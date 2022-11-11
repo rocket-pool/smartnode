@@ -14,7 +14,7 @@ import (
 
 // Get whether node reward claims are enabled
 func GetNodeClaimsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketClaimNodeAddress *common.Address) (bool, error) {
-	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress)
+	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress, opts)
 	if err != nil {
 		return false, err
 	}
@@ -23,7 +23,7 @@ func GetNodeClaimsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacy
 
 // Get whether a node rewards claimer can claim
 func GetNodeClaimPossible(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts, legacyRocketClaimNodeAddress *common.Address) (bool, error) {
-	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress)
+	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress, opts)
 	if err != nil {
 		return false, err
 	}
@@ -32,7 +32,7 @@ func GetNodeClaimPossible(rp *rocketpool.RocketPool, claimerAddress common.Addre
 
 // Get the percentage of rewards available for a node rewards claimer
 func GetNodeClaimRewardsPerc(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts, legacyRocketClaimNodeAddress *common.Address) (float64, error) {
-	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress)
+	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -41,7 +41,7 @@ func GetNodeClaimRewardsPerc(rp *rocketpool.RocketPool, claimerAddress common.Ad
 
 // Get the total amount of rewards available for a node rewards claimer
 func GetNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts, legacyRocketClaimNodeAddress *common.Address) (*big.Int, error) {
-	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress)
+	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func GetNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress common.
 
 // Estimate the gas of ClaimNodeRewards
 func EstimateClaimNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts, legacyRocketClaimNodeAddress *common.Address) (rocketpool.GasInfo, error) {
-	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress)
+	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -59,7 +59,7 @@ func EstimateClaimNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.TransactO
 
 // Claim node rewards
 func ClaimNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts, legacyRocketClaimNodeAddress *common.Address) (common.Hash, error) {
-	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress)
+	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -67,13 +67,13 @@ func ClaimNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts, legacy
 }
 
 // Filters through token claim events and sums the total amount claimed by claimerAddress
-func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address, intervalSize *big.Int, startBlock *big.Int, legacyRocketRewardsPoolAddress *common.Address, legacyRocketClaimNodeAddress *common.Address) (*big.Int, error) {
+func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address, intervalSize *big.Int, startBlock *big.Int, legacyRocketRewardsPoolAddress *common.Address, legacyRocketClaimNodeAddress *common.Address, opts *bind.CallOpts) (*big.Int, error) {
 	// Get contracts
-	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress, opts)
 	if err != nil {
 		return nil, err
 	}
-	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress)
+	rocketClaimNode, err := getRocketClaimNode(rp, legacyRocketClaimNodeAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -117,11 +117,11 @@ func GetNodeTotalClaimed(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyR
 // Get contracts
 var rocketClaimNodeLock sync.Mutex
 
-func getRocketClaimNode(rp *rocketpool.RocketPool, address *common.Address) (*rocketpool.Contract, error) {
+func getRocketClaimNode(rp *rocketpool.RocketPool, address *common.Address, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketClaimNodeLock.Lock()
 	defer rocketClaimNodeLock.Unlock()
 	if address == nil {
-		return rp.VersionManager.V1_0_0.GetContract("rocketClaimNode")
+		return rp.VersionManager.V1_0_0.GetContract("rocketClaimNode", opts)
 	} else {
 		return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketClaimNode", *address)
 	}

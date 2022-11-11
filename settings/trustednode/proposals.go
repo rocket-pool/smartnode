@@ -24,7 +24,7 @@ const (
 
 // The cooldown period a member must wait after making a proposal before making another in seconds
 func GetProposalCooldownTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	proposalsSettingsContract, err := getProposalsSettingsContract(rp)
+	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -46,7 +46,7 @@ func EstimateProposeProposalCooldownTimeGas(rp *rocketpool.RocketPool, value uin
 
 // The period a proposal can be voted on for in seconds
 func GetProposalVoteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	proposalsSettingsContract, err := getProposalsSettingsContract(rp)
+	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -68,7 +68,7 @@ func EstimateProposeProposalVoteTimeGas(rp *rocketpool.RocketPool, value uint64,
 
 // The delay after creation before a proposal can be voted on in seconds
 func GetProposalVoteDelayTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	proposalsSettingsContract, err := getProposalsSettingsContract(rp)
+	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -90,7 +90,7 @@ func EstimateProposeProposalVoteDelayTimeGas(rp *rocketpool.RocketPool, value ui
 
 // The period during which a passed proposal can be executed in time
 func GetProposalExecuteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	proposalsSettingsContract, err := getProposalsSettingsContract(rp)
+	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -112,7 +112,7 @@ func EstimateProposeProposalExecuteTimeGas(rp *rocketpool.RocketPool, value uint
 
 // The period during which an action can be performed on an executed proposal in seconds
 func GetProposalActionTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	proposalsSettingsContract, err := getProposalsSettingsContract(rp)
+	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -135,8 +135,8 @@ func EstimateProposeProposalActionTimeGas(rp *rocketpool.RocketPool, value uint6
 // Get contracts
 var proposalsSettingsContractLock sync.Mutex
 
-func getProposalsSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getProposalsSettingsContract(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	proposalsSettingsContractLock.Lock()
 	defer proposalsSettingsContractLock.Unlock()
-	return rp.GetContract(ProposalsSettingsContractName)
+	return rp.GetContract(ProposalsSettingsContractName, opts)
 }

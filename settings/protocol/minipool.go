@@ -18,7 +18,7 @@ const MinipoolSettingsContractName = "rocketDAOProtocolSettingsMinipool"
 
 // Get the minipool launch balance
 func GetMinipoolLaunchBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func GetMinipoolLaunchBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*
 
 // Required node deposit amounts
 func GetMinipoolFullDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func GetMinipoolFullDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.Call
 	return *value, nil
 }
 func GetMinipoolHalfDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func GetMinipoolHalfDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.Call
 	return *value, nil
 }
 func GetMinipoolEmptyDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func GetMinipoolEmptyDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.Cal
 
 // Required user deposit amounts
 func GetMinipoolFullDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func GetMinipoolFullDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.Call
 	return *value, nil
 }
 func GetMinipoolHalfDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func GetMinipoolHalfDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.Call
 	return *value, nil
 }
 func GetMinipoolEmptyDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func GetMinipoolEmptyDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.Cal
 
 // Minipool withdrawable event submissions currently enabled
 func GetMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -117,7 +117,7 @@ func BootstrapMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, value
 
 // Timeout period in seconds for prelaunch minipools to launch
 func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -135,8 +135,8 @@ func BootstrapMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value time.Durati
 // Get contracts
 var minipoolSettingsContractLock sync.Mutex
 
-func getMinipoolSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getMinipoolSettingsContract(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	minipoolSettingsContractLock.Lock()
 	defer minipoolSettingsContractLock.Unlock()
-	return rp.GetContract(MinipoolSettingsContractName)
+	return rp.GetContract(MinipoolSettingsContractName, opts)
 }

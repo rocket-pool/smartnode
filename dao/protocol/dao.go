@@ -14,7 +14,7 @@ import (
 
 // Estimate the gas of BootstrapBool
 func EstimateBootstrapBoolGas(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAOProtocol, err := getRocketDAOProtocol(rp)
+	rocketDAOProtocol, err := getRocketDAOProtocol(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -23,7 +23,7 @@ func EstimateBootstrapBoolGas(rp *rocketpool.RocketPool, contractName, settingPa
 
 // Bootstrap a bool setting
 func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAOProtocol, err := getRocketDAOProtocol(rp)
+	rocketDAOProtocol, err := getRocketDAOProtocol(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -36,7 +36,7 @@ func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, 
 
 // Estimate the gas of BootstrapUint
 func EstimateBootstrapUintGas(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAOProtocol, err := getRocketDAOProtocol(rp)
+	rocketDAOProtocol, err := getRocketDAOProtocol(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -45,7 +45,7 @@ func EstimateBootstrapUintGas(rp *rocketpool.RocketPool, contractName, settingPa
 
 // Bootstrap a uint256 setting
 func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAOProtocol, err := getRocketDAOProtocol(rp)
+	rocketDAOProtocol, err := getRocketDAOProtocol(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -58,7 +58,7 @@ func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, 
 
 // Estimate the gas of BootstrapAddress
 func EstimateBootstrapAddressGas(rp *rocketpool.RocketPool, contractName, settingPath string, value common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAOProtocol, err := getRocketDAOProtocol(rp)
+	rocketDAOProtocol, err := getRocketDAOProtocol(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -67,7 +67,7 @@ func EstimateBootstrapAddressGas(rp *rocketpool.RocketPool, contractName, settin
 
 // Bootstrap an address setting
 func BootstrapAddress(rp *rocketpool.RocketPool, contractName, settingPath string, value common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAOProtocol, err := getRocketDAOProtocol(rp)
+	rocketDAOProtocol, err := getRocketDAOProtocol(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -80,7 +80,7 @@ func BootstrapAddress(rp *rocketpool.RocketPool, contractName, settingPath strin
 
 // Estimate the gas of BootstrapClaimer
 func EstimateBootstrapClaimerGas(rp *rocketpool.RocketPool, contractName string, amount float64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAOProtocol, err := getRocketDAOProtocol(rp)
+	rocketDAOProtocol, err := getRocketDAOProtocol(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -89,7 +89,7 @@ func EstimateBootstrapClaimerGas(rp *rocketpool.RocketPool, contractName string,
 
 // Bootstrap a rewards claimer
 func BootstrapClaimer(rp *rocketpool.RocketPool, contractName string, amount float64, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAOProtocol, err := getRocketDAOProtocol(rp)
+	rocketDAOProtocol, err := getRocketDAOProtocol(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -103,8 +103,8 @@ func BootstrapClaimer(rp *rocketpool.RocketPool, contractName string, amount flo
 // Get contracts
 var rocketDAOProtocolLock sync.Mutex
 
-func getRocketDAOProtocol(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketDAOProtocol(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDAOProtocolLock.Lock()
 	defer rocketDAOProtocolLock.Unlock()
-	return rp.GetContract("rocketDAOProtocol")
+	return rp.GetContract("rocketDAOProtocol", opts)
 }

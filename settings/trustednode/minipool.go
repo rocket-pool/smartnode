@@ -21,7 +21,7 @@ const (
 
 // The cooldown period a member must wait after making a proposal before making another in seconds
 func GetScrubPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -43,7 +43,7 @@ func EstimateProposeScrubPeriodGas(rp *rocketpool.RocketPool, value uint64, opts
 
 // Whether or not the RPL slashing penalty is applied to scrubbed minipools
 func GetScrubPenaltyEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -66,8 +66,8 @@ func EstimateProposeScrubPenaltyEnabledGas(rp *rocketpool.RocketPool, value bool
 // Get contracts
 var minipoolSettingsContractLock sync.Mutex
 
-func getMinipoolSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getMinipoolSettingsContract(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	minipoolSettingsContractLock.Lock()
 	defer minipoolSettingsContractLock.Unlock()
-	return rp.GetContract(MinipoolSettingsContractName)
+	return rp.GetContract(MinipoolSettingsContractName, opts)
 }

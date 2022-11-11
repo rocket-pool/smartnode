@@ -1,6 +1,7 @@
 package rocketpool
 
 import (
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/hashicorp/go-version"
 )
@@ -45,8 +46,8 @@ func (m *LegacyVersionWrapper_v1_1_0) GetEncodedABI(contractName string) string 
 }
 
 // Get the contract with the provided name for this version of Rocket Pool
-func (m *LegacyVersionWrapper_v1_1_0) GetContract(contractName string) (*Contract, error) {
-	return getLegacyContract(m.rp, contractName, m)
+func (m *LegacyVersionWrapper_v1_1_0) GetContract(contractName string, opts *bind.CallOpts) (*Contract, error) {
+	return getLegacyContract(m.rp, contractName, m, opts)
 }
 
 func (m *LegacyVersionWrapper_v1_1_0) GetContractWithAddress(contractName string, address common.Address) (*Contract, error) {

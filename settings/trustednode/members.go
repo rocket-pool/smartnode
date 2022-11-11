@@ -27,7 +27,7 @@ const (
 
 // Member proposal quorum threshold
 func GetQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	membersSettingsContract, err := getMembersSettingsContract(rp)
+	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -49,7 +49,7 @@ func EstimateProposeQuorumGas(rp *rocketpool.RocketPool, value float64, opts *bi
 
 // RPL bond required for a member
 func GetRPLBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	membersSettingsContract, err := getMembersSettingsContract(rp)
+	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func EstimateProposeRPLBondGas(rp *rocketpool.RocketPool, value *big.Int, opts *
 
 // The maximum number of unbonded minipools a member can run
 func GetMinipoolUnbondedMax(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	membersSettingsContract, err := getMembersSettingsContract(rp)
+	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -93,7 +93,7 @@ func EstimateProposeMinipoolUnbondedMaxGas(rp *rocketpool.RocketPool, value uint
 
 // The minimum commission rate before unbonded minipools are allowed
 func GetMinipoolUnbondedMinFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	membersSettingsContract, err := getMembersSettingsContract(rp)
+	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -115,7 +115,7 @@ func EstimateProposeMinipoolUnbondedMinFeeGas(rp *rocketpool.RocketPool, value u
 
 // The period a member must wait for before submitting another challenge, in blocks
 func GetChallengeCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	membersSettingsContract, err := getMembersSettingsContract(rp)
+	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -137,7 +137,7 @@ func EstimateProposeChallengeCooldownGas(rp *rocketpool.RocketPool, value uint64
 
 // The period during which a member can respond to a challenge, in blocks
 func GetChallengeWindow(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	membersSettingsContract, err := getMembersSettingsContract(rp)
+	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -159,7 +159,7 @@ func EstimateProposeChallengeWindowGas(rp *rocketpool.RocketPool, value uint64, 
 
 // The fee for a non-member to challenge a member, in wei
 func GetChallengeCost(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	membersSettingsContract, err := getMembersSettingsContract(rp)
+	membersSettingsContract, err := getMembersSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -182,8 +182,8 @@ func EstimateProposeChallengeCostGas(rp *rocketpool.RocketPool, value *big.Int, 
 // Get contracts
 var membersSettingsContractLock sync.Mutex
 
-func getMembersSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getMembersSettingsContract(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	membersSettingsContractLock.Lock()
 	defer membersSettingsContractLock.Unlock()
-	return rp.GetContract(MembersSettingsContractName)
+	return rp.GetContract(MembersSettingsContractName, opts)
 }

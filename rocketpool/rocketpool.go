@@ -83,35 +83,39 @@ func NewRocketPool(client ExecutionClient, rocketStorageAddress common.Address) 
 }
 
 // Load Rocket Pool contract addresses
-func (rp *RocketPool) GetAddress(contractName string) (*common.Address, error) {
+func (rp *RocketPool) GetAddress(contractName string, opts *bind.CallOpts) (*common.Address, error) {
 
 	// Check for cached address
-	if cached, ok := rp.getCachedAddress(contractName); ok {
-		if time.Now().Unix()-cached.time <= CacheTTL {
-			return cached.address, nil
-		} else {
-			rp.deleteCachedAddress(contractName)
+	if opts == nil {
+		if cached, ok := rp.getCachedAddress(contractName); ok {
+			if time.Now().Unix()-cached.time <= CacheTTL {
+				return cached.address, nil
+			} else {
+				rp.deleteCachedAddress(contractName)
+			}
 		}
 	}
 
 	// Get address
-	address, err := rp.RocketStorage.GetAddress(nil, crypto.Keccak256Hash([]byte("contract.address"), []byte(contractName)))
+	address, err := rp.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.address"), []byte(contractName)))
 	if err != nil {
 		return nil, fmt.Errorf("Could not load contract %s address: %w", contractName, err)
 	}
 
 	// Cache address
-	rp.setCachedAddress(contractName, cachedAddress{
-		address: &address,
-		time:    time.Now().Unix(),
-	})
+	if opts == nil {
+		rp.setCachedAddress(contractName, cachedAddress{
+			address: &address,
+			time:    time.Now().Unix(),
+		})
+	}
 
 	// Return
 	return &address, nil
 
 }
 
-func (rp *RocketPool) GetAddresses(contractNames ...string) ([]*common.Address, error) {
+func (rp *RocketPool) GetAddresses(opts *bind.CallOpts, contractNames ...string) ([]*common.Address, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -121,7 +125,7 @@ func (rp *RocketPool) GetAddresses(contractNames ...string) ([]*common.Address, 
 	for ci, contractName := range contractNames {
 		ci, contractName := ci, contractName
 		wg.Go(func() error {
-			address, err := rp.GetAddress(contractName)
+			address, err := rp.GetAddress(contractName, opts)
 			if err == nil {
 				addresses[ci] = address
 			}
@@ -140,19 +144,21 @@ func (rp *RocketPool) GetAddresses(contractNames ...string) ([]*common.Address, 
 }
 
 // Load Rocket Pool contract ABIs
-func (rp *RocketPool) GetABI(contractName string) (*abi.ABI, error) {
+func (rp *RocketPool) GetABI(contractName string, opts *bind.CallOpts) (*abi.ABI, error) {
 
 	// Check for cached ABI
-	if cached, ok := rp.getCachedABI(contractName); ok {
-		if time.Now().Unix()-cached.time <= CacheTTL {
-			return cached.abi, nil
-		} else {
-			rp.deleteCachedABI(contractName)
+	if opts == nil {
+		if cached, ok := rp.getCachedABI(contractName); ok {
+			if time.Now().Unix()-cached.time <= CacheTTL {
+				return cached.abi, nil
+			} else {
+				rp.deleteCachedABI(contractName)
+			}
 		}
 	}
 
 	// Get ABI
-	abiEncoded, err := rp.RocketStorage.GetString(nil, crypto.Keccak256Hash([]byte("contract.abi"), []byte(contractName)))
+	abiEncoded, err := rp.RocketStorage.GetString(opts, crypto.Keccak256Hash([]byte("contract.abi"), []byte(contractName)))
 	if err != nil {
 		return nil, fmt.Errorf("Could not load contract %s ABI: %w", contractName, err)
 	}
@@ -164,16 +170,18 @@ func (rp *RocketPool) GetABI(contractName string) (*abi.ABI, error) {
 	}
 
 	// Cache ABI
-	rp.setCachedABI(contractName, cachedABI{
-		abi:  abi,
-		time: time.Now().Unix(),
-	})
+	if opts == nil {
+		rp.setCachedABI(contractName, cachedABI{
+			abi:  abi,
+			time: time.Now().Unix(),
+		})
+	}
 
 	// Return
 	return abi, nil
 
 }
-func (rp *RocketPool) GetABIs(contractNames ...string) ([]*abi.ABI, error) {
+func (rp *RocketPool) GetABIs(opts *bind.CallOpts, contractNames ...string) ([]*abi.ABI, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -183,7 +191,7 @@ func (rp *RocketPool) GetABIs(contractNames ...string) ([]*abi.ABI, error) {
 	for ci, contractName := range contractNames {
 		ci, contractName := ci, contractName
 		wg.Go(func() error {
-			abi, err := rp.GetABI(contractName)
+			abi, err := rp.GetABI(contractName, opts)
 			if err == nil {
 				abis[ci] = abi
 			}
@@ -202,14 +210,16 @@ func (rp *RocketPool) GetABIs(contractNames ...string) ([]*abi.ABI, error) {
 }
 
 // Load Rocket Pool contracts
-func (rp *RocketPool) GetContract(contractName string) (*Contract, error) {
+func (rp *RocketPool) GetContract(contractName string, opts *bind.CallOpts) (*Contract, error) {
 
 	// Check for cached contract
-	if cached, ok := rp.getCachedContract(contractName); ok {
-		if time.Now().Unix()-cached.time <= CacheTTL {
-			return cached.contract, nil
-		} else {
-			rp.deleteCachedContract(contractName)
+	if opts == nil {
+		if cached, ok := rp.getCachedContract(contractName); ok {
+			if time.Now().Unix()-cached.time <= CacheTTL {
+				return cached.contract, nil
+			} else {
+				rp.deleteCachedContract(contractName)
+			}
 		}
 	}
 
@@ -221,12 +231,12 @@ func (rp *RocketPool) GetContract(contractName string) (*Contract, error) {
 	// Load data
 	wg.Go(func() error {
 		var err error
-		address, err = rp.GetAddress(contractName)
+		address, err = rp.GetAddress(contractName, opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		abi, err = rp.GetABI(contractName)
+		abi, err = rp.GetABI(contractName, opts)
 		return err
 	})
 
@@ -253,7 +263,7 @@ func (rp *RocketPool) GetContract(contractName string) (*Contract, error) {
 	return contract, nil
 
 }
-func (rp *RocketPool) GetContracts(contractNames ...string) ([]*Contract, error) {
+func (rp *RocketPool) GetContracts(opts *bind.CallOpts, contractNames ...string) ([]*Contract, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -263,7 +273,7 @@ func (rp *RocketPool) GetContracts(contractNames ...string) ([]*Contract, error)
 	for ci, contractName := range contractNames {
 		ci, contractName := ci, contractName
 		wg.Go(func() error {
-			contract, err := rp.GetContract(contractName)
+			contract, err := rp.GetContract(contractName, opts)
 			if err == nil {
 				contracts[ci] = contract
 			}
@@ -282,10 +292,10 @@ func (rp *RocketPool) GetContracts(contractNames ...string) ([]*Contract, error)
 }
 
 // Create a Rocket Pool contract instance
-func (rp *RocketPool) MakeContract(contractName string, address common.Address) (*Contract, error) {
+func (rp *RocketPool) MakeContract(contractName string, address common.Address, opts *bind.CallOpts) (*Contract, error) {
 
 	// Load ABI
-	abi, err := rp.GetABI(contractName)
+	abi, err := rp.GetABI(contractName, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -18,7 +18,7 @@ const AuctionSettingsContractName = "rocketDAOProtocolSettingsAuction"
 
 // Lot creation currently enabled
 func GetCreateLotEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	auctionSettingsContract, err := getAuctionSettingsContract(rp)
+	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -34,7 +34,7 @@ func BootstrapCreateLotEnabled(rp *rocketpool.RocketPool, value bool, opts *bind
 
 // Lot bidding currently enabled
 func GetBidOnLotEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	auctionSettingsContract, err := getAuctionSettingsContract(rp)
+	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -50,7 +50,7 @@ func BootstrapBidOnLotEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.
 
 // The minimum lot size in ETH value
 func GetLotMinimumEthValue(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	auctionSettingsContract, err := getAuctionSettingsContract(rp)
+	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func BootstrapLotMinimumEthValue(rp *rocketpool.RocketPool, value *big.Int, opts
 
 // The maximum lot size in ETH value
 func GetLotMaximumEthValue(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	auctionSettingsContract, err := getAuctionSettingsContract(rp)
+	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func BootstrapLotMaximumEthValue(rp *rocketpool.RocketPool, value *big.Int, opts
 
 // The lot duration in blocks
 func GetLotDuration(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	auctionSettingsContract, err := getAuctionSettingsContract(rp)
+	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -98,7 +98,7 @@ func BootstrapLotDuration(rp *rocketpool.RocketPool, value uint64, opts *bind.Tr
 
 // The starting price relative to current ETH price, as a fraction
 func GetLotStartingPriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	auctionSettingsContract, err := getAuctionSettingsContract(rp)
+	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -114,7 +114,7 @@ func BootstrapLotStartingPriceRatio(rp *rocketpool.RocketPool, value float64, op
 
 // The reserve price relative to current ETH price, as a fraction
 func GetLotReservePriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	auctionSettingsContract, err := getAuctionSettingsContract(rp)
+	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -131,8 +131,8 @@ func BootstrapLotReservePriceRatio(rp *rocketpool.RocketPool, value float64, opt
 // Get contracts
 var auctionSettingsContractLock sync.Mutex
 
-func getAuctionSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getAuctionSettingsContract(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	auctionSettingsContractLock.Lock()
 	defer auctionSettingsContractLock.Unlock()
-	return rp.GetContract(AuctionSettingsContractName)
+	return rp.GetContract(AuctionSettingsContractName, opts)
 }

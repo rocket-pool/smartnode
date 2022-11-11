@@ -189,7 +189,7 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
 
 // Get the minimum member count
 func GetMinimumMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -202,7 +202,7 @@ func GetMinimumMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 
 // Get the member count
 func GetMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -215,7 +215,7 @@ func GetMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 
 // Get a member address by index
 func GetMemberAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (common.Address, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -228,7 +228,7 @@ func GetMemberAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (
 
 // Member details
 func GetMemberExists(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -239,7 +239,7 @@ func GetMemberExists(rp *rocketpool.RocketPool, memberAddress common.Address, op
 	return *exists, nil
 }
 func GetMemberID(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (string, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return "", err
 	}
@@ -250,7 +250,7 @@ func GetMemberID(rp *rocketpool.RocketPool, memberAddress common.Address, opts *
 	return strings.Sanitize(*id), nil
 }
 func GetMemberUrl(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (string, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return "", err
 	}
@@ -261,7 +261,7 @@ func GetMemberUrl(rp *rocketpool.RocketPool, memberAddress common.Address, opts 
 	return strings.Sanitize(*url), nil
 }
 func GetMemberJoinedTime(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -272,7 +272,7 @@ func GetMemberJoinedTime(rp *rocketpool.RocketPool, memberAddress common.Address
 	return (*joinedTime).Uint64(), nil
 }
 func GetMemberLastProposalTime(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -283,7 +283,7 @@ func GetMemberLastProposalTime(rp *rocketpool.RocketPool, memberAddress common.A
 	return (*lastProposalTime).Uint64(), nil
 }
 func GetMemberRPLBondAmount(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func GetMemberRPLBondAmount(rp *rocketpool.RocketPool, memberAddress common.Addr
 	return *rplBondAmount, nil
 }
 func GetMemberUnbondedValidatorCount(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -316,7 +316,7 @@ func GetMemberReplaceProposalExecutedTime(rp *rocketpool.RocketPool, memberAddre
 	return GetMemberProposalExecutedTime(rp, "replace", memberAddress, opts)
 }
 func GetMemberProposalExecutedTime(rp *rocketpool.RocketPool, proposalType string, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -329,7 +329,7 @@ func GetMemberProposalExecutedTime(rp *rocketpool.RocketPool, proposalType strin
 
 // Get a member's replacement address if being replaced
 func GetMemberReplacementAddress(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -342,7 +342,7 @@ func GetMemberReplacementAddress(rp *rocketpool.RocketPool, memberAddress common
 
 // Get whether a member has an active challenge against them
 func GetMemberIsChallenged(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -355,7 +355,7 @@ func GetMemberIsChallenged(rp *rocketpool.RocketPool, memberAddress common.Addre
 
 // Estimate the gas of BootstrapBool
 func EstimateBootstrapBoolGas(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -364,7 +364,7 @@ func EstimateBootstrapBoolGas(rp *rocketpool.RocketPool, contractName, settingPa
 
 // Bootstrap a bool setting
 func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -377,7 +377,7 @@ func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, 
 
 // Estimate the gas of BootstrapUint
 func EstimateBootstrapUintGas(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -386,7 +386,7 @@ func EstimateBootstrapUintGas(rp *rocketpool.RocketPool, contractName, settingPa
 
 // Bootstrap a uint256 setting
 func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -399,7 +399,7 @@ func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, 
 
 // Estimate the gas of BootstrapMember
 func EstimateBootstrapMemberGas(rp *rocketpool.RocketPool, id, url string, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -409,7 +409,7 @@ func EstimateBootstrapMemberGas(rp *rocketpool.RocketPool, id, url string, nodeA
 
 // Bootstrap a DAO member
 func BootstrapMember(rp *rocketpool.RocketPool, id, url string, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -427,7 +427,7 @@ func EstimateBootstrapUpgradeGas(rp *rocketpool.RocketPool, upgradeType, contrac
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -440,7 +440,7 @@ func BootstrapUpgrade(rp *rocketpool.RocketPool, upgradeType, contractName, cont
 	if err != nil {
 		return common.Hash{}, err
 	}
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -454,8 +454,8 @@ func BootstrapUpgrade(rp *rocketpool.RocketPool, upgradeType, contractName, cont
 // Get contracts
 var rocketDAONodeTrustedLock sync.Mutex
 
-func getRocketDAONodeTrusted(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketDAONodeTrusted(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDAONodeTrustedLock.Lock()
 	defer rocketDAONodeTrustedLock.Unlock()
-	return rp.GetContract("rocketDAONodeTrusted")
+	return rp.GetContract("rocketDAONodeTrusted", opts)
 }

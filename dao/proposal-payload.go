@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -16,14 +17,14 @@ import (
 // Get the string representation of a proposal payload
 var getProposalPayloadStringLock sync.Mutex
 
-func GetProposalPayloadString(rp *rocketpool.RocketPool, daoName string, payload []byte) (string, error) {
+func GetProposalPayloadString(rp *rocketpool.RocketPool, daoName string, payload []byte, opts *bind.CallOpts) (string, error) {
 
 	// Lock while getting proposal payload string
 	getProposalPayloadStringLock.Lock()
 	defer getProposalPayloadStringLock.Unlock()
 
 	// Get proposal DAO contract ABI
-	daoContractAbi, err := rp.GetABI(daoName)
+	daoContractAbi, err := rp.GetABI(daoName, opts)
 	if err != nil {
 		return "", fmt.Errorf("Could not get '%s' DAO contract ABI: %w", daoName, err)
 	}

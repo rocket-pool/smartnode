@@ -18,7 +18,7 @@ const RewardsSettingsContractName = "rocketDAOProtocolSettingsRewards"
 
 // The claim amount for a claimer as a fraction
 func GetRewardsClaimerPerc(rp *rocketpool.RocketPool, contractName string, opts *bind.CallOpts) (float64, error) {
-	rewardsSettingsContract, err := getRewardsSettingsContract(rp)
+	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -31,7 +31,7 @@ func GetRewardsClaimerPerc(rp *rocketpool.RocketPool, contractName string, opts 
 
 // The time that a claimer's share was last updated
 func GetRewardsClaimerPercTimeUpdated(rp *rocketpool.RocketPool, contractName string, opts *bind.CallOpts) (uint64, error) {
-	rewardsSettingsContract, err := getRewardsSettingsContract(rp)
+	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -44,7 +44,7 @@ func GetRewardsClaimerPercTimeUpdated(rp *rocketpool.RocketPool, contractName st
 
 // The total claim amount for all claimers as a fraction
 func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	rewardsSettingsContract, err := getRewardsSettingsContract(rp)
+	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -57,7 +57,7 @@ func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 
 // Rewards claim interval time
 func GetRewardsClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rewardsSettingsContract, err := getRewardsSettingsContract(rp)
+	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -74,8 +74,8 @@ func BootstrapRewardsClaimIntervalTime(rp *rocketpool.RocketPool, value uint64, 
 // Get contracts
 var rewardsSettingsContractLock sync.Mutex
 
-func getRewardsSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRewardsSettingsContract(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rewardsSettingsContractLock.Lock()
 	defer rewardsSettingsContractLock.Unlock()
-	return rp.GetContract(RewardsSettingsContractName)
+	return rp.GetContract(RewardsSettingsContractName, opts)
 }

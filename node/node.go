@@ -81,7 +81,7 @@ type TrustedNodeParticipation struct {
 
 // Get the version of the Node Manager contract
 func GetNodeManagerVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint8, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -234,7 +234,7 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts 
 
 // Get the number of nodes in the network
 func GetNodeCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -247,7 +247,7 @@ func GetNodeCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error
 
 // Get a breakdown of the number of nodes per timezone
 func GetNodeCountPerTimezone(rp *rocketpool.RocketPool, offset, limit *big.Int, opts *bind.CallOpts) ([]TimezoneCount, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return []TimezoneCount{}, err
 	}
@@ -260,7 +260,7 @@ func GetNodeCountPerTimezone(rp *rocketpool.RocketPool, offset, limit *big.Int, 
 
 // Get a node address by index
 func GetNodeAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (common.Address, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -273,7 +273,7 @@ func GetNodeAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (co
 
 // Check whether a node exists
 func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -286,7 +286,7 @@ func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *
 
 // Get a node's timezone location
 func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (string, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return "", err
 	}
@@ -299,7 +299,7 @@ func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Addre
 
 // Estimate the gas of RegisterNode
 func EstimateRegisterNodeGas(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -312,7 +312,7 @@ func EstimateRegisterNodeGas(rp *rocketpool.RocketPool, timezoneLocation string,
 
 // Register a node
 func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -329,7 +329,7 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
 
 // Estimate the gas of SetTimezoneLocation
 func EstimateSetTimezoneLocationGas(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -342,7 +342,7 @@ func EstimateSetTimezoneLocationGas(rp *rocketpool.RocketPool, timezoneLocation 
 
 // Set a node's timezone location
 func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -359,7 +359,7 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
 
 // Get the network ID for a node's rewards
 func GetRewardNetwork(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -372,7 +372,7 @@ func GetRewardNetwork(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 
 // Check if a node's fee distributor has been initialized yet
 func GetFeeDistributorInitialized(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -385,7 +385,7 @@ func GetFeeDistributorInitialized(rp *rocketpool.RocketPool, nodeAddress common.
 
 // Estimate the gas for creating the fee distributor contract for a node
 func EstimateInitializeFeeDistributorGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -394,7 +394,7 @@ func EstimateInitializeFeeDistributorGas(rp *rocketpool.RocketPool, opts *bind.T
 
 // Create the fee distributor contract for a node
 func InitializeFeeDistributor(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -407,7 +407,7 @@ func InitializeFeeDistributor(rp *rocketpool.RocketPool, opts *bind.TransactOpts
 
 // Get a node's average minipool fee
 func GetNodeAverageFee(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (float64, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -420,7 +420,7 @@ func GetNodeAverageFee(rp *rocketpool.RocketPool, nodeAddress common.Address, op
 
 // Get a node's average minipool fee
 func GetNodeAverageFeeRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +433,7 @@ func GetNodeAverageFeeRaw(rp *rocketpool.RocketPool, nodeAddress common.Address,
 
 // Get the time that the user registered as a claimer
 func GetNodeRegistrationTime(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (time.Time, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -445,9 +445,9 @@ func GetNodeRegistrationTime(rp *rocketpool.RocketPool, address common.Address, 
 }
 
 // Returns an array of block numbers for prices submissions the given trusted node has submitted since fromBlock
-func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int) (*[]uint64, error) {
+func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int, opts *bind.CallOpts) (*[]uint64, error) {
 	// Get contracts
-	rocketNetworkPrices, err := getRocketNetworkPrices(rp)
+	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -473,9 +473,9 @@ func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address,
 }
 
 // Returns an array of block numbers for balances submissions the given trusted node has submitted since fromBlock
-func GetBalancesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int) (*[]uint64, error) {
+func GetBalancesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int, opts *bind.CallOpts) (*[]uint64, error) {
 	// Get contracts
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -502,9 +502,9 @@ func GetBalancesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Addres
 }
 
 // Returns the most recent block number that the number of trusted nodes changed since fromBlock
-func getLatestMemberCountChangedBlock(rp *rocketpool.RocketPool, fromBlock uint64, intervalSize *big.Int) (uint64, error) {
+func getLatestMemberCountChangedBlock(rp *rocketpool.RocketPool, fromBlock uint64, intervalSize *big.Int, opts *bind.CallOpts) (uint64, error) {
 	// Get contracts
-	rocketDaoNodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	rocketDaoNodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -551,7 +551,7 @@ func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, interval
 	currentBlockNumber := currentBlock.Number.Uint64()
 	// Get the block of the most recent member join (limiting to 50 intervals)
 	minBlock := (currentBlockNumber/updatePricesFrequency - 50) * updatePricesFrequency
-	latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp, minBlock, intervalSize)
+	latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp, minBlock, intervalSize, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -586,7 +586,7 @@ func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, interval
 		participationTable[member.Address] = make([]bool, intervalsPassed)
 		actual := 0
 		if intervalsPassed > 0 {
-			blocks, err := GetPricesSubmissions(rp, member.Address, startBlock, intervalSize)
+			blocks, err := GetPricesSubmissions(rp, member.Address, startBlock, intervalSize, opts)
 			if err != nil {
 				return nil, err
 			}
@@ -638,7 +638,7 @@ func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, interv
 	currentBlockNumber := currentBlock.Number.Uint64()
 	// Get the block of the most recent member join (limiting to 50 intervals)
 	minBlock := (currentBlockNumber/updateBalancesFrequency - 50) * updateBalancesFrequency
-	latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp, minBlock, intervalSize)
+	latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp, minBlock, intervalSize, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -673,7 +673,7 @@ func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, interv
 		participationTable[member.Address] = make([]bool, intervalsPassed)
 		actual := 0
 		if intervalsPassed > 0 {
-			blocks, err := GetBalancesSubmissions(rp, member.Address, startBlock, intervalSize)
+			blocks, err := GetBalancesSubmissions(rp, member.Address, startBlock, intervalSize, opts)
 			if err != nil {
 				return nil, err
 			}
@@ -711,9 +711,9 @@ func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, interv
 }
 
 // Returns an array of members who submitted a balance since fromBlock
-func GetLatestBalancesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, intervalSize *big.Int) ([]common.Address, error) {
+func GetLatestBalancesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, intervalSize *big.Int, opts *bind.CallOpts) ([]common.Address, error) {
 	// Get contracts
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -756,7 +756,7 @@ func GetTrustedNodeLatestBalancesParticipation(rp *rocketpool.RocketPool, interv
 	}
 	// Get submission within the current interval
 	fromBlock := currentBlockNumber / updateBalancesFrequency * updateBalancesFrequency
-	submissions, err := GetLatestBalancesSubmissions(rp, fromBlock, intervalSize)
+	submissions, err := GetLatestBalancesSubmissions(rp, fromBlock, intervalSize, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -772,9 +772,9 @@ func GetTrustedNodeLatestBalancesParticipation(rp *rocketpool.RocketPool, interv
 }
 
 // Returns an array of members who submitted prices since fromBlock
-func GetLatestPricesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, intervalSize *big.Int) ([]common.Address, error) {
+func GetLatestPricesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, intervalSize *big.Int, opts *bind.CallOpts) ([]common.Address, error) {
 	// Get contracts
-	rocketNetworkPrices, err := getRocketNetworkPrices(rp)
+	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -817,7 +817,7 @@ func GetTrustedNodeLatestPricesParticipation(rp *rocketpool.RocketPool, interval
 	}
 	// Get submission within the current interval
 	fromBlock := currentBlockNumber / updatePricesFrequency * updatePricesFrequency
-	submissions, err := GetLatestPricesSubmissions(rp, fromBlock, intervalSize)
+	submissions, err := GetLatestPricesSubmissions(rp, fromBlock, intervalSize, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -834,7 +834,7 @@ func GetTrustedNodeLatestPricesParticipation(rp *rocketpool.RocketPool, interval
 
 // Get the smoothing pool opt-in status of a node
 func GetSmoothingPoolRegistrationState(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -847,7 +847,7 @@ func GetSmoothingPoolRegistrationState(rp *rocketpool.RocketPool, nodeAddress co
 
 // Get the time of the previous smoothing pool opt-in / opt-out
 func GetSmoothingPoolRegistrationChanged(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -860,7 +860,7 @@ func GetSmoothingPoolRegistrationChanged(rp *rocketpool.RocketPool, nodeAddress 
 
 // Estimate the gas for opting into / out of the smoothing pool
 func EstimateSetSmoothingPoolRegistrationStateGas(rp *rocketpool.RocketPool, optIn bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -869,7 +869,7 @@ func EstimateSetSmoothingPoolRegistrationStateGas(rp *rocketpool.RocketPool, opt
 
 // Opt into / out of the smoothing pool
 func SetSmoothingPoolRegistrationState(rp *rocketpool.RocketPool, optIn bool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -882,7 +882,7 @@ func SetSmoothingPoolRegistrationState(rp *rocketpool.RocketPool, optIn bool, op
 
 // Get the number of nodes in the Smoothing Pool
 func GetSmoothingPoolRegisteredNodeCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp)
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -933,32 +933,32 @@ func GetSmoothingPoolRegisteredNodeCount(rp *rocketpool.RocketPool, opts *bind.C
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
 
-func getRocketNodeManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketNodeManager(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNodeManagerLock.Lock()
 	defer rocketNodeManagerLock.Unlock()
-	return rp.GetContract("rocketNodeManager")
+	return rp.GetContract("rocketNodeManager", opts)
 }
 
 var rocketNetworkPricesLock sync.Mutex
 
-func getRocketNetworkPrices(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketNetworkPrices(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNetworkPricesLock.Lock()
 	defer rocketNetworkPricesLock.Unlock()
-	return rp.GetContract("rocketNetworkPrices")
+	return rp.GetContract("rocketNetworkPrices", opts)
 }
 
 var rocketNetworkBalancesLock sync.Mutex
 
-func getRocketNetworkBalances(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketNetworkBalances(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNetworkBalancesLock.Lock()
 	defer rocketNetworkBalancesLock.Unlock()
-	return rp.GetContract("rocketNetworkBalances")
+	return rp.GetContract("rocketNetworkBalances", opts)
 }
 
 var rocketDAONodeTrustedActionsLock sync.Mutex
 
-func getRocketDAONodeTrustedActions(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketDAONodeTrustedActions(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDAONodeTrustedActionsLock.Lock()
 	defer rocketDAONodeTrustedActionsLock.Unlock()
-	return rp.GetContract("rocketDAONodeTrustedActions")
+	return rp.GetContract("rocketDAONodeTrustedActions", opts)
 }

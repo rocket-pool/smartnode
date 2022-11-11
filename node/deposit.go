@@ -16,7 +16,7 @@ import (
 
 // Estimate the gas of Deposit
 func EstimateDepositGas(rp *rocketpool.RocketPool, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNodeDeposit, err := getRocketNodeDeposit(rp)
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -25,7 +25,7 @@ func EstimateDepositGas(rp *rocketpool.RocketPool, minimumNodeFee float64, valid
 
 // Make a node deposit
 func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (*types.Transaction, error) {
-	rocketNodeDeposit, err := getRocketNodeDeposit(rp)
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, validatorPubkey 
 
 // Get the type of a deposit based on the amount
 func GetDepositType(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.CallOpts) (rptypes.MinipoolDeposit, error) {
-	rocketNodeDeposit, err := getRocketNodeDeposit(rp)
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
 	if err != nil {
 		return rptypes.Empty, err
 	}
@@ -53,8 +53,8 @@ func GetDepositType(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.CallO
 // Get contracts
 var rocketNodeDepositLock sync.Mutex
 
-func getRocketNodeDeposit(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketNodeDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNodeDepositLock.Lock()
 	defer rocketNodeDepositLock.Unlock()
-	return rp.GetContract("rocketNodeDeposit")
+	return rp.GetContract("rocketNodeDeposit", opts)
 }

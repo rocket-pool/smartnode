@@ -362,7 +362,7 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 	}
 
 	// Get proposal payload string
-	payloadStr, err := GetProposalPayloadString(rp, dao, payload)
+	payloadStr, err := GetProposalPayloadString(rp, dao, payload, opts)
 	if err != nil {
 		payloadStr = "(unknown)"
 	}
@@ -429,7 +429,7 @@ func GetProposalDetailsWithMember(rp *rocketpool.RocketPool, proposalId uint64, 
 
 // Get the proposal count
 func GetProposalCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -442,7 +442,7 @@ func GetProposalCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
 
 // Proposal details
 func GetProposalDAO(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (string, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return "", err
 	}
@@ -453,7 +453,7 @@ func GetProposalDAO(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Cal
 	return strings.Sanitize(*daoName), nil
 }
 func GetProposalProposerAddress(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (common.Address, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -464,7 +464,7 @@ func GetProposalProposerAddress(rp *rocketpool.RocketPool, proposalId uint64, op
 	return *proposerAddress, nil
 }
 func GetProposalMessage(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (string, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return "", err
 	}
@@ -475,7 +475,7 @@ func GetProposalMessage(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 	return strings.Sanitize(*message), nil
 }
 func GetProposalCreatedTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -486,7 +486,7 @@ func GetProposalCreatedTime(rp *rocketpool.RocketPool, proposalId uint64, opts *
 	return (*createdTime).Uint64(), nil
 }
 func GetProposalStartTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -497,7 +497,7 @@ func GetProposalStartTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bi
 	return (*startTime).Uint64(), nil
 }
 func GetProposalEndTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -508,7 +508,7 @@ func GetProposalEndTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 	return (*endTime).Uint64(), nil
 }
 func GetProposalExpiryTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -519,7 +519,7 @@ func GetProposalExpiryTime(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 	return (*expiryTime).Uint64(), nil
 }
 func GetProposalVotesRequired(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (float64, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -530,7 +530,7 @@ func GetProposalVotesRequired(rp *rocketpool.RocketPool, proposalId uint64, opts
 	return eth.WeiToEth(*votesRequired), nil
 }
 func GetProposalVotesFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (float64, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -541,7 +541,7 @@ func GetProposalVotesFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bin
 	return eth.WeiToEth(*votesFor), nil
 }
 func GetProposalVotesAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (float64, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -552,7 +552,7 @@ func GetProposalVotesAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts 
 	return eth.WeiToEth(*votesAgainst), nil
 }
 func GetProposalIsCancelled(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (bool, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -563,7 +563,7 @@ func GetProposalIsCancelled(rp *rocketpool.RocketPool, proposalId uint64, opts *
 	return *cancelled, nil
 }
 func GetProposalIsExecuted(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (bool, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -574,7 +574,7 @@ func GetProposalIsExecuted(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 	return *executed, nil
 }
 func GetProposalPayload(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) ([]byte, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -593,14 +593,14 @@ func GetProposalPayloadStr(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 	if err != nil {
 		return "", err
 	}
-	payloadStr, err := GetProposalPayloadString(rp, dao, payload)
+	payloadStr, err := GetProposalPayloadString(rp, dao, payload, opts)
 	if err != nil {
 		payloadStr = "(unknown)"
 	}
 	return payloadStr, nil
 }
 func GetProposalState(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (rptypes.ProposalState, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -613,7 +613,7 @@ func GetProposalState(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.C
 
 // Get whether a member has voted on a proposal
 func GetProposalMemberVoted(rp *rocketpool.RocketPool, proposalId uint64, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -626,7 +626,7 @@ func GetProposalMemberVoted(rp *rocketpool.RocketPool, proposalId uint64, member
 
 // Get whether a member has voted in support of a proposal
 func GetProposalMemberSupported(rp *rocketpool.RocketPool, proposalId uint64, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketDAOProposal, err := getRocketDAOProposal(rp)
+	rocketDAOProposal, err := getRocketDAOProposal(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -640,8 +640,8 @@ func GetProposalMemberSupported(rp *rocketpool.RocketPool, proposalId uint64, me
 // Get contracts
 var rocketDAOProposalLock sync.Mutex
 
-func getRocketDAOProposal(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketDAOProposal(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDAOProposalLock.Lock()
 	defer rocketDAOProposalLock.Unlock()
-	return rp.GetContract("rocketDAOProposal")
+	return rp.GetContract("rocketDAOProposal", opts)
 }

@@ -13,7 +13,7 @@ import (
 
 // Estimate the gas of SubmitPenalty
 func EstimateSubmitPenaltyGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, block *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNetworkPenalties, err := getRocketNetworkPenalties(rp)
+	rocketNetworkPenalties, err := getRocketNetworkPenalties(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -22,7 +22,7 @@ func EstimateSubmitPenaltyGas(rp *rocketpool.RocketPool, minipoolAddress common.
 
 // Submit penalty for given minipool
 func SubmitPenalty(rp *rocketpool.RocketPool, minipoolAddress common.Address, block *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNetworkPrices, err := getRocketNetworkPenalties(rp)
+	rocketNetworkPrices, err := getRocketNetworkPenalties(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -36,8 +36,8 @@ func SubmitPenalty(rp *rocketpool.RocketPool, minipoolAddress common.Address, bl
 // Get contracts
 var rocketNetworkPenaltiesLock sync.Mutex
 
-func getRocketNetworkPenalties(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketNetworkPenalties(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNetworkPenaltiesLock.Lock()
 	defer rocketNetworkPenaltiesLock.Unlock()
-	return rp.GetContract("rocketNetworkPenalties")
+	return rp.GetContract("rocketNetworkPenalties", opts)
 }

@@ -11,7 +11,7 @@ import (
 
 // Get the CreationCode binary for the RocketMinipool contract that will be created by node deposits
 func GetMinipoolBytecode(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]byte, error) {
-	rocketMinipoolFactory, err := getRocketMinipoolFactory(rp)
+	rocketMinipoolFactory, err := getRocketMinipoolFactory(rp, opts)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -25,8 +25,8 @@ func GetMinipoolBytecode(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]byte
 // Get contracts
 var rocketMinipoolFactoryLock sync.Mutex
 
-func getRocketMinipoolFactory(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketMinipoolFactory(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketMinipoolFactoryLock.Lock()
 	defer rocketMinipoolFactoryLock.Unlock()
-	return rp.GetContract("rocketMinipoolFactory")
+	return rp.GetContract("rocketMinipoolFactory", opts)
 }

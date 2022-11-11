@@ -14,7 +14,7 @@ import (
 
 // Get the block number which network balances are current for
 func GetBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -27,7 +27,7 @@ func GetBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
 
 // Get the current network total ETH balance
 func GetTotalETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func GetTotalETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.In
 
 // Get the current network staking ETH balance
 func GetStakingETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func GetStakingETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 
 // Get the current network total rETH supply
 func GetTotalRETHSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func GetTotalRETHSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.In
 
 // Get the current network ETH utilization rate
 func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -79,7 +79,7 @@ func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 
 // Estimate the gas of SubmitBalances
 func EstimateSubmitBalancesGas(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -88,7 +88,7 @@ func EstimateSubmitBalancesGas(rp *rocketpool.RocketPool, block uint64, totalEth
 
 // Submit network balances for an epoch
 func SubmitBalances(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -101,7 +101,7 @@ func SubmitBalances(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEt
 
 // Returns the latest block number that oracles should be reporting balances for
 func GetLatestReportableBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +115,8 @@ func GetLatestReportableBalancesBlock(rp *rocketpool.RocketPool, opts *bind.Call
 // Get contracts
 var rocketNetworkBalancesLock sync.Mutex
 
-func getRocketNetworkBalances(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketNetworkBalances(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNetworkBalancesLock.Lock()
 	defer rocketNetworkBalancesLock.Unlock()
-	return rp.GetContract("rocketNetworkBalances")
+	return rp.GetContract("rocketNetworkBalances", opts)
 }
