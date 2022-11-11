@@ -280,7 +280,7 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	t.printMessage("================================")
 
 	// Make the binding
-	mp, err := minipool.NewMinipool(t.rp, address)
+	mp, err := minipool.NewMinipool(t.rp, address, nil)
 	if err != nil {
 		return fmt.Errorf("error scrubbing migration of minipool %s: %w", address.Hex(), err)
 	}

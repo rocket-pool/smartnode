@@ -157,7 +157,7 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
 	// Create minipool contracts
 	minipools := make([]*minipool.Minipool, len(addresses))
 	for mi, address := range addresses {
-		mp, err := minipool.NewMinipool(t.rp, address)
+		mp, err := minipool.NewMinipool(t.rp, address, nil)
 		if err != nil {
 			return []*minipool.Minipool{}, err
 		}

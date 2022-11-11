@@ -219,7 +219,7 @@ func (t *processPenalties) run() error {
 		checkPrefix := "[Fee Recipients]"
 
 		// Get the Smoothing Pool address
-		smoothingPoolContract, err := t.rp.GetContract("rocketSmoothingPool")
+		smoothingPoolContract, err := t.rp.GetContract("rocketSmoothingPool", nil)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error getting smoothing pool contract: %w", checkPrefix, err))
 			return
@@ -362,7 +362,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock, smoothingPool
 	}
 
 	// Retrieve the node's distributor address
-	mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(t.rp, minipoolAddress, nil)
 	if err != nil {
 		return isIllegalFeeRecipient, err
 	}

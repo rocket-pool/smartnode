@@ -160,7 +160,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		}
 
 		// Get the next minipool address and withdrawal credentials
-		minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
+		minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -344,7 +344,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
+	minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
 	if err != nil {
 		return nil, err
 	}

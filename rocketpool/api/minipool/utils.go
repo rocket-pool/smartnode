@@ -164,7 +164,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
 func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, currentEpoch, currentBlock uint64) (api.MinipoolDetails, error) {
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return api.MinipoolDetails{}, err
 	}
@@ -268,7 +268,7 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.MinipoolDetails, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, currentEpoch uint64) (api.ValidatorDetails, error) {
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolDetails.Address)
+	mp, err := minipool.NewMinipool(rp, minipoolDetails.Address, nil)
 	if err != nil {
 		return api.ValidatorDetails{}, err
 	}

@@ -165,7 +165,7 @@ func setSmoothingPoolStatus(c *cli.Context, status bool) (*api.SetSmoothingPoolR
 
 	// If opting in, change the fee recipient to the Smoothing Pool before submitting the TX so the fee recipient is guaranteed to be non-penalizable at all times
 	if status {
-		smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool")
+		smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool", nil)
 		if err != nil {
 			return nil, err
 		}

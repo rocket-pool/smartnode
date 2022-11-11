@@ -276,7 +276,7 @@ func (t *submitScrubMinipools) initializeMinipoolDetails(minipoolAddresses []com
 
 	for _, minipoolAddress := range minipoolAddresses {
 		// Create a minipool contract wrapper for the given address
-		mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
+		mp, err := minipool.NewMinipool(t.rp, minipoolAddress, nil)
 		if err != nil {
 			t.log.Printf("Error creating minipool wrapper for %s: %s", minipoolAddress.Hex(), err.Error())
 			continue

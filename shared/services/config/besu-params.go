@@ -6,8 +6,8 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:22.10.0-RC2-openjdk-latest"
-	besuTagProd          string = "hyperledger/besu:22.7.7-openjdk-latest"
+	besuTagTest          string = "hyperledger/besu:22.10.0-openjdk-latest"
+	besuTagProd          string = "hyperledger/besu:22.10.0-openjdk-latest"
 	besuEventLogInterval int    = 25000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"
@@ -102,8 +102,7 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: besuTagProd,
 				config.Network_Prater:  besuTagTest,
-				config.Network_Kiln:    besuTagTest,
-				config.Network_Ropsten: besuTagTest,
+				config.Network_Devnet:  besuTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},

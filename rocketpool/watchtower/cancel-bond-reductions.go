@@ -233,7 +233,7 @@ func (t *cancelBondReductions) checkBondReductions() error {
 			mi := mi
 			wg.Go(func() error {
 				address := addresses[mi]
-				mp, err := minipool.NewMinipool(t.rp, address)
+				mp, err := minipool.NewMinipool(t.rp, address, opts)
 				if err != nil {
 					return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
 				}
@@ -314,7 +314,7 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	t.printMessage("=================================")
 
 	// Make the binding
-	mp, err := minipool.NewMinipool(t.rp, address)
+	mp, err := minipool.NewMinipool(t.rp, address, nil)
 	if err != nil {
 		return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
 	}

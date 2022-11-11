@@ -459,7 +459,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 	// Get rETH contract balance
 	wg.Go(func() error {
-		rethContractAddress, err := client.GetAddress("rocketTokenRETH")
+		rethContractAddress, err := client.GetAddress("rocketTokenRETH", opts)
 		if err != nil {
 			return fmt.Errorf("error getting rETH contract address: %w", err)
 		}
@@ -626,7 +626,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(client *rocketp
 func (t *submitNetworkBalances) getMinipoolBalanceDetails(client *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, blockEpoch uint64) (minipoolBalanceDetails, error) {
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(client, minipoolAddress)
+	mp, err := minipool.NewMinipool(client, minipoolAddress, opts)
 	if err != nil {
 		return minipoolBalanceDetails{}, err
 	}

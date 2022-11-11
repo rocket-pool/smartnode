@@ -47,11 +47,11 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 	}
 
 	// Get some contract and ABI dependencies
-	rocketMinipoolFactory, err := rp.GetContract("rocketMinipoolFactory")
+	rocketMinipoolFactory, err := rp.GetContract("rocketMinipoolFactory", nil)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting MinipoolFactory contract: %w", err)
 	}
-	minipoolAbi, err := rp.GetABI("rocketMinipool")
+	minipoolAbi, err := rp.GetABI("rocketMinipool", nil)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting RocketMinipool ABI: %w", err)
 	}

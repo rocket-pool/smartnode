@@ -31,7 +31,7 @@ func canFinaliseMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
 	response := api.CanFinaliseMinipoolResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func finaliseMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Fina
 	response := api.FinaliseMinipoolResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -42,7 +42,7 @@ func canStakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanS
 	}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func stakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.StakeMi
 	response := api.StakeMinipoolResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -32,7 +32,7 @@ func canRefundMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Can
 	response := api.CanRefundMinipoolResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func refundMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Refund
 	response := api.RefundMinipoolResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}

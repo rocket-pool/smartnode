@@ -78,7 +78,7 @@ func GetBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []
 func GetMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, blockEpoch uint64) (minipoolBalanceDetails, error) {
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, opts)
 	if err != nil {
 		return minipoolBalanceDetails{}, err
 	}

@@ -29,7 +29,7 @@ import (
 
 // Settings
 const (
-	SmoothingPoolDetailsBatchSize uint64 = 20
+	SmoothingPoolDetailsBatchSize uint64 = 8
 	RewardsFileVersion            uint64 = 1
 )
 
@@ -379,13 +379,22 @@ func (r *RewardsFile) calculateRplRewards() error {
 	totalNodeRewards := big.NewInt(0)
 	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
 	totalNodeRewards.Div(totalNodeRewards, eth.EthToWei(1))
-	r.log.Printlnf("%s Total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
+	r.log.Printlnf("%s Approx. total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
 
 	// Calculate the true effective stake of each node based on their participation in this interval
 	totalNodeEffectiveStake := big.NewInt(0)
 	trueNodeEffectiveStakes := map[common.Address]*big.Int{}
 	intervalDurationBig := big.NewInt(int64(intervalDuration.Seconds()))
-	for _, address := range r.nodeAddresses {
+	r.log.Printlnf("%s Calculating true total collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
+	nodesDone := 0
+	startTime := time.Now()
+	nodeCount := len(r.nodeAddresses)
+	for i, address := range r.nodeAddresses {
+		if nodesDone == 100 {
+			timeTaken := time.Since(startTime)
+			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
+			nodesDone = 0
+		}
 		// Get the node's effective stake
 		nodeStake, err := node.GetNodeEffectiveRPLStake(r.rp, address, r.opts)
 		if err != nil {
@@ -409,9 +418,20 @@ func (r *RewardsFile) calculateRplRewards() error {
 
 		// Add it to the total
 		totalNodeEffectiveStake.Add(totalNodeEffectiveStake, nodeStake)
+
+		nodesDone++
 	}
 
-	for _, address := range r.nodeAddresses {
+	r.log.Printlnf("%s Calculating individual collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
+	nodesDone = 0
+	startTime = time.Now()
+	for i, address := range r.nodeAddresses {
+		if nodesDone == 100 {
+			timeTaken := time.Since(startTime)
+			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
+			nodesDone = 0
+		}
+
 		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
 		nodeRplRewards := big.NewInt(0)
 		nodeRplRewards.Mul(trueNodeEffectiveStakes[address], totalNodeRewards)
@@ -457,6 +477,8 @@ func (r *RewardsFile) calculateRplRewards() error {
 			}
 			rewardsForNetwork.CollateralRpl.Add(&rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 		}
+
+		nodesDone++
 	}
 
 	// Sanity check to make sure we arrived at the correct total
@@ -592,7 +614,7 @@ func (r *RewardsFile) calculateRplRewards() error {
 func (r *RewardsFile) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
-	smoothingPoolContract, err := r.rp.GetContract("rocketSmoothingPool")
+	smoothingPoolContract, err := r.rp.GetContract("rocketSmoothingPool", r.opts)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
@@ -755,7 +777,7 @@ func (r *RewardsFile) calculateNodeRewards() (*big.Int, *big.Int, error) {
 	for _, nodeInfo := range r.nodeDetails {
 		if nodeInfo.IsEligible {
 			for _, minipool := range nodeInfo.Minipools {
-				if minipool.GoodAttestations+minipool.MissedAttestations == 0 {
+				if minipool.GoodAttestations+minipool.MissedAttestations == 0 || !minipool.WasActive {
 					// Ignore minipools that weren't active for the interval
 					minipool.WasActive = false
 					continue
@@ -1038,8 +1060,22 @@ func (r *RewardsFile) createMinipoolIndexMap() error {
 	for _, details := range r.nodeDetails {
 		if details.IsEligible {
 			for _, minipoolInfo := range details.Minipools {
-				minipoolInfo.ValidatorIndex = statusMap[minipoolInfo.ValidatorPubkey].Index
-				r.validatorIndexMap[minipoolInfo.ValidatorIndex] = minipoolInfo
+				status, exists := statusMap[minipoolInfo.ValidatorPubkey]
+				if !exists {
+					// Remove minipools that don't have indices yet since they're not actually viable
+					r.log.Printlnf("WARNING: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
+					minipoolInfo.WasActive = false
+				} else {
+					switch status.Status {
+					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
+						// Remove minipools that don't have indices yet since they're not actually viable
+						r.log.Printlnf("WARNING: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
+						minipoolInfo.WasActive = false
+					default:
+						minipoolInfo.ValidatorIndex = statusMap[minipoolInfo.ValidatorPubkey].Index
+						r.validatorIndexMap[minipoolInfo.ValidatorIndex] = minipoolInfo
+					}
+				}
 			}
 		}
 	}
@@ -1051,6 +1087,10 @@ func (r *RewardsFile) createMinipoolIndexMap() error {
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
 func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 
+	nodesDone := uint64(0)
+	startTime := time.Now()
+	r.log.Printlnf("%s Getting details of nodes for Smoothing Pool calculation (progress is reported every 100 nodes)", r.logPrefix)
+
 	// For each NO, get their opt-in status and time of last change in batches
 	nodeCount := uint64(len(r.nodeAddresses))
 	r.nodeDetails = make([]*NodeSmoothingDetails, nodeCount)
@@ -1061,6 +1101,12 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 		iterationEndIndex := batchStartIndex + SmoothingPoolDetailsBatchSize
 		if iterationEndIndex > nodeCount {
 			iterationEndIndex = nodeCount
+		}
+
+		if nodesDone >= 100 {
+			timeTaken := time.Since(startTime)
+			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, iterationStartIndex, nodeCount, float64(iterationStartIndex)/float64(nodeCount)*100.0, timeTaken)
+			nodesDone = 0
 		}
 
 		// Load details
@@ -1118,7 +1164,7 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 				}
 				for _, mpd := range minipoolDetails {
 					if mpd.Exists {
-						mp, err := minipool.NewMinipool(r.rp, mpd.Address)
+						mp, err := minipool.NewMinipool(r.rp, mpd.Address, r.opts)
 						if err != nil {
 							return fmt.Errorf("Error creating minipool wrapper for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
 						}
@@ -1168,6 +1214,8 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 		if err := wg.Wait(); err != nil {
 			return err
 		}
+
+		nodesDone += SmoothingPoolDetailsBatchSize
 	}
 
 	return nil
