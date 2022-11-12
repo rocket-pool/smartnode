@@ -88,10 +88,10 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		for _, votedProposal := range votedProposals.Data.Votes {
-			if votedProposal.Proposal.State != "closed" {
-				votesClosedProposals += 1
-			} else {
+			if votedProposal.Proposal.State == "open" {
 				votesOpenProposals += 1
+			} else {
+				votesClosedProposals += 1
 			}
 		}
 
