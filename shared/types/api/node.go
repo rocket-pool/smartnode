@@ -445,3 +445,8 @@ type SnapshotVotedProposals struct {
 		Votes []SnapshotProposalVote `json:"votes"`
 	} `json:"data"`
 }
+type SmoothingRewardsResponse struct {
+	Status     string   `json:"status"`
+	Error      string   `json:"error"`
+	EthBalance *big.Int `json:"eth_balance"`
+}
