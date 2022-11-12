@@ -286,7 +286,7 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 func GetSnapshotProposals(apiDomain string, space string, state string) (*api.SnapshotResponse, error) {
 	stateFilter := ""
 	if state != "" {
-		stateFilter = fmt.Sprintf(", state: %s", state)
+		stateFilter = fmt.Sprintf(`, state: "%s"`, state)
 	}
 	query := fmt.Sprintf(`query Proposals {
 	proposals(where: {space: "%s"%s}, orderBy: "created", orderDirection: desc) {
