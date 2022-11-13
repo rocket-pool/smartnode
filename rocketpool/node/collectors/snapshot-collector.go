@@ -14,14 +14,14 @@ import (
 
 // Represents the collector for Snapshot metrics
 type SnapshotCollector struct {
-	// the number of open Snashot proposals
-	openProposals *prometheus.Desc
+	// the number of active Snashot proposals
+	activeProposals *prometheus.Desc
 
 	// the number of past Snapshot proposals
 	closedProposals *prometheus.Desc
 
-	// the number of votes on open Snapshot proposals
-	votesOpenProposals *prometheus.Desc
+	// the number of votes on active Snapshot proposals
+	votesActiveProposals *prometheus.Desc
 
 	// the number of votes on closed Snapshot proposals
 	votesClosedProposals *prometheus.Desc
@@ -40,20 +40,20 @@ type SnapshotCollector struct {
 func NewSnapshotCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, delegateAddres common.Address) *SnapshotCollector {
 	subsystem := "snapshot"
 	return &SnapshotCollector{
-		openProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "proposals_open"),
-			"The number of open Snapshot proposals",
+		activeProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "proposals_active"),
+			"The number of active Snapshot proposals",
 			nil, nil,
 		),
 		closedProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "proposals_closed"),
-			"The number of close Snapshot proposals",
+			"The number of closed Snapshot proposals",
 			nil, nil,
 		),
-		votesOpenProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "votes_open"),
-			"The number of votes on open Snapshot proposals",
+		votesActiveProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "votes_active"),
+			"The number of votes from user/delegate on active Snapshot proposals",
 			nil, nil,
 		),
 		votesClosedProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "votes_closed"),
-			"The number of votes on closed Snapshot proposals",
+			"The number of votes from user/delegate on closed Snapshot proposals",
 			nil, nil,
 		),
 		cfg:             cfg,
@@ -64,9 +64,9 @@ func NewSnapshotCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfi
 
 // Write metric descriptions to the Prometheus channel
 func (collector *SnapshotCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.openProposals
+	channel <- collector.activeProposals
 	channel <- collector.closedProposals
-	channel <- collector.votesOpenProposals
+	channel <- collector.votesActiveProposals
 	channel <- collector.votesClosedProposals
 }
 
@@ -75,9 +75,9 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
-	openProposals := float64(0)
+	activeProposals := float64(0)
 	closedProposals := float64(0)
-	votesOpenProposals := float64(0)
+	votesActiveProposals := float64(0)
 	votesClosedProposals := float64(0)
 
 	// Get the number of votes on Snapshot proposals
@@ -88,8 +88,8 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		for _, votedProposal := range votedProposals.Data.Votes {
-			if votedProposal.Proposal.State == "open" {
-				votesOpenProposals += 1
+			if votedProposal.Proposal.State == "active" {
+				votesActiveProposals += 1
 			} else {
 				votesClosedProposals += 1
 			}
@@ -106,8 +106,8 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		for _, proposal := range proposals.Data.Proposals {
-			if proposal.State == "open" {
-				openProposals += 1
+			if proposal.State == "active" {
+				activeProposals += 1
 			} else {
 				closedProposals += 1
 			}
@@ -123,11 +123,11 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	channel <- prometheus.MustNewConstMetric(
-		collector.votesOpenProposals, prometheus.GaugeValue, votesOpenProposals)
+		collector.votesActiveProposals, prometheus.GaugeValue, votesActiveProposals)
 	channel <- prometheus.MustNewConstMetric(
 		collector.votesClosedProposals, prometheus.GaugeValue, votesClosedProposals)
 	channel <- prometheus.MustNewConstMetric(
-		collector.openProposals, prometheus.GaugeValue, openProposals)
+		collector.activeProposals, prometheus.GaugeValue, activeProposals)
 	channel <- prometheus.MustNewConstMetric(
 		collector.closedProposals, prometheus.GaugeValue, closedProposals)
 }
