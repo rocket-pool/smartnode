@@ -18,6 +18,7 @@ import (
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -29,6 +30,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
+)
+
+const (
+	prestakeDepositAmount float64 = 1.0
 )
 
 type minipoolCreated struct {
@@ -145,7 +150,8 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		if err != nil {
 			return err
 		}
-		opts.Value = amountWei
+		prestakeDepositAmountWei := eth.EthToWei(prestakeDepositAmount)
+		opts.Value = prestakeDepositAmountWei
 
 		// Get the deposit type
 		depositType, err := node.GetDepositType(rp, amountWei, nil)
@@ -170,7 +176,8 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		}
 
 		// Get validator deposit data and associated parameters
-		depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
+		depositAmount := amountWei.Div(amountWei, big.NewInt(1e9)).Uint64()
+		depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 		if err != nil {
 			return err
 		}
@@ -178,7 +185,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		signature := rptypes.BytesToValidatorSignature(depositData.Signature)
 
 		// Do a final sanity check
-		err = validateDepositInfo(eth2Config, uint64(validator.DepositAmount), pubKey, withdrawalCredentials, signature)
+		err = validateDepositInfo(eth2Config, uint64(depositAmount), pubKey, withdrawalCredentials, signature)
 		if err != nil {
 			return fmt.Errorf("Your deposit failed the validation safety check: %w\n"+
 				"For your safety, this deposit will not be submitted and your ETH will not be staked.\n"+
@@ -194,7 +201,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 				hex.EncodeToString(eth2types.DomainDeposit[:]),
 				hex.EncodeToString(eth2Config.GenesisForkVersion),
 				hex.EncodeToString(eth2types.ZeroGenesisValidatorsRoot),
-				uint64(validator.DepositAmount),
+				depositAmount,
 				pubKey.Hex(),
 				withdrawalCredentials.Hex(),
 				signature.Hex(),
@@ -354,7 +361,8 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Get validator deposit data and associated parameters
-	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
+	depositAmount := amountWei.Div(amountWei, big.NewInt(1e9)).Uint64()
+	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +384,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Do a final sanity check
-	err = validateDepositInfo(eth2Config, uint64(validator.DepositAmount), pubKey, withdrawalCredentials, signature)
+	err = validateDepositInfo(eth2Config, depositAmount, pubKey, withdrawalCredentials, signature)
 	if err != nil {
 		return nil, fmt.Errorf("Your deposit failed the validation safety check: %w\n"+
 			"For your safety, this deposit will not be submitted and your ETH will not be staked.\n"+
@@ -392,7 +400,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 			hex.EncodeToString(eth2types.DomainDeposit[:]),
 			hex.EncodeToString(eth2Config.GenesisForkVersion),
 			hex.EncodeToString(eth2types.ZeroGenesisValidatorsRoot),
-			uint64(validator.DepositAmount),
+			depositAmount,
 			pubKey.Hex(),
 			withdrawalCredentials.Hex(),
 			signature.Hex(),

@@ -67,65 +67,37 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Get deposit amount
-	/*
-		var amount float64
-		if c.String("amount") != "" {
 
-			// Parse amount
-			depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
-			if err != nil {
-				return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
-			}
-			amount = depositAmount
+	var amount float64
+	if c.String("amount") != "" {
 
-		} else {
-
-			// Get deposit amount options
-			amountOptions := []string{
-				"32 ETH (minipool begins staking immediately)",
-				"16 ETH (minipool begins staking after ETH is assigned)",
-			}
-
-			// Prompt for amount
-			selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
-			switch selected {
-			case 0:
-				amount = 32
-			case 1:
-				amount = 16
-			}
-
-			// Get node status
-			status, err := rp.NodeStatus()
-			if err != nil {
-				return err
-			}
-
-			// Get deposit amount options
-			amountOptions := []string{
-				"32 ETH (minipool begins staking immediately)",
-				"16 ETH (minipool begins staking after ETH is assigned)",
-			}
-			if status.Trusted {
-				amountOptions = append(amountOptions, "0 ETH  (minipool begins staking after ETH is assigned)")
-			}
-
-			// Prompt for amount
-			selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
-			switch selected {
-			case 0:
-				amount = 32
-			case 1:
-				amount = 16
-			case 2:
-				amount = 0
-			}
-
+		// Parse amount
+		depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+		if err != nil {
+			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
 		}
-	*/
+		amount = depositAmount
 
-	// Force 16 ETH minipools as the only option after much community discussion
-	amountWei := eth.EthToWei(16.0)
+	} else {
+
+		// Get deposit amount options
+		amountOptions := []string{
+			"8 ETH",
+			"16 ETH",
+		}
+
+		// Prompt for amount
+		selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
+		switch selected {
+		case 0:
+			amount = 8
+		case 1:
+			amount = 16
+		}
+
+	}
+
+	amountWei := eth.EthToWei(amount)
 
 	// Get network node fees
 	nodeFees, err := rp.NodeFee()
