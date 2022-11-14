@@ -324,8 +324,11 @@ func (t *submitRewardsTree) generateTreeImpl(rp *rocketpool.RocketPool, interval
 	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
 	// Generate the rewards file
-	rewardsFile := rprewards.NewRewardsFile(t.log, t.generationPrefix, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed))
-	err := rewardsFile.GenerateTree(rp, t.cfg, t.bc)
+	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed))
+	if err != nil {
+		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
+	}
+	rewardsFile, err := treegen.GenerateTree()
 	if err != nil {
 		return fmt.Errorf("Error generating Merkle tree: %w", err)
 	}
