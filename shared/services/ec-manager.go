@@ -166,6 +166,16 @@ func (p *ExecutionClientManager) PendingNonceAt(ctx context.Context, account com
 	return result.(uint64), err
 }
 
+func (p *ExecutionClientManager) GetPeerCount(ctx context.Context) (int, error) {
+	result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
+		return client.PeerCount(ctx)
+	})
+	if err != nil {
+		return 0, err
+	}
+	return result.(int), err
+}
+
 // SuggestGasPrice retrieves the currently suggested gas price to allow a timely
 // execution of a transaction.
 func (p *ExecutionClientManager) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
