@@ -37,7 +37,7 @@ type BeaconCollector struct {
 	nodeAddress common.Address
 }
 
-// Create a new PerformanceCollector instance
+// Create a new BeaconCollector instance
 func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpool.ExecutionClient, nodeAddress common.Address) *BeaconCollector {
 	subsystem := "beacon"
 	return &BeaconCollector{
