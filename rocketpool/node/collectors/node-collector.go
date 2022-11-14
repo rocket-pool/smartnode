@@ -62,6 +62,12 @@ type NodeCollector struct {
 	// The RPL rewards from the last period that have not been claimed yet
 	unclaimedRewards *prometheus.Desc
 
+	// The claimed ETH rewards from the smoothing pool
+	claimedEthRewards *prometheus.Desc
+
+	// The unclaimed ETH rewards from the smoothing pool
+	unclaimedEthRewards *prometheus.Desc
+
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
@@ -147,6 +153,14 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			"The RPL rewards from the last period that have not been claimed yet",
 			nil, nil,
 		),
+		claimedEthRewards: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "claimed_eth_rewards"),
+			"The claimed ETH rewards from the smoothing pool",
+			nil, nil,
+		),
+		unclaimedEthRewards: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "unclaimed_eth_rewards"),
+			"The unclaimed ETH rewards from the smoothing pool",
+			nil, nil,
+		),
 		rp:               rp,
 		bc:               bc,
 		nodeAddress:      nodeAddress,
@@ -168,6 +182,8 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.depositedEth
 	channel <- collector.beaconShare
 	channel <- collector.unclaimedRewards
+	channel <- collector.claimedEthRewards
+	channel <- collector.unclaimedEthRewards
 }
 
 // Collect the latest metric values and pass them to Prometheus
@@ -192,6 +208,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	var addresses []common.Address
 	var beaconHead beacon.BeaconHead
 	unclaimedRewards := float64(0)
+	claimedEthRewards := float64(0)
+	unclaimedEthRewards := float64(0)
 
 	// Get the total staked RPL
 	wg.Go(func() error {
@@ -223,6 +241,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		// Legacy rewards
 		unclaimedRewardsWei := big.NewInt(0)
 		newRewards := big.NewInt(0)
+		newClaimedEthRewards := big.NewInt(0)
+		newUnclaimedEthRewards := big.NewInt(0)
 		// TODO: PERFORMANCE IMPROVEMENTS
 		/*newRewards, err := legacyrewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, collector.nextRewardsStartBlock, &legacyRewardsPoolAddress, &legacyClaimNodeAddress)
 		if err != nil {
@@ -247,6 +267,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			_, exists := collector.handledIntervals[claimedInterval]
 			if !exists {
 				newRewards.Add(newRewards, &intervalInfo.CollateralRplAmount.Int)
+				newClaimedEthRewards.Add(newClaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
 				collector.handledIntervals[claimedInterval] = true
 			}
 		}
@@ -262,6 +283,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			}
 			if intervalInfo.NodeExists {
 				unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.CollateralRplAmount.Int)
+				newUnclaimedEthRewards.Add(newUnclaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
 			}
 		}
 
@@ -273,6 +295,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 		collector.cumulativeRewards += eth.WeiToEth(newRewards)
 		unclaimedRewards += eth.WeiToEth(unclaimedRewardsWei)
+		claimedEthRewards = eth.WeiToEth(newClaimedEthRewards)
+		unclaimedEthRewards = eth.WeiToEth(newUnclaimedEthRewards)
 		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
 
 		return nil
@@ -453,4 +477,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.beaconBalance, prometheus.GaugeValue, totalBeaconBalance)
 	channel <- prometheus.MustNewConstMetric(
 		collector.unclaimedRewards, prometheus.GaugeValue, unclaimedRewards)
+	channel <- prometheus.MustNewConstMetric(
+		collector.unclaimedEthRewards, prometheus.GaugeValue, unclaimedEthRewards)
+	channel <- prometheus.MustNewConstMetric(
+		collector.claimedEthRewards, prometheus.GaugeValue, claimedEthRewards)
 }

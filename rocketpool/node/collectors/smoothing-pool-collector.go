@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -14,12 +15,6 @@ import (
 
 // Represents the collector for Smoothing Pool metrics
 type SmoothingPoolCollector struct {
-	// the total amount of ETH rewards the user received from the Smoothing Pool
-	ethFromPoolReceived *prometheus.Desc
-
-	// the amount of ETH rewards from the Smoothing Pool the user has pending
-	ethFromPoolPending *prometheus.Desc
-
 	// the ETH balance on the smoothing pool
 	ethBalanceOnSmoothingPool *prometheus.Desc
 
@@ -28,33 +23,27 @@ type SmoothingPoolCollector struct {
 
 	// The EC client
 	ec *services.ExecutionClientManager
+
+	// The node address
+	nodeAddress common.Address
 }
 
 // Create a new SmoothingPoolCollector instance
-func NewSmoothingPoolCollector(rp *rocketpool.RocketPool, ec *services.ExecutionClientManager) *SmoothingPoolCollector {
+func NewSmoothingPoolCollector(rp *rocketpool.RocketPool, ec *services.ExecutionClientManager, nodeAddress common.Address) *SmoothingPoolCollector {
 	subsystem := "smoothing_pool"
 	return &SmoothingPoolCollector{
-		ethFromPoolReceived: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_received"),
-			"The total amount of ETH rewards the user received from the Smoothing Pool",
-			nil, nil,
-		),
-		ethFromPoolPending: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_pending"),
-			"The amount of ETH rewards from the Smoothing Pool the user has pending",
-			nil, nil,
-		),
 		ethBalanceOnSmoothingPool: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_balance"),
 			"The ETH balance on the smoothing pool",
 			nil, nil,
 		),
-		rp: rp,
-		ec: ec,
+		rp:          rp,
+		ec:          ec,
+		nodeAddress: nodeAddress,
 	}
 }
 
 // Write metric descriptions to the Prometheus channel
 func (collector *SmoothingPoolCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.ethFromPoolReceived
-	channel <- collector.ethFromPoolPending
 	channel <- collector.ethBalanceOnSmoothingPool
 }
 
@@ -63,11 +52,9 @@ func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metri
 
 	// Sync
 	var wg errgroup.Group
-	// ethFromPoolReceived := float64(0)
-	// ethFromPoolPending := float64(0)
 	ethBalanceOnSmoothingPool := float64(0)
 
-	// Get the number of votes on Snapshot proposals
+	// Get the ETH balance in the smoothing pool
 	wg.Go(func() error {
 		balanceResponse, err := node.GetSmoothingPoolBalance(collector.rp, collector.ec)
 		if err != nil {
@@ -75,11 +62,6 @@ func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metri
 		}
 		ethBalanceOnSmoothingPool = eth.WeiToEth(balanceResponse.EthBalance)
 
-		return nil
-	})
-
-	// Get the number of live Snapshot proposals
-	wg.Go(func() error {
 		return nil
 	})
 
