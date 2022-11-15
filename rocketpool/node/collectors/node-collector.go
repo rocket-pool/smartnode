@@ -295,8 +295,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 		collector.cumulativeRewards += eth.WeiToEth(newRewards)
 		unclaimedRewards += eth.WeiToEth(unclaimedRewardsWei)
-		claimedEthRewards = eth.WeiToEth(newClaimedEthRewards)
-		unclaimedEthRewards = eth.WeiToEth(newUnclaimedEthRewards)
+		claimedEthRewards += eth.WeiToEth(newClaimedEthRewards)
+		unclaimedEthRewards += eth.WeiToEth(newUnclaimedEthRewards)
 		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
 
 		return nil

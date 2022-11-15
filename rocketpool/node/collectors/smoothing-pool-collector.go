@@ -29,16 +29,15 @@ type SmoothingPoolCollector struct {
 }
 
 // Create a new SmoothingPoolCollector instance
-func NewSmoothingPoolCollector(rp *rocketpool.RocketPool, ec *services.ExecutionClientManager, nodeAddress common.Address) *SmoothingPoolCollector {
+func NewSmoothingPoolCollector(rp *rocketpool.RocketPool, ec *services.ExecutionClientManager) *SmoothingPoolCollector {
 	subsystem := "smoothing_pool"
 	return &SmoothingPoolCollector{
 		ethBalanceOnSmoothingPool: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_balance"),
 			"The ETH balance on the smoothing pool",
 			nil, nil,
 		),
-		rp:          rp,
-		ec:          ec,
-		nodeAddress: nodeAddress,
+		rp: rp,
+		ec: ec,
 	}
 }
 
