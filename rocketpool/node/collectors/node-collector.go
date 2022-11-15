@@ -86,6 +86,12 @@ type NodeCollector struct {
 	// The cumulative amount of RPL earned
 	cumulativeRewards float64
 
+	// The claimed ETH rewards from SP
+	cumulativeClaimedEthRewards float64
+
+	// The unclaimed ETH rewards from SP
+	cumulativeUnclaimedEthRewards float64
+
 	// Map of reward intervals that have already been processed
 	handledIntervals map[uint64]bool
 
@@ -208,8 +214,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	var addresses []common.Address
 	var beaconHead beacon.BeaconHead
 	unclaimedRewards := float64(0)
-	claimedEthRewards := float64(0)
-	unclaimedEthRewards := float64(0)
 
 	// Get the total staked RPL
 	wg.Go(func() error {
@@ -295,8 +299,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 		collector.cumulativeRewards += eth.WeiToEth(newRewards)
 		unclaimedRewards += eth.WeiToEth(unclaimedRewardsWei)
-		claimedEthRewards += eth.WeiToEth(newClaimedEthRewards)
-		unclaimedEthRewards += eth.WeiToEth(newUnclaimedEthRewards)
+		collector.cumulativeClaimedEthRewards += eth.WeiToEth(newClaimedEthRewards)
+		collector.cumulativeUnclaimedEthRewards += eth.WeiToEth(newUnclaimedEthRewards)
 		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
 
 		return nil
@@ -478,7 +482,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.unclaimedRewards, prometheus.GaugeValue, unclaimedRewards)
 	channel <- prometheus.MustNewConstMetric(
-		collector.unclaimedEthRewards, prometheus.GaugeValue, unclaimedEthRewards)
+		collector.unclaimedEthRewards, prometheus.GaugeValue, collector.cumulativeUnclaimedEthRewards)
 	channel <- prometheus.MustNewConstMetric(
-		collector.claimedEthRewards, prometheus.GaugeValue, claimedEthRewards)
+		collector.claimedEthRewards, prometheus.GaugeValue, collector.cumulativeClaimedEthRewards)
 }

@@ -79,6 +79,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 	closedProposals := float64(0)
 	votesActiveProposals := float64(0)
 	votesClosedProposals := float64(0)
+	handledProposals := map[string]bool{}
 
 	// Get the number of votes on Snapshot proposals
 	wg.Go(func() error {
@@ -88,10 +89,14 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		for _, votedProposal := range votedProposals.Data.Votes {
-			if votedProposal.Proposal.State == "active" {
-				votesActiveProposals += 1
-			} else {
-				votesClosedProposals += 1
+			_, exists := handledProposals[votedProposal.Proposal.Id]
+			if !exists {
+				if votedProposal.Proposal.State == "active" {
+					votesActiveProposals += 1
+				} else {
+					votesClosedProposals += 1
+				}
+				handledProposals[votedProposal.Proposal.Id] = true
 			}
 		}
 
