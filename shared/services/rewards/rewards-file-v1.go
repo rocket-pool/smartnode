@@ -11,12 +11,19 @@ import (
 type MinipoolPerformanceFile struct {
 	Index               uint64                                               `json:"index"`
 	Network             string                                               `json:"network"`
+	StartTime           time.Time                                            `json:"startTime,omitempty"`
+	EndTime             time.Time                                            `json:"endTime,omitempty"`
+	ConsensusStartBlock uint64                                               `json:"consensusStartBlock,omitempty"`
+	ConsensusEndBlock   uint64                                               `json:"consensusEndBlock,omitempty"`
+	ExecutionStartBlock uint64                                               `json:"executionStartBlock,omitempty"`
+	ExecutionEndBlock   uint64                                               `json:"executionEndBlock,omitempty"`
 	MinipoolPerformance map[common.Address]*SmoothingPoolMinipoolPerformance `json:"minipoolPerformance"`
 }
 
 // Minipool stats
 type SmoothingPoolMinipoolPerformance struct {
 	Pubkey                  string   `json:"pubkey"`
+	ActiveFraction          float64  `json:"activeFraction,omitempty"`
 	SuccessfulAttestations  uint64   `json:"successfulAttestations"`
 	MissedAttestations      uint64   `json:"missedAttestations"`
 	ParticipationRate       float64  `json:"participationRate"`

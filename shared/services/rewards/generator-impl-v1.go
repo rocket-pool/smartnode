@@ -27,11 +27,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Settings
-const (
-	RewardsFileVersionForImplV1 uint64 = 1
-)
-
 // Implementation for tree generator ruleset v1
 type treeGeneratorImpl_v1 struct {
 	rewardsFile          *RewardsFile
@@ -61,7 +56,8 @@ type treeGeneratorImpl_v1 struct {
 func newTreeGeneratorImpl_v1(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *treeGeneratorImpl_v1 {
 	return &treeGeneratorImpl_v1{
 		rewardsFile: &RewardsFile{
-			RewardsFileVersion: RewardsFileVersionForImplV1,
+			RewardsFileVersion: 1,
+			RulesetVersion:     1,
 			Index:              index,
 			StartTime:          startTime,
 			EndTime:            endTime,
