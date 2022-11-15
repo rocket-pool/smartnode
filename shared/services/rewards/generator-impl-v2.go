@@ -716,6 +716,8 @@ func (r *treeGeneratorImpl_v2) calculateNodeRewards() (*big.Int, *big.Int, error
 				if minipool.GoodAttestations+minipool.MissedAttestations == 0 || minipool.ActiveSlots == 0 {
 					// Ignore minipools that weren't active for the interval
 					minipool.ActiveSlots = 0
+					minipool.WasActive = false
+					minipool.MinipoolShare = big.NewInt(0)
 					continue
 				}
 				// Used for average fee calculation
@@ -1007,12 +1009,14 @@ func (r *treeGeneratorImpl_v2) createMinipoolIndexMap() error {
 					// Remove minipools that don't have indices yet since they're not actually viable
 					r.log.Printlnf("WARNING: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
 					minipoolInfo.ActiveSlots = 0
+					minipoolInfo.WasActive = false
 				} else {
 					switch status.Status {
 					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
 						// Remove minipools that don't have indices yet since they're not actually viable
 						r.log.Printlnf("WARNING: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
 						minipoolInfo.ActiveSlots = 0
+						minipoolInfo.WasActive = false
 					default:
 						// Get the validator index
 						minipoolInfo.ValidatorIndex = statusMap[minipoolInfo.ValidatorPubkey].Index
