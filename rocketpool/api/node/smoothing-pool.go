@@ -1,11 +1,13 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
+	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -206,4 +208,21 @@ func setSmoothingPoolStatus(c *cli.Context, status bool) (*api.SetSmoothingPoolR
 	// Return response
 	return &response, nil
 
+}
+
+func GetSmoothingPoolBalance(rp *rocketpoolapi.RocketPool, ec *services.ExecutionClientManager) (*api.SmoothingRewardsResponse, error) {
+	smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	response := api.SmoothingRewardsResponse{}
+
+	balanceWei, err := ec.BalanceAt(context.Background(), *smoothingPoolContract.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+	response.EthBalance = balanceWei
+
+	return &response, nil
 }
