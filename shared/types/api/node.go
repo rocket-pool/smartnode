@@ -430,6 +430,13 @@ type SnapshotResponse struct {
 		Proposals []SnapshotProposal `json:"proposals"`
 	}
 }
+type SnapshotVotingPower struct {
+	Data struct {
+		Vp struct {
+			Vp float64 `json:"vp"`
+		} `json:"vp"`
+	} `json:"data"`
+}
 type SnapshotProposalVote struct {
 	Choice   interface{}    `json:"choice"`
 	Voter    common.Address `json:"voter"`

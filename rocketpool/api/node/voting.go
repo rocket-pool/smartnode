@@ -243,6 +243,41 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 
 }
 
+func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.Address) (*api.SnapshotVotingPower, error) {
+	query := fmt.Sprintf(`query Vp{
+		vp(
+			space: "%s",
+			voter: "%s",
+		) {
+			vp
+		}
+	}
+	`, space, nodeAddress)
+	url := fmt.Sprintf("https://%s/graphql?operationName=Vp&query=%s", apiDomain, url.PathEscape(query))
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	// Check the response code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+
+	// Get response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var votingPower api.SnapshotVotingPower
+	if err := json.Unmarshal(body, &votingPower); err != nil {
+		return nil, fmt.Errorf("could not decode snapshot response: %w", err)
+
+	}
+
+	return &votingPower, nil
+}
+
 func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress common.Address, delegate common.Address) (*api.SnapshotVotedProposals, error) {
 	query := fmt.Sprintf(`query Votes{
 		votes(
