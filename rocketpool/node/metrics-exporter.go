@@ -55,8 +55,8 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 	if err != nil {
 		return fmt.Errorf("Error getting node account: %w", err)
 	}
-	idHash := cfg.Smartnode.GetVotingSnapshotID()
-	votingDelegate, err := s.Delegation(nil, nodeAccount.Address, idHash)
+	votingId := cfg.Smartnode.GetVotingSnapshotID()
+	votingDelegate, err := s.Delegation(nil, nodeAccount.Address, votingId)
 	if err != nil {
 		return fmt.Errorf("Error getting node delegate: %w", err)
 	}

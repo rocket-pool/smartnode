@@ -258,11 +258,11 @@ func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.A
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	// Check the response code
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
 	}
-	defer resp.Body.Close()
 
 	// Get response
 	body, err := ioutil.ReadAll(resp.Body)
@@ -298,11 +298,11 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	// Check the response code
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
 	}
-	defer resp.Body.Close()
 
 	// Get response
 	body, err := ioutil.ReadAll(resp.Body)
@@ -346,11 +346,11 @@ func GetSnapshotProposals(apiDomain string, space string, state string) (*api.Sn
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	// Check the response code
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
 	}
-	defer resp.Body.Close()
 
 	// Get response
 	body, err := ioutil.ReadAll(resp.Body)
