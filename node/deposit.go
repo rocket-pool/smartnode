@@ -15,39 +15,39 @@ import (
 )
 
 // Estimate the gas of Deposit
-func EstimateDepositGas(rp *rocketpool.RocketPool, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateDepositGas(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "deposit", eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "deposit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 }
 
 // Make a node deposit
-func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (*types.Transaction, error) {
+func Deposit(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (*types.Transaction, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := rocketNodeDeposit.Transact(opts, "deposit", eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	tx, err := rocketNodeDeposit.Transact(opts, "deposit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 	if err != nil {
 		return nil, fmt.Errorf("Could not make node deposit: %w", err)
 	}
 	return tx, nil
 }
 
-// Get the type of a deposit based on the amount
-func GetDepositType(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.CallOpts) (rptypes.MinipoolDeposit, error) {
+// Get the amount of ETH in the node's deposit credit bank
+func GetNodeDepositCredit(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
 	if err != nil {
-		return rptypes.Empty, err
+		return nil, err
 	}
 
-	depositType := new(uint8)
-	if err := rocketNodeDeposit.Call(opts, depositType, "getDepositType", amount); err != nil {
-		return rptypes.Empty, fmt.Errorf("Could not get deposit type: %w", err)
+	creditBalance := new(*big.Int)
+	if err := rocketNodeDeposit.Call(opts, creditBalance, "getNodeDepositCredit", nodeAddress); err != nil {
+		return nil, fmt.Errorf("Could not get node deposit credit: %w", err)
 	}
-	return rptypes.MinipoolDeposit(*depositType), nil
+	return *creditBalance, nil
 }
 
 // Get contracts
