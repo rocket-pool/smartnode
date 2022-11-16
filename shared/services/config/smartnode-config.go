@@ -384,7 +384,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				7846870, 7863708, 7881537, 7900095, 7918951, 7937222, // 35
 				7955161,
 			},
-			config.Network_Devnet: {},
+			config.Network_Devnet: {
+				7955303,
+			},
 		},
 	}
 
