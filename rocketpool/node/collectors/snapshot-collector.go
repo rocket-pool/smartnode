@@ -139,11 +139,11 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
-	// Get the note voting power
+	// Get the node's voting power
 	wg.Go(func() error {
 		votingPowerResponse, err := node.GetSnapshotVotingPower(collector.cfg.Smartnode.GetSnapshotApiDomain(), collector.cfg.Smartnode.GetSnapshotID(), collector.nodeAddress)
 		if err != nil {
-			return fmt.Errorf("Error getting Snapshot voted proposals: %w", err)
+			return fmt.Errorf("Error getting Snapshot voted proposals for node address: %w", err)
 		}
 
 		nodeVotingPower = votingPowerResponse.Data.Vp.Vp
@@ -151,11 +151,11 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
-	// Get the note voting power
+	// Get the delegate's voting power
 	wg.Go(func() error {
 		votingPowerResponse, err := node.GetSnapshotVotingPower(collector.cfg.Smartnode.GetSnapshotApiDomain(), collector.cfg.Smartnode.GetSnapshotID(), collector.delegateAddress)
 		if err != nil {
-			return fmt.Errorf("Error getting Snapshot voted proposals: %w", err)
+			return fmt.Errorf("Error getting Snapshot voted proposals for delegate address: %w", err)
 		}
 
 		delegateVotingPower = votingPowerResponse.Data.Vp.Vp
