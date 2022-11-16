@@ -10,9 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/prysm/v3/beacon-chain/core/signing"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
@@ -26,8 +28,10 @@ import (
 	ethpb "github.com/prysmaticlabs/prysm/v3/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
@@ -71,11 +75,17 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return nil, err
 	}
 
+	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
+	}
+
+	if isAtlasDeployed {
+		return legacyCanNodeDeposit(c, amountWei, minNodeFee, salt, w, ec, rp, bc, eth2Config)
+	}
+
 	// Response
 	response := api.CanNodeDepositResponse{}
-
-	// Check if amount is zero
-	amountIsZero := (amountWei.Cmp(big.NewInt(0)) == 0)
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -117,14 +127,8 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return err
 	})
 
-	// Get trusted status
-	wg1.Go(func() error {
-		var err error
-		isTrusted, err = tndao.GetMemberExists(rp, nodeAccount.Address, nil)
-		return err
-	})
-
 	// Get node staking information
+	// TODO: USE ETH LIMIT STUFF
 	wg1.Go(func() error {
 		var err error
 		minipoolCount, err = minipool.GetNodeMinipoolCount(rp, nodeAccount.Address, nil)
@@ -210,6 +214,208 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 		// Run the deposit gas estimator
 		gasInfo, err := node.EstimateDepositGas(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+		if err == nil {
+			response.GasInfo = gasInfo
+		}
+		return err
+	})
+
+	// Wait for data
+	if err := wg1.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Check data
+	response.InsufficientRplStake = (minipoolCount >= minipoolLimit)
+	response.MinipoolAddress = minipoolAddress
+	response.InvalidAmount = (!isTrusted && amountIsZero)
+
+	// Check oracle node unbonded minipool limit
+	if isTrusted && amountIsZero {
+
+		// Data
+		var wg2 errgroup.Group
+		var unbondedMinipoolCount uint64
+		var unbondedMinipoolsMax uint64
+
+		// Get unbonded minipool details
+		wg2.Go(func() error {
+			var err error
+			unbondedMinipoolCount, err = tndao.GetMemberUnbondedValidatorCount(rp, nodeAccount.Address, nil)
+			return err
+		})
+		wg2.Go(func() error {
+			var err error
+			unbondedMinipoolsMax, err = tnsettings.GetMinipoolUnbondedMax(rp, nil)
+			return err
+		})
+
+		// Wait for data
+		if err := wg2.Wait(); err != nil {
+			return nil, err
+		}
+
+		// Check unbonded minipool limit
+		response.UnbondedMinipoolsAtMax = (unbondedMinipoolCount >= unbondedMinipoolsMax)
+
+	}
+
+	// Update & return response
+	response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.UnbondedMinipoolsAtMax || response.DepositDisabled || !response.InConsensus)
+	return &response, nil
+
+}
+
+func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, w *wallet.Wallet, ec *services.ExecutionClientManager, rp *rocketpool.RocketPool, bc *services.BeaconClientManager, eth2Config beacon.Eth2Config) (*api.CanNodeDepositResponse, error) {
+
+	// Services
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.CanNodeDepositResponse{}
+
+	// Get the legacy contract address
+	rocketNodeDepositAddress := cfg.Smartnode.GetV110NodeDepositAddress()
+
+	// Check if amount is zero
+	amountIsZero := (amountWei.Cmp(big.NewInt(0)) == 0)
+
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Adjust the salt
+	if salt.Cmp(big.NewInt(0)) == 0 {
+		nonce, err := ec.NonceAt(context.Background(), nodeAccount.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+		salt.SetUint64(nonce)
+	}
+
+	// Data
+	var wg1 errgroup.Group
+	var isTrusted bool
+	var minipoolCount uint64
+	var minipoolLimit uint64
+	var minipoolAddress common.Address
+
+	// Check node balance
+	wg1.Go(func() error {
+		ethBalanceWei, err := ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
+		if err == nil {
+			response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
+		}
+		return err
+	})
+
+	// Check node deposits are enabled
+	wg1.Go(func() error {
+		depositEnabled, err := protocol.GetNodeDepositEnabled(rp, nil)
+		if err == nil {
+			response.DepositDisabled = !depositEnabled
+		}
+		return err
+	})
+
+	// Get trusted status
+	wg1.Go(func() error {
+		var err error
+		isTrusted, err = tndao.GetMemberExists(rp, nodeAccount.Address, nil)
+		return err
+	})
+
+	// Get node staking information
+	wg1.Go(func() error {
+		var err error
+		minipoolCount, err = minipool.GetNodeMinipoolCount(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg1.Go(func() error {
+		var err error
+		minipoolLimit, err = v110_node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil, &rocketNodeDepositAddress)
+		return err
+	})
+
+	// Get consensus status
+	wg1.Go(func() error {
+		var err error
+		inConsensus, err := network.InConsensus(rp, nil)
+		response.InConsensus = inConsensus
+		return err
+	})
+
+	// Get gas estimate
+	wg1.Go(func() error {
+		opts, err := w.GetNodeAccountTransactor()
+		if err != nil {
+			return err
+		}
+		prestakeDepositAmountWei := eth.EthToWei(prestakeDepositAmount)
+		opts.Value = prestakeDepositAmountWei
+
+		// Get the deposit type
+		depositType, err := v110_node.GetDepositType(rp, amountWei, nil, &rocketNodeDepositAddress)
+		if err != nil {
+			return err
+		}
+
+		// Get the next validator key
+		validatorKey, err := w.GetNextValidatorKey()
+		if err != nil {
+			return err
+		}
+
+		// Get the next minipool address and withdrawal credentials
+		minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
+		if err != nil {
+			return err
+		}
+		withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, minipoolAddress, nil)
+		if err != nil {
+			return err
+		}
+
+		// Get validator deposit data and associated parameters
+		depositAmount := amountWei.Div(amountWei, big.NewInt(1e9)).Uint64()
+		depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
+		if err != nil {
+			return err
+		}
+		pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
+		signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+
+		// Do a final sanity check
+		err = validateDepositInfo(eth2Config, uint64(depositAmount), pubKey, withdrawalCredentials, signature)
+		if err != nil {
+			return fmt.Errorf("Your deposit failed the validation safety check: %w\n"+
+				"For your safety, this deposit will not be submitted and your ETH will not be staked.\n"+
+				"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS and include the following information:\n"+
+				"\tDomain Type: 0x%s\n"+
+				"\tGenesis Fork Version: 0x%s\n"+
+				"\tGenesis Validator Root: 0x%s\n"+
+				"\tDeposit Amount: %s gwei\n"+
+				"\tValidator Pubkey: %s\n"+
+				"\tWithdrawal Credentials: %s\n"+
+				"\tSignature: %s\n",
+				err,
+				hex.EncodeToString(eth2types.DomainDeposit[:]),
+				hex.EncodeToString(eth2Config.GenesisForkVersion),
+				hex.EncodeToString(eth2types.ZeroGenesisValidatorsRoot),
+				depositAmount,
+				pubKey.Hex(),
+				withdrawalCredentials.Hex(),
+				signature.Hex(),
+			)
+		}
+
+		// Run the deposit gas estimator
+		gasInfo, err := v110_node.EstimateDepositGas(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts, &rocketNodeDepositAddress)
 		if err == nil {
 			response.GasInfo = gasInfo
 		}

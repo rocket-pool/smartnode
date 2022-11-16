@@ -129,6 +129,9 @@ type SmartnodeConfig struct {
 	// The contract address of rocketNodeStaking from v1.1.0
 	v1_1_0_NodeStakingAddress map[config.Network]string `yaml:"-"`
 
+	// The contract address of rocketNodeDeposit from v1.1.0
+	v1_1_0_NodeDepositAddress map[config.Network]string `yaml:"-"`
+
 	// Addresses for RocketRewardsPool that have been upgraded during development
 	previousRewardsPoolAddresses map[config.Network]map[string][]common.Address `yaml:"-"`
 
@@ -358,6 +361,12 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		v1_1_0_NodeStakingAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
 			config.Network_Prater:  "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
+			config.Network_Devnet:  "",
+		},
+
+		v1_1_0_NodeDepositAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
+			config.Network_Prater:  "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 			config.Network_Devnet:  "",
 		},
 
@@ -610,6 +619,10 @@ func (cfg *SmartnodeConfig) GetV110NetworkPricesAddress() common.Address {
 
 func (cfg *SmartnodeConfig) GetV110NodeStakingAddress() common.Address {
 	return common.HexToAddress(cfg.v1_1_0_NodeStakingAddress[cfg.Network.Value.(config.Network)])
+}
+
+func (cfg *SmartnodeConfig) GetV110NodeDepositAddress() common.Address {
+	return common.HexToAddress(cfg.v1_1_0_NodeDepositAddress[cfg.Network.Value.(config.Network)])
 }
 
 func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() map[string][]common.Address {

@@ -140,6 +140,14 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		}
 	})
 
+	if isAtlasDeployed {
+		wg.Go(func() error {
+			var err error
+			response.CreditBalance, err = node.GetNodeDepositCredit(rp, nodeAccount.Address, nil)
+			return err
+		})
+	}
+
 	// Get active and past votes from Snapshot, but treat errors as non-Fatal
 	wg.Go(func() error {
 		var err error
