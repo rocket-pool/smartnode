@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/deposit"
-	"github.com/rocket-pool/rocketpool-go/minipool"
+	v110_minipool "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/minipool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
@@ -32,9 +33,19 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.CanProcessQueueResponse{}
+
+	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
+	}
+	response.IsAtlasDeployed = isAtlasDeployed
 
 	// Data
 	var wg errgroup.Group
@@ -51,11 +62,15 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 	})
 
 	// Get next available minipool capacity
-	wg.Go(func() error {
-		var err error
-		nextMinipoolCapacity, err = minipool.GetQueueNextCapacity(rp, nil)
-		return err
-	})
+	if !isAtlasDeployed {
+		minipoolQueueAddress := cfg.Smartnode.GetV110MinipoolQueueAddress()
+
+		wg.Go(func() error {
+			var err error
+			nextMinipoolCapacity, err = v110_minipool.GetQueueNextCapacity(rp, nil, &minipoolQueueAddress)
+			return err
+		})
+	}
 
 	// Get deposit pool balance
 	wg.Go(func() error {
@@ -83,11 +98,15 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 	}
 
 	// Check next minipool capacity & deposit pool balance
-	response.NoMinipoolsAvailable = (nextMinipoolCapacity.Cmp(big.NewInt(0)) == 0)
-	response.InsufficientDepositBalance = (depositPoolBalance.Cmp(nextMinipoolCapacity) < 0)
+	if !isAtlasDeployed {
+		response.NoMinipoolsAvailable = (nextMinipoolCapacity.Cmp(big.NewInt(0)) == 0)
+		response.InsufficientDepositBalance = (depositPoolBalance.Cmp(nextMinipoolCapacity) < 0)
 
-	// Update & return response
-	response.CanProcess = !(response.AssignDepositsDisabled || response.NoMinipoolsAvailable || response.InsufficientDepositBalance)
+		// Update & return response
+		response.CanProcess = !(response.AssignDepositsDisabled || response.NoMinipoolsAvailable || response.InsufficientDepositBalance)
+	} else {
+		response.CanProcess = !response.AssignDepositsDisabled
+	}
 	return &response, nil
 
 }
