@@ -16,6 +16,8 @@ import (
 // Settings
 const (
 	SmoothingPoolDetailsBatchSize uint64 = 8
+	MainnetV2Interval             uint64 = 3
+	PraterV2Interval              uint64 = 37
 )
 
 type TreeGenerator struct {
@@ -55,13 +57,13 @@ func NewTreeGenerator(log log.ColorLogger, logPrefix string, rp *rocketpool.Rock
 
 	switch t.cfg.Smartnode.Network.Value.(cfgtypes.Network) {
 	case cfgtypes.Network_Mainnet:
-		if t.index < 3 {
+		if t.index < MainnetV2Interval {
 			t.impl = newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
 		} else {
 			t.impl = newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
 		}
 	case cfgtypes.Network_Prater:
-		if t.index < 37 {
+		if t.index < PraterV2Interval {
 			t.impl = newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
 		} else {
 			t.impl = newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
