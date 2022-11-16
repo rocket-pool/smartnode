@@ -32,7 +32,7 @@ type RplCollector struct {
 	rp *rocketpool.RocketPool
 }
 
-// Create a new DemandCollector instance
+// Create a new RplCollector instance
 func NewRplCollector(rp *rocketpool.RocketPool) *RplCollector {
 	subsystem := "rpl"
 	return &RplCollector{

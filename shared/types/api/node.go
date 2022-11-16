@@ -430,11 +430,19 @@ type SnapshotResponse struct {
 		Proposals []SnapshotProposal `json:"proposals"`
 	}
 }
+type SnapshotVotingPower struct {
+	Data struct {
+		Vp struct {
+			Vp float64 `json:"vp"`
+		} `json:"vp"`
+	} `json:"data"`
+}
 type SnapshotProposalVote struct {
 	Choice   interface{}    `json:"choice"`
 	Voter    common.Address `json:"voter"`
 	Proposal struct {
-		Id string `json:"id"`
+		Id    string `json:"id"`
+		State string `json:"state"`
 	} `json:"proposal"`
 }
 type SnapshotVotedProposals struct {
@@ -443,4 +451,9 @@ type SnapshotVotedProposals struct {
 	Data   struct {
 		Votes []SnapshotProposalVote `json:"votes"`
 	} `json:"data"`
+}
+type SmoothingRewardsResponse struct {
+	Status     string   `json:"status"`
+	Error      string   `json:"error"`
+	EthBalance *big.Int `json:"eth_balance"`
 }
