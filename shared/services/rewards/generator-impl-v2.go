@@ -618,12 +618,14 @@ func (r *treeGeneratorImpl_v2) calculateEthRewards(checkBeaconPerformance bool) 
 			return err
 		}
 	} else {
-		// Attestation processing is disabled, just give each minipool 1 good attestation so they're all scored the same
+		// Attestation processing is disabled, just give each minipool 1 good attestation and complete slot activity so they're all scored the same
 		// Used for approximating rETH's share during balances calculation
+		intervalSlots := r.rewardsFile.ConsensusEndBlock - r.rewardsFile.ConsensusStartBlock
 		for _, nodeInfo := range r.nodeDetails {
 			if nodeInfo.IsEligible {
 				for _, minipool := range nodeInfo.Minipools {
 					minipool.GoodAttestations = 1
+					minipool.ActiveSlots = intervalSlots
 				}
 			}
 		}
