@@ -166,10 +166,23 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 		// Get the event details for this interval
 		return GetUpgradedRewardSnapshotEvent(cfg, rp, interval, big.NewInt(1), blockNumber, blockNumber)
 	} else {
-		// Grab the latest known one - there will always be at least one of these
-		latestKnownInterval := len(prerecordedIntervals) - 1
-		latestKnownBlock := prerecordedIntervals[latestKnownInterval]
-		numberOfIntervalsPassed := interval - uint64(latestKnownInterval)
+		var latestKnownBlock uint64
+		var numberOfIntervalsPassed uint64
+		if len(prerecordedIntervals) == 0 {
+			// If there aren't any prerecorded intervals, start from the deployment block
+			deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
+			latestKnownBlockBig, err := rp.RocketStorage.GetUint(nil, deployBlockHash)
+			if err != nil {
+				return rewards.RewardsEvent{}, fmt.Errorf("error getting Rocket Pool deployment block: %w", err)
+			}
+			latestKnownBlock = latestKnownBlockBig.Uint64()
+			numberOfIntervalsPassed = interval + 1
+		} else {
+			// Grab the latest known one - there will always be at least one of these
+			latestKnownInterval := len(prerecordedIntervals) - 1
+			latestKnownBlock = prerecordedIntervals[latestKnownInterval]
+			numberOfIntervalsPassed = interval - uint64(latestKnownInterval)
+		}
 
 		var currentBlock *types.Header
 		currentBlock, err = rp.Client.HeaderByNumber(context.Background(), nil)
