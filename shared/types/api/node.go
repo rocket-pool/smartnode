@@ -34,7 +34,10 @@ type NodeStatusResponse struct {
 	CollateralRatio                   float64         `json:"collateralRatio"`
 	VotingDelegate                    common.Address  `json:"votingDelegate"`
 	VotingDelegateFormatted           string          `json:"votingDelegateFormatted"`
+	IsAtlasDeployed                   bool            `json:"isAtlasDeployed"`
 	MinipoolLimit                     uint64          `json:"minipoolLimit"`
+	EthMatched                        *big.Int        `json:"ethMatched"`
+	EthMatchedLimit                   *big.Int        `json:"ethMatchedLimit"`
 	MinipoolCounts                    struct {
 		Total               int `json:"total"`
 		Initialized         int `json:"initialized"`

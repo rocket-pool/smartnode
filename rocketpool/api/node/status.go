@@ -3,9 +3,11 @@ package node
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -60,6 +62,13 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	}
 	response.AccountAddress = nodeAccount.Address
 	response.AccountAddressFormatted = formatResolvedAddress(c, response.AccountAddress)
+
+	// Check if Atlas is deployed
+	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+	}
+	response.IsAtlasDeployed = isAtlasDeployed
 
 	// Sync
 	var wg errgroup.Group
@@ -117,8 +126,18 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	})
 	wg.Go(func() error {
 		var err error
-		response.MinipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
-		return err
+		if !isAtlasDeployed {
+			rocketNodeStakingAddress := cfg.Smartnode.GetV110NodeStakingAddress()
+			response.MinipoolLimit, err = v110_node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil, &rocketNodeStakingAddress)
+			return err
+		} else {
+			response.EthMatched, err = node.GetNodeEthMatched(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return err
+			}
+			response.EthMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAccount.Address, nil)
+			return err
+		}
 	})
 
 	// Get active and past votes from Snapshot, but treat errors as non-Fatal
