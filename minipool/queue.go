@@ -118,7 +118,7 @@ func GetQueuePositionOfMinipool(rp *rocketpool.RocketPool, mp *Minipool, opts *b
 	if err := rocketMinipoolQueue.Call(opts, position, "getMinipoolPosition", mp.Address); err != nil {
 		return 0, fmt.Errorf("Could not get queue position for minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return (*position).Int64(), nil
+	return (*position).Int64() + 1, nil
 }
 
 // Get the minipool at the specified position in queue (0-indexed).
