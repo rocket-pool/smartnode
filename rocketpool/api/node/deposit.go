@@ -81,7 +81,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	if err != nil {
 		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
 	}
-	if isAtlasDeployed {
+	if !isAtlasDeployed {
 		return legacyCanNodeDeposit(c, amountWei, minNodeFee, salt, w, ec, rp, bc, eth2Config)
 	}
 
@@ -463,7 +463,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	if err != nil {
 		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
 	}
-	if isAtlasDeployed {
+	if !isAtlasDeployed {
 		return legacyNodeDeposit(c, amountWei, minNodeFee, salt, submit, w, ec, rp, bc, eth2Config)
 	}
 
