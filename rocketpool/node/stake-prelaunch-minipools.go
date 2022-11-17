@@ -265,8 +265,24 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
 		return false, err
 	}
 
+	// Get the minipool type
+	depositType, err := mp.GetDepositType(nil)
+	if err != nil {
+		return false, fmt.Errorf("error getting deposit type for minipool %s: %w", mp.Address.Hex(), err)
+	}
+
+	var depositAmount uint64
+	switch depositType {
+	case rptypes.Full, rptypes.Half, rptypes.Empty:
+		depositAmount = uint64(16e9) // 16 ETH in gwei
+	case rptypes.Variable:
+		depositAmount = uint64(31e9) // 31 ETH in gwei
+	default:
+		return false, fmt.Errorf("error staking minipool %s: unknown deposit type %d", mp.Address.Hex(), depositType)
+	}
+
 	// Get validator deposit data
-	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
+	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 	if err != nil {
 		return false, err
 	}

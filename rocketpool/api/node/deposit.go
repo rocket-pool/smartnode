@@ -11,6 +11,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v3/beacon-chain/core/signing"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
+	v110_utils "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/utils"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -38,7 +39,7 @@ import (
 
 const (
 	prestakeDepositAmount float64 = 1.0
-	validatorEth          float64 = 32.0
+	ValidatorEth          float64 = 32.0
 )
 
 type minipoolCreated struct {
@@ -152,7 +153,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	}
 
 	// Check data
-	validatorEthWei := eth.EthToWei(validatorEth)
+	validatorEthWei := eth.EthToWei(ValidatorEth)
 	matchRequest := big.NewInt(0).Sub(validatorEthWei, amountWei)
 	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)
 
@@ -180,7 +181,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	}
 
 	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
+	minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, salt, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +191,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	}
 
 	// Get validator deposit data and associated parameters
-	depositAmount := amountWei.Div(amountWei, big.NewInt(1e9)).Uint64()
+	depositAmount := uint64(1e9) // 1 ETH in gwei
 	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 	if err != nil {
 		return nil, err
@@ -223,7 +224,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	}
 
 	// Run the deposit gas estimator
-	gasInfo, err := node.EstimateDepositGas(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+	gasInfo, err := node.EstimateDepositGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +340,7 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 		}
 
 		// Get the next minipool address and withdrawal credentials
-		minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
+		minipoolAddress, err = v110_utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -519,12 +520,6 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 	opts.Value = amountWei
 
-	// Get the deposit type
-	depositType, err := node.GetDepositType(rp, amountWei, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	// Create and save a new validator key
 	validatorKey, err := w.CreateValidatorKey()
 	if err != nil {
@@ -532,7 +527,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
+	minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, salt, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -542,7 +537,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Get validator deposit data and associated parameters
-	depositAmount := amountWei.Div(amountWei, big.NewInt(1e9)).Uint64()
+	depositAmount := uint64(1e9) // 1 ETH in gwei
 	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 	if err != nil {
 		return nil, err
@@ -598,7 +593,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	opts.NoSend = !submit
 
 	// Deposit
-	tx, err := node.Deposit(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+	tx, err := node.Deposit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -696,7 +691,7 @@ func legacyNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, s
 	}
 
 	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
+	minipoolAddress, err := v110_utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
 	if err != nil {
 		return nil, err
 	}
