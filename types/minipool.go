@@ -63,9 +63,10 @@ const (
 	Full
 	Half
 	Empty
+	Variable
 )
 
-var MinipoolDepositTypes = []string{"None", "Full", "Half", "Empty"}
+var MinipoolDepositTypes = []string{"None", "Full", "Half", "Empty", "Variable"}
 
 // String conversion
 func (d MinipoolDeposit) String() string {

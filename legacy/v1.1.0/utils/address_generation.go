@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
 
 // Combine a node's address and a salt to retreive a new salt compatible with depositing
@@ -23,7 +24,7 @@ func GetNodeSalt(nodeAddress common.Address, salt *big.Int) common.Hash {
 
 // Precompute the address of a minipool based on the node wallet, deposit type, and unique salt
 // If you set minipoolBytecode to nil, this will retrieve it from the contracts using minipool.GetMinipoolBytecode().
-func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, salt *big.Int, minipoolBytecode []byte, opts *bind.CallOpts) (common.Address, error) {
+func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depositType rptypes.MinipoolDeposit, salt *big.Int, minipoolBytecode []byte, opts *bind.CallOpts) (common.Address, error) {
 
 	// Get dependencies
 	rocketMinipoolFactory, err := getRocketMinipoolFactory(rp, opts)
@@ -43,7 +44,9 @@ func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, salt
 	}
 
 	// Create the hash of the minipool constructor call
-	packedConstructorArgs, err := minipoolAbi.Pack("", rp.RocketStorageContract.Address, nodeAddress)
+	depositTypeBytes := [32]byte{}
+	depositTypeBytes[0] = byte(depositType)
+	packedConstructorArgs, err := minipoolAbi.Pack("", rp.RocketStorageContract.Address, nodeAddress, depositType)
 	if err != nil {
 		return common.Address{}, fmt.Errorf("Error creating minipool constructor args: %w", err)
 	}
