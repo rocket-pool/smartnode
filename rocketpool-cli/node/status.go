@@ -230,7 +230,7 @@ func getStatus(c *cli.Context) error {
 				"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL, allowing it to take %.6f more ETH from the deposit pool for minipool deposits.\n",
 				math.RoundDown(eth.WeiToEth(status.RplStake), 6),
 				math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6),
-				math.RoundDown(eth.WeiToGwei(status.EthMatchedLimit.Sub(status.EthMatchedLimit, status.EthMatched)), 6))
+				math.RoundDown(eth.WeiToEth(status.EthMatchedLimit.Sub(status.EthMatchedLimit, status.EthMatched)), 6))
 			if status.CollateralRatio > 0 {
 				fmt.Printf(
 					"This is currently a %.2f%% collateral ratio.\n",
