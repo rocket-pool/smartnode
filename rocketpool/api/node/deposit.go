@@ -10,10 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/prysm/v3/beacon-chain/core/signing"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	v110_network "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/network"
 	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	v110_utils "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/utils"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
@@ -139,14 +139,6 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return err
 	})
 
-	// Get consensus status
-	wg1.Go(func() error {
-		var err error
-		inConsensus, err := network.InConsensus(rp, nil)
-		response.InConsensus = inConsensus
-		return err
-	})
-
 	// Wait for data
 	if err := wg1.Wait(); err != nil {
 		return nil, err
@@ -160,8 +152,8 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	response.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
 	response.MinipoolAddress = minipoolAddress
 
-	// Update esponse
-	response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.UnbondedMinipoolsAtMax || response.DepositDisabled || !response.InConsensus)
+	// Update response
+	response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.UnbondedMinipoolsAtMax || response.DepositDisabled)
 	if !response.CanDeposit {
 		return &response, nil
 	}
@@ -312,8 +304,10 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 
 	// Get consensus status
 	wg1.Go(func() error {
+		networkPricesAddress := cfg.Smartnode.GetV110NetworkPricesAddress()
+
 		var err error
-		inConsensus, err := network.InConsensus(rp, nil)
+		inConsensus, err := v110_network.InConsensus(rp, nil, &networkPricesAddress)
 		response.InConsensus = inConsensus
 		return err
 	})

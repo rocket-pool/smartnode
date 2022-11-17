@@ -112,12 +112,13 @@ type ProcessWithdrawalAndFinaliseResponse struct {
 }
 
 type CanCloseMinipoolResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanClose      bool               `json:"canClose"`
-	InvalidStatus bool               `json:"invalidStatus"`
-	InConsensus   bool               `json:"inConsensus"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status          string             `json:"status"`
+	Error           string             `json:"error"`
+	CanClose        bool               `json:"canClose"`
+	InvalidStatus   bool               `json:"invalidStatus"`
+	InConsensus     bool               `json:"inConsensus"`
+	IsAtlasDeployed bool               `json:"isAtlasDeployed"`
+	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
 }
 type CloseMinipoolResponse struct {
 	Status string      `json:"status"`

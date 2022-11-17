@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/network"
+	v110_network "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils"
@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplResponse, error) {
@@ -30,6 +31,10 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.CanNodeStakeRplResponse{}
@@ -40,6 +45,12 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 		return nil, err
 	}
 
+	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
+	}
+	response.IsAtlasDeployed = isAtlasDeployed
+
 	// Check RPL balance
 	rplBalance, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
 	if err != nil {
@@ -47,12 +58,15 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 	}
 	response.InsufficientBalance = (amountWei.Cmp(rplBalance) > 0)
 
-	// Check network consensus
-	inConsensus, err := network.InConsensus(rp, nil)
-	if err != nil {
-		return nil, err
+	if !isAtlasDeployed {
+		networkPricesAddress := cfg.Smartnode.GetV110NetworkPricesAddress()
+
+		// Check network consensus
+		response.InConsensus, err = v110_network.InConsensus(rp, nil, &networkPricesAddress)
+		if err != nil {
+			return nil, err
+		}
 	}
-	response.InConsensus = inConsensus
 
 	// Get gas estimates
 	opts, err := w.GetNodeAccountTransactor()
@@ -66,7 +80,11 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 	response.GasInfo = gasInfo
 
 	// Update & return response
-	response.CanStake = !(response.InsufficientBalance || !response.InConsensus)
+	if !isAtlasDeployed {
+		response.CanStake = !(response.InsufficientBalance || !response.InConsensus)
+	} else {
+		response.CanStake = !(response.InsufficientBalance)
+	}
 	return &response, nil
 
 }

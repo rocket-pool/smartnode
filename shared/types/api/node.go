@@ -157,6 +157,7 @@ type CanNodeStakeRplResponse struct {
 	Error               string             `json:"error"`
 	CanStake            bool               `json:"canStake"`
 	InsufficientBalance bool               `json:"insufficientBalance"`
+	IsAtlasDeployed     bool               `json:"isAtlasDeployed"`
 	InConsensus         bool               `json:"inConsensus"`
 	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
 }
@@ -189,6 +190,7 @@ type CanNodeWithdrawRplResponse struct {
 	MinipoolsUndercollateralized bool               `json:"minipoolsUndercollateralized"`
 	WithdrawalDelayActive        bool               `json:"withdrawalDelayActive"`
 	InConsensus                  bool               `json:"inConsensus"`
+	IsAtlasDeployed              bool               `json:"isAtlasDeployed"`
 	GasInfo                      rocketpool.GasInfo `json:"gasInfo"`
 }
 type NodeWithdrawRplResponse struct {
