@@ -77,16 +77,17 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return nil, err
 	}
 
+	// Response
+	response := api.CanNodeDepositResponse{}
+
 	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
 	if err != nil {
 		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
 	}
+	response.IsAtlasDeployed = isAtlasDeployed
 	if !isAtlasDeployed {
 		return legacyCanNodeDeposit(c, amountWei, minNodeFee, salt, w, ec, rp, bc, eth2Config)
 	}
-
-	// Response
-	response := api.CanNodeDepositResponse{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()

@@ -209,6 +209,7 @@ type CanNodeDepositResponse struct {
 	UnbondedMinipoolsAtMax bool               `json:"unbondedMinipoolsAtMax"`
 	DepositDisabled        bool               `json:"depositDisabled"`
 	InConsensus            bool               `json:"inConsensus"`
+	IsAtlasDeployed        bool               `json:"isAtlasDeployed"`
 	MinipoolAddress        common.Address     `json:"minipoolAddress"`
 	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
 }
