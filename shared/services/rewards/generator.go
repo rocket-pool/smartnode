@@ -16,7 +16,7 @@ import (
 // Settings
 const (
 	SmoothingPoolDetailsBatchSize uint64 = 8
-	MainnetV2Interval             uint64 = 3
+	MainnetV2Interval             uint64 = 4
 	PraterV2Interval              uint64 = 37
 )
 
