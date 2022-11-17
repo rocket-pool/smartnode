@@ -59,19 +59,6 @@ func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, op
 	return tx.Hash(), nil
 }
 
-// Check if the network is currently in consensus about the RPL price, or if it is still reaching consensus
-func InConsensus(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
-	if err != nil {
-		return false, err
-	}
-	isInConsensus := new(bool)
-	if err := rocketNetworkPrices.Call(opts, isInConsensus, "inConsensus"); err != nil {
-		return false, fmt.Errorf("Could not get consensus status: %w", err)
-	}
-	return *isInConsensus, nil
-}
-
 // Returns the latest block number that oracles should be reporting prices for
 func GetLatestReportablePricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
