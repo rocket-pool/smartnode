@@ -164,18 +164,6 @@ func ValidatePositiveOrZeroWeiAmount(name, value string) (*big.Int, error) {
 	return val, nil
 }
 
-// Validate a deposit amount in wei
-func ValidateDepositWeiAmount(name, value string) (*big.Int, error) {
-	val, err := ValidateWeiAmount(name, value)
-	if err != nil {
-		return nil, err
-	}
-	if ether := strings.Repeat("0", 18); !(val.String() == "8"+ether || val.String() == "16"+ether) {
-		return nil, fmt.Errorf("Invalid %s '%s' - valid values are 8 and 16 ether", name, value)
-	}
-	return val, nil
-}
-
 // Validate a positive ether amount
 func ValidatePositiveEthAmount(name, value string) (float64, error) {
 	val, err := ValidateEthAmount(name, value)
@@ -184,18 +172,6 @@ func ValidatePositiveEthAmount(name, value string) (float64, error) {
 	}
 	if val <= 0 {
 		return 0, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
-	}
-	return val, nil
-}
-
-// Validate a deposit amount in ether
-func ValidateDepositEthAmount(name, value string) (float64, error) {
-	val, err := ValidateEthAmount(name, value)
-	if err != nil {
-		return 0, err
-	}
-	if !(val == 8 || val == 16) {
-		return 0, fmt.Errorf("Invalid %s '%s' - valid values are 8 and 16 ether", name, value)
 	}
 	return val, nil
 }

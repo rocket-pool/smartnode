@@ -544,7 +544,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					amountWei, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -574,7 +574,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
-					amountWei, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}

@@ -93,7 +93,7 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 		}
 	} else {
 		// Create the hash of the minipool constructor call
-		packedConstructorArgs, err = minipoolAbi.Pack("", rp.RocketStorageContract.Address, nodeAddress)
+		packedConstructorArgs, err = minipoolAbi.Pack("", rp.RocketStorageContract.Address)
 		if err != nil {
 			return nil, fmt.Errorf("Error creating minipool constructor args: %w", err)
 		}

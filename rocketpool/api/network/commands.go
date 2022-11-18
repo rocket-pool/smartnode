@@ -155,6 +155,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "is-atlas-deployed",
+				Aliases:   []string{"iad"},
+				Usage:     "Checks if Atlas has been deployed yet.",
+				UsageText: "rocketpool api network is-atlas-deployed",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(isAtlasDeployed(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }

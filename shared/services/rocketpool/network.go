@@ -128,3 +128,19 @@ func (c *Client) GetActiveDAOProposals() (api.NetworkDAOProposalsResponse, error
 	}
 	return response, nil
 }
+
+// Check if Atlas has been deployed yet
+func (c *Client) IsAtlasDeployed() (api.IsAtlasDeployedResponse, error) {
+	responseBytes, err := c.callAPI("network is-atlas-deployed")
+	if err != nil {
+		return api.IsAtlasDeployedResponse{}, fmt.Errorf("could not check if Atlas is deployed: %w", err)
+	}
+	var response api.IsAtlasDeployedResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.IsAtlasDeployedResponse{}, fmt.Errorf("could not decode is-atlas-deployed response: %w", err)
+	}
+	if response.Error != "" {
+		return api.IsAtlasDeployedResponse{}, fmt.Errorf("could not check if Atlas is deployed: %s", response.Error)
+	}
+	return response, nil
+}
