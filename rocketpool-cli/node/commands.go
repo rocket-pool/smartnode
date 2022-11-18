@@ -348,7 +348,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Validate flags
 					if c.String("amount") != "" {
-						if _, err := cliutils.ValidateDepositEthAmount("deposit amount", c.String("amount")); err != nil {
+						if _, err := cliutils.ValidatePositiveEthAmount("deposit amount", c.String("amount")); err != nil {
 							return err
 						}
 					}
