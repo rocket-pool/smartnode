@@ -43,7 +43,7 @@ func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, salt
 	}
 
 	// Create the hash of the minipool constructor call
-	packedConstructorArgs, err := minipoolAbi.Pack("", rp.RocketStorageContract.Address, nodeAddress)
+	packedConstructorArgs, err := minipoolAbi.Pack("", rp.RocketStorageContract.Address)
 	if err != nil {
 		return common.Address{}, fmt.Errorf("Error creating minipool constructor args: %w", err)
 	}
