@@ -164,8 +164,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	if err != nil {
 		return nil, err
 	}
-	prestakeDepositAmountWei := eth.EthToWei(prestakeDepositAmount)
-	opts.Value = prestakeDepositAmountWei
+	opts.Value = amountWei
 
 	// Get the next validator key
 	validatorKey, err := w.GetNextValidatorKey()
