@@ -149,8 +149,11 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 	log.Printlnf("Snapshot Beacon block = %d, EL block = %d, running from %s to %s\n", snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
 	// Generate the rewards file
-	rewardsFile := rprewards.NewRewardsFile(log, "", currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed))
-	err = rewardsFile.GenerateTree(rp, cfg, bn)
+	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed))
+	if err != nil {
+		return fmt.Errorf("error creating tree generator: %w", err)
+	}
+	rewardsFile, err := treegen.GenerateTree()
 	if err != nil {
 		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}
@@ -224,8 +227,11 @@ func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *confi
 
 	// Generate the rewards file
 	start := time.Now()
-	rewardsFile := rprewards.NewRewardsFile(log, "", index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64())
-	err = rewardsFile.GenerateTree(rp, cfg, bn)
+	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64())
+	if err != nil {
+		return fmt.Errorf("error creating tree generator: %w", err)
+	}
+	rewardsFile, err := treegen.GenerateTree()
 	if err != nil {
 		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}
