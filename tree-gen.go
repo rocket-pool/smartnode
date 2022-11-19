@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"net/http"
 	"path/filepath"
 	"time"
 
@@ -24,7 +25,14 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const (
+	MaxConcurrentEth1Requests = 200
+)
+
 func GenerateTree(c *cli.Context) error {
+
+	// Configure
+	configureHTTP()
 
 	// Initialization
 	currentIndex := c.Int64("interval")
@@ -315,5 +323,15 @@ func getLatestFinalizedSlot(log log.ColorLogger, bn beacon.Client) (uint64, uint
 			return finalizedSlot, block.ExecutionBlockNumber, blockTime, nil
 		}
 	}
+
+}
+
+// Configure HTTP transport settings
+func configureHTTP() {
+
+	// The watchtower daemon makes a large number of concurrent RPC requests to the Eth1 client
+	// The HTTP transport is set to cache connections for future re-use equal to the maximum expected number of concurrent requests
+	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
+	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
 
 }
