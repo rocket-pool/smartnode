@@ -313,12 +313,6 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	t.printMessage(fmt.Sprintf("Reason:   %s", reason))
 	t.printMessage("=================================")
 
-	// Make the binding
-	mp, err := minipool.NewMinipool(t.rp, address, nil)
-	if err != nil {
-		return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
-	}
-
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
@@ -326,7 +320,7 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	}
 
 	// Get the gas limit
-	gasInfo, err := mp.EstimateVoteCancelReductionGas(opts)
+	gasInfo, err := minipool.EstimateVoteCancelReductionGas(t.rp, address, opts)
 	if err != nil {
 		return fmt.Errorf("could not estimate the gas required to voteCancelReduction the minipool: %w", err)
 	}
@@ -343,7 +337,7 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Cancel the reduction
-	hash, err := mp.VoteCancelReduction(opts)
+	hash, err := minipool.VoteCancelReduction(t.rp, address, opts)
 	if err != nil {
 		return err
 	}
@@ -355,7 +349,7 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	}
 
 	// Log
-	t.log.Printlnf("Successfully voted to cancel the bond reduction of minipool %s.", mp.Address.Hex())
+	t.log.Printlnf("Successfully voted to cancel the bond reduction of minipool %s.", address.Hex())
 
 	// Return
 	return nil
