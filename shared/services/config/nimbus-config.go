@@ -58,8 +58,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: nimbusTagProd,
 				config.Network_Prater:  nimbusTagTest,
-				config.Network_Kiln:    nimbusTagTest,
-				config.Network_Ropsten: nimbusTagTest,
+				config.Network_Devnet:  nimbusTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},

@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	lighthouseTagPortableTest string = "sigp/lighthouse:v3.2.0"
-	lighthouseTagPortableProd string = "sigp/lighthouse:v3.2.0"
-	lighthouseTagModernTest   string = "sigp/lighthouse:v3.2.0-modern"
-	lighthouseTagModernProd   string = "sigp/lighthouse:v3.2.0-modern"
+	lighthouseTagPortableTest string = "sigp/lighthouse:v3.2.1"
+	lighthouseTagPortableProd string = "sigp/lighthouse:v3.2.1"
+	lighthouseTagModernTest   string = "sigp/lighthouse:v3.2.1-modern"
+	lighthouseTagModernProd   string = "sigp/lighthouse:v3.2.1-modern"
 	defaultLhMaxPeers         uint16 = 80
 )
 
@@ -58,8 +58,7 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: getLighthouseTagProd(),
 				config.Network_Prater:  getLighthouseTagTest(),
-				config.Network_Kiln:    getLighthouseTagTest(),
-				config.Network_Ropsten: getLighthouseTagTest(),
+				config.Network_Devnet:  getLighthouseTagTest(),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},

@@ -196,8 +196,7 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: getLighthouseTagProd(),
 				config.Network_Prater:  getLighthouseTagTest(),
-				config.Network_Kiln:    getLighthouseTagTest(),
-				config.Network_Ropsten: getLighthouseTagTest(),
+				config.Network_Devnet:  getLighthouseTagTest(),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
@@ -428,8 +427,7 @@ func NewExternalPrysmConfig(cfg *RocketPoolConfig) *ExternalPrysmConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: getPrysmVcProdTag(),
 				config.Network_Prater:  getPrysmVcTestTag(),
-				config.Network_Kiln:    getPrysmVcTestTag(),
-				config.Network_Ropsten: getPrysmVcTestTag(),
+				config.Network_Devnet:  getPrysmVcTestTag(),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},

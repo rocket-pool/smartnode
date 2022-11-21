@@ -33,7 +33,7 @@ func canCloseMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanC
 	response := api.CanCloseMinipoolResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func closeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CloseMi
 	response := api.CloseMinipoolResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}

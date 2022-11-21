@@ -243,7 +243,7 @@ func (t *submitWithdrawableMinipools) getNetworkMinipoolWithdrawableDetails(node
 func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress common.Address, minipoolAddress common.Address, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, beaconHead beacon.BeaconHead) (minipoolWithdrawableDetails, error) {
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(t.rp, minipoolAddress, nil)
 	if err != nil {
 		return minipoolWithdrawableDetails{}, err
 	}

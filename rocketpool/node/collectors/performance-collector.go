@@ -137,7 +137,7 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 
 	// Get the ETH balance of the rETH contract
 	wg.Go(func() error {
-		rETHContract, err := collector.rp.GetContract("rocketTokenRETH")
+		rETHContract, err := collector.rp.GetContract("rocketTokenRETH", nil)
 		if err != nil {
 			return fmt.Errorf("Error getting ETH balance of rETH staking contract: %w", err)
 		}

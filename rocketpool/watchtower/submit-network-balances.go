@@ -426,8 +426,11 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		endTime := time.Now()
 
 		// Approximate the staker's share of the smoothing pool balance
-		rewardsFile := rprewards.NewRewardsFile(t.log, "[Balances]", currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed))
-		smoothingPoolShare, err = rewardsFile.ApproximateStakerShareOfSmoothingPool(client, t.cfg, t.bc)
+		treegen, err := rprewards.NewTreeGenerator(t.log, "[Balances]", client, t.cfg, t.bc, currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed))
+		if err != nil {
+			return fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
+		}
+		smoothingPoolShare, err = treegen.ApproximateStakerShareOfSmoothingPool()
 		if err != nil {
 			return fmt.Errorf("error getting approximate share of smoothing pool: %w", err)
 		}
@@ -438,7 +441,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 	// Get rETH contract balance
 	wg.Go(func() error {
-		rethContractAddress, err := client.GetAddress("rocketTokenRETH")
+		rethContractAddress, err := client.GetAddress("rocketTokenRETH", opts)
 		if err != nil {
 			return fmt.Errorf("error getting rETH contract address: %w", err)
 		}
@@ -605,7 +608,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(client *rocketp
 func (t *submitNetworkBalances) getMinipoolBalanceDetails(client *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, blockEpoch uint64) (minipoolBalanceDetails, error) {
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(client, minipoolAddress)
+	mp, err := minipool.NewMinipool(client, minipoolAddress, opts)
 	if err != nil {
 		return minipoolBalanceDetails{}, err
 	}

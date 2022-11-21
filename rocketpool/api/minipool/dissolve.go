@@ -32,7 +32,7 @@ func canDissolveMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
 	response := api.CanDissolveMinipoolResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func dissolveMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Diss
 	response := api.DissolveMinipoolResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}

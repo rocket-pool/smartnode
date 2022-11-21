@@ -148,7 +148,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 	// Get smoothing pool balance
 	wg.Go(func() error {
 		// Get the Smoothing Pool contract's balance
-		smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool")
+		smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool", nil)
 		if err != nil {
 			return fmt.Errorf("error getting smoothing pool contract: %w", err)
 		}

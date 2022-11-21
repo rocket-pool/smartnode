@@ -84,7 +84,7 @@ func allowanceFsRpl(c *cli.Context) (*api.NodeSwapRplAllowanceResponse, error) {
 	response := api.NodeSwapRplAllowanceResponse{}
 
 	// Get new RPL contract address
-	rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
+	rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func getSwapApprovalGas(c *cli.Context, amountWei *big.Int) (*api.NodeSwapRplApp
 	response := api.NodeSwapRplApproveGasResponse{}
 
 	// Get RPL contract address
-	rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
+	rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func approveFsRpl(c *cli.Context, amountWei *big.Int) (*api.NodeSwapRplApproveRe
 	response := api.NodeSwapRplApproveResponse{}
 
 	// Get RPL contract address
-	rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
+	rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL", nil)
 	if err != nil {
 		return nil, err
 	}

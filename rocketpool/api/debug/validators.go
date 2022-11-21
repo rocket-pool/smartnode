@@ -146,7 +146,7 @@ func ExportValidators(c *cli.Context) error {
 func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, blockEpoch uint64) error {
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, opts)
 	if err != nil {
 		return err
 	}

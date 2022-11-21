@@ -37,6 +37,10 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 	if err != nil {
 		return err
 	}
+	s, err := services.GetSnapshotDelegation(c)
+	if err != nil {
+		return err
+	}
 
 	// Return if metrics are disabled
 	if cfg.EnableMetrics.Value == false {
@@ -51,7 +55,11 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 	if err != nil {
 		return fmt.Errorf("Error getting node account: %w", err)
 	}
-
+	votingId := cfg.Smartnode.GetVotingSnapshotID()
+	votingDelegate, err := s.Delegation(nil, nodeAccount.Address, votingId)
+	if err != nil {
+		return fmt.Errorf("Error getting node delegate: %w", err)
+	}
 	// Create the collectors
 	demandCollector := collectors.NewDemandCollector(rp)
 	performanceCollector := collectors.NewPerformanceCollector(rp)
@@ -61,6 +69,8 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 	nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg)
 	trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg)
 	beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address)
+	snapshotCollector := collectors.NewSnapshotCollector(rp, cfg, nodeAccount.Address, votingDelegate)
+	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(rp, ec)
 
 	// Set up Prometheus
 	registry := prometheus.NewRegistry()
@@ -72,6 +82,8 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 	registry.MustRegister(nodeCollector)
 	registry.MustRegister(trustedNodeCollector)
 	registry.MustRegister(beaconCollector)
+	registry.MustRegister(snapshotCollector)
+	registry.MustRegister(smoothingPoolCollector)
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 
 	// Start the HTTP server

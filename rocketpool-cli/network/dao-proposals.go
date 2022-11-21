@@ -85,7 +85,48 @@ func getActiveDAOProposals(c *cli.Context) error {
 					if proposalVote.Voter == proposalsResponse.AccountAddress {
 						voter = "YOU"
 					}
-					fmt.Printf("%s%s voted [%s] on this proposal\n%s", colorGreen, voter, proposal.Choices[proposalVote.Choice-1], colorReset)
+					votedChoices := ""
+					switch proposalVote.Choice.(type) {
+					case float64:
+						choiceFloat := proposalVote.Choice.(float64)
+						choice := int(choiceFloat) - 1
+						if choice < len(proposal.Choices) && choice >= 0 {
+							votedChoices = proposal.Choices[choice]
+						} else {
+							votedChoices = fmt.Sprintf("Unknown (%d is out of bounds)", choice)
+						}
+
+					case []interface{}:
+						choicesArray := proposalVote.Choice.([]interface{})
+						choices := []string{}
+						for i := 0; i < len(choicesArray); i++ {
+							choice := int(choicesArray[i].(float64))
+							if choice < len(proposal.Choices) && choice >= 0 {
+								choices = append(choices, proposal.Choices[choice])
+							} else {
+								choices = append(choices, fmt.Sprintf("Unknown (%d is out of bounds)", choice))
+							}
+						}
+						votedChoices = strings.Join(choices, ", ")
+
+					case map[string]interface{}:
+						choiceMap := proposalVote.Choice.(map[string]interface{})
+						choices := []string{}
+						for index, weight := range choiceMap {
+							choice := int(choiceMap[index].(float64))
+							if choice < len(proposal.Choices) && choice >= 0 {
+								choices = append(choices, fmt.Sprintf("%s: %.2f", proposal.Choices[choice], weight))
+							} else {
+								choices = append(choices, fmt.Sprintf("Unknown (%d is out of bounds)", choice))
+							}
+						}
+						votedChoices = strings.Join(choices, ", ")
+
+					default:
+						votedChoices = fmt.Sprintf("%v", proposalVote.Choice)
+					}
+
+					fmt.Printf("%s%s voted [%s] on this proposal\n%s", colorGreen, voter, votedChoices, colorReset)
 					voted = true
 				}
 			}

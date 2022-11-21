@@ -32,8 +32,7 @@ const (
 	Network_All     Network = "all"
 	Network_Mainnet Network = "mainnet"
 	Network_Prater  Network = "prater"
-	Network_Kiln    Network = "kiln"
-	Network_Ropsten Network = "ropsten"
+	Network_Devnet  Network = "devnet"
 )
 
 // Enum to describe the mode for a client - local (Docker Mode) or external (Hybrid Mode)

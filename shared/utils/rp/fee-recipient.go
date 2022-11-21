@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -19,7 +20,7 @@ type FeeRecipientInfo struct {
 	OptOutEpoch           uint64         `json:"optOutEpoch"`
 }
 
-func GetFeeRecipientInfo(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address) (*FeeRecipientInfo, error) {
+func GetFeeRecipientInfo(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, opts *bind.CallOpts) (*FeeRecipientInfo, error) {
 
 	info := &FeeRecipientInfo{
 		IsInOptOutCooldown: false,
@@ -31,7 +32,7 @@ func GetFeeRecipientInfo(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddres
 
 	// Get the smoothing pool address
 	wg.Go(func() error {
-		smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool")
+		smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool", opts)
 		if err != nil {
 			return fmt.Errorf("Error getting smoothing pool contract: %w", err)
 		}

@@ -38,6 +38,7 @@ type MinipoolInfo struct {
 	MinipoolShare           *big.Int
 	MissingAttestationSlots map[uint64]bool
 	WasActive               bool
+	ActiveSlots             uint64
 }
 
 type IntervalDutiesInfo struct {

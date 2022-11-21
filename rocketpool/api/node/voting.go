@@ -243,6 +243,41 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 
 }
 
+func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.Address) (*api.SnapshotVotingPower, error) {
+	query := fmt.Sprintf(`query Vp{
+		vp(
+			space: "%s",
+			voter: "%s",
+		) {
+			vp
+		}
+	}
+	`, space, nodeAddress)
+	url := fmt.Sprintf("https://%s/graphql?operationName=Vp&query=%s", apiDomain, url.PathEscape(query))
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	// Check the response code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
+	}
+
+	// Get response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var votingPower api.SnapshotVotingPower
+	if err := json.Unmarshal(body, &votingPower); err != nil {
+		return nil, fmt.Errorf("could not decode snapshot response: %w", err)
+
+	}
+
+	return &votingPower, nil
+}
+
 func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress common.Address, delegate common.Address) (*api.SnapshotVotedProposals, error) {
 	query := fmt.Sprintf(`query Votes{
 		votes(
@@ -255,7 +290,7 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 		) {
 		  choice
 		  voter
-		  proposal {id}
+		  proposal {id, state}
 		}
 	  }`, space, nodeAddress, delegate)
 	url := fmt.Sprintf("https://%s/graphql?operationName=Votes&query=%s", apiDomain, url.PathEscape(query))
@@ -263,11 +298,11 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	// Check the response code
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
 	}
-	defer resp.Body.Close()
 
 	// Get response
 	body, err := ioutil.ReadAll(resp.Body)
@@ -284,8 +319,12 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 }
 
 func GetSnapshotProposals(apiDomain string, space string, state string) (*api.SnapshotResponse, error) {
+	stateFilter := ""
+	if state != "" {
+		stateFilter = fmt.Sprintf(`, state: "%s"`, state)
+	}
 	query := fmt.Sprintf(`query Proposals {
-	proposals(where: {space: "%s", state: "%s"}, orderBy: "created", orderDirection: desc) {
+	proposals(where: {space: "%s"%s}, orderBy: "created", orderDirection: desc) {
 	    id
 	    title
 	    choices
@@ -300,18 +339,18 @@ func GetSnapshotProposals(apiDomain string, space string, state string) (*api.Sn
 		quorum
 		link
 	  }
-    }`, space, state)
+    }`, space, stateFilter)
 
 	url := fmt.Sprintf("https://%s/graphql?operationName=Proposals&query=%s", apiDomain, url.PathEscape(query))
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	// Check the response code
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
 	}
-	defer resp.Body.Close()
 
 	// Get response
 	body, err := ioutil.ReadAll(resp.Body)

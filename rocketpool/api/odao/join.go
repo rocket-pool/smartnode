@@ -84,7 +84,7 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
 		if err != nil {
 			return err
 		}
-		rocketDAONodeTrustedActionsAddress, err := rp.GetAddress("rocketDAONodeTrustedActions")
+		rocketDAONodeTrustedActionsAddress, err := rp.GetAddress("rocketDAONodeTrustedActions", nil)
 		if err != nil {
 			return err
 		}
@@ -144,7 +144,7 @@ func approveRpl(c *cli.Context) (*api.JoinTNDAOApproveResponse, error) {
 	// Get oracle node actions contract address
 	wg.Go(func() error {
 		var err error
-		rocketDAONodeTrustedActionsAddress, err = rp.GetAddress("rocketDAONodeTrustedActions")
+		rocketDAONodeTrustedActionsAddress, err = rp.GetAddress("rocketDAONodeTrustedActions", nil)
 		return err
 	})
 
