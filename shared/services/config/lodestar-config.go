@@ -55,8 +55,7 @@ func NewLodestarConfig(cfg *RocketPoolConfig) *LodestarConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: lodestarTagProd,
 				config.Network_Prater:  lodestarTagTest,
-				config.Network_Kiln:    lodestarTagTest,
-				config.Network_Ropsten: lodestarTagTest,
+				config.Network_Devnet:  lodestarTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},

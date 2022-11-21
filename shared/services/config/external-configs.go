@@ -268,8 +268,7 @@ func NewExternalLodestarConfig(cfg *RocketPoolConfig) *ExternalLodestarConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: lodestarTagProd,
 				config.Network_Prater:  lodestarTagTest,
-				config.Network_Kiln:    lodestarTagTest,
-				config.Network_Ropsten: lodestarTagTest,
+				config.Network_Devnet:  lodestarTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
@@ -342,8 +341,7 @@ func NewExternalNimbusConfig(cfg *RocketPoolConfig) *ExternalNimbusConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: nimbusTagProd,
 				config.Network_Prater:  nimbusTagTest,
-				config.Network_Kiln:    nimbusTagTest,
-				config.Network_Ropsten: nimbusTagTest,
+				config.Network_Devnet:  nimbusTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
