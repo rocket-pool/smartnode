@@ -543,20 +543,6 @@ func (mp *Minipool) GetReduceBondTime(opts *bind.CallOpts) (*big.Int, error) {
 	return *reduceBondTime, nil
 }
 
-// Estimate the gas required to vote to cancel a minipool's bond reduction
-func (mp *Minipool) EstimateVoteCancelReductionGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "voteCancelReduction")
-}
-
-// Vote to cancel a minipool's bond reduction
-func (mp *Minipool) VoteCancelReduction(opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "voteCancelReduction")
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not vote to cancel bond reduction for minipool %s: %w", mp.Address.Hex(), err)
-	}
-	return tx.Hash(), nil
-}
-
 // Estimate the gas required to promote a vacant minipool
 func (mp *Minipool) EstimatePromoteGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "promote")
