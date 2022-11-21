@@ -19,14 +19,14 @@ func EstimateVoteCancelReductionGas(rp *rocketpool.RocketPool, minipoolAddress c
 }
 
 // Vote to cancel a minipool's bond reduction
-func (mp *Minipool) VoteCancelReduction(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+func VoteCancelReduction(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
 	tx, err := rocketMinipoolBondReducer.Transact(opts, "voteCancelReduction", minipoolAddress)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not vote to cancel bond reduction for minipool %s: %w", mp.Address.Hex(), err)
+		return common.Hash{}, fmt.Errorf("Could not vote to cancel bond reduction for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return tx.Hash(), nil
 }
