@@ -77,6 +77,10 @@ func newTreeGeneratorImpl_v1(log log.ColorLogger, logPrefix string, index uint64
 			InvalidNetworkNodes: map[common.Address]uint64{},
 			MinipoolPerformanceFile: MinipoolPerformanceFile{
 				Index:               index,
+				StartTime:           startTime,
+				EndTime:             endTime,
+				ConsensusEndBlock:   consensusBlock,
+				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance{},
 			},
 		},
