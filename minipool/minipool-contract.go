@@ -257,6 +257,13 @@ func (mp *Minipool) GetNodeDepositAssigned(opts *bind.CallOpts) (bool, error) {
 	}
 	return *nodeDepositAssigned, nil
 }
+func (mp *Minipool) GetVacant(opts *bind.CallOpts) (bool, error) {
+	isVacant := new(bool)
+	if err := mp.Contract.Call(opts, isVacant, "getVacant"); err != nil {
+		return false, fmt.Errorf("Could not get minipool %s vacant status: %w", mp.Address.Hex(), err)
+	}
+	return *isVacant, nil
+}
 
 // Get user deposit details
 func (mp *Minipool) GetUserDetails(opts *bind.CallOpts) (UserDetails, error) {
