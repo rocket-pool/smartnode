@@ -14,6 +14,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
+	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Config
@@ -245,9 +246,9 @@ func ValidateTxHash(name, value string) (common.Hash, error) {
 
 // Validate a validator pubkey
 func ValidatePubkey(name, value string) (types.ValidatorPubkey, error) {
-	pubkey, err := types.HexToValidatorPubkey(value)
+	pubkey, err := types.HexToValidatorPubkey(hexutils.RemovePrefix(value))
 	if err != nil {
-		return types.ValidatorPubkey{}, fmt.Errorf("Invalid %s '%s': %w", err)
+		return types.ValidatorPubkey{}, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
 	}
 	return pubkey, nil
 }
