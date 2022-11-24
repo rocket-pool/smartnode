@@ -27,6 +27,7 @@ type StatusDetails struct {
 	Status      rptypes.MinipoolStatus `json:"status"`
 	StatusBlock uint64                 `json:"statusBlock"`
 	StatusTime  time.Time              `json:"statusTime"`
+	IsVacant    bool                   `json:"isVacant"`
 }
 type NodeDetails struct {
 	Address         common.Address `json:"address"`
@@ -93,6 +94,7 @@ func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (StatusDetails, error)
 	var status rptypes.MinipoolStatus
 	var statusBlock uint64
 	var statusTime time.Time
+	var isVacant bool
 
 	// Load data
 	wg.Go(func() error {
@@ -110,6 +112,11 @@ func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (StatusDetails, error)
 		statusTime, err = mp.GetStatusTime(opts)
 		return err
 	})
+	wg.Go(func() error {
+		var err error
+		isVacant, err = mp.GetVacant(opts)
+		return err
+	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
@@ -121,6 +128,7 @@ func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (StatusDetails, error)
 		Status:      status,
 		StatusBlock: statusBlock,
 		StatusTime:  statusTime,
+		IsVacant:    isVacant,
 	}, nil
 
 }
