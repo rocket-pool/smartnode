@@ -64,7 +64,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 
 	// Print a notification about the pubkey
-	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at <placeholder> to learn about the process and its implications.", pubkey.Hex())
+	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at <placeholder> to learn about the process and its implications.\n\n", pubkey.Hex())
 
 	// Get deposit amount
 	var amount float64
