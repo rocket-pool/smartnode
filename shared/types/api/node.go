@@ -222,6 +222,25 @@ type NodeDepositResponse struct {
 	ScrubPeriod     time.Duration           `json:"scrubPeriod"`
 }
 
+type CanCreateVacantMinipoolResponse struct {
+	Status               string             `json:"status"`
+	Error                string             `json:"error"`
+	CanDeposit           bool               `json:"canDeposit"`
+	InsufficientRplStake bool               `json:"insufficientRplStake"`
+	InvalidAmount        bool               `json:"invalidAmount"`
+	DepositDisabled      bool               `json:"depositDisabled"`
+	MinipoolAddress      common.Address     `json:"minipoolAddress"`
+	GasInfo              rocketpool.GasInfo `json:"gasInfo"`
+}
+type CreateVacantMinipoolResponse struct {
+	Status                string         `json:"status"`
+	Error                 string         `json:"error"`
+	TxHash                common.Hash    `json:"txHash"`
+	MinipoolAddress       common.Address `json:"minipoolAddress"`
+	ScrubPeriod           time.Duration  `json:"scrubPeriod"`
+	WithdrawalCredentials common.Hash    `json:"withdrawalCredentials"`
+}
+
 type CanNodeSendResponse struct {
 	Status              string             `json:"status"`
 	Error               string             `json:"error"`

@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -919,6 +920,38 @@ func (c *Client) SignMessage(message string) (api.NodeSignResponse, error) {
 	}
 	if response.Error != "" {
 		return api.NodeSignResponse{}, fmt.Errorf("Could not sign message: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether a vacant minipool can be created for solo staker migration
+func (c *Client) CanCreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey, importKey bool) (api.CanCreateVacantMinipoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-create-vacant-minipool %s %f %s %s %t", amountWei.String(), minFee, salt.String(), pubkey.Hex(), importKey))
+	if err != nil {
+		return api.CanCreateVacantMinipoolResponse{}, fmt.Errorf("Could not get can create vacant minipool status: %w", err)
+	}
+	var response api.CanCreateVacantMinipoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanCreateVacantMinipoolResponse{}, fmt.Errorf("Could not decode can create vacant minipool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanCreateVacantMinipoolResponse{}, fmt.Errorf("Could not get can create vacant minipool status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Create a vacant minipool, which can be used to migrate a solo staker
+func (c *Client) CreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey, importKey bool) (api.CreateVacantMinipoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node create-vacant-minipool %s %f %s %s %t", amountWei.String(), minFee, salt.String(), pubkey.Hex(), importKey))
+	if err != nil {
+		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %w", err)
+	}
+	var response api.CreateVacantMinipoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not decode create vacant minipool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %s", response.Error)
 	}
 	return response, nil
 }

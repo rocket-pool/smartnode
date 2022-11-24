@@ -39,3 +39,19 @@ func (c *Client) GetClientStatus() (api.ClientStatusResponse, error) {
 	}
 	return response, nil
 }
+
+// Restarts the Validator client
+func (c *Client) RestartVc() (api.RestartVcResponse, error) {
+	responseBytes, err := c.callAPI("service restart-vc")
+	if err != nil {
+		return api.RestartVcResponse{}, fmt.Errorf("Could not get restart-vc status: %w", err)
+	}
+	var response api.RestartVcResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.RestartVcResponse{}, fmt.Errorf("Could not decode restart-vc response: %w", err)
+	}
+	if response.Error != "" {
+		return api.RestartVcResponse{}, fmt.Errorf("Could not get restart-vc status: %s", response.Error)
+	}
+	return response, nil
+}

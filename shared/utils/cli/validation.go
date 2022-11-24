@@ -12,6 +12,7 @@ import (
 	"github.com/tyler-smith/go-bip39"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 )
 
@@ -240,4 +241,13 @@ func ValidateTxHash(name, value string) (common.Hash, error) {
 
 	return hash, nil
 
+}
+
+// Validate a validator pubkey
+func ValidatePubkey(name, value string) (types.ValidatorPubkey, error) {
+	pubkey, err := types.HexToValidatorPubkey(value)
+	if err != nil {
+		return types.ValidatorPubkey{}, fmt.Errorf("Invalid %s '%s': %w", err)
+	}
+	return pubkey, nil
 }
