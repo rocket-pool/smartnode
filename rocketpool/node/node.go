@@ -33,6 +33,7 @@ const (
 	DownloadRewardsTreesColor    = color.FgGreen
 	MetricsColor                 = color.FgHiYellow
 	ManageFeeRecipientColor      = color.FgHiCyan
+	PromoteMinipoolsColor        = color.FgMagenta
 	ErrorColor                   = color.FgRed
 	WarningColor                 = color.FgYellow
 )
@@ -81,6 +82,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	promoteMinipools, err := newPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor))
+	if err != nil {
+		return err
+	}
 	downloadRewardsTrees, err := newDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor))
 	if err != nil {
 		return err
@@ -120,6 +125,12 @@ func run(c *cli.Context) error {
 
 					// Run the minipool stake check
 					if err := stakePrelaunchMinipools.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+
+					// Run the minipool promotion check
+					if err := promoteMinipools.run(); err != nil {
 						errorLog.Println(err)
 					}
 				}
