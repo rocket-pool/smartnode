@@ -261,33 +261,37 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 		// Get the info for each claimed interval
 		for _, claimedInterval := range claimed {
-			intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, claimedInterval)
-			if err != nil {
-				return err
-			}
-			if !intervalInfo.TreeFileExists {
-				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
-			}
 			_, exists := collector.handledIntervals[claimedInterval]
 			if !exists {
+				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, claimedInterval)
+				if err != nil {
+					return err
+				}
+				if !intervalInfo.TreeFileExists {
+					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
+				}
+
 				newRewards.Add(newRewards, &intervalInfo.CollateralRplAmount.Int)
 				newClaimedEthRewards.Add(newClaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
 				collector.handledIntervals[claimedInterval] = true
 			}
 		}
-
 		// Get the unclaimed rewards
 		for _, unclaimedInterval := range unclaimed {
-			intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval)
-			if err != nil {
-				return err
-			}
-			if !intervalInfo.TreeFileExists {
-				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
-			}
-			if intervalInfo.NodeExists {
-				unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.CollateralRplAmount.Int)
-				newUnclaimedEthRewards.Add(newUnclaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
+			_, exists := collector.handledIntervals[unclaimedInterval]
+			if !exists {
+				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval)
+				if err != nil {
+					return err
+				}
+				if !intervalInfo.TreeFileExists {
+					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
+				}
+				if intervalInfo.NodeExists {
+					unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.CollateralRplAmount.Int)
+					newUnclaimedEthRewards.Add(newUnclaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
+				}
+				collector.handledIntervals[unclaimedInterval] = true
 			}
 		}
 
