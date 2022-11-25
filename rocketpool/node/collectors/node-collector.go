@@ -86,14 +86,8 @@ type NodeCollector struct {
 	// The cumulative amount of RPL earned
 	cumulativeRewards float64
 
-	// The cumulative unclaimed RPL rewards
-	cumulativeUnclaimedRewards float64
-
 	// The claimed ETH rewards from SP
 	cumulativeClaimedEthRewards float64
-
-	// The unclaimed ETH rewards from SP
-	cumulativeUnclaimedEthRewards float64
 
 	// Map of reward intervals that have already been processed
 	handledIntervals map[uint64]bool
@@ -216,6 +210,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	collateralRatio := float64(0)
 	var addresses []common.Address
 	var beaconHead beacon.BeaconHead
+	unclaimedEthRewards := float64(0)
+	unclaimedRplRewards := float64(0)
 
 	// Get the total staked RPL
 	wg.Go(func() error {
@@ -245,10 +241,11 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		//legacyRewardsPoolAddress := collector.cfg.Smartnode.GetLegacyRewardsPoolAddress()
 
 		// Legacy rewards
-		unclaimedRewardsWei := big.NewInt(0)
+		unclaimedRplWei := big.NewInt(0)
+		unclaimedEthWei := big.NewInt(0)
 		newRewards := big.NewInt(0)
 		newClaimedEthRewards := big.NewInt(0)
-		newUnclaimedEthRewards := big.NewInt(0)
+
 		// TODO: PERFORMANCE IMPROVEMENTS
 		/*newRewards, err := legacyrewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, collector.nextRewardsStartBlock, &legacyRewardsPoolAddress, &legacyClaimNodeAddress)
 		if err != nil {
@@ -280,20 +277,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 		// Get the unclaimed rewards
 		for _, unclaimedInterval := range unclaimed {
-			_, exists := collector.handledIntervals[unclaimedInterval]
-			if !exists {
-				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval)
-				if err != nil {
-					return err
-				}
-				if !intervalInfo.TreeFileExists {
-					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
-				}
-				if intervalInfo.NodeExists {
-					unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.CollateralRplAmount.Int)
-					newUnclaimedEthRewards.Add(newUnclaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
-				}
-				collector.handledIntervals[unclaimedInterval] = true
+			intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval)
+			if err != nil {
+				return err
+			}
+			if !intervalInfo.TreeFileExists {
+				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
+			}
+			if intervalInfo.NodeExists {
+				unclaimedRplWei.Add(unclaimedRplWei, &intervalInfo.CollateralRplAmount.Int)
+				unclaimedEthWei.Add(unclaimedEthWei, &intervalInfo.SmoothingPoolEthAmount.Int)
 			}
 		}
 
@@ -304,9 +297,9 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		collector.cumulativeRewards += eth.WeiToEth(newRewards)
-		collector.cumulativeUnclaimedRewards += eth.WeiToEth(unclaimedRewardsWei)
 		collector.cumulativeClaimedEthRewards += eth.WeiToEth(newClaimedEthRewards)
-		collector.cumulativeUnclaimedEthRewards += eth.WeiToEth(newUnclaimedEthRewards)
+		unclaimedRplRewards = eth.WeiToEth(unclaimedRplWei)
+		unclaimedEthRewards = eth.WeiToEth(unclaimedEthWei)
 		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
 
 		return nil
@@ -486,9 +479,9 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.beaconBalance, prometheus.GaugeValue, totalBeaconBalance)
 	channel <- prometheus.MustNewConstMetric(
-		collector.unclaimedRewards, prometheus.GaugeValue, collector.cumulativeUnclaimedRewards)
+		collector.unclaimedRewards, prometheus.GaugeValue, unclaimedRplRewards)
 	channel <- prometheus.MustNewConstMetric(
-		collector.unclaimedEthRewards, prometheus.GaugeValue, collector.cumulativeUnclaimedEthRewards)
+		collector.unclaimedEthRewards, prometheus.GaugeValue, unclaimedEthRewards)
 	channel <- prometheus.MustNewConstMetric(
 		collector.claimedEthRewards, prometheus.GaugeValue, collector.cumulativeClaimedEthRewards)
 }
