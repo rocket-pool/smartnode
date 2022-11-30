@@ -38,6 +38,12 @@ type NethermindConfig struct {
 	// Nethermind's memory for pruning
 	PruneMemSize config.Parameter `yaml:"pruneMemSize,omitempty"`
 
+	// Additional modules to enable on the primary JSON RPC endpoint
+	AdditionalModules config.Parameter `yaml:"additionalModules,omitempty"`
+
+	// Additional JSON RPC URLs
+	AdditionalUrls config.Parameter `yaml:"additionalUrls,omitempty"`
+
 	// The Docker Hub tag for Nethermind
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -94,6 +100,30 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"NETHERMIND_PRUNE_MEM_SIZE"},
 			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		AdditionalModules: config.Parameter{
+			ID:                   "additionalModules",
+			Name:                 "Additional Modules",
+			Description:          "Additional modules you want to add to the primary JSON-RPC route. The defaults are Eth,Net,Personal,Web3. You can add any additional ones you need here; separate multiple modules with commas, and do not use spaces.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
+			EnvironmentVariables: []string{"NETHERMIND_ADDITIONAL_MODULES"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		AdditionalUrls: config.Parameter{
+			ID:                   "additionalUrls",
+			Name:                 "Additional URLs",
+			Description:          "Additional JSON-RPC URLs you want to run alongside the primary URL. These will be added to the \"--JsonRpc.AdditionalRpcUrls\" argument. Wrap each additional URL in quotes, and separate multiple URLs with commas (no spaces). Please consult the Nethermind documentation for more information on this flag, its intended usage, and its expected formatting.\n\nFor advanced users only.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
+			EnvironmentVariables: []string{"NETHERMIND_ADDITIONAL_URLS"},
+			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
 
@@ -190,6 +220,8 @@ func (cfg *NethermindConfig) GetParameters() []*config.Parameter {
 		&cfg.CacheSize,
 		&cfg.MaxPeers,
 		&cfg.PruneMemSize,
+		&cfg.AdditionalModules,
+		&cfg.AdditionalUrls,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,
 	}
