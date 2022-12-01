@@ -1101,11 +1101,16 @@ func (r *treeGeneratorImpl_v2) getSmoothingPoolNodeDetails() error {
 				}
 
 				// Get the slot of the last registration change
+				var changeSlot uint64
 				nodeDetails.StatusChangeTime, err = node.GetSmoothingPoolRegistrationChanged(r.rp, nodeDetails.Address, r.opts)
 				if err != nil {
 					return fmt.Errorf("Error getting smoothing pool registration change time for node %s: %w", nodeDetails.Address.Hex(), err)
 				}
-				changeSlot := uint64(nodeDetails.StatusChangeTime.Sub(genesisTime).Seconds()) / r.beaconConfig.SecondsPerSlot
+				if nodeDetails.StatusChangeTime == time.Unix(0, 0) {
+					changeSlot = 0
+				} else {
+					changeSlot = uint64(nodeDetails.StatusChangeTime.Sub(genesisTime).Seconds()) / r.beaconConfig.SecondsPerSlot
+				}
 
 				// If the node isn't opted into the Smoothing Pool and they didn't opt out during this interval, ignore them
 				if r.rewardsFile.ConsensusStartBlock > changeSlot && !nodeDetails.IsOptedIn {
