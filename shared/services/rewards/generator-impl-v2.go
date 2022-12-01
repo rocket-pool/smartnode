@@ -661,7 +661,7 @@ func (r *treeGeneratorImpl_v2) calculateEthRewards(checkBeaconPerformance bool) 
 				r.rewardsFile.NodeRewards[nodeInfo.Address] = rewardsForNode
 			}
 			rewardsForNode.SmoothingPoolEth.Add(&rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
-			rewardsForNode.SmoothingPoolEligibilityRate = float64(nodeInfo.EligibleSeconds.Uint64()) / float64(r.intervalSeconds.Uint64())
+			rewardsForNode.SmoothingPoolEligibilityRate = float64(nodeInfo.EndSlot-nodeInfo.StartSlot) / float64(r.rewardsFile.ConsensusEndBlock-r.rewardsFile.ConsensusStartBlock)
 
 			// Add minipool rewards to the JSON
 			for _, minipoolInfo := range nodeInfo.Minipools {
@@ -1115,7 +1115,6 @@ func (r *treeGeneratorImpl_v2) getSmoothingPoolNodeDetails() error {
 				// If the node isn't opted into the Smoothing Pool and they didn't opt out during this interval, ignore them
 				if r.rewardsFile.ConsensusStartBlock > changeSlot && !nodeDetails.IsOptedIn {
 					nodeDetails.IsEligible = false
-					nodeDetails.EligibleSeconds = big.NewInt(0)
 					nodeDetails.StartSlot = -1
 					nodeDetails.EndSlot = -1
 					r.nodeDetails[iterationIndex] = nodeDetails
@@ -1162,7 +1161,6 @@ func (r *treeGeneratorImpl_v2) getSmoothingPoolNodeDetails() error {
 							if penaltyCount >= 3 {
 								// This node is a cheater
 								nodeDetails.IsEligible = false
-								nodeDetails.EligibleSeconds = big.NewInt(0)
 								nodeDetails.StartSlot = -1
 								nodeDetails.EndSlot = -1
 								nodeDetails.Minipools = []*MinipoolInfo{}
