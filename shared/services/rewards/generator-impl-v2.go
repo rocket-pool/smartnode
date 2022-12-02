@@ -1046,7 +1046,7 @@ func (r *treeGeneratorImpl_v2) createMinipoolIndexMap() error {
 
 						// Check if the minipool exited before this interval
 						if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
-							r.log.Printlnf("WARNING: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
+							r.log.Printlnf("NOTE: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
 							minipoolInfo.StartSlot = 0
 							minipoolInfo.EndSlot = 0
 							minipoolInfo.WasActive = false
