@@ -27,6 +27,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const (
+	FarEpoch uint64 = 18446744073709551615
+)
+
 // Implementation for tree generator ruleset v2
 type treeGeneratorImpl_v2 struct {
 	rewardsFile          *RewardsFile
@@ -620,12 +624,12 @@ func (r *treeGeneratorImpl_v2) calculateEthRewards(checkBeaconPerformance bool) 
 	} else {
 		// Attestation processing is disabled, just give each minipool 1 good attestation and complete slot activity so they're all scored the same
 		// Used for approximating rETH's share during balances calculation
-		intervalSlots := r.rewardsFile.ConsensusEndBlock - r.rewardsFile.ConsensusStartBlock
 		for _, nodeInfo := range r.nodeDetails {
 			if nodeInfo.IsEligible {
 				for _, minipool := range nodeInfo.Minipools {
 					minipool.GoodAttestations = 1
-					minipool.ActiveSlots = intervalSlots
+					minipool.StartSlot = r.rewardsFile.ConsensusStartBlock
+					minipool.EndSlot = r.rewardsFile.ConsensusEndBlock
 				}
 			}
 		}
@@ -661,13 +665,15 @@ func (r *treeGeneratorImpl_v2) calculateEthRewards(checkBeaconPerformance bool) 
 				r.rewardsFile.NodeRewards[nodeInfo.Address] = rewardsForNode
 			}
 			rewardsForNode.SmoothingPoolEth.Add(&rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
-			rewardsForNode.SmoothingPoolEligibilityRate = float64(nodeInfo.EligibleSeconds.Uint64()) / float64(r.intervalSeconds.Uint64())
+			rewardsForNode.SmoothingPoolEligibilityRate = float64(nodeInfo.EndSlot-nodeInfo.StartSlot) / float64(r.rewardsFile.ConsensusEndBlock-r.rewardsFile.ConsensusStartBlock)
 
 			// Add minipool rewards to the JSON
 			for _, minipoolInfo := range nodeInfo.Minipools {
 				performance := &SmoothingPoolMinipoolPerformance{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
-					ActiveFraction:          float64(minipoolInfo.ActiveSlots) / float64(r.rewardsFile.ConsensusEndBlock-r.rewardsFile.ConsensusStartBlock),
+					StartSlot:               minipoolInfo.StartSlot,
+					EndSlot:                 minipoolInfo.EndSlot,
+					ActiveFraction:          float64(minipoolInfo.EndSlot-minipoolInfo.StartSlot) / float64(r.rewardsFile.ConsensusEndBlock-r.rewardsFile.ConsensusStartBlock),
 					SuccessfulAttestations:  minipoolInfo.GoodAttestations,
 					MissedAttestations:      minipoolInfo.MissedAttestations,
 					EthEarned:               eth.WeiToEth(minipoolInfo.MinipoolShare),
@@ -719,9 +725,10 @@ func (r *treeGeneratorImpl_v2) calculateNodeRewards() (*big.Int, *big.Int, error
 	for _, nodeInfo := range r.nodeDetails {
 		if nodeInfo.IsEligible {
 			for _, minipool := range nodeInfo.Minipools {
-				if minipool.GoodAttestations+minipool.MissedAttestations == 0 || minipool.ActiveSlots == 0 {
+				if minipool.GoodAttestations+minipool.MissedAttestations == 0 || !minipool.WasActive {
 					// Ignore minipools that weren't active for the interval
-					minipool.ActiveSlots = 0
+					minipool.StartSlot = 0
+					minipool.EndSlot = 0
 					minipool.WasActive = false
 					minipool.MinipoolShare = big.NewInt(0)
 					continue
@@ -732,11 +739,6 @@ func (r *treeGeneratorImpl_v2) calculateNodeRewards() (*big.Int, *big.Int, error
 
 				// Minipool share calculation
 				minipoolShare := big.NewInt(0).Add(one, minipool.Fee) // Start with 1 + fee
-				if r.intervalSeconds.Cmp(nodeInfo.EligibleSeconds) == 1 {
-					// Scale the total shares by the eligibility factor based on how long the node has been opted in
-					minipoolShare.Mul(minipoolShare, nodeInfo.EligibleSeconds)
-					minipoolShare.Div(minipoolShare, r.intervalSeconds)
-				}
 				if minipool.MissedAttestations > 0 {
 					// Calculate the participation rate if there are any missed attestations
 					goodCount := big.NewInt(int64(minipool.GoodAttestations))
@@ -745,9 +747,9 @@ func (r *treeGeneratorImpl_v2) calculateNodeRewards() (*big.Int, *big.Int, error
 					minipoolShare.Mul(minipoolShare, goodCount)
 					minipoolShare.Div(minipoolShare, totalCount)
 				}
-				if minipool.ActiveSlots != intervalSlots {
+				if uint64(minipool.EndSlot-minipool.StartSlot) < intervalSlots {
 					// Prorate the minipool based on its number of active slots
-					activeSlots := big.NewInt(int64(minipool.ActiveSlots))
+					activeSlots := big.NewInt(int64(minipool.EndSlot - minipool.StartSlot))
 					minipoolShare.Mul(minipoolShare, activeSlots)
 					minipoolShare.Div(minipoolShare, intervalSlotsBig)
 				}
@@ -772,7 +774,7 @@ func (r *treeGeneratorImpl_v2) calculateNodeRewards() (*big.Int, *big.Int, error
 		nodeInfo.SmoothingPoolEth = big.NewInt(0)
 		if nodeInfo.IsEligible {
 			for _, minipool := range nodeInfo.Minipools {
-				if minipool.ActiveSlots == 0 {
+				if minipool.EndSlot-minipool.StartSlot == 0 {
 					continue
 				}
 				// Minipool ETH = NO amount * minipool share / total minipool share
@@ -1014,14 +1016,16 @@ func (r *treeGeneratorImpl_v2) createMinipoolIndexMap() error {
 				if !exists {
 					// Remove minipools that don't have indices yet since they're not actually viable
 					r.log.Printlnf("WARNING: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
-					minipoolInfo.ActiveSlots = 0
+					minipoolInfo.StartSlot = 0
+					minipoolInfo.EndSlot = 0
 					minipoolInfo.WasActive = false
 				} else {
 					switch status.Status {
 					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
 						// Remove minipools that don't have indices yet since they're not actually viable
 						r.log.Printlnf("WARNING: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
-						minipoolInfo.ActiveSlots = 0
+						minipoolInfo.StartSlot = 0
+						minipoolInfo.EndSlot = 0
 						minipoolInfo.WasActive = false
 					default:
 						// Get the validator index
@@ -1031,13 +1035,33 @@ func (r *treeGeneratorImpl_v2) createMinipoolIndexMap() error {
 						// Get the validator's activation start and end slots
 						startSlot := status.ActivationEpoch * r.beaconConfig.SlotsPerEpoch
 						endSlot := status.ExitEpoch * r.beaconConfig.SlotsPerEpoch
-						if startSlot < r.rewardsFile.ConsensusStartBlock {
-							startSlot = r.rewardsFile.ConsensusStartBlock
+
+						// Verify this minipool has already started
+						if status.ActivationEpoch == FarEpoch {
+							minipoolInfo.StartSlot = 0
+							minipoolInfo.EndSlot = 0
+							minipoolInfo.WasActive = false
+							continue
 						}
-						if endSlot > r.rewardsFile.ConsensusEndBlock {
-							endSlot = r.rewardsFile.ConsensusEndBlock
+
+						// Check if the minipool exited before this interval
+						if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
+							r.log.Printlnf("NOTE: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
+							minipoolInfo.StartSlot = 0
+							minipoolInfo.EndSlot = 0
+							minipoolInfo.WasActive = false
+							continue
 						}
-						minipoolInfo.ActiveSlots = endSlot - startSlot
+
+						// If this minipool was activated after its node-based start slot, update the start slot
+						if startSlot > minipoolInfo.StartSlot {
+							minipoolInfo.StartSlot = startSlot
+						}
+
+						// If this minipool exited before its node-based end slot, update the end slot
+						if status.ExitEpoch != FarEpoch && endSlot < minipoolInfo.EndSlot {
+							minipoolInfo.EndSlot = endSlot
+						}
 					}
 				}
 			}
@@ -1050,6 +1074,8 @@ func (r *treeGeneratorImpl_v2) createMinipoolIndexMap() error {
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
 func (r *treeGeneratorImpl_v2) getSmoothingPoolNodeDetails() error {
+
+	genesisTime := time.Unix(int64(r.beaconConfig.GenesisTime), 0)
 
 	nodesDone := uint64(0)
 	startTime := time.Now()
@@ -1097,28 +1123,43 @@ func (r *treeGeneratorImpl_v2) getSmoothingPoolNodeDetails() error {
 					return fmt.Errorf("Error getting smoothing pool registration state for node %s: %w", nodeDetails.Address.Hex(), err)
 				}
 
-				// Get the time of the last registration change
+				// Get the slot of the last registration change
+				var changeSlot uint64
 				nodeDetails.StatusChangeTime, err = node.GetSmoothingPoolRegistrationChanged(r.rp, nodeDetails.Address, r.opts)
 				if err != nil {
 					return fmt.Errorf("Error getting smoothing pool registration change time for node %s: %w", nodeDetails.Address.Hex(), err)
 				}
+				if nodeDetails.StatusChangeTime == time.Unix(0, 0) {
+					changeSlot = 0
+				} else {
+					changeSlot = uint64(nodeDetails.StatusChangeTime.Sub(genesisTime).Seconds()) / r.beaconConfig.SecondsPerSlot
+				}
 
 				// If the node isn't opted into the Smoothing Pool and they didn't opt out during this interval, ignore them
-				if r.elStartTime.Sub(nodeDetails.StatusChangeTime) > 0 && !nodeDetails.IsOptedIn {
+				if r.rewardsFile.ConsensusStartBlock > changeSlot && !nodeDetails.IsOptedIn {
 					nodeDetails.IsEligible = false
 					nodeDetails.EligibleSeconds = big.NewInt(0)
+					nodeDetails.StartSlot = 0
+					nodeDetails.EndSlot = 0
 					r.nodeDetails[iterationIndex] = nodeDetails
 					return nil
 				}
 
 				// Get the node's total active factor
 				if nodeDetails.IsOptedIn {
-					nodeDetails.EligibleSeconds = big.NewInt(int64(r.elEndTime.Sub(nodeDetails.StatusChangeTime) / time.Second))
+					nodeDetails.StartSlot = changeSlot
+					nodeDetails.EndSlot = r.rewardsFile.ConsensusEndBlock
+					// Clamp to this interval
+					if nodeDetails.StartSlot < r.rewardsFile.ConsensusStartBlock {
+						nodeDetails.StartSlot = r.rewardsFile.ConsensusStartBlock
+					}
 				} else {
-					nodeDetails.EligibleSeconds = big.NewInt(int64(nodeDetails.StatusChangeTime.Sub(r.elStartTime) / time.Second))
-				}
-				if nodeDetails.EligibleSeconds.Cmp(r.intervalSeconds) == 1 {
-					nodeDetails.EligibleSeconds.Set(r.intervalSeconds)
+					nodeDetails.StartSlot = r.rewardsFile.ConsensusStartBlock
+					nodeDetails.EndSlot = changeSlot
+					// Clamp to this interval
+					if nodeDetails.EndSlot > r.rewardsFile.ConsensusEndBlock {
+						nodeDetails.EndSlot = r.rewardsFile.ConsensusEndBlock
+					}
 				}
 
 				// Get the details for each minipool in the node
@@ -1145,6 +1186,8 @@ func (r *treeGeneratorImpl_v2) getSmoothingPoolNodeDetails() error {
 								// This node is a cheater
 								nodeDetails.IsEligible = false
 								nodeDetails.EligibleSeconds = big.NewInt(0)
+								nodeDetails.StartSlot = 0
+								nodeDetails.EndSlot = 0
 								nodeDetails.Minipools = []*MinipoolInfo{}
 								r.nodeDetails[iterationIndex] = nodeDetails
 								return nil
@@ -1165,6 +1208,8 @@ func (r *treeGeneratorImpl_v2) getSmoothingPoolNodeDetails() error {
 								GoodAttestations:        0,
 								MissingAttestationSlots: map[uint64]bool{},
 								WasActive:               true,
+								StartSlot:               nodeDetails.StartSlot,
+								EndSlot:                 nodeDetails.EndSlot,
 							})
 						}
 					}
