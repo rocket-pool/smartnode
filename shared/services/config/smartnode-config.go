@@ -373,7 +373,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
 			config.Network_Mainnet: {
-				15451165, 15637542, 15839520,
+				15451165, 15637542, 15839520, 16038366,
 			},
 			config.Network_Prater: {
 				7287326, 7297026, 7314231, 7331462, 7387271, 7412366, // 5
@@ -382,7 +382,8 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				7636720, 7654452, 7672147, 7689735, 7707617, 7725232, // 23
 				7742548, 7760702, 7777078, 7794263, 7811800, 7829115, // 29
 				7846870, 7863708, 7881537, 7900095, 7918951, 7937222, // 35
-				7955161,
+				7955161, 7972837, 7990504, 8008474, 8027271, 8045546, // 41
+				8063957,
 			},
 			config.Network_Devnet: {
 				7955303,
