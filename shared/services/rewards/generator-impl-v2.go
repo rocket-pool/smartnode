@@ -739,6 +739,12 @@ func (r *treeGeneratorImpl_v2) calculateNodeRewards() (*big.Int, *big.Int, error
 
 				// Minipool share calculation
 				minipoolShare := big.NewInt(0).Add(one, minipool.Fee) // Start with 1 + fee
+				if uint64(minipool.EndSlot-minipool.StartSlot) < intervalSlots {
+					// Prorate the minipool based on its number of active slots
+					activeSlots := big.NewInt(int64(minipool.EndSlot - minipool.StartSlot))
+					minipoolShare.Mul(minipoolShare, activeSlots)
+					minipoolShare.Div(minipoolShare, intervalSlotsBig)
+				}
 				if minipool.MissedAttestations > 0 {
 					// Calculate the participation rate if there are any missed attestations
 					goodCount := big.NewInt(int64(minipool.GoodAttestations))
@@ -746,12 +752,6 @@ func (r *treeGeneratorImpl_v2) calculateNodeRewards() (*big.Int, *big.Int, error
 					totalCount := big.NewInt(0).Add(goodCount, missedCount)
 					minipoolShare.Mul(minipoolShare, goodCount)
 					minipoolShare.Div(minipoolShare, totalCount)
-				}
-				if uint64(minipool.EndSlot-minipool.StartSlot) < intervalSlots {
-					// Prorate the minipool based on its number of active slots
-					activeSlots := big.NewInt(int64(minipool.EndSlot - minipool.StartSlot))
-					minipoolShare.Mul(minipoolShare, activeSlots)
-					minipoolShare.Div(minipoolShare, intervalSlotsBig)
 				}
 				minipoolShareTotal.Add(minipoolShareTotal, minipoolShare)
 				minipool.MinipoolShare = minipoolShare
