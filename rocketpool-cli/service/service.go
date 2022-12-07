@@ -646,6 +646,55 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		}
 	}
 
+	// Force stop eth2 if using Nimbus prior to v1.8.0 so it ensures the container is shut down and thus lets go of the validator keys and slashing database
+	isLocalNimbus := (cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ConsensusClient.Value.(cfgtypes.ConsensusClient) == cfgtypes.ConsensusClient_Nimbus)
+	if isUpdate && !isNew && !cfg.IsNativeMode && isLocalNimbus {
+		previousVersion := "0.0.0"
+		backupCfg, err := rp.LoadBackupConfig()
+		if err != nil {
+			fmt.Printf("WARNING: Couldn't determine previous Smartnode version from backup settings: %s\n", err.Error())
+		} else if backupCfg != nil {
+			previousVersion = backupCfg.Version
+		}
+
+		oldVersion, err := version.NewVersion(strings.TrimPrefix(previousVersion, "v"))
+		if err != nil {
+			fmt.Printf("WARNING: Backup configuration states the previous Smartnode installation used version %s, which is not a valid version\n", previousVersion)
+			oldVersion, _ = version.NewVersion("0.0.0")
+		}
+
+		vulnerableConstraint, _ := version.NewConstraint("< 1.8.0")
+		if vulnerableConstraint.Check(oldVersion) {
+			fmt.Printf("%sNOTE: You are configured to use Nimbus in local mode. Starting with v1.8.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does. Due to this, we must restart Nimbus as part of the upgrade.%s\n\n", colorYellow, colorReset)
+
+			// Ensure the eth2 and validator containers have stopped
+			prefix, err := getContainerPrefix(rp)
+			if err != nil {
+				return fmt.Errorf("error getting container prefix: %w", err)
+			}
+
+			eth2ContainerName := prefix + BeaconContainerSuffix
+			fmt.Printf("Stopping %s...\n", eth2ContainerName)
+			out, err := rp.StopContainer(eth2ContainerName)
+			if err != nil {
+				return fmt.Errorf("error stopping %s: %w", eth2ContainerName, err)
+			}
+			if out != eth2ContainerName {
+				return fmt.Errorf("unexpected output when trying to stop %s: [%s]", eth2ContainerName, out)
+			}
+
+			validatorContainerName := prefix + ValidatorContainerSuffix
+			fmt.Printf("Stopping %s...\n", validatorContainerName)
+			out, err = rp.StopContainer(validatorContainerName)
+			if err != nil {
+				return fmt.Errorf("error stopping %s: %w", validatorContainerName, err)
+			}
+			if out != validatorContainerName {
+				return fmt.Errorf("unexpected output when trying to stop %s: [%s]", validatorContainerName, out)
+			}
+		}
+	}
+
 	// Write a note on doppelganger protection
 	doppelgangerEnabled, err := cfg.IsDoppelgangerEnabled()
 	if err != nil {
