@@ -267,7 +267,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Value:       config.ConsensusClient_Lighthouse,
 			}, {
 				Name:        "Lodestar",
-				Description: "<Insert description here>",
+				Description: "Lodestar is an open-source Ethereum consensus client written in Typescript.",
 				Value:       config.ConsensusClient_Lodestar,
 			}, {
 				Name:        "Nimbus",
