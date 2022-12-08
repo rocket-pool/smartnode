@@ -608,10 +608,10 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 }
 
 // Start the Rocket Pool service
-func (c *Client) StartService(composeFiles []string) error {
+func (c *Client) StartService() error {
 
 	// Start the API container first
-	cmd, err := c.compose([]string{}, "up -d")
+	cmd, err := c.compose("up -d")
 	if err != nil {
 		return fmt.Errorf("error creating compose command for API container: %w", err)
 	}
@@ -621,7 +621,7 @@ func (c *Client) StartService(composeFiles []string) error {
 	}
 
 	// Start all of the containers
-	cmd, err = c.compose(composeFiles, "up -d --remove-orphans")
+	cmd, err = c.compose("up -d --remove-orphans")
 	if err != nil {
 		return err
 	}
@@ -629,8 +629,8 @@ func (c *Client) StartService(composeFiles []string) error {
 }
 
 // Pause the Rocket Pool service
-func (c *Client) PauseService(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "stop")
+func (c *Client) PauseService() error {
+	cmd, err := c.compose("stop")
 	if err != nil {
 		return err
 	}
@@ -638,8 +638,8 @@ func (c *Client) PauseService(composeFiles []string) error {
 }
 
 // Stop the Rocket Pool service
-func (c *Client) StopService(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "down -v")
+func (c *Client) StopService() error {
+	cmd, err := c.compose("down -v")
 	if err != nil {
 		return err
 	}
@@ -647,8 +647,8 @@ func (c *Client) StopService(composeFiles []string) error {
 }
 
 // Print the Rocket Pool service status
-func (c *Client) PrintServiceStatus(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "ps")
+func (c *Client) PrintServiceStatus() error {
+	cmd, err := c.compose("ps")
 	if err != nil {
 		return err
 	}
@@ -656,12 +656,12 @@ func (c *Client) PrintServiceStatus(composeFiles []string) error {
 }
 
 // Print the Rocket Pool service logs
-func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNames ...string) error {
+func (c *Client) PrintServiceLogs(tail string, serviceNames ...string) error {
 	sanitizedStrings := make([]string, len(serviceNames))
 	for i, serviceName := range serviceNames {
 		sanitizedStrings[i] = fmt.Sprintf("%s", shellescape.Quote(serviceName))
 	}
-	cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")))
+	cmd, err := c.compose(fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")))
 	if err != nil {
 		return err
 	}
@@ -669,10 +669,10 @@ func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNam
 }
 
 // Print the Rocket Pool service stats
-func (c *Client) PrintServiceStats(composeFiles []string) error {
+func (c *Client) PrintServiceStats() error {
 
 	// Get service container IDs
-	cmd, err := c.compose(composeFiles, "ps -q")
+	cmd, err := c.compose("ps -q")
 	if err != nil {
 		return err
 	}
@@ -688,8 +688,8 @@ func (c *Client) PrintServiceStats(composeFiles []string) error {
 }
 
 // Print the Rocket Pool service compose config
-func (c *Client) PrintServiceCompose(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "config")
+func (c *Client) PrintServiceCompose() error {
+	cmd, err := c.compose("config")
 	if err != nil {
 		return err
 	}
@@ -1139,7 +1139,7 @@ func convertUintParam(oldParam config.UserParam, newParam *cfgtypes.Parameter, n
 }
 
 // Build a docker compose command
-func (c *Client) compose(composeFiles []string, args string) (string, error) {
+func (c *Client) compose(args string) (string, error) {
 
 	// Cancel if running in non-docker mode
 	if c.daemonPath != "" {
