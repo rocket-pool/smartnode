@@ -14,12 +14,14 @@ import (
 
 // Config
 const (
-	MinipoolSettingsContractName = "rocketDAONodeTrustedSettingsMinipool"
-	ScrubPeriodPath              = "minipool.scrub.period"
-	ScrubPenaltyEnabledPath      = "minipool.scrub.penalty.enabled"
+	MinipoolSettingsContractName  = "rocketDAONodeTrustedSettingsMinipool"
+	ScrubPeriodPath               = "minipool.scrub.period"
+	ScrubPenaltyEnabledPath       = "minipool.scrub.penalty.enabled"
+	BondReductionWindowStartPath  = "minipool.bond.reduction.window.start"
+	BondReductionWindowLengthPath = "minipool.bond.reduction.window.length"
 )
 
-// The cooldown period a member must wait after making a proposal before making another in seconds
+// The amount of time, in seconds, the scrub check lasts before a minipool can move from prelaunch to staking
 func GetScrubPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
 	if err != nil {
@@ -61,6 +63,50 @@ func ProposeScrubPenaltyEnabled(rp *rocketpool.RocketPool, value bool, opts *bin
 }
 func EstimateProposeScrubPenaltyEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return trustednodedao.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", ScrubPenaltyEnabledPath), MinipoolSettingsContractName, ScrubPenaltyEnabledPath, value, opts)
+}
+
+// The amount of time, in seconds, a minipool must wait after beginning a bond reduction before it can apply the bond reduction (how long the Oracle DAO has to cancel the reduction if required)
+func GetBondReductionWindowStart(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := minipoolSettingsContract.Call(opts, value, "getBondReductionWindowStart"); err != nil {
+		return 0, fmt.Errorf("Could not get bond reduction window start: %w", err)
+	}
+	return (*value).Uint64(), nil
+}
+func BootstrapBondReductionWindowStart(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
+	return trustednodedao.BootstrapUint(rp, MinipoolSettingsContractName, BondReductionWindowStartPath, big.NewInt(int64(value)), opts)
+}
+func ProposeBondReductionWindowStart(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", BondReductionWindowStartPath), MinipoolSettingsContractName, BondReductionWindowStartPath, big.NewInt(int64(value)), opts)
+}
+func EstimateProposeBondReductionWindowStartGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", BondReductionWindowStartPath), MinipoolSettingsContractName, BondReductionWindowStartPath, big.NewInt(int64(value)), opts)
+}
+
+// The amount of time, in seconds, a minipool has to reduce its bond once it has passed the check window
+func GetBondReductionWindowLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := minipoolSettingsContract.Call(opts, value, "getBondReductionWindowLength"); err != nil {
+		return 0, fmt.Errorf("Could not get bond reduction window length: %w", err)
+	}
+	return (*value).Uint64(), nil
+}
+func BootstrapBondReductionWindowLength(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
+	return trustednodedao.BootstrapUint(rp, MinipoolSettingsContractName, BondReductionWindowLengthPath, big.NewInt(int64(value)), opts)
+}
+func ProposeBondReductionWindowLength(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", BondReductionWindowLengthPath), MinipoolSettingsContractName, BondReductionWindowLengthPath, big.NewInt(int64(value)), opts)
+}
+func EstimateProposeBondReductionWindowLengthGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", BondReductionWindowLengthPath), MinipoolSettingsContractName, BondReductionWindowLengthPath, big.NewInt(int64(value)), opts)
 }
 
 // Get contracts
