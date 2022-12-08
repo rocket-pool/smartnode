@@ -282,7 +282,10 @@ type GetTNDAOProposalSettingsResponse struct {
 	ActionTime    uint64 `json:"actionTime"`
 }
 type GetTNDAOMinipoolSettingsResponse struct {
-	Status      string `json:"status"`
-	Error       string `json:"error"`
-	ScrubPeriod uint64 `json:"scrubPeriod"`
+	Status                    string `json:"status"`
+	Error                     string `json:"error"`
+	ScrubPeriod               uint64 `json:"scrubPeriod"`
+	ScrubPenaltyEnabled       bool   `json:"scrubPenaltyEnabled"`
+	BondReductionWindowStart  uint64 `json:"bondReductionWindowStart"`
+	BondReductionWindowLength uint64 `json:"bondReductionWindowLength"`
 }

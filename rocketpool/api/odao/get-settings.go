@@ -132,8 +132,23 @@ func getMinipoolSettings(c *cli.Context) (*api.GetTNDAOMinipoolSettingsResponse,
 	if err != nil {
 		return nil, fmt.Errorf("Error getting scrub period: %w", err)
 	}
+	scrubPenaltyEnabled, err := trustednode.GetScrubPenaltyEnabled(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting scrub penalty flag: %w", err)
+	}
+	bondReductionWindowStart, err := trustednode.GetBondReductionWindowStart(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting bond reduction window start: %w", err)
+	}
+	bondReductionWindowLength, err := trustednode.GetBondReductionWindowLength(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting bond reduction window length: %w", err)
+	}
 
 	response.ScrubPeriod = scrubPeriod
+	response.ScrubPenaltyEnabled = scrubPenaltyEnabled
+	response.BondReductionWindowStart = bondReductionWindowStart
+	response.BondReductionWindowLength = bondReductionWindowLength
 
 	// Return response
 	return &response, nil
