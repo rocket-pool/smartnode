@@ -95,10 +95,13 @@ type RocketPoolConfig struct {
 	// Consensus client configurations
 	ConsensusCommon    *ConsensusCommonConfig    `yaml:"consensusCommon,omitempty"`
 	Lighthouse         *LighthouseConfig         `yaml:"lighthouse,omitempty"`
+	Lodestar           *LodestarConfig           `yaml:"lodestar,omitempty"`
 	Nimbus             *NimbusConfig             `yaml:"nimbus,omitempty"`
 	Prysm              *PrysmConfig              `yaml:"prysm,omitempty"`
 	Teku               *TekuConfig               `yaml:"teku,omitempty"`
 	ExternalLighthouse *ExternalLighthouseConfig `yaml:"externalLighthouse,omitempty"`
+	ExternalNimbus     *ExternalNimbusConfig     `yaml:"externalNimbus,omitempty"`
+	ExternalLodestar   *ExternalLodestarConfig   `yaml:"externalLodestar,omitempty"`
 	ExternalPrysm      *ExternalPrysmConfig      `yaml:"externalPrysm,omitempty"`
 	ExternalTeku       *ExternalTekuConfig       `yaml:"externalTeku,omitempty"`
 
@@ -263,6 +266,10 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Description: "Lighthouse is a Consensus client with a heavy focus on speed and security. The team behind it, Sigma Prime, is an information security and software engineering firm who have funded Lighthouse along with the Ethereum Foundation, Consensys, and private individuals. Lighthouse is built in Rust and offered under an Apache 2.0 License.",
 				Value:       config.ConsensusClient_Lighthouse,
 			}, {
+				Name:        "Lodestar",
+				Description: "Lodestar is the fifth open-source Ethereum consensus client. It is written in Typescript maintained by ChainSafe Systems. Lodestar, their flagship product, is a production-capable Beacon Chain and Validator Client uniquely situated as the go-to for researchers and developers for rapid prototyping and browser usage.",
+				Value:       config.ConsensusClient_Lodestar,
+			}, {
 				Name:        "Nimbus",
 				Description: "Nimbus is a Consensus client implementation that strives to be as lightweight as possible in terms of resources used. This allows it to perform well on embedded systems, resource-restricted devices -- including Raspberry Pis and mobile devices -- and multi-purpose servers.",
 				Value:       config.ConsensusClient_Nimbus,
@@ -291,6 +298,14 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Lighthouse",
 				Description: "Select this if you will use Lighthouse as your Consensus client.",
 				Value:       config.ConsensusClient_Lighthouse,
+			}, {
+				Name:        "Lodestar",
+				Description: "Select this if you will use Lodestar as your Consensus client.",
+				Value:       config.ConsensusClient_Lodestar,
+			}, {
+				Name:        "Nimbus",
+				Description: "Select this if you will use Nimbus as your Consensus client.",
+				Value:       config.ConsensusClient_Nimbus,
 			}, {
 				Name:        "Prysm",
 				Description: "Select this if you will use Prysm as your Consensus client.",
@@ -437,10 +452,13 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	cfg.FallbackPrysm = NewFallbackPrysmConfig(cfg)
 	cfg.ConsensusCommon = NewConsensusCommonConfig(cfg)
 	cfg.Lighthouse = NewLighthouseConfig(cfg)
+	cfg.Lodestar = NewLodestarConfig(cfg)
 	cfg.Nimbus = NewNimbusConfig(cfg)
 	cfg.Prysm = NewPrysmConfig(cfg)
 	cfg.Teku = NewTekuConfig(cfg)
 	cfg.ExternalLighthouse = NewExternalLighthouseConfig(cfg)
+	cfg.ExternalLodestar = NewExternalLodestarConfig(cfg)
+	cfg.ExternalNimbus = NewExternalNimbusConfig(cfg)
 	cfg.ExternalPrysm = NewExternalPrysmConfig(cfg)
 	cfg.ExternalTeku = NewExternalTekuConfig(cfg)
 	cfg.Grafana = NewGrafanaConfig(cfg)
@@ -535,10 +553,13 @@ func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 		"externalExecution":  cfg.ExternalExecution,
 		"consensusCommon":    cfg.ConsensusCommon,
 		"lighthouse":         cfg.Lighthouse,
+		"lodestar":           cfg.Lodestar,
 		"nimbus":             cfg.Nimbus,
 		"prysm":              cfg.Prysm,
 		"teku":               cfg.Teku,
 		"externalLighthouse": cfg.ExternalLighthouse,
+		"externalLodestar":   cfg.ExternalLodestar,
+		"externalNimbus":     cfg.ExternalNimbus,
 		"externalPrysm":      cfg.ExternalPrysm,
 		"externalTeku":       cfg.ExternalTeku,
 		"fallbackNormal":     cfg.FallbackNormal,
@@ -636,6 +657,8 @@ func (cfg *RocketPoolConfig) GetSelectedConsensusClientConfig() (config.Consensu
 		switch client {
 		case config.ConsensusClient_Lighthouse:
 			return cfg.Lighthouse, nil
+		case config.ConsensusClient_Lodestar:
+			return cfg.Lodestar, nil
 		case config.ConsensusClient_Nimbus:
 			return cfg.Nimbus, nil
 		case config.ConsensusClient_Prysm:
@@ -651,6 +674,10 @@ func (cfg *RocketPoolConfig) GetSelectedConsensusClientConfig() (config.Consensu
 		switch client {
 		case config.ConsensusClient_Lighthouse:
 			return cfg.ExternalLighthouse, nil
+		case config.ConsensusClient_Lodestar:
+			return cfg.ExternalLodestar, nil
+		case config.ConsensusClient_Nimbus:
+			return cfg.ExternalNimbus, nil
 		case config.ConsensusClient_Prysm:
 			return cfg.ExternalPrysm, nil
 		case config.ConsensusClient_Teku:
@@ -675,11 +702,7 @@ func (cfg *RocketPoolConfig) IsDoppelgangerEnabled() (bool, error) {
 	case config.Mode_Local:
 		client := cfg.ConsensusClient.Value.(config.ConsensusClient)
 		switch client {
-		case config.ConsensusClient_Lighthouse:
-			return cfg.ConsensusCommon.DoppelgangerDetection.Value.(bool), nil
-		case config.ConsensusClient_Nimbus:
-			return cfg.ConsensusCommon.DoppelgangerDetection.Value.(bool), nil
-		case config.ConsensusClient_Prysm:
+		case config.ConsensusClient_Lighthouse, config.ConsensusClient_Lodestar, config.ConsensusClient_Nimbus, config.ConsensusClient_Prysm:
 			return cfg.ConsensusCommon.DoppelgangerDetection.Value.(bool), nil
 		case config.ConsensusClient_Teku:
 			return false, nil
@@ -692,6 +715,10 @@ func (cfg *RocketPoolConfig) IsDoppelgangerEnabled() (bool, error) {
 		switch client {
 		case config.ConsensusClient_Lighthouse:
 			return cfg.ExternalLighthouse.DoppelgangerDetection.Value.(bool), nil
+		case config.ConsensusClient_Lodestar:
+			return cfg.ExternalLodestar.DoppelgangerDetection.Value.(bool), nil
+		case config.ConsensusClient_Nimbus:
+			return cfg.ExternalNimbus.DoppelgangerDetection.Value.(bool), nil
 		case config.ConsensusClient_Prysm:
 			return cfg.ExternalPrysm.DoppelgangerDetection.Value.(bool), nil
 		case config.ConsensusClient_Teku:
@@ -866,6 +893,8 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		switch consensusClient {
 		case config.ConsensusClient_Lighthouse:
 			config.AddParametersToEnvVars(cfg.Lighthouse.GetParameters(), envVars)
+		case config.ConsensusClient_Lodestar:
+			config.AddParametersToEnvVars(cfg.Lodestar.GetParameters(), envVars)
 		case config.ConsensusClient_Nimbus:
 			config.AddParametersToEnvVars(cfg.Nimbus.GetParameters(), envVars)
 		case config.ConsensusClient_Prysm:
@@ -880,6 +909,10 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		switch consensusClient {
 		case config.ConsensusClient_Lighthouse:
 			config.AddParametersToEnvVars(cfg.ExternalLighthouse.GetParameters(), envVars)
+		case config.ConsensusClient_Lodestar:
+			config.AddParametersToEnvVars(cfg.ExternalLodestar.GetParameters(), envVars)
+		case config.ConsensusClient_Nimbus:
+			config.AddParametersToEnvVars(cfg.ExternalNimbus.GetParameters(), envVars)
 		case config.ConsensusClient_Prysm:
 			config.AddParametersToEnvVars(cfg.ExternalPrysm.GetParameters(), envVars)
 		case config.ConsensusClient_Teku:
@@ -894,7 +927,14 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 	envVars["ROCKET_POOL_VERSION"] = versionString
 	if len(versionString) < 8 {
 		ecInitial := strings.ToUpper(string(envVars["EC_CLIENT"][0]))
-		ccInitial := strings.ToUpper(string(envVars["CC_CLIENT"][0]))
+
+		var ccInitial string
+		switch consensusClient {
+		case config.ConsensusClient_Lodestar:
+			ccInitial = "S" // Lodestar is special because it conflicts with Lighthouse
+		default:
+			ccInitial = strings.ToUpper(string(envVars["CC_CLIENT"][0]))
+		}
 		identifier = fmt.Sprintf("-%s%s", ecInitial, ccInitial)
 	}
 

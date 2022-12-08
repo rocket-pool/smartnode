@@ -23,6 +23,8 @@ type MinipoolPerformanceFile struct {
 // Minipool stats
 type SmoothingPoolMinipoolPerformance struct {
 	Pubkey                  string   `json:"pubkey"`
+	StartSlot               uint64   `json:"startSlot,omitempty"`
+	EndSlot                 uint64   `json:"endSlot,omitempty"`
 	ActiveFraction          float64  `json:"activeFraction,omitempty"`
 	SuccessfulAttestations  uint64   `json:"successfulAttestations"`
 	MissedAttestations      uint64   `json:"missedAttestations"`

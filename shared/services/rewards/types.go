@@ -38,7 +38,8 @@ type MinipoolInfo struct {
 	MinipoolShare           *big.Int
 	MissingAttestationSlots map[uint64]bool
 	WasActive               bool
-	ActiveSlots             uint64
+	StartSlot               uint64
+	EndSlot                 uint64
 }
 
 type IntervalDutiesInfo struct {
@@ -64,6 +65,8 @@ type NodeSmoothingDetails struct {
 	StatusChangeTime time.Time
 	Minipools        []*MinipoolInfo
 	EligibleSeconds  *big.Int
+	StartSlot        uint64
+	EndSlot          uint64
 	SmoothingPoolEth *big.Int
 	RewardsNetwork   uint64
 }

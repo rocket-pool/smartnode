@@ -78,11 +78,11 @@ func (home *settingsHome) createContent() {
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 			if mainText == home.fallbackPage.page.title {
-				// Temp block of Nimbus for the fallback page until it supports fallback
+				// Temp block of Lodestar for the fallback page until it supports fallback
 				cc, _ := home.md.Config.GetSelectedConsensusClient()
 				switch cc {
-				case cfgtypes.ConsensusClient_Nimbus:
-					layout.descriptionBox.SetText("You have Nimbus selected for your Consensus client.\n\nNimbus does not support fallback clients at this time, so this option is disabled.")
+				case cfgtypes.ConsensusClient_Lodestar:
+					layout.descriptionBox.SetText("You have Lodestar selected for your Consensus client.\n\nLodestar does not support fallback clients at this time, so this option is disabled.")
 					return
 				}
 			}
@@ -107,10 +107,10 @@ func (home *settingsHome) createContent() {
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
 		if s1 == home.fallbackPage.page.title {
-			// Temp block of Nimbus for the fallback page until it supports fallback
+			// Temp block of Lodestar for the fallback page until it supports fallback
 			cc, _ := home.md.Config.GetSelectedConsensusClient()
 			switch cc {
-			case cfgtypes.ConsensusClient_Nimbus:
+			case cfgtypes.ConsensusClient_Lodestar:
 				return
 			}
 		}

@@ -148,14 +148,11 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== MEV-Boost Updates ===%s\n", colorGreen, colorReset)
-	fmt.Println("MEV-Boost is now opt-out instead of opt-in. Furthermore, there is a new way to select relays: you can now select \"profiles\" instead of individual relays. As new relays are added to the Smartnode, any that belong to the profiles you've selected will automatically be enabled for you.\nNOTE: everyone will have to configure either profile-mode or individual-relay mode when first upgrading from v1.6, even if you had previously configured MEV-Boost.\n")
+	fmt.Printf("%s=== Nimbus Changes ===%s\n", colorGreen, colorReset)
+	fmt.Println("Nimbus now supports running a separate Validator Client, which means it now supports fallback clients! If you're using Nimbus and would like to set up a fallback client pair for your node, simply go to the Consensus Client section of the `service config` TUI - you can now add one just like with the other clients!\nNote that if you want to check on your validator performance, you will need to look at the validator container instead of the eth2 container like you used to do.\n")
 
-	fmt.Printf("%s=== ENS Support ===%s\n", colorGreen, colorReset)
-	fmt.Println("`rocketpool node set-withdrawal-address`, `rocketpool node send`, and `rocketpool node set-voting-delegate` can now use ENS names instead of addresses! This requires your Execution Client to be online and synced.\nAlso, use the `rocketpool wallet set-ens-name` command to confirm an ENS domain or subdomain name that you assign to your node wallet. Once you do this, you can refer to your node's address by its ENS name on explorers like Etherscan.\n")
-
-	fmt.Printf("%s=== Modern vs. Portable ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now automatically checks your node's CPU features and defaults to either the \"modern\" optimized version of certain clients, or the more generic \"portable\" version based on what your machine supports. This only applies to MEV-Boost and Lighthouse.\n")
+	fmt.Printf("%s=== Lodestar ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode now supports Lodestar - the Ethereum Consensus Client written in Typescript! If you'd like to switch to Lodestar, simply follow the instructions for changing consensus clients: https://docs.rocketpool.net/guides/node/change-clients.html#changing-consensus-clients\n")
 
 	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
 	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
@@ -646,6 +643,55 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		}
 	}
 
+	// Force stop eth2 if using Nimbus prior to v1.8.0 so it ensures the container is shut down and thus lets go of the validator keys and slashing database
+	isLocalNimbus := (cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ConsensusClient.Value.(cfgtypes.ConsensusClient) == cfgtypes.ConsensusClient_Nimbus)
+	if isUpdate && !isNew && !cfg.IsNativeMode && isLocalNimbus {
+		previousVersion := "0.0.0"
+		backupCfg, err := rp.LoadBackupConfig()
+		if err != nil {
+			fmt.Printf("WARNING: Couldn't determine previous Smartnode version from backup settings: %s\n", err.Error())
+		} else if backupCfg != nil {
+			previousVersion = backupCfg.Version
+		}
+
+		oldVersion, err := version.NewVersion(strings.TrimPrefix(previousVersion, "v"))
+		if err != nil {
+			fmt.Printf("WARNING: Backup configuration states the previous Smartnode installation used version %s, which is not a valid version\n", previousVersion)
+			oldVersion, _ = version.NewVersion("0.0.0")
+		}
+
+		vulnerableConstraint, _ := version.NewConstraint("< 1.8.0")
+		if vulnerableConstraint.Check(oldVersion) {
+			fmt.Printf("%sNOTE: You are configured to use Nimbus in local mode. Starting with v1.8.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does. Due to this, we must restart Nimbus as part of the upgrade.%s\n\n", colorYellow, colorReset)
+
+			// Ensure the eth2 and validator containers have stopped
+			prefix, err := getContainerPrefix(rp)
+			if err != nil {
+				return fmt.Errorf("error getting container prefix: %w", err)
+			}
+
+			eth2ContainerName := prefix + BeaconContainerSuffix
+			fmt.Printf("Stopping %s...\n", eth2ContainerName)
+			out, err := rp.StopContainer(eth2ContainerName)
+			if err != nil {
+				return fmt.Errorf("error stopping %s: %w", eth2ContainerName, err)
+			}
+			if out != eth2ContainerName {
+				return fmt.Errorf("unexpected output when trying to stop %s: [%s]", eth2ContainerName, out)
+			}
+
+			validatorContainerName := prefix + ValidatorContainerSuffix
+			fmt.Printf("Stopping %s...\n", validatorContainerName)
+			out, err = rp.StopContainer(validatorContainerName)
+			if err != nil {
+				return fmt.Errorf("error stopping %s: %w", validatorContainerName, err)
+			}
+			if out != validatorContainerName {
+				return fmt.Errorf("unexpected output when trying to stop %s: [%s]", validatorContainerName, out)
+			}
+		}
+	}
+
 	// Write a note on doppelganger protection
 	doppelgangerEnabled, err := cfg.IsDoppelgangerEnabled()
 	if err != nil {
@@ -773,6 +819,12 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 	} else if currentValidatorName == "" {
 		fmt.Println("This is the first time starting Rocket Pool - no slashing prevention delay necessary.")
 	} else {
+
+		consensusClient, _ := cfg.GetSelectedConsensusClient()
+		// Warn about Lodestar
+		if consensusClient == cfgtypes.ConsensusClient_Lodestar {
+			fmt.Printf("%sNOTE:\nIf this is your first time running Lodestar and you have existing minipools, you must run `rocketpool wallet rebuild` after the Smartnode starts to generate the validator keys for it.\nIf you have run it before or you don't have any minipools, you can ignore this message.%s\n\n", colorYellow, colorReset)
+		}
 
 		// Get the time that the container responsible for validator duties exited
 		validatorDutyContainerName, err := getContainerNameForValidatorDuties(currentValidatorName, rp)
@@ -1217,6 +1269,8 @@ func serviceVersion(c *cli.Context) error {
 		switch eth2Client {
 		case cfgtypes.ConsensusClient_Lighthouse:
 			eth2ClientString = fmt.Sprintf(format, "Lighthouse", cfg.Lighthouse.ContainerTag.Value.(string))
+		case cfgtypes.ConsensusClient_Lodestar:
+			eth2ClientString = fmt.Sprintf(format, "Lodestar", cfg.Lodestar.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Nimbus:
 			eth2ClientString = fmt.Sprintf(format, "Nimbus", cfg.Nimbus.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Prysm:
@@ -1234,6 +1288,8 @@ func serviceVersion(c *cli.Context) error {
 		switch eth2Client {
 		case cfgtypes.ConsensusClient_Lighthouse:
 			eth2ClientString = fmt.Sprintf(format, "Lighthouse", cfg.ExternalLighthouse.ContainerTag.Value.(string))
+		case cfgtypes.ConsensusClient_Lodestar:
+			eth2ClientString = fmt.Sprintf(format, "Lodestar", cfg.ExternalLodestar.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Prysm:
 			eth2ClientString = fmt.Sprintf(format, "Prysm", cfg.ExternalPrysm.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Teku:

@@ -69,6 +69,7 @@ const (
 const (
 	ConsensusClient_Unknown    ConsensusClient = ""
 	ConsensusClient_Lighthouse ConsensusClient = "lighthouse"
+	ConsensusClient_Lodestar   ConsensusClient = "lodestar"
 	ConsensusClient_Nimbus     ConsensusClient = "nimbus"
 	ConsensusClient_Prysm      ConsensusClient = "prysm"
 	ConsensusClient_Teku       ConsensusClient = "teku"
