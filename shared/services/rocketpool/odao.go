@@ -557,6 +557,48 @@ func (c *Client) CanProposeTNDAOSettingScrubPeriod(scrubPeriod uint64) (api.CanP
 	}
 	return response, nil
 }
+func (c *Client) CanProposeTNDAOSettingScrubPenaltyEnabled(enabled bool) (api.CanProposeTNDAOSettingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-scrub-penalty-enabled %t", enabled))
+	if err != nil {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting minipool.scrub.penalty.enabled: %w", err)
+	}
+	var response api.CanProposeTNDAOSettingResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting minipool.scrub.penalty.enabled response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting minipool.scrub.penalty.enabled: %s", response.Error)
+	}
+	return response, nil
+}
+func (c *Client) CanProposeTNDAOSettingBondReductionWindowStart(windowStart uint64) (api.CanProposeTNDAOSettingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-bond-reduction-window-start %d", windowStart))
+	if err != nil {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting minipool.bond.reduction.window.start: %w", err)
+	}
+	var response api.CanProposeTNDAOSettingResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting minipool.bond.reduction.window.start response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting minipool.bond.reduction.window.start: %s", response.Error)
+	}
+	return response, nil
+}
+func (c *Client) CanProposeTNDAOSettingBondReductionWindowLength(windowLength uint64) (api.CanProposeTNDAOSettingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-bond-reduction-window-length %d", windowLength))
+	if err != nil {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting minipool.bond.reduction.window.length: %w", err)
+	}
+	var response api.CanProposeTNDAOSettingResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting minipool.bond.reduction.window.length response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting minipool.bond.reduction.window.length: %s", response.Error)
+	}
+	return response, nil
+}
 
 // Propose a setting update
 func (c *Client) ProposeTNDAOSettingMembersQuorum(quorum float64) (api.ProposeTNDAOSettingMembersQuorumResponse, error) {
@@ -682,6 +724,48 @@ func (c *Client) ProposeTNDAOSettingScrubPeriod(scrubPeriod uint64) (api.Propose
 	}
 	if response.Error != "" {
 		return api.ProposeTNDAOSettingScrubPeriodResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.scrub.period: %s", response.Error)
+	}
+	return response, nil
+}
+func (c *Client) ProposeTNDAOSettingScrubPenaltyEnabled(enabled bool) (api.ProposeTNDAOSettingScrubPenaltyEnabledResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-scrub-penalty-enabled %t", enabled))
+	if err != nil {
+		return api.ProposeTNDAOSettingScrubPenaltyEnabledResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.scrub.penalty.enabled: %w", err)
+	}
+	var response api.ProposeTNDAOSettingScrubPenaltyEnabledResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ProposeTNDAOSettingScrubPenaltyEnabledResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting minipool.scrub.penalty.enabled response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ProposeTNDAOSettingScrubPenaltyEnabledResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.scrub.penalty.enabled: %s", response.Error)
+	}
+	return response, nil
+}
+func (c *Client) ProposeTNDAOSettingBondReductionWindowStart(windowStart uint64) (api.ProposeTNDAOSettingBondReductionWindowStartResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-bond-reduction-window-start %d", windowStart))
+	if err != nil {
+		return api.ProposeTNDAOSettingBondReductionWindowStartResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.bond.reduction.window.start: %w", err)
+	}
+	var response api.ProposeTNDAOSettingBondReductionWindowStartResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ProposeTNDAOSettingBondReductionWindowStartResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting minipool.bond.reduction.window.start response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ProposeTNDAOSettingBondReductionWindowStartResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.bond.reduction.window.start: %s", response.Error)
+	}
+	return response, nil
+}
+func (c *Client) ProposeTNDAOSettingBondReductionWindowLength(windowLength uint64) (api.ProposeTNDAOSettingBondReductionWindowLengthResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-bond-reduction-window-length %d", windowLength))
+	if err != nil {
+		return api.ProposeTNDAOSettingBondReductionWindowLengthResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.bond.reduction.window.length: %w", err)
+	}
+	var response api.ProposeTNDAOSettingBondReductionWindowLengthResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ProposeTNDAOSettingBondReductionWindowLengthResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting minipool.bond.reduction.window.length response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ProposeTNDAOSettingBondReductionWindowLengthResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.bond.reduction.window.length: %s", response.Error)
 	}
 	return response, nil
 }

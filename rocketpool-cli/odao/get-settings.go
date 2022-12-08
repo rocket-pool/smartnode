@@ -97,6 +97,9 @@ func getMinipoolSettings(c *cli.Context) error {
 
 	// Log & return
 	fmt.Printf("Scrub Period: %s\n", time.Duration(response.ScrubPeriod*1000000000))
+	fmt.Printf("Scrub Penalty Enabled: %t\n", response.ScrubPenaltyEnabled)
+	fmt.Printf("Bond Reduction Window Start: %s\n", time.Duration(response.BondReductionWindowStart*1000000000))
+	fmt.Printf("Bond Reduction Window Length: %s\n", time.Duration(response.BondReductionWindowLength*1000000000))
 	return nil
 
 }

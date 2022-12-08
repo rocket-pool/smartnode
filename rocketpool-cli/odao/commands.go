@@ -358,6 +358,61 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 								},
 							},
+							{
+								Name:      "scrub-penalty-enabled",
+								Aliases:   []string{"spe"},
+								Usage:     "Propose updating the minipool.scrub.penalty.enabled setting - format is true / false",
+								UsageText: "rocketpool odao propose setting scrub-penalty-enabled value",
+								Action: func(c *cli.Context) error {
+
+									// Validate args
+									if err := cliutils.ValidateArgCount(c, 1); err != nil {
+										return err
+									}
+									enabled, err := cliutils.ValidateBool("enabled", c.Args().Get(0))
+									if err != nil {
+										return err
+									}
+
+									// Run
+									return proposeSettingScrubPenaltyEnabled(c, enabled)
+
+								},
+							},
+							{
+								Name:      "bond-reduction-window-start",
+								Aliases:   []string{"brws"},
+								Usage:     "Propose updating the minipool.bond.reduction.window.start setting - format is e.g. 1h30m45s",
+								UsageText: "rocketpool odao propose setting bond-reduction-window-start value",
+								Action: func(c *cli.Context) error {
+
+									// Validate args
+									if err := cliutils.ValidateArgCount(c, 1); err != nil {
+										return err
+									}
+
+									// Run
+									return proposeSettingBondReductionWindowStart(c, c.Args().Get(0))
+
+								},
+							},
+							{
+								Name:      "bond-reduction-window-length",
+								Aliases:   []string{"brwl"},
+								Usage:     "Propose updating the minipool.bond.reduction.window.length setting - format is e.g. 1h30m45s",
+								UsageText: "rocketpool odao propose setting bond-reduction-window-length value",
+								Action: func(c *cli.Context) error {
+
+									// Validate args
+									if err := cliutils.ValidateArgCount(c, 1); err != nil {
+										return err
+									}
+
+									// Run
+									return proposeSettingBondReductionWindowLength(c, c.Args().Get(0))
+
+								},
+							},
 						},
 					},
 				},

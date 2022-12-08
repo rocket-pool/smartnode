@@ -261,6 +261,24 @@ type ProposeTNDAOSettingScrubPeriodResponse struct {
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
+type ProposeTNDAOSettingScrubPenaltyEnabledResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+type ProposeTNDAOSettingBondReductionWindowStartResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+type ProposeTNDAOSettingBondReductionWindowLengthResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
 
 type GetTNDAOMemberSettingsResponse struct {
 	Status              string   `json:"status"`
