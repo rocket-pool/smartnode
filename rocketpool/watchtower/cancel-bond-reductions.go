@@ -233,12 +233,7 @@ func (t *cancelBondReductions) checkBondReductions() error {
 			mi := mi
 			wg.Go(func() error {
 				address := addresses[mi]
-				mp, err := minipool.NewMinipool(t.rp, address, opts)
-				if err != nil {
-					return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
-				}
-
-				rawTime, err := mp.GetReduceBondTime(opts)
+				rawTime, err := minipool.GetReduceBondTime(t.rp, address, opts)
 				if err != nil {
 					return fmt.Errorf("error getting bond reduction time for minipool %s: %w", address.Hex(), err)
 				}
