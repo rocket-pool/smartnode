@@ -2,6 +2,7 @@ package minipool
 
 import (
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -29,6 +30,19 @@ func VoteCancelReduction(rp *rocketpool.RocketPool, minipoolAddress common.Addre
 		return common.Hash{}, fmt.Errorf("Could not vote to cancel bond reduction for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return tx.Hash(), nil
+}
+
+// Gets the time at which the MP owner started the bond reduction process
+func GetReduceBondTime(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	reduceBondTime := new(*big.Int)
+	if err := rocketMinipoolBondReducer.Call(opts, reduceBondTime, "getReduceBondTime", minipoolAddress); err != nil {
+		return nil, fmt.Errorf("Could not get reduce bond start time for minipool %s: %w", minipoolAddress.Hex(), err)
+	}
+	return *reduceBondTime, nil
 }
 
 // Get contracts

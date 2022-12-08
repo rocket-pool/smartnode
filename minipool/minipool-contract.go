@@ -549,15 +549,6 @@ func (mp *Minipool) VoteScrub(opts *bind.TransactOpts) (common.Hash, error) {
 	return tx.Hash(), nil
 }
 
-// Gets the time at which the MP owner started the bond reduction process
-func (mp *Minipool) GetReduceBondTime(opts *bind.CallOpts) (*big.Int, error) {
-	reduceBondTime := new(*big.Int)
-	if err := mp.Contract.Call(opts, reduceBondTime, "getReduceBondTime"); err != nil {
-		return nil, fmt.Errorf("Could not get reduce bond start time for minipool %s: %w", mp.Address.Hex(), err)
-	}
-	return *reduceBondTime, nil
-}
-
 // Estimate the gas required to promote a vacant minipool
 func (mp *Minipool) EstimatePromoteGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "promote")
