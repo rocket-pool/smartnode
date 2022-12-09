@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -46,16 +47,16 @@ func GetReduceBondCancelled(rp *rocketpool.RocketPool, minipoolAddress common.Ad
 }
 
 // Gets the time at which the MP owner started the bond reduction process
-func GetReduceBondTime(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetReduceBondTime(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
 	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
 	if err != nil {
-		return nil, err
+		return time.Time{}, err
 	}
 	reduceBondTime := new(*big.Int)
 	if err := rocketMinipoolBondReducer.Call(opts, reduceBondTime, "getReduceBondTime", minipoolAddress); err != nil {
-		return nil, fmt.Errorf("Could not get reduce bond start time for minipool %s: %w", minipoolAddress.Hex(), err)
+		return time.Time{}, fmt.Errorf("Could not get reduce bond time for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
-	return *reduceBondTime, nil
+	return time.Unix((*reduceBondTime).Int64(), 0), nil
 }
 
 // Estimate the gas required to begin a minipool bond reduction
