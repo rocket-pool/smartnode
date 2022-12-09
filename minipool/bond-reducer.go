@@ -32,6 +32,19 @@ func VoteCancelReduction(rp *rocketpool.RocketPool, minipoolAddress common.Addre
 	return tx.Hash(), nil
 }
 
+// Gets whether or not the bond reduction process for this minipool has already been cancelled
+func GetReduceBondCancelled(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (bool, error) {
+	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
+	if err != nil {
+		return false, err
+	}
+	isCancelled := new(bool)
+	if err := rocketMinipoolBondReducer.Call(opts, isCancelled, "getBondReduceCancelled", minipoolAddress); err != nil {
+		return false, fmt.Errorf("Could not get bond reduce cancelled status for minipool %s: %w", minipoolAddress.Hex(), err)
+	}
+	return *isCancelled, nil
+}
+
 // Gets the time at which the MP owner started the bond reduction process
 func GetReduceBondTime(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
 	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
