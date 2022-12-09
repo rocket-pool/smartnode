@@ -39,7 +39,7 @@ func validateMinipoolOwner(mp *minipool.Minipool, nodeAddress common.Address) er
 }
 
 // Get all node minipool details
-func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address) ([]api.MinipoolDetails, error) {
+func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, isAtlasDeployed bool) ([]api.MinipoolDetails, error) {
 
 	// Data
 	var wg1 errgroup.Group
@@ -109,7 +109,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
 			wg.Go(func() error {
 				address := addresses[mi]
 				validator := validators[address]
-				mpDetails, err := getMinipoolDetails(rp, address, validator, eth2Config, currentEpoch, currentBlock)
+				mpDetails, err := getMinipoolDetails(rp, address, validator, eth2Config, currentEpoch, currentBlock, isAtlasDeployed)
 				if err == nil {
 					details[mi] = mpDetails
 				}
@@ -161,7 +161,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
 }
 
 // Get a minipool's details
-func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, currentEpoch, currentBlock uint64) (api.MinipoolDetails, error) {
+func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, currentEpoch, currentBlock uint64, isAtlasDeployed bool) (api.MinipoolDetails, error) {
 
 	// Create minipool
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
@@ -239,6 +239,19 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 		details.Queue, err = minipool.GetQueueDetails(rp, mp, nil)
 		return err
 	})
+
+	if isAtlasDeployed {
+		wg.Go(func() error {
+			var err error
+			details.ReduceBondTime, err = minipool.GetReduceBondTime(rp, minipoolAddress, nil)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			details.ReduceBondCancelled, err = minipool.GetReduceBondCancelled(rp, minipoolAddress, nil)
+			return err
+		})
+	}
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {

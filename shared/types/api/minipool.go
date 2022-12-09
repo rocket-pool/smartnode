@@ -13,10 +13,11 @@ import (
 )
 
 type MinipoolStatusResponse struct {
-	Status         string            `json:"status"`
-	Error          string            `json:"error"`
-	Minipools      []MinipoolDetails `json:"minipools"`
-	LatestDelegate common.Address    `json:"latestDelegate"`
+	Status          string            `json:"status"`
+	Error           string            `json:"error"`
+	Minipools       []MinipoolDetails `json:"minipools"`
+	LatestDelegate  common.Address    `json:"latestDelegate"`
+	IsAtlasDeployed bool              `json:"isAtlasDeployed"`
 }
 type MinipoolDetails struct {
 	Address             common.Address         `json:"address"`
@@ -39,6 +40,8 @@ type MinipoolDetails struct {
 	EffectiveDelegate   common.Address         `json:"effectiveDelegate"`
 	TimeUntilDissolve   time.Duration          `json:"timeUntilDissolve"`
 	Penalties           uint64                 `json:"penalties"`
+	ReduceBondTime      time.Time              `json:"reduceBondTime"`
+	ReduceBondCancelled bool                   `json:"reduceBondCancelled"`
 }
 type ValidatorDetails struct {
 	Exists      bool     `json:"exists"`
@@ -214,4 +217,26 @@ type GetVanityArtifactsResponse struct {
 	NodeAddress            common.Address `json:"nodeAddress"`
 	MinipoolFactoryAddress common.Address `json:"minipoolFactoryAddress"`
 	InitHash               common.Hash    `json:"initHash"`
+}
+
+type CanBeginReduceBondAmountResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type BeginReduceBondAmountResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type CanReduceBondAmountResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type ReduceBondAmountResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
 }

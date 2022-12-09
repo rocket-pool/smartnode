@@ -359,3 +359,67 @@ func (c *Client) GetVanityArtifacts(depositAmount *big.Int, nodeAddress string) 
 	}
 	return response, nil
 }
+
+// Check whether the minipool can begin the bond reduction process
+func (c *Client) CanBeginReduceBondAmount(address common.Address, newBondAmountWei *big.Int) (api.CanBeginReduceBondAmountResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-begin-reduce-bond-amount %s %s", address.Hex(), newBondAmountWei.String()))
+	if err != nil {
+		return api.CanBeginReduceBondAmountResponse{}, fmt.Errorf("Could not get can begin reduce bond amount status: %w", err)
+	}
+	var response api.CanBeginReduceBondAmountResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanBeginReduceBondAmountResponse{}, fmt.Errorf("Could not decode can begin reduce bond status amount response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanBeginReduceBondAmountResponse{}, fmt.Errorf("Could not get can begin reduce bond amount status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Begin the bond reduction process for a minipool
+func (c *Client) BeginReduceBondAmount(address common.Address, newBondAmountWei *big.Int) (api.BeginReduceBondAmountResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool begin-reduce-bond-amount %s %s", address.Hex(), newBondAmountWei.String()))
+	if err != nil {
+		return api.BeginReduceBondAmountResponse{}, fmt.Errorf("Could not begin reduce bond amount: %w", err)
+	}
+	var response api.BeginReduceBondAmountResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.BeginReduceBondAmountResponse{}, fmt.Errorf("Could not decode begin reduce bond amount response: %w", err)
+	}
+	if response.Error != "" {
+		return api.BeginReduceBondAmountResponse{}, fmt.Errorf("Could not begin reduce bond amount: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check if a minipool's bond can be reduced
+func (c *Client) CanReduceBondAmount(address common.Address) (api.CanReduceBondAmountResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-reduce-bond-amount %s", address.Hex()))
+	if err != nil {
+		return api.CanReduceBondAmountResponse{}, fmt.Errorf("Could not get can reduce bond amount status: %w", err)
+	}
+	var response api.CanReduceBondAmountResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanReduceBondAmountResponse{}, fmt.Errorf("Could not decode can reduce bond amount response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanReduceBondAmountResponse{}, fmt.Errorf("Could not get can reduce bond amount status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Reduce a minipool's bond
+func (c *Client) ReduceBondAmount(address common.Address) (api.ReduceBondAmountResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool reduce-bond-amount %s", address.Hex()))
+	if err != nil {
+		return api.ReduceBondAmountResponse{}, fmt.Errorf("Could not reduce bond amount: %w", err)
+	}
+	var response api.ReduceBondAmountResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ReduceBondAmountResponse{}, fmt.Errorf("Could not decode reduce bond amount response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ReduceBondAmountResponse{}, fmt.Errorf("Could not reduce bond amount: %s", response.Error)
+	}
+	return response, nil
+}

@@ -237,7 +237,7 @@ func (t *cancelBondReductions) checkBondReductions() error {
 				if err != nil {
 					return fmt.Errorf("error getting bond reduction time for minipool %s: %w", address.Hex(), err)
 				}
-				reductionMpTimes[mi] = rawTime.Int64()
+				reductionMpTimes[mi] = rawTime.Unix()
 				return nil
 			})
 		}

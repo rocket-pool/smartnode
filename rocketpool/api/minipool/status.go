@@ -7,6 +7,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
@@ -34,12 +35,18 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 	// Response
 	response := api.MinipoolStatusResponse{}
 
+	// Check if Atlas is deployed
+	response.IsAtlasDeployed, err = rputils.IsAtlasDeployed(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
+	}
+
 	// Get minipool details
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
 	}
-	details, err := getNodeMinipoolDetails(rp, bc, nodeAccount.Address)
+	details, err := getNodeMinipoolDetails(rp, bc, nodeAccount.Address, response.IsAtlasDeployed)
 	if err != nil {
 		return nil, err
 	}

@@ -546,6 +546,100 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "can-begin-reduce-bond-amount",
+				Usage:     "Check whether the minipool can begin the bond reduction process",
+				UsageText: "rocketpool api minipool can-begin-reduce-bond-amount minipool-address new-bond-amount-wei",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					newBondAmountWei, err := cliutils.ValidateWeiAmount("new bond amount", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canBeginReduceBondAmount(c, minipoolAddress, newBondAmountWei))
+					return nil
+
+				},
+			},
+			{
+				Name:      "begin-reduce-bond-amount",
+				Usage:     "Begin the bond reduction process for a minipool",
+				UsageText: "rocketpool api minipool begin-reduce-bond-amount minipool-address new-bond-amount-wei",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					newBondAmountWei, err := cliutils.ValidateWeiAmount("new bond amount", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(beginReduceBondAmount(c, minipoolAddress, newBondAmountWei))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-reduce-bond-amount",
+				Usage:     "Check if a minipool's bond can be reduced",
+				UsageText: "rocketpool api minipool can-reduce-bond-amount minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canReduceBondAmount(c, minipoolAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "reduce-bond-amount",
+				Usage:     "Reduce a minipool's bond",
+				UsageText: "rocketpool api minipool reduce-bond-amount minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(reduceBondAmount(c, minipoolAddress))
+					return nil
+
+				},
+			},
 		},
 	})
 }
