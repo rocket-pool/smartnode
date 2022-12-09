@@ -127,7 +127,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 			{
 				Name:      "reduce-bond",
-				Aliases:   []string{"bbr"},
+				Aliases:   []string{"rb"},
 				Usage:     "Manually completes the ETH bond reduction process for a minipool from 16 ETH down to 8 ETH once it is eligible. Please run `begin-bond-reduction` first to start this process.",
 				UsageText: "rocketpool minipool reduce-bond [options]",
 				Flags: []cli.Flag{
