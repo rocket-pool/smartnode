@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -63,7 +64,10 @@ func beginReduceBondAmount(c *cli.Context) error {
 	reduceableMinipools := []api.MinipoolDetails{}
 	for _, minipool := range status.Minipools {
 		nodeDepositBalance := eth.WeiToEth(minipool.Node.DepositBalance)
-		if nodeDepositBalance == 16 && time.Since(minipool.ReduceBondTime) > bondReductionTimeout && !minipool.ReduceBondCancelled {
+		if nodeDepositBalance == 16 &&
+			time.Since(minipool.ReduceBondTime) > bondReductionTimeout &&
+			!minipool.ReduceBondCancelled &&
+			minipool.Status.Status == types.Staking {
 			reduceableMinipools = append(reduceableMinipools, minipool)
 		}
 	}
