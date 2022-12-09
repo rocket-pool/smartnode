@@ -13,9 +13,6 @@ import (
 func getMemberSettings(c *cli.Context) (*api.GetTNDAOMemberSettingsResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -68,9 +65,6 @@ func getMemberSettings(c *cli.Context) (*api.GetTNDAOMemberSettingsResponse, err
 func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -117,9 +111,6 @@ func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse,
 func getMinipoolSettings(c *cli.Context) (*api.GetTNDAOMinipoolSettingsResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
