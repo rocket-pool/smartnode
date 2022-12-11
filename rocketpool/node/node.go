@@ -34,6 +34,7 @@ const (
 	MetricsColor                 = color.FgHiYellow
 	ManageFeeRecipientColor      = color.FgHiCyan
 	PromoteMinipoolsColor        = color.FgMagenta
+	ReduceBondAmountColor        = color.FgWhite
 	ErrorColor                   = color.FgRed
 	WarningColor                 = color.FgYellow
 )
@@ -90,6 +91,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	reduceBonds, err := newReduceBonds(c, log.NewColorLogger(ReduceBondAmountColor))
+	if err != nil {
+		return err
+	}
 
 	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
@@ -125,6 +130,12 @@ func run(c *cli.Context) error {
 
 					// Run the minipool stake check
 					if err := stakePrelaunchMinipools.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+
+					// Run the reduce bond check
+					if err := reduceBonds.run(); err != nil {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
