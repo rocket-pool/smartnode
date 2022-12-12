@@ -499,6 +499,15 @@ func (mp *Minipool) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, e
 	return *address, nil
 }
 
+// Get the version of the minipool contract
+func (mp *Minipool) GetVersion(opts *bind.CallOpts) (uint8, error) {
+	version := new(uint8)
+	if err := mp.Contract.Call(opts, version, "version"); err != nil {
+		return 0, fmt.Errorf("Could not get minipool version: %w", err)
+	}
+	return *version, nil
+}
+
 // Given a validator balance, calculates how much belongs to the node taking into consideration rewards and penalties
 func (mp *Minipool) CalculateNodeShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
 	nodeAmount := new(*big.Int)
