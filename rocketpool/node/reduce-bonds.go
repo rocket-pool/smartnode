@@ -287,8 +287,14 @@ func (t *reduceBonds) reduceBond(mp minipoolBondReductionDetails, windowStart ti
 		return false, err
 	}
 
+	// Make the minipool binding
+	mpBinding, err := minipool.NewMinipool(t.rp, mp.Address, nil)
+	if err != nil {
+		return false, fmt.Errorf("error creating minipool binding for %s: %w", mp.Address.Hex(), err)
+	}
+
 	// Get the gas limit
-	gasInfo, err := minipool.EstimateReduceBondAmountGas(t.rp, mp.Address, opts)
+	gasInfo, err := mpBinding.EstimateReduceBondAmountGas(opts)
 	if err != nil {
 		return false, fmt.Errorf("could not estimate the gas required to reduce bond: %w", err)
 	}
@@ -328,7 +334,7 @@ func (t *reduceBonds) reduceBond(mp minipoolBondReductionDetails, windowStart ti
 	opts.GasLimit = gas.Uint64()
 
 	// Reduce bond
-	hash, err := minipool.ReduceBondAmount(t.rp, mp.Address, opts)
+	hash, err := mpBinding.ReduceBondAmount(opts)
 	if err != nil {
 		return false, err
 	}

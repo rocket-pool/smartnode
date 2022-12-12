@@ -100,12 +100,18 @@ func canReduceBondAmount(c *cli.Context, minipoolAddress common.Address) (*api.C
 	// Response
 	response := api.CanReduceBondAmountResponse{}
 
+	// Make the minipool binding
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating minipool binding for %s: %w", minipoolAddress.Hex(), err)
+	}
+
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := minipool.EstimateReduceBondAmountGas(rp, minipoolAddress, opts)
+	gasInfo, err := mp.EstimateReduceBondAmountGas(opts)
 	if err == nil {
 		response.GasInfo = gasInfo
 	}
@@ -131,7 +137,13 @@ func reduceBondAmount(c *cli.Context, minipoolAddress common.Address) (*api.Redu
 	// Response
 	response := api.ReduceBondAmountResponse{}
 
-	// Get gas estimate
+	// Make the minipool binding
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating minipool binding for %s: %w", minipoolAddress.Hex(), err)
+	}
+
+	// Get the node transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
@@ -144,7 +156,7 @@ func reduceBondAmount(c *cli.Context, minipoolAddress common.Address) (*api.Redu
 	}
 
 	// Start bond reduction
-	hash, err := minipool.ReduceBondAmount(rp, minipoolAddress, opts)
+	hash, err := mp.ReduceBondAmount(opts)
 	if err != nil {
 		return nil, err
 	}
