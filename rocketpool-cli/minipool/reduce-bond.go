@@ -72,6 +72,11 @@ func beginReduceBondAmount(c *cli.Context) error {
 		}
 	}
 
+	if len(reduceableMinipools) == 0 {
+		fmt.Println("No minipools can have their bond reduced at this time.")
+		return nil
+	}
+
 	// Get selected minipools
 	var selectedMinipools []api.MinipoolDetails
 	if c.String("minipool") == "" {
