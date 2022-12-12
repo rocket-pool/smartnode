@@ -40,8 +40,8 @@ func GetReduceBondCancelled(rp *rocketpool.RocketPool, minipoolAddress common.Ad
 		return false, err
 	}
 	isCancelled := new(bool)
-	if err := rocketMinipoolBondReducer.Call(opts, isCancelled, "getBondReduceCancelled", minipoolAddress); err != nil {
-		return false, fmt.Errorf("Could not get bond reduce cancelled status for minipool %s: %w", minipoolAddress.Hex(), err)
+	if err := rocketMinipoolBondReducer.Call(opts, isCancelled, "getReduceBondCancelled", minipoolAddress); err != nil {
+		return false, fmt.Errorf("Could not get reduce bond cancelled status for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return *isCancelled, nil
 }
