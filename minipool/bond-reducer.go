@@ -81,28 +81,6 @@ func BeginReduceBondAmount(rp *rocketpool.RocketPool, minipoolAddress common.Add
 	return tx.Hash(), nil
 }
 
-// Estimate the gas required to reduce a minipool's bond
-func EstimateReduceBondAmountGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	return rocketMinipoolBondReducer.GetTransactionGasInfo(opts, "reduceBondAmount", minipoolAddress)
-}
-
-// Reduce a minipool's bond
-func ReduceBondAmount(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketMinipoolBondReducer.Transact(opts, "reduceBondAmount", minipoolAddress)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not reduce bond for minipool %s: %w", minipoolAddress.Hex(), err)
-	}
-	return tx.Hash(), nil
-}
-
 // Get contracts
 var rocketMinipoolBondReducerLock sync.Mutex
 

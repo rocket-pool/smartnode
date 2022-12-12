@@ -508,6 +508,20 @@ func (mp *Minipool) GetVersion(opts *bind.CallOpts) (uint8, error) {
 	return *version, nil
 }
 
+// Estimate the gas required to reduce a minipool's bond
+func (mp *Minipool) EstimateReduceBondAmountGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "reduceBondAmount")
+}
+
+// Reduce a minipool's bond
+func (mp *Minipool) ReduceBondAmount(opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "reduceBondAmount")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not reduce bond for minipool %s: %w", mp.Address.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
 // Given a validator balance, calculates how much belongs to the node taking into consideration rewards and penalties
 func (mp *Minipool) CalculateNodeShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
 	nodeAmount := new(*big.Int)
