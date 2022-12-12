@@ -365,24 +365,6 @@ func (mp *Minipool) DistributeBalance(opts *bind.TransactOpts) (common.Hash, err
 	return tx.Hash(), nil
 }
 
-// Estimate the gas of DistributeBalanceAndFinalise
-func (mp *Minipool) EstimateDistributeBalanceAndFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "distributeBalanceAndFinalise")
-}
-
-// Distribute the minipool's ETH balance to the node operator and rETH staking pool,
-// then finalises the minipool
-// !!! WARNING !!!
-// DO NOT CALL THIS until the minipool's validator has exited from the Beacon Chain
-// and the balance has been deposited into the minipool!
-func (mp *Minipool) DistributeBalanceAndFinalise(opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "distributeBalanceAndFinalise")
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not process withdrawal for and finalise minipool %s: %w", mp.Address.Hex(), err)
-	}
-	return tx.Hash(), nil
-}
-
 // Estimate the gas of Stake
 func (mp *Minipool) EstimateStakeGas(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorSignature[:], depositDataRoot)
