@@ -64,7 +64,12 @@ func distributeBalance(c *cli.Context) error {
 		for _, mp := range versionTooLowMinipools {
 			fmt.Printf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` in order to distribute their ETH balances.%s\n", colorReset)
+		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` in order to distribute their ETH balances.%s\n\n", colorReset)
+	}
+
+	if len(eligibleMinipools) == 0 {
+		fmt.Println("No minipools are eligible for balance distribution.")
+		return nil
 	}
 
 	// Get selected minipools
