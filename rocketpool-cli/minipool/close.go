@@ -97,7 +97,7 @@ func closeMinipools(c *cli.Context) error {
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanCloseMinipool(minipool.Address)
 		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for close transaction (%s)", err)
+			fmt.Printf("WARNING: Couldn't get gas price for close transaction (%s)", err.Error())
 			break
 		} else {
 			gasInfo = canResponse.GasInfo
@@ -125,7 +125,7 @@ func closeMinipools(c *cli.Context) error {
 
 		canResponse, err := rp.CanCloseMinipool(minipool.Address)
 		if err != nil {
-			fmt.Printf("Could not check closing status for minipool %s: %s.\n", minipool.Address.Hex(), err)
+			fmt.Printf("Could not check closing status for minipool %s: %s.\n", minipool.Address.Hex(), err.Error())
 			continue
 		}
 		if !canResponse.CanClose {
@@ -141,14 +141,14 @@ func closeMinipools(c *cli.Context) error {
 
 		response, err := rp.CloseMinipool(minipool.Address)
 		if err != nil {
-			fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err)
+			fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err.Error())
 			continue
 		}
 
 		fmt.Printf("Closing minipool %s...\n", minipool.Address.Hex())
 		cliutils.PrintTransactionHash(rp, response.TxHash)
 		if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-			fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err)
+			fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err.Error())
 		} else {
 			fmt.Printf("Successfully closed minipool %s.\n", minipool.Address.Hex())
 		}

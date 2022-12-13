@@ -155,6 +155,38 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "distribute-balance",
+				Aliases:   []string{"d"},
+				Usage:     "Distribute a minipool's ETH balance between your withdrawal address and the rETH holders.",
+				UsageText: "rocketpool minipool distribute-balance [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "minipool, m",
+						Usage: "The minipool/s to distribute the balance of (address or 'all')",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Validate flags
+					if c.String("minipool") != "" && c.String("minipool") != "all" {
+						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
+							return err
+						}
+					}
+
+					// Run
+					return distributeBalance(c)
+
+				},
+			},
+
 			/*
 			   REMOVED UNTIL BEACON WITHDRAWALS
 			   cli.Command{

@@ -640,6 +640,87 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "get-distribute-balance-details",
+				Usage:     "Get the balance distribution details for all of the node's minipools",
+				UsageText: "rocketpool api minipool get-distribute-balance-details",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getDistributeBalanceDetails(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-distribute-balance",
+				Usage:     "Check if a minipool's ETH balance can be distributed",
+				UsageText: "rocketpool api minipool can-distribute-balance minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canDistributeBalance(c, minipoolAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "estimate-distribute-balance-gas",
+				Usage:     "Estimate the gas cost of ETH distribution for a minipool",
+				UsageText: "rocketpool api minipool estimate-distribute-balance-gas minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(estimateDistributeBalanceGas(c, minipoolAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "distribute-balance",
+				Usage:     "Distribute a minipool's ETH balance",
+				UsageText: "rocketpool api minipool distribute-balance minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(distributeBalance(c, minipoolAddress))
+					return nil
+
+				},
+			},
 		},
 	})
 }

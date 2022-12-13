@@ -423,3 +423,67 @@ func (c *Client) ReduceBondAmount(address common.Address) (api.ReduceBondAmountR
 	}
 	return response, nil
 }
+
+// Get the balance distribution details for all of the node's minipools
+func (c *Client) GetDistributeBalanceDetails() (api.GetDistributeBalanceDetailsResponse, error) {
+	responseBytes, err := c.callAPI("minipool get-distribute-balance-details")
+	if err != nil {
+		return api.GetDistributeBalanceDetailsResponse{}, fmt.Errorf("Could not get distribute balance details: %w", err)
+	}
+	var response api.GetDistributeBalanceDetailsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetDistributeBalanceDetailsResponse{}, fmt.Errorf("Could not decode get distribute balance details response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetDistributeBalanceDetailsResponse{}, fmt.Errorf("Could not get distribute balance details: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check if a minipool's ETH balance can be distributed
+func (c *Client) CanDistributeBalance(address common.Address) (api.CanDistributeBalanceResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-distribute-balance %s", address.Hex()))
+	if err != nil {
+		return api.CanDistributeBalanceResponse{}, fmt.Errorf("Could not get can distribute balance status: %w", err)
+	}
+	var response api.CanDistributeBalanceResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanDistributeBalanceResponse{}, fmt.Errorf("Could not decode can distribute balance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanDistributeBalanceResponse{}, fmt.Errorf("Could not get can distribute balance status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Estimate the gas cost of ETH distribution for a minipool
+func (c *Client) EstimateDistributeBalanceGas(address common.Address) (api.EstimateDistributeBalanceGasResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool estimate-distribute-balance-gas %s", address.Hex()))
+	if err != nil {
+		return api.EstimateDistributeBalanceGasResponse{}, fmt.Errorf("Could not get estimate distribute balance gas status: %w", err)
+	}
+	var response api.EstimateDistributeBalanceGasResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.EstimateDistributeBalanceGasResponse{}, fmt.Errorf("Could not decode estimate distribute balance gas response: %w", err)
+	}
+	if response.Error != "" {
+		return api.EstimateDistributeBalanceGasResponse{}, fmt.Errorf("Could not get estimate distribute balance gas status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Distribute a minipool's ETH balance
+func (c *Client) DistributeBalance(address common.Address) (api.DistributeBalanceResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool distribute-balance %s", address.Hex()))
+	if err != nil {
+		return api.DistributeBalanceResponse{}, fmt.Errorf("Could not get distribute balance status: %w", err)
+	}
+	var response api.DistributeBalanceResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.DistributeBalanceResponse{}, fmt.Errorf("Could not decode distribute balance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.DistributeBalanceResponse{}, fmt.Errorf("Could not get distribute balance status: %s", response.Error)
+	}
+	return response, nil
+}

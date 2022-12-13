@@ -50,6 +50,12 @@ type ValidatorDetails struct {
 	Balance     *big.Int `json:"balance"`
 	NodeBalance *big.Int `json:"nodeBalance"`
 }
+type MinipoolBalanceDistributionDetails struct {
+	Address       common.Address `json:"address"`
+	Balance       *big.Int       `json:"balance"`
+	VersionTooLow bool           `json:"versionTooLow"`
+	InvalidStatus bool           `json:"invalidStatus"`
+}
 
 type CanRefundMinipoolResponse struct {
 	Status                    string             `json:"status"`
@@ -124,6 +130,33 @@ type CanCloseMinipoolResponse struct {
 	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
 }
 type CloseMinipoolResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type GetDistributeBalanceDetailsResponse struct {
+	Status          string                               `json:"status"`
+	Error           string                               `json:"error"`
+	IsAtlasDeployed bool                                 `json:"isAtlasDeployed"`
+	Details         []MinipoolBalanceDistributionDetails `json:"details"`
+}
+type CanDistributeBalanceResponse struct {
+	Status          string               `json:"status"`
+	Error           string               `json:"error"`
+	MinipoolVersion uint8                `json:"minipoolVersion"`
+	MinipoolStatus  types.MinipoolStatus `json:"minipoolStatus"`
+	Balance         *big.Int             `json:"balance"`
+	IsAtlasDeployed bool                 `json:"isAtlasDeployed"`
+	CanDistribute   bool                 `json:"canDistribute"`
+	GasInfo         rocketpool.GasInfo   `json:"gasInfo"`
+}
+type EstimateDistributeBalanceGasResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type DistributeBalanceResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
