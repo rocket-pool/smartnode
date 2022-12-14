@@ -763,9 +763,9 @@ func (r *treeGeneratorImpl_v2) calculateNodeRewards() (*big.Int, *big.Int, error
 		}
 	}
 	averageFee := big.NewInt(0).Div(feeTotal, big.NewInt(minipoolCount))
-	r.log.Printlnf("%s Fee Total:    %s (%.3f)", r.logPrefix, feeTotal.String(), eth.WeiToEth(feeTotal))
-	r.log.Printlnf("%s Minipool Count:    %d", r.logPrefix, minipoolCount)
-	r.log.Printlnf("%s Average Fee:    %s (%.3f)", r.logPrefix, averageFee.String(), eth.WeiToEth(averageFee))
+	r.log.Printlnf("%s Fee Total:          %s (%.3f)", r.logPrefix, feeTotal.String(), eth.WeiToEth(feeTotal))
+	r.log.Printlnf("%s Minipool Count:     %d", r.logPrefix, minipoolCount)
+	r.log.Printlnf("%s Average Fee:        %s (%.3f)", r.logPrefix, averageFee.String(), eth.WeiToEth(averageFee))
 
 	// Calculate the staking pool share and the node op share
 	halfSmoothingPool := big.NewInt(0).Div(r.smoothingPoolBalance, big.NewInt(2))
