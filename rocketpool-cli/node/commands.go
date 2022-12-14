@@ -372,7 +372,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "send",
 				Aliases:   []string{"n"},
-				Usage:     "Send ETH or tokens from the node account to an address",
+				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported.",
 				UsageText: "rocketpool node send [options] amount token to",
 				Flags: []cli.Flag{
 					cli.BoolFlag{

@@ -1533,24 +1533,26 @@ func exportEcData(c *cli.Context, targetDir string) error {
 		return fmt.Errorf("Error getting execution client volume name: %w", err)
 	}
 
-	// Make sure the target dir has enough space
-	volumeBytes, err := getVolumeSpaceUsed(rp, volume)
-	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't check the disk space used by the Execution client volume: %s\nPlease verify you have enough free space to store the chain data in the target folder before proceeding!%s\n\n", colorRed, err.Error(), colorReset)
-	} else {
-		volumeBytesHuman := humanize.IBytes(volumeBytes)
-		targetFree, err := getPartitionFreeSpace(rp, targetDir)
+	if !c.Bool("force") {
+		// Make sure the target dir has enough space
+		volumeBytes, err := getVolumeSpaceUsed(rp, volume)
 		if err != nil {
-			fmt.Printf("%sWARNING: Couldn't get the free space available on the target folder: %s\nPlease verify you have enough free space to store the chain data in the target folder before proceeding!%s\n\n", colorRed, err.Error(), colorReset)
+			fmt.Printf("%sWARNING: Couldn't check the disk space used by the Execution client volume: %s\nPlease verify you have enough free space to store the chain data in the target folder before proceeding!%s\n\n", colorRed, err.Error(), colorReset)
 		} else {
-			freeSpaceHuman := humanize.IBytes(targetFree)
-			fmt.Printf("%sChain data size:       %s%s\n", colorLightBlue, volumeBytesHuman, colorReset)
-			fmt.Printf("%sTarget dir free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
-			if targetFree < volumeBytes {
-				return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
-			}
+			volumeBytesHuman := humanize.IBytes(volumeBytes)
+			targetFree, err := getPartitionFreeSpace(rp, targetDir)
+			if err != nil {
+				fmt.Printf("%sWARNING: Couldn't get the free space available on the target folder: %s\nPlease verify you have enough free space to store the chain data in the target folder before proceeding!%s\n\n", colorRed, err.Error(), colorReset)
+			} else {
+				freeSpaceHuman := humanize.IBytes(targetFree)
+				fmt.Printf("%sChain data size:       %s%s\n", colorLightBlue, volumeBytesHuman, colorReset)
+				fmt.Printf("%sTarget dir free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
+				if targetFree < volumeBytes {
+					return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again or use the --force flag to ignore this check.%s", colorRed, colorReset)
+				}
 
-			fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
+				fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
+			}
 		}
 	}
 
