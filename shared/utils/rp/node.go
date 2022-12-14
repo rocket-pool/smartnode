@@ -1,6 +1,7 @@
 package rp
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -9,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
@@ -28,6 +30,16 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionC
 	if err != nil {
 		return nil, err
 	}
+
+	// Remove zero pubkeys
+	zeroPubkey := types.ValidatorPubkey{}
+	filteredPubkeys := []types.ValidatorPubkey{}
+	for _, pubkey := range pubkeys {
+		if !bytes.Equal(pubkey[:], zeroPubkey[:]) {
+			filteredPubkeys = append(filteredPubkeys, pubkey)
+		}
+	}
+	pubkeys = filteredPubkeys
 
 	// Get validator statuses by pubkeys
 	statuses, err := bc.GetValidatorStatuses(pubkeys, nil)

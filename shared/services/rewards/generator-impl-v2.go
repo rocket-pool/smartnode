@@ -96,6 +96,8 @@ func newTreeGeneratorImpl_v2(log log.ColorLogger, logPrefix string, index uint64
 
 func (r *treeGeneratorImpl_v2) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*RewardsFile, error) {
 
+	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
+
 	// Provision some struct params
 	r.rp = rp
 	r.cfg = cfg
@@ -161,6 +163,8 @@ func (r *treeGeneratorImpl_v2) generateTree(rp *rocketpool.RocketPool, cfg *conf
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
 func (r *treeGeneratorImpl_v2) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error) {
+	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
+
 	r.rp = rp
 	r.cfg = cfg
 	r.bc = bc
@@ -759,6 +763,9 @@ func (r *treeGeneratorImpl_v2) calculateNodeRewards() (*big.Int, *big.Int, error
 		}
 	}
 	averageFee := big.NewInt(0).Div(feeTotal, big.NewInt(minipoolCount))
+	r.log.Printlnf("%s Fee Total:    %s (%.3f)", r.logPrefix, feeTotal.String(), eth.WeiToEth(feeTotal))
+	r.log.Printlnf("%s Minipool Count:    %d", r.logPrefix, minipoolCount)
+	r.log.Printlnf("%s Average Fee:    %s (%.3f)", r.logPrefix, averageFee.String(), eth.WeiToEth(averageFee))
 
 	// Calculate the staking pool share and the node op share
 	halfSmoothingPool := big.NewInt(0).Div(r.smoothingPoolBalance, big.NewInt(2))
@@ -798,7 +805,7 @@ func (r *treeGeneratorImpl_v2) calculateNodeRewards() (*big.Int, *big.Int, error
 		return nil, nil, fmt.Errorf("error calculating smoothing pool ETH: total was %s, but expected %s; error was too large (%s wei)", totalEthForMinipools.String(), nodeOpShare.String(), delta.String())
 	}
 
-	r.log.Printlnf("%s Pool staker ETH:    %s (%.3f)", r.logPrefix, poolStakerShare.String(), eth.WeiToEth(truePoolStakerAmount))
+	r.log.Printlnf("%s Pool staker ETH:    %s (%.3f)", r.logPrefix, poolStakerShare.String(), eth.WeiToEth(poolStakerShare))
 	r.log.Printlnf("%s Node Op ETH:        %s (%.3f)", r.logPrefix, nodeOpShare.String(), eth.WeiToEth(nodeOpShare))
 	r.log.Printlnf("%s Calculated NO ETH:  %s (error = %s wei)", r.logPrefix, totalEthForMinipools.String(), delta.String())
 	r.log.Printlnf("%s Adjusting pool staker ETH to %s to account for truncation", r.logPrefix, truePoolStakerAmount.String())
