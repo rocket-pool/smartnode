@@ -80,6 +80,7 @@ type Minipool interface {
 	EstimateDissolveGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	Dissolve(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateCloseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	Close(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	Finalise(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
