@@ -14,53 +14,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
-
-// The number of blocks to look for events in at once when scanning
-const EventScanInterval = 10000
-
-// Minipool detail types
-type StatusDetails struct {
-	Status      rptypes.MinipoolStatus `json:"status"`
-	StatusBlock uint64                 `json:"statusBlock"`
-	StatusTime  time.Time              `json:"statusTime"`
-	IsVacant    bool                   `json:"isVacant"`
-}
-type NodeDetails struct {
-	Address         common.Address `json:"address"`
-	Fee             float64        `json:"fee"`
-	DepositBalance  *big.Int       `json:"depositBalance"`
-	RefundBalance   *big.Int       `json:"refundBalance"`
-	DepositAssigned bool           `json:"depositAssigned"`
-}
-type UserDetails struct {
-	DepositBalance      *big.Int  `json:"depositBalance"`
-	DepositAssigned     bool      `json:"depositAssigned"`
-	DepositAssignedTime time.Time `json:"depositAssignedTime"`
-}
-
-// The data from a minipool's MinipoolPrestaked event
-type minipoolPrestakeEvent struct {
-	Pubkey                []byte   `abi:"validatorPubkey"`
-	Signature             []byte   `abi:"validatorSignature"`
-	DepositDataRoot       [32]byte `abi:"depositDataRoot"`
-	Amount                *big.Int `abi:"amount"`
-	WithdrawalCredentials []byte   `abi:"withdrawalCredentials"`
-	Time                  *big.Int `abi:"time"`
-}
-
-// Formatted MinipoolPrestaked event data
-type PrestakeData struct {
-	Pubkey                rptypes.ValidatorPubkey    `json:"pubkey"`
-	WithdrawalCredentials common.Hash                `json:"withdrawalCredentials"`
-	Amount                *big.Int                   `json:"amount"`
-	Signature             rptypes.ValidatorSignature `json:"signature"`
-	DepositDataRoot       common.Hash                `json:"depositDataRoot"`
-	Time                  time.Time                  `json:"time"`
-}
 
 // Minipool contract
 type Minipool struct {
@@ -70,7 +28,7 @@ type Minipool struct {
 }
 
 // Create new minipool contract
-func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (*Minipool, error) {
+func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (minipool.Minipool, error) {
 
 	// Get contract
 	contract, err := getMinipoolContract(rp, address, opts)
@@ -86,8 +44,13 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
 	}, nil
 }
 
+// Get the contract address
+func (mp *Minipool) GetAddress() common.Address {
+	return mp.Address
+}
+
 // Get status details
-func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (StatusDetails, error) {
+func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (minipool.StatusDetails, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -120,11 +83,11 @@ func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (StatusDetails, error)
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return StatusDetails{}, err
+		return minipool.StatusDetails{}, err
 	}
 
 	// Return
-	return StatusDetails{
+	return minipool.StatusDetails{
 		Status:      status,
 		StatusBlock: statusBlock,
 		StatusTime:  statusTime,
@@ -171,7 +134,7 @@ func (mp *Minipool) GetDepositType(opts *bind.CallOpts) (rptypes.MinipoolDeposit
 }
 
 // Get node details
-func (mp *Minipool) GetNodeDetails(opts *bind.CallOpts) (NodeDetails, error) {
+func (mp *Minipool) GetNodeDetails(opts *bind.CallOpts) (minipool.NodeDetails, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -210,11 +173,11 @@ func (mp *Minipool) GetNodeDetails(opts *bind.CallOpts) (NodeDetails, error) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return NodeDetails{}, err
+		return minipool.NodeDetails{}, err
 	}
 
 	// Return
-	return NodeDetails{
+	return minipool.NodeDetails{
 		Address:         address,
 		Fee:             fee,
 		DepositBalance:  depositBalance,
@@ -274,7 +237,7 @@ func (mp *Minipool) GetVacant(opts *bind.CallOpts) (bool, error) {
 }
 
 // Get user deposit details
-func (mp *Minipool) GetUserDetails(opts *bind.CallOpts) (UserDetails, error) {
+func (mp *Minipool) GetUserDetails(opts *bind.CallOpts) (minipool.UserDetails, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -301,11 +264,11 @@ func (mp *Minipool) GetUserDetails(opts *bind.CallOpts) (UserDetails, error) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return UserDetails{}, err
+		return minipool.UserDetails{}, err
 	}
 
 	// Return
-	return UserDetails{
+	return minipool.UserDetails{
 		DepositBalance:      depositBalance,
 		DepositAssigned:     depositAssigned,
 		DepositAssignedTime: depositAssignedTime,
@@ -569,7 +532,7 @@ func (mp *Minipool) Promote(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Get the data from this minipool's MinipoolPrestaked event
-func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts) (PrestakeData, error) {
+func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts) (minipool.PrestakeData, error) {
 
 	addressFilter := []common.Address{mp.Address}
 	topicFilter := [][]common.Hash{{mp.Contract.ABI.Events["MinipoolPrestaked"].ID}}
@@ -577,14 +540,14 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 	// Grab the latest block number
 	currentBlock, err := mp.RocketPool.Client.BlockNumber(context.Background())
 	if err != nil {
-		return PrestakeData{}, fmt.Errorf("Error getting current block %s: %w", mp.Address.Hex(), err)
+		return minipool.PrestakeData{}, fmt.Errorf("Error getting current block %s: %w", mp.Address.Hex(), err)
 	}
 
 	// Grab the lowest block number worth querying from (should never have to go back this far in practice)
 	deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
 	fromBlockBig, err := mp.RocketPool.RocketStorage.GetUint(nil, deployBlockHash)
 	if err != nil {
-		return PrestakeData{}, fmt.Errorf("Error getting deploy block %s: %w", mp.Address.Hex(), err)
+		return minipool.PrestakeData{}, fmt.Errorf("Error getting deploy block %s: %w", mp.Address.Hex(), err)
 	}
 
 	fromBlock := fromBlockBig.Uint64()
@@ -592,8 +555,8 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 	found := false
 
 	// Backwards scan through blocks to find the event
-	for i := currentBlock; i >= fromBlock; i -= EventScanInterval {
-		from := i - EventScanInterval + 1
+	for i := currentBlock; i >= fromBlock; i -= minipool.EventScanInterval {
+		from := i - minipool.EventScanInterval + 1
 		if from < fromBlock {
 			from = fromBlock
 		}
@@ -603,7 +566,7 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 
 		logs, err := eth.GetLogs(mp.RocketPool, addressFilter, topicFilter, intervalSize, fromBig, toBig, nil)
 		if err != nil {
-			return PrestakeData{}, fmt.Errorf("Error getting prestake logs for minipool %s: %w", mp.Address.Hex(), err)
+			return minipool.PrestakeData{}, fmt.Errorf("Error getting prestake logs for minipool %s: %w", mp.Address.Hex(), err)
 		}
 
 		if len(logs) > 0 {
@@ -615,18 +578,18 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 
 	if !found {
 		// This should never happen
-		return PrestakeData{}, fmt.Errorf("Error finding prestake log for minipool %s", mp.Address.Hex())
+		return minipool.PrestakeData{}, fmt.Errorf("Error finding prestake log for minipool %s", mp.Address.Hex())
 	}
 
 	// Decode the event
-	prestakeEvent := new(minipoolPrestakeEvent)
+	prestakeEvent := new(minipool.MinipoolPrestakeEvent)
 	mp.Contract.Contract.UnpackLog(prestakeEvent, "MinipoolPrestaked", log)
 	if err != nil {
-		return PrestakeData{}, fmt.Errorf("Error unpacking prestake data: %w", err)
+		return minipool.PrestakeData{}, fmt.Errorf("Error unpacking prestake data: %w", err)
 	}
 
 	// Convert the event to a more useable struct
-	prestakeData := PrestakeData{
+	prestakeData := minipool.PrestakeData{
 		Pubkey:                rptypes.BytesToValidatorPubkey(prestakeEvent.Pubkey),
 		WithdrawalCredentials: common.BytesToHash(prestakeEvent.WithdrawalCredentials),
 		Amount:                prestakeEvent.Amount,
