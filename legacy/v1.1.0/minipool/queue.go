@@ -189,8 +189,8 @@ func GetQueueNextCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacy
 }
 
 // Get Queue position details of a minipool
-func GetQueueDetails(rp *rocketpool.RocketPool, mp *minipool.Minipool, opts *bind.CallOpts, legacyRocketMinipoolQueueAddress *common.Address) (QueueDetails, error) {
-	position, err := GetQueuePositionOfMinipool(mp, opts, legacyRocketMinipoolQueueAddress)
+func GetQueueDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, opts *bind.CallOpts, legacyRocketMinipoolQueueAddress *common.Address) (QueueDetails, error) {
+	position, err := GetQueuePositionOfMinipool(rp, mp, opts, legacyRocketMinipoolQueueAddress)
 	if err != nil {
 		return QueueDetails{}, err
 	}
@@ -202,19 +202,19 @@ func GetQueueDetails(rp *rocketpool.RocketPool, mp *minipool.Minipool, opts *bin
 }
 
 // Get a minipools position in queue (1-indexed). 0 means it is currently not queued.
-func GetQueuePositionOfMinipool(mp *minipool.Minipool, opts *bind.CallOpts, legacyRocketMinipoolQueueAddress *common.Address) (uint64, error) {
+func GetQueuePositionOfMinipool(rp *rocketpool.RocketPool, mp minipool.Minipool, opts *bind.CallOpts, legacyRocketMinipoolQueueAddress *common.Address) (uint64, error) {
 	depositType, err := mp.GetDepositType(opts)
 	if err != nil {
 		return 0, fmt.Errorf("Could not get deposit type: %w", err)
 	}
 	if depositType == rptypes.None {
-		return 0, fmt.Errorf("Minipool address %s has no deposit type", mp.Address)
+		return 0, fmt.Errorf("Minipool address %s has no deposit type", mp.GetAddress())
 	}
 
 	queryIndex := func(key string) (uint64, error) {
-		index, err := storage.GetAddressQueueIndexOf(mp.RocketPool, opts, crypto.Keccak256Hash([]byte(key)), mp.Address)
+		index, err := storage.GetAddressQueueIndexOf(rp, opts, crypto.Keccak256Hash([]byte(key)), mp.GetAddress())
 		if err != nil {
-			return 0, fmt.Errorf("Could not get queue index for address %s: %w", mp.Address, err)
+			return 0, fmt.Errorf("Could not get queue index for address %s: %w", mp.GetAddress(), err)
 		}
 		return uint64(index + 1), nil
 	}
@@ -223,7 +223,7 @@ func GetQueuePositionOfMinipool(mp *minipool.Minipool, opts *bind.CallOpts, lega
 
 	// half cleared first
 	if depositType != rptypes.Half {
-		position, err = GetQueueLength(mp.RocketPool, rptypes.Half, opts, legacyRocketMinipoolQueueAddress)
+		position, err = GetQueueLength(rp, rptypes.Half, opts, legacyRocketMinipoolQueueAddress)
 		if err != nil {
 			return 0, fmt.Errorf("Could not get queue length of type %s: %w", rptypes.MinipoolDepositTypes[rptypes.Empty], err)
 		}
@@ -233,7 +233,7 @@ func GetQueuePositionOfMinipool(mp *minipool.Minipool, opts *bind.CallOpts, lega
 
 	// full deposits next
 	if depositType != rptypes.Full {
-		length, err := GetQueueLength(mp.RocketPool, rptypes.Full, opts, legacyRocketMinipoolQueueAddress)
+		length, err := GetQueueLength(rp, rptypes.Full, opts, legacyRocketMinipoolQueueAddress)
 		if err != nil {
 			return 0, fmt.Errorf("Could not get queue length of type %s: %w", rptypes.MinipoolDepositTypes[rptypes.Empty], err)
 		}
@@ -255,7 +255,7 @@ func GetQueuePositionOfMinipool(mp *minipool.Minipool, opts *bind.CallOpts, lega
 }
 
 // Get the minipool at the specified position in queue (0-indexed).
-func GetQueueMinipoolAtPosition(rp *rocketpool.RocketPool, position uint64, opts *bind.CallOpts, legacyRocketMinipoolQueueAddress *common.Address) (*minipool.Minipool, error) {
+func GetQueueMinipoolAtPosition(rp *rocketpool.RocketPool, position uint64, opts *bind.CallOpts, legacyRocketMinipoolQueueAddress *common.Address) (minipool.Minipool, error) {
 	totalLength, err := GetQueueTotalLength(rp, opts, legacyRocketMinipoolQueueAddress)
 	if err != nil {
 		return nil, fmt.Errorf("Could not get total queue length: %w", err)
@@ -268,7 +268,7 @@ func GetQueueMinipoolAtPosition(rp *rocketpool.RocketPool, position uint64, opts
 		return nil, fmt.Errorf("Could not get queue lengths: %w", err)
 	}
 
-	getMinipool := func(key string) (*minipool.Minipool, error) {
+	getMinipool := func(key string) (minipool.Minipool, error) {
 		pos := big.NewInt(int64(position))
 		address, err := storage.GetAddressQueueItem(rp, opts, crypto.Keccak256Hash([]byte(key)), pos)
 		if err != nil {

@@ -1,10 +1,9 @@
-package minipool_v2
+package minipool
 
 import (
 	"context"
 	"fmt"
 	"math/big"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -14,14 +13,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 // Minipool contract
-type Minipool struct {
+type Minipool_v3 struct {
 	Address    common.Address
 	Version    uint8
 	Contract   *rocketpool.Contract
@@ -29,7 +27,7 @@ type Minipool struct {
 }
 
 // Create new minipool contract
-func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (minipool.Minipool, error) {
+func newMinipool_v3(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (Minipool, error) {
 
 	// Get contract
 	contract, err := getMinipoolContract(rp, address, opts)
@@ -38,32 +36,33 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
 	}
 
 	// Create and return
-	return &Minipool{
+	return &Minipool_v3{
 		Address:    address,
-		Version:    2,
+		Version:    3,
 		Contract:   contract,
 		RocketPool: rp,
 	}, nil
 }
 
 // Get the contract address
-func (mp *Minipool) GetAddress() common.Address {
+func (mp *Minipool_v3) GetAddress() common.Address {
 	return mp.Address
 }
 
 // Get the contract version
-func (mp *Minipool) GetVersion() uint8 {
+func (mp *Minipool_v3) GetVersion() uint8 {
 	return mp.Version
 }
 
 // Get status details
-func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (minipool.StatusDetails, error) {
+func (mp *Minipool_v3) GetStatusDetails(opts *bind.CallOpts) (StatusDetails, error) {
 
 	// Data
 	var wg errgroup.Group
 	var status rptypes.MinipoolStatus
 	var statusBlock uint64
 	var statusTime time.Time
+	var isVacant bool
 
 	// Load data
 	wg.Go(func() error {
@@ -81,42 +80,48 @@ func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (minipool.StatusDetail
 		statusTime, err = mp.GetStatusTime(opts)
 		return err
 	})
+	wg.Go(func() error {
+		var err error
+		isVacant, err = mp.GetVacant(opts)
+		return err
+	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return minipool.StatusDetails{}, err
+		return StatusDetails{}, err
 	}
 
 	// Return
-	return minipool.StatusDetails{
+	return StatusDetails{
 		Status:      status,
 		StatusBlock: statusBlock,
 		StatusTime:  statusTime,
+		IsVacant:    isVacant,
 	}, nil
 
 }
-func (mp *Minipool) GetStatus(opts *bind.CallOpts) (rptypes.MinipoolStatus, error) {
+func (mp *Minipool_v3) GetStatus(opts *bind.CallOpts) (rptypes.MinipoolStatus, error) {
 	status := new(uint8)
 	if err := mp.Contract.Call(opts, status, "getStatus"); err != nil {
 		return 0, fmt.Errorf("Could not get minipool %s status: %w", mp.Address.Hex(), err)
 	}
 	return rptypes.MinipoolStatus(*status), nil
 }
-func (mp *Minipool) GetStatusBlock(opts *bind.CallOpts) (uint64, error) {
+func (mp *Minipool_v3) GetStatusBlock(opts *bind.CallOpts) (uint64, error) {
 	statusBlock := new(*big.Int)
 	if err := mp.Contract.Call(opts, statusBlock, "getStatusBlock"); err != nil {
 		return 0, fmt.Errorf("Could not get minipool %s status changed block: %w", mp.Address.Hex(), err)
 	}
 	return (*statusBlock).Uint64(), nil
 }
-func (mp *Minipool) GetStatusTime(opts *bind.CallOpts) (time.Time, error) {
+func (mp *Minipool_v3) GetStatusTime(opts *bind.CallOpts) (time.Time, error) {
 	statusTime := new(*big.Int)
 	if err := mp.Contract.Call(opts, statusTime, "getStatusTime"); err != nil {
 		return time.Unix(0, 0), fmt.Errorf("Could not get minipool %s status changed time: %w", mp.Address.Hex(), err)
 	}
 	return time.Unix((*statusTime).Int64(), 0), nil
 }
-func (mp *Minipool) GetFinalised(opts *bind.CallOpts) (bool, error) {
+func (mp *Minipool_v3) GetFinalised(opts *bind.CallOpts) (bool, error) {
 	finalised := new(bool)
 	if err := mp.Contract.Call(opts, finalised, "getFinalised"); err != nil {
 		return false, fmt.Errorf("Could not get minipool %s finalised: %w", mp.Address.Hex(), err)
@@ -125,7 +130,7 @@ func (mp *Minipool) GetFinalised(opts *bind.CallOpts) (bool, error) {
 }
 
 // Get deposit type
-func (mp *Minipool) GetDepositType(opts *bind.CallOpts) (rptypes.MinipoolDeposit, error) {
+func (mp *Minipool_v3) GetDepositType(opts *bind.CallOpts) (rptypes.MinipoolDeposit, error) {
 	depositType := new(uint8)
 	if err := mp.Contract.Call(opts, depositType, "getDepositType"); err != nil {
 		return 0, fmt.Errorf("Could not get minipool %s deposit type: %w", mp.Address.Hex(), err)
@@ -134,7 +139,7 @@ func (mp *Minipool) GetDepositType(opts *bind.CallOpts) (rptypes.MinipoolDeposit
 }
 
 // Get node details
-func (mp *Minipool) GetNodeDetails(opts *bind.CallOpts) (minipool.NodeDetails, error) {
+func (mp *Minipool_v3) GetNodeDetails(opts *bind.CallOpts) (NodeDetails, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -173,11 +178,11 @@ func (mp *Minipool) GetNodeDetails(opts *bind.CallOpts) (minipool.NodeDetails, e
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return minipool.NodeDetails{}, err
+		return NodeDetails{}, err
 	}
 
 	// Return
-	return minipool.NodeDetails{
+	return NodeDetails{
 		Address:         address,
 		Fee:             fee,
 		DepositBalance:  depositBalance,
@@ -186,51 +191,58 @@ func (mp *Minipool) GetNodeDetails(opts *bind.CallOpts) (minipool.NodeDetails, e
 	}, nil
 
 }
-func (mp *Minipool) GetNodeAddress(opts *bind.CallOpts) (common.Address, error) {
+func (mp *Minipool_v3) GetNodeAddress(opts *bind.CallOpts) (common.Address, error) {
 	nodeAddress := new(common.Address)
 	if err := mp.Contract.Call(opts, nodeAddress, "getNodeAddress"); err != nil {
 		return common.Address{}, fmt.Errorf("Could not get minipool %s node address: %w", mp.Address.Hex(), err)
 	}
 	return *nodeAddress, nil
 }
-func (mp *Minipool) GetNodeFee(opts *bind.CallOpts) (float64, error) {
+func (mp *Minipool_v3) GetNodeFee(opts *bind.CallOpts) (float64, error) {
 	nodeFee := new(*big.Int)
 	if err := mp.Contract.Call(opts, nodeFee, "getNodeFee"); err != nil {
 		return 0, fmt.Errorf("Could not get minipool %s node fee: %w", mp.Address.Hex(), err)
 	}
 	return eth.WeiToEth(*nodeFee), nil
 }
-func (mp *Minipool) GetNodeFeeRaw(opts *bind.CallOpts) (*big.Int, error) {
+func (mp *Minipool_v3) GetNodeFeeRaw(opts *bind.CallOpts) (*big.Int, error) {
 	nodeFee := new(*big.Int)
 	if err := mp.Contract.Call(opts, nodeFee, "getNodeFee"); err != nil {
 		return nil, fmt.Errorf("Could not get minipool %s node fee: %w", mp.Address.Hex(), err)
 	}
 	return *nodeFee, nil
 }
-func (mp *Minipool) GetNodeDepositBalance(opts *bind.CallOpts) (*big.Int, error) {
+func (mp *Minipool_v3) GetNodeDepositBalance(opts *bind.CallOpts) (*big.Int, error) {
 	nodeDepositBalance := new(*big.Int)
 	if err := mp.Contract.Call(opts, nodeDepositBalance, "getNodeDepositBalance"); err != nil {
 		return nil, fmt.Errorf("Could not get minipool %s node deposit balance: %w", mp.Address.Hex(), err)
 	}
 	return *nodeDepositBalance, nil
 }
-func (mp *Minipool) GetNodeRefundBalance(opts *bind.CallOpts) (*big.Int, error) {
+func (mp *Minipool_v3) GetNodeRefundBalance(opts *bind.CallOpts) (*big.Int, error) {
 	nodeRefundBalance := new(*big.Int)
 	if err := mp.Contract.Call(opts, nodeRefundBalance, "getNodeRefundBalance"); err != nil {
 		return nil, fmt.Errorf("Could not get minipool %s node refund balance: %w", mp.Address.Hex(), err)
 	}
 	return *nodeRefundBalance, nil
 }
-func (mp *Minipool) GetNodeDepositAssigned(opts *bind.CallOpts) (bool, error) {
+func (mp *Minipool_v3) GetNodeDepositAssigned(opts *bind.CallOpts) (bool, error) {
 	nodeDepositAssigned := new(bool)
 	if err := mp.Contract.Call(opts, nodeDepositAssigned, "getNodeDepositAssigned"); err != nil {
 		return false, fmt.Errorf("Could not get minipool %s node deposit assigned status: %w", mp.Address.Hex(), err)
 	}
 	return *nodeDepositAssigned, nil
 }
+func (mp *Minipool_v3) GetVacant(opts *bind.CallOpts) (bool, error) {
+	isVacant := new(bool)
+	if err := mp.Contract.Call(opts, isVacant, "getVacant"); err != nil {
+		return false, fmt.Errorf("Could not get minipool %s vacant status: %w", mp.Address.Hex(), err)
+	}
+	return *isVacant, nil
+}
 
 // Get user deposit details
-func (mp *Minipool) GetUserDetails(opts *bind.CallOpts) (minipool.UserDetails, error) {
+func (mp *Minipool_v3) GetUserDetails(opts *bind.CallOpts) (UserDetails, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -257,32 +269,32 @@ func (mp *Minipool) GetUserDetails(opts *bind.CallOpts) (minipool.UserDetails, e
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return minipool.UserDetails{}, err
+		return UserDetails{}, err
 	}
 
 	// Return
-	return minipool.UserDetails{
+	return UserDetails{
 		DepositBalance:      depositBalance,
 		DepositAssigned:     depositAssigned,
 		DepositAssignedTime: depositAssignedTime,
 	}, nil
 
 }
-func (mp *Minipool) GetUserDepositBalance(opts *bind.CallOpts) (*big.Int, error) {
+func (mp *Minipool_v3) GetUserDepositBalance(opts *bind.CallOpts) (*big.Int, error) {
 	userDepositBalance := new(*big.Int)
 	if err := mp.Contract.Call(opts, userDepositBalance, "getUserDepositBalance"); err != nil {
 		return nil, fmt.Errorf("Could not get minipool %s user deposit balance: %w", mp.Address.Hex(), err)
 	}
 	return *userDepositBalance, nil
 }
-func (mp *Minipool) GetUserDepositAssigned(opts *bind.CallOpts) (bool, error) {
+func (mp *Minipool_v3) GetUserDepositAssigned(opts *bind.CallOpts) (bool, error) {
 	userDepositAssigned := new(bool)
 	if err := mp.Contract.Call(opts, userDepositAssigned, "getUserDepositAssigned"); err != nil {
 		return false, fmt.Errorf("Could not get minipool %s user deposit assigned status: %w", mp.Address.Hex(), err)
 	}
 	return *userDepositAssigned, nil
 }
-func (mp *Minipool) GetUserDepositAssignedTime(opts *bind.CallOpts) (time.Time, error) {
+func (mp *Minipool_v3) GetUserDepositAssignedTime(opts *bind.CallOpts) (time.Time, error) {
 	depositAssignedTime := new(*big.Int)
 	if err := mp.Contract.Call(opts, depositAssignedTime, "getUserDepositAssignedTime"); err != nil {
 		return time.Unix(0, 0), fmt.Errorf("Could not get minipool %s user deposit assigned time: %w", mp.Address.Hex(), err)
@@ -291,12 +303,12 @@ func (mp *Minipool) GetUserDepositAssignedTime(opts *bind.CallOpts) (time.Time, 
 }
 
 // Estimate the gas of Refund
-func (mp *Minipool) EstimateRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *Minipool_v3) EstimateRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "refund")
 }
 
 // Refund node ETH from the minipool
-func (mp *Minipool) Refund(opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *Minipool_v3) Refund(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "refund")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not refund from minipool %s: %w", mp.Address.Hex(), err)
@@ -305,7 +317,7 @@ func (mp *Minipool) Refund(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas of DistributeBalance
-func (mp *Minipool) EstimateDistributeBalanceGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *Minipool_v3) EstimateDistributeBalanceGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "distributeBalance")
 }
 
@@ -313,7 +325,7 @@ func (mp *Minipool) EstimateDistributeBalanceGas(opts *bind.TransactOpts) (rocke
 // !!! WARNING !!!
 // DO NOT CALL THIS until the minipool's validator has exited from the Beacon Chain
 // and the balance has been deposited into the minipool!
-func (mp *Minipool) DistributeBalance(opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *Minipool_v3) DistributeBalance(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "distributeBalance")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not process withdrawal for minipool %s: %w", mp.Address.Hex(), err)
@@ -321,31 +333,13 @@ func (mp *Minipool) DistributeBalance(opts *bind.TransactOpts) (common.Hash, err
 	return tx.Hash(), nil
 }
 
-// Estimate the gas of DistributeBalanceAndFinalise
-func (mp *Minipool) EstimateDistributeBalanceAndFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "distributeBalanceAndFinalise")
-}
-
-// Distribute the minipool's ETH balance to the node operator and rETH staking pool,
-// then finalises the minipool
-// !!! WARNING !!!
-// DO NOT CALL THIS until the minipool's validator has exited from the Beacon Chain
-// and the balance has been deposited into the minipool!
-func (mp *Minipool) DistributeBalanceAndFinalise(opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "distributeBalanceAndFinalise")
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not process withdrawal for and finalise minipool %s: %w", mp.Address.Hex(), err)
-	}
-	return tx.Hash(), nil
-}
-
 // Estimate the gas of Stake
-func (mp *Minipool) EstimateStakeGas(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *Minipool_v3) EstimateStakeGas(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorSignature[:], depositDataRoot)
 }
 
 // Progress the prelaunch minipool to staking
-func (mp *Minipool) Stake(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *Minipool_v3) Stake(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "stake", validatorSignature[:], depositDataRoot)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err)
@@ -354,12 +348,12 @@ func (mp *Minipool) Stake(validatorSignature rptypes.ValidatorSignature, deposit
 }
 
 // Estimate the gas of Dissolve
-func (mp *Minipool) EstimateDissolveGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *Minipool_v3) EstimateDissolveGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "dissolve")
 }
 
 // Dissolve the initialized or prelaunch minipool
-func (mp *Minipool) Dissolve(opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *Minipool_v3) Dissolve(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "dissolve")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err)
@@ -368,12 +362,12 @@ func (mp *Minipool) Dissolve(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas of Close
-func (mp *Minipool) EstimateCloseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *Minipool_v3) EstimateCloseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "close")
 }
 
 // Withdraw node balances from the dissolved minipool and close it
-func (mp *Minipool) Close(opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *Minipool_v3) Close(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "close")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not close minipool %s: %w", mp.Address.Hex(), err)
@@ -382,12 +376,12 @@ func (mp *Minipool) Close(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas of Finalise
-func (mp *Minipool) EstimateFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *Minipool_v3) EstimateFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "finalise")
 }
 
 // Finalise a minipool to get the RPL stake back
-func (mp *Minipool) Finalise(opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *Minipool_v3) Finalise(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "finalise")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not finalise minipool %s: %w", mp.Address.Hex(), err)
@@ -396,12 +390,12 @@ func (mp *Minipool) Finalise(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Estimate the gas of DelegateUpgrade
-func (mp *Minipool) EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *Minipool_v3) EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "delegateUpgrade")
 }
 
 // Upgrade this minipool to the latest network delegate contract
-func (mp *Minipool) DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *Minipool_v3) DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "delegateUpgrade")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not upgrade delegate for minipool %s: %w", mp.Address.Hex(), err)
@@ -410,12 +404,12 @@ func (mp *Minipool) DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, error
 }
 
 // Estimate the gas of DelegateRollback
-func (mp *Minipool) EstimateDelegateRollbackGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *Minipool_v3) EstimateDelegateRollbackGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "delegateRollback")
 }
 
 // Rollback to previous delegate contract
-func (mp *Minipool) DelegateRollback(opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *Minipool_v3) DelegateRollback(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "delegateRollback")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not rollback delegate for minipool %s: %w", mp.Address.Hex(), err)
@@ -424,12 +418,12 @@ func (mp *Minipool) DelegateRollback(opts *bind.TransactOpts) (common.Hash, erro
 }
 
 // Estimate the gas of SetUseLatestDelegate
-func (mp *Minipool) EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *Minipool_v3) EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "setUseLatestDelegate", setting)
 }
 
 // If set to true, will automatically use the latest delegate contract
-func (mp *Minipool) SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *Minipool_v3) SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "setUseLatestDelegate", setting)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not set use latest delegate for minipool %s: %w", mp.Address.Hex(), err)
@@ -438,7 +432,7 @@ func (mp *Minipool) SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) 
 }
 
 // Getter for useLatestDelegate setting
-func (mp *Minipool) GetUseLatestDelegate(opts *bind.CallOpts) (bool, error) {
+func (mp *Minipool_v3) GetUseLatestDelegate(opts *bind.CallOpts) (bool, error) {
 	setting := new(bool)
 	if err := mp.Contract.Call(opts, setting, "getUseLatestDelegate"); err != nil {
 		return false, fmt.Errorf("Could not get use latest delegate for minipool %s: %w", mp.Address.Hex(), err)
@@ -447,7 +441,7 @@ func (mp *Minipool) GetUseLatestDelegate(opts *bind.CallOpts) (bool, error) {
 }
 
 // Returns the address of the minipool's stored delegate
-func (mp *Minipool) GetDelegate(opts *bind.CallOpts) (common.Address, error) {
+func (mp *Minipool_v3) GetDelegate(opts *bind.CallOpts) (common.Address, error) {
 	address := new(common.Address)
 	if err := mp.Contract.Call(opts, address, "getDelegate"); err != nil {
 		return common.Address{}, fmt.Errorf("Could not get delegate for minipool %s: %w", mp.Address.Hex(), err)
@@ -456,7 +450,7 @@ func (mp *Minipool) GetDelegate(opts *bind.CallOpts) (common.Address, error) {
 }
 
 // Returns the address of the minipool's previous delegate (or address(0) if not set)
-func (mp *Minipool) GetPreviousDelegate(opts *bind.CallOpts) (common.Address, error) {
+func (mp *Minipool_v3) GetPreviousDelegate(opts *bind.CallOpts) (common.Address, error) {
 	address := new(common.Address)
 	if err := mp.Contract.Call(opts, address, "getPreviousDelegate"); err != nil {
 		return common.Address{}, fmt.Errorf("Could not get previous delegate for minipool %s: %w", mp.Address.Hex(), err)
@@ -465,7 +459,7 @@ func (mp *Minipool) GetPreviousDelegate(opts *bind.CallOpts) (common.Address, er
 }
 
 // Returns the delegate which will be used when calling this minipool taking into account useLatestDelegate setting
-func (mp *Minipool) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, error) {
+func (mp *Minipool_v3) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, error) {
 	address := new(common.Address)
 	if err := mp.Contract.Call(opts, address, "getEffectiveDelegate"); err != nil {
 		return common.Address{}, fmt.Errorf("Could not get effective delegate for minipool %s: %w", mp.Address.Hex(), err)
@@ -473,8 +467,22 @@ func (mp *Minipool) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, e
 	return *address, nil
 }
 
+// Estimate the gas required to reduce a minipool's bond
+func (mp *Minipool_v3) EstimateReduceBondAmountGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "reduceBondAmount")
+}
+
+// Reduce a minipool's bond
+func (mp *Minipool_v3) ReduceBondAmount(opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "reduceBondAmount")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not reduce bond for minipool %s: %w", mp.Address.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
 // Given a validator balance, calculates how much belongs to the node taking into consideration rewards and penalties
-func (mp *Minipool) CalculateNodeShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+func (mp *Minipool_v3) CalculateNodeShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
 	nodeAmount := new(*big.Int)
 	if err := mp.Contract.Call(opts, nodeAmount, "calculateNodeShare", balance); err != nil {
 		return nil, fmt.Errorf("Could not get minipool node portion: %w", err)
@@ -483,7 +491,7 @@ func (mp *Minipool) CalculateNodeShare(balance *big.Int, opts *bind.CallOpts) (*
 }
 
 // Given a validator balance, calculates how much belongs to rETH users taking into consideration rewards and penalties
-func (mp *Minipool) CalculateUserShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+func (mp *Minipool_v3) CalculateUserShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
 	userAmount := new(*big.Int)
 	if err := mp.Contract.Call(opts, userAmount, "calculateUserShare", balance); err != nil {
 		return nil, fmt.Errorf("Could not get minipool user portion: %w", err)
@@ -491,13 +499,13 @@ func (mp *Minipool) CalculateUserShare(balance *big.Int, opts *bind.CallOpts) (*
 	return *userAmount, nil
 }
 
-// Estimate the gas requiired to vote to scrub a minipool
-func (mp *Minipool) EstimateVoteScrubGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+// Estimate the gas required to vote to scrub a minipool
+func (mp *Minipool_v3) EstimateVoteScrubGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "voteScrub")
 }
 
 // Vote to scrub a minipool
-func (mp *Minipool) VoteScrub(opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *Minipool_v3) VoteScrub(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "voteScrub")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not vote to scrub minipool %s: %w", mp.Address.Hex(), err)
@@ -505,8 +513,22 @@ func (mp *Minipool) VoteScrub(opts *bind.TransactOpts) (common.Hash, error) {
 	return tx.Hash(), nil
 }
 
+// Estimate the gas required to promote a vacant minipool
+func (mp *Minipool_v3) EstimatePromoteGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "promote")
+}
+
+// Promote a vacant minipool
+func (mp *Minipool_v3) Promote(opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "promote")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not promote minipool %s: %w", mp.Address.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get the data from this minipool's MinipoolPrestaked event
-func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts) (minipool.PrestakeData, error) {
+func (mp *Minipool_v3) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts) (PrestakeData, error) {
 
 	addressFilter := []common.Address{mp.Address}
 	topicFilter := [][]common.Hash{{mp.Contract.ABI.Events["MinipoolPrestaked"].ID}}
@@ -514,14 +536,14 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 	// Grab the latest block number
 	currentBlock, err := mp.RocketPool.Client.BlockNumber(context.Background())
 	if err != nil {
-		return minipool.PrestakeData{}, fmt.Errorf("Error getting current block %s: %w", mp.Address.Hex(), err)
+		return PrestakeData{}, fmt.Errorf("Error getting current block %s: %w", mp.Address.Hex(), err)
 	}
 
 	// Grab the lowest block number worth querying from (should never have to go back this far in practice)
 	deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
 	fromBlockBig, err := mp.RocketPool.RocketStorage.GetUint(nil, deployBlockHash)
 	if err != nil {
-		return minipool.PrestakeData{}, fmt.Errorf("Error getting deploy block %s: %w", mp.Address.Hex(), err)
+		return PrestakeData{}, fmt.Errorf("Error getting deploy block %s: %w", mp.Address.Hex(), err)
 	}
 
 	fromBlock := fromBlockBig.Uint64()
@@ -529,8 +551,8 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 	found := false
 
 	// Backwards scan through blocks to find the event
-	for i := currentBlock; i >= fromBlock; i -= minipool.EventScanInterval {
-		from := i - minipool.EventScanInterval + 1
+	for i := currentBlock; i >= fromBlock; i -= EventScanInterval {
+		from := i - EventScanInterval + 1
 		if from < fromBlock {
 			from = fromBlock
 		}
@@ -540,7 +562,7 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 
 		logs, err := eth.GetLogs(mp.RocketPool, addressFilter, topicFilter, intervalSize, fromBig, toBig, nil)
 		if err != nil {
-			return minipool.PrestakeData{}, fmt.Errorf("Error getting prestake logs for minipool %s: %w", mp.Address.Hex(), err)
+			return PrestakeData{}, fmt.Errorf("Error getting prestake logs for minipool %s: %w", mp.Address.Hex(), err)
 		}
 
 		if len(logs) > 0 {
@@ -552,18 +574,18 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 
 	if !found {
 		// This should never happen
-		return minipool.PrestakeData{}, fmt.Errorf("Error finding prestake log for minipool %s", mp.Address.Hex())
+		return PrestakeData{}, fmt.Errorf("Error finding prestake log for minipool %s", mp.Address.Hex())
 	}
 
 	// Decode the event
-	prestakeEvent := new(minipool.MinipoolPrestakeEvent)
+	prestakeEvent := new(MinipoolPrestakeEvent)
 	mp.Contract.Contract.UnpackLog(prestakeEvent, "MinipoolPrestaked", log)
 	if err != nil {
-		return minipool.PrestakeData{}, fmt.Errorf("Error unpacking prestake data: %w", err)
+		return PrestakeData{}, fmt.Errorf("Error unpacking prestake data: %w", err)
 	}
 
 	// Convert the event to a more useable struct
-	prestakeData := minipool.PrestakeData{
+	prestakeData := PrestakeData{
 		Pubkey:                rptypes.BytesToValidatorPubkey(prestakeEvent.Pubkey),
 		WithdrawalCredentials: common.BytesToHash(prestakeEvent.WithdrawalCredentials),
 		Amount:                prestakeEvent.Amount,
@@ -572,13 +594,4 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 		Time:                  time.Unix(prestakeEvent.Time.Int64(), 0),
 	}
 	return prestakeData, nil
-}
-
-// Get a minipool contract
-var rocketMinipoolLock sync.Mutex
-
-func getMinipoolContract(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	rocketMinipoolLock.Lock()
-	defer rocketMinipoolLock.Unlock()
-	return rp.MakeContract("rocketMinipool", minipoolAddress, opts)
 }
