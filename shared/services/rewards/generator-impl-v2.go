@@ -1022,7 +1022,7 @@ func (r *treeGeneratorImpl_v2) createMinipoolIndexMap() error {
 				status, exists := statusMap[minipoolInfo.ValidatorPubkey]
 				if !exists {
 					// Remove minipools that don't have indices yet since they're not actually viable
-					r.log.Printlnf("WARNING: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
+					r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
 					minipoolInfo.StartSlot = 0
 					minipoolInfo.EndSlot = 0
 					minipoolInfo.WasActive = false
@@ -1030,7 +1030,7 @@ func (r *treeGeneratorImpl_v2) createMinipoolIndexMap() error {
 					switch status.Status {
 					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
 						// Remove minipools that don't have indices yet since they're not actually viable
-						r.log.Printlnf("WARNING: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
+						r.log.Printlnf("NOTE: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
 						minipoolInfo.StartSlot = 0
 						minipoolInfo.EndSlot = 0
 						minipoolInfo.WasActive = false
@@ -1054,6 +1054,15 @@ func (r *treeGeneratorImpl_v2) createMinipoolIndexMap() error {
 						// Check if the minipool exited before this interval
 						if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
 							r.log.Printlnf("NOTE: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
+							minipoolInfo.StartSlot = 0
+							minipoolInfo.EndSlot = 0
+							minipoolInfo.WasActive = false
+							continue
+						}
+
+						if startSlot > details.EndSlot {
+							// This minipool was activated after the node's window ended, so don't count it
+							r.log.Printlnf("NOTE: minipool %s was activated on slot %d which was after the node's end slot of %d; removing it", minipoolInfo.Address.Hex(), details.EndSlot, r.rewardsFile.ConsensusStartBlock)
 							minipoolInfo.StartSlot = 0
 							minipoolInfo.EndSlot = 0
 							minipoolInfo.WasActive = false
