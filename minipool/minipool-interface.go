@@ -75,6 +75,8 @@ type Minipool interface {
 	GetUserDepositAssignedTime(opts *bind.CallOpts) (time.Time, error)
 	EstimateRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	Refund(opts *bind.TransactOpts) (common.Hash, error)
+	EstimateDistributeBalanceGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	DistributeBalance(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateStakeGas(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	Stake(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (common.Hash, error)
 	EstimateDissolveGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
