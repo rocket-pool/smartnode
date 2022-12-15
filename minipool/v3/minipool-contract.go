@@ -23,6 +23,7 @@ import (
 // Minipool contract
 type Minipool struct {
 	Address    common.Address
+	Version    uint8
 	Contract   *rocketpool.Contract
 	RocketPool *rocketpool.RocketPool
 }
@@ -39,6 +40,7 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
 	// Create and return
 	return &Minipool{
 		Address:    address,
+		Version:    3,
 		Contract:   contract,
 		RocketPool: rp,
 	}, nil
@@ -47,6 +49,11 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
 // Get the contract address
 func (mp *Minipool) GetAddress() common.Address {
 	return mp.Address
+}
+
+// Get the contract version
+func (mp *Minipool) GetVersion() uint8 {
+	return mp.Version
 }
 
 // Get status details
@@ -460,15 +467,6 @@ func (mp *Minipool) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, e
 		return common.Address{}, fmt.Errorf("Could not get effective delegate for minipool %s: %w", mp.Address.Hex(), err)
 	}
 	return *address, nil
-}
-
-// Get the version of the minipool contract
-func (mp *Minipool) GetVersion(opts *bind.CallOpts) (uint8, error) {
-	version := new(uint8)
-	if err := mp.Contract.Call(opts, version, "version"); err != nil {
-		return 0, fmt.Errorf("Could not get minipool version: %w", err)
-	}
-	return *version, nil
 }
 
 // Estimate the gas required to reduce a minipool's bond

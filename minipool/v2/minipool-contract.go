@@ -23,6 +23,7 @@ import (
 // Minipool contract
 type Minipool struct {
 	Address    common.Address
+	Version    uint8
 	Contract   *rocketpool.Contract
 	RocketPool *rocketpool.RocketPool
 }
@@ -39,6 +40,7 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
 	// Create and return
 	return &Minipool{
 		Address:    address,
+		Version:    2,
 		Contract:   contract,
 		RocketPool: rp,
 	}, nil
@@ -47,6 +49,11 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
 // Get the contract address
 func (mp *Minipool) GetAddress() common.Address {
 	return mp.Address
+}
+
+// Get the contract version
+func (mp *Minipool) GetVersion() uint8 {
+	return mp.Version
 }
 
 // Get status details

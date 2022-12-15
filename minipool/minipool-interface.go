@@ -55,6 +55,7 @@ type PrestakeData struct {
 
 type Minipool interface {
 	GetAddress() common.Address
+	GetVersion() uint8
 	GetStatusDetails(opts *bind.CallOpts) (StatusDetails, error)
 	GetStatus(opts *bind.CallOpts) (rptypes.MinipoolStatus, error)
 	GetStatusBlock(opts *bind.CallOpts) (uint64, error)
