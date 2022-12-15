@@ -197,7 +197,7 @@ func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowS
 	}
 
 	// Create minipool contracts
-	minipools := make([]*minipool.Minipool, len(addresses))
+	minipools := make([]minipool.Minipool, len(addresses))
 	for mi, address := range addresses {
 		mp, err := minipool.NewMinipool(t.rp, address, nil)
 		if err != nil {
@@ -214,29 +214,29 @@ func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowS
 	for mi, mp := range minipools {
 		mi, mp := mi, mp
 		wg.Go(func() error {
-			details[mi].Address = mp.Address
+			details[mi].Address = mp.GetAddress()
 
 			depositBalance, err := mp.GetNodeDepositBalance(nil)
 			if err != nil {
-				return fmt.Errorf("error getting node deposit balance for minipool %s: %w", mp.Address.Hex(), err)
+				return fmt.Errorf("error getting node deposit balance for minipool %s: %w", mp.GetAddress().Hex(), err)
 			}
 			details[mi].DepositBalance = depositBalance
 
-			reduceBondTime, err := minipool.GetReduceBondTime(t.rp, mp.Address, nil)
+			reduceBondTime, err := minipool.GetReduceBondTime(t.rp, mp.GetAddress(), nil)
 			if err != nil {
-				return fmt.Errorf("error getting bond reduction time for minipool %s: %w", mp.Address.Hex(), err)
+				return fmt.Errorf("error getting bond reduction time for minipool %s: %w", mp.GetAddress().Hex(), err)
 			}
 			details[mi].ReduceBondTime = reduceBondTime
 
-			reduceBondCancelled, err := minipool.GetReduceBondCancelled(t.rp, mp.Address, nil)
+			reduceBondCancelled, err := minipool.GetReduceBondCancelled(t.rp, mp.GetAddress(), nil)
 			if err != nil {
-				return fmt.Errorf("error getting bond reduction cancel status for minipool %s: %w", mp.Address.Hex(), err)
+				return fmt.Errorf("error getting bond reduction cancel status for minipool %s: %w", mp.GetAddress().Hex(), err)
 			}
 			details[mi].ReduceBondCancelled = reduceBondCancelled
 
 			status, err := mp.GetStatus(nil)
 			if err != nil {
-				return fmt.Errorf("error getting status for minipool %s: %w", mp.Address.Hex(), err)
+				return fmt.Errorf("error getting status for minipool %s: %w", mp.GetAddress().Hex(), err)
 			}
 			details[mi].Status = status
 
@@ -265,7 +265,7 @@ func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowS
 				reduceableMinipools = append(reduceableMinipools, minipoolDetails)
 			} else {
 				remainingTime := windowStart - timeSinceReductionStart
-				t.log.Printlnf("Minipool %s has %s left until it can have its bond reduced.", mp.Address.Hex(), remainingTime)
+				t.log.Printlnf("Minipool %s has %s left until it can have its bond reduced.", mp.GetAddress().Hex(), remainingTime)
 			}
 		}
 	}
@@ -293,8 +293,14 @@ func (t *reduceBonds) reduceBond(mp minipoolBondReductionDetails, windowStart ti
 		return false, fmt.Errorf("error creating minipool binding for %s: %w", mp.Address.Hex(), err)
 	}
 
+	// Get the updated minipool interface
+	mpv3, success := minipool.GetMinipoolAsV3(mpBinding)
+	if !success {
+		return false, fmt.Errorf("cannot reduce bond for minipool %s because its delegate version is too low (v%d); please update the delegate", mpBinding.GetAddress().Hex(), mpBinding.GetVersion())
+	}
+
 	// Get the gas limit
-	gasInfo, err := mpBinding.EstimateReduceBondAmountGas(opts)
+	gasInfo, err := mpv3.EstimateReduceBondAmountGas(opts)
 	if err != nil {
 		return false, fmt.Errorf("could not estimate the gas required to reduce bond: %w", err)
 	}
@@ -334,7 +340,7 @@ func (t *reduceBonds) reduceBond(mp minipoolBondReductionDetails, windowStart ti
 	opts.GasLimit = gas.Uint64()
 
 	// Reduce bond
-	hash, err := mpBinding.ReduceBondAmount(opts)
+	hash, err := mpv3.ReduceBondAmount(opts)
 	if err != nil {
 		return false, err
 	}

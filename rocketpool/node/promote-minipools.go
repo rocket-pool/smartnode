@@ -147,7 +147,7 @@ func (t *promoteMinipools) run() error {
 	for _, mp := range minipools {
 		_, err := t.promoteMinipool(mp, eth2Config)
 		if err != nil {
-			t.log.Println(fmt.Errorf("Could not promote minipool %s: %w", mp.Address.Hex(), err))
+			t.log.Println(fmt.Errorf("Could not promote minipool %s: %w", mp.GetAddress().Hex(), err))
 			return err
 		}
 	}
@@ -158,20 +158,20 @@ func (t *promoteMinipools) run() error {
 }
 
 // Get vacant minipools
-func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address) ([]*minipool.Minipool, error) {
+func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address) ([]minipool.Minipool, error) {
 
 	// Get node minipool addresses
 	addresses, err := minipool.GetNodeMinipoolAddresses(t.rp, nodeAddress, nil)
 	if err != nil {
-		return []*minipool.Minipool{}, err
+		return []minipool.Minipool{}, err
 	}
 
 	// Create minipool contracts
-	minipools := make([]*minipool.Minipool, len(addresses))
+	minipools := make([]minipool.Minipool, len(addresses))
 	for mi, address := range addresses {
 		mp, err := minipool.NewMinipool(t.rp, address, nil)
 		if err != nil {
-			return []*minipool.Minipool{}, err
+			return []minipool.Minipool{}, err
 		}
 		minipools[mi] = mp
 	}
@@ -194,25 +194,25 @@ func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address) ([]*mi
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return []*minipool.Minipool{}, err
+		return []minipool.Minipool{}, err
 	}
 
 	// Get the scrub period
 	scrubPeriodSeconds, err := trustednode.GetScrubPeriod(t.rp, nil)
 	if err != nil {
-		return []*minipool.Minipool{}, err
+		return []minipool.Minipool{}, err
 	}
 	scrubPeriod := time.Duration(scrubPeriodSeconds) * time.Second
 
 	// Get the time of the latest block
 	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return []*minipool.Minipool{}, fmt.Errorf("Can't get the latest block time: %w", err)
+		return []minipool.Minipool{}, fmt.Errorf("Can't get the latest block time: %w", err)
 	}
 	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
 
 	// Filter minipools by vacancy
-	vacantMinipools := []*minipool.Minipool{}
+	vacantMinipools := []minipool.Minipool{}
 	for mi, mp := range minipools {
 		if statuses[mi].IsVacant {
 			creationTime := statuses[mi].StatusTime
@@ -220,7 +220,7 @@ func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address) ([]*mi
 			if remainingTime < 0 {
 				vacantMinipools = append(vacantMinipools, mp)
 			} else {
-				t.log.Printlnf("Minipool %s has %s left until it can be promoted.", mp.Address.Hex(), remainingTime)
+				t.log.Printlnf("Minipool %s has %s left until it can be promoted.", mp.GetAddress().Hex(), remainingTime)
 			}
 		}
 	}
@@ -231,10 +231,16 @@ func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address) ([]*mi
 }
 
 // Promote a minipool
-func (t *promoteMinipools) promoteMinipool(mp *minipool.Minipool, eth2Config beacon.Eth2Config) (bool, error) {
+func (t *promoteMinipools) promoteMinipool(mp minipool.Minipool, eth2Config beacon.Eth2Config) (bool, error) {
 
 	// Log
-	t.log.Printlnf("Promoting minipool %s...", mp.Address.Hex())
+	t.log.Printlnf("Promoting minipool %s...", mp.GetAddress().Hex())
+
+	// Get the updated minipool interface
+	mpv3, success := minipool.GetMinipoolAsV3(mp)
+	if !success {
+		return false, fmt.Errorf("cannot promote minipool %s because its delegate version is too low (v%d); please update the delegate to promote it", mp.GetAddress().Hex(), mp.GetVersion())
+	}
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -243,7 +249,7 @@ func (t *promoteMinipools) promoteMinipool(mp *minipool.Minipool, eth2Config bea
 	}
 
 	// Get the gas limit
-	gasInfo, err := mp.EstimatePromoteGas(opts)
+	gasInfo, err := mpv3.EstimatePromoteGas(opts)
 	if err != nil {
 		return false, fmt.Errorf("Could not estimate the gas required to stake the minipool: %w", err)
 	}
@@ -287,7 +293,7 @@ func (t *promoteMinipools) promoteMinipool(mp *minipool.Minipool, eth2Config bea
 	opts.GasLimit = gas.Uint64()
 
 	// Promote minipool
-	hash, err := mp.Promote(opts)
+	hash, err := mpv3.Promote(opts)
 	if err != nil {
 		return false, err
 	}
@@ -299,7 +305,7 @@ func (t *promoteMinipools) promoteMinipool(mp *minipool.Minipool, eth2Config bea
 	}
 
 	// Log
-	t.log.Printlnf("Successfully promoted minipool %s.", mp.Address.Hex())
+	t.log.Printlnf("Successfully promoted minipool %s.", mp.GetAddress().Hex())
 
 	// Return
 	return true, nil

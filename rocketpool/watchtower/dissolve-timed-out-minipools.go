@@ -110,7 +110,7 @@ func (t *dissolveTimedOutMinipools) run() error {
 	// Dissolve minipools
 	for _, mp := range minipools {
 		if err := t.dissolveMinipool(mp); err != nil {
-			t.log.Println(fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err))
+			t.log.Println(fmt.Errorf("Could not dissolve minipool %s: %w", mp.GetAddress().Hex(), err))
 		}
 	}
 
@@ -120,7 +120,7 @@ func (t *dissolveTimedOutMinipools) run() error {
 }
 
 // Get timed out minipools
-func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool, error) {
+func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]minipool.Minipool, error) {
 
 	// Data
 	var wg1 errgroup.Group
@@ -151,15 +151,15 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
 
 	// Wait for data
 	if err := wg1.Wait(); err != nil {
-		return []*minipool.Minipool{}, err
+		return []minipool.Minipool{}, err
 	}
 
 	// Create minipool contracts
-	minipools := make([]*minipool.Minipool, len(addresses))
+	minipools := make([]minipool.Minipool, len(addresses))
 	for mi, address := range addresses {
 		mp, err := minipool.NewMinipool(t.rp, address, nil)
 		if err != nil {
-			return []*minipool.Minipool{}, err
+			return []minipool.Minipool{}, err
 		}
 		minipools[mi] = mp
 	}
@@ -189,14 +189,14 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
 			})
 		}
 		if err := wg.Wait(); err != nil {
-			return []*minipool.Minipool{}, err
+			return []minipool.Minipool{}, err
 		}
 
 	}
 
 	// Filter minipools by status
 	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
-	timedOutMinipools := []*minipool.Minipool{}
+	timedOutMinipools := []minipool.Minipool{}
 	for mi, mp := range minipools {
 		if statuses[mi].Status == rptypes.Prelaunch && latestBlockTime.Sub(statuses[mi].StatusTime) >= launchTimeout {
 			timedOutMinipools = append(timedOutMinipools, mp)
@@ -209,10 +209,10 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
 }
 
 // Dissolve a minipool
-func (t *dissolveTimedOutMinipools) dissolveMinipool(mp *minipool.Minipool) error {
+func (t *dissolveTimedOutMinipools) dissolveMinipool(mp minipool.Minipool) error {
 
 	// Log
-	t.log.Printlnf("Dissolving minipool %s...", mp.Address.Hex())
+	t.log.Printlnf("Dissolving minipool %s...", mp.GetAddress().Hex())
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -250,7 +250,7 @@ func (t *dissolveTimedOutMinipools) dissolveMinipool(mp *minipool.Minipool) erro
 	}
 
 	// Log
-	t.log.Printlnf("Successfully dissolved minipool %s.", mp.Address.Hex())
+	t.log.Printlnf("Successfully dissolved minipool %s.", mp.GetAddress().Hex())
 
 	// Return
 	return nil

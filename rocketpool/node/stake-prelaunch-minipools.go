@@ -150,7 +150,7 @@ func (t *stakePrelaunchMinipools) run() error {
 	for _, mp := range minipools {
 		success, err := t.stakeMinipool(mp, eth2Config)
 		if err != nil {
-			t.log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
+			t.log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.GetAddress().Hex(), err))
 			return err
 		}
 		if success {
@@ -171,20 +171,20 @@ func (t *stakePrelaunchMinipools) run() error {
 }
 
 // Get prelaunch minipools
-func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Address) ([]*minipool.Minipool, error) {
+func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Address) ([]minipool.Minipool, error) {
 
 	// Get node minipool addresses
 	addresses, err := minipool.GetNodeMinipoolAddresses(t.rp, nodeAddress, nil)
 	if err != nil {
-		return []*minipool.Minipool{}, err
+		return []minipool.Minipool{}, err
 	}
 
 	// Create minipool contracts
-	minipools := make([]*minipool.Minipool, len(addresses))
+	minipools := make([]minipool.Minipool, len(addresses))
 	for mi, address := range addresses {
 		mp, err := minipool.NewMinipool(t.rp, address, nil)
 		if err != nil {
-			return []*minipool.Minipool{}, err
+			return []minipool.Minipool{}, err
 		}
 		minipools[mi] = mp
 	}
@@ -207,25 +207,25 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return []*minipool.Minipool{}, err
+		return []minipool.Minipool{}, err
 	}
 
 	// Get the scrub period
 	scrubPeriodSeconds, err := trustednode.GetScrubPeriod(t.rp, nil)
 	if err != nil {
-		return []*minipool.Minipool{}, err
+		return []minipool.Minipool{}, err
 	}
 	scrubPeriod := time.Duration(scrubPeriodSeconds) * time.Second
 
 	// Get the time of the latest block
 	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return []*minipool.Minipool{}, fmt.Errorf("Can't get the latest block time: %w", err)
+		return []minipool.Minipool{}, fmt.Errorf("Can't get the latest block time: %w", err)
 	}
 	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
 
 	// Filter minipools by status
-	prelaunchMinipools := []*minipool.Minipool{}
+	prelaunchMinipools := []minipool.Minipool{}
 	for mi, mp := range minipools {
 		if statuses[mi].Status == rptypes.Prelaunch {
 			creationTime := statuses[mi].StatusTime
@@ -233,7 +233,7 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 			if remainingTime < 0 {
 				prelaunchMinipools = append(prelaunchMinipools, mp)
 			} else {
-				t.log.Printlnf("Minipool %s has %s left until it can be staked.", mp.Address.Hex(), remainingTime)
+				t.log.Printlnf("Minipool %s has %s left until it can be staked.", mp.GetAddress().Hex(), remainingTime)
 			}
 		}
 	}
@@ -244,19 +244,19 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 }
 
 // Stake a minipool
-func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Config beacon.Eth2Config) (bool, error) {
+func (t *stakePrelaunchMinipools) stakeMinipool(mp minipool.Minipool, eth2Config beacon.Eth2Config) (bool, error) {
 
 	// Log
-	t.log.Printlnf("Staking minipool %s...", mp.Address.Hex())
+	t.log.Printlnf("Staking minipool %s...", mp.GetAddress().Hex())
 
 	// Get minipool withdrawal credentials
-	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(t.rp, mp.Address, nil)
+	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(t.rp, mp.GetAddress(), nil)
 	if err != nil {
 		return false, err
 	}
 
 	// Get the validator key for the minipool
-	validatorPubkey, err := minipool.GetMinipoolPubkey(t.rp, mp.Address, nil)
+	validatorPubkey, err := minipool.GetMinipoolPubkey(t.rp, mp.GetAddress(), nil)
 	if err != nil {
 		return false, err
 	}
@@ -268,7 +268,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
 	// Get the minipool type
 	depositType, err := mp.GetDepositType(nil)
 	if err != nil {
-		return false, fmt.Errorf("error getting deposit type for minipool %s: %w", mp.Address.Hex(), err)
+		return false, fmt.Errorf("error getting deposit type for minipool %s: %w", mp.GetAddress().Hex(), err)
 	}
 
 	var depositAmount uint64
@@ -278,7 +278,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
 	case rptypes.Variable:
 		depositAmount = uint64(31e9) // 31 ETH in gwei
 	default:
-		return false, fmt.Errorf("error staking minipool %s: unknown deposit type %d", mp.Address.Hex(), depositType)
+		return false, fmt.Errorf("error staking minipool %s: unknown deposit type %d", mp.GetAddress().Hex(), depositType)
 	}
 
 	// Get validator deposit data
@@ -355,7 +355,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
 	}
 
 	// Log
-	t.log.Printlnf("Successfully staked minipool %s.", mp.Address.Hex())
+	t.log.Printlnf("Successfully staked minipool %s.", mp.GetAddress().Hex())
 
 	// Return
 	return true, nil

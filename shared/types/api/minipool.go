@@ -264,9 +264,11 @@ type BeginReduceBondAmountResponse struct {
 }
 
 type CanReduceBondAmountResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status          string             `json:"status"`
+	Error           string             `json:"error"`
+	MinipoolVersion uint8              `json:"minipoolVersion"`
+	CanReduce       bool               `json:"canReduce"`
+	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
 }
 type ReduceBondAmountResponse struct {
 	Status string      `json:"status"`

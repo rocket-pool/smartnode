@@ -105,16 +105,21 @@ func canReduceBondAmount(c *cli.Context, minipoolAddress common.Address) (*api.C
 	if err != nil {
 		return nil, fmt.Errorf("error creating minipool binding for %s: %w", minipoolAddress.Hex(), err)
 	}
+	response.MinipoolVersion = mp.GetVersion()
+	mpv3, success := minipool.GetMinipoolAsV3(mp)
+	if success {
+		// Get gas estimate
+		opts, err := w.GetNodeAccountTransactor()
+		if err != nil {
+			return nil, err
+		}
+		gasInfo, err := mpv3.EstimateReduceBondAmountGas(opts)
+		if err == nil {
+			response.GasInfo = gasInfo
+		}
+	}
 
-	// Get gas estimate
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := mp.EstimateReduceBondAmountGas(opts)
-	if err == nil {
-		response.GasInfo = gasInfo
-	}
+	response.CanReduce = success
 
 	// Update & return response
 	return &response, nil
@@ -142,6 +147,10 @@ func reduceBondAmount(c *cli.Context, minipoolAddress common.Address) (*api.Redu
 	if err != nil {
 		return nil, fmt.Errorf("error creating minipool binding for %s: %w", minipoolAddress.Hex(), err)
 	}
+	mpv3, success := minipool.GetMinipoolAsV3(mp)
+	if !success {
+		return nil, fmt.Errorf("bond reduction is not supported for minipool version %d; please upgrade the delegate for minipool %s to reduce its bond", mp.GetVersion(), minipoolAddress.Hex())
+	}
 
 	// Get the node transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -156,7 +165,7 @@ func reduceBondAmount(c *cli.Context, minipoolAddress common.Address) (*api.Redu
 	}
 
 	// Start bond reduction
-	hash, err := mp.ReduceBondAmount(opts)
+	hash, err := mpv3.ReduceBondAmount(opts)
 	if err != nil {
 		return nil, err
 	}

@@ -27,13 +27,13 @@ import (
 const MinipoolDetailsBatchSize = 10
 
 // Validate that a minipool belongs to a node
-func validateMinipoolOwner(mp *minipool.Minipool, nodeAddress common.Address) error {
+func validateMinipoolOwner(mp minipool.Minipool, nodeAddress common.Address) error {
 	owner, err := mp.GetNodeAddress(nil)
 	if err != nil {
 		return err
 	}
 	if !bytes.Equal(owner.Bytes(), nodeAddress.Bytes()) {
-		return fmt.Errorf("Minipool %s does not belong to the node", mp.Address.Hex())
+		return fmt.Errorf("Minipool %s does not belong to the node", mp.GetAddress().Hex())
 	}
 	return nil
 }
@@ -236,7 +236,7 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	})
 	wg.Go(func() error {
 		var err error
-		details.Queue, err = minipool.GetQueueDetails(rp, mp, nil)
+		details.Queue, err = minipool.GetQueueDetails(rp, mp.GetAddress(), nil)
 		return err
 	})
 

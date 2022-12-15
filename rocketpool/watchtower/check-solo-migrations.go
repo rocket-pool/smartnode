@@ -321,7 +321,7 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	}
 
 	// Log
-	t.log.Printlnf("Successfully voted to scrub minipool %s.", mp.Address.Hex())
+	t.log.Printlnf("Successfully voted to scrub minipool %s.", mp.GetAddress().Hex())
 
 	// Return
 	return nil

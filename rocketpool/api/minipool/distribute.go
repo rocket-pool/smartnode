@@ -92,9 +92,9 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 					return err
 				})
 				wg2.Go(func() error {
-					version, err := mp.GetVersion(nil)
+					version := mp.GetVersion()
 					minipoolDetails.VersionTooLow = (version < 3)
-					return err
+					return nil
 				})
 
 				// Wait for data
@@ -161,10 +161,7 @@ func canDistributeBalance(c *cli.Context, minipoolAddress common.Address) (*api.
 	response.MinipoolStatus = status
 
 	// Get minipool delegate version
-	version, err := mp.GetVersion(nil)
-	if err != nil {
-		return nil, err
-	}
+	version := mp.GetVersion()
 	response.MinipoolVersion = version
 
 	// Get gas estimate

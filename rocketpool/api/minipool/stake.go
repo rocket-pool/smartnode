@@ -90,13 +90,13 @@ func canStakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanS
 		}
 
 		// Get minipool withdrawal credentials
-		withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.Address, nil)
+		withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.GetAddress(), nil)
 		if err != nil {
 			return nil, err
 		}
 
 		// Get the validator key for the minipool
-		validatorPubkey, err := minipool.GetMinipoolPubkey(rp, mp.Address, nil)
+		validatorPubkey, err := minipool.GetMinipoolPubkey(rp, mp.GetAddress(), nil)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +108,7 @@ func canStakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanS
 		// Get the minipool type
 		depositType, err := mp.GetDepositType(nil)
 		if err != nil {
-			return nil, fmt.Errorf("error getting deposit type for minipool %s: %w", mp.Address.Hex(), err)
+			return nil, fmt.Errorf("error getting deposit type for minipool %s: %w", mp.GetAddress().Hex(), err)
 		}
 
 		var depositAmount uint64
@@ -118,7 +118,7 @@ func canStakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanS
 		case rptypes.Variable:
 			depositAmount = uint64(31e9) // 31 ETH in gwei
 		default:
-			return nil, fmt.Errorf("error staking minipool %s: unknown deposit type %d", mp.Address.Hex(), depositType)
+			return nil, fmt.Errorf("error staking minipool %s: unknown deposit type %d", mp.GetAddress().Hex(), depositType)
 		}
 
 		// Get validator deposit data
@@ -193,13 +193,13 @@ func stakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.StakeMi
 	}
 
 	// Get minipool withdrawal credentials
-	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.Address, nil)
+	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.GetAddress(), nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get the validator key for the minipool
-	validatorPubkey, err := minipool.GetMinipoolPubkey(rp, mp.Address, nil)
+	validatorPubkey, err := minipool.GetMinipoolPubkey(rp, mp.GetAddress(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func stakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.StakeMi
 	// Get the minipool type
 	depositType, err := mp.GetDepositType(nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting deposit type for minipool %s: %w", mp.Address.Hex(), err)
+		return nil, fmt.Errorf("error getting deposit type for minipool %s: %w", mp.GetAddress().Hex(), err)
 	}
 
 	var depositAmount uint64
@@ -221,7 +221,7 @@ func stakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.StakeMi
 	case rptypes.Variable:
 		depositAmount = uint64(31e9) // 31 ETH in gwei
 	default:
-		return nil, fmt.Errorf("error staking minipool %s: unknown deposit type %d", mp.Address.Hex(), depositType)
+		return nil, fmt.Errorf("error staking minipool %s: unknown deposit type %d", mp.GetAddress().Hex(), depositType)
 	}
 
 	// Get validator deposit data
