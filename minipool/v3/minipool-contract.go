@@ -1,4 +1,4 @@
-package minipool
+package minipool_v3
 
 import (
 	"context"

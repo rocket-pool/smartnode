@@ -85,11 +85,7 @@ func GetNodeManagerVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 	if err != nil {
 		return 0, err
 	}
-	version := new(uint8)
-	if err := rocketNodeManager.Call(opts, version, "version"); err != nil {
-		return 0, fmt.Errorf("Could not get node manager version: %w", err)
-	}
-	return *version, nil
+	return rocketpool.GetContractVersion(rp, *rocketNodeManager.Address, nil)
 }
 
 // Get the details for a node

@@ -17,11 +17,7 @@ func GetNodeStakingVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 	if err != nil {
 		return 0, err
 	}
-	version := new(uint8)
-	if err := rocketNodeStaking.Call(opts, version, "version"); err != nil {
-		return 0, fmt.Errorf("Could not get node staking version: %w", err)
-	}
-	return *version, nil
+	return rocketpool.GetContractVersion(rp, *rocketNodeStaking.Address, nil)
 }
 
 // Get the total RPL staked in the network

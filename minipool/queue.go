@@ -96,8 +96,8 @@ func GetQueueEffectiveCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 }
 
 // Get Queue position details of a minipool
-func GetQueueDetails(rp *rocketpool.RocketPool, mp *Minipool, opts *bind.CallOpts) (QueueDetails, error) {
-	position, err := GetQueuePositionOfMinipool(rp, mp, opts)
+func GetQueueDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (QueueDetails, error) {
+	position, err := GetQueuePositionOfMinipool(rp, minipoolAddress, opts)
 	if err != nil {
 		return QueueDetails{}, err
 	}
@@ -109,14 +109,14 @@ func GetQueueDetails(rp *rocketpool.RocketPool, mp *Minipool, opts *bind.CallOpt
 }
 
 // Get a minipools position in queue (1-indexed). 0 means it is currently not queued.
-func GetQueuePositionOfMinipool(rp *rocketpool.RocketPool, mp *Minipool, opts *bind.CallOpts) (int64, error) {
+func GetQueuePositionOfMinipool(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (int64, error) {
 	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	position := new(*big.Int)
-	if err := rocketMinipoolQueue.Call(opts, position, "getMinipoolPosition", mp.Address); err != nil {
-		return 0, fmt.Errorf("Could not get queue position for minipool %s: %w", mp.Address.Hex(), err)
+	if err := rocketMinipoolQueue.Call(opts, position, "getMinipoolPosition", minipoolAddress); err != nil {
+		return 0, fmt.Errorf("Could not get queue position for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return (*position).Int64() + 1, nil
 }
