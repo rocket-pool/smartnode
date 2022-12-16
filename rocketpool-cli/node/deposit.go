@@ -167,7 +167,9 @@ func nodeDeposit(c *cli.Context) error {
 	if !canDeposit.CanDeposit {
 		fmt.Println("Cannot make node deposit:")
 		if canDeposit.InsufficientBalance {
-			fmt.Println("The node's ETH balance is insufficient.")
+			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
+			creditBalance := eth.WeiToEth(canDeposit.CreditBalance)
+			fmt.Printf("The node's balance of %.6f ETH and credit balance of %.6f ETH are not enough to create a minipool with a %.1f ETH bond.", nodeBalance, creditBalance, amount)
 		}
 		if canDeposit.InsufficientRplStake {
 			fmt.Printf("The node has not staked enough RPL to collateralize a new minipool with a bond of %d ETH.\n", int(amount))
@@ -185,6 +187,14 @@ func nodeDeposit(c *cli.Context) error {
 			fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.\nPlease try again in a few minutes.")
 		}
 		return nil
+	}
+
+	// Get how much credit to use
+	remainingAmount := big.NewInt(0).Sub(amountWei, canDeposit.CreditBalance)
+	if remainingAmount.Cmp(big.NewInt(0)) > 0 {
+		fmt.Printf("This deposit will use all %.6f ETH from your credit balance and %.6f ETH from your node.\n\n", eth.WeiToEth(canDeposit.CreditBalance), eth.WeiToEth(remainingAmount))
+	} else {
+		fmt.Printf("This deposit will use %.6f ETH from your credit balance and will not require any ETH from your node.", amount)
 	}
 
 	if c.String("salt") != "" {

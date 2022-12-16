@@ -110,11 +110,20 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	var ethMatchedLimit *big.Int
 	var minipoolAddress common.Address
 
+	// Check credit balance
+	wg1.Go(func() error {
+		ethBalanceWei, err := node.GetNodeDepositCredit(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.CreditBalance = ethBalanceWei
+		}
+		return err
+	})
+
 	// Check node balance
 	wg1.Go(func() error {
 		ethBalanceWei, err := ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
 		if err == nil {
-			response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
+			response.NodeBalance = ethBalanceWei
 		}
 		return err
 	})
@@ -144,6 +153,10 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	if err := wg1.Wait(); err != nil {
 		return nil, err
 	}
+
+	// Check for insufficient balance
+	totalBalance := big.NewInt(0).Add(response.NodeBalance, response.CreditBalance)
+	response.InsufficientBalance = (amountWei.Cmp(totalBalance) > 0)
 
 	// Check data
 	validatorEthWei := eth.EthToWei(ValidatorEth)
@@ -512,7 +525,19 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	if err != nil {
 		return nil, err
 	}
-	opts.Value = amountWei
+
+	// Get the node's credit balance
+	creditBalanceWei, err := node.GetNodeDepositCredit(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get how much credit to use
+	remainingAmount := big.NewInt(0).Sub(amountWei, creditBalanceWei)
+	if remainingAmount.Cmp(big.NewInt(0)) > 0 {
+		// Assign the TX value to the amount required by the node
+		opts.Value = remainingAmount
+	}
 
 	// Create and save a new validator key
 	validatorKey, err := w.CreateValidatorKey()
