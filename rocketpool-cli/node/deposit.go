@@ -190,11 +190,13 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Get how much credit to use
-	remainingAmount := big.NewInt(0).Sub(amountWei, canDeposit.CreditBalance)
-	if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-		fmt.Printf("This deposit will use all %.6f ETH from your credit balance and %.6f ETH from your node.\n\n", eth.WeiToEth(canDeposit.CreditBalance), eth.WeiToEth(remainingAmount))
-	} else {
-		fmt.Printf("This deposit will use %.6f ETH from your credit balance and will not require any ETH from your node.\n\n", amount)
+	if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
+		remainingAmount := big.NewInt(0).Sub(amountWei, canDeposit.CreditBalance)
+		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
+			fmt.Printf("This deposit will use all %.6f ETH from your credit balance and %.6f ETH from your node.\n\n", eth.WeiToEth(canDeposit.CreditBalance), eth.WeiToEth(remainingAmount))
+		} else {
+			fmt.Printf("This deposit will use %.6f ETH from your credit balance and will not require any ETH from your node.\n\n", amount)
+		}
 	}
 
 	if c.String("salt") != "" {
@@ -261,7 +263,7 @@ func nodeDeposit(c *cli.Context) error {
 	fmt.Printf("The validator pubkey is: %s\n\n", response.ValidatorPubkey.Hex())
 
 	fmt.Println("Your minipool is now in Initialized status.")
-	fmt.Println("Once the 16 ETH deposit has been matched by the staking pool, it will move to Prelaunch status.")
+	fmt.Println("Once the remaining ETH has been assigned to your minipool from the staking pool, it will move to Prelaunch status.")
 	fmt.Printf("After that, it will move to Staking status once %s have passed.\n", response.ScrubPeriod)
 	fmt.Println("You can watch its progress using `rocketpool service logs node`.")
 
