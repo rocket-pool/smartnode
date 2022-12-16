@@ -177,7 +177,13 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	if err != nil {
 		return nil, err
 	}
-	opts.Value = amountWei
+
+	// Get how much credit to use
+	remainingAmount := big.NewInt(0).Sub(amountWei, response.CreditBalance)
+	if remainingAmount.Cmp(big.NewInt(0)) > 0 {
+		// Assign the TX value to the amount required by the node
+		opts.Value = remainingAmount
+	}
 
 	// Get the next validator key
 	validatorKey, err := w.GetNextValidatorKey()

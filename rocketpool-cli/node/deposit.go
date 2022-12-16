@@ -194,7 +194,7 @@ func nodeDeposit(c *cli.Context) error {
 	if remainingAmount.Cmp(big.NewInt(0)) > 0 {
 		fmt.Printf("This deposit will use all %.6f ETH from your credit balance and %.6f ETH from your node.\n\n", eth.WeiToEth(canDeposit.CreditBalance), eth.WeiToEth(remainingAmount))
 	} else {
-		fmt.Printf("This deposit will use %.6f ETH from your credit balance and will not require any ETH from your node.", amount)
+		fmt.Printf("This deposit will use %.6f ETH from your credit balance and will not require any ETH from your node.\n\n", amount)
 	}
 
 	if c.String("salt") != "" {
