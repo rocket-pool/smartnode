@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/urfave/cli"
 )
 
@@ -355,10 +356,10 @@ func getNodeTrusted(c *cli.Context) (bool, error) {
 // timeout of 0 indicates no timeout
 var ethClientSyncLock sync.Mutex
 
-func checkExecutionClientStatus(ecMgr *ExecutionClientManager) (bool, rocketpool.ExecutionClient, error) {
+func checkExecutionClientStatus(ecMgr *ExecutionClientManager, cfg *config.RocketPoolConfig) (bool, rocketpool.ExecutionClient, error) {
 
 	// Check the EC status
-	mgrStatus := ecMgr.CheckStatus()
+	mgrStatus := ecMgr.CheckStatus(cfg)
 	if ecMgr.primaryReady {
 		return true, nil, nil
 	}
@@ -447,7 +448,12 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 		return false, err
 	}
 
-	synced, clientToCheck, err := checkExecutionClientStatus(ecMgr)
+	cfg, err := GetConfig(c)
+	if err != nil {
+		return false, err
+	}
+
+	synced, clientToCheck, err := checkExecutionClientStatus(ecMgr, cfg)
 	if err != nil {
 		return false, err
 	}
@@ -473,7 +479,7 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 		if time.Since(ecRefreshTime) > ethClientStatusRefreshInterval {
 			log.Println("Refreshing primary / fallback execution client status...")
 			ecRefreshTime = time.Now()
-			synced, clientToCheck, err = checkExecutionClientStatus(ecMgr)
+			synced, clientToCheck, err = checkExecutionClientStatus(ecMgr, cfg)
 			if err != nil {
 				return false, err
 			}

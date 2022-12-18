@@ -332,7 +332,7 @@ func (p *ExecutionClientManager) SyncProgress(ctx context.Context) (*ethereum.Sy
 /// Internal functions
 /// ==================
 
-func (p *ExecutionClientManager) CheckStatus() *api.ClientManagerStatus {
+func (p *ExecutionClientManager) CheckStatus(cfg *config.RocketPoolConfig) *api.ClientManagerStatus {
 
 	status := &api.ClientManagerStatus{
 		FallbackEnabled: p.fallbackEc != nil,
@@ -352,16 +352,36 @@ func (p *ExecutionClientManager) CheckStatus() *api.ClientManagerStatus {
 	// Get the primary EC status
 	status.PrimaryClientStatus = checkEcStatus(p.primaryEc)
 
+	// Flag if primary client is ready
+	p.primaryReady = (status.PrimaryClientStatus.IsWorking && status.PrimaryClientStatus.IsSynced)
+
 	// Get the fallback EC status if applicable
 	if status.FallbackEnabled {
 		status.FallbackClientStatus = checkEcStatus(p.fallbackEc)
+		// Check if fallback is using the expected network
+		if status.FallbackClientStatus.NetworkId != cfg.Smartnode.Network.ID {
+			p.fallbackReady = false
+			colorReset := "\033[0m"
+			colorYellow := "\033[33m"
+			status.FallbackClientStatus.Error = fmt.Sprintf("The fallback client is using a different Chain [%s%s%s]", colorYellow, getNetworkNameFromId(status.FallbackClientStatus.NetworkId), colorReset)
+			return status
+		}
 	}
 
-	// Flag the ready clients
-	p.primaryReady = (status.PrimaryClientStatus.IsWorking && status.PrimaryClientStatus.IsSynced)
 	p.fallbackReady = (status.FallbackEnabled && status.FallbackClientStatus.IsWorking && status.FallbackClientStatus.IsSynced)
 
 	return status
+}
+
+func getNetworkNameFromId(networkId string) string {
+	switch networkId {
+	case "1":
+		return "Ethereum Mainnet"
+	case "5":
+		return "Goerli Testnet"
+	default:
+		return "Unknown Network"
+	}
 
 }
 
@@ -369,6 +389,19 @@ func (p *ExecutionClientManager) CheckStatus() *api.ClientManagerStatus {
 func checkEcStatus(client *ethclient.Client) api.ClientStatus {
 
 	status := api.ClientStatus{}
+
+	// Get the NetworkId
+	networkId, err := client.NetworkID(context.Background())
+	if err != nil {
+		status.Error = fmt.Sprintf("Sync progress check failed with [%s]", err.Error())
+		status.IsSynced = false
+		status.IsWorking = false
+		return status
+	}
+
+	if networkId != nil {
+		status.NetworkId = networkId.Text(10)
+	}
 
 	// Get the fallback's sync progress
 	progress, err := client.SyncProgress(context.Background())
