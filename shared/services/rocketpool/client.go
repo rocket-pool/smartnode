@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/a8m/envsubst"
@@ -1625,11 +1624,7 @@ func (c *Client) getDownloader() (string, error) {
 }
 
 // pipeToStdOut pipes cmdOut to stdout
-// Adds to WaitGroup and calls Done
-func pipeToStdOut(cmdOut io.Reader, wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
-
+func pipeToStdOut(cmdOut io.Reader) {
 	_, err := io.Copy(os.Stdout, cmdOut)
 	if err != nil {
 		log.Printf("Error piping stdout: %v", err)
@@ -1637,11 +1632,7 @@ func pipeToStdOut(cmdOut io.Reader, wg *sync.WaitGroup) {
 }
 
 // pipeToStdErr pipes cmdErr to stderr
-// Adds to WaitGroup and calls Done
-func pipeToStdErr(cmdErr io.Reader, wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
-
+func pipeToStdErr(cmdErr io.Reader) {
 	_, err := io.Copy(os.Stderr, cmdErr)
 	if err != nil {
 		log.Printf("Error piping stderr: %v", err)
@@ -1649,14 +1640,9 @@ func pipeToStdErr(cmdErr io.Reader, wg *sync.WaitGroup) {
 }
 
 // pipeOutput pipes cmdOut and cmdErr to stdout and stderr
-// Blocks until both cmdOut and cmdErr file descriptors are closed
 func pipeOutput(cmdOut, cmdErr io.Reader) {
-	var wg sync.WaitGroup
-
-	go pipeToStdOut(cmdOut, &wg)
-	go pipeToStdErr(cmdErr, &wg)
-
-	wg.Wait()
+	go pipeToStdOut(cmdOut)
+	go pipeToStdErr(cmdErr)
 }
 
 // Run a command and print its output
@@ -1674,12 +1660,13 @@ func (c *Client) printOutput(cmdText string) error {
 		return err
 	}
 
+	// Begin piping before the command is started
+	pipeOutput(cmdOut, cmdErr)
+
 	// Start the command
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-
-	pipeOutput(cmdOut, cmdErr)
 
 	// Wait for the command to exit
 	return cmd.Wait()
