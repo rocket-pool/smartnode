@@ -20,11 +20,16 @@ func getClientStatus(c *cli.Context) (*api.ClientStatusResponse, error) {
 		return nil, err
 	}
 
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
+
 	// Response
 	response := api.ClientStatusResponse{}
 
 	// Get the EC manager status
-	ecMgrStatus := ec.CheckStatus()
+	ecMgrStatus := ec.CheckStatus(cfg)
 	response.EcManagerStatus = *ecMgrStatus
 
 	// Get the BC manager status
