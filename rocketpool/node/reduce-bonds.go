@@ -23,6 +23,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // The fraction of the timeout period to trigger overdue transactions
@@ -30,17 +31,18 @@ const reduceBondTimeoutSafetyFactor int = 2
 
 // Reduce bonds task
 type reduceBonds struct {
-	c              *cli.Context
-	log            log.ColorLogger
-	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	bc             beacon.Client
-	d              *client.Client
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
+	c               *cli.Context
+	log             log.ColorLogger
+	cfg             *config.RocketPoolConfig
+	w               *wallet.Wallet
+	rp              *rocketpool.RocketPool
+	bc              beacon.Client
+	d               *client.Client
+	gasThreshold    float64
+	maxFee          *big.Int
+	maxPriorityFee  *big.Int
+	gasLimit        uint64
+	isAtlasDeployed bool
 }
 
 // Details required to check for bond reduction eligibility
@@ -101,17 +103,18 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 
 	// Return task
 	return &reduceBonds{
-		c:              c,
-		log:            logger,
-		cfg:            cfg,
-		w:              w,
-		rp:             rp,
-		bc:             bc,
-		d:              d,
-		gasThreshold:   gasThreshold,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
-		gasLimit:       0,
+		c:               c,
+		log:             logger,
+		cfg:             cfg,
+		w:               w,
+		rp:              rp,
+		bc:              bc,
+		d:               d,
+		gasThreshold:    gasThreshold,
+		maxFee:          maxFee,
+		maxPriorityFee:  priorityFee,
+		gasLimit:        0,
+		isAtlasDeployed: false,
 	}, nil
 
 }
@@ -127,6 +130,19 @@ func (t *reduceBonds) run() error {
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return err
+	}
+
+	// Check if Atlas has been deployed yet
+	if !t.isAtlasDeployed {
+		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
+		if err != nil {
+			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		if isAtlasDeployed {
+			t.isAtlasDeployed = true
+		} else {
+			return nil
+		}
 	}
 
 	// Log

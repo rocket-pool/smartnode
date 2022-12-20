@@ -23,22 +23,24 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 // Stake prelaunch minipools task
 type stakePrelaunchMinipools struct {
-	c              *cli.Context
-	log            log.ColorLogger
-	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	bc             beacon.Client
-	d              *client.Client
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
+	c               *cli.Context
+	log             log.ColorLogger
+	cfg             *config.RocketPoolConfig
+	w               *wallet.Wallet
+	rp              *rocketpool.RocketPool
+	bc              beacon.Client
+	d               *client.Client
+	gasThreshold    float64
+	maxFee          *big.Int
+	maxPriorityFee  *big.Int
+	gasLimit        uint64
+	isAtlasDeployed bool
 }
 
 // Create stake prelaunch minipools task
@@ -90,17 +92,18 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
 
 	// Return task
 	return &stakePrelaunchMinipools{
-		c:              c,
-		log:            logger,
-		cfg:            cfg,
-		w:              w,
-		rp:             rp,
-		bc:             bc,
-		d:              d,
-		gasThreshold:   gasThreshold,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
-		gasLimit:       0,
+		c:               c,
+		log:             logger,
+		cfg:             cfg,
+		w:               w,
+		rp:              rp,
+		bc:              bc,
+		d:               d,
+		gasThreshold:    gasThreshold,
+		maxFee:          maxFee,
+		maxPriorityFee:  priorityFee,
+		gasLimit:        0,
+		isAtlasDeployed: false,
 	}, nil
 
 }
@@ -120,6 +123,17 @@ func (t *stakePrelaunchMinipools) run() error {
 
 	// Log
 	t.log.Println("Checking for minipools to launch...")
+
+	// Check if Atlas has been deployed yet
+	if !t.isAtlasDeployed {
+		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
+		if err != nil {
+			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		if isAtlasDeployed {
+			t.isAtlasDeployed = true
+		}
+	}
 
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
@@ -228,6 +242,10 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 	prelaunchMinipools := []minipool.Minipool{}
 	for mi, mp := range minipools {
 		if statuses[mi].Status == rptypes.Prelaunch {
+			if t.isAtlasDeployed && statuses[mi].IsVacant {
+				// Ignore vacant minipools
+				continue
+			}
 			creationTime := statuses[mi].StatusTime
 			remainingTime := creationTime.Add(scrubPeriod).Sub(latestBlockTime)
 			if remainingTime < 0 {

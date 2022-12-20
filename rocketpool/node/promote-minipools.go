@@ -23,21 +23,23 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Promote minipools task
 type promoteMinipools struct {
-	c              *cli.Context
-	log            log.ColorLogger
-	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	bc             beacon.Client
-	d              *client.Client
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
+	c               *cli.Context
+	log             log.ColorLogger
+	cfg             *config.RocketPoolConfig
+	w               *wallet.Wallet
+	rp              *rocketpool.RocketPool
+	bc              beacon.Client
+	d               *client.Client
+	gasThreshold    float64
+	maxFee          *big.Int
+	maxPriorityFee  *big.Int
+	gasLimit        uint64
+	isAtlasDeployed bool
 }
 
 // Create promote minipools task
@@ -89,17 +91,18 @@ func newPromoteMinipools(c *cli.Context, logger log.ColorLogger) (*promoteMinipo
 
 	// Return task
 	return &promoteMinipools{
-		c:              c,
-		log:            logger,
-		cfg:            cfg,
-		w:              w,
-		rp:             rp,
-		bc:             bc,
-		d:              d,
-		gasThreshold:   gasThreshold,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
-		gasLimit:       0,
+		c:               c,
+		log:             logger,
+		cfg:             cfg,
+		w:               w,
+		rp:              rp,
+		bc:              bc,
+		d:               d,
+		gasThreshold:    gasThreshold,
+		maxFee:          maxFee,
+		maxPriorityFee:  priorityFee,
+		gasLimit:        0,
+		isAtlasDeployed: false,
 	}, nil
 
 }
@@ -115,6 +118,19 @@ func (t *promoteMinipools) run() error {
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return err
+	}
+
+	// Check if Atlas has been deployed yet
+	if !t.isAtlasDeployed {
+		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
+		if err != nil {
+			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		if isAtlasDeployed {
+			t.isAtlasDeployed = true
+		} else {
+			return nil
+		}
 	}
 
 	// Log
