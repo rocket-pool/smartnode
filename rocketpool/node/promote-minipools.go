@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -214,7 +215,7 @@ func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address) ([]min
 	// Filter minipools by vacancy
 	vacantMinipools := []minipool.Minipool{}
 	for mi, mp := range minipools {
-		if statuses[mi].IsVacant {
+		if statuses[mi].IsVacant && statuses[mi].Status == types.Prelaunch {
 			creationTime := statuses[mi].StatusTime
 			remainingTime := creationTime.Add(scrubPeriod).Sub(latestBlockTime)
 			if remainingTime < 0 {
