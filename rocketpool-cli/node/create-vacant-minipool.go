@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"os"
 	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -23,6 +24,12 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Load the config
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return err
+	}
 
 	// Check and assign the EC status
 	err = cliutils.CheckClientStatus(rp)
@@ -166,6 +173,25 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		if !cliutils.Confirm("Have you removed the key from your own Validator Client and restarted it so that it is no longer active?") {
 			fmt.Println("Cancelled.")
 			return nil
+		}
+
+		customKeyPasswordFile, err := promptForSoloKeyPassword(rp, cfg, pubkey)
+		if err != nil {
+			return err
+		}
+		if customKeyPasswordFile != "" {
+			// Defer deleting the custom keystore password file
+			defer func(customKeyPasswordFile string) {
+				_, err := os.Stat(customKeyPasswordFile)
+				if os.IsNotExist(err) {
+					return
+				}
+
+				err = os.Remove(customKeyPasswordFile)
+				if err != nil {
+					fmt.Printf("*** WARNING ***\nAn error occurred while removing the custom keystore password file: %s\n\nThis file contains the passwords to your custom validator keys.\nYou *must* delete it manually as soon as possible so nobody can read it.\n\nThe file is located here:\n\n\t%s\n\n", err.Error(), customKeyPasswordFile)
+				}
+			}(customKeyPasswordFile)
 		}
 	} else {
 		fmt.Println("NOTE: You have not requested to import the validator's private key into the Validator Client managed by the Smartnode. You will still be responsible for running and maintaining your own Validator Client with the validator's private key loaded, just as you are today.\n")
