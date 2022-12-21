@@ -94,6 +94,11 @@ func newTreeGeneratorImpl_v2(log log.ColorLogger, logPrefix string, index uint64
 	}
 }
 
+// Get the version of the ruleset used by this generator
+func (r *treeGeneratorImpl_v2) getRulesetVersion() uint64 {
+	return r.rewardsFile.RulesetVersion
+}
+
 func (r *treeGeneratorImpl_v2) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*RewardsFile, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)

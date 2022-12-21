@@ -52,6 +52,11 @@ type treeGeneratorImpl_v1 struct {
 	beaconConfig         beacon.Eth2Config
 }
 
+// Get the version of the ruleset used by this generator
+func (r *treeGeneratorImpl_v1) getRulesetVersion() uint64 {
+	return r.rewardsFile.RulesetVersion
+}
+
 // Create a new tree generator
 func newTreeGeneratorImpl_v1(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *treeGeneratorImpl_v1 {
 	return &treeGeneratorImpl_v1{
