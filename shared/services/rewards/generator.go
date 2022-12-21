@@ -16,10 +16,14 @@ import (
 // Settings
 const (
 	SmoothingPoolDetailsBatchSize uint64 = 8
-	MainnetV2Interval             uint64 = 4
-	MainnetV3Interval             uint64 = 5
-	PraterV2Interval              uint64 = 37
-	PraterV3Interval              uint64 = 49
+
+	// Mainnet intervals
+	MainnetV2Interval int64 = 4
+	MainnetV3Interval int64 = 5
+
+	// Prater intervals
+	PraterV2Interval int64 = 37
+	PraterV3Interval int64 = 49
 )
 
 type TreeGenerator struct {
@@ -43,9 +47,9 @@ type treeGeneratorImpl interface {
 	approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error)
 }
 
-func NewTreeGenerator(log log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) (*TreeGenerator, error) {
+func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) (*TreeGenerator, error) {
 	t := &TreeGenerator{
-		logger:           log,
+		logger:           logger,
 		logPrefix:        logPrefix,
 		rp:               rp,
 		cfg:              cfg,
@@ -58,49 +62,46 @@ func NewTreeGenerator(log log.ColorLogger, logPrefix string, rp *rocketpool.Rock
 		intervalsPassed:  intervalsPassed,
 	}
 
+	// Get the start intervals for this network
+	var startIntervals []int64
 	switch t.cfg.Smartnode.Network.Value.(cfgtypes.Network) {
 	case cfgtypes.Network_Mainnet:
-		// Tree generator
-		if t.index >= MainnetV3Interval {
-			t.generatorImpl = newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		} else if t.index >= MainnetV2Interval {
-			t.generatorImpl = newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		} else {
-			t.generatorImpl = newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		}
-		// Approximator
-		if t.index > MainnetV3Interval {
-			t.approximatorImpl = newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		} else if t.index > MainnetV2Interval {
-			t.approximatorImpl = newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		} else {
-			t.approximatorImpl = newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		}
+		startIntervals = []int64{MainnetV3Interval, MainnetV2Interval}
 
 	case cfgtypes.Network_Prater:
-		// Tree generator
-		if t.index >= PraterV3Interval {
-			t.generatorImpl = newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		} else if t.index >= PraterV2Interval {
-			t.generatorImpl = newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		} else {
-			t.generatorImpl = newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		}
-		// Approximator
-		if t.index > PraterV3Interval {
-			t.approximatorImpl = newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		} else if t.index > PraterV2Interval {
-			t.approximatorImpl = newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		} else {
-			t.approximatorImpl = newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		}
+		startIntervals = []int64{PraterV3Interval, PraterV2Interval}
 
 	case cfgtypes.Network_Devnet:
-		t.generatorImpl = newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
-		t.approximatorImpl = newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
+		startIntervals = []int64{-1} // Always use the latest for the devnet
 
 	default:
 		return nil, fmt.Errorf("unknown network: %s", string(t.cfg.Smartnode.Network.Value.(cfgtypes.Network)))
+	}
+
+	// Default to ruleset v1
+	t.generatorImpl = newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed)
+	t.approximatorImpl = t.generatorImpl
+
+	// Create newer generators
+	generators := []treeGeneratorImpl{
+		newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
+		newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
+	}
+
+	// Tree generator
+	for i, intervalStart := range startIntervals {
+		if int64(t.index) >= intervalStart {
+			t.generatorImpl = generators[i]
+			break
+		}
+	}
+
+	// Approximator
+	for i, intervalStart := range startIntervals {
+		if int64(t.index) > intervalStart {
+			t.approximatorImpl = generators[i]
+			break
+		}
 	}
 
 	return t, nil
