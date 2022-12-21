@@ -359,11 +359,12 @@ func (p *ExecutionClientManager) CheckStatus(cfg *config.RocketPoolConfig) *api.
 	if status.FallbackEnabled {
 		status.FallbackClientStatus = checkEcStatus(p.fallbackEc)
 		// Check if fallback is using the expected network
-		if status.FallbackClientStatus.NetworkId != cfg.Smartnode.Network.ID {
+		expectedChainID := cfg.Smartnode.GetChainID()
+		if status.FallbackClientStatus.NetworkId != expectedChainID {
 			p.fallbackReady = false
 			colorReset := "\033[0m"
 			colorYellow := "\033[33m"
-			status.FallbackClientStatus.Error = fmt.Sprintf("The fallback client is using a different Chain [%s%s%s]", colorYellow, getNetworkNameFromId(status.FallbackClientStatus.NetworkId), colorReset)
+			status.FallbackClientStatus.Error = fmt.Sprintf("The fallback client is using a different chain [%s%s%s, Chain ID %d] than what your node is configured for [%s, Chain ID %d]", colorYellow, getNetworkNameFromId(status.FallbackClientStatus.NetworkId), colorReset, status.FallbackClientStatus.NetworkId, getNetworkNameFromId(expectedChainID), expectedChainID)
 			return status
 		}
 	}
@@ -373,11 +374,11 @@ func (p *ExecutionClientManager) CheckStatus(cfg *config.RocketPoolConfig) *api.
 	return status
 }
 
-func getNetworkNameFromId(networkId string) string {
+func getNetworkNameFromId(networkId uint) string {
 	switch networkId {
-	case "1":
+	case 1:
 		return "Ethereum Mainnet"
-	case "5":
+	case 5:
 		return "Goerli Testnet"
 	default:
 		return "Unknown Network"
@@ -400,7 +401,7 @@ func checkEcStatus(client *ethclient.Client) api.ClientStatus {
 	}
 
 	if networkId != nil {
-		status.NetworkId = networkId.Text(10)
+		status.NetworkId = uint(networkId.Uint64())
 	}
 
 	// Get the fallback's sync progress
