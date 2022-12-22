@@ -336,12 +336,12 @@ func NewExternalNimbusConfig(cfg *RocketPoolConfig) *ExternalNimbusConfig {
 		ContainerTag: config.Parameter{
 			ID:          "containerTag",
 			Name:        "Container Tag",
-			Description: "The tag name of the Nimbus container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
+			Description: "The tag name of the Nimbus validator container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: nimbusTagProd,
-				config.Network_Prater:  nimbusTagTest,
-				config.Network_Devnet:  nimbusTagTest,
+				config.Network_Mainnet: nimbusVcTagProd,
+				config.Network_Prater:  nimbusVcTagTest,
+				config.Network_Devnet:  nimbusVcTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},

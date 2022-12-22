@@ -448,7 +448,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 			cfg.Lighthouse.ContainerTag.Value = option.Image
 			cfg.ExternalLighthouse.ContainerTag.Value = option.Image
 		case "nimbus":
-			cfg.Nimbus.ContainerTag.Value = option.Image
+			cfg.Nimbus.BnContainerTag.Value = option.Image
 		case "prysm":
 			cfg.Prysm.BnContainerTag.Value = option.BeaconImage
 			cfg.Prysm.VcContainerTag.Value = option.ValidatorImage
