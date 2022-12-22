@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	version    string = "1.0.1"
+	version    string = "1.1.0"
 	colorReset string = "\033[0m"
 	colorRed   string = "\033[31m"
 )
@@ -60,6 +60,30 @@ func main() {
 			Aliases: []string{"p"},
 			Usage:   "Toggle for saving the files in pretty-print format so they're human readable.",
 			Value:   true,
+		},
+		/*
+			&cli.Uint64Flag{
+				Name:    "target-epoch",
+				Aliases: []string{"t"},
+				Usage:   "If provided without -i, treegen will generate a dry-run tree for this epoch instead of whatever the latest finalized epoch is.",
+			},
+		*/
+		&cli.Uint64Flag{
+			Name:    "ruleset",
+			Aliases: []string{"r"},
+			Usage:   "The ruleset to use during generation. If not included, treegen will use the default ruleset for the network based on the rewards interval at the chosen block. Default of 0 will use whatever the ruleset specified by the network based on which block is being targeted.",
+		},
+		&cli.BoolFlag{
+			Name:    "network-info",
+			Aliases: []string{"n"},
+			Usage:   "If provided, this will simply print out info about the network being used, the current rewards interval, and the current ruleset.",
+			Value:   false,
+		},
+		&cli.BoolFlag{
+			Name:    "approximate-only",
+			Aliases: []string{"a"},
+			Usage:   "Approximates the rETH stakers' share of the Smoothing Pool at the current block instead of generating the entire rewards tree. Ignores -i.",
+			Value:   false,
 		},
 	}
 

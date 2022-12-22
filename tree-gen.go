@@ -10,12 +10,14 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/fatih/color"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -28,6 +30,15 @@ import (
 const (
 	MaxConcurrentEth1Requests = 200
 )
+
+type snapshotDetails struct {
+	index                 uint64
+	startTime             time.Time
+	endTime               time.Time
+	snapshotBeaconBlock   uint64
+	snapshotElBlockHeader *types.Header
+	intervalsPassed       uint64
+}
 
 func GenerateTree(c *cli.Context) error {
 
@@ -83,77 +94,51 @@ func GenerateTree(c *cli.Context) error {
 		return fmt.Errorf("error creating Rocket Pool wrapper: %w", err)
 	}
 
-	if currentIndex < 0 {
-		return generateCurrentTree(log, rp, cfg, bn, c.String("output-dir"), c.Bool("pretty-print"))
+	// Print the network info and exit if requested
+	if c.Bool("network-info") {
+		printNetworkInfo(rp, cfg, bn, log, nil)
+		return nil
+	}
+
+	// Run the tree generation or the rETH SP approximation
+	if c.Bool("approximate-only") {
+		return approximateCurrentRethSpRewards(log, rp, cfg, bn, c.String("output-dir"), c.Bool("pretty-print"), c.Uint64("ruleset"))
 	} else {
-		return generatePastTree(log, rp, cfg, bn, uint64(currentIndex), c.String("output-dir"), c.Bool("pretty-print"))
+		if currentIndex < 0 {
+			return generateCurrentTree(log, rp, cfg, bn, c.String("output-dir"), c.Bool("pretty-print"), c.Uint64("ruleset"))
+		} else {
+			return generatePastTree(log, rp, cfg, bn, uint64(currentIndex), c.String("output-dir"), c.Bool("pretty-print"), c.Uint64("ruleset"))
+		}
 	}
 
 }
 
 // Generates a preview / dry run of the tree for the current interval, using the latest finalized state as the endpoint instead of whatever the actual endpoint will end up being
-func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, outputDir string, prettyPrint bool) error {
+func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, outputDir string, prettyPrint bool, ruleset uint64) error {
 
-	// Get the current interval
-	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
+	details, err := getSnapshotDetails(rp, bn, log, nil)
 	if err != nil {
-		return fmt.Errorf("error getting current reward index: %w", err)
-	}
-	currentIndex := currentIndexBig.Uint64()
-
-	log.Printlnf("Generating a dry-run tree for the current interval (%d)", currentIndex)
-
-	// Get the start time for the current interval, and how long an interval is supposed to take
-	startTime, err := rewards.GetClaimIntervalTimeStart(rp, nil)
-	if err != nil {
-		return fmt.Errorf("error getting claim interval start time: %w", err)
-	}
-	intervalTime, err := rewards.GetClaimIntervalTime(rp, nil)
-	if err != nil {
-		return fmt.Errorf("error getting claim interval time: %w", err)
+		return fmt.Errorf("error getting snapshot details: %w", err)
 	}
 
-	// Calculate the intervals passed
-	latestBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return fmt.Errorf("error getting latest block header: %w", err)
-	}
-	latestBlockTime := time.Unix(int64(latestBlockHeader.Time), 0)
-	timeSinceStart := latestBlockTime.Sub(startTime)
-	intervalsPassed := timeSinceStart / intervalTime
-	endTime := time.Now()
+	log.Printlnf("Generating a dry-run tree for the current interval (%d)", details.index)
 
-	// Get the latest finalized Beacon block
-	snapshotBeaconBlock, elBlockNumber, beaconBlockTime, err := getLatestFinalizedSlot(log, bn)
-	if err != nil {
-		return fmt.Errorf("error getting latest finalized slot: %w", err)
-	}
-
-	// Get the number of the EL block matching the CL snapshot block
-	var snapshotElBlockHeader *types.Header
-	if elBlockNumber == 0 {
-		// No EL data so the Merge hasn't happened yet, figure out the EL block based on the Epoch ending time
-		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(beaconBlockTime, rp)
-		if err != nil {
-			return fmt.Errorf("error getting EL block for time %s: %w", beaconBlockTime, err)
-		}
-	} else {
-		snapshotElBlockHeader, err = rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
-		if err != nil {
-			return fmt.Errorf("error getting EL block %d: %w", elBlockNumber, err)
-		}
-	}
-	elBlockIndex := snapshotElBlockHeader.Number.Uint64()
+	elBlockIndex := details.snapshotElBlockHeader.Number.Uint64()
 
 	// Log
-	log.Printlnf("Snapshot Beacon block = %d, EL block = %d, running from %s to %s\n", snapshotBeaconBlock, elBlockIndex, startTime, endTime)
+	log.Printlnf("Snapshot Beacon block = %d, EL block = %d, running from %s to %s\n", details.snapshotBeaconBlock, elBlockIndex, details.startTime, details.endTime)
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed))
+	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, details.index, details.startTime, details.endTime, details.snapshotBeaconBlock, details.snapshotElBlockHeader, details.intervalsPassed)
 	if err != nil {
 		return fmt.Errorf("error creating tree generator: %w", err)
 	}
-	rewardsFile, err := treegen.GenerateTree()
+	var rewardsFile *rprewards.RewardsFile
+	if ruleset == 0 {
+		rewardsFile, err = treegen.GenerateTree()
+	} else {
+		rewardsFile, err = treegen.GenerateTreeWithRuleset(ruleset)
+	}
 	if err != nil {
 		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}
@@ -162,8 +147,8 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 	}
 
 	// Get the output paths
-	rewardsTreePath := filepath.Join(outputDir, fmt.Sprintf(config.RewardsTreeFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), currentIndex))
-	minipoolPerformancePath := filepath.Join(outputDir, fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), currentIndex))
+	rewardsTreePath := filepath.Join(outputDir, fmt.Sprintf(config.RewardsTreeFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), details.index))
+	minipoolPerformancePath := filepath.Join(outputDir, fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), details.index))
 
 	// Serialize the minipool performance file
 	var minipoolPerformanceBytes []byte
@@ -204,13 +189,57 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 	}
 
 	log.Printlnf("Saved rewards snapshot file to %s", rewardsTreePath)
-	log.Printlnf("Successfully generated rewards snapshot for interval %d.\n", currentIndex)
+	log.Printlnf("Successfully generated rewards snapshot for interval %d.\n", details.index)
+
+	return nil
+}
+
+// Approximates the rETH stakers' share of the Smoothing Pool's current balance
+func approximateCurrentRethSpRewards(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, outputDir string, prettyPrint bool, ruleset uint64) error {
+
+	details, err := getSnapshotDetails(rp, bn, log, nil)
+	if err != nil {
+		return fmt.Errorf("error getting snapshot details: %w", err)
+	}
+
+	elBlockIndex := details.snapshotElBlockHeader.Number.Uint64()
+
+	// Log
+	log.Printlnf("Snapshot Beacon block = %d, EL block = %d, running from %s to %s\n", details.snapshotBeaconBlock, elBlockIndex, details.startTime, details.endTime)
+
+	// Get the Smoothing Pool contract's balance
+	smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool", nil)
+	if err != nil {
+		return fmt.Errorf("error getting smoothing pool contract: %w", err)
+	}
+	smoothingPoolBalance, err := rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, nil)
+	if err != nil {
+		return fmt.Errorf("error getting smoothing pool balance: %w", err)
+	}
+
+	// Approximate the balance
+	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, details.index, details.startTime, details.endTime, details.snapshotBeaconBlock, details.snapshotElBlockHeader, details.intervalsPassed)
+	if err != nil {
+		return fmt.Errorf("error creating tree generator: %w", err)
+	}
+
+	var rETHShare *big.Int
+	if ruleset == 0 {
+		rETHShare, err = treegen.ApproximateStakerShareOfSmoothingPool()
+	} else {
+		rETHShare, err = treegen.ApproximateStakerShareOfSmoothingPoolWithRuleset(ruleset)
+	}
+	if err != nil {
+		return fmt.Errorf("error approximating rETH stakers' share of the Smoothing Pool: %w", err)
+	}
+	log.Printlnf("Total ETH in the Smoothing Pool: %s wei (%.6f ETH)", smoothingPoolBalance.String(), eth.WeiToEth(smoothingPoolBalance))
+	log.Printlnf("rETH stakers's share:            %s wei (%.6f ETH)", rETHShare.String(), eth.WeiToEth(rETHShare))
 
 	return nil
 }
 
 // Recreates an existing tree for a past interval
-func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, index uint64, outputDir string, prettyPrint bool) error {
+func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, index uint64, outputDir string, prettyPrint bool, ruleset uint64) error {
 
 	// Find the event for this interval
 	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(rp, cfg, index)
@@ -231,7 +260,12 @@ func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *confi
 	if err != nil {
 		return fmt.Errorf("error creating tree generator: %w", err)
 	}
-	rewardsFile, err := treegen.GenerateTree()
+	var rewardsFile *rprewards.RewardsFile
+	if ruleset == 0 {
+		rewardsFile, err = treegen.GenerateTree()
+	} else {
+		rewardsFile, err = treegen.GenerateTreeWithRuleset(ruleset)
+	}
 	if err != nil {
 		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}
@@ -294,8 +328,8 @@ func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *confi
 
 }
 
-// Get the latest finalized slot
-func getLatestFinalizedSlot(log log.ColorLogger, bn beacon.Client) (uint64, uint64, time.Time, error) {
+// Get the finalized slot for the given target epoch, or the latest one if there isn't a target epoch
+func getFinalizedSlot(log log.ColorLogger, bn beacon.Client, targetEpoch *uint64) (uint64, uint64, time.Time, error) {
 
 	// Get the config
 	eth2Config, err := bn.GetEth2Config()
@@ -303,6 +337,8 @@ func getLatestFinalizedSlot(log log.ColorLogger, bn beacon.Client) (uint64, uint
 		return 0, 0, time.Time{}, fmt.Errorf("error getting Beacon config: %w", err)
 	}
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
+
+	// Get the target epoch details
 
 	// Get the beacon head
 	beaconHead, err := bn.GetBeaconHead()
@@ -312,7 +348,22 @@ func getLatestFinalizedSlot(log log.ColorLogger, bn beacon.Client) (uint64, uint
 
 	// Get the latest finalized slot that existed
 	finalizedEpoch := beaconHead.FinalizedEpoch
-	finalizedSlot := (finalizedEpoch+1)*eth2Config.SlotsPerEpoch - 1
+
+	// Sanity check the target epoch
+	if targetEpoch != nil {
+		if *targetEpoch > finalizedEpoch {
+			return 0, 0, time.Time{}, fmt.Errorf("target epoch %d is not finalized yet; latest finalized epoch is %d", *targetEpoch, finalizedEpoch)
+		}
+	}
+
+	// Get the target slot
+	var finalizedSlot uint64
+	if targetEpoch == nil {
+		finalizedSlot = (finalizedEpoch+1)*eth2Config.SlotsPerEpoch - 1
+	} else {
+		finalizedSlot = (*targetEpoch+1)*eth2Config.SlotsPerEpoch - 1
+	}
+
 	for {
 		// Try to get the current block
 		block, exists, err := bn.GetBeaconBlock(fmt.Sprint(finalizedSlot))
@@ -330,6 +381,110 @@ func getLatestFinalizedSlot(log log.ColorLogger, bn beacon.Client) (uint64, uint
 		}
 	}
 
+}
+
+// Get the details of the rewards snapshot at the given block
+func getSnapshotDetails(rp *rocketpool.RocketPool, bn beacon.Client, log log.ColorLogger, opts *bind.CallOpts) (snapshotDetails, error) {
+	// Get the interval index
+	indexBig, err := rewards.GetRewardIndex(rp, opts)
+	if err != nil {
+		return snapshotDetails{}, fmt.Errorf("error getting current reward index: %w", err)
+	}
+	index := indexBig.Uint64()
+
+	// Get the start time for the current interval, and how long an interval is supposed to take
+	startTime, err := rewards.GetClaimIntervalTimeStart(rp, opts)
+	if err != nil {
+		return snapshotDetails{}, fmt.Errorf("error getting claim interval start time: %w", err)
+	}
+	intervalTime, err := rewards.GetClaimIntervalTime(rp, opts)
+	if err != nil {
+		return snapshotDetails{}, fmt.Errorf("error getting claim interval time: %w", err)
+	}
+
+	// Get the block header for the target block
+	var targetBlockNumber *big.Int
+	if opts == nil {
+		targetBlockNumber = nil
+	} else {
+		targetBlockNumber = opts.BlockNumber
+	}
+	blockHeader, err := rp.Client.HeaderByNumber(context.Background(), targetBlockNumber)
+	if err != nil {
+		return snapshotDetails{}, fmt.Errorf("error getting latest block header: %w", err)
+	}
+
+	// Calculate the intervals passed
+	blockTime := time.Unix(int64(blockHeader.Time), 0)
+	timeSinceStart := blockTime.Sub(startTime)
+	intervalsPassed := timeSinceStart / intervalTime
+	endTime := time.Now()
+
+	// Get the latest finalized Beacon block
+	snapshotBeaconBlock, elBlockNumber, beaconBlockTime, err := getFinalizedSlot(log, bn, nil)
+	if err != nil {
+		return snapshotDetails{}, fmt.Errorf("error getting latest finalized slot: %w", err)
+	}
+
+	// Get the number of the EL block matching the CL snapshot block
+	var snapshotElBlockHeader *types.Header
+	if elBlockNumber == 0 {
+		// No EL data so the Merge hasn't happened yet, figure out the EL block based on the Epoch ending time
+		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(beaconBlockTime, rp)
+		if err != nil {
+			return snapshotDetails{}, fmt.Errorf("error getting EL block for time %s: %w", beaconBlockTime, err)
+		}
+	} else {
+		snapshotElBlockHeader, err = rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
+		if err != nil {
+			return snapshotDetails{}, fmt.Errorf("error getting EL block %d: %w", elBlockNumber, err)
+		}
+	}
+
+	return snapshotDetails{
+		index:                 index,
+		startTime:             startTime,
+		endTime:               endTime,
+		snapshotBeaconBlock:   snapshotBeaconBlock,
+		snapshotElBlockHeader: snapshotElBlockHeader,
+		intervalsPassed:       uint64(intervalsPassed),
+	}, nil
+}
+
+func printNetworkInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, log log.ColorLogger, opts *bind.CallOpts) error {
+	details, err := getSnapshotDetails(rp, bn, log, opts)
+	if err != nil {
+		return fmt.Errorf("error getting network details for snapshot: %w", err)
+	}
+
+	generator, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, details.index, details.startTime, details.endTime, details.snapshotBeaconBlock, details.snapshotElBlockHeader, details.intervalsPassed)
+	if err != nil {
+		return fmt.Errorf("error creating generator: %w", err)
+	}
+
+	log.Println()
+	log.Println("=== Network Details ===")
+	log.Printlnf("Current index:        %d", details.index)
+	log.Printlnf("Start Time:           %s", details.startTime)
+
+	// Find the event for the previous interval
+	if details.index > 0 {
+		rewardsEvent, err := rprewards.GetRewardSnapshotEvent(rp, cfg, details.index-1)
+		if err != nil {
+			return fmt.Errorf("error getting rewards submission event for previous interval (%d): %w", details.index-1, err)
+		}
+		log.Printlnf("Start Beacon Slot:    %d", rewardsEvent.ConsensusBlock.Uint64()+1)
+		log.Printlnf("Start EL Block:       %d", rewardsEvent.ExecutionBlock.Uint64()+1)
+	}
+
+	log.Printlnf("End Time:             %s", details.endTime)
+	log.Printlnf("Snapshot Beacon Slot: %d", details.snapshotBeaconBlock)
+	log.Printlnf("Snapshot EL Block:    %s", details.snapshotElBlockHeader.Number.String())
+	log.Printlnf("Intervals Passed:     %d", details.intervalsPassed)
+	log.Printlnf("Tree Ruleset:         v%d", generator.GetGeneratorRulesetVersion())
+	log.Printlnf("Approximator Ruleset: v%d", generator.GetApproximatorRulesetVersion())
+
+	return nil
 }
 
 // Configure HTTP transport settings
