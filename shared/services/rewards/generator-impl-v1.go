@@ -52,6 +52,11 @@ type treeGeneratorImpl_v1 struct {
 	beaconConfig         beacon.Eth2Config
 }
 
+// Get the version of the ruleset used by this generator
+func (r *treeGeneratorImpl_v1) getRulesetVersion() uint64 {
+	return r.rewardsFile.RulesetVersion
+}
+
 // Create a new tree generator
 func newTreeGeneratorImpl_v1(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *treeGeneratorImpl_v1 {
 	return &treeGeneratorImpl_v1{
@@ -91,6 +96,8 @@ func newTreeGeneratorImpl_v1(log log.ColorLogger, logPrefix string, index uint64
 }
 
 func (r *treeGeneratorImpl_v1) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*RewardsFile, error) {
+
+	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	// Provision some struct params
 	r.rp = rp
@@ -157,6 +164,8 @@ func (r *treeGeneratorImpl_v1) generateTree(rp *rocketpool.RocketPool, cfg *conf
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
 func (r *treeGeneratorImpl_v1) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error) {
+	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
+
 	r.rp = rp
 	r.cfg = cfg
 	r.bc = bc

@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -39,6 +40,17 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 	if err != nil {
 		return nil, err
 	}
+
+	// Remove zero pubkeys
+	zeroPubkey := types.ValidatorPubkey{}
+	filteredPubkeys := []types.ValidatorPubkey{}
+	for _, pubkey := range pubkeys {
+		if !bytes.Equal(pubkey[:], zeroPubkey[:]) {
+			filteredPubkeys = append(filteredPubkeys, pubkey)
+		}
+	}
+	pubkeys = filteredPubkeys
+
 	pubkeyMap := map[types.ValidatorPubkey]bool{}
 	for _, pubkey := range pubkeys {
 		pubkeyMap[pubkey] = true

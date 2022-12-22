@@ -12,7 +12,7 @@ import (
 const (
 	nethermindTagAmd64         string = "nethermind/nethermind:1.14.7"
 	nethermindTagArm64         string = "nethermind/nethermind:1.14.7"
-	nethermindEventLogInterval int    = 25000
+	nethermindEventLogInterval int    = 1000
 	nethermindStopSignal       string = "SIGTERM"
 )
 
