@@ -88,45 +88,7 @@ func (t *respondChallenges) run() error {
 	}
 
 	// Log
-	t.log.Printlnf("Node %s has an active challenge against it, responding...", nodeAccount.Address.Hex())
+	t.log.Printlnf("Node %s has an active challenge against it.", nodeAccount.Address.Hex())
 
-	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
-	if err != nil {
-		return err
-	}
-
-	// Get the gas limit
-	gasInfo, err := trustednode.EstimateDecideChallengeGas(t.rp, nodeAccount.Address, opts)
-	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to respond to the challenge: %w", err)
-	}
-
-	// Print the gas info
-	maxFee := eth.GweiToWei(WatchtowerMaxFee)
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
-		return nil
-	}
-
-	// Set the gas settings
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
-	opts.GasLimit = gasInfo.SafeGasLimit
-
-	// Respond to challenge
-	hash, err := trustednode.DecideChallenge(t.rp, nodeAccount.Address, opts)
-	if err != nil {
-		return err
-	}
-
-	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
-	if err != nil {
-		return err
-	}
-
-	// Log & return
-	t.log.Printlnf("Successfully responded to challenge against node %s.", nodeAccount.Address.Hex())
-	return nil
 
 }
