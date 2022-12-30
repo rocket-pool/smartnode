@@ -154,11 +154,11 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== ENS Support ===%s\n", colorGreen, colorReset)
 	fmt.Println("`rocketpool node set-withdrawal-address`, `rocketpool node send`, and `rocketpool node set-voting-delegate` can now use ENS names instead of addresses! This requires your Execution Client to be online and synced.\nAlso, use the `rocketpool wallet set-ens-name` command to confirm an ENS domain or subdomain name that you assign to your node wallet. Once you do this, you can refer to your node's address by its ENS name on explorers like Etherscan.\n")
 
-	fmt.Printf("%s=== Modern vs. Portable ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now automatically checks your node's CPU features and defaults to either the \"modern\" optimized version of certain clients, or the more generic \"portable\" version based on what your machine supports. This only applies to MEV-Boost and Lighthouse.\n")
-
 	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
 	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
+
+	fmt.Printf("%s=== New MEV Relay ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode now supports the Ultra Sound relay - a credibly-neutral and permissionless relay, considered as a public good from the ultrasound.money team. This is an uncensored relay that allows all MEV types. If you're opted into that MEV profile, you'll start using it automatically. Otherwise, you'll need to enable it manually.\n")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
