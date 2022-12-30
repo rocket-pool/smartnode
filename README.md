@@ -30,6 +30,9 @@ Options:
    --interval value, -i value     The rewards interval to generate the artifacts for. A value of -1 indicates that you want to do a "dry run" of generating the tree for the current (active) interval, using the current latest finalized block as the interval end. (default: -1)
    --output-dir value, -o value   Optional output directory to save generated files (default is the current working directory).
    --pretty-print, -p             Toggle for saving the files in pretty-print format so they're human readable. (default: true)
+   --ruleset value, -r value      The ruleset to use during generation. If not included, treegen will use the default ruleset for the network based on the rewards interval at the chosen block. Default of 0 will use whatever the ruleset specified by the network based on which block is being targeted. (default: 0)
+   --network-info, -n             If provided, this will simply print out info about the network being used, the current rewards interval, and the current ruleset. (default: false)
+   --approximate-only, -a         Approximates the rETH stakers' share of the Smoothing Pool at the current block instead of generating the entire rewards tree. Ignores -i. (default: false)
 ```
 
 
@@ -49,6 +52,9 @@ Options:
    --ec-endpoint value, -e value  The URL of the Execution Client's JSON-RPC API. Note that for past interval generation, this must be an Archive EC. (default: "http://localhost:8545")
    --interval value, -i value     The rewards interval to generate the artifacts for. A value of -1 indicates that you want to do a "dry run" of generating the tree for the current (active) interval, using the current latest finalized block as the interval end. (default: -1)
    --pretty-print, -p             Toggle for saving the files in pretty-print format so they're human readable. (default: true)
+   --ruleset value, -r value      The ruleset to use during generation. If not included, treegen will use the default ruleset for the network based on the rewards interval at the chosen block. Default of 0 will use whatever the ruleset specified by the network based on which block is being targeted. (default: 0)
+   --network-info, -n             If provided, this will simply print out info about the network being used, the current rewards interval, and the current ruleset. (default: false)
+   --approximate-only, -a         Approximates the rETH stakers' share of the Smoothing Pool at the current block instead of generating the entire rewards tree. Ignores -i. (default: false)
 ```
 
 NOTE: Do *not* use the `-o` flag if you are using this script, as it is already built into the script.
