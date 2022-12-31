@@ -26,7 +26,6 @@ func promptTimezone() string {
 	// Time zone value
 	var timezone string
 	var continent string
-	var city string
 
 	// Prompt for auto-detect
 	if cliutils.Confirm("Would you like to detect your timezone automatically?") {
@@ -63,27 +62,34 @@ func promptTimezone() string {
 
 	// Prompt for continent
 	for continent == "" {
-		continent = cliutils.Prompt("Please enter your continent to see a list of timezones: (use Etc if you prefer not to answer)", "^.+$", continent)
-	}
-	cmd := fmt.Sprintf("timedatectl list-timezones --no-pager | grep '%s' | sed 's#^[^/]*/##' | paste -sd ','", continent)
-	tzList, err := exec.Command("bash", "-c", cmd).Output()
-	if err != nil {
-		fmt.Errorf(err.Error())
-	}
+		timezone = ""
+		continent = cliutils.Prompt("Enter part of the timezone (continent, country or city) to see list of options:", "^.+$", continent)
 
-	fmt.Println(string(tzList))
-
-	// Prompt for city
-	for city == "" {
-		city = cliutils.Prompt("Please enter a timezone (City) to register with (use UTC if you prefer not to answer):", "^.+$", "Please enter a timezone (City) to register with (use UTC if you prefer not to answer)")
-		if !cliutils.Confirm(fmt.Sprintf("You have chosen to register with the timezone '%s/%s', is this correct?", continent, city)) {
-			city = ""
+		// Gets timezones matching the provided continent removing the text until the first '/'
+		cmd := fmt.Sprintf("timedatectl list-timezones --no-pager | grep '%s' ", continent)
+		timezoneList, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			fmt.Println("Error running timedatectl:", err)
 		}
+
+		// Split the timezones
+		timezones := strings.Split(string(timezoneList), "\n")
+
+		// Print the list separated by ", "
+		fmt.Println(strings.Join(timezones, ", "))
+
+		// Prompt for city
+		for timezone == "" {
+			timezone = cliutils.Prompt("\nPlease enter a timezone from the list in the format (Country/City) to register with (use Etc/UTC if you prefer not to answer):", "^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$", "Please enter a timezone from the list in the format (Country/City) to register with (use Etc/UTC if you prefer not to answer):")
+			if !cliutils.Confirm(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct?", timezone)) {
+				continent = ""
+			}
+		}
+
 	}
 
 	// Return
-	return fmt.Sprintf("%s/%s", continent, city)
-
+	return timezone
 }
 
 // Prompt user for a minimum node fee
