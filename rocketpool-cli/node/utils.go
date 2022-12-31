@@ -12,12 +12,12 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-// FreeGeoIP config
-const FreeGeoIPURL = "https://freegeoip.app/json/"
+// IPInfo API
+const IPInfoURL = "https://ipinfo.io/json/"
 
-// FreeGeoIP response
-type freeGeoIPResponse struct {
-	Timezone string `json:"time_zone"`
+// IPInfo response
+type ipInfoResponse struct {
+	Timezone string `json:"timezone"`
 }
 
 // Prompt user for a time zone string
@@ -25,16 +25,18 @@ func promptTimezone() string {
 
 	// Time zone value
 	var timezone string
+	var continent string
+	var city string
 
 	// Prompt for auto-detect
 	if cliutils.Confirm("Would you like to detect your timezone automatically?") {
-		// Detect using FreeGeoIP
-		if resp, err := http.Get(FreeGeoIPURL); err == nil {
+		// Detect using the IPInfo API
+		if resp, err := http.Get(IPInfoURL); err == nil {
 			defer func() {
 				_ = resp.Body.Close()
 			}()
 			if body, err := ioutil.ReadAll(resp.Body); err == nil {
-				message := new(freeGeoIPResponse)
+				message := new(ipInfoResponse)
 				if err := json.Unmarshal(body, message); err == nil {
 					timezone = message.Timezone
 				}
@@ -54,19 +56,33 @@ func promptTimezone() string {
 	if timezone != "" {
 		if !cliutils.Confirm(fmt.Sprintf("The detected timezone is '%s', would you like to register using this timezone?", timezone)) {
 			timezone = ""
+		} else {
+			return timezone
 		}
 	}
 
-	// Prompt for time zone
-	for timezone == "" {
-		timezone = cliutils.Prompt("Please enter a timezone to register with in the format 'Country/City' (use Etc/UTC if you prefer not to answer):", "^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$", "Please enter a timezone in the format 'Country/City' (use Etc/UTC if you prefer not to answer)")
-		if !cliutils.Confirm(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct?", timezone)) {
-			timezone = ""
+	// Prompt for continent
+	for continent == "" {
+		continent = cliutils.Prompt("Please enter your continent to see a list of timezones: (use Etc if you prefer not to answer)", "^.+$", continent)
+	}
+	cmd := fmt.Sprintf("timedatectl list-timezones --no-pager | grep '%s' | sed 's#^[^/]*/##' | paste -sd ','", continent)
+	tzList, err := exec.Command("bash", "-c", cmd).Output()
+	if err != nil {
+		fmt.Errorf(err.Error())
+	}
+
+	fmt.Println(string(tzList))
+
+	// Prompt for city
+	for city == "" {
+		city = cliutils.Prompt("Please enter a timezone (City) to register with (use UTC if you prefer not to answer):", "^.+$", "Please enter a timezone (City) to register with (use UTC if you prefer not to answer)")
+		if !cliutils.Confirm(fmt.Sprintf("You have chosen to register with the timezone '%s/%s', is this correct?", continent, city)) {
+			city = ""
 		}
 	}
 
 	// Return
-	return timezone
+	return fmt.Sprintf("%s/%s", continent, city)
 
 }
 
