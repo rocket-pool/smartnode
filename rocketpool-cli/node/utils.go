@@ -25,7 +25,7 @@ func promptTimezone() string {
 
 	// Time zone value
 	var timezone string
-	var continent string
+	var filter string
 
 	// Prompt for auto-detect
 	if cliutils.Confirm("Would you like to detect your timezone automatically?") {
@@ -61,12 +61,12 @@ func promptTimezone() string {
 	}
 
 	// Prompt for continent
-	for continent == "" {
+	for filter == "" {
 		timezone = ""
-		continent = cliutils.Prompt("Enter part of the timezone (continent, country or city) to see list of options:", "^.+$", continent)
+		filter = cliutils.Prompt("Enter part of the timezone (continent, country or city) to see list of options:", "^.+$", filter)
 
 		// Gets timezones matching the provided continent removing the text until the first '/'
-		cmd := fmt.Sprintf("timedatectl list-timezones --no-pager | grep '%s' ", continent)
+		cmd := fmt.Sprintf("timedatectl list-timezones --no-pager | grep '%s' ", filter)
 		timezoneList, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
 			fmt.Println("Error running timedatectl:", err)
@@ -78,11 +78,11 @@ func promptTimezone() string {
 		// Print the list separated by ", "
 		fmt.Println(strings.Join(timezones, ", "))
 
-		// Prompt for city
+		// Prompt for the timezone
 		for timezone == "" {
 			timezone = cliutils.Prompt("\nPlease enter a timezone from the list in the format (Country/City) to register with (use Etc/UTC if you prefer not to answer):", "^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$", "Please enter a timezone from the list in the format (Country/City) to register with (use Etc/UTC if you prefer not to answer):")
 			if !cliutils.Confirm(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct?", timezone)) {
-				continent = ""
+				filter = ""
 			}
 		}
 
