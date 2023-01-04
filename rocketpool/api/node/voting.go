@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -243,7 +244,14 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 
 }
 
+func getHttpClientWithTimeout() *http.Client {
+	return &http.Client{
+		Timeout: time.Second * 5,
+	}
+}
+
 func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.Address) (*api.SnapshotVotingPower, error) {
+	client := getHttpClientWithTimeout()
 	query := fmt.Sprintf(`query Vp{
 		vp(
 			space: "%s",
@@ -254,7 +262,7 @@ func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.A
 	}
 	`, space, nodeAddress)
 	url := fmt.Sprintf("https://%s/graphql?operationName=Vp&query=%s", apiDomain, url.PathEscape(query))
-	resp, err := http.Get(url)
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -279,6 +287,7 @@ func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.A
 }
 
 func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress common.Address, delegate common.Address) (*api.SnapshotVotedProposals, error) {
+	client := getHttpClientWithTimeout()
 	query := fmt.Sprintf(`query Votes{
 		votes(
 		  where: {
@@ -294,7 +303,7 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 		}
 	  }`, space, nodeAddress, delegate)
 	url := fmt.Sprintf("https://%s/graphql?operationName=Votes&query=%s", apiDomain, url.PathEscape(query))
-	resp, err := http.Get(url)
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -319,6 +328,7 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 }
 
 func GetSnapshotProposals(apiDomain string, space string, state string) (*api.SnapshotResponse, error) {
+	client := getHttpClientWithTimeout()
 	stateFilter := ""
 	if state != "" {
 		stateFilter = fmt.Sprintf(`, state: "%s"`, state)
@@ -342,7 +352,7 @@ func GetSnapshotProposals(apiDomain string, space string, state string) (*api.Sn
     }`, space, stateFilter)
 
 	url := fmt.Sprintf("https://%s/graphql?operationName=Proposals&query=%s", apiDomain, url.PathEscape(query))
-	resp, err := http.Get(url)
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
