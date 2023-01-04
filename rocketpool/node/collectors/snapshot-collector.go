@@ -193,7 +193,9 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		log.Printf("%s\n", err.Error())
 		return
 	}
-	collector.lastApiCallTimestamp = time.Now()
+	if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
+		collector.lastApiCallTimestamp = time.Now()
+	}
 
 	channel <- prometheus.MustNewConstMetric(
 		collector.votesActiveProposals, prometheus.GaugeValue, collector.cachedVotesActiveProposals)
