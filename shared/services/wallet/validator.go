@@ -211,7 +211,7 @@ func (w *Wallet) SaveValidatorKey(key ValidatorKey) error {
 
 	// Update account index
 	if key.WalletIndex > w.ws.NextAccount {
-		w.ws.NextAccount = key.WalletIndex
+		w.ws.NextAccount = key.WalletIndex + 1
 	}
 
 	// Update keystores
