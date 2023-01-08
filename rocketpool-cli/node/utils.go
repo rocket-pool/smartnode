@@ -12,12 +12,12 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-// FreeGeoIP config
-const FreeGeoIPURL = "https://freegeoip.app/json/"
+// IP locator API config
+const GeolocatorIPURL = "https://ipinfo.io/json"
 
-// FreeGeoIP response
-type freeGeoIPResponse struct {
-	Timezone string `json:"time_zone"`
+// IP locator API response
+type geolocatorIPResponse struct {
+	Timezone string `json:"timezone"`
 }
 
 // Prompt user for a time zone string
@@ -28,13 +28,13 @@ func promptTimezone() string {
 
 	// Prompt for auto-detect
 	if cliutils.Confirm("Would you like to detect your timezone automatically?") {
-		// Detect using FreeGeoIP
-		if resp, err := http.Get(FreeGeoIPURL); err == nil {
+		// Detect using IP locator API
+		if resp, err := http.Get(GeolocatorIPURL); err == nil {
 			defer func() {
 				_ = resp.Body.Close()
 			}()
 			if body, err := ioutil.ReadAll(resp.Body); err == nil {
-				message := new(freeGeoIPResponse)
+				message := new(geolocatorIPResponse)
 				if err := json.Unmarshal(body, message); err == nil {
 					timezone = message.Timezone
 				}
