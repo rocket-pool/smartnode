@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	tekuTag             string = "consensys/teku:22.10.2"
+	tekuTag             string = "consensys/teku:22.12.0"
 	defaultTekuMaxPeers uint16 = 100
 )
 
@@ -74,7 +74,7 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 			Name:                 "Enable Archive Mode",
 			Description:          "When enabled, Teku will run in \"archive\" mode which means it can recreate the state of the Beacon chain for a previous block. This is required for manually generating the Merkle rewards tree.\n\nIf you are sure you will never be manually generating a tree, you can disable archive mode.",
 			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: true},
+			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"TEKU_ARCHIVE_MODE"},
 			CanBeBlank:           false,

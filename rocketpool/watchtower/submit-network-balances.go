@@ -33,7 +33,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -197,20 +196,6 @@ func (t *submitNetworkBalances) run() error {
 		return nil
 	}
 
-	// If confirm distance has passed, we just want to ensure we have submitted and then early exit
-	// NOTE: should not be required now that finality exists
-	/*
-		if blockNumber+ConfirmDistanceBalances <= currentBlockNumber {
-			hasSubmitted, err := t.hasSubmittedBlockBalances(nodeAccount.Address, blockNumber)
-			if err != nil {
-				return err
-			}
-			if hasSubmitted {
-				return nil
-			}
-		}
-	*/
-
 	// Log
 	t.log.Printlnf("Calculating network balances for block %d...", blockNumber)
 
@@ -221,13 +206,13 @@ func (t *submitNetworkBalances) run() error {
 	}
 
 	// Log
-	t.log.Printlnf("Deposit pool balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.DepositPool), 6))
-	t.log.Printlnf("Total minipool user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.MinipoolsTotal), 6))
-	t.log.Printlnf("Staking minipool user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.MinipoolsStaking), 6))
-	t.log.Printlnf("Fee distributor user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.DistributorShareTotal), 6))
-	t.log.Printlnf("Smoothing pool user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.SmoothingPoolShare), 6))
-	t.log.Printlnf("rETH contract balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.RETHContract), 6))
-	t.log.Printlnf("rETH token supply: %.6f rETH", math.RoundDown(eth.WeiToEth(balances.RETHSupply), 6))
+	t.log.Printlnf("Deposit pool balance: %s wei", balances.DepositPool.String())
+	t.log.Printlnf("Total minipool user balance: %s wei", balances.MinipoolsTotal.String())
+	t.log.Printlnf("Staking minipool user balance: %s wei", balances.MinipoolsStaking.String())
+	t.log.Printlnf("Fee distributor user balance: %s wei", balances.DistributorShareTotal.String())
+	t.log.Printlnf("Smoothing pool user balance: %s wei", balances.SmoothingPoolShare.String())
+	t.log.Printlnf("rETH contract balance: %s wei", balances.RETHContract.String())
+	t.log.Printlnf("rETH token supply: %s wei", balances.RETHSupply.String())
 
 	// Check if we have reported these specific values before
 	hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, balances)

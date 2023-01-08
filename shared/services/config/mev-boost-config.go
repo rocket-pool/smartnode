@@ -10,8 +10,8 @@ import (
 
 // Constants
 const (
-	mevBoostPortableTag         string = "flashbots/mev-boost:v1.3.2-portable"
-	mevBoostModernTag           string = "flashbots/mev-boost:v1.3.2"
+	mevBoostPortableTag         string = "flashbots/mev-boost:1.4.0-portable"
+	mevBoostModernTag           string = "flashbots/mev-boost:1.4.0"
 	mevBoostUrlEnvVar           string = "MEV_BOOST_URL"
 	mevBoostRelaysEnvVar        string = "MEV_BOOST_RELAYS"
 	mevDocsUrl                  string = "https://docs.rocketpool.net/guides/node/mev.html"
@@ -60,6 +60,9 @@ type MevBoostConfig struct {
 
 	// Eden relay
 	EdenRelay config.Parameter `yaml:"edenEnabled,omitempty"`
+
+	// Ultra sound relay
+	UltrasoundRelay config.Parameter `yaml:"ultrasoundEnabled,omitempty"`
 
 	// The RPC port
 	Port config.Parameter `yaml:"port,omitempty"`
@@ -153,6 +156,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		BloxRouteRegulatedRelay: generateRelayParameter("bloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
 		BlocknativeRelay:        generateRelayParameter("blocknativeEnabled", relayMap[config.MevRelayID_Blocknative]),
 		EdenRelay:               generateRelayParameter("edenEnabled", relayMap[config.MevRelayID_Eden]),
+		UltrasoundRelay:         generateRelayParameter("ultrasoundEnabled", relayMap[config.MevRelayID_Ultrasound]),
 
 		Port: config.Parameter{
 			ID:                   "port",
@@ -234,6 +238,7 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.BloxRouteRegulatedRelay,
 		&cfg.BlocknativeRelay,
 		&cfg.EdenRelay,
+		&cfg.UltrasoundRelay,
 		&cfg.Port,
 		&cfg.OpenRpcPort,
 		&cfg.ContainerTag,
@@ -357,6 +362,12 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 				relays = append(relays, cfg.relayMap[config.MevRelayID_Eden])
 			}
 		}
+		if cfg.UltrasoundRelay.Value == true {
+			_, exists := cfg.relayMap[config.MevRelayID_Ultrasound].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_Ultrasound])
+			}
+		}
 	}
 
 	return relays
@@ -455,6 +466,20 @@ func createDefaultRelays() []config.MevRelay {
 				config.Network_Devnet:  "https://0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b@relay-goerli.edennetwork.io?id=rocketpool",
 			},
 			Regulated:     true,
+			NoSandwiching: false,
+		},
+
+		// Ultrasound
+		{
+			ID:          config.MevRelayID_Ultrasound,
+			Name:        "Ultra Sound",
+			Description: "The ultra sound relay is a credibly-neutral and permissionless relay — a public good from the ultrasound.money team.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money?id=rocketpool",
+				config.Network_Prater:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-stag.ultrasound.money?id=rocketpool",
+				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-stag.ultrasound.money?id=rocketpool",
+			},
+			Regulated:     false,
 			NoSandwiching: false,
 		},
 	}

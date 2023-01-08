@@ -1883,12 +1883,8 @@ github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd h1:p9K
 github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd/go.mod h1:UE9fof8P7iESVtLn1K9CTSkNRYVFHZHlf96RKbU33kA=
 github.com/rocket-pool/go-w3s-client v0.0.0-20221006052217-dbd9938d11d8 h1:xDY7MRx0l2An/DTsYDrJTEVp8sKViOFDEEQuz3YSjiM=
 github.com/rocket-pool/go-w3s-client v0.0.0-20221006052217-dbd9938d11d8/go.mod h1:rAyadna/2hhchsRet/kgZ8dIVE3ZKNWLSRvpq3T2iaA=
-github.com/rocket-pool/rocketpool-go v1.3.5 h1:oZ9pSHxkErYBny7Diqi3ZCmyn/b97c1XOZ2uGtBl8cc=
-github.com/rocket-pool/rocketpool-go v1.3.5/go.mod h1:+7kSXEvMUCEqstio3PBVTnaGoI2lSTwNUJ8/D4D91gM=
-github.com/rocket-pool/rocketpool-go v1.10.1-0.20221006035856-5d89bd5c2117 h1:tc0kNcDCn6P9PD8q6W9RAaPVQ1MzZ3YqgTTrywspe7o=
-github.com/rocket-pool/rocketpool-go v1.10.1-0.20221006035856-5d89bd5c2117/go.mod h1:+7kSXEvMUCEqstio3PBVTnaGoI2lSTwNUJ8/D4D91gM=
-github.com/rocket-pool/rocketpool-go v1.10.1-0.20221107074643-c7bbb1946848 h1:Iny1IgKEv3/0eUyPoExnXlyXNzUtGda+JAa2m0KlVrQ=
-github.com/rocket-pool/rocketpool-go v1.10.1-0.20221107074643-c7bbb1946848/go.mod h1:+7kSXEvMUCEqstio3PBVTnaGoI2lSTwNUJ8/D4D91gM=
+github.com/rocket-pool/rocketpool-go v1.4.1 h1:yS3stw3Ouli4fjRwQgpUxbP0yBN4aGkDrxPLxkUSox8=
+github.com/rocket-pool/rocketpool-go v1.4.1/go.mod h1:+7kSXEvMUCEqstio3PBVTnaGoI2lSTwNUJ8/D4D91gM=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
