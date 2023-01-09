@@ -6,11 +6,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -28,7 +29,6 @@ func promptTimezone() string {
 
 	// Time zone value
 	var timezone string
-	var filter string
 
 	// Prompt for auto-detect
 	if cliutils.Confirm("Would you like to detect your timezone automatically?") {
@@ -109,35 +109,142 @@ func promptTimezone() string {
 		}
 	}
 
-	// Prompt for continent
-	for filter == "" {
-		timezone = ""
-		filter = cliutils.Prompt("Enter part of the timezone (continent, country or city) to see list of options:", "^.+$", filter)
-
-		// Gets timezones matching the provided continent removing the text until the first '/'
-		cmd := fmt.Sprintf("timedatectl list-timezones --no-pager | grep '%s' ", filter)
-		timezoneList, err := exec.Command("bash", "-c", cmd).Output()
+	// Get the list of valid countries
+	var platformZoneSources = []string{
+		"/usr/share/zoneinfo/",
+		"/usr/share/lib/zoneinfo/",
+		"/usr/lib/locale/TZ/",
+	}
+	countryNames := []string{}
+	for _, source := range platformZoneSources {
+		files, err := os.ReadDir(source)
 		if err != nil {
-			fmt.Println("Error running timedatectl:", err)
+			continue
 		}
 
-		// Split the timezones
-		timezones := strings.Split(string(timezoneList), "\n")
+		for _, file := range files {
+			fileInfo, err := file.Info()
+			if err != nil {
+				continue
+			}
+			isSymlink := fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink // Don't allow symlinks, which are just TZ aliases
+			isDir := fileInfo.IsDir()                                     // Must be a directory
+			isUpper := unicode.IsUpper(rune(fileInfo.Name()[0]))          // Must start with an upper case letter
+			if !isSymlink && isDir && isUpper {
+				countryNames = append(countryNames, fileInfo.Name())
+			}
+		}
+	}
 
-		// Print the list separated by ", "
-		fmt.Println(strings.Join(timezones, ", "))
+	fmt.Println("You will now be prompted to enter a timezone.\nFor a complete list of valid entries, please use one of the \"TZ database name\" entries listed here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones\n")
 
-		// Prompt for the timezone
+	// Handle situations where we couldn't parse any timezone info from the OS
+	if len(countryNames) == 0 {
 		for timezone == "" {
-			timezone = cliutils.Prompt("\nPlease enter a timezone from the list in the format (Country/City) to register with (use Etc/UTC if you prefer not to answer):", "^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$", "Please enter a timezone from the list in the format (Country/City) to register with (use Etc/UTC if you prefer not to answer):")
+			timezone = cliutils.Prompt("Please enter a timezone to register with in the format 'Country/City' (use Etc/UTC if you prefer not to answer):", "^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$", "Please enter a timezone in the format 'Country/City' (use Etc/UTC if you prefer not to answer)")
 			if !cliutils.Confirm(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct?", timezone)) {
-				filter = ""
+				timezone = ""
 			}
 		}
 
+		// Return
+		return timezone
+	}
+
+	// Print countries
+	sort.Strings(countryNames)
+	fmt.Println("List of valid countries / continents:")
+	for _, countryName := range countryNames {
+		fmt.Println(countryName)
+	}
+	fmt.Println()
+
+	// Prompt for country
+	country := ""
+	for {
+		time.Now().Zone()
+		timezone = ""
+		country = cliutils.Prompt("Please enter a country / continent from the list above:", "^.+$", "Please enter a country / continent from the list above:")
+
+		exists := false
+		for _, candidate := range countryNames {
+			if candidate == country {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			fmt.Printf("%s is not a valid country or continent. Please see the list above for valid countries and continents.\n\n", country)
+		} else {
+			break
+		}
+	}
+
+	// Get the list of regions for the selected country
+	regionNames := []string{}
+	for _, source := range platformZoneSources {
+		files, err := os.ReadDir(filepath.Join(source, country))
+		if err != nil {
+			continue
+		}
+
+		for _, file := range files {
+			fileInfo, err := file.Info()
+			if err != nil {
+				continue
+			}
+			if fileInfo.IsDir() {
+				subfiles, err := os.ReadDir(filepath.Join(source, country, fileInfo.Name()))
+				if err != nil {
+					continue
+				}
+				for _, subfile := range subfiles {
+					subfileInfo, err := subfile.Info()
+					if err != nil {
+						continue
+					}
+					regionNames = append(regionNames, fmt.Sprintf("%s/%s", fileInfo.Name(), subfileInfo.Name()))
+				}
+			} else {
+				regionNames = append(regionNames, fileInfo.Name())
+			}
+		}
+	}
+
+	// Print regions
+	sort.Strings(regionNames)
+	fmt.Println("List of valid regions:")
+	for _, regionName := range regionNames {
+		fmt.Println(regionName)
+	}
+	fmt.Println()
+
+	// Prompt for region
+	region := ""
+	for {
+		time.Now().Zone()
+		timezone = ""
+		region = cliutils.Prompt("Please enter a region from the list above:", "^.+$", "Please enter a region from the list above:")
+
+		exists := false
+		for _, candidate := range regionNames {
+			if candidate == region {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			fmt.Printf("%s is not a valid country or continent. Please see the list above for valid countries and continents.\n\n", region)
+		} else {
+			break
+		}
 	}
 
 	// Return
+	timezone = fmt.Sprintf("%s/%s", country, region)
+	fmt.Printf("Using timezone %s.\n", timezone)
 	return timezone
 }
 
