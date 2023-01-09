@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -30,22 +33,68 @@ func promptTimezone() string {
 	// Prompt for auto-detect
 	if cliutils.Confirm("Would you like to detect your timezone automatically?") {
 		// Detect using the IPInfo API
-		if resp, err := http.Get(IPInfoURL); err == nil {
+		resp, err := http.Get(IPInfoURL)
+		if err == nil {
 			defer func() {
 				_ = resp.Body.Close()
 			}()
-			if body, err := ioutil.ReadAll(resp.Body); err == nil {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err == nil {
 				message := new(ipInfoResponse)
-				if err := json.Unmarshal(body, message); err == nil {
+				err := json.Unmarshal(body, message)
+				if err == nil {
 					timezone = message.Timezone
+				} else {
+					fmt.Printf("WARNING: couldn't query %s for your timezone based on your IP address (%s).\nChecking your system's timezone...\n", IPInfoURL, err.Error())
 				}
+			} else {
+				fmt.Printf("WARNING: couldn't query %s for your timezone based on your IP address (%s).\nChecking your system's timezone...\n", IPInfoURL, err.Error())
 			}
+		} else {
+			fmt.Printf("WARNING: couldn't query %s for your timezone based on your IP address (%s).\nChecking your system's timezone...\n", IPInfoURL, err.Error())
 		}
 
 		// Fall back to system time zone
 		if timezone == "" {
-			if tzOutput, _ := exec.Command("cat", "/etc/timezone").Output(); len(tzOutput) > 0 {
-				timezone = strings.TrimSpace(string(tzOutput))
+			_, err := os.Stat("/etc/timezone")
+			if os.IsNotExist(err) {
+				// Try /etc/localtime, which Redhat-based systems use instead
+				_, err = os.Stat("/etc/localtime")
+				if err != nil {
+					fmt.Printf("WARNING: couldn't get system timezone info (%s), you'll have to set it manually.\n", err.Error())
+				} else {
+					path, err := filepath.EvalSymlinks("/etc/localtime")
+					if err != nil {
+						fmt.Printf("WARNING: couldn't get system timezone info (%s), you'll have to set it manually.\n", err.Error())
+					} else {
+						path = strings.TrimPrefix(path, "/usr/share/zoneinfo/")
+						path = strings.TrimPrefix(path, "posix/")
+						path = strings.TrimSpace(path)
+						// Verify it
+						_, err = time.LoadLocation(path)
+						if err != nil {
+							fmt.Printf("WARNING: couldn't get system timezone info (%s), you'll have to set it manually.\n", err.Error())
+						} else {
+							timezone = path
+						}
+					}
+				}
+			} else if err != nil {
+				fmt.Printf("WARNING: couldn't get system timezone info (%s), you'll have to set it manually.\n", err.Error())
+			} else {
+				// Debian systems
+				bytes, err := os.ReadFile("/etc/timezone")
+				if err != nil {
+					fmt.Printf("WARNING: couldn't get system timezone info (%s), you'll have to set it manually.\n", err.Error())
+				} else {
+					timezone = strings.TrimSpace(string(bytes))
+					// Verify it
+					_, err = time.LoadLocation(timezone)
+					if err != nil {
+						fmt.Printf("WARNING: couldn't get system timezone info (%s), you'll have to set it manually.\n", err.Error())
+						timezone = ""
+					}
+				}
 			}
 		}
 
