@@ -87,10 +87,10 @@ func GetLogs(rp *rocketpool.RocketPool, addressFilter []common.Address, topicFil
 
 		// Set the start and end, clamping on the latest block
 		intervalSize := big.NewInt(0).Sub(intervalSize, big.NewInt(1))
-		start := fromBlock
+		start := big.NewInt(0).Set(fromBlock)
 		end := big.NewInt(0).Add(start, intervalSize)
 		if end.Cmp(toBlock) == 1 {
-			end = toBlock
+			end.Set(toBlock)
 		}
 		for {
 			// Get the logs using the current interval
@@ -117,7 +117,7 @@ func GetLogs(rp *rocketpool.RocketPool, addressFilter []common.Address, topicFil
 			start.Add(end, big.NewInt(1))
 			end.Add(start, intervalSize)
 			if end.Cmp(toBlock) == 1 {
-				end = toBlock
+				end.Set(toBlock)
 			}
 		}
 	}
