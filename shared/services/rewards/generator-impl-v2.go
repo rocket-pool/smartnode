@@ -63,8 +63,8 @@ func newTreeGeneratorImpl_v2(log log.ColorLogger, logPrefix string, index uint64
 			RewardsFileVersion: 1,
 			RulesetVersion:     2,
 			Index:              index,
-			StartTime:          startTime,
-			EndTime:            endTime,
+			StartTime:          startTime.UTC(),
+			EndTime:            endTime.UTC(),
 			ConsensusEndBlock:  consensusBlock,
 			ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
 			IntervalsPassed:    intervalsPassed,
@@ -81,8 +81,8 @@ func newTreeGeneratorImpl_v2(log log.ColorLogger, logPrefix string, index uint64
 			InvalidNetworkNodes: map[common.Address]uint64{},
 			MinipoolPerformanceFile: MinipoolPerformanceFile{
 				Index:               index,
-				StartTime:           startTime,
-				EndTime:             endTime,
+				StartTime:           startTime.UTC(),
+				EndTime:             endTime.UTC(),
 				ConsensusEndBlock:   consensusBlock,
 				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance{},
@@ -92,6 +92,11 @@ func newTreeGeneratorImpl_v2(log log.ColorLogger, logPrefix string, index uint64
 		log:              log,
 		logPrefix:        logPrefix,
 	}
+}
+
+// Get the version of the ruleset used by this generator
+func (r *treeGeneratorImpl_v2) getRulesetVersion() uint64 {
+	return r.rewardsFile.RulesetVersion
 }
 
 func (r *treeGeneratorImpl_v2) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*RewardsFile, error) {

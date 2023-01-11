@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-const gasNowUrl string = "https://etherchain.org/api/gasnow"
+const gasNowUrl string = "https://beaconcha.in/api/v1/execution/gasnow"
 
 // Standard response
 type gasNowResponse struct {
