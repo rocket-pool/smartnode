@@ -257,6 +257,13 @@ func (mp *minipool_v3) GetVacant(opts *bind.CallOpts) (bool, error) {
 	}
 	return *isVacant, nil
 }
+func (mp *minipool_v3) GetPreMigrationBalance(opts *bind.CallOpts) (*big.Int, error) {
+	preMigrationBalance := new(*big.Int)
+	if err := mp.Contract.Call(opts, preMigrationBalance, "getPreMigrationBalance"); err != nil {
+		return nil, fmt.Errorf("Could not get minipool %s pre-migration balance: %w", mp.Address.Hex(), err)
+	}
+	return *preMigrationBalance, nil
+}
 
 // Get user deposit details
 func (mp *minipool_v3) GetUserDetails(opts *bind.CallOpts) (UserDetails, error) {
