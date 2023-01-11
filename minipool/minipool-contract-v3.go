@@ -24,6 +24,7 @@ type MinipoolV3 interface {
 	ReduceBondAmount(opts *bind.TransactOpts) (common.Hash, error)
 	EstimatePromoteGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	Promote(opts *bind.TransactOpts) (common.Hash, error)
+	GetPreMigrationBalance(opts *bind.CallOpts) (*big.Int, error)
 }
 
 // Minipool contract
