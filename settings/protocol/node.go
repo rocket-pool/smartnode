@@ -60,6 +60,19 @@ func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	return eth.WeiToEth(*value), nil
 }
+
+// The minimum RPL stake per minipool as a fraction of assigned user ETH
+func GetMinimumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := nodeSettingsContract.Call(opts, value, "getMinimumPerMinipoolStake"); err != nil {
+		return nil, fmt.Errorf("Could not get minimum RPL stake per minipool: %w", err)
+	}
+	return *value, nil
+}
 func BootstrapMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
 	return protocoldao.BootstrapUint(rp, NodeSettingsContractName, "node.per.minipool.stake.minimum", eth.EthToWei(value), opts)
 }
@@ -75,6 +88,19 @@ func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 		return 0, fmt.Errorf("Could not get maximum RPL stake per minipool: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
+}
+
+// The maximum RPL stake per minipool as a fraction of assigned user ETH
+func GetMaximumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := nodeSettingsContract.Call(opts, value, "getMaximumPerMinipoolStake"); err != nil {
+		return nil, fmt.Errorf("Could not get maximum RPL stake per minipool: %w", err)
+	}
+	return *value, nil
 }
 func BootstrapMaximumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
 	return protocoldao.BootstrapUint(rp, NodeSettingsContractName, "node.per.minipool.stake.maximum", eth.EthToWei(value), opts)
