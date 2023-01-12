@@ -1420,6 +1420,7 @@ func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 			}
 		}
 
+		nodesDone += SmoothingPoolDetailsBatchSize
 	}
 
 	// Cache the minipool details and aggregate the pubkeys
@@ -1445,16 +1446,7 @@ func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 
 	// Get the effective stake per node
 	effectiveStakes := make([]*big.Int, len(r.nodeAddresses))
-	nodesDone = 0
-	startTime = time.Now()
-	r.log.Printlnf("%s Calculating effective RPL stake for nodes (progress is reported every 100 nodes)", r.logPrefix)
 	for i, address := range r.nodeAddresses {
-		// Report progress
-		if nodesDone >= 100 {
-			timeTaken := time.Since(startTime)
-			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
-			nodesDone = 0
-		}
 
 		// Get the number of eligible minipools
 		eligibleMinipools := 0
@@ -1479,16 +1471,17 @@ func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 
 		// Calculate the min and max RPL collateral based on the number of eligible minipools
 		_16Eth := eth.EthToWei(16)
-		one := eth.EthToWei(1)
 		eligibleMinipoolsBig := big.NewInt(int64(eligibleMinipools))
 
 		// minCollateral := 16 * minCollateralFraction * eligibleMinipools / ratio
+		// NOTE: minCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
 		minCollateral := big.NewInt(0).Mul(_16Eth, r.minCollateralFraction)
-		minCollateral.Mul(minCollateral, eligibleMinipoolsBig).Div(minCollateral, one).Div(minCollateral, r.rplPrice)
+		minCollateral.Mul(minCollateral, eligibleMinipoolsBig).Div(minCollateral, r.rplPrice)
 
 		// maxCollateral := 16 * maxCollateralFraction * eligibleMinipools / ratio
+		// NOTE: maxCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
 		maxCollateral := big.NewInt(0).Mul(_16Eth, r.maxCollateralFraction)
-		maxCollateral.Mul(maxCollateral, eligibleMinipoolsBig).Div(maxCollateral, one).Div(maxCollateral, r.rplPrice)
+		maxCollateral.Mul(maxCollateral, eligibleMinipoolsBig).Div(maxCollateral, r.rplPrice)
 
 		// Calculate the effective stake
 		nodeStake := nodeStakes[i]
@@ -1499,6 +1492,7 @@ func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 		} else {
 			effectiveStakes[i] = nodeStake
 		}
+
 	}
 
 	return effectiveStakes, nil
