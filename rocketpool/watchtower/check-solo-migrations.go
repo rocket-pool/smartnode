@@ -27,6 +27,7 @@ const (
 	soloMigrationCheckThreshold time.Duration = 24 * time.Hour
 	blsPrefix                   byte          = 0x00
 	elPrefix                    byte          = 0x01
+	migrationBalanceBuffer      float64       = 0.001
 )
 
 type checkSoloMigrations struct {
@@ -231,6 +232,8 @@ func (t *checkSoloMigrations) checkSoloMigrations() error {
 
 	// Go through each minipool
 	// TODO: does this need to be multithreaded?
+	threshold := uint64(32000000000)
+	buffer := uint64(migrationBalanceBuffer * eth.WeiPerGwei)
 	for i := uint64(0); i < vacantCount; i++ {
 		address, err := minipool.GetVacantMinipoolAt(t.rp, i, opts)
 		if err != nil {
@@ -247,6 +250,16 @@ func (t *checkSoloMigrations) checkSoloMigrations() error {
 			return fmt.Errorf("error getting minipool %s Beacon status: %w", address.Hex(), err)
 		}
 
+		// Check the status
+		switch status.Status {
+		case beacon.ValidatorState_ActiveOngoing:
+			break
+
+		default:
+			t.scrubVacantMinipool(address, fmt.Sprintf("minipool %s was in state %v, but is required to be active_ongoing for migration", address.Hex(), status.Status))
+		}
+
+		// Check the withdrawal credentials
 		withdrawalCreds := status.WithdrawalCredentials
 		switch withdrawalCreds[0] {
 		case blsPrefix:
@@ -264,6 +277,29 @@ func (t *checkSoloMigrations) checkSoloMigrations() error {
 		default:
 			t.scrubVacantMinipool(address, fmt.Sprintf("unexpected prefix in withdrawal credentials: %s", withdrawalCreds.Hex()))
 		}
+
+		// Check the balance
+		mp, err := minipool.NewMinipool(t.rp, address, nil)
+		if err != nil {
+			return fmt.Errorf("error creating minipool binding for %s: %w", address.Hex(), err)
+		}
+		mpv3, success := minipool.GetMinipoolAsV3(mp)
+		if !success {
+			return fmt.Errorf("getting pre-migration balance is not supported for minipool version %d; please upgrade the delegate for minipool %s to get it", mp.GetVersion(), address.Hex())
+		}
+		creationBalance, err := mpv3.GetPreMigrationBalance(nil)
+		if err != nil {
+			return fmt.Errorf("error checking pre-migration balance for %s: %w", address.Hex(), err)
+		}
+		creationBalanceGwei := creationBalance.Div(creationBalance, big.NewInt(1e9)).Uint64()
+		currentBalance := status.Balance
+		if currentBalance < threshold {
+			t.scrubVacantMinipool(address, fmt.Sprintf("current balance of %d is lower than the threshold of %d", currentBalance, threshold))
+		}
+		if currentBalance < (creationBalanceGwei - buffer) {
+			t.scrubVacantMinipool(address, fmt.Sprintf("current balance of %d is lower than the creation balance of %d, and below the acceptable buffer threshold of %d", currentBalance, creationBalanceGwei, buffer))
+		}
+
 	}
 
 	return nil
