@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -62,40 +63,8 @@ func (w *Wallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2t
 		return nil, errors.New("Wallet is not initialized")
 	}
 
-	// Get pubkey hex string
-	pubkeyHex := pubkey.Hex()
-
-	// Check for cached validator key index
-	if index, ok := w.validatorKeyIndices[pubkeyHex]; ok {
-		if key, _, err := w.getValidatorPrivateKey(index); err != nil {
-			return nil, err
-		} else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
-			return key, nil
-		}
-	}
-
-	// Find matching validator key
-	var index uint
-	var validatorKey *eth2types.BLSPrivateKey
-	for index = 0; index < w.ws.NextAccount; index++ {
-		if key, _, err := w.getValidatorPrivateKey(index); err != nil {
-			return nil, err
-		} else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
-			validatorKey = key
-			break
-		}
-	}
-
-	// Check validator key
-	if validatorKey == nil {
-		return nil, fmt.Errorf("Validator %s key not found", pubkeyHex)
-	}
-
-	// Cache validator key index
-	w.validatorKeyIndices[pubkeyHex] = index
-
-	// Return
-	return validatorKey, nil
+	// Load the key from the wallet's keystores
+	return w.LoadValidatorKey(pubkey)
 
 }
 
@@ -128,6 +97,7 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
 
 }
 
+// Stores a validator key into all of the wallet's keystores
 func (w *Wallet) StoreValidatorKey(key *eth2types.BLSPrivateKey, path string) error {
 
 	for name := range w.keystores {
@@ -139,6 +109,31 @@ func (w *Wallet) StoreValidatorKey(key *eth2types.BLSPrivateKey, path string) er
 
 	// Return validator key
 	return nil
+
+}
+
+// Loads a validator key from the wallet's keystores
+func (w *Wallet) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+
+	errors := []string{}
+	// Try loading the key from all of the keystores, caching errors but not breaking on them
+	for name := range w.keystores {
+		key, err := w.keystores[name].LoadValidatorKey(pubkey)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+		if key != nil {
+			return key, nil
+		}
+	}
+
+	if len(errors) > 0 {
+		// If there were errors, return them
+		return nil, fmt.Errorf("encountered the following errors while trying to load the key for validator %s:\n%s", pubkey.Hex(), strings.Join(errors, "\n"))
+	} else {
+		// If there were no errors, the key just didn't exist
+		return nil, fmt.Errorf("couldn't find the key for validator %s in any of the wallet's keystores", pubkey.Hex())
+	}
 
 }
 
@@ -210,8 +205,8 @@ func (w *Wallet) GetValidatorKeys(startIndex uint, length uint) ([]ValidatorKey,
 func (w *Wallet) SaveValidatorKey(key ValidatorKey) error {
 
 	// Update account index
-	if key.WalletIndex > w.ws.NextAccount {
-		w.ws.NextAccount = key.WalletIndex
+	if key.WalletIndex >= w.ws.NextAccount {
+		w.ws.NextAccount = key.WalletIndex + 1
 	}
 
 	// Update keystores
