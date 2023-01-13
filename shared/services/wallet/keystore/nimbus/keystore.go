@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"github.com/rocket-pool/rocketpool-go/types"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -118,5 +119,66 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
 
 	// Return
 	return nil
+
+}
+
+// Load a private key
+func (ks *Keystore) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+
+	// Get key file path
+	keyFilePath := filepath.Join(ks.keystorePath, KeystoreDir, ValidatorsDir, hexutil.AddPrefix(pubkey.Hex()), KeyFileName)
+
+	// Read the key file
+	_, err := os.Stat(keyFilePath)
+	if os.IsNotExist(err) {
+		return nil, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("couldn't open the Nimbus keystore for pubkey %s: %w", pubkey.Hex(), err)
+	}
+	bytes, err := os.ReadFile(keyFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't read the Nimbus keystore for pubkey %s: %w", pubkey.Hex(), err)
+	}
+
+	// Unmarshal the keystore
+	var keystore validatorKey
+	err = json.Unmarshal(bytes, &keystore)
+	if err != nil {
+		return nil, fmt.Errorf("error deserializing Nimbus keystore for pubkey %s: %w", pubkey.Hex(), err)
+	}
+
+	// Get secret file path
+	secretFilePath := filepath.Join(ks.keystorePath, KeystoreDir, SecretsDir, hexutil.AddPrefix(pubkey.Hex()))
+
+	// Read secret from disk
+	_, err = os.Stat(secretFilePath)
+	if os.IsNotExist(err) {
+		return nil, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("couldn't open the Nimbus secret for pubkey %s: %w", pubkey.Hex(), err)
+	}
+	bytes, err = os.ReadFile(secretFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't read the Nimbus secret for pubkey %s: %w", pubkey.Hex(), err)
+	}
+
+	// Decrypt key
+	password := string(bytes)
+	decryptedKey, err := ks.encryptor.Decrypt(keystore.Crypto, password)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't decrypt keystore for pubkey %s: %w", pubkey.Hex(), err)
+	}
+	privateKey, err := eth2types.BLSPrivateKeyFromBytes(decryptedKey)
+	if err != nil {
+		return nil, fmt.Errorf("error recreating private key for validator %s: %w", keystore.Pubkey.Hex(), err)
+	}
+
+	// Verify the private key matches the public key
+	reconstructedPubkey := types.BytesToValidatorPubkey(privateKey.PublicKey().Marshal())
+	if reconstructedPubkey != pubkey {
+		return nil, fmt.Errorf("private keystore file %s claims to be for validator %s but it's for validator %s", keyFilePath, pubkey.Hex(), reconstructedPubkey.Hex())
+	}
+
+	return privateKey, nil
 
 }

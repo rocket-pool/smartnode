@@ -53,8 +53,7 @@ type Wallet struct {
 	nodeKeyPath string
 
 	// Validator key caches
-	validatorKeys       map[uint]*eth2types.BLSPrivateKey
-	validatorKeyIndices map[string]uint
+	validatorKeys map[uint]*eth2types.BLSPrivateKey
 
 	// Keystores
 	keystores map[string]keystore.Keystore
@@ -81,16 +80,15 @@ func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee 
 
 	// Initialize wallet
 	w := &Wallet{
-		walletPath:          walletPath,
-		pm:                  passwordManager,
-		encryptor:           eth2ks.New(),
-		chainID:             big.NewInt(int64(chainId)),
-		validatorKeys:       map[uint]*eth2types.BLSPrivateKey{},
-		validatorKeyIndices: map[string]uint{},
-		keystores:           map[string]keystore.Keystore{},
-		maxFee:              maxFee,
-		maxPriorityFee:      maxPriorityFee,
-		gasLimit:            gasLimit,
+		walletPath:     walletPath,
+		pm:             passwordManager,
+		encryptor:      eth2ks.New(),
+		chainID:        big.NewInt(int64(chainId)),
+		validatorKeys:  map[uint]*eth2types.BLSPrivateKey{},
+		keystores:      map[string]keystore.Keystore{},
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
+		gasLimit:       gasLimit,
 	}
 
 	// Load & decrypt wallet store
