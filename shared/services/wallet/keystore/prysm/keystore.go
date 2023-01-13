@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"github.com/rocket-pool/rocketpool-go/types"
 	rpkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -232,5 +233,38 @@ func (ks *Keystore) initialize() error {
 	// Set account store & return
 	ks.as = as
 	return nil
+
+}
+
+// Load a private key
+func (ks *Keystore) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+
+	// Initialize the account store
+	err := ks.initialize()
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the validator key in the account store
+	for ki := 0; ki < len(ks.as.PrivateKeys); ki++ {
+		if bytes.Equal(pubkey.Bytes(), ks.as.PublicKeys[ki]) {
+			decryptedKey := ks.as.PrivateKeys[ki]
+			privateKey, err := eth2types.BLSPrivateKeyFromBytes(decryptedKey)
+			if err != nil {
+				return nil, fmt.Errorf("error recreating private key for validator %s: %w", pubkey.Hex(), err)
+			}
+
+			// Verify the private key matches the public key
+			reconstructedPubkey := types.BytesToValidatorPubkey(privateKey.PublicKey().Marshal())
+			if reconstructedPubkey != pubkey {
+				return nil, fmt.Errorf("Prysm's keystore has a key that claims to be for validator %s but it's for validator %s", pubkey.Hex(), reconstructedPubkey.Hex())
+			}
+
+			return privateKey, nil
+		}
+	}
+
+	// Return nothing if the private key wasn't found
+	return nil, nil
 
 }
