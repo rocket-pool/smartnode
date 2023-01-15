@@ -266,11 +266,20 @@ func getStatus(c *cli.Context) error {
 			if status.MinipoolCounts.RefundAvailable > 0 {
 				fmt.Printf("* %d minipool(s) have refunds available!\n", status.MinipoolCounts.RefundAvailable)
 			}
-			if status.MinipoolCounts.WithdrawalAvailable > 0 {
-				fmt.Printf("* %d minipool(s) are ready for withdrawal once Beacon Chain withdrawals are enabled!\n", status.MinipoolCounts.WithdrawalAvailable)
-			}
-			if status.MinipoolCounts.CloseAvailable > 0 {
-				fmt.Printf("* %d dissolved minipool(s) can be closed once Beacon Chain withdrawals are enabled!\n", status.MinipoolCounts.CloseAvailable)
+			if !status.IsAtlasDeployed {
+				if status.MinipoolCounts.WithdrawalAvailable > 0 {
+					fmt.Printf("* %d minipool(s) are ready for withdrawal once Beacon Chain withdrawals are enabled!\n", status.MinipoolCounts.WithdrawalAvailable)
+				}
+				if status.MinipoolCounts.CloseAvailable > 0 {
+					fmt.Printf("* %d dissolved minipool(s) can be closed once Beacon Chain withdrawals are enabled!\n", status.MinipoolCounts.CloseAvailable)
+				}
+			} else {
+				if status.MinipoolCounts.WithdrawalAvailable > 0 {
+					fmt.Printf("* %d minipool(s) are ready for withdrawal!\n", status.MinipoolCounts.WithdrawalAvailable)
+				}
+				if status.MinipoolCounts.CloseAvailable > 0 {
+					fmt.Printf("* %d dissolved minipool(s) can be closed and your deposit (minus the prelaunch amount) refunded!\n", status.MinipoolCounts.CloseAvailable)
+				}
 			}
 			if status.MinipoolCounts.Finalised > 0 {
 				fmt.Printf("* %d minipool(s) are finalized and no longer active.\n", status.MinipoolCounts.Finalised)

@@ -17,6 +17,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
+const (
+	finalizationThreshold float64 = 8
+)
+
 func distributeBalance(c *cli.Context) error {
 
 	// Get RP client
@@ -109,6 +113,23 @@ func distributeBalance(c *cli.Context) error {
 			}
 		}
 
+	}
+
+	// Print a note if the balance is too high
+	highBalanceMinipools := []api.MinipoolBalanceDistributionDetails{}
+	balanceThreshold := eth.EthToWei(finalizationThreshold)
+	for _, mp := range selectedMinipools {
+		if mp.Balance.Cmp(balanceThreshold) == 1 {
+			highBalanceMinipools = append(highBalanceMinipools, mp)
+		}
+	}
+	if len(highBalanceMinipools) > 0 {
+		fmt.Printf("%sNOTE:\nThe following minipools have a balance higher than %.2f ETH; distributing their funds will close them:\n", colorYellow, finalizationThreshold)
+		for _, mp := range highBalanceMinipools {
+			fmt.Printf("\t%s (%.6f ETH)\n", mp.Address.Hex(), eth.WeiToEth(mp.Balance))
+		}
+		fmt.Println(colorReset)
+		fmt.Println()
 	}
 
 	// Get the total gas limit estimate
