@@ -120,6 +120,38 @@ func (c *Client) StakeMinipool(address common.Address) (api.StakeMinipoolRespons
 	return response, nil
 }
 
+// Check whether a minipool is eligible for promotion
+func (c *Client) CanPromoteMinipool(address common.Address) (api.CanPromoteMinipoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-promote %s", address.Hex()))
+	if err != nil {
+		return api.CanPromoteMinipoolResponse{}, fmt.Errorf("Could not get can promote minipool status: %w", err)
+	}
+	var response api.CanPromoteMinipoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanPromoteMinipoolResponse{}, fmt.Errorf("Could not decode can promote minipool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanPromoteMinipoolResponse{}, fmt.Errorf("Could not get can promote minipool status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Promote a minipool
+func (c *Client) PromoteMinipool(address common.Address) (api.PromoteMinipoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool promote %s", address.Hex()))
+	if err != nil {
+		return api.PromoteMinipoolResponse{}, fmt.Errorf("Could not promote minipool: %w", err)
+	}
+	var response api.PromoteMinipoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PromoteMinipoolResponse{}, fmt.Errorf("Could not decode promote minipool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PromoteMinipoolResponse{}, fmt.Errorf("Could not promote minipool: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether a minipool can be dissolved
 func (c *Client) CanDissolveMinipool(address common.Address) (api.CanDissolveMinipoolResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-dissolve %s", address.Hex()))

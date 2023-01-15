@@ -29,6 +29,7 @@ type MinipoolDetails struct {
 	Balances            tokens.Balances        `json:"balances"`
 	Validator           ValidatorDetails       `json:"validator"`
 	CanStake            bool                   `json:"canStake"`
+	CanPromote          bool                   `json:"canPromote"`
 	Queue               minipool.QueueDetails  `json:"queue"`
 	RefundAvailable     bool                   `json:"refundAvailable"`
 	WithdrawalAvailable bool                   `json:"withdrawalAvailable"`
@@ -215,6 +216,18 @@ type CanStakeMinipoolResponse struct {
 	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
 }
 type StakeMinipoolResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type CanPromoteMinipoolResponse struct {
+	Status     string             `json:"status"`
+	Error      string             `json:"error"`
+	CanPromote bool               `json:"canPromote"`
+	GasInfo    rocketpool.GasInfo `json:"gasInfo"`
+}
+type PromoteMinipoolResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`

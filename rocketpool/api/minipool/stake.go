@@ -58,6 +58,9 @@ func canStakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanS
 
 	// Check the minipool's status
 	status, err := mp.GetStatusDetails(nil)
+	if err != nil {
+		return nil, err
+	}
 
 	if status.Status == rptypes.Prelaunch {
 

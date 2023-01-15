@@ -129,6 +129,13 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
 	}
 	scrubPeriod := time.Duration(scrubPeriodSeconds) * time.Second
 
+	// Get the promotion scrub period
+	promotionScrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	promotionScrubPeriod := time.Duration(promotionScrubPeriodSeconds) * time.Second
+
 	// Get the dissolve timeout
 	timeout, err := protocol.GetMinipoolLaunchTimeout(rp, nil)
 	if err != nil {
@@ -150,6 +157,19 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
 			remainingTime := creationTime.Add(scrubPeriod).Sub(latestBlockTime)
 			if remainingTime < 0 {
 				details[i].CanStake = true
+				details[i].TimeUntilDissolve = time.Until(dissolveTime)
+			}
+		}
+	}
+
+	// Check the promotion status of each minipool
+	for i, mpDetails := range details {
+		if mpDetails.Status.IsVacant {
+			creationTime := mpDetails.Status.StatusTime
+			dissolveTime := creationTime.Add(timeout)
+			remainingTime := creationTime.Add(promotionScrubPeriod).Sub(latestBlockTime)
+			if remainingTime < 0 {
+				details[i].CanPromote = true
 				details[i].TimeUntilDissolve = time.Until(dissolveTime)
 			}
 		}

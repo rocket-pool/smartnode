@@ -557,6 +557,20 @@ func (c *Client) CanProposeTNDAOSettingScrubPeriod(scrubPeriod uint64) (api.CanP
 	}
 	return response, nil
 }
+func (c *Client) CanProposeTNDAOSettingPromotionScrubPeriod(scrubPeriod uint64) (api.CanProposeTNDAOSettingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-promotion-scrub-period %d", scrubPeriod))
+	if err != nil {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting minipool.promotion.scrub.period: %w", err)
+	}
+	var response api.CanProposeTNDAOSettingResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting minipool.promotion.scrub.period response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting minipool.promotion.scrub.period: %s", response.Error)
+	}
+	return response, nil
+}
 func (c *Client) CanProposeTNDAOSettingScrubPenaltyEnabled(enabled bool) (api.CanProposeTNDAOSettingResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-scrub-penalty-enabled %t", enabled))
 	if err != nil {
@@ -724,6 +738,20 @@ func (c *Client) ProposeTNDAOSettingScrubPeriod(scrubPeriod uint64) (api.Propose
 	}
 	if response.Error != "" {
 		return api.ProposeTNDAOSettingScrubPeriodResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.scrub.period: %s", response.Error)
+	}
+	return response, nil
+}
+func (c *Client) ProposeTNDAOSettingPromotionScrubPeriod(scrubPeriod uint64) (api.ProposeTNDAOSettingPromotionScrubPeriodResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-promotion-scrub-period %d", scrubPeriod))
+	if err != nil {
+		return api.ProposeTNDAOSettingPromotionScrubPeriodResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.promotion.scrub.period: %w", err)
+	}
+	var response api.ProposeTNDAOSettingPromotionScrubPeriodResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ProposeTNDAOSettingPromotionScrubPeriodResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting minipool.promotion.scrub.period response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ProposeTNDAOSettingPromotionScrubPeriodResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.promotion.scrub.period: %s", response.Error)
 	}
 	return response, nil
 }

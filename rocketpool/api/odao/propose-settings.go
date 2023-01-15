@@ -740,6 +740,84 @@ func proposeSettingScrubPeriod(c *cli.Context, scrubPeriod uint64) (*api.Propose
 
 }
 
+func canProposeSettingPromotionScrubPeriod(c *cli.Context, promotionScrubPeriod uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeTrusted(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := canProposeSetting(c, w, rp)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get gas estimate
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+	gasInfo, err := trustednode.EstimateProposePromotionScrubPeriodGas(rp, promotionScrubPeriod, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	response.GasInfo = gasInfo
+	return response, nil
+
+}
+
+func proposeSettingPromotionScrubPeriod(c *cli.Context, promotionScrubPeriod uint64) (*api.ProposeTNDAOSettingPromotionScrubPeriodResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeTrusted(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.ProposeTNDAOSettingPromotionScrubPeriodResponse{}
+
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	}
+
+	// Submit proposal
+	proposalId, hash, err := trustednode.ProposePromotionScrubPeriod(rp, promotionScrubPeriod, opts)
+	if err != nil {
+		return nil, err
+	}
+	response.ProposalId = proposalId
+	response.TxHash = hash
+
+	// Return response
+	return &response, nil
+
+}
+
 func canProposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services

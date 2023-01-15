@@ -79,6 +79,49 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "can-promote",
+				Usage:     "Check whether a vacant minipool is ready to be promoted",
+				UsageText: "rocketpool api minipool can-promote minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canPromoteMinipool(c, minipoolAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "promote",
+				Usage:     "Promote a vacant minipool",
+				UsageText: "rocketpool api minipool promote minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(promoteMinipool(c, minipoolAddress))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "can-refund",
 				Usage:     "Check whether the node can refund ETH from the minipool",
 				UsageText: "rocketpool api minipool can-refund minipool-address",

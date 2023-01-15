@@ -359,6 +359,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								},
 							},
 							{
+								Name:      "promotion-scrub-period",
+								Aliases:   []string{"p"},
+								Usage:     "Propose updating the minipool.promotion.scrub.period setting - format is e.g. 1h30m45s",
+								UsageText: "rocketpool odao propose setting promotion-scrub-period value",
+								Action: func(c *cli.Context) error {
+
+									// Validate args
+									if err := cliutils.ValidateArgCount(c, 1); err != nil {
+										return err
+									}
+
+									// Run
+									return proposeSettingPromotionScrubPeriod(c, c.Args().Get(0))
+
+								},
+							},
+							{
 								Name:      "scrub-penalty-enabled",
 								Aliases:   []string{"spe"},
 								Usage:     "Propose updating the minipool.scrub.penalty.enabled setting - format is true / false",
