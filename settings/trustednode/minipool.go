@@ -16,6 +16,7 @@ import (
 const (
 	MinipoolSettingsContractName  = "rocketDAONodeTrustedSettingsMinipool"
 	ScrubPeriodPath               = "minipool.scrub.period"
+	PromotionScrubPeriodPath      = "minipool.promotion.scrub.period"
 	ScrubPenaltyEnabledPath       = "minipool.scrub.penalty.enabled"
 	BondReductionWindowStartPath  = "minipool.bond.reduction.window.start"
 	BondReductionWindowLengthPath = "minipool.bond.reduction.window.length"
@@ -41,6 +42,28 @@ func ProposeScrubPeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.Tran
 }
 func EstimateProposeScrubPeriodGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ScrubPeriodPath), MinipoolSettingsContractName, ScrubPeriodPath, big.NewInt(int64(value)), opts)
+}
+
+// The amount of time, in seconds, the promotion scrub check lasts before a vacant minipool can be promoted
+func GetPromotionScrubPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := minipoolSettingsContract.Call(opts, value, "getPromotionScrubPeriod"); err != nil {
+		return 0, fmt.Errorf("Could not get promotion scrub period: %w", err)
+	}
+	return (*value).Uint64(), nil
+}
+func BootstrapPromotionScrubPeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
+	return trustednodedao.BootstrapUint(rp, MinipoolSettingsContractName, PromotionScrubPeriodPath, big.NewInt(int64(value)), opts)
+}
+func ProposePromotionScrubPeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", PromotionScrubPeriodPath), MinipoolSettingsContractName, PromotionScrubPeriodPath, big.NewInt(int64(value)), opts)
+}
+func EstimatePromotionProposeScrubPeriodGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", PromotionScrubPeriodPath), MinipoolSettingsContractName, PromotionScrubPeriodPath, big.NewInt(int64(value)), opts)
 }
 
 // Whether or not the RPL slashing penalty is applied to scrubbed minipools
