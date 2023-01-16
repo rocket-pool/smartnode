@@ -288,7 +288,7 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	}
 
 	// Update & return
-	details.RefundAvailable = (details.Node.RefundBalance.Cmp(big.NewInt(0)) > 0)
+	details.RefundAvailable = (details.Node.RefundBalance.Cmp(big.NewInt(0)) > 0) && (details.Balances.ETH.Cmp(details.Node.RefundBalance) >= 0)
 	details.CloseAvailable = (details.Status.Status == types.Dissolved)
 	if details.Status.Status == types.Withdrawable {
 		details.WithdrawalAvailable = true
