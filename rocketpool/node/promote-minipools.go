@@ -215,7 +215,7 @@ func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address) ([]min
 	}
 
 	// Get the scrub period
-	scrubPeriodSeconds, err := trustednode.GetScrubPeriod(t.rp, nil)
+	scrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(t.rp, nil)
 	if err != nil {
 		return []minipool.Minipool{}, err
 	}
@@ -268,7 +268,7 @@ func (t *promoteMinipools) promoteMinipool(mp minipool.Minipool, eth2Config beac
 	// Get the gas limit
 	gasInfo, err := mpv3.EstimatePromoteGas(opts)
 	if err != nil {
-		return false, fmt.Errorf("Could not estimate the gas required to stake the minipool: %w", err)
+		return false, fmt.Errorf("Could not estimate the gas required to promote the minipool: %w", err)
 	}
 	var gas *big.Int
 	if t.gasLimit != 0 {
