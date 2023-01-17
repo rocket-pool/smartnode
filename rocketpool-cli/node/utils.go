@@ -110,11 +110,15 @@ func promptTimezone() string {
 	}
 
 	// Get the list of valid countries
-	var platformZoneSources = []string{
+	platformZoneSources := []string{
 		"/usr/share/zoneinfo/",
 		"/usr/share/lib/zoneinfo/",
 		"/usr/lib/locale/TZ/",
 	}
+	invalidCountries := []string{
+		"SystemV",
+	}
+
 	countryNames := []string{}
 	for _, source := range platformZoneSources {
 		files, err := os.ReadDir(source)
@@ -127,11 +131,21 @@ func promptTimezone() string {
 			if err != nil {
 				continue
 			}
+			filename := fileInfo.Name()
 			isSymlink := fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink // Don't allow symlinks, which are just TZ aliases
 			isDir := fileInfo.IsDir()                                     // Must be a directory
-			isUpper := unicode.IsUpper(rune(fileInfo.Name()[0]))          // Must start with an upper case letter
+			isUpper := unicode.IsUpper(rune(filename[0]))                 // Must start with an upper case letter
 			if !isSymlink && isDir && isUpper {
-				countryNames = append(countryNames, fileInfo.Name())
+				isValid := true
+				for _, invalidCountry := range invalidCountries {
+					if invalidCountry == filename {
+						isValid = false
+						break
+					}
+				}
+				if isValid {
+					countryNames = append(countryNames, filename)
+				}
 			}
 		}
 	}
