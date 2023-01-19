@@ -13,10 +13,6 @@ import (
 )
 
 func signMessage(c *cli.Context, message string) (*api.NodeSignResponse, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
