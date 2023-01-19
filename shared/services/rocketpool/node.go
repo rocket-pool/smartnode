@@ -908,6 +908,8 @@ func (c *Client) ReverseResolveEnsName(name string) (api.ResolveEnsNameResponse,
 
 // Use the node private key to sign an arbitrary message
 func (c *Client) SignMessage(message string) (api.NodeSignResponse, error) {
+	// Ignore sync status so we can sign messages even without ready clients
+	c.ignoreSyncCheck = true
 	responseBytes, err := c.callAPI("node sign-message", message)
 	if err != nil {
 		return api.NodeSignResponse{}, fmt.Errorf("Could not sign message: %w", err)
