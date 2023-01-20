@@ -256,20 +256,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "get-minipool-close-details-for-node",
 				Usage:     "Check all of the node's minipools for closure eligibility, and return the details of the closeable ones",
-				UsageText: "rocketpool api minipool get-minipool-close-details-for-node node-address",
+				UsageText: "rocketpool api minipool get-minipool-close-details-for-node",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					nodeAddress, err := cliutils.ValidateAddress("node address", c.Args().Get(0))
-					if err != nil {
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(getMinipoolCloseDetailsForNode(c, nodeAddress))
+					api.PrintResponse(getMinipoolCloseDetailsForNode(c))
 					return nil
 
 				},
