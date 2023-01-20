@@ -824,6 +824,9 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 		fmt.Printf("Validator client [%s] was previously used - no slashing prevention delay necessary.\n", currentValidatorName)
 	} else if currentValidatorName == "" {
 		fmt.Println("This is the first time starting Rocket Pool - no slashing prevention delay necessary.")
+	} else if (currentValidatorName == "nimbus-eth2" && pendingValidatorName == "nimbus-validator-client") || (pendingValidatorName == "nimbus-eth2" && currentValidatorName == "nimbus-validator-client") {
+		// Handle the transition from Nimbus v22.11.x to Nimbus v22.12.x where they split the VC into its own container
+		fmt.Printf("Validator client [%s] was previously used, you are changing to [%s] but the Smartnode will migrate your slashing database automatically to this new client. No slashing prevention delay is necessary.\n", currentValidatorName, pendingValidatorName)
 	} else {
 
 		consensusClient, _ := cfg.GetSelectedConsensusClient()
@@ -1278,9 +1281,8 @@ func serviceVersion(c *cli.Context) error {
 		case cfgtypes.ConsensusClient_Lodestar:
 			eth2ClientString = fmt.Sprintf(format, "Lodestar", cfg.Lodestar.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Nimbus:
-			eth2ClientString = fmt.Sprintf(format, "Nimbus", cfg.Nimbus.ContainerTag.Value.(string))
+			eth2ClientString = fmt.Sprintf(format+"\n\tVC image: %s", "Nimbus", cfg.Nimbus.BnContainerTag.Value.(string), cfg.Nimbus.VcContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Prysm:
-			// Prysm is a special case, as the BN and VC image versions may differ
 			eth2ClientString = fmt.Sprintf(format+"\n\tVC image: %s", "Prysm", cfg.Prysm.BnContainerTag.Value.(string), cfg.Prysm.VcContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Teku:
 			eth2ClientString = fmt.Sprintf(format, "Teku", cfg.Teku.ContainerTag.Value.(string))

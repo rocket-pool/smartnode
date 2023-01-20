@@ -7,8 +7,14 @@ import (
 )
 
 const (
-	nimbusTagTest            string = "statusim/nimbus-eth2:multiarch-v23.1.0"
-	nimbusTagProd            string = "statusim/nimbus-eth2:multiarch-v23.1.0"
+	// Prater
+	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.1.0"
+	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.1.0"
+
+	// Mainnet
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.1.0"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.1.0"
+
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
 )
@@ -23,8 +29,11 @@ type NimbusConfig struct {
 	// Common parameters that Nimbus doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"-"`
 
-	// The Docker Hub tag for Nimbus
-	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
+	// The Docker Hub tag for the BN
+	BnContainerTag config.Parameter `yaml:"bnContainerTag,omitempty"`
+
+	// The Docker Hub tag for the VC
+	VcContainerTag config.Parameter `yaml:"vcContainerTag,omitempty"`
 
 	// Custom command line flags for the BN
 	AdditionalBnFlags config.Parameter `yaml:"additionalBnFlags,omitempty"`
@@ -50,18 +59,34 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		ContainerTag: config.Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the Nimbus container you want to use on Docker Hub.",
+		BnContainerTag: config.Parameter{
+			ID:          "bnContainerTag",
+			Name:        "Beacon Node Container Tag",
+			Description: "The tag name of the Nimbus Beacon Node container you want to use on Docker Hub.",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: nimbusTagProd,
-				config.Network_Prater:  nimbusTagTest,
-				config.Network_Devnet:  nimbusTagTest,
+				config.Network_Mainnet: nimbusBnTagProd,
+				config.Network_Prater:  nimbusBnTagTest,
+				config.Network_Devnet:  nimbusBnTagTest,
 			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
-			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
+			EnvironmentVariables: []string{"BN_CONTAINER_TAG"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		VcContainerTag: config.Parameter{
+			ID:          "containerTag",
+			Name:        "Validator Client Container Tag",
+			Description: "The tag name of the Nimbus Validator Client container you want to use on Docker Hub.",
+			Type:        config.ParameterType_String,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: nimbusVcTagProd,
+				config.Network_Prater:  nimbusVcTagTest,
+				config.Network_Devnet:  nimbusVcTagTest,
+			},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
+			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
@@ -96,7 +121,8 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 func (cfg *NimbusConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.MaxPeers,
-		&cfg.ContainerTag,
+		&cfg.BnContainerTag,
+		&cfg.VcContainerTag,
 		&cfg.AdditionalBnFlags,
 		&cfg.AdditionalVcFlags,
 	}
@@ -109,7 +135,7 @@ func (cfg *NimbusConfig) GetUnsupportedCommonParams() []string {
 
 // Get the Docker container name of the validator client
 func (cfg *NimbusConfig) GetValidatorImage() string {
-	return cfg.ContainerTag.Value.(string)
+	return cfg.VcContainerTag.Value.(string)
 }
 
 // Get the name of the client
