@@ -61,7 +61,7 @@ ______           _        _    ______           _
 			Email: "kane@rocketpool.net",
 		},
 	}
-	app.Copyright = "(c) 2021 Rocket Pool Pty Ltd"
+	app.Copyright = "(c) 2023 Rocket Pool Pty Ltd"
 
 	// Set application flags
 	app.Flags = []cli.Flag{
