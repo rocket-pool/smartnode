@@ -121,14 +121,22 @@ type ProcessWithdrawalAndFinaliseResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type CanCloseMinipoolResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	CanClose        bool               `json:"canClose"`
-	InvalidStatus   bool               `json:"invalidStatus"`
-	InConsensus     bool               `json:"inConsensus"`
-	IsAtlasDeployed bool               `json:"isAtlasDeployed"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
+type MinipoolCloseDetails struct {
+	Address        common.Address       `json:"address"`
+	IsFinalized    bool                 `json:"isFinalized"`
+	MinipoolStatus types.MinipoolStatus `json:"minipoolStatus"`
+	CanClose       bool                 `json:"canClose"`
+	Balance        *big.Int             `json:"balance"`
+	NodeShare      *big.Int             `json:"nodeShare"`
+	UserShare      *big.Int             `json:"userShare"`
+	GasInfo        rocketpool.GasInfo   `json:"gasInfo"`
+}
+
+type GetMinipoolCloseDetailsForNodeResponse struct {
+	Status          string                 `json:"status"`
+	Error           string                 `json:"error"`
+	IsAtlasDeployed bool                   `json:"isAtlasDeployed"`
+	Details         []MinipoolCloseDetails `json:"details"`
 }
 type CloseMinipoolResponse struct {
 	Status string      `json:"status"`

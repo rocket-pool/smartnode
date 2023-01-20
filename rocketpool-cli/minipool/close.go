@@ -32,18 +32,11 @@ func closeMinipools(c *cli.Context) error {
 	}
 
 	// Get minipool statuses
-	status, err := rp.MinipoolStatus()
+	details, err := rp.GetMinipoolCloseDetailsForNode()
 	if err != nil {
 		return err
 	}
-
-	// Get closable minipools
-	closableMinipools := []api.MinipoolDetails{}
-	for _, minipool := range status.Minipools {
-		if minipool.CloseAvailable {
-			closableMinipools = append(closableMinipools, minipool)
-		}
-	}
+	closableMinipools := details.Details
 
 	// Check for closable minipools
 	if len(closableMinipools) == 0 {
@@ -52,14 +45,14 @@ func closeMinipools(c *cli.Context) error {
 	}
 
 	// Get selected minipools
-	var selectedMinipools []api.MinipoolDetails
+	var selectedMinipools []api.MinipoolCloseDetails
 	if c.String("minipool") == "" {
 
 		// Prompt for minipool selection
 		options := make([]string, len(closableMinipools)+1)
 		options[0] = "All available minipools"
 		for mi, minipool := range closableMinipools {
-			options[mi+1] = fmt.Sprintf("%s (%.6f ETH to claim)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
+			options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH is yours)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6))
 		}
 		selected, _ := cliutils.Select("Please select a minipool to close:", options)
 
@@ -67,7 +60,7 @@ func closeMinipools(c *cli.Context) error {
 		if selected == 0 {
 			selectedMinipools = closableMinipools
 		} else {
-			selectedMinipools = []api.MinipoolDetails{closableMinipools[selected-1]}
+			selectedMinipools = []api.MinipoolCloseDetails{closableMinipools[selected-1]}
 		}
 
 	} else {
@@ -79,7 +72,7 @@ func closeMinipools(c *cli.Context) error {
 			selectedAddress := common.HexToAddress(c.String("minipool"))
 			for _, minipool := range closableMinipools {
 				if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
-					selectedMinipools = []api.MinipoolDetails{minipool}
+					selectedMinipools = []api.MinipoolCloseDetails{minipool}
 					break
 				}
 			}
@@ -91,22 +84,11 @@ func closeMinipools(c *cli.Context) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
 	var gasInfo rocketpoolapi.GasInfo
 	for _, minipool := range selectedMinipools {
-		canResponse, err := rp.CanCloseMinipool(minipool.Address)
-		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for close transaction (%s)", err.Error())
-			break
-		} else {
-			gasInfo = canResponse.GasInfo
-			totalGas += canResponse.GasInfo.EstGasLimit
-			totalSafeGas += canResponse.GasInfo.SafeGasLimit
-		}
+		gasInfo.EstGasLimit += minipool.GasInfo.EstGasLimit
+		gasInfo.SafeGasLimit += minipool.GasInfo.SafeGasLimit
 	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
@@ -122,22 +104,6 @@ func closeMinipools(c *cli.Context) error {
 
 	// Close minipools
 	for _, minipool := range selectedMinipools {
-
-		canResponse, err := rp.CanCloseMinipool(minipool.Address)
-		if err != nil {
-			fmt.Printf("Could not check closing status for minipool %s: %s.\n", minipool.Address.Hex(), err.Error())
-			continue
-		}
-		if !canResponse.CanClose {
-			fmt.Printf("Cannot close minipool %s:\n", minipool.Address.Hex())
-			if canResponse.InvalidStatus {
-				fmt.Println("The minipool is not in a closeable state.")
-			}
-			if !canResponse.InConsensus {
-				fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.\nPlease try again in a few minutes.")
-			}
-			continue
-		}
 
 		response, err := rp.CloseMinipool(minipool.Address)
 		if err != nil {

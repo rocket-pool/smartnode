@@ -285,35 +285,38 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
-			/*
-			   REMOVED UNTIL BEACON WITHDRAWALS
-			   cli.Command{
-			       Name:      "close",
-			       Aliases:   []string{"c"},
-			       Usage:     "Withdraw balances from dissolved minipools and close them",
-			       UsageText: "rocketpool minipool close [options]",
-			       Flags: []cli.Flag{
-			           cli.StringFlag{
-			               Name:  "minipool, m",
-			               Usage: "The minipool/s to close (address or 'all')",
-			           },
-			       },
-			       Action: func(c *cli.Context) error {
 
-			           // Validate args
-			           if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+			{
+				Name:      "close",
+				Aliases:   []string{"c"},
+				Usage:     "Withdraw any remaining balance from a minipool and close it",
+				UsageText: "rocketpool minipool close [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "minipool, m",
+						Usage: "The minipool/s to close (address or 'all')",
+					},
+				},
+				Action: func(c *cli.Context) error {
 
-			           // Validate flags
-			           if c.String("minipool") != "" && c.String("minipool") != "all" {
-			               if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil { return err }
-			           }
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
 
-			           // Run
-			           return closeMinipools(c)
+					// Validate flags
+					if c.String("minipool") != "" && c.String("minipool") != "all" {
+						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
+							return err
+						}
+					}
 
-			       },
-			   },
-			*/
+					// Run
+					return closeMinipools(c)
+
+				},
+			},
+
 			{
 				Name:      "delegate-upgrade",
 				Aliases:   []string{"u"},

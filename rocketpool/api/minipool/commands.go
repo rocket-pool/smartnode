@@ -254,22 +254,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-close",
-				Usage:     "Check whether the minipool can be closed",
-				UsageText: "rocketpool api minipool can-close minipool-address",
+				Name:      "get-minipool-close-details-for-node",
+				Usage:     "Check all of the node's minipools for closure eligibility, and return the details of the closeable ones",
+				UsageText: "rocketpool api minipool get-minipool-close-details-for-node node-address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					nodeAddress, err := cliutils.ValidateAddress("node address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canCloseMinipool(c, minipoolAddress))
+					api.PrintResponse(getMinipoolCloseDetailsForNode(c, nodeAddress))
 					return nil
 
 				},

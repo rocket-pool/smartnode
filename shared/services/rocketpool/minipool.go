@@ -216,18 +216,18 @@ func (c *Client) ExitMinipool(address common.Address) (api.ExitMinipoolResponse,
 	return response, nil
 }
 
-// Check whether a minipool can be closed
-func (c *Client) CanCloseMinipool(address common.Address) (api.CanCloseMinipoolResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-close %s", address.Hex()))
+// Check all of the node's minipools for closure eligibility, and return the details of the closeable ones
+func (c *Client) GetMinipoolCloseDetailsForNode() (api.GetMinipoolCloseDetailsForNodeResponse, error) {
+	responseBytes, err := c.callAPI("minipool get-minipool-close-details-for-node")
 	if err != nil {
-		return api.CanCloseMinipoolResponse{}, fmt.Errorf("Could not get can close minipool status: %w", err)
+		return api.GetMinipoolCloseDetailsForNodeResponse{}, fmt.Errorf("Could not get get-minipool-close-details-for-node status: %w", err)
 	}
-	var response api.CanCloseMinipoolResponse
+	var response api.GetMinipoolCloseDetailsForNodeResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanCloseMinipoolResponse{}, fmt.Errorf("Could not decode can close minipool response: %w", err)
+		return api.GetMinipoolCloseDetailsForNodeResponse{}, fmt.Errorf("Could not decode get-minipool-close-details-for-node response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanCloseMinipoolResponse{}, fmt.Errorf("Could not get can close minipool status: %s", response.Error)
+		return api.GetMinipoolCloseDetailsForNodeResponse{}, fmt.Errorf("Could not get get-minipool-close-details-for-node status: %s", response.Error)
 	}
 	return response, nil
 }
