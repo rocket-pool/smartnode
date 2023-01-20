@@ -25,6 +25,7 @@ type MinipoolV3 interface {
 	EstimatePromoteGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	Promote(opts *bind.TransactOpts) (common.Hash, error)
 	GetPreMigrationBalance(opts *bind.CallOpts) (*big.Int, error)
+	GetUserDistributed(opts *bind.CallOpts) (bool, error)
 }
 
 // Minipool contract
@@ -341,15 +342,21 @@ func (mp *minipool_v3) Refund(opts *bind.TransactOpts) (common.Hash, error) {
 	return tx.Hash(), nil
 }
 
+// Check if the minipool's balance has already been distributed
+func (mp *minipool_v3) GetUserDistributed(opts *bind.CallOpts) (bool, error) {
+	distributed := new(bool)
+	if err := mp.Contract.Call(opts, distributed, "getUserDistributed"); err != nil {
+		return false, fmt.Errorf("Could not get user distributed status for minipool %s: %w", mp.Address.Hex(), err)
+	}
+	return *distributed, nil
+}
+
 // Estimate the gas of DistributeBalance
 func (mp *minipool_v3) EstimateDistributeBalanceGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "distributeBalance")
 }
 
 // Distribute the minipool's ETH balance to the node operator and rETH staking pool.
-// !!! WARNING !!!
-// DO NOT CALL THIS until the minipool's validator has exited from the Beacon Chain
-// and the balance has been deposited into the minipool!
 func (mp *minipool_v3) DistributeBalance(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "distributeBalance")
 	if err != nil {
