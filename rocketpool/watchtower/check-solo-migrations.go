@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -240,6 +241,20 @@ func (t *checkSoloMigrations) checkSoloMigrations() error {
 			return fmt.Errorf("error getting vacant minipool %d address: %w", i, err)
 		}
 
+		mp, err := minipool.NewMinipool(t.rp, address, nil)
+		if err != nil {
+			return fmt.Errorf("error creating minipool binding for %s: %w", address.Hex(), err)
+		}
+
+		mpStatus, err := mp.GetStatus(opts)
+		if err != nil {
+			return fmt.Errorf("error checking minipool %s status: %w", err)
+		}
+		if mpStatus == types.Dissolved {
+			// Ignore minipools that are already dissolved
+			continue
+		}
+
 		pubkey, err := minipool.GetMinipoolPubkey(t.rp, address, opts)
 		if err != nil {
 			return fmt.Errorf("error getting minipool %s pubkey: %w", address.Hex(), err)
@@ -251,12 +266,9 @@ func (t *checkSoloMigrations) checkSoloMigrations() error {
 		}
 
 		// Check the status
-		switch status.Status {
-		case beacon.ValidatorState_ActiveOngoing:
-			break
-
-		default:
+		if status.Status != beacon.ValidatorState_ActiveOngoing {
 			t.scrubVacantMinipool(address, fmt.Sprintf("minipool %s was in state %v, but is required to be active_ongoing for migration", address.Hex(), status.Status))
+			continue
 		}
 
 		// Check the withdrawal credentials
@@ -273,16 +285,14 @@ func (t *checkSoloMigrations) checkSoloMigrations() error {
 			}
 			if withdrawalCreds != expectedCreds {
 				t.scrubVacantMinipool(address, fmt.Sprintf("withdrawal credentials do not match (expected %s, actual %s)", expectedCreds.Hex(), withdrawalCreds.Hex()))
+				continue
 			}
 		default:
 			t.scrubVacantMinipool(address, fmt.Sprintf("unexpected prefix in withdrawal credentials: %s", withdrawalCreds.Hex()))
+			continue
 		}
 
 		// Check the balance
-		mp, err := minipool.NewMinipool(t.rp, address, nil)
-		if err != nil {
-			return fmt.Errorf("error creating minipool binding for %s: %w", address.Hex(), err)
-		}
 		mpv3, success := minipool.GetMinipoolAsV3(mp)
 		if !success {
 			return fmt.Errorf("getting pre-migration balance is not supported for minipool version %d; please upgrade the delegate for minipool %s to get it", mp.GetVersion(), address.Hex())
@@ -295,9 +305,11 @@ func (t *checkSoloMigrations) checkSoloMigrations() error {
 		currentBalance := status.Balance
 		if currentBalance < threshold {
 			t.scrubVacantMinipool(address, fmt.Sprintf("current balance of %d is lower than the threshold of %d", currentBalance, threshold))
+			continue
 		}
 		if currentBalance < (creationBalanceGwei - buffer) {
 			t.scrubVacantMinipool(address, fmt.Sprintf("current balance of %d is lower than the creation balance of %d, and below the acceptable buffer threshold of %d", currentBalance, creationBalanceGwei, buffer))
+			continue
 		}
 
 	}
