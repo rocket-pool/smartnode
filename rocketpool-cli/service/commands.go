@@ -431,6 +431,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "force",
 						Usage: "Bypass the free space check on the target folder",
 					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm",
+					},
 				},
 				Action: func(c *cli.Context) error {
 
