@@ -1563,13 +1563,17 @@ func exportEcData(c *cli.Context, targetDir string) error {
 		return nil
 	}
 
-	fmt.Printf("Stopping %s...\n", executionContainerName)
-	result, err := rp.StopContainer(executionContainerName)
-	if err != nil {
-		return fmt.Errorf("Error stopping main execution container: %w", err)
-	}
-	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
+	var result string
+	if !c.Bool("dirty") {
+
+		fmt.Printf("Stopping %s...\n", executionContainerName)
+		result, err := rp.StopContainer(executionContainerName)
+		if err != nil {
+			return fmt.Errorf("Error stopping main execution container: %w", err)
+		}
+		if result != executionContainerName {
+			return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
+		}
 	}
 
 	// Run the migrator
