@@ -21,10 +21,12 @@ const (
 	// Mainnet intervals
 	MainnetV2Interval uint64 = 4
 	MainnetV3Interval uint64 = 5
+	MainnetV4Interval uint64 = 6
 
 	// Prater intervals
 	PraterV2Interval uint64 = 37
 	PraterV3Interval uint64 = 49
+	PraterV4Interval uint64 = 60
 )
 
 type TreeGenerator struct {
@@ -69,8 +71,8 @@ func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.R
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
 			rewardsRulesetVersion: 4,
-			mainnetStartInterval:  TestingInterval,
-			praterStartInterval:   TestingInterval,
+			mainnetStartInterval:  MainnetV4Interval,
+			praterStartInterval:   PraterV4Interval,
 			generator:             newTreeGeneratorImpl_v4(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		}, {
 			rewardsRulesetVersion: 3,
