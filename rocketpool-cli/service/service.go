@@ -214,7 +214,7 @@ func serviceStatus(c *cli.Context) error {
 	}
 
 	// Print service status
-	return rp.PrintServiceStatus(getComposeFiles(c))
+	return rp.PrintServiceStatus()
 
 }
 
@@ -447,7 +447,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 
 	// Stop all of the containers
 	fmt.Print("Stopping containers... ")
-	err := rp.PauseService(getComposeFiles(c))
+	err := rp.PauseService()
 	if err != nil {
 		return fmt.Errorf("error stopping service: %w", err)
 	}
@@ -482,7 +482,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 
 	// Terminate the current setup
 	fmt.Print("Removing old installation... ")
-	err = rp.StopService(getComposeFiles(c))
+	err = rp.StopService()
 	if err != nil {
 		return fmt.Errorf("error terminating old installation: %w", err)
 	}
@@ -497,7 +497,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 
 	// Start the service
 	fmt.Print("Starting Rocket Pool... ")
-	err = rp.StartService(getComposeFiles(c))
+	err = rp.StartService()
 	if err != nil {
 		return fmt.Errorf("error starting service: %w", err)
 	}
@@ -655,7 +655,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	}
 
 	// Start service
-	err = rp.StartService(getComposeFiles(c))
+	err = rp.StartService()
 	if err != nil {
 		return err
 	}
@@ -1073,7 +1073,7 @@ func pauseService(c *cli.Context) error {
 	}
 
 	// Pause service
-	return rp.PauseService(getComposeFiles(c))
+	return rp.PauseService()
 
 }
 
@@ -1094,7 +1094,7 @@ func stopService(c *cli.Context) error {
 	defer rp.Close()
 
 	// Stop service
-	return rp.StopService(getComposeFiles(c))
+	return rp.StopService()
 
 }
 
@@ -1109,7 +1109,7 @@ func serviceLogs(c *cli.Context, serviceNames ...string) error {
 	defer rp.Close()
 
 	// Print service logs
-	return rp.PrintServiceLogs(getComposeFiles(c), c.String("tail"), serviceNames...)
+	return rp.PrintServiceLogs(c.String("tail"), serviceNames...)
 
 }
 
@@ -1124,7 +1124,7 @@ func serviceStats(c *cli.Context) error {
 	defer rp.Close()
 
 	// Print service stats
-	return rp.PrintServiceStats(getComposeFiles(c))
+	return rp.PrintServiceStats()
 
 }
 
@@ -1139,7 +1139,7 @@ func serviceCompose(c *cli.Context) error {
 	defer rp.Close()
 
 	// Print service compose config
-	return rp.PrintServiceCompose(getComposeFiles(c))
+	return rp.PrintServiceCompose()
 
 }
 
@@ -1253,11 +1253,6 @@ func serviceVersion(c *cli.Context) error {
 	fmt.Printf("Selected Eth 2.0 client: %s\n", eth2ClientString)
 	return nil
 
-}
-
-// Get the compose file paths for a CLI context
-func getComposeFiles(c *cli.Context) []string {
-	return c.Parent().StringSlice("compose-file")
 }
 
 // Destroy and resync the eth1 client from scratch
