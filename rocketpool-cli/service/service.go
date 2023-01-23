@@ -1564,6 +1564,8 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	}
 
 	var result string
+	// If dirty flag is used, copies chain data without stopping the eth1 client.
+	// This requires a second quick pass to sync the remaining files after stopping the client.
 	if !c.Bool("dirty") {
 
 		fmt.Printf("Stopping %s...\n", executionContainerName)
