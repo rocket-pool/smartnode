@@ -16,6 +16,7 @@ import (
 // Settings
 const (
 	SmoothingPoolDetailsBatchSize uint64 = 8
+	TestingInterval               uint64 = 1000000000 // A large number that won't ever actually be hit
 
 	// Mainnet intervals
 	MainnetV2Interval uint64 = 4
@@ -67,6 +68,11 @@ func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.R
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
+			rewardsRulesetVersion: 4,
+			mainnetStartInterval:  TestingInterval,
+			praterStartInterval:   TestingInterval,
+			generator:             newTreeGeneratorImpl_v4(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
+		}, {
 			rewardsRulesetVersion: 3,
 			mainnetStartInterval:  MainnetV3Interval,
 			praterStartInterval:   PraterV3Interval,
