@@ -23,6 +23,9 @@ type NimbusConfig struct {
 	// Common parameters that Nimbus doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"-"`
 
+	// The pruning mode to use in the BN
+	PruningMode config.Parameter `yaml:"pruningMode,omitempty"`
+
 	// The Docker Hub tag for Nimbus
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -45,6 +48,27 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 			EnvironmentVariables: []string{"BN_MAX_PEERS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+		},
+
+		PruningMode: config.Parameter{
+			ID:                   "pruningMode",
+			Name:                 "Pruning Mode",
+			Description:          "Choose how Nimbus will prune its database. Highlight each option to learn more about it.",
+			Type:                 config.ParameterType_Choice,
+			Default:              map[config.Network]interface{}{config.Network_All: config.NimbusPruningMode_Archive},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
+			EnvironmentVariables: []string{"NIMBUS_PRUNING_MODE"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+			Options: []config.ParameterOption{{
+				Name:        "Archive",
+				Description: "Nimbus will download the entire Beacon Chain history and store it forever. This is healthier for the overall network, since people will be able to sync the entire chain from scratch using your node.",
+				Value:       config.NimbusPruningMode_Archive,
+			}, {
+				Name:        "Pruned",
+				Description: "Nimbus will only keep the last 5 months of data available, and will delete everything older than that. This will make Nimbus use less disk space overall, but you won't be able to access state older than 5 months (such as regenerating old rewards trees).\n\n[orange]WARNING: Pruning an *existing* database will take a VERY long time when Nimbus first starts. If you change from Archive to Pruned, you should delete your old chain data and do a checkpoint sync using `rocketpool service resync-eth2`. Make sure you have a checkpoint sync provider specified first!",
+				Value:       config.NimbusPruningMode_Prune,
+			}},
 		},
 
 		ContainerTag: config.Parameter{
@@ -81,6 +105,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 func (cfg *NimbusConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.MaxPeers,
+		&cfg.PruningMode,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,
 	}
