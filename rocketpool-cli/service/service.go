@@ -148,17 +148,14 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== MEV-Boost Updates ===%s\n", colorGreen, colorReset)
-	fmt.Println("MEV-Boost is now opt-out instead of opt-in. Furthermore, there is a new way to select relays: you can now select \"profiles\" instead of individual relays. As new relays are added to the Smartnode, any that belong to the profiles you've selected will automatically be enabled for you.\nNOTE: everyone will have to configure either profile-mode or individual-relay mode when first upgrading from v1.6, even if you had previously configured MEV-Boost.\n")
+	fmt.Printf("%s=== Rewards Tree Changes ===%s\n", colorGreen, colorReset)
+	fmt.Println("Starting with Interval 6 on February 16th (on Mainnet), the Redstone Merkle rewards tree will no longer award RPL for minipools that have already exited the Beacon chain. Please see the DAO forum post for more info: https://dao.rocketpool.net/t/odao-rewards-tree-spec-v4/1389/1\n")
 
-	fmt.Printf("%s=== ENS Support ===%s\n", colorGreen, colorReset)
-	fmt.Println("`rocketpool node set-withdrawal-address`, `rocketpool node send`, and `rocketpool node set-voting-delegate` can now use ENS names instead of addresses! This requires your Execution Client to be online and synced.\nAlso, use the `rocketpool wallet set-ens-name` command to confirm an ENS domain or subdomain name that you assign to your node wallet. Once you do this, you can refer to your node's address by its ENS name on explorers like Etherscan.\n")
+	fmt.Printf("%s=== Nimbus Pruning ===%s\n", colorGreen, colorReset)
+	fmt.Println("Nimbus users can now use its new pruning feature to cull everything but the last 5 months of chain data. This will reduce disk usage and keep it relatively flat going forward. You'll find the option under the Nimbus settings in the `rocketpool service config` TUI.\n")
 
 	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
-	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!\n")
-
-	fmt.Printf("%s=== New MEV Relay ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now supports the Ultra Sound relay - a credibly-neutral and permissionless relay, considered as a public good from the ultrasound.money team. This is an uncensored relay that allows all MEV types. If you're opted into that MEV profile, you'll start using it automatically. Otherwise, you'll need to enable it manually.")
+	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
@@ -1567,7 +1564,6 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	// If dirty flag is used, copies chain data without stopping the eth1 client.
 	// This requires a second quick pass to sync the remaining files after stopping the client.
 	if !c.Bool("dirty") {
-
 		fmt.Printf("Stopping %s...\n", executionContainerName)
 		result, err := rp.StopContainer(executionContainerName)
 		if err != nil {
