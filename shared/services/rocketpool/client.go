@@ -610,7 +610,7 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 func (c *Client) StartService(composeFiles []string) error {
 
 	// Start the API container first
-	cmd, err := c.compose([]string{}, "up -d")
+	cmd, err := c.compose([]string{}, "up -d --quiet-pull")
 	if err != nil {
 		return fmt.Errorf("error creating compose command for API container: %w", err)
 	}
@@ -620,7 +620,7 @@ func (c *Client) StartService(composeFiles []string) error {
 	}
 
 	// Start all of the containers
-	cmd, err = c.compose(composeFiles, "up -d --remove-orphans")
+	cmd, err = c.compose(composeFiles, "up -d --remove-orphans --quiet-pull")
 	if err != nil {
 		return err
 	}
