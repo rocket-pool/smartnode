@@ -1586,14 +1586,16 @@ func exportEcData(c *cli.Context, targetDir string) error {
 		return fmt.Errorf("Error running EC migrator: %w", err)
 	}
 
-	// Restart ETH1
-	fmt.Printf("Restarting %s...\n", executionContainerName)
-	result, err = rp.StartContainer(executionContainerName)
-	if err != nil {
-		return fmt.Errorf("Error starting main execution client: %w", err)
-	}
-	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
+	if !c.Bool("dirty") {
+		// Restart ETH1
+		fmt.Printf("Restarting %s...\n", executionContainerName)
+		result, err = rp.StartContainer(executionContainerName)
+		if err != nil {
+			return fmt.Errorf("Error starting main execution client: %w", err)
+		}
+		if result != executionContainerName {
+			return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
+		}
 	}
 
 	fmt.Println("\nDone! Your chain data has been exported.")
