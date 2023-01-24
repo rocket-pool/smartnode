@@ -1563,13 +1563,19 @@ func exportEcData(c *cli.Context, targetDir string) error {
 		return nil
 	}
 
-	fmt.Printf("Stopping %s...\n", executionContainerName)
-	result, err := rp.StopContainer(executionContainerName)
-	if err != nil {
-		return fmt.Errorf("Error stopping main execution container: %w", err)
-	}
-	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
+	var result string
+	// If dirty flag is used, copies chain data without stopping the eth1 client.
+	// This requires a second quick pass to sync the remaining files after stopping the client.
+	if !c.Bool("dirty") {
+
+		fmt.Printf("Stopping %s...\n", executionContainerName)
+		result, err := rp.StopContainer(executionContainerName)
+		if err != nil {
+			return fmt.Errorf("Error stopping main execution container: %w", err)
+		}
+		if result != executionContainerName {
+			return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
+		}
 	}
 
 	// Run the migrator
@@ -1580,14 +1586,16 @@ func exportEcData(c *cli.Context, targetDir string) error {
 		return fmt.Errorf("Error running EC migrator: %w", err)
 	}
 
-	// Restart ETH1
-	fmt.Printf("Restarting %s...\n", executionContainerName)
-	result, err = rp.StartContainer(executionContainerName)
-	if err != nil {
-		return fmt.Errorf("Error starting main execution client: %w", err)
-	}
-	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
+	if !c.Bool("dirty") {
+		// Restart ETH1
+		fmt.Printf("Restarting %s...\n", executionContainerName)
+		result, err = rp.StartContainer(executionContainerName)
+		if err != nil {
+			return fmt.Errorf("Error starting main execution client: %w", err)
+		}
+		if result != executionContainerName {
+			return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
+		}
 	}
 
 	fmt.Println("\nDone! Your chain data has been exported.")
