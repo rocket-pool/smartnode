@@ -5,8 +5,8 @@ go 1.19
 require (
 	github.com/ethereum/go-ethereum v1.10.25
 	github.com/fatih/color v1.13.0
-	github.com/rocket-pool/rocketpool-go v1.4.1
-	github.com/rocket-pool/smartnode v1.7.2
+	github.com/rocket-pool/rocketpool-go v1.10.1-0.20230112061444-ea169f1eb8b6
+	github.com/rocket-pool/smartnode v1.7.4
 	github.com/urfave/cli/v2 v2.23.0
 )
 
@@ -61,3 +61,5 @@ require (
 )
 
 replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd
+
+// replace github.com/rocket-pool/smartnode => ../smartnode
