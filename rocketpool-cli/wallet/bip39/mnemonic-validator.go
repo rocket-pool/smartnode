@@ -33,7 +33,7 @@ func (mv *MnemonicValidator) AddWord(input string) error {
 		return errors.New("Invalid word")
 	}
 
-	if wordList[idx] != input && (len(input) < 4 || wordList[idx][:4] != input[:4]) {
+	if wordList[idx] != input && (len(input) < 4 || (len(wordList[idx]) < 4 || wordList[idx][:4] != input[:4])) {
 		return errors.New("Invalid word")
 	}
 
