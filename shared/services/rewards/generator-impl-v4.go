@@ -1393,12 +1393,12 @@ func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 			iterationIndex := iterationIndex
 			wg.Go(func() error {
 				address := r.nodeAddresses[iterationIndex]
-				stakingMinipools := []minipool.MinipoolDetails{}
-				minipoolPubkeys := []rptypes.ValidatorPubkey{}
 				minipoolDetails, err := minipool.GetNodeMinipools(r.rp, address, r.opts)
 				if err != nil {
 					return fmt.Errorf("Error getting minipool details for node %s: %w", address, err)
 				}
+				stakingMinipools := make([]minipool.MinipoolDetails, 0, len(minipoolDetails))
+				minipoolPubkeys := make([]rptypes.ValidatorPubkey, 0, len(minipoolDetails))
 				for _, mpd := range minipoolDetails {
 					if mpd.Exists {
 						mp, err := minipool.NewMinipool(r.rp, mpd.Address, r.opts)
