@@ -31,32 +31,34 @@ import (
 
 // Implementation for tree generator ruleset v4
 type treeGeneratorImpl_v4 struct {
-	rewardsFile           *RewardsFile
-	elSnapshotHeader      *types.Header
-	log                   log.ColorLogger
-	logPrefix             string
-	rp                    *rocketpool.RocketPool
-	cfg                   *config.RocketPoolConfig
-	bc                    beacon.Client
-	opts                  *bind.CallOpts
-	nodeAddresses         []common.Address
-	nodeDetails           []*NodeSmoothingDetails
-	smoothingPoolBalance  *big.Int
-	smoothingPoolAddress  common.Address
-	intervalDutiesInfo    *IntervalDutiesInfo
-	slotsPerEpoch         uint64
-	validatorIndexMap     map[uint64]*MinipoolInfo
-	elStartTime           time.Time
-	elEndTime             time.Time
-	validNetworkCache     map[uint64]bool
-	epsilon               *big.Int
-	intervalSeconds       *big.Int
-	beaconConfig          beacon.Eth2Config
-	stakingMinipoolMap    map[common.Address][]minipool.MinipoolDetails
-	validatorStatusMap    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
-	rplPrice              *big.Int
-	minCollateralFraction *big.Int
-	maxCollateralFraction *big.Int
+	rewardsFile            *RewardsFile
+	elSnapshotHeader       *types.Header
+	log                    log.ColorLogger
+	logPrefix              string
+	rp                     *rocketpool.RocketPool
+	cfg                    *config.RocketPoolConfig
+	bc                     beacon.Client
+	opts                   *bind.CallOpts
+	nodeAddresses          []common.Address
+	nodeDetails            []*NodeSmoothingDetails
+	smoothingPoolBalance   *big.Int
+	smoothingPoolAddress   common.Address
+	intervalDutiesInfo     *IntervalDutiesInfo
+	slotsPerEpoch          uint64
+	validatorIndexMap      map[uint64]*MinipoolInfo
+	elStartTime            time.Time
+	elEndTime              time.Time
+	validNetworkCache      map[uint64]bool
+	epsilon                *big.Int
+	intervalSeconds        *big.Int
+	beaconConfig           beacon.Eth2Config
+	stakingMinipoolMap     map[common.Address][]minipool.MinipoolDetails
+	validatorStatusMap     map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
+	rplPrice               *big.Int
+	minCollateralFraction  *big.Int
+	maxCollateralFraction  *big.Int
+	stakingMinipoolPubkeys []rptypes.ValidatorPubkey
+	nodeStakes             []*big.Int
 }
 
 // Create a new tree generator
@@ -146,6 +148,12 @@ func (r *treeGeneratorImpl_v4) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	}
 	r.epsilon = big.NewInt(int64(minipoolCount))
 
+	// Create the minipool details cache
+	err = r.cacheMinipoolDetails()
+	if err != nil {
+		return nil, fmt.Errorf("Error caching minipool details: %w", err)
+	}
+
 	// Calculate the RPL rewards
 	err = r.calculateRplRewards()
 	if err != nil {
@@ -219,6 +227,12 @@ func (r *treeGeneratorImpl_v4) approximateStakerShareOfSmoothingPool(rp *rocketp
 		return nil, fmt.Errorf("Error getting minipool count: %w", err)
 	}
 	r.epsilon = big.NewInt(int64(minipoolCount))
+
+	// Create the minipool details cache
+	err = r.cacheMinipoolDetails()
+	if err != nil {
+		return nil, fmt.Errorf("Error caching minipool details: %w", err)
+	}
 
 	// Calculate the ETH rewards
 	err = r.calculateEthRewards(false)
@@ -1223,7 +1237,6 @@ func (r *treeGeneratorImpl_v4) getSmoothingPoolNodeDetails() error {
 				}
 
 				// Get the details for each minipool in the node
-
 				minipoolDetails, exists := r.stakingMinipoolMap[nodeDetails.Address]
 				if !exists {
 					return fmt.Errorf("attempted to get the minipool details for node %s, but that node's minipools were missing from the cache", nodeDetails.Address.Hex())
@@ -1345,10 +1358,10 @@ func (r *treeGeneratorImpl_v4) getStartBlocksForInterval(previousIntervalEvent r
 	return startElHeader, nil
 }
 
-// Get the effective stake of a node based on the status of its validators
-func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
+// Create a cache of the minipool details for each node
+func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 
-	totalMinipoolPubkeys := []rptypes.ValidatorPubkey{}
+	r.stakingMinipoolPubkeys = []rptypes.ValidatorPubkey{}
 	nodesDone := uint64(0)
 	startTime := time.Now()
 	r.log.Printlnf("%s Querying minipool info for nodes (progress is reported every 100 nodes)", r.logPrefix)
@@ -1356,7 +1369,7 @@ func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 	nodeCount := uint64(len(r.nodeAddresses))
 	stakingMinipoolDetailsList := make([][]minipool.MinipoolDetails, nodeCount)
 	pubkeyList := make([][]rptypes.ValidatorPubkey, nodeCount)
-	nodeStakes := make([]*big.Int, nodeCount)
+	r.nodeStakes = make([]*big.Int, nodeCount)
 
 	// Get the details for each minipool in each node
 	for batchStartIndex := uint64(0); batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
@@ -1410,13 +1423,13 @@ func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 				if err != nil {
 					return fmt.Errorf("error getting RPL stake for node %s: %w", address.Hex(), err)
 				}
-				nodeStakes[iterationIndex] = nodeStake
+				r.nodeStakes[iterationIndex] = nodeStake
 
 				return nil
 			})
 
 			if err := wg.Wait(); err != nil {
-				return nil, err
+				return err
 			}
 		}
 
@@ -1426,13 +1439,20 @@ func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 	// Cache the minipool details and aggregate the pubkeys
 	for i, address := range r.nodeAddresses {
 		r.stakingMinipoolMap[address] = stakingMinipoolDetailsList[i]
-		totalMinipoolPubkeys = append(totalMinipoolPubkeys, pubkeyList[i]...)
+		r.stakingMinipoolPubkeys = append(r.stakingMinipoolPubkeys, pubkeyList[i]...)
 	}
+
+	return nil
+
+}
+
+// Get the effective stake of a node based on the status of its validators
+func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 
 	// Get the status for all staking minipool validators
 	r.log.Printlnf("%s Getting validator statuses for all eligible minipools", r.logPrefix)
 	r.validatorIndexMap = map[uint64]*MinipoolInfo{}
-	statusMap, err := r.bc.GetValidatorStatuses(totalMinipoolPubkeys, &beacon.ValidatorStatusOptions{
+	statusMap, err := r.bc.GetValidatorStatuses(r.stakingMinipoolPubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &r.rewardsFile.ConsensusEndBlock,
 	})
 	if err != nil {
@@ -1484,7 +1504,7 @@ func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 		maxCollateral.Mul(maxCollateral, eligibleMinipoolsBig).Div(maxCollateral, r.rplPrice)
 
 		// Calculate the effective stake
-		nodeStake := nodeStakes[i]
+		nodeStake := r.nodeStakes[i]
 		if nodeStake.Cmp(minCollateral) == -1 {
 			effectiveStakes[i] = big.NewInt(0)
 		} else if nodeStake.Cmp(maxCollateral) == 1 {
