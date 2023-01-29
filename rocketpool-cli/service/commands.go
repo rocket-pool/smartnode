@@ -431,6 +431,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "force",
 						Usage: "Bypass the free space check on the target folder",
 					},
+					cli.BoolFlag{
+						Name:  "dirty",
+						Usage: "Exports the execution (eth1) chain data without stopping the client. Requires a second pass (much faster) to sync the remaining files without the client running.",
+					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm",
+					},
 				},
 				Action: func(c *cli.Context) error {
 
