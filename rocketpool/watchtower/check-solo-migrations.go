@@ -1,6 +1,7 @@
 package watchtower
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"sync"
@@ -301,8 +302,17 @@ func (t *checkSoloMigrations) checkSoloMigrations() error {
 		if err != nil {
 			return fmt.Errorf("error checking pre-migration balance for %s: %w", address.Hex(), err)
 		}
-		creationBalanceGwei := creationBalance.Div(creationBalance, big.NewInt(1e9)).Uint64()
+		creationBalanceGwei := big.NewInt(0).Div(creationBalance, big.NewInt(1e9)).Uint64()
 		currentBalance := status.Balance
+
+		// Add the minipool balance to the Beacon balance in case it already got skimmed
+		minipoolBalance, err := t.ec.BalanceAt(context.Background(), mpv3.GetAddress(), opts.BlockNumber)
+		if err != nil {
+			return fmt.Errorf("error checking pre-migration balance of minipool %s: %w", mpv3.GetAddress().Hex(), err)
+		}
+		minipoolBalanceGwei := big.NewInt(0).Div(minipoolBalance, big.NewInt(1e9)).Uint64()
+		currentBalance += minipoolBalanceGwei
+
 		if currentBalance < threshold {
 			t.scrubVacantMinipool(address, fmt.Sprintf("current balance of %d is lower than the threshold of %d", currentBalance, threshold))
 			continue
