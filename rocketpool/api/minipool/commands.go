@@ -760,6 +760,57 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "can-change-withdrawal-creds",
+				Usage:     "Check whether a solo validator's withdrawal credentials can be changed to a minipool address",
+				UsageText: "rocketpool api minipool can-change-withdrawal-creds minipool-address mnemonic",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canChangeWithdrawalCreds(c, minipoolAddress, mnemonic))
+					return nil
+
+				},
+			},
+			{
+				Name:      "change-withdrawal-creds",
+				Usage:     "Change a solo validator's withdrawal credentials to a minipool address",
+				UsageText: "rocketpool api minipool change-withdrawal-creds minipool-address mnemonic",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(changeWithdrawalCreds(c, minipoolAddress, mnemonic))
+					return nil
+
+				},
+			},
 		},
 	})
 }

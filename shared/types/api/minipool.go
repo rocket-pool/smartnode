@@ -95,6 +95,16 @@ type ExitMinipoolResponse struct {
 	Error  string `json:"error"`
 }
 
+type CanChangeWithdrawalCredentialsResponse struct {
+	Status    string `json:"status"`
+	Error     string `json:"error"`
+	CanChange bool   `json:"canChange"`
+}
+type ChangeWithdrawalCredentialsResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
+
 type CanProcessWithdrawalResponse struct {
 	Status        string             `json:"status"`
 	Error         string             `json:"error"`

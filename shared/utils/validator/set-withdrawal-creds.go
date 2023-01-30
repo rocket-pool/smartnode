@@ -2,6 +2,7 @@ package validator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -9,14 +10,32 @@ import (
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
+// Get the withdrawal private key for a validator based on its mnemonic, index, and path
+func GetWithdrawalKey(mnemonic string, index uint, validatorKeyPath string) (*eth2types.BLSPrivateKey, error) {
+
+	withdrawalKeyPath := strings.TrimSuffix(validatorKeyPath, "/0")
+	withdrawalKey, err := GetPrivateKey(mnemonic, index, withdrawalKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("error getting withdrawal private key: %w", err)
+	}
+
+	return withdrawalKey, nil
+
+}
+
 // Get a voluntary exit message signature for a given validator key and index
-func GetSignedWithdrawalCredsChangeMessage(validatorKey *eth2types.BLSPrivateKey, validatorIndex uint64, fromBlsPubkey types.ValidatorPubkey, newWithdrawalAddress common.Address, signatureDomain []byte) (types.ValidatorSignature, error) {
+func GetSignedWithdrawalCredsChangeMessage(withdrawalKey *eth2types.BLSPrivateKey, validatorIndex uint64, newWithdrawalAddress common.Address, signatureDomain []byte) (types.ValidatorSignature, error) {
+
+	// Get the withdrawal pubkey
+	withdrawalPubkey := withdrawalKey.PublicKey().Marshal()
+	withdrawalPubkeyBuffer := [48]byte{}
+	copy(withdrawalPubkeyBuffer[:], withdrawalPubkey)
 
 	// Build withdrawal creds change message
 	message := eth2.WithdrawalCredentialsChange{
-		ValidatorIndex:     fmt.Sprintf("%d", validatorIndex),
-		FromBLSPubkey:      fromBlsPubkey.Hex(),
-		ToExecutionAddress: newWithdrawalAddress.Hex(),
+		ValidatorIndex:     validatorIndex,
+		FromBLSPubkey:      withdrawalPubkeyBuffer,
+		ToExecutionAddress: newWithdrawalAddress,
 	}
 
 	// Get object root
@@ -37,7 +56,7 @@ func GetSignedWithdrawalCredsChangeMessage(validatorKey *eth2types.BLSPrivateKey
 	}
 
 	// Sign message
-	signature := validatorKey.Sign(srHash[:]).Marshal()
+	signature := withdrawalKey.Sign(srHash[:]).Marshal()
 
 	// Return
 	return types.BytesToValidatorSignature(signature), nil

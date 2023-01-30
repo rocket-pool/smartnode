@@ -27,19 +27,20 @@ const (
 	RequestUrlFormat   = "%s%s"
 	RequestContentType = "application/json"
 
-	RequestSyncStatusPath            = "/eth/v1/node/syncing"
-	RequestEth2ConfigPath            = "/eth/v1/config/spec"
-	RequestEth2DepositContractMethod = "/eth/v1/config/deposit_contract"
-	RequestGenesisPath               = "/eth/v1/beacon/genesis"
-	RequestCommitteePath             = "/eth/v1/beacon/states/%s/committees"
-	RequestFinalityCheckpointsPath   = "/eth/v1/beacon/states/%s/finality_checkpoints"
-	RequestForkPath                  = "/eth/v1/beacon/states/%s/fork"
-	RequestValidatorsPath            = "/eth/v1/beacon/states/%s/validators"
-	RequestVoluntaryExitPath         = "/eth/v1/beacon/pool/voluntary_exits"
-	RequestAttestationsPath          = "/eth/v1/beacon/blocks/%s/attestations"
-	RequestBeaconBlockPath           = "/eth/v2/beacon/blocks/%s"
-	RequestValidatorSyncDuties       = "/eth/v1/validator/duties/sync/%s"
-	RequestValidatorProposerDuties   = "/eth/v1/validator/duties/proposer/%s"
+	RequestSyncStatusPath                  = "/eth/v1/node/syncing"
+	RequestEth2ConfigPath                  = "/eth/v1/config/spec"
+	RequestEth2DepositContractMethod       = "/eth/v1/config/deposit_contract"
+	RequestGenesisPath                     = "/eth/v1/beacon/genesis"
+	RequestCommitteePath                   = "/eth/v1/beacon/states/%s/committees"
+	RequestFinalityCheckpointsPath         = "/eth/v1/beacon/states/%s/finality_checkpoints"
+	RequestForkPath                        = "/eth/v1/beacon/states/%s/fork"
+	RequestValidatorsPath                  = "/eth/v1/beacon/states/%s/validators"
+	RequestVoluntaryExitPath               = "/eth/v1/beacon/pool/voluntary_exits"
+	RequestAttestationsPath                = "/eth/v1/beacon/blocks/%s/attestations"
+	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%s"
+	RequestValidatorSyncDuties             = "/eth/v1/validator/duties/sync/%s"
+	RequestValidatorProposerDuties         = "/eth/v1/validator/duties/proposer/%s"
+	RequestWithdrawalCredentialsChangePath = "/eth/v1/beacon/pool/bls_to_execution_changes"
 
 	MaxRequestValidatorsCount = 600
 )
@@ -551,6 +552,18 @@ func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Comm
 	return committees, nil
 }
 
+// Perform a withdrawal credentials change on a validator
+func (c *StandardHttpClient) ChangeWithdrawalCredentials(validatorIndex uint64, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
+	return c.postWithdrawalCredentialsChange(BLSToExecutionChangeRequest{
+		Message: BLSToExecutionChangeMessage{
+			ValidatorIndex:     uinteger(validatorIndex),
+			FromBLSPubkey:      fromBlsPubkey[:],
+			ToExecutionAddress: toExecutionAddress[:],
+		},
+		Signature: signature.Bytes(),
+	})
+}
+
 // Get sync status
 func (c *StandardHttpClient) getSyncStatus() (SyncStatusResponse, error) {
 	responseBody, status, err := c.getRequest(RequestSyncStatusPath)
@@ -789,6 +802,18 @@ func (c *StandardHttpClient) getCommittees(stateId string, epoch *uint64) (Commi
 		return CommitteesResponse{}, fmt.Errorf("Could not decode committees: %w", err)
 	}
 	return committees, nil
+}
+
+// Send withdrawal credentials change request
+func (c *StandardHttpClient) postWithdrawalCredentialsChange(request BLSToExecutionChangeRequest) error {
+	responseBody, status, err := c.postRequest(RequestWithdrawalCredentialsChangePath, request)
+	if err != nil {
+		return fmt.Errorf("Could not broadcast withdrawal credentials change for validator %d: %w", request.Message.ValidatorIndex, err)
+	}
+	if status != http.StatusOK {
+		return fmt.Errorf("Could not broadcast withdrawal credentials change for validator %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
+	}
+	return nil
 }
 
 // Make a GET request to the beacon node

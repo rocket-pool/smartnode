@@ -29,7 +29,7 @@ type VoluntaryExit struct {
 
 // Withdrawal creds change message
 type WithdrawalCredentialsChange struct {
-	ValidatorIndex     string `json:"validator_index"`
-	FromBLSPubkey      string `json:"from_bls_pubkey"`
-	ToExecutionAddress string `json:"to_execution_address"`
+	ValidatorIndex     uint64   `json:"validator_index"`
+	FromBLSPubkey      [48]byte `json:"from_bls_pubkey" ssz-size:"48"`
+	ToExecutionAddress [20]byte `json:"to_execution_address" ssz-size:"20"`
 }

@@ -10,13 +10,22 @@ import (
 )
 
 // Request types
+type VoluntaryExitMessage struct {
+	Epoch          uinteger `json:"epoch"`
+	ValidatorIndex uinteger `json:"validator_index"`
+}
 type VoluntaryExitRequest struct {
 	Message   VoluntaryExitMessage `json:"message"`
 	Signature byteArray            `json:"signature"`
 }
-type VoluntaryExitMessage struct {
-	Epoch          uinteger `json:"epoch"`
-	ValidatorIndex uinteger `json:"validator_index"`
+type BLSToExecutionChangeMessage struct {
+	ValidatorIndex     uinteger  `json:"validator_index"`
+	FromBLSPubkey      byteArray `json:"from_bls_pubkey"`
+	ToExecutionAddress byteArray `json:"to_execution_address"`
+}
+type BLSToExecutionChangeRequest struct {
+	Message   BLSToExecutionChangeMessage `json:"message"`
+	Signature byteArray                   `json:"signature"`
 }
 
 // Response types

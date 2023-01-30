@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -290,6 +291,17 @@ func (m *BeaconClientManager) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Com
 		return nil, err
 	}
 	return result.([]beacon.Committee), nil
+}
+
+// Change the withdrawal credentials for a validator
+func (m *BeaconClientManager) ChangeWithdrawalCredentials(validatorIndex uint64, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
+	err := m.runFunction0(func(client beacon.Client) error {
+		return client.ChangeWithdrawalCredentials(validatorIndex, fromBlsPubkey, toExecutionAddress, signature)
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 /// ==================

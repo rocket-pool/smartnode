@@ -20,10 +20,9 @@ require (
 	github.com/glendc/go-external-ip v0.1.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-version v1.6.0
-	github.com/herumi/bls-eth-go-binary v1.28.1 // indirect
 	github.com/imdario/mergo v0.3.13
 	github.com/klauspost/compress v1.15.11
-	github.com/klauspost/cpuid/v2 v2.1.1
+	github.com/klauspost/cpuid/v2 v2.2.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/term v0.0.0-20220808134915-39b0c02b01ae // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
@@ -47,7 +46,6 @@ require (
 	github.com/web3-storage/go-w3s-client v0.0.6
 	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b
 	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
-	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
 	golang.org/x/term v0.0.0-20220919170432-7a66f970e087
 	google.golang.org/grpc v1.49.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
@@ -57,5 +55,7 @@ require (
 replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd
 
 replace github.com/web3-storage/go-w3s-client => github.com/rocket-pool/go-w3s-client v0.0.0-20221006052217-dbd9938d11d8
+
+replace github.com/wealdtech/go-eth2-types/v2 => github.com/rocket-pool/go-eth2-types/v2 v2.0.0-20230130220714-d88838162252
 
 // replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
