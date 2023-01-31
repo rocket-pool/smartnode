@@ -105,6 +105,11 @@ type ChangeWithdrawalCredentialsResponse struct {
 	Error  string `json:"error"`
 }
 
+type ImportKeyResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
+
 type CanProcessWithdrawalResponse struct {
 	Status        string             `json:"status"`
 	Error         string             `json:"error"`

@@ -762,6 +762,32 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "import-key",
+				Usage:     "Import a validator private key for a vacant minipool",
+				UsageText: "rocketpool api minipool import-key minipool-address mnemonic",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(importKey(c, minipoolAddress, mnemonic))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "can-change-withdrawal-creds",
 				Usage:     "Check whether a solo validator's withdrawal credentials can be changed to a minipool address",
 				UsageText: "rocketpool api minipool can-change-withdrawal-creds minipool-address mnemonic",

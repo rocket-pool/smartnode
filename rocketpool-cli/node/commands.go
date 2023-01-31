@@ -385,15 +385,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
-						Usage: "Automatically confirm deposit",
+						Usage: "Automatically confirm all interactive questions",
 					},
 					cli.StringFlag{
 						Name:  "salt, l",
 						Usage: "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
 					},
+					cli.StringFlag{
+						Name:  "mnemonic, m",
+						Usage: "Use this flag if you want to recreate your validator's private key within the Smartnode's VC instead of running it via your own VC, and have the Smartnode reassign your validator's withdrawal credentials to the new minipool address automatically.",
+					},
 					cli.BoolFlag{
-						Name:  "import-key, i",
-						Usage: "Use this flag to indicate you want to import the validator's private key into the Smartnode's Validator Client instead of running it on your own client.",
+						Name:  "no-restart",
+						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
 					},
 				},
 				Action: func(c *cli.Context) error {

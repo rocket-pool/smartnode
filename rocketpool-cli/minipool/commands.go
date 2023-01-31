@@ -64,6 +64,68 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "set-withdrawal-creds",
+				Aliases:   []string{"swc"},
+				Usage:     "Convert the withdrawal credentials for a migrated solo validator from the old 0x00 value to the minipool address. Required to complete the migration process.",
+				UsageText: "rocketpool minipool set-withdrawal-creds minipool-address [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "mnemonic, m",
+						Usage: "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					address, err := cliutils.ValidateAddress("minipool-address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return setWithdrawalCreds(c, address)
+
+				},
+			},
+			{
+				Name:      "import-key",
+				Aliases:   []string{"ik"},
+				Usage:     "Import the externally-derived key for a minipool that was previously a solo validator, so the Smartnode's VC manages it instead of your externally-managed VC.",
+				UsageText: "rocketpool minipool import-key minipool-address [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "mnemonic, m",
+						Usage: "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
+					},
+					cli.BoolFlag{
+						Name:  "no-restart",
+						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
+					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm all interactive questions",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					address, err := cliutils.ValidateAddress("minipool-address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return importKey(c, address)
+
+				},
+			},
+			{
 				Name:      "promote",
 				Aliases:   []string{"p"},
 				Usage:     "Promote a vacant minipool after the scrub check, completing a solo validator migration.",

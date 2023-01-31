@@ -42,7 +42,7 @@ func promptPassword() string {
 }
 
 // Prompt for a recovery mnemonic phrase
-func promptMnemonic() string {
+func PromptMnemonic() string {
 	for {
 		lengthInput := cliutils.Prompt(
 			"Please enter the "+bold+"number"+unbold+" of words in your mnemonic phrase (24 by default):",
@@ -90,7 +90,7 @@ func promptMnemonic() string {
 func confirmMnemonic(mnemonic string) {
 	for {
 		fmt.Println("Please enter your mnemonic phrase to confirm.")
-		confirmation := promptMnemonic()
+		confirmation := PromptMnemonic()
 		if mnemonic == confirmation {
 			return
 		}

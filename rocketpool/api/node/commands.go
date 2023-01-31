@@ -1249,11 +1249,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-create-vacant-minipool",
 				Usage:     "Check whether a vacant minipool can be created for solo staker migration",
-				UsageText: "rocketpool api node can-create-vacant-minipool amount min-fee salt pubkey import-key",
+				UsageText: "rocketpool api node can-create-vacant-minipool amount min-fee salt pubkey",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 5); err != nil {
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
 					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
@@ -1272,13 +1272,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					importKey, err := cliutils.ValidateBool("import key", c.Args().Get(4))
-					if err != nil {
-						return err
-					}
 
 					// Run
-					api.PrintResponse(canCreateVacantMinipool(c, amountWei, minNodeFee, salt, pubkey, importKey))
+					api.PrintResponse(canCreateVacantMinipool(c, amountWei, minNodeFee, salt, pubkey))
 					return nil
 
 				},
@@ -1286,11 +1282,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "create-vacant-minipool",
 				Usage:     "Create a vacant minipool, which can be used to migrate a solo staker",
-				UsageText: "rocketpool api node create-vacant-minipool amount min-fee salt pubkey import-key",
+				UsageText: "rocketpool api node create-vacant-minipool amount min-fee salt pubkey",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 5); err != nil {
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
 					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
@@ -1309,13 +1305,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					importKey, err := cliutils.ValidateBool("import key", c.Args().Get(4))
-					if err != nil {
-						return err
-					}
 
 					// Run
-					api.PrintResponse(createVacantMinipool(c, amountWei, minNodeFee, salt, pubkey, importKey))
+					api.PrintResponse(createVacantMinipool(c, amountWei, minNodeFee, salt, pubkey))
 					return nil
 
 				},

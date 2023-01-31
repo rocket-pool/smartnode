@@ -519,3 +519,51 @@ func (c *Client) DistributeBalance(address common.Address) (api.DistributeBalanc
 	}
 	return response, nil
 }
+
+// Import a validator private key for a vacant minipool
+func (c *Client) ImportKey(address common.Address, mnemonic string) (api.ChangeWithdrawalCredentialsResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool import-key %s \"%s\"", address.Hex(), mnemonic))
+	if err != nil {
+		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not import validator key: %w", err)
+	}
+	var response api.ChangeWithdrawalCredentialsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not decode import-key response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not import validator key: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether a solo validator's withdrawal creds can be migrated to a minipool address
+func (c *Client) CanChangeWithdrawalCredentials(address common.Address, mnemonic string) (api.CanChangeWithdrawalCredentialsResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-change-withdrawal-creds %s \"%s\"", address.Hex(), mnemonic))
+	if err != nil {
+		return api.CanChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not get can-change-withdrawal-creds status: %w", err)
+	}
+	var response api.CanChangeWithdrawalCredentialsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not decode can-change-withdrawal-creds response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not get can-change-withdrawal-creds status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Migrate a solo validator's withdrawal creds to a minipool address
+func (c *Client) ChangeWithdrawalCredentials(address common.Address, mnemonic string) (api.ChangeWithdrawalCredentialsResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool change-withdrawal-creds %s \"%s\"", address.Hex(), mnemonic))
+	if err != nil {
+		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not change withdrawal creds: %w", err)
+	}
+	var response api.ChangeWithdrawalCredentialsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not decode change-withdrawal-creds response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not change withdrawal creds: %s", response.Error)
+	}
+	return response, nil
+}

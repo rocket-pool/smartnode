@@ -4,15 +4,16 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
-	"os"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/migration"
 	"github.com/urfave/cli"
 )
 
@@ -24,12 +25,6 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		return err
 	}
 	defer rp.Close()
-
-	// Load the config
-	cfg, _, err := rp.LoadConfig()
-	if err != nil {
-		return err
-	}
 
 	// Check and assign the EC status
 	err = cliutils.CheckClientStatus(rp)
@@ -71,7 +66,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 
 	// Print a notification about the pubkey
-	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at <placeholder> to learn about the process and its implications.\n\n", pubkey.Hex())
+	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at <placeholder> to learn about the process and its implications.\n\nFirst, we'll create the new minipool. Next, we'll ask whether you want to import the validator's private key into your Smartnode's Validator Client, or keep running your own externally-managed validator. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.\n\n", pubkey.Hex())
 
 	// Get deposit amount
 	var amount float64
@@ -165,40 +160,8 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		salt = big.NewInt(0).SetBytes(buffer)
 	}
 
-	// Ask amount importing
-	importKey := c.Bool("import-key")
-	if importKey {
-		fmt.Printf("%sNOTE:\nYou have requested to import your validator's private key into the Validator Client container managed by the Smartnode stack. Before doing this, you **MUST** remove this key from your existing Validator Client used for solo staking and restart it so that it is no longer validating with that key.\nFailure to do this **will result in your validator being SLASHED**.\n\nPlease confirm the validator is no longer active by intentionally waiting until it has missed at least three attestations.\n\n%s", colorRed, colorReset)
-
-		if !cliutils.Confirm("Have you removed the key from your own Validator Client and restarted it so that it is no longer active?") {
-			fmt.Println("Cancelled.")
-			return nil
-		}
-
-		customKeyPasswordFile, err := promptForSoloKeyPassword(rp, cfg, pubkey)
-		if err != nil {
-			return err
-		}
-		if customKeyPasswordFile != "" {
-			// Defer deleting the custom keystore password file
-			defer func(customKeyPasswordFile string) {
-				_, err := os.Stat(customKeyPasswordFile)
-				if os.IsNotExist(err) {
-					return
-				}
-
-				err = os.Remove(customKeyPasswordFile)
-				if err != nil {
-					fmt.Printf("*** WARNING ***\nAn error occurred while removing the custom keystore password file: %s\n\nThis file contains the passwords to your custom validator keys.\nYou *must* delete it manually as soon as possible so nobody can read it.\n\nThe file is located here:\n\n\t%s\n\n", err.Error(), customKeyPasswordFile)
-				}
-			}(customKeyPasswordFile)
-		}
-	} else {
-		fmt.Println("NOTE: You have not requested to import the validator's private key into the Validator Client managed by the Smartnode. You will still be responsible for running and maintaining your own Validator Client with the validator's private key loaded, just as you are today.\n")
-	}
-
 	// Check deposit can be made
-	canDeposit, err := rp.CanCreateVacantMinipool(amountWei, minNodeFee, salt, pubkey, importKey)
+	canDeposit, err := rp.CanCreateVacantMinipool(amountWei, minNodeFee, salt, pubkey)
 	if err != nil {
 		return err
 	}
@@ -226,8 +189,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	colorYellow := "\033[33m"
 	syncResponse, err := rp.NodeSync()
 	if err != nil {
-		fmt.Printf("%s**WARNING**: Can't verify the sync status of your consensus client.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n"+
-			"Reason: %s\n%s", colorRed, err, colorReset)
+		return fmt.Errorf("error checking if your clients are in sync: %w", err)
 	} else {
 		if syncResponse.BcStatus.PrimaryClientStatus.IsSynced {
 			fmt.Printf("Your consensus client is synced, you may safely create a minipool.\n")
@@ -235,10 +197,12 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 			if syncResponse.BcStatus.FallbackClientStatus.IsSynced {
 				fmt.Printf("Your fallback consensus client is synced, you may safely create a minipool.\n")
 			} else {
-				fmt.Printf("%s**WARNING**: neither your primary nor fallback consensus clients are fully synced.\nYOU WILL LOSE ETH if your minipool is activated before they are fully synced.\n%s", colorRed, colorReset)
+				fmt.Printf("%s**WARNING**: neither your primary nor fallback consensus clients are fully synced.\nYou cannot migrate until they've finished syncing.\n%s", colorRed, colorReset)
+				return nil
 			}
 		} else {
-			fmt.Printf("%s**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n%s", colorRed, colorReset)
+			fmt.Printf("%s**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.\nYou cannot migrate until you have a synced consensus client.\n%s", colorRed, colorReset)
+			return nil
 		}
 	}
 
@@ -250,9 +214,8 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
-		"You are about to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%.\n"+
+		"You are about to create a new a minipool with a minimum possible commission rate of %f%%.\n"+
 			"%sARE YOU SURE YOU WANT TO DO THIS? Running a minipool is a long-term commitment, and this action cannot be undone!%s",
-		math.RoundDown(eth.WeiToEth(amountWei), 6),
 		minNodeFee*100,
 		colorYellow,
 		colorReset))) {
@@ -261,7 +224,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 
 	// Make deposit
-	response, err := rp.CreateVacantMinipool(amountWei, minNodeFee, salt, pubkey, importKey)
+	response, err := rp.CreateVacantMinipool(amountWei, minNodeFee, salt, pubkey)
 	if err != nil {
 		return err
 	}
@@ -274,26 +237,50 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		return err
 	}
 
-	if importKey {
-		fmt.Print("Restarting Validator Client...")
-		// Restart the VC
-		_, err := rp.RestartVc()
-		if err != nil {
-			fmt.Printf("failed!\n%sWARNING: error restarting validator client: %s\n\nPlease restart it manually so it picks up the new validator key for your minipool.%s", colorYellow, err.Error(), colorReset)
-		} else {
-			fmt.Println(" done!\n")
+	// Log
+	fmt.Println("Your minipool was made successfully!")
+	fmt.Printf("Your new minipool's address is: %s\n\n", response.MinipoolAddress)
+
+	// Get the mnemonic if importing
+	mnemonic := ""
+	if c.IsSet("mnemonic") {
+		mnemonic = c.String("mnemonic")
+	} else if !c.Bool("yes") {
+		fmt.Println("You have the option of importing your validator's private key into the Smartnode's Validator Client instead of running your own Validator Client separately. In doing so, the Smartnode will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.\n")
+		if cliutils.Confirm("Would you like to import your key and automatically migrate your withdrawal credentials?") {
+			mnemonic = wallet.PromptMnemonic()
 		}
 	}
 
-	// Log & return
-	fmt.Println("Your minipool was made successfully!")
-	fmt.Printf("Your new minipool's address is: %s\n", response.MinipoolAddress)
+	if mnemonic != "" {
+		handleImport(c, rp, response.MinipoolAddress, mnemonic)
+	} else {
+		// Ignore importing / it errored out
+		fmt.Println("Since you're not importing your validator key, you will still be responsible for running and maintaining your own Validator Client with the validator's private key loaded, just as you are today.\n\n")
+		fmt.Printf("You must now upgrade your validator's withdrawal credentials manually, using as tool such as `ethdo` (https://github.com/wealdtech/ethdo), to the following minipool address:\n\n\t%s\n\n", response.MinipoolAddress)
+	}
 
-	fmt.Printf("You can now upgrade your validator's withdrawal credentials to the following:\n\n\t%s\n\n", response.WithdrawalCredentials)
-	fmt.Printf("It has entered the scrub check, where it will hold for %s.", response.ScrubPeriod)
+	fmt.Printf("The minipool is now in the scrub check, where it will hold for %s.\n", response.ScrubPeriod)
 	fmt.Println("You can watch its progress using `rocketpool service logs node`.")
 	fmt.Println("Once the scrub check period has passed, your node will automatically promote it to an active minipool.")
 
 	return nil
 
+}
+
+// Import a validator's private key into the Smartnode and set the validator's withdrawal creds
+func handleImport(c *cli.Context, rp *rocketpool.Client, minipoolAddress common.Address, mnemonic string) {
+	// Check if the withdrawal creds can be changed
+	success := migration.ChangeWithdrawalCreds(rp, minipoolAddress, mnemonic)
+	if !success {
+		fmt.Println("Your withdrawal credentials cannot be automatically changed at this time. Import aborted.\nYou can try again later by using `rocketpool minipool set-withdrawal-creds`.")
+		return
+	}
+
+	// Import the private key
+	success = migration.ImportKey(c, rp, minipoolAddress, mnemonic)
+	if !success {
+		fmt.Println("Your validator's withdrawal credentials have been changed to the minipool address, but importing the key failed.\nYou can try again later by using `rocketpool minipool import-key`.")
+		return
+	}
 }

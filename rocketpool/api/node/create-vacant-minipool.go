@@ -10,7 +10,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
-	"github.com/rocket-pool/rocketpool-go/types"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -19,12 +18,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/rocket-pool/smartnode/shared/utils/wallet"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 )
 
-func canCreateVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey, importKey bool) (*api.CanCreateVacantMinipoolResponse, error) {
+func canCreateVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey) (*api.CanCreateVacantMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -141,22 +139,6 @@ func canCreateVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee floa
 		return nil, fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
 	}
 
-	// Check if the key can be imported
-	if importKey {
-		pubkeyMap := map[types.ValidatorPubkey]bool{
-			pubkey: true,
-		}
-		pubkeyMap, err := wallet.CheckForAndRecoverCustomMinipoolKeys(cfg, pubkeyMap, nil, true)
-		if err != nil {
-			return nil, fmt.Errorf("error checking if validator key can be imported: %w", err)
-		}
-
-		_, exists := pubkeyMap[pubkey]
-		if exists {
-			return nil, fmt.Errorf("cannot import the validator key for %s because it was not found in the custom keys directory.", pubkey.Hex())
-		}
-	}
-
 	// Convert the existing balance from gwei to wei
 	balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
 	balanceWei.Mul(balanceWei, big.NewInt(1e9))
@@ -172,7 +154,7 @@ func canCreateVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee floa
 
 }
 
-func createVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey, importKey bool) (*api.CreateVacantMinipoolResponse, error) {
+func createVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey) (*api.CreateVacantMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -232,7 +214,7 @@ func createVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee float64
 	}
 
 	// Get the scrub period
-	scrubPeriodUnix, err := trustednode.GetScrubPeriod(rp, nil)
+	scrubPeriodUnix, err := trustednode.GetPromotionScrubPeriod(rp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -269,22 +251,6 @@ func createVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee float64
 	}
 	if cfg.Smartnode.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
 		return nil, fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
-	}
-
-	// Check if the key can be imported
-	if importKey {
-		pubkeyMap := map[types.ValidatorPubkey]bool{
-			pubkey: true,
-		}
-		pubkeyMap, err := wallet.CheckForAndRecoverCustomMinipoolKeys(cfg, pubkeyMap, w, false)
-		if err != nil {
-			return nil, fmt.Errorf("error checking if validator key can be imported: %w", err)
-		}
-
-		_, exists := pubkeyMap[pubkey]
-		if exists {
-			return nil, fmt.Errorf("cannot import the validator key for %s because it was not found in the custom keys directory.", pubkey.Hex())
-		}
 	}
 
 	// Convert the existing balance from gwei to wei

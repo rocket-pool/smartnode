@@ -927,8 +927,8 @@ func (c *Client) SignMessage(message string) (api.NodeSignResponse, error) {
 }
 
 // Check whether a vacant minipool can be created for solo staker migration
-func (c *Client) CanCreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey, importKey bool) (api.CanCreateVacantMinipoolResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-create-vacant-minipool %s %f %s %s %t", amountWei.String(), minFee, salt.String(), pubkey.Hex(), importKey))
+func (c *Client) CanCreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey) (api.CanCreateVacantMinipoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-create-vacant-minipool %s %f %s %s", amountWei.String(), minFee, salt.String(), pubkey.Hex()))
 	if err != nil {
 		return api.CanCreateVacantMinipoolResponse{}, fmt.Errorf("Could not get can create vacant minipool status: %w", err)
 	}
@@ -943,8 +943,8 @@ func (c *Client) CanCreateVacantMinipool(amountWei *big.Int, minFee float64, sal
 }
 
 // Create a vacant minipool, which can be used to migrate a solo staker
-func (c *Client) CreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey, importKey bool) (api.CreateVacantMinipoolResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node create-vacant-minipool %s %f %s %s %t", amountWei.String(), minFee, salt.String(), pubkey.Hex(), importKey))
+func (c *Client) CreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey) (api.CreateVacantMinipoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node create-vacant-minipool %s %f %s %s", amountWei.String(), minFee, salt.String(), pubkey.Hex()))
 	if err != nil {
 		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %w", err)
 	}
