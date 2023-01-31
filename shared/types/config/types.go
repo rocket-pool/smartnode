@@ -29,11 +29,12 @@ const (
 
 // Enum to describe which network the system is on
 const (
-	Network_Unknown Network = ""
-	Network_All     Network = "all"
-	Network_Mainnet Network = "mainnet"
-	Network_Prater  Network = "prater"
-	Network_Devnet  Network = "devnet"
+	Network_Unknown  Network = ""
+	Network_All      Network = "all"
+	Network_Mainnet  Network = "mainnet"
+	Network_Prater   Network = "prater"
+	Network_Devnet   Network = "devnet"
+	Network_Zhejiang Network = "zhejiang"
 )
 
 // Enum to describe the mode for a client - local (Docker Mode) or external (Hybrid Mode)

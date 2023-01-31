@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	tekuTag             string = "consensys/teku:22.12.0"
+	tekuTagTest         string = "consensys/teku:develop"
+	tekuTagProd         string = "consensys/teku:22.12.0"
 	defaultTekuMaxPeers uint16 = 100
 )
 
@@ -82,11 +83,16 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 		},
 
 		ContainerTag: config.Parameter{
-			ID:                   "containerTag",
-			Name:                 "Container Tag",
-			Description:          "The tag name of the Teku container you want to use on Docker Hub.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: tekuTag},
+			ID:          "containerTag",
+			Name:        "Container Tag",
+			Description: "The tag name of the Teku container you want to use on Docker Hub.",
+			Type:        config.ParameterType_String,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet:  tekuTagProd,
+				config.Network_Prater:   tekuTagTest,
+				config.Network_Devnet:   tekuTagTest,
+				config.Network_Zhejiang: tekuTagTest,
+			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
