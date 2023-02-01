@@ -39,7 +39,7 @@ type MinipoolCountsPerStatus struct {
 }
 
 // Minipool details from the native getMinipoolDetails() function
-type NativeMinipolDetails struct {
+type NativeMinipoolDetails struct {
 	Exists                  bool                    `abi:"exists"`
 	MinipoolAddress         common.Address          `abi:"minipoolAddress"`
 	Pubkey                  rptypes.ValidatorPubkey `abi:"pubkey"`
@@ -83,26 +83,26 @@ func GetNodeMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 }
 
 // Get the details for a minipool
-func GetNativeMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (NativeMinipolDetails, error) {
+func GetNativeMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (NativeMinipoolDetails, error) {
 	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
-		return NativeMinipolDetails{}, err
+		return NativeMinipoolDetails{}, err
 	}
-	details := new(NativeMinipolDetails)
+	details := new(NativeMinipoolDetails)
 	if err := rocketMinipoolManager.Call(opts, details, "getMinipoolDetails", minipoolAddress); err != nil {
-		return NativeMinipolDetails{}, fmt.Errorf("Could not get minipool %s details: %w", minipoolAddress.Hex(), err)
+		return NativeMinipoolDetails{}, fmt.Errorf("Could not get minipool %s details: %w", minipoolAddress.Hex(), err)
 	}
 	return *details, nil
 }
 
 // Get the details for all of the minipools on a node
-func GetNodeNativeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) ([]NativeMinipolDetails, error) {
+func GetNodeNativeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) ([]NativeMinipoolDetails, error) {
 	// Get the minipool count
 	minipoolCount, err := GetNodeMinipoolCount(rp, nodeAddress, opts)
 	if err != nil {
 		return nil, err
 	}
-	totalDetails := make([]NativeMinipolDetails, 0, minipoolCount)
+	totalDetails := make([]NativeMinipoolDetails, 0, minipoolCount)
 
 	// Get the contract
 	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
@@ -116,7 +116,7 @@ func GetNodeNativeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.
 	for index < minipoolCount {
 		offset := big.NewInt(int64(index))
 
-		details := new([]NativeMinipolDetails)
+		details := new([]NativeMinipoolDetails)
 		if err := rocketMinipoolManager.Call(opts, details, "getNodeMinipoolDetails", nodeAddress, offset, limit); err != nil {
 			return nil, fmt.Errorf("could not get minipool details for node %s from range %d to %d: %w", nodeAddress.Hex(), index, index+NativeMinipoolDetailsBatchSize, err)
 		}
@@ -129,13 +129,13 @@ func GetNodeNativeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.
 }
 
 // Get the details for all of the minipools
-func GetAllNativeMinipoolDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NativeMinipolDetails, error) {
+func GetAllNativeMinipoolDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NativeMinipoolDetails, error) {
 	// Get the minipool count
 	minipoolCount, err := GetMinipoolCount(rp, opts)
 	if err != nil {
 		return nil, err
 	}
-	totalDetails := make([]NativeMinipolDetails, 0, minipoolCount)
+	totalDetails := make([]NativeMinipoolDetails, 0, minipoolCount)
 
 	// Get the contract
 	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
@@ -149,7 +149,7 @@ func GetAllNativeMinipoolDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	for index < minipoolCount {
 		offset := big.NewInt(int64(index))
 
-		details := new([]NativeMinipolDetails)
+		details := new([]NativeMinipoolDetails)
 		if err := rocketMinipoolManager.Call(opts, details, "getAllMinipoolDetails", offset, limit); err != nil {
 			return nil, fmt.Errorf("could not get minipool details from range %d to %d: %w", index, index+NativeMinipoolDetailsBatchSize, err)
 		}

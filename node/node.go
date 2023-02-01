@@ -108,7 +108,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address,
 
 // Get the details for every node in the network
 func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NativeNodeDetails, error) {
-	// Get node count
+	// Get the node count
 	nodeCount, err := GetNodeCount(rp, opts)
 	if err != nil {
 		return nil, err
