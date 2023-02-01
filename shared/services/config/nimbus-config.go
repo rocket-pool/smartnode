@@ -8,12 +8,12 @@ import (
 
 const (
 	// Prater
-	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.1.0"
-	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.1.0"
+	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.1.1"
+	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.1.1"
 
 	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.1.0"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.1.0"
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.1.1"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.1.1"
 
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
@@ -34,6 +34,9 @@ type NimbusConfig struct {
 
 	// The Docker Hub tag for the VC
 	VcContainerTag config.Parameter `yaml:"vcContainerTag,omitempty"`
+
+	// The pruning mode to use in the BN
+	PruningMode config.Parameter `yaml:"pruningMode,omitempty"`
 
 	// Custom command line flags for the BN
 	AdditionalBnFlags config.Parameter `yaml:"additionalBnFlags,omitempty"`
@@ -91,6 +94,27 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 			OverwriteOnUpgrade:   true,
 		},
 
+		PruningMode: config.Parameter{
+			ID:                   "pruningMode",
+			Name:                 "Pruning Mode",
+			Description:          "Choose how Nimbus will prune its database. Highlight each option to learn more about it.",
+			Type:                 config.ParameterType_Choice,
+			Default:              map[config.Network]interface{}{config.Network_All: config.NimbusPruningMode_Archive},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
+			EnvironmentVariables: []string{"NIMBUS_PRUNING_MODE"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+			Options: []config.ParameterOption{{
+				Name:        "Archive",
+				Description: "Nimbus will download the entire Beacon Chain history and store it forever. This is healthier for the overall network, since people will be able to sync the entire chain from scratch using your node.",
+				Value:       config.NimbusPruningMode_Archive,
+			}, {
+				Name:        "Pruned",
+				Description: "Nimbus will only keep the last 5 months of data available, and will delete everything older than that. This will make Nimbus use less disk space overall, but you won't be able to access state older than 5 months (such as regenerating old rewards trees).\n\n[orange]WARNING: Pruning an *existing* database will take a VERY long time when Nimbus first starts. If you change from Archive to Pruned, you should delete your old chain data and do a checkpoint sync using `rocketpool service resync-eth2`. Make sure you have a checkpoint sync provider specified first!",
+				Value:       config.NimbusPruningMode_Prune,
+			}},
+		},
+
 		AdditionalBnFlags: config.Parameter{
 			ID:                   "additionalBnFlags",
 			Name:                 "Additional Beacon Client Flags",
@@ -121,6 +145,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 func (cfg *NimbusConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.MaxPeers,
+		&cfg.PruningMode,
 		&cfg.BnContainerTag,
 		&cfg.VcContainerTag,
 		&cfg.AdditionalBnFlags,

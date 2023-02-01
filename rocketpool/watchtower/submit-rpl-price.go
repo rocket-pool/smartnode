@@ -58,7 +58,11 @@ const MessengerAbi = `[
   ]`
 
 // Settings
-const BlocksPerTurn = 75 // Approx. 15 minutes
+const (
+	BlocksPerTurn                      uint64  = 75  // Approx. 15 minutes
+	RplPriceDecreaseDeviationThreshold float64 = 0.5 // Error out if price drops >50%
+	RplPriceIncreaseDeviationThreshold float64 = 1.6 // Error out if price rises >60%
+)
 
 // Submit RPL price task
 type submitRplPrice struct {
@@ -332,6 +336,41 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 	rplPrice, err := oio.GetRateToEth(opts, rplAddress, true)
 	if err != nil {
 		return nil, fmt.Errorf("Could not get RPL price at block %d: %w", blockNumber, err)
+	}
+
+	// Get the previously reported price
+	previousPrice, err := network.GetRPLPrice(t.rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get previous RPL price at block %d: %w", blockNumber, err)
+	}
+
+	// See if the new price is lower than the decrease threshold
+	one := eth.EthToWei(1)
+	decreaseThresholdBig := eth.EthToWei(RplPriceDecreaseDeviationThreshold)
+	oldDecreaseThreshold := big.NewInt(0)
+	oldDecreaseThreshold.Mul(previousPrice, decreaseThresholdBig).Div(oldDecreaseThreshold, one)
+	if rplPrice.Cmp(oldDecreaseThreshold) == -1 {
+		t.log.Println("=== RPL PRICE ANOMALY DETECTED ===")
+		t.log.Printlnf("Previous RPL Price: %s", previousPrice.String())
+		t.log.Printlnf("Min Allowed Price:  %s", oldDecreaseThreshold.String())
+		t.log.Printlnf("CURRENT RPL PRICE:  %s", rplPrice.String())
+		t.log.Println("==================================")
+
+		return nil, fmt.Errorf("rpl price decreased beyond the allowed threshold")
+	}
+
+	// See if the new price is higher than the increase threshold
+	increaseThresholdBig := eth.EthToWei(RplPriceIncreaseDeviationThreshold)
+	oldIncreaseThreshold := big.NewInt(0)
+	oldIncreaseThreshold.Mul(previousPrice, increaseThresholdBig).Div(oldIncreaseThreshold, one)
+	if rplPrice.Cmp(oldIncreaseThreshold) == 1 {
+		t.log.Println("=== RPL PRICE ANOMALY DETECTED ===")
+		t.log.Printlnf("Previous RPL Price: %s", previousPrice.String())
+		t.log.Printlnf("Max Allowed Price:  %s", oldIncreaseThreshold.String())
+		t.log.Printlnf("CURRENT RPL PRICE:  %s", rplPrice.String())
+		t.log.Println("==================================")
+
+		return nil, fmt.Errorf("rpl price increased beyond the allowed threshold")
 	}
 
 	// Return

@@ -10,8 +10,8 @@ import (
 
 // Constants
 const (
-	nethermindTagAmd64         string = "nethermind/nethermind:1.15.0"
-	nethermindTagArm64         string = "nethermind/nethermind:1.15.0"
+	nethermindTagAmd64         string = "nethermind/nethermind:1.16.1"
+	nethermindTagArm64         string = "nethermind/nethermind:1.16.1"
 	nethermindEventLogInterval int    = 1000
 	nethermindStopSignal       string = "SIGTERM"
 )
@@ -161,15 +161,15 @@ func calculateNethermindCache() uint64 {
 	if totalMemoryGB == 0 {
 		return 0
 	} else if totalMemoryGB < 9 {
-		return 512
+		return 256
 	} else if totalMemoryGB < 13 {
-		return 1024
+		return 512
 	} else if totalMemoryGB < 17 {
-		return 2048
+		return 1024
 	} else if totalMemoryGB < 25 {
-		return 4096
+		return 2048
 	} else if totalMemoryGB < 33 {
-		return 6144
+		return 4096
 	} else {
 		return 8192
 	}
@@ -182,15 +182,15 @@ func calculateNethermindPruneMemSize() uint64 {
 	if totalMemoryGB == 0 {
 		return 0
 	} else if totalMemoryGB < 9 {
-		return 512
+		return 256
 	} else if totalMemoryGB < 13 {
-		return 1024
+		return 512
 	} else if totalMemoryGB < 17 {
-		return 2048
+		return 1024
 	} else if totalMemoryGB < 25 {
-		return 4096
+		return 2048
 	} else if totalMemoryGB < 33 {
-		return 6144
+		return 4096
 	} else {
 		return 8192
 	}
