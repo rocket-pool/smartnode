@@ -16,9 +16,10 @@ import (
 
 // Settings
 const (
-	MinipoolPrelaunchBatchSize = 250
-	MinipoolAddressBatchSize   = 50
-	MinipoolDetailsBatchSize   = 20
+	MinipoolPrelaunchBatchSize     = 250
+	MinipoolAddressBatchSize       = 50
+	MinipoolDetailsBatchSize       = 20
+	NativeMinipoolDetailsBatchSize = 1000
 )
 
 // Minipool details
@@ -37,6 +38,32 @@ type MinipoolCountsPerStatus struct {
 	Dissolved    *big.Int `abi:"dissolvedCount"`
 }
 
+// Minipool details from the native getMinipoolDetails() function
+type NativeMinipolDetails struct {
+	Exists                  bool                    `abi:"exists"`
+	MinipoolAddress         common.Address          `abi:"minipoolAddress"`
+	Pubkey                  rptypes.ValidatorPubkey `abi:"pubkey"`
+	Status                  rptypes.MinipoolStatus  `abi:"status"`
+	StatusBlock             *big.Int                `abi:"statusBlock"`
+	StatusTime              *big.Int                `abi:"statusTime"`
+	Finalised               bool                    `abi:"finalised"`
+	DepositType             rptypes.MinipoolDeposit `abi:"depositType"`
+	NodeFee                 *big.Int                `abi:"nodeFee"`
+	NodeDepositBalance      *big.Int                `abi:"nodeDepositBalance"`
+	NodeDepositAssigned     bool                    `abi:"nodeDepositAssigned"`
+	UserDepositBalance      *big.Int                `abi:"userDepositBalance"`
+	UserDepositAssigned     bool                    `abi:"userDepositAssigned"`
+	UserDepositAssignedTime *big.Int                `abi:"userDepositAssignedTime"`
+	UseLatestDelegate       bool                    `abi:"useLatestDelegate"`
+	Delegate                common.Address          `abi:"delegate"`
+	PreviousDelegate        common.Address          `abi:"previousDelegate"`
+	EffectiveDelegate       common.Address          `abi:"effectiveDelegate"`
+	PenaltyCount            *big.Int                `abi:"penaltyCount"`
+	PenaltyRate             *big.Int                `abi:"penaltyRate"`
+	UserDistributed         bool                    `abi:"userDistributed"`
+	Slashed                 bool                    `abi:"slashed"`
+}
+
 // Get all minipool details
 func GetMinipools(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]MinipoolDetails, error) {
 	minipoolAddresses, err := GetMinipoolAddresses(rp, opts)
@@ -53,6 +80,85 @@ func GetNodeMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 		return []MinipoolDetails{}, err
 	}
 	return loadMinipoolDetails(rp, minipoolAddresses, opts)
+}
+
+// Get the details for a minipool
+func GetNativeMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (NativeMinipolDetails, error) {
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
+	if err != nil {
+		return NativeMinipolDetails{}, err
+	}
+	details := new(NativeMinipolDetails)
+	if err := rocketMinipoolManager.Call(opts, details, "getMinipoolDetails", minipoolAddress); err != nil {
+		return NativeMinipolDetails{}, fmt.Errorf("Could not get minipool %s details: %w", minipoolAddress.Hex(), err)
+	}
+	return *details, nil
+}
+
+// Get the details for all of the minipools on a node
+func GetNodeNativeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) ([]NativeMinipolDetails, error) {
+	// Get the minipool count
+	minipoolCount, err := GetNodeMinipoolCount(rp, nodeAddress, opts)
+	if err != nil {
+		return nil, err
+	}
+	totalDetails := make([]NativeMinipolDetails, 0, minipoolCount)
+
+	// Get the contract
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all of the minipools
+	index := uint64(0)
+	limit := big.NewInt(int64(NativeMinipoolDetailsBatchSize))
+	for index < minipoolCount {
+		offset := big.NewInt(int64(index))
+
+		details := new([]NativeMinipolDetails)
+		if err := rocketMinipoolManager.Call(opts, details, "getNodeMinipoolDetails", nodeAddress, offset, limit); err != nil {
+			return nil, fmt.Errorf("could not get minipool details for node %s from range %d to %d: %w", nodeAddress.Hex(), index, index+NativeMinipoolDetailsBatchSize, err)
+		}
+
+		totalDetails = append(totalDetails, *details...)
+		index += NativeMinipoolDetailsBatchSize
+	}
+
+	return totalDetails, nil
+}
+
+// Get the details for all of the minipools
+func GetAllNativeMinipoolDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NativeMinipolDetails, error) {
+	// Get the minipool count
+	minipoolCount, err := GetMinipoolCount(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	totalDetails := make([]NativeMinipolDetails, 0, minipoolCount)
+
+	// Get the contract
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all of the minipools
+	index := uint64(0)
+	limit := big.NewInt(int64(NativeMinipoolDetailsBatchSize))
+	for index < minipoolCount {
+		offset := big.NewInt(int64(index))
+
+		details := new([]NativeMinipolDetails)
+		if err := rocketMinipoolManager.Call(opts, details, "getAllMinipoolDetails", offset, limit); err != nil {
+			return nil, fmt.Errorf("could not get minipool details from range %d to %d: %w", index, index+NativeMinipoolDetailsBatchSize, err)
+		}
+
+		totalDetails = append(totalDetails, *details...)
+		index += NativeMinipoolDetailsBatchSize
+	}
+
+	return totalDetails, nil
 }
 
 // Load minipool details
