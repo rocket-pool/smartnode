@@ -42,6 +42,7 @@ type MinipoolCountsPerStatus struct {
 type NativeMinipoolDetails struct {
 	Exists                  bool                    `abi:"exists"`
 	MinipoolAddress         common.Address          `abi:"minipoolAddress"`
+	NodeAddress             common.Address          `abi:"nodeAddress"`
 	Pubkey                  rptypes.ValidatorPubkey `abi:"pubkey"`
 	Status                  rptypes.MinipoolStatus  `abi:"status"`
 	StatusBlock             *big.Int                `abi:"statusBlock"`
