@@ -70,6 +70,11 @@ func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.R
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
+			rewardsRulesetVersion: 5,
+			mainnetStartInterval:  TestingInterval,
+			praterStartInterval:   TestingInterval,
+			generator:             newTreeGeneratorImpl_v5(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
+		}, {
 			rewardsRulesetVersion: 4,
 			mainnetStartInterval:  MainnetV4Interval,
 			praterStartInterval:   PraterV4Interval,

@@ -762,14 +762,13 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 // Calculate the distribution of Smoothing Pool ETH to each node
 func (r *treeGeneratorImpl_v5) calculateNodeRewards() (*big.Int, *big.Int, error) {
 
-	// Get the average fee for all eligible minipools and calculate their weighted share
-	one := big.NewInt(1e18) // 100%, used for dividing percentages properly
-	feeTotal := big.NewInt(0)
-	minipoolCount := int64(0)
-	minipoolShareTotal := big.NewInt(0)
-	intervalSlots := r.rewardsFile.ConsensusEndBlock - r.rewardsFile.ConsensusStartBlock
-	intervalSlotsBig := big.NewInt(int64(intervalSlots))
+	totalEthForMinipools := big.NewInt(0)
+	totalNodeOpShare := big.NewInt(0)
+	totalNodeOpShare.Mul(r.smoothingPoolBalance, r.totalAttestationScore)
+	totalNodeOpShare.Div(totalNodeOpShare, big.NewInt(int64(r.successfulAttestations)))
+
 	for _, nodeInfo := range r.nodeDetails {
+		nodeInfo.SmoothingPoolEth = big.NewInt(0)
 		if nodeInfo.IsEligible {
 			for _, minipool := range nodeInfo.Minipools {
 				if minipool.GoodAttestations+minipool.MissedAttestations == 0 || !minipool.WasActive {
@@ -780,76 +779,32 @@ func (r *treeGeneratorImpl_v5) calculateNodeRewards() (*big.Int, *big.Int, error
 					minipool.MinipoolShare = big.NewInt(0)
 					continue
 				}
-				// Used for average fee calculation
-				feeTotal.Add(feeTotal, minipool.Fee)
-				minipoolCount++
 
-				// Minipool share calculation
-				minipoolShare := big.NewInt(0).Add(one, minipool.Fee) // Start with 1 + fee
-				if uint64(minipool.EndSlot-minipool.StartSlot) < intervalSlots {
-					// Prorate the minipool based on its number of active slots
-					activeSlots := big.NewInt(int64(minipool.EndSlot - minipool.StartSlot))
-					minipoolShare.Mul(minipoolShare, activeSlots)
-					minipoolShare.Div(minipoolShare, intervalSlotsBig)
-				}
-				if minipool.MissedAttestations > 0 {
-					// Calculate the participation rate if there are any missed attestations
-					goodCount := big.NewInt(int64(minipool.GoodAttestations))
-					missedCount := big.NewInt(int64(minipool.MissedAttestations))
-					totalCount := big.NewInt(0).Add(goodCount, missedCount)
-					minipoolShare.Mul(minipoolShare, goodCount)
-					minipoolShare.Div(minipoolShare, totalCount)
-				}
-				minipoolShareTotal.Add(minipoolShareTotal, minipoolShare)
-				minipool.MinipoolShare = minipoolShare
-			}
-		}
-	}
-	averageFee := big.NewInt(0).Div(feeTotal, big.NewInt(minipoolCount))
-	r.log.Printlnf("%s Fee Total:          %s (%.3f)", r.logPrefix, feeTotal.String(), eth.WeiToEth(feeTotal))
-	r.log.Printlnf("%s Minipool Count:     %d", r.logPrefix, minipoolCount)
-	r.log.Printlnf("%s Average Fee:        %s (%.3f)", r.logPrefix, averageFee.String(), eth.WeiToEth(averageFee))
-
-	// Calculate the staking pool share and the node op share
-	halfSmoothingPool := big.NewInt(0).Div(r.smoothingPoolBalance, big.NewInt(2))
-	commission := big.NewInt(0)
-	commission.Mul(halfSmoothingPool, averageFee)
-	commission.Div(commission, one)
-	poolStakerShare := big.NewInt(0).Sub(halfSmoothingPool, commission)
-	nodeOpShare := big.NewInt(0).Sub(r.smoothingPoolBalance, poolStakerShare)
-
-	// Calculate the amount of ETH to give each minipool based on their share
-	totalEthForMinipools := big.NewInt(0)
-	for _, nodeInfo := range r.nodeDetails {
-		nodeInfo.SmoothingPoolEth = big.NewInt(0)
-		if nodeInfo.IsEligible {
-			for _, minipool := range nodeInfo.Minipools {
-				if minipool.EndSlot-minipool.StartSlot == 0 {
-					continue
-				}
-				// Minipool ETH = NO amount * minipool share / total minipool share
-				minipoolEth := big.NewInt(0).Set(nodeOpShare)
-				minipoolEth.Mul(minipoolEth, minipool.MinipoolShare)
-				minipoolEth.Div(minipoolEth, minipoolShareTotal)
+				minipoolEth := big.NewInt(0).Set(totalNodeOpShare)
+				minipoolEth.Mul(minipoolEth, minipool.AttestationScore)
+				minipoolEth.Div(minipoolEth, r.totalAttestationScore)
+				minipool.MinipoolShare = minipoolEth
 				nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, minipoolEth)
-				minipool.MinipoolShare = minipoolEth // Set the minipool share to the normalized fraction for the JSON
 			}
-			totalEthForMinipools.Add(totalEthForMinipools, nodeInfo.SmoothingPoolEth)
 		}
+		totalEthForMinipools.Add(totalEthForMinipools, nodeInfo.SmoothingPoolEth)
 	}
 
 	// This is how much actually goes to the pool stakers - it should ideally be equal to poolStakerShare but this accounts for any cumulative floating point errors
 	truePoolStakerAmount := big.NewInt(0).Sub(r.smoothingPoolBalance, totalEthForMinipools)
 
 	// Sanity check to make sure we arrived at the correct total
-	delta := big.NewInt(0).Sub(totalEthForMinipools, nodeOpShare)
+	delta := big.NewInt(0).Sub(totalEthForMinipools, totalNodeOpShare)
 	delta.Abs(delta)
 	if delta.Cmp(r.epsilon) == 1 {
-		return nil, nil, fmt.Errorf("error calculating smoothing pool ETH: total was %s, but expected %s; error was too large (%s wei)", totalEthForMinipools.String(), nodeOpShare.String(), delta.String())
+		return nil, nil, fmt.Errorf("error calculating smoothing pool ETH: total was %s, but expected %s; error was too large (%s wei)", totalEthForMinipools.String(), totalNodeOpShare.String(), delta.String())
 	}
 
+	// Calculate the staking pool share and the node op share
+	poolStakerShare := big.NewInt(0).Sub(r.smoothingPoolBalance, totalNodeOpShare)
+
 	r.log.Printlnf("%s Pool staker ETH:    %s (%.3f)", r.logPrefix, poolStakerShare.String(), eth.WeiToEth(poolStakerShare))
-	r.log.Printlnf("%s Node Op ETH:        %s (%.3f)", r.logPrefix, nodeOpShare.String(), eth.WeiToEth(nodeOpShare))
+	r.log.Printlnf("%s Node Op ETH:        %s (%.3f)", r.logPrefix, totalNodeOpShare.String(), eth.WeiToEth(totalNodeOpShare))
 	r.log.Printlnf("%s Calculated NO ETH:  %s (error = %s wei)", r.logPrefix, totalEthForMinipools.String(), delta.String())
 	r.log.Printlnf("%s Adjusting pool staker ETH to %s to account for truncation", r.logPrefix, truePoolStakerAmount.String())
 

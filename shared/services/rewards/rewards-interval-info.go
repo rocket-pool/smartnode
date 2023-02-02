@@ -21,6 +21,8 @@ func (r *rewardsIntervalInfo) GetStartInterval(network cfgtypes.Network) (uint64
 		return r.praterStartInterval, nil
 	case cfgtypes.Network_Devnet:
 		return 0, nil
+	case cfgtypes.Network_Zhejiang:
+		return 0, nil
 	default:
 		return 0, fmt.Errorf("unknown network: %s", string(network))
 	}
