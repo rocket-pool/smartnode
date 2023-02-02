@@ -27,6 +27,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
+	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -34,28 +35,92 @@ import (
 	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-const MessengerAbi = `[
-    {
-      "inputs": [],
-      "name": "rateStale",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "submitRate",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-  ]`
+const (
+	OptimismMessengerAbi string = `[
+		{
+		"inputs": [],
+		"name": "rateStale",
+		"outputs": [
+			{
+			"internalType": "bool",
+			"name": "",
+			"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+		},
+		{
+		"inputs": [],
+		"name": "submitRate",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+		}
+	]`
+
+	PolygonMessengerAbi string = `[
+		{
+		"inputs": [],
+		"name": "rateStale",
+		"outputs": [
+			{
+			"internalType": "bool",
+			"name": "",
+			"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+		},
+		{
+		"inputs": [],
+		"name": "submitRate",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+		}
+	]`
+
+	ArbitrumMessengerAbi string = `[
+		{
+		"inputs": [],
+		"name": "rateStale",
+		"outputs": [
+			{
+			"internalType": "bool",
+			"name": "",
+			"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+		},
+		{
+		"inputs": [
+			{
+			"internalType": "uint256",
+			"name": "_maxSubmissionCost",
+			"type": "uint256"
+			},
+			{
+			"internalType": "uint256",
+			"name": "_gasLimit",
+			"type": "uint256"
+			},
+			{
+			"internalType": "uint256",
+			"name": "_gasPriceBid",
+			"type": "uint256"
+			}
+		],
+		"name": "submitRate",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+		}
+	]`
+)
 
 // Settings
 const (
@@ -165,6 +230,20 @@ func (t *submitRplPrice) run() error {
 	if err != nil {
 		// Error is not fatal for this task so print and continue
 		t.log.Printf("Error submitting Optimism price: %q\n", err)
+	}
+
+	// Check if Polygon rate is stale and submit
+	err = t.submitPolygonPrice()
+	if err != nil {
+		// Error is not fatal for this task so print and continue
+		t.log.Printf("Error submitting Polygon price: %q\n", err)
+	}
+
+	// Check if Arbitrum rate is stale and submit
+	err = t.submitArbitrumPrice()
+	if err != nil {
+		// Error is not fatal for this task so print and continue
+		t.log.Printf("Error submitting Arbitrum price: %q\n", err)
 	}
 
 	// Log
@@ -447,7 +526,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 	}
 
 	// Construct the price messenger contract instance
-	parsed, err := abi.JSON(strings.NewReader(MessengerAbi))
+	parsed, err := abi.JSON(strings.NewReader(OptimismMessengerAbi))
 	if err != nil {
 		return fmt.Errorf("Failed decoding ABI: %q", err)
 	}
@@ -466,7 +545,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 	err = priceMessengerContract.Call(nil, &out, "rateStale")
 
 	if err != nil {
-		return fmt.Errorf("Failed to query rate staleness: %q", err)
+		return fmt.Errorf("Failed to query rate staleness for Optimism: %q", err)
 	}
 
 	rateStale := *abi.ConvertType(out[0], new(bool)).(*bool)
@@ -565,6 +644,311 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 
 		// Log
 		t.log.Printlnf("Successfully submitted Optimism price for block %d.", blockNumber)
+
+	}
+
+	return nil
+}
+
+// Checks if Polygon rate is stale and if it's our turn to submit, calls submitRate on the messenger
+func (t *submitRplPrice) submitPolygonPrice() error {
+	priceMessengerAddress := t.cfg.Smartnode.GetPolygonMessengerAddress()
+
+	if priceMessengerAddress == "" {
+		// No price messenger deployed on the current network
+		return nil
+	}
+
+	// Get transactor
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return fmt.Errorf("Failed getting transactor: %q", err)
+	}
+
+	// Construct the price messenger contract instance
+	parsed, err := abi.JSON(strings.NewReader(PolygonMessengerAbi))
+	if err != nil {
+		return fmt.Errorf("Failed decoding ABI: %q", err)
+	}
+
+	addr := common.HexToAddress(priceMessengerAddress)
+	priceMessengerContract := bind.NewBoundContract(addr, parsed, t.ec, t.ec, t.ec)
+	priceMessenger := rocketpool.Contract{
+		Contract: priceMessengerContract,
+		Address:  &addr,
+		ABI:      &parsed,
+		Client:   t.ec,
+	}
+
+	// Check if the rate is stale
+	var out []interface{}
+	err = priceMessengerContract.Call(nil, &out, "rateStale")
+
+	if err != nil {
+		return fmt.Errorf("Failed to query rate staleness for Polygon: %q", err)
+	}
+
+	rateStale := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	if !rateStale {
+		// Nothing to do
+		return nil
+	}
+
+	// Get total number of ODAO members
+	count, err := trustednode.GetMemberCount(t.rp, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to get member count: %q", err)
+	}
+
+	// Find out which index we are
+	var index = uint64(0)
+	for i := uint64(0); i < count; i++ {
+		addr, err := trustednode.GetMemberAt(t.rp, i, nil)
+		if err != nil {
+			return fmt.Errorf("Failed to get member at %d: %q", i, err)
+		}
+
+		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+			index = i
+			break
+		}
+	}
+
+	// Get current block number
+	blockNumber, err := t.ec.BlockNumber(context.Background())
+	if err != nil {
+		return fmt.Errorf("Failed to get block number: %q", err)
+	}
+
+	// Calculate whose turn it is to submit
+	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+
+	if index == indexToSubmit {
+
+		// Temporary gas calculations until this gets put into a binding
+		input, err := priceMessenger.ABI.Pack("submitRate")
+		if err != nil {
+			return fmt.Errorf("Could not encode input data for Polygon price submission: %w", err)
+		}
+
+		// Estimate gas limit
+		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
+			From:     opts.From,
+			To:       priceMessenger.Address,
+			GasPrice: big.NewInt(0), // use 0 gwei for simulation
+			Value:    opts.Value,
+			Data:     input,
+		})
+		if err != nil {
+			return fmt.Errorf("Error estimating gas limit of submitPolygonPrice: %w", err)
+		}
+
+		// Get the safe gas limit
+		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
+		if gasLimit > rocketpool.MaxGasLimit {
+			gasLimit = rocketpool.MaxGasLimit
+		}
+		if safeGasLimit > rocketpool.MaxGasLimit {
+			safeGasLimit = rocketpool.MaxGasLimit
+		}
+		gasInfo := rocketpool.GasInfo{
+			EstGasLimit:  gasLimit,
+			SafeGasLimit: safeGasLimit,
+		}
+
+		// Print the gas info
+		maxFee := eth.GweiToWei(WatchtowerMaxFee)
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+			return nil
+		}
+
+		// Set the gas settings
+		opts.GasFeeCap = maxFee
+		opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+		opts.GasLimit = gasInfo.SafeGasLimit
+
+		t.log.Println("Submitting rate to Polygon...")
+
+		// Submit rates
+		tx, err := priceMessenger.Transact(opts, "submitRate")
+		if err != nil {
+			return fmt.Errorf("Failed to submit rate to Polygon: %q", err)
+		}
+
+		// Print TX info and wait for it to be included in a block
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		if err != nil {
+			return err
+		}
+
+		// Log
+		t.log.Printlnf("Successfully submitted Polygon price for block %d.", blockNumber)
+
+	}
+
+	return nil
+}
+
+// Checks if Arbitrum rate is stale and if it's our turn to submit, calls submitRate on the messenger
+func (t *submitRplPrice) submitArbitrumPrice() error {
+	priceMessengerAddress := t.cfg.Smartnode.GetArbitrumMessengerAddress()
+
+	if priceMessengerAddress == "" {
+		// No price messenger deployed on the current network
+		return nil
+	}
+
+	// Get transactor
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return fmt.Errorf("Failed getting transactor: %q", err)
+	}
+
+	// Construct the price messenger contract instance
+	parsed, err := abi.JSON(strings.NewReader(ArbitrumMessengerAbi))
+	if err != nil {
+		return fmt.Errorf("Failed decoding ABI: %q", err)
+	}
+
+	addr := common.HexToAddress(priceMessengerAddress)
+	priceMessengerContract := bind.NewBoundContract(addr, parsed, t.ec, t.ec, t.ec)
+	priceMessenger := rocketpool.Contract{
+		Contract: priceMessengerContract,
+		Address:  &addr,
+		ABI:      &parsed,
+		Client:   t.ec,
+	}
+
+	// Check if the rate is stale
+	var out []interface{}
+	err = priceMessengerContract.Call(nil, &out, "rateStale")
+
+	if err != nil {
+		return fmt.Errorf("Failed to query rate staleness for Arbitrum: %q", err)
+	}
+
+	rateStale := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	if !rateStale {
+		// Nothing to do
+		return nil
+	}
+
+	// Get total number of ODAO members
+	count, err := trustednode.GetMemberCount(t.rp, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to get member count: %q", err)
+	}
+
+	// Find out which index we are
+	var index = uint64(0)
+	for i := uint64(0); i < count; i++ {
+		addr, err := trustednode.GetMemberAt(t.rp, i, nil)
+		if err != nil {
+			return fmt.Errorf("Failed to get member at %d: %q", i, err)
+		}
+
+		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+			index = i
+			break
+		}
+	}
+
+	// Get current block number
+	blockNumber, err := t.ec.BlockNumber(context.Background())
+	if err != nil {
+		return fmt.Errorf("Failed to get block number: %q", err)
+	}
+
+	// Calculate whose turn it is to submit
+	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+
+	if index == indexToSubmit {
+
+		// Get the current network recommended max fee
+		suggestedMaxFee, err := rpgas.GetHeadlessMaxFeeWei()
+		if err != nil {
+			return fmt.Errorf("error getting recommended base fee from the network for Arbitrum price submission: %w", err)
+		}
+
+		// Constants for Arbitrum
+		bufferMultiplier := big.NewInt(4)
+		dataLength := big.NewInt(36)
+		arbitrumGasLimit := big.NewInt(40000)
+		arbitrumMaxFeePerGas := eth.GweiToWei(0.1)
+
+		// Gas limit calculation on Arbitrum
+		maxSubmissionCost := big.NewInt(6)
+		maxSubmissionCost.Mul(maxSubmissionCost, dataLength)
+		maxSubmissionCost.Add(maxSubmissionCost, big.NewInt(1400))
+		maxSubmissionCost.Mul(maxSubmissionCost, suggestedMaxFee)  // (1400 + 6 * dataLength) * baseFee
+		maxSubmissionCost.Mul(maxSubmissionCost, bufferMultiplier) // Multiply by the buffer constant for safety
+
+		// Provide enough ETH for the L2 and roundtrip TX's
+		value := big.NewInt(0)
+		value.Mul(arbitrumGasLimit, arbitrumMaxFeePerGas)
+		value.Add(value, maxSubmissionCost)
+		opts.Value = value
+
+		// Temporary gas calculations until this gets put into a binding
+		input, err := priceMessenger.ABI.Pack("submitRate", maxSubmissionCost, arbitrumGasLimit, arbitrumMaxFeePerGas)
+		if err != nil {
+			return fmt.Errorf("Could not encode input data for Arbitrum price submission: %w", err)
+		}
+
+		// Estimate gas limit
+		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
+			From:     opts.From,
+			To:       priceMessenger.Address,
+			GasPrice: big.NewInt(0), // use 0 gwei for simulation
+			Value:    opts.Value,
+			Data:     input,
+		})
+		if err != nil {
+			return fmt.Errorf("Error estimating gas limit of submitArbitrumPrice: %w", err)
+		}
+
+		// Get the safe gas limit
+		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
+		if gasLimit > rocketpool.MaxGasLimit {
+			gasLimit = rocketpool.MaxGasLimit
+		}
+		if safeGasLimit > rocketpool.MaxGasLimit {
+			safeGasLimit = rocketpool.MaxGasLimit
+		}
+		gasInfo := rocketpool.GasInfo{
+			EstGasLimit:  gasLimit,
+			SafeGasLimit: safeGasLimit,
+		}
+
+		// Print the gas info
+		maxFee := eth.GweiToWei(WatchtowerMaxFee)
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+			return nil
+		}
+
+		// Set the gas settings
+		opts.GasFeeCap = maxFee
+		opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+		opts.GasLimit = gasInfo.SafeGasLimit
+
+		t.log.Println("Submitting rate to Arbitrum...")
+
+		// Submit rates
+		tx, err := priceMessenger.Transact(opts, "submitRate", maxSubmissionCost, arbitrumGasLimit, arbitrumMaxFeePerGas)
+		if err != nil {
+			return fmt.Errorf("Failed to submit Arbitrum rate: %q", err)
+		}
+
+		// Print TX info and wait for it to be included in a block
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		if err != nil {
+			return err
+		}
+
+		// Log
+		t.log.Printlnf("Successfully submitted Arbitrum price for block %d.", blockNumber)
 
 	}
 
