@@ -1427,10 +1427,10 @@ func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 
 				return nil
 			})
+		}
 
-			if err := wg.Wait(); err != nil {
-				return err
-			}
+		if err := wg.Wait(); err != nil {
+			return err
 		}
 
 		nodesDone += SmoothingPoolDetailsBatchSize

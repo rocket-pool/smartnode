@@ -138,8 +138,14 @@ type SmartnodeConfig struct {
 	// Addresses for RocketRewardsPool that have been upgraded during development
 	previousRewardsPoolAddresses map[config.Network]map[string][]common.Address `yaml:"-"`
 
-	// The RocketOvmPriceMessenger address for each network
+	// The RocketOvmPriceMessenger Optimism address for each network
 	optimismPriceMessengerAddress map[config.Network]string `yaml:"-"`
+
+	// The RocketOvmPriceMessenger Polygon address for each network
+	polygonPriceMessengerAddress map[config.Network]string `yaml:"-"`
+
+	// The RocketOvmPriceMessenger Arbitrum address for each network
+	arbitrumPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
 	// Rewards submission block maps
 	rewardsSubmissionBlockMaps map[config.Network][]uint64 `yaml:"-"`
@@ -425,6 +431,18 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Zhejiang: "",
 		},
 
+		polygonPriceMessengerAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
+			config.Network_Prater:  "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
+			config.Network_Devnet:  "",
+		},
+
+		arbitrumPriceMessengerAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x05330300f829AD3fC8f33838BC88CFC4093baD53",
+			config.Network_Prater:  "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
+			config.Network_Devnet:  "",
+		},
+
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
 			config.Network_Mainnet: {
 				15451165, 15637542, 15839520, 16038366, 16238906, 16439406, // 5
@@ -669,6 +687,14 @@ func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() map[string][]commo
 
 func (cfg *SmartnodeConfig) GetOptimismMessengerAddress() string {
 	return cfg.optimismPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetPolygonMessengerAddress() string {
+	return cfg.polygonPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
+	return cfg.arbitrumPriceMessengerAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetRewardsSubmissionBlockMaps() []uint64 {
