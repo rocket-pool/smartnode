@@ -40,6 +40,7 @@ type MinipoolInfo struct {
 	WasActive               bool
 	StartSlot               uint64
 	EndSlot                 uint64
+	AttestationScore        *big.Int
 }
 
 type IntervalDutiesInfo struct {
@@ -69,6 +70,10 @@ type NodeSmoothingDetails struct {
 	EndSlot          uint64
 	SmoothingPoolEth *big.Int
 	RewardsNetwork   uint64
+
+	// v2 Fields
+	OptInTime  time.Time
+	OptOutTime time.Time
 }
 
 type QuotedBigInt struct {
