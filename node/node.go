@@ -65,6 +65,7 @@ type NativeNodeDetails struct {
 	PendingWithdrawalAddress         common.Address `abi:"pendingWithdrawalAddress"`
 	SmoothingPoolRegistrationState   bool           `abi:"smoothingPoolRegistrationState"`
 	SmoothingPoolRegistrationChanged *big.Int       `abi:"smoothingPoolRegistrationChanged"`
+	NodeAddress                      common.Address `abi:"nodeAddress"`
 }
 
 // Count of nodes belonging to a timezone

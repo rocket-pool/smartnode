@@ -40,29 +40,31 @@ type MinipoolCountsPerStatus struct {
 
 // Minipool details from the native getMinipoolDetails() function
 type NativeMinipoolDetails struct {
-	Exists                  bool                    `abi:"exists"`
-	MinipoolAddress         common.Address          `abi:"minipoolAddress"`
-	NodeAddress             common.Address          `abi:"nodeAddress"`
-	Pubkey                  rptypes.ValidatorPubkey `abi:"pubkey"`
-	Status                  rptypes.MinipoolStatus  `abi:"status"`
-	StatusBlock             *big.Int                `abi:"statusBlock"`
-	StatusTime              *big.Int                `abi:"statusTime"`
-	Finalised               bool                    `abi:"finalised"`
-	DepositType             rptypes.MinipoolDeposit `abi:"depositType"`
-	NodeFee                 *big.Int                `abi:"nodeFee"`
-	NodeDepositBalance      *big.Int                `abi:"nodeDepositBalance"`
-	NodeDepositAssigned     bool                    `abi:"nodeDepositAssigned"`
-	UserDepositBalance      *big.Int                `abi:"userDepositBalance"`
-	UserDepositAssigned     bool                    `abi:"userDepositAssigned"`
-	UserDepositAssignedTime *big.Int                `abi:"userDepositAssignedTime"`
-	UseLatestDelegate       bool                    `abi:"useLatestDelegate"`
-	Delegate                common.Address          `abi:"delegate"`
-	PreviousDelegate        common.Address          `abi:"previousDelegate"`
-	EffectiveDelegate       common.Address          `abi:"effectiveDelegate"`
-	PenaltyCount            *big.Int                `abi:"penaltyCount"`
-	PenaltyRate             *big.Int                `abi:"penaltyRate"`
-	UserDistributed         bool                    `abi:"userDistributed"`
-	Slashed                 bool                    `abi:"slashed"`
+	Exists                     bool                    `abi:"exists"`
+	MinipoolAddress            common.Address          `abi:"minipoolAddress"`
+	Pubkey                     rptypes.ValidatorPubkey `abi:"pubkey"`
+	Status                     rptypes.MinipoolStatus  `abi:"status"`
+	StatusBlock                *big.Int                `abi:"statusBlock"`
+	StatusTime                 *big.Int                `abi:"statusTime"`
+	Finalised                  bool                    `abi:"finalised"`
+	DepositType                rptypes.MinipoolDeposit `abi:"depositType"`
+	NodeFee                    *big.Int                `abi:"nodeFee"`
+	NodeDepositBalance         *big.Int                `abi:"nodeDepositBalance"`
+	NodeDepositAssigned        bool                    `abi:"nodeDepositAssigned"`
+	UserDepositBalance         *big.Int                `abi:"userDepositBalance"`
+	UserDepositAssigned        bool                    `abi:"userDepositAssigned"`
+	UserDepositAssignedTime    *big.Int                `abi:"userDepositAssignedTime"`
+	UseLatestDelegate          bool                    `abi:"useLatestDelegate"`
+	Delegate                   common.Address          `abi:"delegate"`
+	PreviousDelegate           common.Address          `abi:"previousDelegate"`
+	EffectiveDelegate          common.Address          `abi:"effectiveDelegate"`
+	PenaltyCount               *big.Int                `abi:"penaltyCount"`
+	PenaltyRate                *big.Int                `abi:"penaltyRate"`
+	UserDistributed            bool                    `abi:"userDistributed"`
+	Slashed                    bool                    `abi:"slashed"`
+	NodeAddress                common.Address          `abi:"nodeAddress"`
+	LastBondReductionTime      *big.Int                `abi:"lastBondReductionTime"`
+	LastBondReductionPrevValue *big.Int                `abi:"lastBondReductionPrevValue"`
 }
 
 // Get all minipool details
