@@ -137,6 +137,9 @@ type SmartnodeConfig struct {
 
 	// Rewards submission block maps
 	rewardsSubmissionBlockMaps map[config.Network][]uint64 `yaml:"-"`
+
+	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
+	rplTwapPoolAddress map[config.Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -389,6 +392,12 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Devnet:  "",
 		},
 
+		rplTwapPoolAddress: map[config.Network]string{
+			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
+			config.Network_Prater:  "",
+			config.Network_Devnet:  "",
+		},
+
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
 			config.Network_Mainnet: {
 				15451165, 15637542, 15839520, 16038366, 16238906, 16439406, // 5
@@ -624,6 +633,10 @@ func (cfg *SmartnodeConfig) GetPolygonMessengerAddress() string {
 
 func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
 	return cfg.arbitrumPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetRplTwapPoolAddress() string {
+	return cfg.rplTwapPoolAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetRewardsSubmissionBlockMaps() []uint64 {
