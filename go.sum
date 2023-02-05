@@ -1624,8 +1624,6 @@ github.com/rivo/uniseg v0.4.2 h1:YwD0ulJSJytLpiaWua0sBDusfsCZohxjxzVTYjwxfV8=
 github.com/rivo/uniseg v0.4.2/go.mod h1:FN3SvrM+Zdj16jyLfmOkMNblXMcoc8DfTHruCPUcx88=
 github.com/rjeczalik/notify v0.9.1 h1:CLCKso/QK1snAlnhNR/CNvNiFU2saUtjV0bx3EwNeCE=
 github.com/rjeczalik/notify v0.9.1/go.mod h1:rKwnCoCGeuQnwBtTSPL9Dad03Vh2n40ePRrjvIXnJho=
-github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd h1:p9KuetSKB9nte9I/MkkiM3pwKFVQgqxxPTQ0y56Ff6s=
-github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd/go.mod h1:UE9fof8P7iESVtLn1K9CTSkNRYVFHZHlf96RKbU33kA=
 github.com/rocket-pool/rocketpool-go v1.4.2 h1:Jp1X4hkaRthVu7YMXgip+n2K8tvLwPjlGEutpti658I=
 github.com/rocket-pool/rocketpool-go v1.4.2/go.mod h1:+7kSXEvMUCEqstio3PBVTnaGoI2lSTwNUJ8/D4D91gM=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
@@ -1817,6 +1815,8 @@ github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.3.0 h1:3Kx2QvKU/4PP0
 github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.3.0/go.mod h1:qqIU42c9sXcNYsiEjUQoOOWYZfZDL1zmyLtz3t+wN2s=
 github.com/wealdtech/go-eth2-wallet-types/v2 v2.9.0 h1:XqWgsONVqsPvciuEXxM/QU4hYouBVk0+5/pGqDMGUHQ=
 github.com/wealdtech/go-eth2-wallet-types/v2 v2.9.0/go.mod h1:7Ad2xp27vOQRQWQsIeHBdU/YiyEt6klBeh5gwnNnlwE=
+github.com/wealdtech/go-merkletree v1.0.1-0.20230205101955-ec7a95ea11ca h1:oK35INPN4CiubFw7ZPQkbxm2AsSU6Tjeb9YhciZnvIM=
+github.com/wealdtech/go-merkletree v1.0.1-0.20230205101955-ec7a95ea11ca/go.mod h1:bM9mDSjsti+gkjl8FjovMoUH3MPR5bwJ3+ucaYFY0Jk=
 github.com/wealdtech/go-multicodec v1.4.0 h1:iq5PgxwssxnXGGPTIK1srvt6U5bJwIp7k6kBrudIWxg=
 github.com/wealdtech/go-multicodec v1.4.0/go.mod h1:aedGMaTeYkIqi/KCPre1ho5rTb3hGpu/snBOS3GQLw4=
 github.com/wealdtech/go-string2eth v1.1.0 h1:USJQmysUrBYYmZs7d45pMb90hRSyEwizP7lZaOZLDAw=
