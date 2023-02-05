@@ -68,6 +68,22 @@ func (c *command) Wait() error {
 	return c.session.Wait()
 }
 
+func (c *command) SetStdout(w io.Writer) {
+	if c.cmd != nil {
+		c.cmd.Stdout = w
+	} else {
+		c.session.Stdout = w
+	}
+}
+
+func (c *command) SetStderr(w io.Writer) {
+	if c.cmd != nil {
+		c.cmd.Stderr = w
+	} else {
+		c.session.Stderr = w
+	}
+}
+
 // Run the command and return its output
 func (c *command) Output() ([]byte, error) {
 	if c.cmd != nil {
