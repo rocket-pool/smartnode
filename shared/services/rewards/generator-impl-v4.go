@@ -286,7 +286,11 @@ func (r *treeGeneratorImpl_v4) generateMerkleTree() error {
 	}
 
 	// Generate the tree
-	tree, err := merkletree.NewUsing(totalData, keccak256.New(), false, true)
+	tree, err := merkletree.NewTree(
+		merkletree.WithData(totalData),
+		merkletree.WithHashType(keccak256.New()),
+		merkletree.WithSorted(true),
+	)
 	if err != nil {
 		return fmt.Errorf("error generating Merkle Tree: %w", err)
 	}
