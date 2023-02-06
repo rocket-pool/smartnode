@@ -27,6 +27,9 @@ const (
 	PraterV2Interval uint64 = 37
 	PraterV3Interval uint64 = 49
 	PraterV4Interval uint64 = 60
+
+	// Zhejiang intervals
+	ZhejiangV4Interval uint64 = 0
 )
 
 type TreeGenerator struct {
@@ -73,11 +76,13 @@ func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.R
 			rewardsRulesetVersion: 5,
 			mainnetStartInterval:  TestingInterval,
 			praterStartInterval:   TestingInterval,
+			zhejiangStartInterval: TestingInterval,
 			generator:             newTreeGeneratorImpl_v5(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		}, {
 			rewardsRulesetVersion: 4,
 			mainnetStartInterval:  MainnetV4Interval,
 			praterStartInterval:   PraterV4Interval,
+			zhejiangStartInterval: ZhejiangV4Interval,
 			generator:             newTreeGeneratorImpl_v4(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		}, {
 			rewardsRulesetVersion: 3,
