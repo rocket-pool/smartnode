@@ -8,8 +8,8 @@ import (
 
 const (
 	// Prater
-	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.1.1"
-	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.1.1"
+	nimbusBnTagTest string = "rocketpool/nimbus-eth2:unstable-f3ddea6-bn"
+	nimbusVcTagTest string = "rocketpool/nimbus-eth2:unstable-f3ddea6-vc"
 
 	// Mainnet
 	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.1.1"

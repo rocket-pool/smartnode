@@ -329,7 +329,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet:  "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
 			config.Network_Prater:   "0x5e932688e81a182e3de211db6544f98b8e4f89c7",
 			config.Network_Devnet:   "0x09b6aEF57B580f5CB46746BA59ed312Ba80E8Ad4",
-			config.Network_Zhejiang: "",
+			config.Network_Zhejiang: "0x119B413F73326B70377D774C18E071393A9D82A8",
 		},
 
 		rplFaucetAddress: map[config.Network]string{
@@ -343,7 +343,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet:  "0xae78736Cd615f374D3085123A210448E74Fc6393",
 			config.Network_Prater:   "0x178E141a0E3b34152f73Ff610437A7bf9B83267A",
 			config.Network_Devnet:   "0x2DF914425da6d0067EF1775AfDBDd7B24fc8100E",
-			config.Network_Zhejiang: "",
+			config.Network_Zhejiang: "0x9a0b5d3101d111EA0edD573d45ef2208CC97984a",
 		},
 
 		v1_0_0_RewardsPoolAddress: map[config.Network]string{
@@ -378,28 +378,28 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet:  "0xd3f500F550F46e504A4D2153127B47e007e11166",
 			config.Network_Prater:   "0x12f96dC173a806D18d71fAFe3C1BA2149c3E3Dc6",
 			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "",
+			config.Network_Zhejiang: "0x614A5be866A0EC908cA9aE0d7D3eB100492A9f4e",
 		},
 
 		v1_1_0_NodeStakingAddress: map[config.Network]string{
 			config.Network_Mainnet:  "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
 			config.Network_Prater:   "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
 			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "",
+			config.Network_Zhejiang: "0xfD33e53d0400f52C486B6d1484f1827AD2341405",
 		},
 
 		v1_1_0_NodeDepositAddress: map[config.Network]string{
 			config.Network_Mainnet:  "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 			config.Network_Prater:   "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "",
+			config.Network_Zhejiang: "0x47B600D9127a473e45B693A7badD9F4d929d5b76",
 		},
 
 		v1_1_0_MinipoolQueueAddress: map[config.Network]string{
 			config.Network_Mainnet:  "0x5870dA524635D1310Dc0e6F256Ce331012C9C19E",
 			config.Network_Prater:   "0xEF5EF45bf1CC08D5694f87F8c4023f00CCCB7237",
 			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "",
+			config.Network_Zhejiang: "0x5ffe8bD3165e80D51ce834B32a6B6C02233494bF",
 		},
 
 		snapshotDelegationAddress: map[config.Network]string{
