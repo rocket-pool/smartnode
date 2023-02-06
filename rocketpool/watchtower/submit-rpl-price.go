@@ -122,6 +122,28 @@ const (
 		"type": "function"
 		}
 	]`
+
+	RplTwapPoolAbi string = `[
+		{
+		"inputs": [{
+			"internalType": "uint32[]",
+			"name": "secondsAgos",
+			"type": "uint32[]"
+		}],
+		"name": "observe",
+		"outputs": [{
+			"internalType": "int56[]",
+			"name": "tickCumulatives",
+			"type": "int56[]"
+		}, {
+			"internalType": "uint160[]",
+			"name": "secondsPerLiquidityCumulativeX128s",
+			"type": "uint160[]"
+		}],
+		"stateMutability": "view",
+		"type": "function"
+		}
+	]`
 )
 
 // Settings
@@ -130,7 +152,13 @@ const (
 	BlocksPerTurn                      uint64  = 75  // Approx. 15 minutes
 	RplPriceDecreaseDeviationThreshold float64 = 0.5 // Error out if price drops >50%
 	RplPriceIncreaseDeviationThreshold float64 = 1.6 // Error out if price rises >60%
+	twapTransitionEpoch                uint64  = 999999999999999
 )
+
+type poolObserveResponse struct {
+	TickCumulatives                    []*big.Int `abi:"tickCumulatives"`
+	SecondsPerLiquidityCumulativeX128s []*big.Int `abi:"secondsPerLiquidityCumulativeX128s"`
+}
 
 // Submit RPL price task
 type submitRplPrice struct {
@@ -310,7 +338,12 @@ func (t *submitRplPrice) run() error {
 	t.log.Printlnf("Getting RPL price for block %d...", blockNumber)
 
 	// Get RPL price at block
-	rplPrice, err := t.getRplPrice(blockNumber)
+	var rplPrice *big.Int
+	if finalizedEpoch < twapTransitionEpoch {
+		rplPrice, err = t.getRplPrice(blockNumber)
+	} else {
+		rplPrice, err = t.getRplTwap(blockNumber)
+	}
 	if err != nil {
 		return err
 	}
@@ -476,6 +509,69 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 
 		return nil, fmt.Errorf("rpl price increased beyond the allowed threshold")
 	}
+
+	// Return
+	return rplPrice, nil
+
+}
+
+// Get RPL price via TWAP at block
+func (t *submitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
+
+	// Initialize call options
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(int64(blockNumber)),
+	}
+
+	poolAddress := t.cfg.Smartnode.GetRplTwapPoolAddress()
+	if poolAddress == "" {
+		return nil, fmt.Errorf("RPL TWAP pool contract not deployed on this network")
+	}
+
+	// Get a client with the block number available
+	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	// Construct the pool contract instance
+	parsed, err := abi.JSON(strings.NewReader(RplTwapPoolAbi))
+	if err != nil {
+		return nil, fmt.Errorf("error decoding RPL TWAP pool ABI: %w", err)
+	}
+	addr := common.HexToAddress(poolAddress)
+	poolContract := bind.NewBoundContract(addr, parsed, client.Client, client.Client, client.Client)
+	pool := rocketpool.Contract{
+		Contract: poolContract,
+		Address:  &addr,
+		ABI:      &parsed,
+		Client:   client.Client,
+	}
+
+	// Get RPL price
+	response := poolObserveResponse{}
+	interval := uint32(24 * 60 * 60) // 1 day
+	args := []uint32{interval, 0}
+
+	err = pool.Call(opts, &response, "observe", args)
+	if err != nil {
+		return nil, fmt.Errorf("could not get RPL price at block %d: %w", blockNumber, err)
+	}
+
+	tick := big.NewInt(0).Sub(response.TickCumulatives[1], response.TickCumulatives[0])
+	tick.Div(tick, big.NewInt(int64(interval))) // tick = (cumulative[1] - cumulative[0]) / interval
+
+	base := eth.EthToWei(1.0001) // 1.0001e18
+	one := eth.EthToWei(1)       // 1e18
+
+	numerator := big.NewInt(0).Exp(base, tick, nil) // 1.0001e18 ^ tick
+	numerator.Mul(numerator, one)
+
+	denominator := big.NewInt(0).Exp(one, tick, nil) // 1e18 ^ tick
+	denominator.Div(numerator, denominator)          // denominator = (1.0001e18^tick / 1e18^tick)
+
+	numerator.Mul(one, one)                               // 1e18 ^ 2
+	rplPrice := big.NewInt(0).Div(numerator, denominator) // 1e18 ^ 2 / (1.0001e18^tick * 1e18 / 1e18^tick)
 
 	// Return
 	return rplPrice, nil
