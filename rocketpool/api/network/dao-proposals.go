@@ -31,6 +31,11 @@ func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, er
 	response := api.NetworkDAOProposalsResponse{}
 	response.AccountAddress = nodeAccount.Address
 
+	// Return nothing if Snapshot isn't available on this network
+	if s == nil {
+		return &response, nil
+	}
+
 	// Get snapshot proposals
 	snapshotResponse, err := node.GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
 	if err != nil {

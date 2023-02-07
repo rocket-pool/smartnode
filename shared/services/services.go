@@ -269,7 +269,10 @@ func getRplFaucet(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClien
 func getSnapshotDelegation(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*contracts.SnapshotDelegation, error) {
 	var err error
 	initSnapshotDelegation.Do(func() {
-		snapshotDelegation, err = contracts.NewSnapshotDelegation(common.HexToAddress(cfg.Smartnode.GetSnapshotDelegationAddress()), client)
+		address := cfg.Smartnode.GetSnapshotDelegationAddress()
+		if address != "" {
+			snapshotDelegation, err = contracts.NewSnapshotDelegation(common.HexToAddress(address), client)
+		}
 	})
 	return snapshotDelegation, err
 }

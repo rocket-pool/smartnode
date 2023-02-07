@@ -102,6 +102,9 @@ func setSnapshotDelegate(c *cli.Context, address common.Address) (*api.SetSnapsh
 	if err != nil {
 		return nil, err
 	}
+	if s == nil {
+		return nil, fmt.Errorf("voting is not enabled on network [%s]", cfg.Smartnode.Network.Value.(cfgtypes.Network))
+	}
 
 	// Response
 	response := api.SetSnapshotDelegateResponse{}
@@ -212,6 +215,9 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 	s, err := services.GetSnapshotDelegation(c)
 	if err != nil {
 		return nil, err
+	}
+	if s == nil {
+		return nil, fmt.Errorf("voting is not enabled on network [%s]", cfg.Smartnode.Network.Value.(cfgtypes.Network))
 	}
 
 	// Response
