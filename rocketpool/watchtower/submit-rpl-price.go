@@ -151,10 +151,9 @@ const (
 	RplPriceDecreaseDeviationThreshold float64 = 0.5 // Error out if price drops >50%
 	RplPriceIncreaseDeviationThreshold float64 = 1.6 // Error out if price rises >60%
 
-	twapTransitionEpochMainnet  uint64 = 999999999999999
-	twapTransitionEpochPrater   uint64 = 999999999999999
-	twapTransitionEpochDevnet   uint64 = 999999999999999
-	twapTransitionEpochZhejiang uint64 = 0
+	twapTransitionEpochMainnet uint64 = 999999999999999
+	twapTransitionEpochPrater  uint64 = 999999999999999
+	twapTransitionEpochDevnet  uint64 = 999999999999999
 )
 
 type poolObserveResponse struct {
@@ -1066,8 +1065,6 @@ func (t *submitRplPrice) getTwapEpoch() uint64 {
 		return twapTransitionEpochPrater
 	case cfgtypes.Network_Devnet:
 		return twapTransitionEpochDevnet
-	case cfgtypes.Network_Zhejiang:
-		return twapTransitionEpochZhejiang
 	default:
 		panic(fmt.Sprintf("unknown network [%v]", network))
 	}
