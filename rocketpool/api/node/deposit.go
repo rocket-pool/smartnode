@@ -18,7 +18,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -41,12 +40,6 @@ const (
 	prestakeDepositAmount float64 = 1.0
 	ValidatorEth          float64 = 32.0
 )
-
-type minipoolCreated struct {
-	Minipool common.Address
-	Node     common.Address
-	Time     *big.Int
-}
 
 func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int) (*api.CanNodeDepositResponse, error) {
 
@@ -219,7 +212,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 			"\tDomain Type: 0x%s\n"+
 			"\tGenesis Fork Version: 0x%s\n"+
 			"\tGenesis Validator Root: 0x%s\n"+
-			"\tDeposit Amount: %s gwei\n"+
+			"\tDeposit Amount: %d gwei\n"+
 			"\tValidator Pubkey: %s\n"+
 			"\tWithdrawal Credentials: %s\n"+
 			"\tSignature: %s\n",
@@ -256,8 +249,9 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 	// Response
 	response := api.CanNodeDepositResponse{}
 
-	// Get the legacy contract address
+	// Get the legacy contract addresses
 	rocketNodeDepositAddress := cfg.Smartnode.GetV110NodeDepositAddress()
+	rocketNodeStakingAddress := cfg.Smartnode.GetV110NodeStakingAddress()
 
 	// Check if amount is zero
 	amountIsZero := (amountWei.Cmp(big.NewInt(0)) == 0)
@@ -317,7 +311,7 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 	})
 	wg1.Go(func() error {
 		var err error
-		minipoolLimit, err = v110_node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil, &rocketNodeDepositAddress)
+		minipoolLimit, err = v110_node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil, &rocketNodeStakingAddress)
 		return err
 	})
 
@@ -380,7 +374,7 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 				"\tDomain Type: 0x%s\n"+
 				"\tGenesis Fork Version: 0x%s\n"+
 				"\tGenesis Validator Root: 0x%s\n"+
-				"\tDeposit Amount: %s gwei\n"+
+				"\tDeposit Amount: %d gwei\n"+
 				"\tValidator Pubkey: %s\n"+
 				"\tWithdrawal Credentials: %s\n"+
 				"\tSignature: %s\n",
@@ -429,7 +423,7 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 		})
 		wg2.Go(func() error {
 			var err error
-			unbondedMinipoolsMax, err = tnsettings.GetMinipoolUnbondedMax(rp, nil)
+			unbondedMinipoolsMax, err = trustednode.GetMinipoolUnbondedMax(rp, nil)
 			return err
 		})
 
