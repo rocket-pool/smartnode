@@ -31,6 +31,16 @@ func beginReduceBondAmount(c *cli.Context) error {
 		return err
 	}
 
+	// Check for Atlas
+	atlasResponse, err := rp.IsAtlasDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Atlas has been deployed: %w", err)
+	}
+	if !atlasResponse.IsAtlasDeployed {
+		fmt.Println("You cannot reduce a minipool's bond until Atlas has been deployed.")
+		return nil
+	}
+
 	// Get minipool statuses
 	status, err := rp.MinipoolStatus()
 	if err != nil {
