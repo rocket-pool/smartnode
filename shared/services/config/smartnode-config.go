@@ -126,11 +126,20 @@ type SmartnodeConfig struct {
 	// Addresses for RocketRewardsPool that have been upgraded during development
 	previousRewardsPoolAddresses map[config.Network]map[string][]common.Address `yaml:"-"`
 
-	// The RocketOvmPriceMessenger address for each network
+	// The RocketOvmPriceMessenger Optimism address for each network
 	optimismPriceMessengerAddress map[config.Network]string `yaml:"-"`
+
+	// The RocketOvmPriceMessenger Polygon address for each network
+	polygonPriceMessengerAddress map[config.Network]string `yaml:"-"`
+
+	// The RocketOvmPriceMessenger Arbitrum address for each network
+	arbitrumPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
 	// Rewards submission block maps
 	rewardsSubmissionBlockMaps map[config.Network][]uint64 `yaml:"-"`
+
+	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
+	rplTwapPoolAddress map[config.Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -371,6 +380,25 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Devnet:  "",
 		},
 
+		polygonPriceMessengerAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
+			config.Network_Prater:  "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
+			config.Network_Devnet:  "",
+		},
+
+		arbitrumPriceMessengerAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x05330300f829AD3fC8f33838BC88CFC4093baD53",
+			config.Network_Prater:  "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
+			config.Network_Devnet:  "",
+		},
+
+		rplTwapPoolAddress: map[config.Network]string{
+			config.Network_Mainnet:  "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
+			config.Network_Prater:   "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
+			config.Network_Devnet:   "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
+			config.Network_Zhejiang: "0x7F6319248359AA354cB6c97Bd244f82E92aF546E",
+		},
+
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
 			config.Network_Mainnet: {
 				15451165, 15637542, 15839520, 16038366, 16238906, 16439406, // 5
@@ -598,6 +626,18 @@ func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() map[string][]commo
 
 func (cfg *SmartnodeConfig) GetOptimismMessengerAddress() string {
 	return cfg.optimismPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetPolygonMessengerAddress() string {
+	return cfg.polygonPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
+	return cfg.arbitrumPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetRplTwapPoolAddress() string {
+	return cfg.rplTwapPoolAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetRewardsSubmissionBlockMaps() []uint64 {
