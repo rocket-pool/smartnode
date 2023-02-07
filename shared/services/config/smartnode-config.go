@@ -449,9 +449,10 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		rplTwapPoolAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Prater:  "",
-			config.Network_Devnet:  "",
+			config.Network_Mainnet:  "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
+			config.Network_Prater:   "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
+			config.Network_Devnet:   "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
+			config.Network_Zhejiang: "0x7F6319248359AA354cB6c97Bd244f82E92aF546E",
 		},
 
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{

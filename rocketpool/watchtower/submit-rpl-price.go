@@ -30,6 +30,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -152,7 +153,11 @@ const (
 	BlocksPerTurn                      uint64  = 75  // Approx. 15 minutes
 	RplPriceDecreaseDeviationThreshold float64 = 0.5 // Error out if price drops >50%
 	RplPriceIncreaseDeviationThreshold float64 = 1.6 // Error out if price rises >60%
-	twapTransitionEpoch                uint64  = 999999999999999
+
+	twapTransitionEpochMainnet  uint64 = 999999999999999
+	twapTransitionEpochPrater   uint64 = 999999999999999
+	twapTransitionEpochDevnet   uint64 = 999999999999999
+	twapTransitionEpochZhejiang uint64 = 0
 )
 
 type poolObserveResponse struct {
@@ -339,7 +344,7 @@ func (t *submitRplPrice) run() error {
 
 	// Get RPL price at block
 	var rplPrice *big.Int
-	if finalizedEpoch < twapTransitionEpoch {
+	if finalizedEpoch < t.getTwapEpoch() {
 		rplPrice, err = t.getRplPrice(blockNumber)
 	} else {
 		rplPrice, err = t.getRplTwap(blockNumber)
@@ -1101,4 +1106,21 @@ func (t *submitRplPrice) submitArbitrumPrice() error {
 	}
 
 	return nil
+}
+
+// Get the epoch for using TWAP based on the selected network
+func (t *submitRplPrice) getTwapEpoch() uint64 {
+	network := t.cfg.Smartnode.Network.Value.(cfgtypes.Network)
+	switch network {
+	case cfgtypes.Network_Mainnet:
+		return twapTransitionEpochMainnet
+	case cfgtypes.Network_Prater:
+		return twapTransitionEpochPrater
+	case cfgtypes.Network_Devnet:
+		return twapTransitionEpochDevnet
+	case cfgtypes.Network_Zhejiang:
+		return twapTransitionEpochZhejiang
+	default:
+		panic(fmt.Sprintf("unknown network [%v]", network))
+	}
 }
