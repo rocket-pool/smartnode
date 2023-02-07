@@ -79,22 +79,28 @@ func nodeDeposit(c *cli.Context) error {
 		amount = depositAmount
 
 	} else {
-
-		// Get deposit amount options
-		amountOptions := []string{
-			"8 ETH",
-			"16 ETH",
+		response, err := rp.IsAtlasDeployed()
+		if err != nil {
+			return fmt.Errorf("error checking if Atlas has been deployed: %w", err)
 		}
-
-		// Prompt for amount
-		selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
-		switch selected {
-		case 0:
-			amount = 8
-		case 1:
+		if !response.IsAtlasDeployed {
 			amount = 16
-		}
+		} else {
+			// Get deposit amount options
+			amountOptions := []string{
+				"8 ETH",
+				"16 ETH",
+			}
 
+			// Prompt for amount
+			selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
+			switch selected {
+			case 0:
+				amount = 8
+			case 1:
+				amount = 16
+			}
+		}
 	}
 
 	amountWei := eth.EthToWei(amount)
