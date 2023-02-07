@@ -59,6 +59,32 @@ func GetReduceBondTime(rp *rocketpool.RocketPool, minipoolAddress common.Address
 	return time.Unix((*reduceBondTime).Int64(), 0), nil
 }
 
+// Gets the timestamp at which the bond was last reduced
+func GetLastBondReductionTime(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
+	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+	lastBondReductionTime := new(*big.Int)
+	if err := rocketMinipoolBondReducer.Call(opts, lastBondReductionTime, "getLastBondReductionTime", minipoolAddress); err != nil {
+		return time.Time{}, fmt.Errorf("Could not get last bond reduction time for minipool %s: %w", minipoolAddress.Hex(), err)
+	}
+	return time.Unix((*lastBondReductionTime).Int64(), 0), nil
+}
+
+// Gets the previous bond amount of the minipool prior to its last reduction
+func GetLastBondReductionPrevValue(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	lastBondReductionPrevValue := new(*big.Int)
+	if err := rocketMinipoolBondReducer.Call(opts, lastBondReductionPrevValue, "getLastBondReductionPrevValue", minipoolAddress); err != nil {
+		return nil, fmt.Errorf("Could not get last bond reduction previous value for minipool %s: %w", minipoolAddress.Hex(), err)
+	}
+	return *lastBondReductionPrevValue, nil
+}
+
 // Estimate the gas required to begin a minipool bond reduction
 func EstimateBeginReduceBondAmountGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, newBondAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
