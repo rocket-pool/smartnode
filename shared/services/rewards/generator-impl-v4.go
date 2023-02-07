@@ -436,7 +436,9 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
 		nodeRplRewards := big.NewInt(0)
 		nodeRplRewards.Mul(trueNodeEffectiveStakes[address], totalNodeRewards)
-		nodeRplRewards.Div(nodeRplRewards, totalNodeEffectiveStake)
+		if totalNodeEffectiveStake.Cmp(big.NewInt(0)) > 0 {
+			nodeRplRewards.Div(nodeRplRewards, totalNodeEffectiveStake)
+		}
 
 		// If there are pending rewards, add it to the map
 		if nodeRplRewards.Cmp(big.NewInt(0)) == 1 {
@@ -483,14 +485,17 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	}
 
 	// Sanity check to make sure we arrived at the correct total
+
 	delta := big.NewInt(0)
 	totalCalculatedNodeRewards := big.NewInt(0)
 	for _, networkRewards := range r.rewardsFile.NetworkRewards {
 		totalCalculatedNodeRewards.Add(totalCalculatedNodeRewards, &networkRewards.CollateralRpl.Int)
 	}
 	delta.Sub(totalNodeRewards, totalCalculatedNodeRewards).Abs(delta)
-	if delta.Cmp(r.epsilon) == 1 {
-		return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
+	if totalNodeEffectiveStake.Cmp(big.NewInt(0)) > 0 {
+		if delta.Cmp(r.epsilon) == 1 {
+			return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
+		}
 	}
 	r.rewardsFile.TotalRewards.TotalCollateralRpl.Int = *totalCalculatedNodeRewards
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
@@ -579,6 +584,9 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	}
 
 	// Sanity check to make sure we arrived at the correct total
+	if big.NewInt(int64(len(oDaoAddresses))).Cmp(r.epsilon) > 0 {
+		r.epsilon.SetUint64(uint64(len(oDaoAddresses)))
+	}
 	totalCalculatedOdaoRewards := big.NewInt(0)
 	delta = big.NewInt(0)
 	for _, networkRewards := range r.rewardsFile.NetworkRewards {
