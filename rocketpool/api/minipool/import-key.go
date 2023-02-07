@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
@@ -35,10 +36,29 @@ func importKey(c *cli.Context, minipoolAddress common.Address, mnemonic string) 
 	// Response
 	response := api.ImportKeyResponse{}
 
+	// Create minipool
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate minipool owner
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+	if err := validateMinipoolOwner(mp, nodeAccount.Address); err != nil {
+		return nil, err
+	}
+
 	// Get minipool validator pubkey
 	pubkey, err := minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
+	}
+	emptyPubkey := types.ValidatorPubkey{}
+	if pubkey == emptyPubkey {
+		return nil, fmt.Errorf("minipool %s does not have a validator pubkey associated with it", minipoolAddress.Hex())
 	}
 
 	// Get the index for this validator based on the mnemonic

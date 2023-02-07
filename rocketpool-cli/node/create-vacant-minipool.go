@@ -49,6 +49,16 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 
 	fmt.Println("Your eth2 client is on the correct network.\n")
 
+	// Check for Atlas
+	atlasResponse, err := rp.IsAtlasDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Atlas has been deployed: %w", err)
+	}
+	if !atlasResponse.IsAtlasDeployed {
+		fmt.Println("You cannot create a vacant minipool to migrate a solo validator until Atlas has been deployed.")
+		return nil
+	}
+
 	// Check if the fee distributor has been initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
 	if err != nil {
@@ -66,7 +76,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 
 	// Print a notification about the pubkey
-	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at <placeholder> to learn about the process and its implications.\n\nFirst, we'll create the new minipool. Next, we'll ask whether you want to import the validator's private key into your Smartnode's Validator Client, or keep running your own externally-managed validator. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.\n\n", pubkey.Hex())
+	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at <placeholder> to learn about the process and its implications.\n\n1. First, we'll create the new minipool.\n2. Next, we'll ask whether you want to import the validator's private key into your Smartnode's Validator Client, or keep running your own externally-managed validator.\n3. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.\n\n", pubkey.Hex())
 
 	// Get deposit amount
 	var amount float64
@@ -214,8 +224,8 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
-		"You are about to create a new a minipool with a minimum possible commission rate of %f%%.\n"+
-			"%sARE YOU SURE YOU WANT TO DO THIS? Running a minipool is a long-term commitment, and this action cannot be undone!%s",
+		"You are about to create a new, vacant minipool with a minimum possible commission rate of %f%%. Once created, you will be able to migrate your existing validator into this minipool.\n"+
+			"%sAre you sure you want to do this?%s",
 		minNodeFee*100,
 		colorYellow,
 		colorReset))) {

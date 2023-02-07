@@ -25,11 +25,21 @@ func importKey(c *cli.Context, minipoolAddress common.Address) error {
 		return err
 	}
 
+	// Check for Atlas
+	atlasResponse, err := rp.IsAtlasDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Atlas has been deployed: %w", err)
+	}
+	if !atlasResponse.IsAtlasDeployed {
+		fmt.Println("You cannot import a validator key as part of solo validator migration until Atlas has been deployed.")
+		return nil
+	}
+
 	fmt.Printf("This will allow you to import the externally-created private key for the validator associated with minipool %s so it can be managed by the Smartnode's Validator Client instead of your externally-managed Validator Client.\n\n", minipoolAddress.Hex())
 
 	success := migration.ImportKey(c, rp, minipoolAddress, c.String("mnemonic"))
 	if !success {
-		fmt.Println("Your validator's withdrawal credentials have been changed to the minipool address, but importing the key failed.\nYou can try again later by using `rocketpool minipool import-key`.")
+		fmt.Println("Importing the key failed.\nYou can try again later by using `rocketpool minipool import-key`.")
 		return nil
 	}
 

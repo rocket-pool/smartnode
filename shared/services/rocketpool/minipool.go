@@ -522,7 +522,7 @@ func (c *Client) DistributeBalance(address common.Address) (api.DistributeBalanc
 
 // Import a validator private key for a vacant minipool
 func (c *Client) ImportKey(address common.Address, mnemonic string) (api.ChangeWithdrawalCredentialsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool import-key %s \"%s\"", address.Hex(), mnemonic))
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool import-key %s", address.Hex()), mnemonic)
 	if err != nil {
 		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not import validator key: %w", err)
 	}
@@ -538,7 +538,7 @@ func (c *Client) ImportKey(address common.Address, mnemonic string) (api.ChangeW
 
 // Check whether a solo validator's withdrawal creds can be migrated to a minipool address
 func (c *Client) CanChangeWithdrawalCredentials(address common.Address, mnemonic string) (api.CanChangeWithdrawalCredentialsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-change-withdrawal-creds %s \"%s\"", address.Hex(), mnemonic))
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-change-withdrawal-creds %s", address.Hex()), mnemonic)
 	if err != nil {
 		return api.CanChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not get can-change-withdrawal-creds status: %w", err)
 	}
@@ -554,7 +554,7 @@ func (c *Client) CanChangeWithdrawalCredentials(address common.Address, mnemonic
 
 // Migrate a solo validator's withdrawal creds to a minipool address
 func (c *Client) ChangeWithdrawalCredentials(address common.Address, mnemonic string) (api.ChangeWithdrawalCredentialsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool change-withdrawal-creds %s \"%s\"", address.Hex(), mnemonic))
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool change-withdrawal-creds %s", address.Hex()), mnemonic)
 	if err != nil {
 		return api.ChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not change withdrawal creds: %w", err)
 	}
