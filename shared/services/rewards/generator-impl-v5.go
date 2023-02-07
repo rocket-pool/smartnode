@@ -673,8 +673,6 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 			if nodeInfo.IsEligible {
 				for _, minipool := range nodeInfo.Minipools {
 					minipool.GoodAttestations = 1
-					minipool.StartSlot = r.rewardsFile.ConsensusStartBlock
-					minipool.EndSlot = r.rewardsFile.ConsensusEndBlock
 				}
 			}
 		}
@@ -718,9 +716,6 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 			for _, minipoolInfo := range nodeInfo.Minipools {
 				performance := &SmoothingPoolMinipoolPerformance{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
-					StartSlot:               minipoolInfo.StartSlot,
-					EndSlot:                 minipoolInfo.EndSlot,
-					ActiveFraction:          float64(minipoolInfo.EndSlot-minipoolInfo.StartSlot) / float64(r.rewardsFile.ConsensusEndBlock-r.rewardsFile.ConsensusStartBlock),
 					SuccessfulAttestations:  minipoolInfo.GoodAttestations,
 					MissedAttestations:      minipoolInfo.MissedAttestations,
 					EthEarned:               eth.WeiToEth(minipoolInfo.MinipoolShare),
@@ -773,8 +768,6 @@ func (r *treeGeneratorImpl_v5) calculateNodeRewards() (*big.Int, *big.Int, error
 			for _, minipool := range nodeInfo.Minipools {
 				if minipool.GoodAttestations+minipool.MissedAttestations == 0 || !minipool.WasActive {
 					// Ignore minipools that weren't active for the interval
-					minipool.StartSlot = 0
-					minipool.EndSlot = 0
 					minipool.WasActive = false
 					minipool.MinipoolShare = big.NewInt(0)
 					continue
@@ -933,6 +926,8 @@ func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.Attestat
 				// Check if each RP validator attested successfully
 				for position, validator := range rpCommittee.Positions {
 					if attestation.AggregationBits.BitAt(uint64(position)) {
+						// This was seen, so remove it from the missing attestations at least
+						validator.MissedAttestations--
 
 						// Check if this minipool was opted into the SP for this block
 						nodeDetails := r.nodeDetails[validator.NodeIndex]
@@ -949,7 +944,6 @@ func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.Attestat
 						if len(slotInfo.Committees) == 0 {
 							delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
 						}
-						validator.MissedAttestations--
 						validator.GoodAttestations++
 						delete(validator.MissingAttestationSlots, attestation.SlotIndex)
 
@@ -1023,19 +1017,6 @@ func (r *treeGeneratorImpl_v5) getDutiesForEpoch(committees []beacon.Committee) 
 // Maps all minipools to their validator indices and creates a map of indices to minipool info
 func (r *treeGeneratorImpl_v5) createMinipoolIndexMap() error {
 
-	// Make a slice of all minipool pubkeys
-	uncachedMinipoolPubkeys := []rptypes.ValidatorPubkey{}
-	for _, details := range r.nodeDetails {
-		if details.IsEligible {
-			for _, minipoolInfo := range details.Minipools {
-				_, exists := r.validatorStatusMap[minipoolInfo.ValidatorPubkey]
-				if !exists {
-					uncachedMinipoolPubkeys = append(uncachedMinipoolPubkeys, minipoolInfo.ValidatorPubkey)
-				}
-			}
-		}
-	}
-
 	// Get the status for all uncached minipool validators and add them to the cache
 	r.validatorIndexMap = map[uint64]*MinipoolInfo{}
 	for _, details := range r.nodeDetails {
@@ -1045,16 +1026,12 @@ func (r *treeGeneratorImpl_v5) createMinipoolIndexMap() error {
 				if !exists {
 					// Remove minipools that don't have indices yet since they're not actually viable
 					r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
-					minipoolInfo.StartSlot = 0
-					minipoolInfo.EndSlot = 0
 					minipoolInfo.WasActive = false
 				} else {
 					switch status.Status {
 					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
 						// Remove minipools that don't have indices yet since they're not actually viable
 						r.log.Printlnf("NOTE: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
-						minipoolInfo.StartSlot = 0
-						minipoolInfo.EndSlot = 0
 						minipoolInfo.WasActive = false
 					default:
 						// Get the validator index
@@ -1067,38 +1044,19 @@ func (r *treeGeneratorImpl_v5) createMinipoolIndexMap() error {
 
 						// Verify this minipool has already started
 						if status.ActivationEpoch == FarEpoch {
-							minipoolInfo.StartSlot = 0
-							minipoolInfo.EndSlot = 0
+							r.log.Printlnf("NOTE: minipool %s hasn't been scheduled for activation yet; removing it", minipoolInfo.Address.Hex())
 							minipoolInfo.WasActive = false
 							continue
+						} else if startSlot > r.rewardsFile.ConsensusEndBlock {
+							r.log.Printlnf("NOTE: minipool %s activates on slot %d which is after interval end %d; removing it", minipoolInfo.Address.Hex(), startSlot, r.rewardsFile.ConsensusEndBlock)
+							minipoolInfo.WasActive = false
 						}
 
 						// Check if the minipool exited before this interval
 						if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
 							r.log.Printlnf("NOTE: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
-							minipoolInfo.StartSlot = 0
-							minipoolInfo.EndSlot = 0
 							minipoolInfo.WasActive = false
 							continue
-						}
-
-						if startSlot > details.EndSlot {
-							// This minipool was activated after the node's window ended, so don't count it
-							r.log.Printlnf("NOTE: minipool %s was activated on slot %d which was after the node's end slot of %d; removing it", minipoolInfo.Address.Hex(), details.EndSlot, r.rewardsFile.ConsensusStartBlock)
-							minipoolInfo.StartSlot = 0
-							minipoolInfo.EndSlot = 0
-							minipoolInfo.WasActive = false
-							continue
-						}
-
-						// If this minipool was activated after its node-based start slot, update the start slot
-						if startSlot > minipoolInfo.StartSlot {
-							minipoolInfo.StartSlot = startSlot
-						}
-
-						// If this minipool exited before its node-based end slot, update the end slot
-						if status.ExitEpoch != FarEpoch && endSlot < minipoolInfo.EndSlot {
-							minipoolInfo.EndSlot = endSlot
 						}
 					}
 				}
@@ -1187,8 +1145,6 @@ func (r *treeGeneratorImpl_v5) getSmoothingPoolNodeDetails() error {
 							GoodAttestations:        0,
 							MissingAttestationSlots: map[uint64]bool{},
 							WasActive:               true,
-							StartSlot:               nodeDetails.StartSlot,
-							EndSlot:                 nodeDetails.EndSlot,
 						})
 					}
 				}
