@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"net"
 	"net/url"
@@ -1623,28 +1621,6 @@ func (c *Client) getDownloader() (string, error) {
 
 }
 
-// pipeToStdOut pipes cmdOut to stdout
-func pipeToStdOut(cmdOut io.Reader) {
-	_, err := io.Copy(os.Stdout, cmdOut)
-	if err != nil {
-		log.Printf("Error piping stdout: %v", err)
-	}
-}
-
-// pipeToStdErr pipes cmdErr to stderr
-func pipeToStdErr(cmdErr io.Reader) {
-	_, err := io.Copy(os.Stderr, cmdErr)
-	if err != nil {
-		log.Printf("Error piping stderr: %v", err)
-	}
-}
-
-// pipeOutput pipes cmdOut and cmdErr to stdout and stderr
-func pipeOutput(cmdOut, cmdErr io.Reader) {
-	go pipeToStdOut(cmdOut)
-	go pipeToStdErr(cmdErr)
-}
-
 // Run a command and print its output
 func (c *Client) printOutput(cmdText string) error {
 
@@ -1655,13 +1631,8 @@ func (c *Client) printOutput(cmdText string) error {
 	}
 	defer cmd.Close()
 
-	cmdOut, cmdErr, err := cmd.OutputPipes()
-	if err != nil {
-		return err
-	}
-
-	// Begin piping before the command is started
-	pipeOutput(cmdOut, cmdErr)
+	cmd.SetStdout(os.Stdout)
+	cmd.SetStderr(os.Stderr)
 
 	// Start the command
 	if err := cmd.Start(); err != nil {
