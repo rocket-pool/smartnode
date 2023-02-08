@@ -151,6 +151,7 @@ const (
 	RplPriceDecreaseDeviationThreshold float64 = 0.5 // Error out if price drops >50%
 	RplPriceIncreaseDeviationThreshold float64 = 1.6 // Error out if price rises >60%
 
+	twapNumberOfSeconds        uint32 = 60 * 60 * 3 // 3 hours
 	twapTransitionEpochMainnet uint64 = 999999999999999
 	twapTransitionEpochPrater  uint64 = 999999999999999
 	twapTransitionEpochDevnet  uint64 = 999999999999999
@@ -529,7 +530,7 @@ func (t *submitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 
 	// Get RPL price
 	response := poolObserveResponse{}
-	interval := uint32(24 * 60 * 60) // 1 day
+	interval := twapNumberOfSeconds
 	args := []uint32{interval, 0}
 
 	err = pool.Call(opts, &response, "observe", args)
