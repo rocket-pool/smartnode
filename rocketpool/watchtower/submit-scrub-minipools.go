@@ -316,7 +316,7 @@ func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(pubkeys []types
 	// Get the status of the validators on the Beacon chain
 	statuses, err := t.bc.GetValidatorStatuses(pubkeys, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting validator statuses from the Beacon chain: %w", err)
 	}
 
 	// Get the withdrawal credentials on Beacon for each validator if they exist
@@ -362,45 +362,37 @@ func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(pubkeys []types
 // Get various elements needed to do eth1 prestake and deposit contract searches
 func (t *submitScrubMinipools) getEth1SearchArtifacts() error {
 
-	// Get the starting eth1 block to search from
-	/*
-	   data, err := t.bc.GetEth1DataForEth2Block("finalized")
-	   if err != nil {
-	       return nil, err
-	   }
-
-	   latestEth1Block, err := t.ec.BlockByHash(context.Background(), data.BlockHash)
-	   if err != nil {
-	       return nil, err
-	   }
-	*/
 	latestEth1Block, err := t.ec.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting latest EL block: %w", err)
 	}
 	t.it.latestBlockTime = time.Unix(int64(latestEth1Block.Time), 0)
-	targetBlockNumber := big.NewInt(0).Sub(latestEth1Block.Number, big.NewInt(BlockStartOffset))
+	startBlock := big.NewInt(BlockStartOffset)
+	if latestEth1Block.Number.Cmp(startBlock) < 0 {
+		startBlock = latestEth1Block.Number // Deal with chains that aren't old enough, looking at you Zhejiang
+	}
+	targetBlockNumber := big.NewInt(0).Sub(latestEth1Block.Number, startBlock)
 	targetBlock, err := t.ec.HeaderByNumber(context.Background(), targetBlockNumber)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting header for EL block %d: %w", targetBlockNumber, err)
 	}
 	t.it.startBlock = targetBlock.Number
 
 	// Check the prestake event from the minipool and validate its signature
 	eventLogInterval, err := t.cfg.GetEventLogInterval()
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting event log interval %w", err)
 	}
 	t.it.eventLogInterval = big.NewInt(int64(eventLogInterval))
 
 	// Put together the signature validation data
 	eth2Config, err := t.bc.GetEth2Config()
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting Beacon config: %w", err)
 	}
 	depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
 	if err != nil {
-		return err
+		return fmt.Errorf("error computing deposit domain: %w", err)
 	}
 	t.it.depositDomain = depositDomain
 
@@ -458,8 +450,6 @@ func (t *submitScrubMinipools) verifyPrestakeEvents() {
 			t.log.Printlnf("ALERT: Couldn't scrub minipool %s: %s", minipool.GetAddress().Hex(), err.Error())
 		}
 	}
-
-	return
 
 }
 
@@ -560,7 +550,7 @@ func (t *submitScrubMinipools) checkSafetyScrub() error {
 	// Get the scrub period
 	scrubPeriodUint, err := tnsettings.GetScrubPeriod(t.rp, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting scrub period: %w", err)
 	}
 	scrubPeriod := time.Duration(scrubPeriodUint) * time.Second
 
@@ -642,7 +632,7 @@ func (t *submitScrubMinipools) submitVoteScrubMinipool(mp minipool.Minipool) err
 	// Dissolve
 	hash, err := mp.VoteScrub(opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("error voting to scrub minipool %s: %w", mp.GetAddress().Hex(), err)
 	}
 
 	// Print TX info and wait for it to be included in a block
