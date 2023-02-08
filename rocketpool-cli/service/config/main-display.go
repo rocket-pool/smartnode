@@ -93,10 +93,10 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 	md.dockerWizard = newWizard(md)
 
 	// Set up the resize warning
-	md.app.SetAfterDrawFunc(func(screen tcell.Screen) {
+	md.app.SetBeforeDrawFunc(func(screen tcell.Screen) bool {
 		x, y := screen.Size()
 		if x == md.previousWidth && y == md.previousHeight {
-			return
+			return false
 		}
 		if x < 112 || y < 32 {
 			grid.RemoveItem(pages)
@@ -107,6 +107,8 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 		}
 		md.previousWidth = x
 		md.previousHeight = y
+
+		return false
 	})
 
 	if isNew || isMigration {
