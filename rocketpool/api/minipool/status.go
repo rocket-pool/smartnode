@@ -31,6 +31,10 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.MinipoolStatusResponse{}
@@ -41,12 +45,15 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
 	}
 
+	// Get the legacy MinipoolQueue contract address
+	legacyMinipoolQueueAddress := cfg.Smartnode.GetV110MinipoolQueueAddress()
+
 	// Get minipool details
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
 	}
-	details, err := getNodeMinipoolDetails(rp, bc, nodeAccount.Address, response.IsAtlasDeployed)
+	details, err := getNodeMinipoolDetails(rp, bc, nodeAccount.Address, response.IsAtlasDeployed, &legacyMinipoolQueueAddress)
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	v110_minipool "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/minipool"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
@@ -39,7 +40,7 @@ func validateMinipoolOwner(mp minipool.Minipool, nodeAddress common.Address) err
 }
 
 // Get all node minipool details
-func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, isAtlasDeployed bool) ([]api.MinipoolDetails, error) {
+func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, isAtlasDeployed bool, legacyMinipoolQueueAddress *common.Address) ([]api.MinipoolDetails, error) {
 
 	// Data
 	var wg1 errgroup.Group
@@ -109,7 +110,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
 			wg.Go(func() error {
 				address := addresses[mi]
 				validator := validators[address]
-				mpDetails, err := getMinipoolDetails(rp, address, validator, eth2Config, currentEpoch, currentBlock, isAtlasDeployed)
+				mpDetails, err := getMinipoolDetails(rp, address, validator, eth2Config, currentEpoch, currentBlock, isAtlasDeployed, legacyMinipoolQueueAddress)
 				if err == nil {
 					details[mi] = mpDetails
 				}
@@ -183,7 +184,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
 }
 
 // Get a minipool's details
-func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, currentEpoch, currentBlock uint64, isAtlasDeployed bool) (api.MinipoolDetails, error) {
+func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, currentEpoch, currentBlock uint64, isAtlasDeployed bool, legacyMinipoolQueueAddress *common.Address) (api.MinipoolDetails, error) {
 
 	// Create minipool
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
@@ -256,11 +257,22 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 		details.Penalties, err = minipool.GetMinipoolPenaltyCount(rp, minipoolAddress, nil)
 		return err
 	})
-	wg.Go(func() error {
-		var err error
-		details.Queue, err = minipool.GetQueueDetails(rp, mp.GetAddress(), nil)
-		return err
-	})
+	if isAtlasDeployed {
+		wg.Go(func() error {
+			var err error
+			details.Queue, err = minipool.GetQueueDetails(rp, mp.GetAddress(), nil)
+			return err
+		})
+	} else {
+		wg.Go(func() error {
+			legacyQueueDetails, err := v110_minipool.GetQueueDetails(rp, mp, nil, legacyMinipoolQueueAddress)
+			if err != nil {
+				return err
+			}
+			details.Queue.Position = int64(legacyQueueDetails.Position)
+			return nil
+		})
+	}
 
 	if isAtlasDeployed {
 		wg.Go(func() error {
