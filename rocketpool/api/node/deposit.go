@@ -331,8 +331,7 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 		if err != nil {
 			return err
 		}
-		prestakeDepositAmountWei := eth.EthToWei(prestakeDepositAmount)
-		opts.Value = prestakeDepositAmountWei
+		opts.Value = amountWei
 
 		// Get the deposit type
 		depositType, err := v110_node.GetDepositType(rp, amountWei, nil, &rocketNodeDepositAddress)
@@ -357,7 +356,7 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 		}
 
 		// Get validator deposit data and associated parameters
-		depositAmount := amountWei.Div(amountWei, big.NewInt(1e9)).Uint64()
+		depositAmount := eth.GweiToWei(16).Uint64()
 		depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 		if err != nil {
 			return err
@@ -720,7 +719,7 @@ func legacyNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, s
 	}
 
 	// Get validator deposit data and associated parameters
-	depositAmount := amountWei.Div(amountWei, big.NewInt(1e9)).Uint64()
+	depositAmount := eth.GweiToWei(16).Uint64()
 	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 	if err != nil {
 		return nil, err

@@ -66,24 +66,24 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
+	// Check if Atlas has been deployed
+	atlasResponse, err := rp.IsAtlasDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Atlas has been deployed: %w", err)
+	}
+
 	// Get deposit amount
 
 	var amount float64
 	if c.String("amount") != "" {
-
 		// Parse amount
 		depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
 		if err != nil {
 			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
 		}
 		amount = depositAmount
-
 	} else {
-		response, err := rp.IsAtlasDeployed()
-		if err != nil {
-			return fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-		}
-		if !response.IsAtlasDeployed {
+		if !atlasResponse.IsAtlasDeployed {
 			amount = 16
 		} else {
 			// Get deposit amount options
@@ -195,13 +195,15 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
-	// Get how much credit to use
-	if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
-		remainingAmount := big.NewInt(0).Sub(amountWei, canDeposit.CreditBalance)
-		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-			fmt.Printf("This deposit will use all %.6f ETH from your credit balance and %.6f ETH from your node.\n\n", eth.WeiToEth(canDeposit.CreditBalance), eth.WeiToEth(remainingAmount))
-		} else {
-			fmt.Printf("This deposit will use %.6f ETH from your credit balance and will not require any ETH from your node.\n\n", amount)
+	if atlasResponse.IsAtlasDeployed {
+		// Get how much credit to use
+		if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
+			remainingAmount := big.NewInt(0).Sub(amountWei, canDeposit.CreditBalance)
+			if remainingAmount.Cmp(big.NewInt(0)) > 0 {
+				fmt.Printf("This deposit will use all %.6f ETH from your credit balance and %.6f ETH from your node.\n\n", eth.WeiToEth(canDeposit.CreditBalance), eth.WeiToEth(remainingAmount))
+			} else {
+				fmt.Printf("This deposit will use %.6f ETH from your credit balance and will not require any ETH from your node.\n\n", amount)
+			}
 		}
 	}
 
