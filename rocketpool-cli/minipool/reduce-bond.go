@@ -137,7 +137,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 			break
 		} else {
 			if canResponse.BondReductionDisabled {
-				fmt.Println("Cannot create a vacant minipool for migration:")
+				fmt.Println("Cannot reduce minipool bonds:")
 				fmt.Println("Bond reductions are currently disabled.")
 				return nil
 			}
