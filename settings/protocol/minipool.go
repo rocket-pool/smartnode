@@ -132,6 +132,22 @@ func BootstrapMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value time.Durati
 	return protocoldao.BootstrapUint(rp, MinipoolSettingsContractName, "minipool.launch.timeout", big.NewInt(int64(value.Seconds())), opts)
 }
 
+// Minipool bond reductions currently enabled
+func GetBondReductionEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := minipoolSettingsContract.Call(opts, value, "getBondReductionEnabled"); err != nil {
+		return false, fmt.Errorf("Could not get bond reduction enabled status: %w", err)
+	}
+	return *value, nil
+}
+func BootstrapBondReductionEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
+	return protocoldao.BootstrapBool(rp, MinipoolSettingsContractName, "minipool.bond.reduction.enabled", value, opts)
+}
+
 // Get contracts
 var minipoolSettingsContractLock sync.Mutex
 

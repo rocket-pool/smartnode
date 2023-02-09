@@ -48,6 +48,22 @@ func BootstrapNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bi
 	return protocoldao.BootstrapBool(rp, NodeSettingsContractName, "node.deposit.enabled", value, opts)
 }
 
+// Vacant minipools currently enabled
+func GetVacantMinipoolsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := nodeSettingsContract.Call(opts, value, "getVacantMinipoolsEnabled"); err != nil {
+		return false, fmt.Errorf("Could not get vacant minipools enabled status: %w", err)
+	}
+	return *value, nil
+}
+func BootstrapVacantMinipoolsEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
+	return protocoldao.BootstrapBool(rp, NodeSettingsContractName, "node.vacant.minipools.enabled", value, opts)
+}
+
 // The minimum RPL stake per minipool as a fraction of assigned user ETH
 func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
 	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
