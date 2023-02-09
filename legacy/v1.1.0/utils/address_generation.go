@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/rocket-pool/rocketpool-go/minipool"
+	v110_minipool "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
@@ -24,7 +24,7 @@ func GetNodeSalt(nodeAddress common.Address, salt *big.Int) common.Hash {
 
 // Precompute the address of a minipool based on the node wallet, deposit type, and unique salt
 // If you set minipoolBytecode to nil, this will retrieve it from the contracts using minipool.GetMinipoolBytecode().
-func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depositType rptypes.MinipoolDeposit, salt *big.Int, minipoolBytecode []byte, opts *bind.CallOpts) (common.Address, error) {
+func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depositType rptypes.MinipoolDeposit, salt *big.Int, minipoolBytecode []byte, opts *bind.CallOpts, legacyRocketMinipoolFactoryAddress *common.Address) (common.Address, error) {
 
 	// Get dependencies
 	rocketMinipoolFactory, err := getRocketMinipoolFactory(rp, opts)
@@ -37,7 +37,7 @@ func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depo
 	}
 
 	if len(minipoolBytecode) == 0 {
-		minipoolBytecode, err = minipool.GetMinipoolBytecode(rp, nil)
+		minipoolBytecode, err = v110_minipool.GetMinipoolBytecode(rp, nil, legacyRocketMinipoolFactoryAddress)
 		if err != nil {
 			return common.Address{}, fmt.Errorf("Error getting minipool bytecode: %w", err)
 		}
