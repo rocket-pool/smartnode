@@ -3,7 +3,7 @@ module github.com/rocket-pool/smartnode
 go 1.19
 
 require (
-	github.com/a8m/envsubst v1.3.0
+	github.com/a8m/envsubst v1.4.1
 	github.com/alessio/shellescape v1.4.1
 	github.com/blang/semver/v4 v4.0.0
 	github.com/btcsuite/btcd v0.23.4
@@ -12,7 +12,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/fatih/color v1.14.1
-	github.com/ferranbt/fastssz v0.1.2
+	github.com/ferranbt/fastssz v0.1.3
 	github.com/gdamore/tcell/v2 v2.5.4
 	github.com/glendc/go-external-ip v0.1.0
 	github.com/google/uuid v1.3.0
@@ -25,7 +25,7 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v3 v3.2.0
-	github.com/rivo/tview v0.0.0-20230203122838-f0550c7918da
+	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
 	github.com/rocket-pool/rocketpool-go v1.10.1-0.20230209072032-fe09eb14540a
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
@@ -37,9 +37,9 @@ require (
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.3.0
 	github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a
 	github.com/web3-storage/go-w3s-client v0.0.7
-	golang.org/x/crypto v0.5.0
+	golang.org/x/crypto v0.6.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/term v0.4.0
+	golang.org/x/term v0.5.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -167,9 +167,9 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/tools v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
