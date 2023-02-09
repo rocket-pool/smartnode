@@ -225,6 +225,10 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	wg.Go(func() error {
 		var err error
 		details.Balances, err = tokens.GetBalances(rp, minipoolAddress, nil)
+		if err != nil {
+			return fmt.Errorf("error getting minipool %s balances: %w", minipoolAddress.Hex(), err)
+		}
+		details.NodeShareOfETHBalance, err = mp.CalculateNodeShare(details.Balances.ETH, nil)
 		return err
 	})
 	wg.Go(func() error {

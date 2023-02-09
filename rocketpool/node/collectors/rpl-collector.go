@@ -22,9 +22,6 @@ type RplCollector struct {
 	// The total amount of RPL staked on the network
 	totalValueStaked *prometheus.Desc
 
-	// The total effective amount of RPL staked on the network
-	totalEffectiveStaked *prometheus.Desc
-
 	// The date and time of the next RPL rewards checkpoint
 	checkpointTime *prometheus.Desc
 
@@ -44,10 +41,6 @@ func NewRplCollector(rp *rocketpool.RocketPool) *RplCollector {
 			"The total amount of RPL staked on the network",
 			nil, nil,
 		),
-		totalEffectiveStaked: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_effective_staked"),
-			"The total effective amount of RPL staked on the network",
-			nil, nil,
-		),
 		checkpointTime: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "checkpoint_time"),
 			"The date and time of the next RPL rewards checkpoint",
 			nil, nil,
@@ -60,7 +53,6 @@ func NewRplCollector(rp *rocketpool.RocketPool) *RplCollector {
 func (collector *RplCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.rplPrice
 	channel <- collector.totalValueStaked
-	channel <- collector.totalEffectiveStaked
 	channel <- collector.checkpointTime
 }
 
@@ -71,7 +63,6 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 	var wg errgroup.Group
 	rplPriceFloat := float64(-1)
 	totalValueStakedFloat := float64(-1)
-	totalEffectiveStakedFloat := float64(-1)
 	var lastCheckpoint time.Time
 	var rewardsInterval time.Duration
 
@@ -94,17 +85,6 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		totalValueStakedFloat = eth.WeiToEth(totalValueStaked)
-		return nil
-	})
-
-	// Get the total effective amount of RPL staked on the network
-	wg.Go(func() error {
-		totalEffectiveStaked, err := node.GetTotalEffectiveRPLStake(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting total effective amount of RPL staked on the network: %w", err)
-		}
-
-		totalEffectiveStakedFloat = eth.WeiToEth(totalEffectiveStaked)
 		return nil
 	})
 
@@ -142,8 +122,6 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.rplPrice, prometheus.GaugeValue, rplPriceFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalValueStaked, prometheus.GaugeValue, totalValueStakedFloat)
-	channel <- prometheus.MustNewConstMetric(
-		collector.totalEffectiveStaked, prometheus.GaugeValue, totalEffectiveStakedFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.checkpointTime, prometheus.GaugeValue, nextRewardsTime)
 }

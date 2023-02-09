@@ -95,7 +95,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 		options := make([]string, len(reduceableMinipools)+1)
 		options[0] = "All available minipools"
 		for mi, minipool := range reduceableMinipools {
-			options[mi+1] = fmt.Sprintf("%s (Current bond: %d ETH)", minipool.Address.Hex(), int(eth.WeiToEth(minipool.Node.DepositBalance)))
+			options[mi+1] = fmt.Sprintf("%s (Current bond: %d ETH, commission: %.2f%%)", minipool.Address.Hex(), int(eth.WeiToEth(minipool.Node.DepositBalance)), minipool.Node.Fee*100)
 		}
 		selected, _ := cliutils.Select("Please select a minipool to begin the ETH bond reduction for:", options)
 
@@ -220,6 +220,11 @@ func reduceBondAmount(c *cli.Context) error {
 		if nodeDepositBalance == 16 && timeSinceBondReductionStart > time.Duration(settingsResponse.BondReductionWindowStart) && timeSinceBondReductionStart < time.Duration(settingsResponse.BondReductionWindowStart+settingsResponse.BondReductionWindowLength) && !minipool.ReduceBondCancelled {
 			reduceableMinipools = append(reduceableMinipools, minipool)
 		}
+	}
+
+	if len(reduceableMinipools) == 0 {
+		fmt.Println("No minipools can have their bond reduced at this time.")
+		return nil
 	}
 
 	// Get selected minipools

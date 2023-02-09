@@ -155,45 +155,47 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 	// RP ETH deposit details - prelaunch & staking minipools
 	if minipool.Status.Status == types.Prelaunch || minipool.Status.Status == types.Staking {
 		if minipool.User.DepositAssigned {
-			fmt.Printf("RP ETH assigned:      %s\n", minipool.User.DepositAssignedTime.Format(TimeFormat))
-			fmt.Printf("RP deposit:           %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.User.DepositBalance), 6))
+			fmt.Printf("RP ETH assigned:       %s\n", minipool.User.DepositAssignedTime.Format(TimeFormat))
+			fmt.Printf("RP deposit:            %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.User.DepositBalance), 6))
 		} else {
-			fmt.Printf("RP ETH assigned:      no\n")
+			fmt.Printf("RP ETH assigned:       no\n")
 		}
+		fmt.Printf("Minipool Balance (EL): %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Balances.ETH), 6))
+		fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.NodeShareOfETHBalance), 6))
 	}
 
 	// Validator details - prelaunch and staking minipools
 	if minipool.Status.Status == types.Prelaunch ||
 		minipool.Status.Status == types.Staking {
-		fmt.Printf("Validator pubkey:     %s\n", hex.AddPrefix(minipool.ValidatorPubkey.Hex()))
-		fmt.Printf("Validator index:      %d\n", minipool.Validator.Index)
+		fmt.Printf("Validator pubkey:      %s\n", hex.AddPrefix(minipool.ValidatorPubkey.Hex()))
+		fmt.Printf("Validator index:       %d\n", minipool.Validator.Index)
 		if minipool.Validator.Exists {
 			if minipool.Validator.Active {
-				fmt.Printf("Validator active:     yes\n")
+				fmt.Printf("Validator active:      yes\n")
 			} else {
-				fmt.Printf("Validator active:     no\n")
+				fmt.Printf("Validator active:      no\n")
 			}
-			fmt.Printf("Validator balance:    %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Validator.Balance), 6))
-			fmt.Printf("Expected rewards:     %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Validator.NodeBalance), 6))
+			fmt.Printf("Beacon balance (CL):   %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Validator.Balance), 6))
+			fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Validator.NodeBalance), 6))
 		} else {
-			fmt.Printf("Validator seen:       no\n")
+			fmt.Printf("Validator seen:        no\n")
 		}
 	}
 
 	// Withdrawal details - withdrawable minipools
 	if minipool.Status.Status == types.Withdrawable {
-		fmt.Printf("Withdrawal available: yes\n")
+		fmt.Printf("Withdrawal available:  yes\n")
 	}
 
 	// Delegate details
 	if minipool.UseLatestDelegate {
-		fmt.Printf("Use latest delegate:  yes\n")
+		fmt.Printf("Use latest delegate:   yes\n")
 	} else {
-		fmt.Printf("Use latest delegate:  no\n")
+		fmt.Printf("Use latest delegate:   no\n")
 	}
-	fmt.Printf("Delegate address:     %s\n", cliutils.GetPrettyAddress(minipool.Delegate))
-	fmt.Printf("Rollback delegate:    %s\n", cliutils.GetPrettyAddress(minipool.PreviousDelegate))
-	fmt.Printf("Effective delegate:   %s\n", cliutils.GetPrettyAddress(minipool.EffectiveDelegate))
+	fmt.Printf("Delegate address:      %s\n", cliutils.GetPrettyAddress(minipool.Delegate))
+	fmt.Printf("Rollback delegate:     %s\n", cliutils.GetPrettyAddress(minipool.PreviousDelegate))
+	fmt.Printf("Effective delegate:    %s\n", cliutils.GetPrettyAddress(minipool.EffectiveDelegate))
 
 	if minipool.EffectiveDelegate != latestDelegate {
 		fmt.Printf("%s*Minipool can be upgraded to delegate %s!%s\n", colorYellow, latestDelegate.Hex(), colorReset)

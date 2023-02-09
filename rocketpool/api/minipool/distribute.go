@@ -84,6 +84,10 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 				wg2.Go(func() error {
 					var err error
 					minipoolDetails.Balance, err = rp.Client.BalanceAt(context.Background(), address, nil)
+					if err != nil {
+						return fmt.Errorf("error getting balance of minipool %s: %w", address.Hex(), err)
+					}
+					minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(minipoolDetails.Balance, nil)
 					return err
 				})
 				wg2.Go(func() error {

@@ -84,7 +84,7 @@ func distributeBalance(c *cli.Context) error {
 		options := make([]string, len(eligibleMinipools)+1)
 		options[0] = "All available minipools"
 		for mi, minipool := range eligibleMinipools {
-			options[mi+1] = fmt.Sprintf("%s (%.6f ETH available)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6))
+			options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH goes to you)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfBalance), 6))
 		}
 		selected, _ := cliutils.Select("Please select a minipool to distribute the balance of:", options)
 

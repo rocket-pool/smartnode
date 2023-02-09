@@ -20,29 +20,30 @@ type MinipoolStatusResponse struct {
 	IsAtlasDeployed bool              `json:"isAtlasDeployed"`
 }
 type MinipoolDetails struct {
-	Address             common.Address         `json:"address"`
-	ValidatorPubkey     types.ValidatorPubkey  `json:"validatorPubkey"`
-	Status              minipool.StatusDetails `json:"status"`
-	DepositType         types.MinipoolDeposit  `json:"depositType"`
-	Node                minipool.NodeDetails   `json:"node"`
-	User                minipool.UserDetails   `json:"user"`
-	Balances            tokens.Balances        `json:"balances"`
-	Validator           ValidatorDetails       `json:"validator"`
-	CanStake            bool                   `json:"canStake"`
-	CanPromote          bool                   `json:"canPromote"`
-	Queue               minipool.QueueDetails  `json:"queue"`
-	RefundAvailable     bool                   `json:"refundAvailable"`
-	WithdrawalAvailable bool                   `json:"withdrawalAvailable"`
-	CloseAvailable      bool                   `json:"closeAvailable"`
-	Finalised           bool                   `json:"finalised"`
-	UseLatestDelegate   bool                   `json:"useLatestDelegate"`
-	Delegate            common.Address         `json:"delegate"`
-	PreviousDelegate    common.Address         `json:"previousDelegate"`
-	EffectiveDelegate   common.Address         `json:"effectiveDelegate"`
-	TimeUntilDissolve   time.Duration          `json:"timeUntilDissolve"`
-	Penalties           uint64                 `json:"penalties"`
-	ReduceBondTime      time.Time              `json:"reduceBondTime"`
-	ReduceBondCancelled bool                   `json:"reduceBondCancelled"`
+	Address               common.Address         `json:"address"`
+	ValidatorPubkey       types.ValidatorPubkey  `json:"validatorPubkey"`
+	Status                minipool.StatusDetails `json:"status"`
+	DepositType           types.MinipoolDeposit  `json:"depositType"`
+	Node                  minipool.NodeDetails   `json:"node"`
+	User                  minipool.UserDetails   `json:"user"`
+	Balances              tokens.Balances        `json:"balances"`
+	NodeShareOfETHBalance *big.Int               `json:"nodeShareOfETHBalance"`
+	Validator             ValidatorDetails       `json:"validator"`
+	CanStake              bool                   `json:"canStake"`
+	CanPromote            bool                   `json:"canPromote"`
+	Queue                 minipool.QueueDetails  `json:"queue"`
+	RefundAvailable       bool                   `json:"refundAvailable"`
+	WithdrawalAvailable   bool                   `json:"withdrawalAvailable"`
+	CloseAvailable        bool                   `json:"closeAvailable"`
+	Finalised             bool                   `json:"finalised"`
+	UseLatestDelegate     bool                   `json:"useLatestDelegate"`
+	Delegate              common.Address         `json:"delegate"`
+	PreviousDelegate      common.Address         `json:"previousDelegate"`
+	EffectiveDelegate     common.Address         `json:"effectiveDelegate"`
+	TimeUntilDissolve     time.Duration          `json:"timeUntilDissolve"`
+	Penalties             uint64                 `json:"penalties"`
+	ReduceBondTime        time.Time              `json:"reduceBondTime"`
+	ReduceBondCancelled   bool                   `json:"reduceBondCancelled"`
 }
 type ValidatorDetails struct {
 	Exists      bool     `json:"exists"`
@@ -52,10 +53,11 @@ type ValidatorDetails struct {
 	NodeBalance *big.Int `json:"nodeBalance"`
 }
 type MinipoolBalanceDistributionDetails struct {
-	Address       common.Address `json:"address"`
-	Balance       *big.Int       `json:"balance"`
-	VersionTooLow bool           `json:"versionTooLow"`
-	InvalidStatus bool           `json:"invalidStatus"`
+	Address            common.Address `json:"address"`
+	Balance            *big.Int       `json:"balance"`
+	NodeShareOfBalance *big.Int       `json:"nodeShareOfBalance"`
+	VersionTooLow      bool           `json:"versionTooLow"`
+	InvalidStatus      bool           `json:"invalidStatus"`
 }
 
 type CanRefundMinipoolResponse struct {
