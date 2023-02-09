@@ -243,3 +243,15 @@ func removeLegacyFeeRecipientFiles(c *cli.Context) error {
 	return nil
 
 }
+
+/*
+func getLatestNetworkState(m *state.NetworkStateManager) (*state.NetworkState, error) {
+	// Get the state of the network
+	latest, err := m.UpdateState(nil)
+	if err != nil {
+		return nil, err
+	}
+
+
+}
+*/

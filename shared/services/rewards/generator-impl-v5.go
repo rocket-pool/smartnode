@@ -13,11 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -56,9 +54,6 @@ type treeGeneratorImpl_v5 struct {
 	intervalSeconds        *big.Int
 	beaconConfig           beacon.Eth2Config
 	validatorStatusMap     map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
-	rplPrice               *big.Int
-	minCollateralFraction  *big.Int
-	maxCollateralFraction  *big.Int
 	nodeStakes             []*big.Int
 	totalAttestationScore  *big.Int
 	successfulAttestations uint64
@@ -123,7 +118,7 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 
 	// Get a network snapshot
 	r.log.Printlnf("%s Creating a snapshot of the Rocket Pool network state...", r.logPrefix)
-	state, err := mgr.GetTotalState(r.rewardsFile.ExecutionEndBlock)
+	state, err := mgr.UpdateState(&r.rewardsFile.ExecutionEndBlock)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network state snapshot: %w", err)
 	}
@@ -345,86 +340,24 @@ func (r *treeGeneratorImpl_v5) updateNetworksAndTotals() {
 // Calculates the RPL rewards for the given interval
 func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 
-	snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
-	intervalDuration, err := GetClaimIntervalTime(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return fmt.Errorf("error getting required registration time: %w", err)
-	}
-
-	// Get the RPL min and max collateral stats
-	r.rplPrice, err = network.GetRPLPrice(r.rp, r.opts)
-	if err != nil {
-		return fmt.Errorf("error getting RPL price ratio: %w", err)
-	}
-	r.minCollateralFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(r.rp, r.opts)
-	if err != nil {
-		return fmt.Errorf("error getting minimum per minipool stake: %w", err)
-	}
-	r.maxCollateralFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(r.rp, r.opts)
-	if err != nil {
-		return fmt.Errorf("error getting maximum per minipool stake: %w", err)
-	}
-
-	// Handle node operator rewards
-	nodeOpPercent, err := GetNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return err
-	}
-	pendingRewards, err := GetPendingRPLRewards(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return err
-	}
+	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
+	nodeOpPercent := r.networkState.NetworkDetails.NodeOperatorRewardsPercent
 	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
 	totalNodeRewards := big.NewInt(0)
 	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
 	totalNodeRewards.Div(totalNodeRewards, eth.EthToWei(1))
 	r.log.Printlnf("%s Approx. total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
 
-	// Get the effective stakes of each node
-	effectiveStakes, err := r.getNodeEffectiveRPLStakes()
+	// Calculate the effective stake of each node, scaling by their participation in this interval
+	trueNodeEffectiveStakes, totalNodeEffectiveStake, err := r.networkState.CalculateEffectiveStakes(true)
 	if err != nil {
 		return fmt.Errorf("error calculating effective RPL stakes: %w", err)
 	}
 
-	// Calculate the true effective stake of each node based on their participation in this interval
-	totalNodeEffectiveStake := big.NewInt(0)
-	trueNodeEffectiveStakes := map[common.Address]*big.Int{}
-	intervalDurationBig := big.NewInt(int64(intervalDuration.Seconds()))
-	r.log.Printlnf("%s Calculating true total collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
+	r.log.Printlnf("%s Calculating individual collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
 	nodesDone := 0
 	startTime := time.Now()
 	nodeCount := len(r.nodeAddresses)
-	for i, address := range r.nodeAddresses {
-		if nodesDone == 100 {
-			timeTaken := time.Since(startTime)
-			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
-			nodesDone = 0
-		}
-		// Get the node's effective stake
-		nodeStake := effectiveStakes[i]
-
-		// Get the timestamp of the node's registration
-		regTimeBig := r.networkState.NodeDetails[i].RegistrationTime
-		regTime := time.Unix(regTimeBig.Int64(), 0)
-
-		// Get the actual effective stake, scaled based on participation
-		eligibleDuration := snapshotBlockTime.Sub(regTime)
-		if eligibleDuration < intervalDuration {
-			eligibleSeconds := big.NewInt(int64(eligibleDuration / time.Second))
-			nodeStake.Mul(nodeStake, eligibleSeconds)
-			nodeStake.Div(nodeStake, intervalDurationBig)
-		}
-		trueNodeEffectiveStakes[address] = nodeStake
-
-		// Add it to the total
-		totalNodeEffectiveStake.Add(totalNodeEffectiveStake, nodeStake)
-
-		nodesDone++
-	}
-
-	r.log.Printlnf("%s Calculating individual collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
-	nodesDone = 0
-	startTime = time.Now()
 	for i, address := range r.nodeAddresses {
 		if nodesDone == 100 {
 			timeTaken := time.Since(startTime)
@@ -492,10 +425,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 
 	// Handle Oracle DAO rewards
-	oDaoPercent, err := GetTrustedNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return err
-	}
+	oDaoPercent := r.networkState.NetworkDetails.TrustedNodeOperatorRewardsPercent
 	totalODaoRewards := big.NewInt(0)
 	totalODaoRewards.Mul(pendingRewards, oDaoPercent)
 	totalODaoRewards.Div(totalODaoRewards, eth.EthToWei(1))
@@ -515,7 +445,10 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 		regTime := time.Unix(regTimeBig.Int64(), 0)
 
 		// Get the actual effective time, scaled based on participation
+		intervalDuration := r.networkState.NetworkDetails.IntervalDuration
+		intervalDurationBig := big.NewInt(int64(intervalDuration.Seconds()))
 		participationTime := big.NewInt(0).Set(intervalDurationBig)
+		snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
 		eligibleDuration := snapshotBlockTime.Sub(regTime)
 		if eligibleDuration < intervalDuration {
 			participationTime = big.NewInt(int64(eligibleDuration.Seconds()))
@@ -583,10 +516,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get expected Protocol DAO rewards
-	pDaoPercent, err := GetProtocolDaoRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return err
-	}
+	pDaoPercent := r.networkState.NetworkDetails.ProtocolDaoRewardsPercent
 	pDaoRewards := NewQuotedBigInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
 	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
@@ -1224,103 +1154,6 @@ func (r *treeGeneratorImpl_v5) getStartBlocksForInterval(previousIntervalEvent r
 	}
 
 	return startElHeader, nil
-}
-
-// Get the effective stake of every node based on the status of their validators
-func (r *treeGeneratorImpl_v5) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
-
-	nodeCount := uint64(len(r.nodeAddresses))
-	effectiveStakes := make([]*big.Int, nodeCount)
-
-	// Get the effective stake per node
-	for batchStartIndex := uint64(0); batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
-
-		// Get batch start & end index
-		iterationStartIndex := batchStartIndex
-		iterationEndIndex := batchStartIndex + SmoothingPoolDetailsBatchSize
-		if iterationEndIndex > nodeCount {
-			iterationEndIndex = nodeCount
-		}
-
-		// Calculate effective stakes
-		var wg errgroup.Group
-		for iterationIndex := iterationStartIndex; iterationIndex < iterationEndIndex; iterationIndex++ {
-			iterationIndex := iterationIndex
-			wg.Go(func() error {
-				var err error
-				nodeDetails := r.networkState.NodeDetails[iterationIndex]
-				effectiveStakes[iterationIndex], err = r.getNodeEffectiveRPLStake(nodeDetails)
-				return err
-			})
-		}
-
-		if err := wg.Wait(); err != nil {
-			return nil, err
-		}
-	}
-
-	return effectiveStakes, nil
-
-}
-
-// Get the true effective RPL stake for a single node
-func (r *treeGeneratorImpl_v5) getNodeEffectiveRPLStake(nodeDetails node.NativeNodeDetails) (*big.Int, error) {
-	eligibleBorrowedEth := big.NewInt(0)
-	eligibleBondedEth := big.NewInt(0)
-	minipools := r.networkState.MinipoolDetailsByNode[nodeDetails.NodeAddress]
-
-	// Check each minipool
-	for _, mpd := range minipools {
-		// It must exist and be staking
-		if mpd.Exists && mpd.Status == rptypes.Staking {
-			// Doesn't exist on Beacon yet
-			validatorStatus, exists := r.networkState.ValidatorDetails[mpd.Pubkey]
-			if !exists {
-				r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
-				continue
-			}
-
-			// Starts too late
-			intervalEndEpoch := r.rewardsFile.ConsensusEndBlock / r.slotsPerEpoch
-			if validatorStatus.ActivationEpoch > intervalEndEpoch {
-				r.log.Printlnf("NOTE: Minipool %s starts on epoch %d which is after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ActivationEpoch, intervalEndEpoch)
-				continue
-			}
-
-			// Already exited
-			if validatorStatus.ExitEpoch <= intervalEndEpoch {
-				r.log.Printlnf("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
-				continue
-			}
-
-			// It's eligible, so add up the borrowed and bonded amounts
-			eligibleBorrowedEth.Add(eligibleBorrowedEth, mpd.UserDepositBalance)
-			eligibleBondedEth.Add(eligibleBondedEth, mpd.NodeDepositBalance)
-		}
-	}
-
-	// minCollateral := borrowedEth * minCollateralFraction / ratio
-	// NOTE: minCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
-	minCollateral := big.NewInt(0).Mul(eligibleBorrowedEth, r.minCollateralFraction)
-	minCollateral.Div(minCollateral, r.rplPrice)
-
-	// maxCollateral := bondedEth * maxCollateralFraction / ratio
-	// NOTE: maxCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
-	maxCollateral := big.NewInt(0).Mul(eligibleBondedEth, r.maxCollateralFraction)
-	maxCollateral.Div(maxCollateral, r.rplPrice)
-
-	// Calculate the effective stake
-	nodeStake := nodeDetails.RplStake
-	if nodeStake.Cmp(minCollateral) == -1 {
-		// Under min collateral
-		return big.NewInt(0), nil
-	} else if nodeStake.Cmp(maxCollateral) == 1 {
-		// Over max collateral
-		return maxCollateral, nil
-	} else {
-		// In-between
-		return nodeStake, nil
-	}
 }
 
 // Get the bond of a minipool for the specified time
