@@ -19,7 +19,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -157,7 +156,6 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)
 
 	response.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
-	response.MinipoolAddress = minipoolAddress
 
 	// Update response
 	response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
@@ -185,10 +183,11 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	}
 
 	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, salt, nil, nil)
+	minipoolAddress, err = minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
 	if err != nil {
 		return nil, err
 	}
+	response.MinipoolAddress = minipoolAddress
 	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
@@ -252,6 +251,7 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 	// Get the legacy contract addresses
 	rocketNodeDepositAddress := cfg.Smartnode.GetV110NodeDepositAddress()
 	rocketNodeStakingAddress := cfg.Smartnode.GetV110NodeStakingAddress()
+	rocketMinipoolFactoryAddress := cfg.Smartnode.GetV110MinipoolFactoryAddress()
 
 	// Check if amount is zero
 	amountIsZero := (amountWei.Cmp(big.NewInt(0)) == 0)
@@ -346,7 +346,7 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 		}
 
 		// Get the next minipool address and withdrawal credentials
-		minipoolAddress, err = v110_utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
+		minipoolAddress, err = v110_utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil, &rocketMinipoolFactoryAddress)
 		if err != nil {
 			return err
 		}
@@ -545,7 +545,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, salt, nil, nil)
+	minipoolAddress, err := minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -648,6 +648,7 @@ func legacyNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, s
 	}
 	// Get the legacy contract address
 	rocketNodeDepositAddress := cfg.Smartnode.GetV110NodeDepositAddress()
+	rocketMinipoolFactoryAddress := cfg.Smartnode.GetV110MinipoolFactoryAddress()
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -709,7 +710,7 @@ func legacyNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, s
 	}
 
 	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := v110_utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil)
+	minipoolAddress, err := v110_utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, nil, &rocketMinipoolFactoryAddress)
 	if err != nil {
 		return nil, err
 	}

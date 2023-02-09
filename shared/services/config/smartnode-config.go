@@ -135,6 +135,9 @@ type SmartnodeConfig struct {
 	// The contract address of rocketMinipoolQueue from v1.1.0
 	v1_1_0_MinipoolQueueAddress map[config.Network]string `yaml:"-"`
 
+	// The contract address of rocketMinipoolFactory from v1.1.0
+	v1_1_0_MinipoolFactoryAddress map[config.Network]string `yaml:"-"`
+
 	// Addresses for RocketRewardsPool that have been upgraded during development
 	previousRewardsPoolAddresses map[config.Network]map[string][]common.Address `yaml:"-"`
 
@@ -400,6 +403,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Prater:   "0xEF5EF45bf1CC08D5694f87F8c4023f00CCCB7237",
 			config.Network_Devnet:   "",
 			config.Network_Zhejiang: "0x5ffe8bD3165e80D51ce834B32a6B6C02233494bF",
+		},
+
+		v1_1_0_MinipoolFactoryAddress: map[config.Network]string{
+			config.Network_Mainnet:  "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788",
+			config.Network_Prater:   "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788",
+			config.Network_Devnet:   "",
+			config.Network_Zhejiang: "0xBD1E62AEbfA1E60797484916685E2B9e62ADbF7B",
 		},
 
 		snapshotDelegationAddress: map[config.Network]string{
@@ -691,6 +701,10 @@ func (cfg *SmartnodeConfig) GetV110NodeDepositAddress() common.Address {
 
 func (cfg *SmartnodeConfig) GetV110MinipoolQueueAddress() common.Address {
 	return common.HexToAddress(cfg.v1_1_0_MinipoolQueueAddress[cfg.Network.Value.(config.Network)])
+}
+
+func (cfg *SmartnodeConfig) GetV110MinipoolFactoryAddress() common.Address {
+	return common.HexToAddress(cfg.v1_1_0_MinipoolFactoryAddress[cfg.Network.Value.(config.Network)])
 }
 
 func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() map[string][]common.Address {

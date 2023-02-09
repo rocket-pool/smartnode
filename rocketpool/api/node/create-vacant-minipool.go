@@ -11,7 +11,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -99,7 +98,7 @@ func canCreateVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee floa
 	}
 
 	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, salt, nil, nil)
+	minipoolAddress, err := minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +227,7 @@ func createVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee float64
 	}
 
 	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, salt, nil, nil)
+	minipoolAddress, err := minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
 	if err != nil {
 		return nil, err
 	}
