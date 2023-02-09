@@ -184,7 +184,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 			fmt.Println("The deposit amount is invalid.")
 		}
 		if canDeposit.DepositDisabled {
-			fmt.Println("Node deposits are currently disabled.")
+			fmt.Println("Vacant minipool deposits are currently disabled.")
 		}
 		return nil
 	}

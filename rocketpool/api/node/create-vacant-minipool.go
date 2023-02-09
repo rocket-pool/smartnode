@@ -74,7 +74,7 @@ func canCreateVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee floa
 
 	// Check node deposits are enabled
 	wg1.Go(func() error {
-		depositEnabled, err := protocol.GetNodeDepositEnabled(rp, nil)
+		depositEnabled, err := protocol.GetVacantMinipoolsEnabled(rp, nil)
 		if err == nil {
 			response.DepositDisabled = !depositEnabled
 		}

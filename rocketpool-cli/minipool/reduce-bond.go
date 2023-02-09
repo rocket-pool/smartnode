@@ -136,6 +136,11 @@ func beginReduceBondAmount(c *cli.Context) error {
 			fmt.Printf("WARNING: Couldn't get gas price for beginning bond reduction on minipool %s: %s)", minipool.Address.Hex(), err.Error())
 			break
 		} else {
+			if canResponse.BondReductionDisabled {
+				fmt.Println("Cannot create a vacant minipool for migration:")
+				fmt.Println("Bond reductions are currently disabled.")
+				return nil
+			}
 			gasInfo = canResponse.GasInfo
 			totalGas += canResponse.GasInfo.EstGasLimit
 			totalSafeGas += canResponse.GasInfo.SafeGasLimit

@@ -291,9 +291,10 @@ type GetVanityArtifactsResponse struct {
 }
 
 type CanBeginReduceBondAmountResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status                string             `json:"status"`
+	Error                 string             `json:"error"`
+	BondReductionDisabled bool               `json:"bondReductionDisabled"`
+	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
 }
 type BeginReduceBondAmountResponse struct {
 	Status string      `json:"status"`
