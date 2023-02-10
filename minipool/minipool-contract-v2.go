@@ -18,6 +18,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
+const (
+	minipoolV2ABI string = "eJzdWd1v2jAQ/1cqnvvUaVPVt3ZdpUnrVEG7PVQVcpIDLIyN7HMYqva/7xwgHyRAKHGT7qkNXO5+97vzfZjn1x6TSi5nypre1YgJA+c9LucW6fH5lf6N4A9EvSvUNvkGQUsmHpdz6F31WBRpMKZ33pNs5j4YaTWjJyx+/fc8pyi1UdBk6fni85dMEyNEEjNdG4G36EJOf8qaXlKBbzgBfQtzZTiS3lQUYiAMzmSTJJFsaAt2TiFKqgiuGyTLGtBN6kOFTNwwwWRYFQRv4fzNcRJptmDiQauQ2PUfWFQfNfc3ZMm3U1SNJ1gi5BiKmeARQ6UfbDCFZWZtJVfDwV0KB3wsGVoNb9X56SLTGq1KwS1D1lcKt1SS5DtHdcvpRZraXzVEFCZOb73B7+OT5Z5LPleKjhQYZNNTjlTTkAahtkHg/5DPYBaAbuagH3QuceqXar4pOVuXGRAKJlpThHLpyaXE1NOcTm21V6kP2TsxaMOVK07KYs7DfS6VnCF1zk24t8gCLjgunWYOi0xyZGWIztAOHGPAwYapPUhA2tlZmpebF/ziuuNkn6+a3B5oASGqwpJ83ihFN0KF08MRKyRPdeI0BulxlZttISpZK9WW4c7iUvQmXxVaDvZ6ak4s1j8U67e8n4qfbjhOWd6DrhSK6hg0BOkO2szDEpx1NLIhvTPI+kCCUQeBrSm7Nobmzi6cwyeTbrAdoyuHrJN0bUC13B0K8B7d0pyW+QO1q+2mJQtFtnIsPqITDKNCRyl1hbUYve7WHpp4CuRU+klj8pwtWSDgaG+3Nq9hrQW2noYDG+v+DXV4eEXNuJJZwTpMVk2mMu02O0oetOukAzQZ40y3EcxM/KgercdxP9pDJgdu/W6ljnYxw02JjeaSBDC9Sly96MFIxA1qHliEdfO+ltGd1xQqWfRaRkstahjsvBHOp7kIrSAYbuIaTJju1PZ2ok9uAmnbp0I6GCViX/VKKF95HNN8lAxKXvM3VBI1C/Gsr8Kpu05Qmo3huxMasSTimxzQeYFjpqK256p6fBERVDdsSP6dfNdb8liJ6BYEjAnILoePUyhhcZLC4283N+b6SgigxTW5Amv0hvx/Zu1pPtYs8n+H/5F/pu5DCDyu5qjOvM2ECFxa1pTXK3M7+0Yxcp5mldyhCtjWrXLjG19hah7S+Idcjium52w+pFb+gxAYzB0bDzSMD1lq6QK4DpL3u1990BBzKhNdw/VtNAKSiaElYC//AGQZTdM="
+)
+
 type MinipoolV2 interface {
 	Minipool
 	EstimateDistributeBalanceAndFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
@@ -33,10 +37,10 @@ type minipool_v2 struct {
 }
 
 // Create new minipool contract
-func newMinipool_v2(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (Minipool, error) {
+func newMinipool_v2(rp *rocketpool.RocketPool, address common.Address) (Minipool, error) {
 
 	// Get contract
-	contract, err := getMinipoolContract(rp, address, opts)
+	contract, err := createMinipoolContractFromAbi(rp, address, minipoolV2ABI)
 	if err != nil {
 		return nil, err
 	}
