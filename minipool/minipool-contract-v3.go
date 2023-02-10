@@ -26,6 +26,7 @@ type MinipoolV3 interface {
 	Promote(opts *bind.TransactOpts) (common.Hash, error)
 	GetPreMigrationBalance(opts *bind.CallOpts) (*big.Int, error)
 	GetUserDistributed(opts *bind.CallOpts) (bool, error)
+	CalculateNodeRewards(opts *bind.CallOpts) (*big.Int, error)
 }
 
 // Minipool contract
@@ -265,6 +266,13 @@ func (mp *minipool_v3) GetPreMigrationBalance(opts *bind.CallOpts) (*big.Int, er
 		return nil, fmt.Errorf("Could not get minipool %s pre-migration balance: %w", mp.Address.Hex(), err)
 	}
 	return *preMigrationBalance, nil
+}
+func (mp *minipool_v3) CalculateNodeRewards(opts *bind.CallOpts) (*big.Int, error) {
+	rewards := new(*big.Int)
+	if err := mp.Contract.Call(opts, rewards, "calculateNodeRewards"); err != nil {
+		return nil, fmt.Errorf("Could not get minipool %s node rewards: %w", mp.Address.Hex(), err)
+	}
+	return *rewards, nil
 }
 
 // Get user deposit details
