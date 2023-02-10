@@ -59,14 +59,14 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, m *state.NetworkSt
 
 	// Create the collectors
 	demandCollector := collectors.NewDemandCollector(rp, m)
-	performanceCollector := collectors.NewPerformanceCollector(rp)
-	supplyCollector := collectors.NewSupplyCollector(rp)
-	rplCollector := collectors.NewRplCollector(rp)
-	odaoCollector := collectors.NewOdaoCollector(rp)
+	performanceCollector := collectors.NewPerformanceCollector(rp, m)
+	supplyCollector := collectors.NewSupplyCollector(rp, m)
+	rplCollector := collectors.NewRplCollector(rp, cfg, m)
+	odaoCollector := collectors.NewOdaoCollector(rp, m)
 	nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg, m)
-	trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg)
+	trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg, m)
 	beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address, m)
-	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(rp, ec)
+	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(rp, ec, m)
 
 	// Set up Prometheus
 	registry := prometheus.NewRegistry()

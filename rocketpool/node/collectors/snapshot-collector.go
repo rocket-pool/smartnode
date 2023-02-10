@@ -2,7 +2,6 @@ package collectors
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -55,10 +54,13 @@ type SnapshotCollector struct {
 
 	// Store the last execution time
 	lastApiCallTimestamp time.Time
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new SnapshotCollector instance
-func NewSnapshotCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, delegateAddres common.Address) *SnapshotCollector {
+func NewSnapshotCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, delegateAddress common.Address) *SnapshotCollector {
 	subsystem := "snapshot"
 	return &SnapshotCollector{
 		activeProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "proposals_active"),
@@ -87,7 +89,8 @@ func NewSnapshotCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfi
 		),
 		cfg:             cfg,
 		nodeAddress:     nodeAddress,
-		delegateAddress: delegateAddres,
+		delegateAddress: delegateAddress,
+		logPrefix:       "Snapshot Collector",
 	}
 }
 
@@ -190,7 +193,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 	if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
@@ -209,4 +212,9 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.nodeVotingPower, prometheus.GaugeValue, collector.cachedNodeVotingPower)
 	channel <- prometheus.MustNewConstMetric(
 		collector.delegateVotingPower, prometheus.GaugeValue, collector.cachedDelegateVotingPower)
+}
+
+// Log error messages
+func (collector *SnapshotCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

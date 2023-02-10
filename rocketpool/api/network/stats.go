@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/rocketpool-go/deposit"
+	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
@@ -24,6 +26,10 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
 	}
@@ -119,16 +125,24 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 	})
 
 	// Get total effective RPL staked
-	// TODO!
-	/*
-		wg.Go(func() error {
-			effectiveStaked, err := node.GetTotalEffectiveRPLStake(rp, nil)
-			if err == nil {
-				response.EffectiveRplStaked = eth.WeiToEth(effectiveStaked)
+	wg.Go(func() error {
+		isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+		if err != nil {
+			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		if !isAtlasDeployed {
+			legacyNodeStakingAddress := cfg.Smartnode.GetV110NodeStakingAddress()
+			effectiveStaked, err := v110_node.GetTotalEffectiveRPLStake(rp, nil, &legacyNodeStakingAddress)
+			if err != nil {
+				return err
 			}
-			return err
-		})
-	*/
+			response.EffectiveRplStaked = eth.WeiToEth(effectiveStaked)
+			return nil
+		} else {
+			// TODO once the getter is done
+			return nil
+		}
+	})
 
 	// Get rETH price
 	wg.Go(func() error {

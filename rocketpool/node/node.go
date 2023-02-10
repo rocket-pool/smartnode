@@ -163,6 +163,7 @@ func run(c *cli.Context) error {
 			if isAtlasDeployedMasterFlag {
 				if err := updateNetworkState(m, updateLog); err != nil {
 					errorLog.Println(err)
+					time.Sleep(tasksInterval)
 					continue
 				}
 			}

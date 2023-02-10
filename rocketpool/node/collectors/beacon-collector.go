@@ -2,7 +2,6 @@ package collectors
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -121,7 +120,7 @@ func (collector *BeaconCollector) collectImpl_Legacy(channel chan<- prometheus.M
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -193,7 +192,7 @@ func (collector *BeaconCollector) collectImpl_Legacy(channel chan<- prometheus.M
 
 	// Wait for data
 	if err := wg2.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -292,7 +291,7 @@ func (collector *BeaconCollector) collectImpl_Atlas(state *state.NetworkState, c
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -306,5 +305,5 @@ func (collector *BeaconCollector) collectImpl_Atlas(state *state.NetworkState, c
 
 // Log error messages
 func (collector *BeaconCollector) logError(err error) {
-	fmt.Printf("[%s] %w\n", collector.logPrefix, err.Error())
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

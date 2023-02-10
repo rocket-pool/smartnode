@@ -3,11 +3,11 @@ package collectors
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -27,10 +27,16 @@ type OdaoCollector struct {
 
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
+
+	// The manager for the network state in Atlas
+	m *state.NetworkStateManager
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new DemandCollector instance
-func NewOdaoCollector(rp *rocketpool.RocketPool) *OdaoCollector {
+func NewOdaoCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager) *OdaoCollector {
 	subsystem := "odao"
 	return &OdaoCollector{
 		currentEth1Block: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "current_eth1_block"),
@@ -49,7 +55,9 @@ func NewOdaoCollector(rp *rocketpool.RocketPool) *OdaoCollector {
 			"The latest ETH1 block where network prices were reportable by the ODAO",
 			nil, nil,
 		),
-		rp: rp,
+		rp:        rp,
+		m:         m,
+		logPrefix: "ODAO Collector",
 	}
 }
 
@@ -63,6 +71,16 @@ func (collector *OdaoCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
+	latestState := collector.m.GetLatestState()
+	if latestState == nil {
+		collector.collectImpl_Legacy(channel)
+	} else {
+		collector.collectImpl_Atlas(latestState, channel)
+	}
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *OdaoCollector) collectImpl_Legacy(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
@@ -107,7 +125,7 @@ func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -120,4 +138,28 @@ func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.latestReportableBlock, prometheus.GaugeValue, latestReportableBlockFloat)
 
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *OdaoCollector) collectImpl_Atlas(state *state.NetworkState, channel chan<- prometheus.Metric) {
+
+	blockNumberFloat := float64(state.ElBlockNumber)
+	pricesBlockFloat := float64(state.NetworkDetails.PricesBlock)
+	effectiveRplStakeBlockFloat := pricesBlockFloat
+	latestReportableBlockFloat := float64(state.NetworkDetails.LatestReportablePricesBlock)
+
+	channel <- prometheus.MustNewConstMetric(
+		collector.currentEth1Block, prometheus.GaugeValue, blockNumberFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.pricesBlock, prometheus.GaugeValue, pricesBlockFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.effectiveRplStakeBlock, prometheus.GaugeValue, effectiveRplStakeBlockFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.latestReportableBlock, prometheus.GaugeValue, latestReportableBlockFloat)
+
+}
+
+// Log error messages
+func (collector *OdaoCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

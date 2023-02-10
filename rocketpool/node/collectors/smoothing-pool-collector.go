@@ -2,14 +2,13 @@ package collectors
 
 import (
 	"fmt"
-	"log"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/api/node"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -24,20 +23,25 @@ type SmoothingPoolCollector struct {
 	// The EC client
 	ec *services.ExecutionClientManager
 
-	// The node address
-	nodeAddress common.Address
+	// The manager for the network state in Atlas
+	m *state.NetworkStateManager
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new SmoothingPoolCollector instance
-func NewSmoothingPoolCollector(rp *rocketpool.RocketPool, ec *services.ExecutionClientManager) *SmoothingPoolCollector {
+func NewSmoothingPoolCollector(rp *rocketpool.RocketPool, ec *services.ExecutionClientManager, m *state.NetworkStateManager) *SmoothingPoolCollector {
 	subsystem := "smoothing_pool"
 	return &SmoothingPoolCollector{
 		ethBalanceOnSmoothingPool: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_balance"),
 			"The ETH balance on the smoothing pool",
 			nil, nil,
 		),
-		rp: rp,
-		ec: ec,
+		rp:        rp,
+		ec:        ec,
+		m:         m,
+		logPrefix: "SP Collector",
 	}
 }
 
@@ -48,6 +52,16 @@ func (collector *SmoothingPoolCollector) Describe(channel chan<- *prometheus.Des
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metric) {
+	latestState := collector.m.GetLatestState()
+	if latestState == nil {
+		collector.collectImpl_Legacy(channel)
+	} else {
+		collector.collectImpl_Atlas(latestState, channel)
+	}
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *SmoothingPoolCollector) collectImpl_Legacy(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
@@ -66,10 +80,24 @@ func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metri
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
 	channel <- prometheus.MustNewConstMetric(
 		collector.ethBalanceOnSmoothingPool, prometheus.GaugeValue, ethBalanceOnSmoothingPool)
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *SmoothingPoolCollector) collectImpl_Atlas(state *state.NetworkState, channel chan<- prometheus.Metric) {
+
+	ethBalanceOnSmoothingPool := eth.WeiToEth(state.NetworkDetails.SmoothingPoolBalance)
+
+	channel <- prometheus.MustNewConstMetric(
+		collector.ethBalanceOnSmoothingPool, prometheus.GaugeValue, ethBalanceOnSmoothingPool)
+}
+
+// Log error messages
+func (collector *SmoothingPoolCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

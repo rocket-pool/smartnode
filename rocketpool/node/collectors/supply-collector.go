@@ -2,13 +2,13 @@ package collectors
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -31,10 +31,16 @@ type SupplyCollector struct {
 
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
+
+	// The manager for the network state in Atlas
+	m *state.NetworkStateManager
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new PerformanceCollector instance
-func NewSupplyCollector(rp *rocketpool.RocketPool) *SupplyCollector {
+func NewSupplyCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager) *SupplyCollector {
 	subsystem := "supply"
 	return &SupplyCollector{
 		nodeCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "node_count"),
@@ -57,7 +63,9 @@ func NewSupplyCollector(rp *rocketpool.RocketPool) *SupplyCollector {
 			"The number of active (non-finalized) Rocket Pool minipools",
 			nil, nil,
 		),
-		rp: rp,
+		rp:        rp,
+		m:         m,
+		logPrefix: "Supply Collector",
 	}
 }
 
@@ -72,6 +80,16 @@ func (collector *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
+	latestState := collector.m.GetLatestState()
+	if latestState == nil {
+		collector.collectImpl_Legacy(channel)
+	} else {
+		collector.collectImpl_Atlas(latestState, channel)
+	}
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *SupplyCollector) collectImpl_Legacy(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
@@ -131,7 +149,7 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -160,4 +178,79 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.activeMinipools, prometheus.GaugeValue, activeMinipoolCount)
 
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *SupplyCollector) collectImpl_Atlas(state *state.NetworkState, channel chan<- prometheus.Metric) {
+
+	// Sync
+	var wg errgroup.Group
+	nodeCount := float64(len(state.NodeDetails))
+	nodeFee := state.NetworkDetails.NodeFee
+	initializedCount := float64(-1)
+	prelaunchCount := float64(-1)
+	stakingCount := float64(-1)
+	withdrawableCount := float64(-1)
+	dissolvedCount := float64(-1)
+	finalizedCount := float64(-1)
+
+	// Get the total number of Rocket Pool minipools
+	wg.Go(func() error {
+		minipoolCounts, err := minipool.GetMinipoolCountPerStatus(collector.rp, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
+		}
+
+		initializedCount = float64(minipoolCounts.Initialized.Uint64())
+		prelaunchCount = float64(minipoolCounts.Prelaunch.Uint64())
+		stakingCount = float64(minipoolCounts.Staking.Uint64())
+		withdrawableCount = float64(minipoolCounts.Withdrawable.Uint64())
+		dissolvedCount = float64(minipoolCounts.Dissolved.Uint64())
+
+		finalizedCountUint, err := minipool.GetFinalisedMinipoolCount(collector.rp, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
+		}
+
+		finalizedCount = float64(finalizedCountUint)
+		withdrawableCount -= finalizedCount
+		return nil
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		collector.logError(err)
+		return
+	}
+
+	channel <- prometheus.MustNewConstMetric(
+		collector.nodeCount, prometheus.GaugeValue, nodeCount)
+	channel <- prometheus.MustNewConstMetric(
+		collector.nodeFee, prometheus.GaugeValue, nodeFee)
+	channel <- prometheus.MustNewConstMetric(
+		collector.minipoolCount, prometheus.GaugeValue, initializedCount, "initialized")
+	channel <- prometheus.MustNewConstMetric(
+		collector.minipoolCount, prometheus.GaugeValue, prelaunchCount, "prelaunch")
+	channel <- prometheus.MustNewConstMetric(
+		collector.minipoolCount, prometheus.GaugeValue, stakingCount, "staking")
+	channel <- prometheus.MustNewConstMetric(
+		collector.minipoolCount, prometheus.GaugeValue, withdrawableCount, "withdrawable")
+	channel <- prometheus.MustNewConstMetric(
+		collector.minipoolCount, prometheus.GaugeValue, dissolvedCount, "dissolved")
+	channel <- prometheus.MustNewConstMetric(
+		collector.minipoolCount, prometheus.GaugeValue, finalizedCount, "finalized")
+
+	// Set the total and active count
+	totalMinipoolCount := initializedCount + prelaunchCount + stakingCount + withdrawableCount + dissolvedCount + finalizedCount
+	activeMinipoolCount := totalMinipoolCount - finalizedCount
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalMinipools, prometheus.GaugeValue, totalMinipoolCount)
+	channel <- prometheus.MustNewConstMetric(
+		collector.activeMinipools, prometheus.GaugeValue, activeMinipoolCount)
+
+}
+
+// Log error messages
+func (collector *SupplyCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

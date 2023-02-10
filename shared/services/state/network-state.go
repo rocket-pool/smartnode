@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
@@ -32,6 +33,7 @@ type NetworkDetails struct {
 	MinCollateralFraction             *big.Int
 	MaxCollateralFraction             *big.Int
 	IntervalDuration                  time.Duration
+	IntervalStart                     time.Time
 	NodeOperatorRewardsPercent        *big.Int
 	TrustedNodeOperatorRewardsPercent *big.Int
 	ProtocolDaoRewardsPercent         *big.Int
@@ -47,6 +49,17 @@ type NetworkDetails struct {
 	QueueCapacity                     minipool.QueueCapacity
 	RPLInflationIntervalRate          *big.Int
 	RPLTotalSupply                    *big.Int
+	PricesBlock                       uint64
+	LatestReportablePricesBlock       uint64
+	ETHUtilizationRate                float64
+	StakingETHBalance                 *big.Int
+	RETHExchangeRate                  float64
+	TotalETHBalance                   *big.Int
+	RETHBalance                       *big.Int
+	TotalRETHSupply                   *big.Int
+	TotalRPLStake                     *big.Int
+	SmoothingPoolBalance              *big.Int
+	NodeFee                           float64
 }
 
 type NetworkState struct {
@@ -126,6 +139,11 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		return nil, fmt.Errorf("error getting interval duration: %w", err)
 	}
 
+	state.NetworkDetails.IntervalStart, err = rewards.GetClaimIntervalTimeStart(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting interval start: %w", err)
+	}
+
 	state.NetworkDetails.NodeOperatorRewardsPercent, err = GetNodeOperatorRewardsPercent(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting node operator rewards percent")
@@ -201,6 +219,63 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		return nil, fmt.Errorf("error getting total RPL supply: %w", err)
 	}
 
+	state.NetworkDetails.PricesBlock, err = network.GetPricesBlock(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting ETH1 prices block: %w", err)
+	}
+
+	latestReportableBlock, err := network.GetLatestReportablePricesBlock(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting ETH1 latest reportable block: %w", err)
+	}
+	state.NetworkDetails.LatestReportablePricesBlock = latestReportableBlock.Uint64()
+
+	state.NetworkDetails.ETHUtilizationRate, err = network.GetETHUtilizationRate(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting ETH utilization rate: %w", err)
+	}
+
+	state.NetworkDetails.StakingETHBalance, err = network.GetStakingETHBalance(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting total ETH staking balance: %w", err)
+	}
+
+	state.NetworkDetails.RETHExchangeRate, err = tokens.GetRETHExchangeRate(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting ETH-rETH exchange rate: %w", err)
+	}
+
+	state.NetworkDetails.TotalETHBalance, err = network.GetTotalETHBalance(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting total ETH balance (TVL): %w", err)
+	}
+
+	rethAddress := cfg.Smartnode.GetRethAddress()
+	state.NetworkDetails.RETHBalance, err = rp.Client.BalanceAt(context.Background(), rethAddress, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting ETH balance of rETH staking contract: %w", err)
+	}
+
+	state.NetworkDetails.TotalRETHSupply, err = tokens.GetRETHTotalSupply(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting total rETH supply: %w", err)
+	}
+
+	state.NetworkDetails.TotalRPLStake, err = node.GetTotalRPLStake(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting total amount of RPL staked on the network: %w", err)
+	}
+
+	state.NetworkDetails.SmoothingPoolBalance, err = rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, opts.BlockNumber)
+	if err != nil {
+		return nil, fmt.Errorf("error getting smoothing pool balance: %w", err)
+	}
+
+	state.NetworkDetails.NodeFee, err = network.GetNodeFee(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting current node fee for new minipools: %w", err)
+	}
+
 	// Node details
 	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
 	start := time.Now()
@@ -259,7 +334,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 // Logs a line if the logger is specified
 func (s *NetworkState) logLine(format string, v ...interface{}) {
 	if s.log != nil {
-		s.log.Printlnf(format, v)
+		s.log.Printlnf(format, v...)
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -21,6 +22,7 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
@@ -207,17 +209,23 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	})
 
 	// Get the total network effective stake
-	// TODO!
-	/*
-		wg.Go(func() error {
-			var err error
-			totalEffectiveStake, err = node.GetTotalEffectiveRPLStake(rp, nil)
+	wg.Go(func() error {
+		isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+		if err != nil {
+			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		if !isAtlasDeployed {
+			legacyNodeStakingAddress := cfg.Smartnode.GetV110NodeStakingAddress()
+			totalEffectiveStake, err = v110_node.GetTotalEffectiveRPLStake(rp, nil, &legacyNodeStakingAddress)
 			if err != nil {
 				return err
 			}
 			return nil
-		})
-	*/
+		} else {
+			// TODO once the getter is done
+			return nil
+		}
+	})
 
 	// Get the total RPL supply
 	wg.Go(func() error {

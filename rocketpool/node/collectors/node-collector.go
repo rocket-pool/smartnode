@@ -431,7 +431,7 @@ func (collector *NodeCollector) collectImpl_Legacy(channel chan<- prometheus.Met
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -458,7 +458,7 @@ func (collector *NodeCollector) collectImpl_Legacy(channel chan<- prometheus.Met
 	// Calculate the total deposits and corresponding beacon chain balance share
 	minipoolDetails, err := eth2.GetBeaconBalances(collector.rp, collector.bc, addresses, beaconHead, nil)
 	if err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 	totalDepositBalance := float64(0)
@@ -650,7 +650,7 @@ func (collector *NodeCollector) collectImpl_Atlas(state *state.NetworkState, cha
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -677,7 +677,7 @@ func (collector *NodeCollector) collectImpl_Atlas(state *state.NetworkState, cha
 	// Calculate the total deposits and corresponding beacon chain balance share
 	minipoolDetails, err := eth2.GetBeaconBalancesFromState(collector.rp, minipools, state, beaconHead, nil)
 	if err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 	totalDepositBalance := float64(0)
@@ -724,4 +724,9 @@ func (collector *NodeCollector) collectImpl_Atlas(state *state.NetworkState, cha
 		collector.unclaimedEthRewards, prometheus.GaugeValue, unclaimedEthRewards)
 	channel <- prometheus.MustNewConstMetric(
 		collector.claimedEthRewards, prometheus.GaugeValue, collector.cumulativeClaimedEthRewards)
+}
+
+// Log error messages
+func (collector *NodeCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

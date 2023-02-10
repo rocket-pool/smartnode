@@ -2,15 +2,18 @@ package collectors
 
 import (
 	"fmt"
-	"log"
+	"math/big"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,15 +25,27 @@ type RplCollector struct {
 	// The total amount of RPL staked on the network
 	totalValueStaked *prometheus.Desc
 
+	// The total effective amount of RPL staked on the network
+	totalEffectiveStaked *prometheus.Desc
+
 	// The date and time of the next RPL rewards checkpoint
 	checkpointTime *prometheus.Desc
 
+	// The Rocket Pool config
+	cfg *config.RocketPoolConfig
+
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
+
+	// The manager for the network state in Atlas
+	m *state.NetworkStateManager
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new RplCollector instance
-func NewRplCollector(rp *rocketpool.RocketPool) *RplCollector {
+func NewRplCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, m *state.NetworkStateManager) *RplCollector {
 	subsystem := "rpl"
 	return &RplCollector{
 		rplPrice: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rpl_price"),
@@ -41,11 +56,18 @@ func NewRplCollector(rp *rocketpool.RocketPool) *RplCollector {
 			"The total amount of RPL staked on the network",
 			nil, nil,
 		),
+		totalEffectiveStaked: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_effective_staked"),
+			"The total effective amount of RPL staked on the network",
+			nil, nil,
+		),
 		checkpointTime: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "checkpoint_time"),
 			"The date and time of the next RPL rewards checkpoint",
 			nil, nil,
 		),
-		rp: rp,
+		rp:        rp,
+		cfg:       cfg,
+		m:         m,
+		logPrefix: "RPL Collector",
 	}
 }
 
@@ -53,16 +75,28 @@ func NewRplCollector(rp *rocketpool.RocketPool) *RplCollector {
 func (collector *RplCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.rplPrice
 	channel <- collector.totalValueStaked
+	channel <- collector.totalEffectiveStaked
 	channel <- collector.checkpointTime
 }
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
+	latestState := collector.m.GetLatestState()
+	if latestState == nil {
+		collector.collectImpl_Legacy(channel)
+	} else {
+		collector.collectImpl_Atlas(latestState, channel)
+	}
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *RplCollector) collectImpl_Legacy(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
 	rplPriceFloat := float64(-1)
 	totalValueStakedFloat := float64(-1)
+	totalEffectiveStakedFloat := float64(-1)
 	var lastCheckpoint time.Time
 	var rewardsInterval time.Duration
 
@@ -85,6 +119,18 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		totalValueStakedFloat = eth.WeiToEth(totalValueStaked)
+		return nil
+	})
+
+	// Get the total effective amount of RPL staked on the network
+	wg.Go(func() error {
+		legacyNodeStakingAddress := collector.cfg.Smartnode.GetV110NodeStakingAddress()
+		totalEffectiveStaked, err := v110_node.GetTotalEffectiveRPLStake(collector.rp, nil, &legacyNodeStakingAddress)
+		if err != nil {
+			return fmt.Errorf("Error getting total effective amount of RPL staked on the network: %w", err)
+		}
+
+		totalEffectiveStakedFloat = eth.WeiToEth(totalEffectiveStaked)
 		return nil
 	})
 
@@ -112,7 +158,7 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -123,5 +169,39 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalValueStaked, prometheus.GaugeValue, totalValueStakedFloat)
 	channel <- prometheus.MustNewConstMetric(
+		collector.totalEffectiveStaked, prometheus.GaugeValue, totalEffectiveStakedFloat)
+	channel <- prometheus.MustNewConstMetric(
 		collector.checkpointTime, prometheus.GaugeValue, nextRewardsTime)
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *RplCollector) collectImpl_Atlas(state *state.NetworkState, channel chan<- prometheus.Metric) {
+
+	rplPriceFloat := eth.WeiToEth(state.NetworkDetails.RplPrice)
+	totalValueStakedFloat := eth.WeiToEth(state.NetworkDetails.TotalRPLStake)
+	var totalEffectiveStake *big.Int
+	lastCheckpoint := state.NetworkDetails.IntervalStart
+	rewardsInterval := state.NetworkDetails.IntervalDuration
+
+	_totalEffectiveStake := big.NewInt(0)
+	for _, node := range state.NodeDetails {
+		_totalEffectiveStake.Add(_totalEffectiveStake, node.EffectiveRPLStake)
+	}
+	totalEffectiveStake = _totalEffectiveStake
+
+	nextRewardsTime := float64(lastCheckpoint.Add(rewardsInterval).Unix()) * 1000
+
+	channel <- prometheus.MustNewConstMetric(
+		collector.rplPrice, prometheus.GaugeValue, rplPriceFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalValueStaked, prometheus.GaugeValue, totalValueStakedFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalEffectiveStaked, prometheus.GaugeValue, eth.WeiToEth(totalEffectiveStake))
+	channel <- prometheus.MustNewConstMetric(
+		collector.checkpointTime, prometheus.GaugeValue, nextRewardsTime)
+}
+
+// Log error messages
+func (collector *RplCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

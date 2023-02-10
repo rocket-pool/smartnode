@@ -3,13 +3,13 @@ package collectors
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -35,10 +35,16 @@ type PerformanceCollector struct {
 
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
+
+	// The manager for the network state in Atlas
+	m *state.NetworkStateManager
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new PerformanceCollector instance
-func NewPerformanceCollector(rp *rocketpool.RocketPool) *PerformanceCollector {
+func NewPerformanceCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager) *PerformanceCollector {
 	subsystem := "performance"
 	return &PerformanceCollector{
 		ethUtilizationRate: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_utilization_rate"),
@@ -65,7 +71,9 @@ func NewPerformanceCollector(rp *rocketpool.RocketPool) *PerformanceCollector {
 			"The total rETH supply",
 			nil, nil,
 		),
-		rp: rp,
+		rp:        rp,
+		m:         m,
+		logPrefix: "Performance Collector",
 	}
 }
 
@@ -81,6 +89,16 @@ func (collector *PerformanceCollector) Describe(channel chan<- *prometheus.Desc)
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric) {
+	latestState := collector.m.GetLatestState()
+	if latestState == nil {
+		collector.collectImpl_Legacy(channel)
+	} else {
+		collector.collectImpl_Atlas(latestState, channel)
+	}
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *PerformanceCollector) collectImpl_Legacy(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
@@ -164,7 +182,7 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -181,4 +199,34 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalRethSupply, prometheus.GaugeValue, rethFloat)
 
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *PerformanceCollector) collectImpl_Atlas(state *state.NetworkState, channel chan<- prometheus.Metric) {
+
+	ethUtilizationRate := state.NetworkDetails.ETHUtilizationRate
+	balanceFloat := eth.WeiToEth(state.NetworkDetails.StakingETHBalance)
+	exchangeRate := state.NetworkDetails.RETHExchangeRate
+	tvlFloat := eth.WeiToEth(state.NetworkDetails.TotalETHBalance)
+	rETHBalance := eth.WeiToEth(state.NetworkDetails.RETHBalance)
+	rethFloat := eth.WeiToEth(state.NetworkDetails.TotalRETHSupply)
+
+	channel <- prometheus.MustNewConstMetric(
+		collector.ethUtilizationRate, prometheus.GaugeValue, ethUtilizationRate)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalStakingBalanceEth, prometheus.GaugeValue, balanceFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.ethRethExchangeRate, prometheus.GaugeValue, exchangeRate)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalValueLockedEth, prometheus.GaugeValue, tvlFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.rethContractBalance, prometheus.GaugeValue, rETHBalance)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalRethSupply, prometheus.GaugeValue, rethFloat)
+
+}
+
+// Log error messages
+func (collector *PerformanceCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

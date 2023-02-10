@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -60,10 +61,16 @@ type TrustedNodeCollector struct {
 
 	// The event log interval for the current eth1 client
 	eventLogInterval *big.Int
+
+	// The manager for the network state in Atlas
+	m *state.NetworkStateManager
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new NodeCollector instance
-func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig) *TrustedNodeCollector {
+func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig, m *state.NetworkStateManager) *TrustedNodeCollector {
 
 	// Get the event log interval
 	eventLogInterval, err := cfg.GetEventLogInterval()
@@ -103,6 +110,8 @@ func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 		bc:               bc,
 		nodeAddress:      nodeAddress,
 		eventLogInterval: big.NewInt(int64(eventLogInterval)),
+		m:                m,
+		logPrefix:        "ODAO Stats Collector",
 	}
 }
 
@@ -154,7 +163,7 @@ func (collector *TrustedNodeCollector) collectSlowMetrics(memberIds map[common.A
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -231,7 +240,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -256,7 +265,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -324,4 +333,9 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	for _, metric := range collector.cachedMetrics {
 		channel <- metric
 	}
+}
+
+// Log error messages
+func (collector *TrustedNodeCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

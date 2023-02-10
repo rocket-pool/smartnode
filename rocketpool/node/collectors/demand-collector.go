@@ -2,7 +2,6 @@ package collectors
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/deposit"
@@ -128,7 +127,7 @@ func (collector *DemandCollector) collectImpl_Legacy(channel chan<- prometheus.M
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -160,4 +159,9 @@ func (collector *DemandCollector) collectImpl_Atlas(state *state.NetworkState, c
 	channel <- prometheus.MustNewConstMetric(
 		collector.effectiveMinipoolCapacity, prometheus.GaugeValue, effectiveFloat)
 
+}
+
+// Log error messages
+func (collector *DemandCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }
