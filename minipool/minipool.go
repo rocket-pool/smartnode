@@ -65,6 +65,8 @@ type NativeMinipoolDetails struct {
 	NodeAddress                common.Address          `abi:"nodeAddress"`
 	LastBondReductionTime      *big.Int                `abi:"lastBondReductionTime"`
 	LastBondReductionPrevValue *big.Int                `abi:"lastBondReductionPrevValue"`
+	IsVacant                   bool                    `abi:"vacant"`
+	Version                    uint8                   `abi:"delegateVersion"`
 }
 
 // Get all minipool details

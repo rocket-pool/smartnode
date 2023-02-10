@@ -33,19 +33,6 @@ func GetTotalRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 	return *totalRplStake, nil
 }
 
-// Get the effective RPL staked in the network
-func GetTotalEffectiveRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	totalEffectiveRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, totalEffectiveRplStake, "getTotalEffectiveRPLStake"); err != nil {
-		return nil, fmt.Errorf("Could not get effective network RPL stake: %w", err)
-	}
-	return *totalEffectiveRplStake, nil
-}
-
 // Get a node's RPL stake
 func GetNodeRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
