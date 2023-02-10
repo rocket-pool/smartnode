@@ -15,7 +15,7 @@ func GetCurrentVersion(rp *rocketpool.RocketPool) (*version.Version, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error checking node staking version: %w", err)
 	}
-	if nodeStakingVersion == 3 {
+	if nodeStakingVersion > 3 {
 		return version.NewSemver("1.2.0")
 	}
 
@@ -24,7 +24,7 @@ func GetCurrentVersion(rp *rocketpool.RocketPool) (*version.Version, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error checking node manager version: %w", err)
 	}
-	if nodeMgrVersion == 2 {
+	if nodeMgrVersion > 1 {
 		return version.NewSemver("1.1.0")
 	}
 
