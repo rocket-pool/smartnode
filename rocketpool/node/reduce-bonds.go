@@ -7,23 +7,21 @@ import (
 	"time"
 
 	"github.com/docker/docker/client"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // The fraction of the timeout period to trigger overdue transactions
@@ -31,18 +29,18 @@ const reduceBondTimeoutSafetyFactor int = 2
 
 // Reduce bonds task
 type reduceBonds struct {
-	c               *cli.Context
-	log             log.ColorLogger
-	cfg             *config.RocketPoolConfig
-	w               *wallet.Wallet
-	rp              *rocketpool.RocketPool
-	bc              beacon.Client
-	d               *client.Client
-	gasThreshold    float64
-	maxFee          *big.Int
-	maxPriorityFee  *big.Int
-	gasLimit        uint64
-	isAtlasDeployed bool
+	c              *cli.Context
+	log            log.ColorLogger
+	cfg            *config.RocketPoolConfig
+	w              *wallet.Wallet
+	rp             *rocketpool.RocketPool
+	d              *client.Client
+	gasThreshold   float64
+	maxFee         *big.Int
+	maxPriorityFee *big.Int
+	gasLimit       uint64
+	m              *state.NetworkStateManager
+	s              *state.NetworkState
 }
 
 // Details required to check for bond reduction eligibility
@@ -55,7 +53,7 @@ type minipoolBondReductionDetails struct {
 }
 
 // Create reduce bonds task
-func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error) {
+func newReduceBonds(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*reduceBonds, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -67,10 +65,6 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -103,24 +97,23 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 
 	// Return task
 	return &reduceBonds{
-		c:               c,
-		log:             logger,
-		cfg:             cfg,
-		w:               w,
-		rp:              rp,
-		bc:              bc,
-		d:               d,
-		gasThreshold:    gasThreshold,
-		maxFee:          maxFee,
-		maxPriorityFee:  priorityFee,
-		gasLimit:        0,
-		isAtlasDeployed: false,
+		c:              c,
+		log:            logger,
+		cfg:            cfg,
+		w:              w,
+		rp:             rp,
+		d:              d,
+		gasThreshold:   gasThreshold,
+		maxFee:         maxFee,
+		maxPriorityFee: priorityFee,
+		gasLimit:       0,
+		m:              m,
 	}, nil
 
 }
 
 // Reduce bonds
-func (t *reduceBonds) run() error {
+func (t *reduceBonds) run(isAtlasDeployed bool) error {
 
 	// Reload the wallet (in case a call to `node deposit` changed it)
 	if err := t.w.Reload(); err != nil {
@@ -133,20 +126,18 @@ func (t *reduceBonds) run() error {
 	}
 
 	// Check if Atlas has been deployed yet
-	if !t.isAtlasDeployed {
-		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
-		if err != nil {
-			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
-		}
-		if isAtlasDeployed {
-			t.isAtlasDeployed = true
-		} else {
-			return nil
-		}
+	if !isAtlasDeployed {
+		return nil
 	}
 
 	// Log
 	t.log.Println("Checking for minipool bonds to reduce...")
+
+	// Get the latest state
+	t.s = t.m.GetLatestState()
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
+	}
 
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
@@ -155,26 +146,18 @@ func (t *reduceBonds) run() error {
 	}
 
 	// Get the bond reduction details
-	windowStartRaw, err := trustednode.GetBondReductionWindowStart(t.rp, nil)
-	if err != nil {
-		return fmt.Errorf("error getting bond reduction window start: %w", err)
-	}
-	windowStart := time.Duration(windowStartRaw) * time.Second
-	windowLengthRaw, err := trustednode.GetBondReductionWindowLength(t.rp, nil)
-	if err != nil {
-		return fmt.Errorf("error getting bond reduction window length: %w", err)
-	}
-	windowLength := time.Duration(windowLengthRaw) * time.Second
+	windowStart := t.s.NetworkDetails.BondReductionWindowStart
+	windowLength := t.s.NetworkDetails.BondReductionWindowLength
 
 	// Get the time of the latest block
-	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
+	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
 	if err != nil {
 		return fmt.Errorf("can't get the latest block time: %w", err)
 	}
 	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
 
 	// Get reduceable minipools
-	minipools, err := t.getReduceableMinipools(nodeAccount.Address, windowStart, windowLength, latestBlockTime)
+	minipools, err := t.getReduceableMinipools(nodeAccount.Address, windowStart, windowLength, latestBlockTime, opts)
 	if err != nil {
 		return err
 	}
@@ -188,9 +171,9 @@ func (t *reduceBonds) run() error {
 	// Reduce bonds
 	successCount := 0
 	for _, mp := range minipools {
-		success, err := t.reduceBond(mp, windowStart, windowLength, latestBlockTime)
+		success, err := t.reduceBond(mp, windowStart, windowLength, latestBlockTime, opts)
 		if err != nil {
-			t.log.Println(fmt.Errorf("could not reduce bond for minipool %s: %w", mp.Address.Hex(), err))
+			t.log.Println(fmt.Errorf("could not reduce bond for minipool %s: %w", mp.MinipoolAddress.Hex(), err))
 			return err
 		}
 		if success {
@@ -204,84 +187,34 @@ func (t *reduceBonds) run() error {
 }
 
 // Get reduceable minipools
-func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time) ([]minipoolBondReductionDetails, error) {
-
-	// Get node minipool addresses
-	addresses, err := minipool.GetNodeMinipoolAddresses(t.rp, nodeAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create minipool contracts
-	minipools := make([]minipool.Minipool, len(addresses))
-	for mi, address := range addresses {
-		mp, err := minipool.NewMinipool(t.rp, address, nil)
-		if err != nil {
-			return nil, err
-		}
-		minipools[mi] = mp
-	}
-
-	// Data
-	var wg errgroup.Group
-	details := make([]minipoolBondReductionDetails, len(minipools))
-
-	// Load minipool details
-	for mi, mp := range minipools {
-		mi, mp := mi, mp
-		wg.Go(func() error {
-			details[mi].Address = mp.GetAddress()
-
-			depositBalance, err := mp.GetNodeDepositBalance(nil)
-			if err != nil {
-				return fmt.Errorf("error getting node deposit balance for minipool %s: %w", mp.GetAddress().Hex(), err)
-			}
-			details[mi].DepositBalance = depositBalance
-
-			reduceBondTime, err := minipool.GetReduceBondTime(t.rp, mp.GetAddress(), nil)
-			if err != nil {
-				return fmt.Errorf("error getting bond reduction time for minipool %s: %w", mp.GetAddress().Hex(), err)
-			}
-			details[mi].ReduceBondTime = reduceBondTime
-
-			reduceBondCancelled, err := minipool.GetReduceBondCancelled(t.rp, mp.GetAddress(), nil)
-			if err != nil {
-				return fmt.Errorf("error getting bond reduction cancel status for minipool %s: %w", mp.GetAddress().Hex(), err)
-			}
-			details[mi].ReduceBondCancelled = reduceBondCancelled
-
-			status, err := mp.GetStatus(nil)
-			if err != nil {
-				return fmt.Errorf("error getting status for minipool %s: %w", mp.GetAddress().Hex(), err)
-			}
-			details[mi].Status = status
-
-			return nil
-		})
-	}
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
+func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, opts *bind.CallOpts) ([]*minipool.NativeMinipoolDetails, error) {
 
 	// Filter minipools
-	reduceableMinipools := []minipoolBondReductionDetails{}
-	for mi, mp := range minipools {
+	reduceableMinipools := []*minipool.NativeMinipoolDetails{}
+	for _, mpd := range t.s.MinipoolDetailsByNode[nodeAddress] {
 
-		minipoolDetails := details[mi]
-		depositBalance := eth.WeiToEth(minipoolDetails.DepositBalance)
-		timeSinceReductionStart := latestBlockTime.Sub(minipoolDetails.ReduceBondTime)
+		// TEMP
+		reduceBondTime, err := minipool.GetReduceBondTime(t.rp, mpd.MinipoolAddress, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error getting reduce bond time for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+		}
+		reduceBondCancelled, err := minipool.GetReduceBondCancelled(t.rp, mpd.MinipoolAddress, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error getting reduce bond cancelled for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+		}
+
+		depositBalance := eth.WeiToEth(mpd.NodeDepositBalance)
+		timeSinceReductionStart := latestBlockTime.Sub(reduceBondTime)
 
 		if depositBalance == 16 &&
 			timeSinceReductionStart < (windowStart+windowLength) &&
-			!minipoolDetails.ReduceBondCancelled &&
-			minipoolDetails.Status == types.Staking {
+			!reduceBondCancelled &&
+			mpd.Status == types.Staking {
 			if timeSinceReductionStart > windowStart {
-				reduceableMinipools = append(reduceableMinipools, minipoolDetails)
+				reduceableMinipools = append(reduceableMinipools, mpd)
 			} else {
 				remainingTime := windowStart - timeSinceReductionStart
-				t.log.Printlnf("Minipool %s has %s left until it can have its bond reduced.", mp.GetAddress().Hex(), remainingTime)
+				t.log.Printlnf("Minipool %s has %s left until it can have its bond reduced.", mpd.MinipoolAddress.Hex(), remainingTime)
 			}
 		}
 	}
@@ -292,10 +225,10 @@ func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowS
 }
 
 // Reduce a minipool's bond
-func (t *reduceBonds) reduceBond(mp minipoolBondReductionDetails, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time) (bool, error) {
+func (t *reduceBonds) reduceBond(mpd *minipool.NativeMinipoolDetails, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, callOpts *bind.CallOpts) (bool, error) {
 
 	// Log
-	t.log.Printlnf("Reducing bond for minipool %s...", mp.Address.Hex())
+	t.log.Printlnf("Reducing bond for minipool %s...", mpd.MinipoolAddress.Hex())
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -304,9 +237,9 @@ func (t *reduceBonds) reduceBond(mp minipoolBondReductionDetails, windowStart ti
 	}
 
 	// Make the minipool binding
-	mpBinding, err := minipool.NewMinipool(t.rp, mp.Address, nil)
+	mpBinding, err := minipool.NewMinipoolFromDetails(t.rp, *mpd, nil)
 	if err != nil {
-		return false, fmt.Errorf("error creating minipool binding for %s: %w", mp.Address.Hex(), err)
+		return false, fmt.Errorf("error creating minipool binding for %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
 
 	// Get the updated minipool interface
@@ -336,10 +269,16 @@ func (t *reduceBonds) reduceBond(mp minipoolBondReductionDetails, windowStart ti
 		}
 	}
 
+	// TEMP
+	reduceBondTime, err := minipool.GetReduceBondTime(t.rp, mpd.MinipoolAddress, callOpts)
+	if err != nil {
+		return false, fmt.Errorf("error getting reduce bond time for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+	}
+
 	// Print the gas info
 	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
 		// Check for the timeout buffer
-		timeSinceReductionStart := latestBlockTime.Sub(mp.ReduceBondTime)
+		timeSinceReductionStart := latestBlockTime.Sub(reduceBondTime)
 		remainingTime := (windowStart + windowLength) - timeSinceReductionStart
 		isDue := remainingTime < (windowLength / time.Duration(reduceBondTimeoutSafetyFactor))
 		if !isDue {
@@ -368,7 +307,7 @@ func (t *reduceBonds) reduceBond(mp minipoolBondReductionDetails, windowStart ti
 	}
 
 	// Log
-	t.log.Printlnf("Successfully reduced bond for minipool %s.", mp.Address.Hex())
+	t.log.Printlnf("Successfully reduced bond for minipool %s.", mpd.MinipoolAddress.Hex())
 
 	// Return
 	return true, nil

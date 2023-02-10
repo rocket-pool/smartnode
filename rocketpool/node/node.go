@@ -12,13 +12,16 @@ import (
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Config
@@ -34,9 +37,10 @@ const (
 	MetricsColor                 = color.FgHiYellow
 	ManageFeeRecipientColor      = color.FgHiCyan
 	PromoteMinipoolsColor        = color.FgMagenta
-	ReduceBondAmountColor        = color.FgWhite
+	ReduceBondAmountColor        = color.FgHiBlue
 	ErrorColor                   = color.FgRed
 	WarningColor                 = color.FgYellow
+	UpdateColor                  = color.FgHiWhite
 )
 
 // Register node command
@@ -74,78 +78,123 @@ func run(c *cli.Context) error {
 		return err
 	}
 
-	// Initialize tasks
-	manageFeeRecipient, err := newManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor))
+	// Get services
+	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return err
 	}
-	stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
+	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return err
 	}
-	promoteMinipools, err := newPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor))
-	if err != nil {
-		return err
-	}
-	downloadRewardsTrees, err := newDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor))
-	if err != nil {
-		return err
-	}
-	reduceBonds, err := newReduceBonds(c, log.NewColorLogger(ReduceBondAmountColor))
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return err
 	}
 
 	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
+	updateLog := log.NewColorLogger(UpdateColor)
+
+	// Create the state manager
+	m, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, &updateLog)
+	if err != nil {
+		return err
+	}
+
+	// Initialize tasks
+	manageFeeRecipient, err := newManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor), m)
+	if err != nil {
+		return err
+	}
+	stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor), m)
+	if err != nil {
+		return err
+	}
+	promoteMinipools, err := newPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor), m)
+	if err != nil {
+		return err
+	}
+	downloadRewardsTrees, err := newDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor), m)
+	if err != nil {
+		return err
+	}
+	reduceBonds, err := newReduceBonds(c, log.NewColorLogger(ReduceBondAmountColor), m)
+	if err != nil {
+		return err
+	}
 
 	// Wait group to handle the various threads
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
 
 	// Run task loop
+	isAtlasDeployedMasterFlag := false
 	go func() {
 		for {
 			// Check the EC status
 			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errorLog.Println(err)
-			} else {
-				// Check the BC status
-				err := services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+				time.Sleep(tasksInterval)
+				continue
+			}
+
+			// Check the BC status
+			err = services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+			if err != nil {
+				errorLog.Println(err)
+				time.Sleep(tasksInterval)
+				continue
+			}
+
+			// Check for Atlas
+			if !isAtlasDeployedMasterFlag {
+				isAtlasDeployed, err := checkIfAtlasIsDeployed(rp)
 				if err != nil {
 					errorLog.Println(err)
-				} else {
-					// Manage the fee recipient for the node
-					if err := manageFeeRecipient.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
+					time.Sleep(tasksInterval)
+					continue
+				}
+				isAtlasDeployedMasterFlag = isAtlasDeployed
+			}
 
-					// Run the rewards download check
-					if err := downloadRewardsTrees.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the minipool stake check
-					if err := stakePrelaunchMinipools.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the reduce bond check
-					if err := reduceBonds.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the minipool promotion check
-					if err := promoteMinipools.run(); err != nil {
-						errorLog.Println(err)
-					}
+			// Update the network state
+			if isAtlasDeployedMasterFlag {
+				if err := updateNetworkState(m, updateLog); err != nil {
+					errorLog.Println(err)
+					continue
 				}
 			}
+			// Manage the fee recipient for the node
+			if err := manageFeeRecipient.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the rewards download check
+			if err := downloadRewardsTrees.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the minipool stake check
+			if err := stakePrelaunchMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the reduce bond check
+			if err := reduceBonds.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the minipool promotion check
+			if err := promoteMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+
 			time.Sleep(tasksInterval)
 		}
 		wg.Done()
@@ -153,7 +202,7 @@ func run(c *cli.Context) error {
 
 	// Run metrics loop
 	go func() {
-		err := runMetricsServer(c, log.NewColorLogger(MetricsColor))
+		err := runMetricsServer(c, log.NewColorLogger(MetricsColor), m)
 		if err != nil {
 			errorLog.Println(err)
 		}
@@ -244,14 +293,48 @@ func removeLegacyFeeRecipientFiles(c *cli.Context) error {
 
 }
 
-/*
-func getLatestNetworkState(m *state.NetworkStateManager) (*state.NetworkState, error) {
-	// Get the state of the network
-	latest, err := m.UpdateState(nil)
+// Check if Atlas has been deployed yet
+func checkIfAtlasIsDeployed(rpbinding *rocketpool.RocketPool) (bool, error) {
+	isAtlasDeployed, err := rp.IsAtlasDeployed(rpbinding)
 	if err != nil {
-		return nil, err
+		return false, fmt.Errorf("error checking if Atlas is deployed: %w", err)
 	}
 
-
+	if isAtlasDeployed {
+		fmt.Println(`
+*       .
+*      / \
+*     |.'.|
+*     |'.'|
+*   ,'|   |'.
+*  |,-'-|-'-.|
+*   __|_| |         _        _      _____           _
+*  | ___ \|        | |      | |    | ___ \         | |
+*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
+*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
+*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
+*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
+* +---------------------------------------------------+
+* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
+* +---------------------------------------------------+
+*
+* ================ Atlas has launched! ================
+`)
+	}
+	return isAtlasDeployed, nil
 }
-*/
+
+// Update the latest network state at each cycle
+func updateNetworkState(m *state.NetworkStateManager, log log.ColorLogger) error {
+	log.Print("Getting latest network state... ")
+	start := time.Now()
+
+	// Get the state of the network
+	_, err := m.UpdateState(nil)
+	if err != nil {
+		return fmt.Errorf("error updating network state: %w", err)
+	}
+
+	log.Printlnf("done in %s", time.Since(start))
+	return nil
+}

@@ -7,12 +7,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -34,6 +37,16 @@ type NetworkDetails struct {
 	ProtocolDaoRewardsPercent         *big.Int
 	PendingRPLRewards                 *big.Int
 	RewardIndex                       uint64
+	PromotionScrubPeriod              time.Duration
+	BondReductionWindowStart          time.Duration
+	BondReductionWindowLength         time.Duration
+	ScrubPeriod                       time.Duration
+	SmoothingPoolAddress              common.Address
+	DepositPoolBalance                *big.Int
+	DepositPoolExcess                 *big.Int
+	QueueCapacity                     minipool.QueueCapacity
+	RPLInflationIntervalRate          *big.Int
+	RPLTotalSupply                    *big.Int
 }
 
 type NetworkState struct {
@@ -91,14 +104,17 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	if err != nil {
 		return nil, fmt.Errorf("error getting RPL price ratio: %w", err)
 	}
+
 	state.NetworkDetails.MinCollateralFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting minimum per minipool stake: %w", err)
 	}
+
 	state.NetworkDetails.MaxCollateralFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting maximum per minipool stake: %w", err)
 	}
+
 	rewardIndex, err := rewards.GetRewardIndex(rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting reward index: %w", err)
@@ -109,21 +125,80 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	if err != nil {
 		return nil, fmt.Errorf("error getting interval duration: %w", err)
 	}
+
 	state.NetworkDetails.NodeOperatorRewardsPercent, err = GetNodeOperatorRewardsPercent(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting node operator rewards percent")
 	}
+
 	state.NetworkDetails.TrustedNodeOperatorRewardsPercent, err = GetTrustedNodeOperatorRewardsPercent(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting trusted node operator rewards percent")
 	}
+
 	state.NetworkDetails.ProtocolDaoRewardsPercent, err = GetProtocolDaoRewardsPercent(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting protocol DAO rewards percent")
 	}
+
 	state.NetworkDetails.PendingRPLRewards, err = GetPendingRPLRewards(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting pending RPL rewards")
+	}
+
+	promotionScrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting promotion scrub period: %w", err)
+	}
+	state.NetworkDetails.PromotionScrubPeriod = time.Duration(promotionScrubPeriodSeconds) * time.Second
+
+	windowStartRaw, err := trustednode.GetBondReductionWindowStart(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting bond reduction window start: %w", err)
+	}
+	state.NetworkDetails.BondReductionWindowStart = time.Duration(windowStartRaw) * time.Second
+
+	windowLengthRaw, err := trustednode.GetBondReductionWindowLength(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting bond reduction window length: %w", err)
+	}
+	state.NetworkDetails.BondReductionWindowLength = time.Duration(windowLengthRaw) * time.Second
+
+	scrubPeriodSeconds, err := trustednode.GetScrubPeriod(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting scrub period: %w", err)
+	}
+	state.NetworkDetails.ScrubPeriod = time.Duration(scrubPeriodSeconds) * time.Second
+
+	smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool", opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting smoothing pool contract: %w", err)
+	}
+	state.NetworkDetails.SmoothingPoolAddress = *smoothingPoolContract.Address
+
+	state.NetworkDetails.DepositPoolBalance, err = deposit.GetBalance(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting deposit pool balance: %w", err)
+	}
+
+	state.NetworkDetails.DepositPoolExcess, err = deposit.GetExcessBalance(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting deposit pool excess: %w", err)
+	}
+
+	state.NetworkDetails.QueueCapacity, err = minipool.GetQueueCapacity(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool queue capacity: %w", err)
+	}
+
+	state.NetworkDetails.RPLInflationIntervalRate, err = tokens.GetRPLInflationIntervalRate(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting RPL inflation interval: %w", err)
+	}
+
+	state.NetworkDetails.RPLTotalSupply, err = tokens.GetRPLTotalSupply(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting total RPL supply: %w", err)
 	}
 
 	// Node details
@@ -198,11 +273,12 @@ func (s *NetworkState) CalculateEffectiveStakes(scaleByParticipation bool) (map[
 	nodeCount := uint64(len(s.NodeDetails))
 	effectiveStakeSlice := make([]*big.Int, nodeCount)
 
-	//
+	// Get the effective stake for each node
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
 	for i, node := range s.NodeDetails {
 		i := i
+		node := node
 		wg.Go(func() error {
 			eligibleBorrowedEth := big.NewInt(0)
 			eligibleBondedEth := big.NewInt(0)

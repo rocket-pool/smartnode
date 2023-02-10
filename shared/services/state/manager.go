@@ -60,9 +60,6 @@ func (m *NetworkStateManager) logLine(format string, v ...interface{}) {
 
 // Get the state of the network at the provided Beacon slot
 func (m *NetworkStateManager) UpdateState(slotNumber *uint64) (*NetworkState, error) {
-	m.updateLock.Lock()
-	defer m.updateLock.Unlock()
-
 	if slotNumber == nil {
 		// Get the latest finalized slot
 		head, err := m.bc.GetBeaconHead()
@@ -95,6 +92,8 @@ func (m *NetworkStateManager) UpdateState(slotNumber *uint64) (*NetworkState, er
 		return nil, err
 	}
 
+	m.updateLock.Lock()
+	defer m.updateLock.Unlock()
 	m.latestState = state
 	return state, nil
 }

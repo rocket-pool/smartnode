@@ -10,11 +10,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli"
 )
 
-func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
+func runMetricsServer(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) error {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -57,14 +58,14 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 	}
 
 	// Create the collectors
-	demandCollector := collectors.NewDemandCollector(rp)
+	demandCollector := collectors.NewDemandCollector(rp, m)
 	performanceCollector := collectors.NewPerformanceCollector(rp)
 	supplyCollector := collectors.NewSupplyCollector(rp)
 	rplCollector := collectors.NewRplCollector(rp)
 	odaoCollector := collectors.NewOdaoCollector(rp)
-	nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg)
+	nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg, m)
 	trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg)
-	beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address)
+	beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address, m)
 	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(rp, ec)
 
 	// Set up Prometheus

@@ -119,13 +119,16 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 	})
 
 	// Get total effective RPL staked
-	wg.Go(func() error {
-		effectiveStaked, err := node.GetTotalEffectiveRPLStake(rp, nil)
-		if err == nil {
-			response.EffectiveRplStaked = eth.WeiToEth(effectiveStaked)
-		}
-		return err
-	})
+	// TODO!
+	/*
+		wg.Go(func() error {
+			effectiveStaked, err := node.GetTotalEffectiveRPLStake(rp, nil)
+			if err == nil {
+				response.EffectiveRplStaked = eth.WeiToEth(effectiveStaked)
+			}
+			return err
+		})
+	*/
 
 	// Get rETH price
 	wg.Go(func() error {

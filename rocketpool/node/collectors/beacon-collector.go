@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -35,10 +36,16 @@ type BeaconCollector struct {
 
 	// The node's address
 	nodeAddress common.Address
+
+	// The manager for the network state in Atlas
+	m *state.NetworkStateManager
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new BeaconCollector instance
-func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpool.ExecutionClient, nodeAddress common.Address) *BeaconCollector {
+func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpool.ExecutionClient, nodeAddress common.Address, m *state.NetworkStateManager) *BeaconCollector {
 	subsystem := "beacon"
 	return &BeaconCollector{
 		activeSyncCommittee: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "active_sync_committee"),
@@ -57,6 +64,8 @@ func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpo
 		bc:          bc,
 		ec:          ec,
 		nodeAddress: nodeAddress,
+		m:           m,
+		logPrefix:   "Beacon Collector",
 	}
 }
 
@@ -69,6 +78,16 @@ func (collector *BeaconCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
+	latestState := collector.m.GetLatestState()
+	if latestState == nil {
+		collector.collectImpl_Legacy(channel)
+	} else {
+		collector.collectImpl_Atlas(latestState, channel)
+	}
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *BeaconCollector) collectImpl_Legacy(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
@@ -184,4 +203,108 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.upcomingSyncCommittee, prometheus.GaugeValue, upcomingSyncCommittee)
 	channel <- prometheus.MustNewConstMetric(
 		collector.upcomingProposals, prometheus.GaugeValue, upcomingProposals)
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *BeaconCollector) collectImpl_Atlas(state *state.NetworkState, channel chan<- prometheus.Metric) {
+
+	var wg errgroup.Group
+	activeSyncCommittee := float64(0)
+	upcomingSyncCommittee := float64(0)
+	upcomingProposals := float64(0)
+
+	var validatorIndices []uint64
+	var head beacon.BeaconHead
+
+	// Get sync committee duties
+	for _, mpd := range state.MinipoolDetailsByNode[collector.nodeAddress] {
+		validatorIndices = append(validatorIndices, state.ValidatorDetails[mpd.Pubkey].Index)
+	}
+
+	head, err := collector.bc.GetBeaconHead()
+	if err != nil {
+		collector.logError(fmt.Errorf("error getting Beacon chain head: %w", err))
+		return
+	}
+
+	wg.Go(func() error {
+		// Get current duties
+		duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch)
+		if err != nil {
+			return fmt.Errorf("Error getting sync duties: %w", err)
+		}
+
+		for _, duty := range duties {
+			if duty {
+				activeSyncCommittee++
+			}
+		}
+
+		return nil
+	})
+
+	wg.Go(func() error {
+		// Get epochs per sync committee period config to query next period
+		config := collector.m.BeaconConfig
+
+		// Get upcoming duties
+		duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch+config.EpochsPerSyncCommitteePeriod)
+		if err != nil {
+			return fmt.Errorf("Error getting sync duties: %w", err)
+		}
+
+		for _, duty := range duties {
+			if duty {
+				upcomingSyncCommittee++
+			}
+		}
+
+		return nil
+	})
+
+	wg.Go(func() error {
+		// Get proposals in this epoch
+		duties, err := collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch)
+		if err != nil {
+			return fmt.Errorf("Error getting proposer duties: %w", err)
+		}
+
+		for _, duty := range duties {
+			upcomingProposals += float64(duty)
+		}
+
+		// TODO: this seems to be illegal according to the official spec:
+		// https://eth2book.info/altair/annotated-spec/#compute_proposer_index
+		/*
+			// Get proposals in the next epoch
+			duties, err = collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch + 1)
+			if err != nil {
+				return fmt.Errorf("Error getting proposer duties: %w", err)
+			}
+
+			for _, duty := range duties {
+				upcomingProposals += float64(duty)
+			}
+		*/
+
+		return nil
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		log.Printf("%s\n", err.Error())
+		return
+	}
+
+	channel <- prometheus.MustNewConstMetric(
+		collector.activeSyncCommittee, prometheus.GaugeValue, activeSyncCommittee)
+	channel <- prometheus.MustNewConstMetric(
+		collector.upcomingSyncCommittee, prometheus.GaugeValue, upcomingSyncCommittee)
+	channel <- prometheus.MustNewConstMetric(
+		collector.upcomingProposals, prometheus.GaugeValue, upcomingProposals)
+}
+
+// Log error messages
+func (collector *BeaconCollector) logError(err error) {
+	fmt.Printf("[%s] %w\n", collector.logPrefix, err.Error())
 }

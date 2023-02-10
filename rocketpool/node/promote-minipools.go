@@ -7,43 +7,41 @@ import (
 	"time"
 
 	"github.com/docker/docker/client"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Promote minipools task
 type promoteMinipools struct {
-	c               *cli.Context
-	log             log.ColorLogger
-	cfg             *config.RocketPoolConfig
-	w               *wallet.Wallet
-	rp              *rocketpool.RocketPool
-	bc              beacon.Client
-	d               *client.Client
-	gasThreshold    float64
-	maxFee          *big.Int
-	maxPriorityFee  *big.Int
-	gasLimit        uint64
-	isAtlasDeployed bool
+	c              *cli.Context
+	log            log.ColorLogger
+	cfg            *config.RocketPoolConfig
+	w              *wallet.Wallet
+	rp             *rocketpool.RocketPool
+	d              *client.Client
+	gasThreshold   float64
+	maxFee         *big.Int
+	maxPriorityFee *big.Int
+	gasLimit       uint64
+	m              *state.NetworkStateManager
+	s              *state.NetworkState
 }
 
 // Create promote minipools task
-func newPromoteMinipools(c *cli.Context, logger log.ColorLogger) (*promoteMinipools, error) {
+func newPromoteMinipools(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*promoteMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -55,10 +53,6 @@ func newPromoteMinipools(c *cli.Context, logger log.ColorLogger) (*promoteMinipo
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -91,24 +85,23 @@ func newPromoteMinipools(c *cli.Context, logger log.ColorLogger) (*promoteMinipo
 
 	// Return task
 	return &promoteMinipools{
-		c:               c,
-		log:             logger,
-		cfg:             cfg,
-		w:               w,
-		rp:              rp,
-		bc:              bc,
-		d:               d,
-		gasThreshold:    gasThreshold,
-		maxFee:          maxFee,
-		maxPriorityFee:  priorityFee,
-		gasLimit:        0,
-		isAtlasDeployed: false,
+		c:              c,
+		log:            logger,
+		cfg:            cfg,
+		w:              w,
+		rp:             rp,
+		d:              d,
+		gasThreshold:   gasThreshold,
+		maxFee:         maxFee,
+		maxPriorityFee: priorityFee,
+		gasLimit:       0,
+		m:              m,
 	}, nil
 
 }
 
 // Stake prelaunch minipools
-func (t *promoteMinipools) run() error {
+func (t *promoteMinipools) run(isAtlasDeployed bool) error {
 
 	// Reload the wallet (in case a call to `node deposit` changed it)
 	if err := t.w.Reload(); err != nil {
@@ -121,20 +114,18 @@ func (t *promoteMinipools) run() error {
 	}
 
 	// Check if Atlas has been deployed yet
-	if !t.isAtlasDeployed {
-		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
-		if err != nil {
-			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
-		}
-		if isAtlasDeployed {
-			t.isAtlasDeployed = true
-		} else {
-			return nil
-		}
+	if !isAtlasDeployed {
+		return nil
 	}
 
 	// Log
 	t.log.Println("Checking for minipools to promote...")
+
+	// Get the latest state
+	t.s = t.m.GetLatestState()
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
+	}
 
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
@@ -143,7 +134,7 @@ func (t *promoteMinipools) run() error {
 	}
 
 	// Get prelaunch minipools
-	minipools, err := t.getVacantMinipools(nodeAccount.Address)
+	minipools, err := t.getVacantMinipools(nodeAccount.Address, opts)
 	if err != nil {
 		return err
 	}
@@ -151,20 +142,14 @@ func (t *promoteMinipools) run() error {
 		return nil
 	}
 
-	// Get eth2 config
-	eth2Config, err := t.bc.GetEth2Config()
-	if err != nil {
-		return err
-	}
-
 	// Log
 	t.log.Printlnf("%d minipool(s) are ready for promotion...", len(minipools))
 
 	// Promote minipools
-	for _, mp := range minipools {
-		_, err := t.promoteMinipool(mp, eth2Config)
+	for _, mpd := range minipools {
+		_, err := t.promoteMinipool(mpd, opts)
 		if err != nil {
-			t.log.Println(fmt.Errorf("Could not promote minipool %s: %w", mp.GetAddress().Hex(), err))
+			t.log.Println(fmt.Errorf("Could not promote minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
 			return err
 		}
 	}
@@ -175,69 +160,30 @@ func (t *promoteMinipools) run() error {
 }
 
 // Get vacant minipools
-func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address) ([]minipool.Minipool, error) {
+func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address, opts *bind.CallOpts) ([]*minipool.NativeMinipoolDetails, error) {
 
-	// Get node minipool addresses
-	addresses, err := minipool.GetNodeMinipoolAddresses(t.rp, nodeAddress, nil)
-	if err != nil {
-		return []minipool.Minipool{}, err
-	}
-
-	// Create minipool contracts
-	minipools := make([]minipool.Minipool, len(addresses))
-	for mi, address := range addresses {
-		mp, err := minipool.NewMinipool(t.rp, address, nil)
-		if err != nil {
-			return []minipool.Minipool{}, err
-		}
-		minipools[mi] = mp
-	}
-
-	// Data
-	var wg errgroup.Group
-	statuses := make([]minipool.StatusDetails, len(minipools))
-
-	// Load minipool statuses
-	for mi, mp := range minipools {
-		mi, mp := mi, mp
-		wg.Go(func() error {
-			status, err := mp.GetStatusDetails(nil)
-			if err == nil {
-				statuses[mi] = status
-			}
-			return err
-		})
-	}
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return []minipool.Minipool{}, err
-	}
+	vacantMinipools := []*minipool.NativeMinipoolDetails{}
 
 	// Get the scrub period
-	scrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(t.rp, nil)
-	if err != nil {
-		return []minipool.Minipool{}, err
-	}
-	scrubPeriod := time.Duration(scrubPeriodSeconds) * time.Second
+	scrubPeriod := t.s.NetworkDetails.PromotionScrubPeriod
 
-	// Get the time of the latest block
-	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
+	// Get the time of the target block
+	block, err := t.rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
 	if err != nil {
-		return []minipool.Minipool{}, fmt.Errorf("Can't get the latest block time: %w", err)
+		return nil, fmt.Errorf("Can't get the latest block time: %w", err)
 	}
-	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
+	blockTime := time.Unix(int64(block.Time), 0)
 
-	// Filter minipools by vacancy
-	vacantMinipools := []minipool.Minipool{}
-	for mi, mp := range minipools {
-		if statuses[mi].IsVacant && statuses[mi].Status == types.Prelaunch {
-			creationTime := statuses[mi].StatusTime
-			remainingTime := creationTime.Add(scrubPeriod).Sub(latestBlockTime)
+	// Filter by vacancy
+	mpds := t.s.MinipoolDetailsByNode[nodeAddress]
+	for _, mpd := range mpds {
+		if mpd.IsVacant && mpd.Status == types.Prelaunch {
+			creationTime := time.Unix(mpd.StatusTime.Int64(), 0)
+			remainingTime := creationTime.Add(scrubPeriod).Sub(blockTime)
 			if remainingTime < 0 {
-				vacantMinipools = append(vacantMinipools, mp)
+				vacantMinipools = append(vacantMinipools, mpd)
 			} else {
-				t.log.Printlnf("Minipool %s has %s left until it can be promoted.", mp.GetAddress().Hex(), remainingTime)
+				t.log.Printlnf("Minipool %s has %s left until it can be promoted.", mpd.MinipoolAddress.Hex(), remainingTime)
 			}
 		}
 	}
@@ -248,12 +194,16 @@ func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address) ([]min
 }
 
 // Promote a minipool
-func (t *promoteMinipools) promoteMinipool(mp minipool.Minipool, eth2Config beacon.Eth2Config) (bool, error) {
+func (t *promoteMinipools) promoteMinipool(mpd *minipool.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
 
 	// Log
-	t.log.Printlnf("Promoting minipool %s...", mp.GetAddress().Hex())
+	t.log.Printlnf("Promoting minipool %s...", mpd.MinipoolAddress.Hex())
 
 	// Get the updated minipool interface
+	mp, err := minipool.NewMinipoolFromDetails(t.rp, *mpd, callOpts)
+	if err != nil {
+		return false, fmt.Errorf("cannot create binding for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+	}
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
 		return false, fmt.Errorf("cannot promote minipool %s because its delegate version is too low (v%d); please update the delegate to promote it", mp.GetAddress().Hex(), mp.GetVersion())
@@ -289,10 +239,7 @@ func (t *promoteMinipools) promoteMinipool(mp minipool.Minipool, eth2Config beac
 	// Print the gas info
 	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
 		// Check for the timeout buffer
-		creationTime, err := mp.GetStatusTime(nil)
-		if err != nil {
-			t.log.Printlnf("Error checking minipool launch time: %s\nPromoting now for safety...", err.Error())
-		}
+		creationTime := time.Unix(mpd.StatusTime.Int64(), 0)
 		isDue, timeUntilDue, err := api.IsTransactionDue(t.rp, creationTime)
 		if err != nil {
 			t.log.Printlnf("Error checking if minipool is due: %s\nPromoting now for safety...", err.Error())
@@ -322,7 +269,7 @@ func (t *promoteMinipools) promoteMinipool(mp minipool.Minipool, eth2Config beac
 	}
 
 	// Log
-	t.log.Printlnf("Successfully promoted minipool %s.", mp.GetAddress().Hex())
+	t.log.Printlnf("Successfully promoted minipool %s.", mpd.MinipoolAddress.Hex())
 
 	// Return
 	return true, nil

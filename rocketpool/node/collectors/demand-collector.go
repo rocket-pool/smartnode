@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -30,10 +31,16 @@ type DemandCollector struct {
 
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
+
+	// The manager for the network state in Atlas
+	m *state.NetworkStateManager
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new DemandCollector instance
-func NewDemandCollector(rp *rocketpool.RocketPool) *DemandCollector {
+func NewDemandCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager) *DemandCollector {
 	subsystem := "demand"
 	return &DemandCollector{
 		depositPoolBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "deposit_pool_balance"),
@@ -52,7 +59,9 @@ func NewDemandCollector(rp *rocketpool.RocketPool) *DemandCollector {
 			"The effective ETH capacity of the Minipool queue",
 			nil, nil,
 		),
-		rp: rp,
+		rp:        rp,
+		m:         m,
+		logPrefix: "Demand Collector",
 	}
 }
 
@@ -66,6 +75,16 @@ func (collector *DemandCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
+	latestState := collector.m.GetLatestState()
+	if latestState == nil {
+		collector.collectImpl_Legacy(channel)
+	} else {
+		collector.collectImpl_Atlas(latestState, channel)
+	}
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *DemandCollector) collectImpl_Legacy(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
@@ -112,6 +131,25 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 		log.Printf("%s\n", err.Error())
 		return
 	}
+
+	channel <- prometheus.MustNewConstMetric(
+		collector.depositPoolBalance, prometheus.GaugeValue, balanceFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.depositPoolExcess, prometheus.GaugeValue, excessFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalMinipoolCapacity, prometheus.GaugeValue, totalFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.effectiveMinipoolCapacity, prometheus.GaugeValue, effectiveFloat)
+
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *DemandCollector) collectImpl_Atlas(state *state.NetworkState, channel chan<- prometheus.Metric) {
+
+	balanceFloat := eth.WeiToEth(state.NetworkDetails.DepositPoolBalance)
+	excessFloat := eth.WeiToEth(state.NetworkDetails.DepositPoolExcess)
+	totalFloat := eth.WeiToEth(state.NetworkDetails.QueueCapacity.Total)
+	effectiveFloat := eth.WeiToEth(state.NetworkDetails.QueueCapacity.Effective)
 
 	channel <- prometheus.MustNewConstMetric(
 		collector.depositPoolBalance, prometheus.GaugeValue, balanceFloat)

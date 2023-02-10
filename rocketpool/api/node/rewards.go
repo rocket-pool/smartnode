@@ -207,14 +207,17 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	})
 
 	// Get the total network effective stake
-	wg.Go(func() error {
-		var err error
-		totalEffectiveStake, err = node.GetTotalEffectiveRPLStake(rp, nil)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	// TODO!
+	/*
+		wg.Go(func() error {
+			var err error
+			totalEffectiveStake, err = node.GetTotalEffectiveRPLStake(rp, nil)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	*/
 
 	// Get the total RPL supply
 	wg.Go(func() error {

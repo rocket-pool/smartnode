@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
+	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -20,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	"golang.org/x/sync/errgroup"
 )
@@ -94,10 +96,16 @@ type NodeCollector struct {
 
 	// The Rocket Pool config
 	cfg *config.RocketPoolConfig
+
+	// The manager for the network state in Atlas
+	m *state.NetworkStateManager
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new NodeCollector instance
-func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig) *NodeCollector {
+func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig, m *state.NetworkStateManager) *NodeCollector {
 
 	// Get the event log interval
 	eventLogInterval, err := cfg.GetEventLogInterval()
@@ -170,6 +178,8 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 		eventLogInterval: big.NewInt(int64(eventLogInterval)),
 		handledIntervals: map[uint64]bool{},
 		cfg:              cfg,
+		m:                m,
+		logPrefix:        "Node Collector",
 	}
 }
 
@@ -191,6 +201,16 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
+	latestState := collector.m.GetLatestState()
+	if latestState == nil {
+		collector.collectImpl_Legacy(channel)
+	} else {
+		collector.collectImpl_Atlas(latestState, channel)
+	}
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *NodeCollector) collectImpl_Legacy(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
@@ -337,7 +357,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Get the total network effective stake
 	wg.Go(func() error {
-		_totalEffectiveStake, err := node.GetTotalEffectiveRPLStake(collector.rp, nil)
+		legacyNodeStakingAddress := collector.cfg.Smartnode.GetV110NodeStakingAddress()
+		_totalEffectiveStake, err := v110_node.GetTotalEffectiveRPLStake(collector.rp, nil, &legacyNodeStakingAddress)
 		if err != nil {
 			return fmt.Errorf("Error getting total network effective stake: %w", err)
 		}
@@ -436,6 +457,225 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Calculate the total deposits and corresponding beacon chain balance share
 	minipoolDetails, err := eth2.GetBeaconBalances(collector.rp, collector.bc, addresses, beaconHead, nil)
+	if err != nil {
+		log.Printf("%s\n", err.Error())
+		return
+	}
+	totalDepositBalance := float64(0)
+	totalNodeShare := float64(0)
+	totalBeaconBalance := float64(0)
+	for _, minipool := range minipoolDetails {
+		totalDepositBalance += eth.WeiToEth(minipool.NodeDeposit)
+		totalNodeShare += eth.WeiToEth(minipool.NodeBalance)
+		totalBeaconBalance += eth.WeiToEth(minipool.TotalBalance)
+	}
+
+	// Update all the metrics
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalStakedRpl, prometheus.GaugeValue, stakedRpl)
+	channel <- prometheus.MustNewConstMetric(
+		collector.effectiveStakedRpl, prometheus.GaugeValue, effectiveStakedRpl)
+	channel <- prometheus.MustNewConstMetric(
+		collector.rplCollateral, prometheus.GaugeValue, collateralRatio)
+	channel <- prometheus.MustNewConstMetric(
+		collector.cumulativeRplRewards, prometheus.GaugeValue, collector.cumulativeRewards)
+	channel <- prometheus.MustNewConstMetric(
+		collector.expectedRplRewards, prometheus.GaugeValue, estimatedRewards)
+	channel <- prometheus.MustNewConstMetric(
+		collector.rplApr, prometheus.GaugeValue, rplApr)
+	channel <- prometheus.MustNewConstMetric(
+		collector.balances, prometheus.GaugeValue, ethBalance, "ETH")
+	channel <- prometheus.MustNewConstMetric(
+		collector.balances, prometheus.GaugeValue, oldRplBalance, "Legacy RPL")
+	channel <- prometheus.MustNewConstMetric(
+		collector.balances, prometheus.GaugeValue, newRplBalance, "New RPL")
+	channel <- prometheus.MustNewConstMetric(
+		collector.balances, prometheus.GaugeValue, rethBalance, "rETH")
+	channel <- prometheus.MustNewConstMetric(
+		collector.activeMinipoolCount, prometheus.GaugeValue, activeMinipoolCount)
+	channel <- prometheus.MustNewConstMetric(
+		collector.depositedEth, prometheus.GaugeValue, totalDepositBalance)
+	channel <- prometheus.MustNewConstMetric(
+		collector.beaconShare, prometheus.GaugeValue, totalNodeShare)
+	channel <- prometheus.MustNewConstMetric(
+		collector.beaconBalance, prometheus.GaugeValue, totalBeaconBalance)
+	channel <- prometheus.MustNewConstMetric(
+		collector.unclaimedRewards, prometheus.GaugeValue, unclaimedRplRewards)
+	channel <- prometheus.MustNewConstMetric(
+		collector.unclaimedEthRewards, prometheus.GaugeValue, unclaimedEthRewards)
+	channel <- prometheus.MustNewConstMetric(
+		collector.claimedEthRewards, prometheus.GaugeValue, collector.cumulativeClaimedEthRewards)
+}
+
+// Collect the latest metric values and pass them to Prometheus
+func (collector *NodeCollector) collectImpl_Atlas(state *state.NetworkState, channel chan<- prometheus.Metric) {
+
+	nd := state.NodeDetailsByAddress[collector.nodeAddress]
+	minipools := state.MinipoolDetailsByNode[collector.nodeAddress]
+
+	// Sync
+	var wg errgroup.Group
+	stakedRpl := eth.WeiToEth(nd.RplStake)
+	effectiveStakedRpl := eth.WeiToEth(nd.EffectiveRPLStake)
+	rewardsInterval := state.NetworkDetails.IntervalDuration
+	inflationInterval := state.NetworkDetails.RPLInflationIntervalRate
+	totalRplSupply := state.NetworkDetails.RPLTotalSupply
+	var totalEffectiveStake *big.Int
+	nodeOperatorRewardsPercent := eth.WeiToEth(state.NetworkDetails.NodeOperatorRewardsPercent)
+	ethBalance := float64(0)
+	oldRplBalance := float64(0)
+	newRplBalance := float64(0)
+	rethBalance := float64(0)
+	var activeMinipoolCount float64
+	rplPrice := eth.WeiToEth(state.NetworkDetails.RplPrice)
+	collateralRatio := float64(0)
+	var beaconHead beacon.BeaconHead
+	unclaimedEthRewards := float64(0)
+	unclaimedRplRewards := float64(0)
+
+	// Get the cumulative claimed and unclaimed RPL rewards
+	wg.Go(func() error {
+		//legacyClaimNodeAddress := collector.cfg.Smartnode.GetLegacyClaimNodeAddress()
+		//legacyRewardsPoolAddress := collector.cfg.Smartnode.GetLegacyRewardsPoolAddress()
+
+		// Legacy rewards
+		unclaimedRplWei := big.NewInt(0)
+		unclaimedEthWei := big.NewInt(0)
+		newRewards := big.NewInt(0)
+		newClaimedEthRewards := big.NewInt(0)
+
+		// TODO: PERFORMANCE IMPROVEMENTS
+		/*newRewards, err := legacyrewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, collector.nextRewardsStartBlock, &legacyRewardsPoolAddress, &legacyClaimNodeAddress)
+		if err != nil {
+			return fmt.Errorf("Error getting cumulative RPL rewards: %w", err)
+		}*/
+
+		// Get the claimed and unclaimed intervals
+		unclaimed, claimed, err := rprewards.GetClaimStatus(collector.rp, collector.nodeAddress)
+		if err != nil {
+			return err
+		}
+
+		// Get the info for each claimed interval
+		for _, claimedInterval := range claimed {
+			_, exists := collector.handledIntervals[claimedInterval]
+			if !exists {
+				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, claimedInterval)
+				if err != nil {
+					return err
+				}
+				if !intervalInfo.TreeFileExists {
+					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
+				}
+
+				newRewards.Add(newRewards, &intervalInfo.CollateralRplAmount.Int)
+				newClaimedEthRewards.Add(newClaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
+				collector.handledIntervals[claimedInterval] = true
+			}
+		}
+		// Get the unclaimed rewards
+		for _, unclaimedInterval := range unclaimed {
+			intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval)
+			if err != nil {
+				return err
+			}
+			if !intervalInfo.TreeFileExists {
+				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
+			}
+			if intervalInfo.NodeExists {
+				unclaimedRplWei.Add(unclaimedRplWei, &intervalInfo.CollateralRplAmount.Int)
+				unclaimedEthWei.Add(unclaimedEthWei, &intervalInfo.SmoothingPoolEthAmount.Int)
+			}
+		}
+
+		// Get the block for the next rewards checkpoint
+		header, err := collector.rp.Client.HeaderByNumber(context.Background(), nil)
+		if err != nil {
+			return fmt.Errorf("Error getting latest block header: %w", err)
+		}
+
+		collector.cumulativeRewards += eth.WeiToEth(newRewards)
+		collector.cumulativeClaimedEthRewards += eth.WeiToEth(newClaimedEthRewards)
+		unclaimedRplRewards = eth.WeiToEth(unclaimedRplWei)
+		unclaimedEthRewards = eth.WeiToEth(unclaimedEthWei)
+		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
+
+		return nil
+	})
+
+	// Get the total network effective stake
+	wg.Go(func() error {
+		_totalEffectiveStake := big.NewInt(0)
+		for _, node := range state.NodeDetails {
+			_totalEffectiveStake.Add(_totalEffectiveStake, node.EffectiveRPLStake)
+		}
+		totalEffectiveStake = _totalEffectiveStake
+		return nil
+	})
+
+	// Get the node balances
+	wg.Go(func() error {
+		balances, err := tokens.GetBalances(collector.rp, collector.nodeAddress, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting node balances: %w", err)
+		}
+		ethBalance = eth.WeiToEth(balances.ETH)
+		oldRplBalance = eth.WeiToEth(balances.FixedSupplyRPL)
+		newRplBalance = eth.WeiToEth(balances.RPL)
+		rethBalance = eth.WeiToEth(balances.RETH)
+		return nil
+	})
+
+	// Get the number of active minipools on the node
+	wg.Go(func() error {
+		minipoolCount := len(minipools)
+		for _, mpd := range minipools {
+			if mpd.Finalised {
+				minipoolCount--
+			}
+		}
+		activeMinipoolCount = float64(minipoolCount)
+		return nil
+	})
+
+	// Get the beacon head
+	wg.Go(func() error {
+		_beaconHead, err := collector.bc.GetBeaconHead()
+		if err != nil {
+			return fmt.Errorf("Error getting beacon chain head: %w", err)
+		}
+		beaconHead = _beaconHead
+		return nil
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		log.Printf("%s\n", err.Error())
+		return
+	}
+
+	// Calculate the estimated rewards
+	rewardsIntervalDays := rewardsInterval.Seconds() / (60 * 60 * 24)
+	inflationPerDay := eth.WeiToEth(inflationInterval)
+	totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * eth.WeiToEth(totalRplSupply)
+	if totalRplAtNextCheckpoint < 0 {
+		totalRplAtNextCheckpoint = 0
+	}
+	estimatedRewards := float64(0)
+	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
+		estimatedRewards = effectiveStakedRpl / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
+	}
+
+	// Calculate the RPL APR
+	rplApr := estimatedRewards / stakedRpl / rewardsInterval.Hours() * (24 * 365) * 100
+
+	// Calculate the collateral ratio
+	if activeMinipoolCount > 0 {
+		collateralRatio = rplPrice * stakedRpl / (activeMinipoolCount * 16.0)
+	}
+
+	// Calculate the total deposits and corresponding beacon chain balance share
+	minipoolDetails, err := eth2.GetBeaconBalancesFromState(collector.rp, minipools, state, beaconHead, nil)
 	if err != nil {
 		log.Printf("%s\n", err.Error())
 		return

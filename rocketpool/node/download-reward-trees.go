@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -27,10 +28,11 @@ type downloadRewardsTrees struct {
 	rp  *rocketpool.RocketPool
 	d   *client.Client
 	bc  beacon.Client
+	m   *state.NetworkStateManager
 }
 
 // Create manage fee recipient task
-func newDownloadRewardsTrees(c *cli.Context, logger log.ColorLogger) (*downloadRewardsTrees, error) {
+func newDownloadRewardsTrees(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*downloadRewardsTrees, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -63,12 +65,13 @@ func newDownloadRewardsTrees(c *cli.Context, logger log.ColorLogger) (*downloadR
 		rp:  rp,
 		d:   d,
 		bc:  bc,
+		m:   m,
 	}, nil
 
 }
 
 // Manage fee recipient
-func (d *downloadRewardsTrees) run() error {
+func (d *downloadRewardsTrees) run(isAtlasDeployed bool) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(d.c, true); err != nil {
@@ -90,11 +93,16 @@ func (d *downloadRewardsTrees) run() error {
 	}
 
 	// Get the current interval
-	currentIndexBig, err := rewards.GetRewardIndex(d.rp, nil)
-	if err != nil {
-		return err
+	var currentIndex uint64
+	if !isAtlasDeployed {
+		currentIndexBig, err := rewards.GetRewardIndex(d.rp, nil)
+		if err != nil {
+			return err
+		}
+		currentIndex = currentIndexBig.Uint64()
+	} else {
+		currentIndex = d.m.GetLatestState().NetworkDetails.RewardIndex
 	}
-	currentIndex := currentIndexBig.Uint64()
 
 	// Check for missing intervals
 	missingIntervals := []uint64{}
