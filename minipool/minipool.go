@@ -67,6 +67,8 @@ type NativeMinipoolDetails struct {
 	LastBondReductionPrevValue *big.Int                `abi:"lastBondReductionPrevValue"`
 	IsVacant                   bool                    `abi:"vacant"`
 	Version                    uint8                   `abi:"delegateVersion"`
+	Balance                    *big.Int                `abi:"balance"`   // Contract balance
+	NodeShareOfBalance         *big.Int                `abi:"nodeShare"` // Result of calculateNodeShare(contract balance)
 }
 
 // Get all minipool details
