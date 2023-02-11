@@ -118,7 +118,7 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 
 	// Get a network snapshot
 	r.log.Printlnf("%s Creating a snapshot of the Rocket Pool network state...", r.logPrefix)
-	state, err := mgr.UpdateState(&r.rewardsFile.ExecutionEndBlock)
+	state, err := mgr.UpdateState(&r.rewardsFile.ExecutionEndBlock, true)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network state snapshot: %w", err)
 	}

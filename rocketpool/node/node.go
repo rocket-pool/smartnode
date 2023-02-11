@@ -136,7 +136,7 @@ func run(c *cli.Context) error {
 			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errorLog.Println(err)
-				time.Sleep(tasksInterval)
+				time.Sleep(taskCooldown)
 				continue
 			}
 
@@ -144,7 +144,7 @@ func run(c *cli.Context) error {
 			err = services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
 			if err != nil {
 				errorLog.Println(err)
-				time.Sleep(tasksInterval)
+				time.Sleep(taskCooldown)
 				continue
 			}
 
@@ -153,20 +153,19 @@ func run(c *cli.Context) error {
 				isAtlasDeployed, err := checkIfAtlasIsDeployed(rp)
 				if err != nil {
 					errorLog.Println(err)
-					time.Sleep(tasksInterval)
+					time.Sleep(taskCooldown)
 					continue
 				}
 				isAtlasDeployedMasterFlag = isAtlasDeployed
 			}
 
 			// Update the network state
-			if isAtlasDeployedMasterFlag {
-				if err := updateNetworkState(m, updateLog); err != nil {
-					errorLog.Println(err)
-					time.Sleep(tasksInterval)
-					continue
-				}
+			if err := updateNetworkState(m, updateLog, isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+				time.Sleep(taskCooldown)
+				continue
 			}
+
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.run(isAtlasDeployedMasterFlag); err != nil {
 				errorLog.Println(err)
@@ -326,12 +325,12 @@ func checkIfAtlasIsDeployed(rpbinding *rocketpool.RocketPool) (bool, error) {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m *state.NetworkStateManager, log log.ColorLogger) error {
+func updateNetworkState(m *state.NetworkStateManager, log log.ColorLogger, isAtlasDeployed bool) error {
 	log.Print("Getting latest network state... ")
 	start := time.Now()
 
 	// Get the state of the network
-	_, err := m.UpdateState(nil)
+	_, err := m.UpdateState(nil, isAtlasDeployed)
 	if err != nil {
 		return fmt.Errorf("error updating network state: %w", err)
 	}

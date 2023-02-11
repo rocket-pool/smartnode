@@ -59,7 +59,7 @@ func (m *NetworkStateManager) logLine(format string, v ...interface{}) {
 }
 
 // Get the state of the network at the provided Beacon slot
-func (m *NetworkStateManager) UpdateState(slotNumber *uint64) (*NetworkState, error) {
+func (m *NetworkStateManager) UpdateState(slotNumber *uint64, isAtlasDeployed bool) (*NetworkState, error) {
 	if slotNumber == nil {
 		// Get the latest finalized slot
 		head, err := m.bc.GetBeaconHead()
@@ -87,7 +87,7 @@ func (m *NetworkStateManager) UpdateState(slotNumber *uint64) (*NetworkState, er
 		}
 	}
 
-	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, *slotNumber, m.BeaconConfig)
+	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, *slotNumber, m.BeaconConfig, isAtlasDeployed)
 	if err != nil {
 		return nil, err
 	}

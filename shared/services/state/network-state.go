@@ -16,8 +16,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/storage"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -87,7 +89,7 @@ type NetworkState struct {
 	log *log.ColorLogger
 }
 
-func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config) (*NetworkState, error) {
+func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, isAtlasDeployed bool) (*NetworkState, error) {
 	// Get the execution block for the given slot
 	beaconBlock, exists, err := bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
 	if err != nil {
@@ -112,11 +114,75 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		log:                      log,
 	}
 
+	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
+	start := time.Now()
+
 	// Network details
+	err = state.getNetworkDetails(cfg, rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting network details: %w", err)
+	}
+	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
+
+	// Node details
+	err = state.getNodeDetails(cfg, rp, opts, isAtlasDeployed)
+	if err != nil {
+		return nil, fmt.Errorf("error getting network details: %w", err)
+	}
+	state.logLine("2/5 - Retrieved node details (%s so far)", time.Since(start))
+
+	// Minipool details
+	minipoolDetails, err := minipool.GetAllNativeMinipoolDetails(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	state.logLine("3/5 - Retrieved minipool details (%s so far)", time.Since(start))
+
+	// Create the node lookup
+	for _, details := range state.NodeDetails {
+		state.NodeDetailsByAddress[details.NodeAddress] = &details
+	}
+
+	// Create the minipool lookups
+	pubkeys := make([]types.ValidatorPubkey, 0, len(minipoolDetails))
+	emptyPubkey := types.ValidatorPubkey{}
+	for _, details := range minipoolDetails {
+		state.MinipoolDetailsByAddress[details.MinipoolAddress] = &details
+		if details.Pubkey != emptyPubkey {
+			pubkeys = append(pubkeys, details.Pubkey)
+		}
+
+		// The map of nodes to minipools
+		nodeList, exists := state.MinipoolDetailsByNode[details.NodeAddress]
+		if !exists {
+			nodeList = []*minipool.NativeMinipoolDetails{}
+		}
+		nodeList = append(nodeList, &details)
+		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
+	}
+	state.logLine("4/5 - Created lookups (%s so far)", time.Since(start))
+
+	// Get the validator stats from Beacon
+	statusMap, err := bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
+		Slot: &slotNumber,
+	})
+	if err != nil {
+		return nil, err
+	}
+	state.ValidatorDetails = statusMap
+	state.logLine("5/5 - Retrieved validator details (total time: %s)", time.Since(start))
+
+	return state, nil
+}
+
+// Get the details for the network
+func (state *NetworkState) getNetworkDetails(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, opts *bind.CallOpts) error {
+
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.RplPrice, err = network.GetRPLPrice(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting RPL price ratio: %w", err)
@@ -125,6 +191,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.MinCollateralFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting minimum per minipool stake: %w", err)
@@ -133,6 +200,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.MaxCollateralFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting maximum per minipool stake: %w", err)
@@ -141,6 +209,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		rewardIndex, err := rewards.GetRewardIndex(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting reward index: %w", err)
@@ -150,6 +219,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.IntervalDuration, err = GetClaimIntervalTime(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting interval duration: %w", err)
@@ -158,6 +228,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.IntervalStart, err = rewards.GetClaimIntervalTimeStart(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting interval start: %w", err)
@@ -166,6 +237,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.NodeOperatorRewardsPercent, err = GetNodeOperatorRewardsPercent(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting node operator rewards percent")
@@ -174,6 +246,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.TrustedNodeOperatorRewardsPercent, err = GetTrustedNodeOperatorRewardsPercent(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting trusted node operator rewards percent")
@@ -182,6 +255,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.ProtocolDaoRewardsPercent, err = GetProtocolDaoRewardsPercent(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting protocol DAO rewards percent")
@@ -190,6 +264,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.PendingRPLRewards, err = GetPendingRPLRewards(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting pending RPL rewards")
@@ -248,6 +323,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.DepositPoolBalance, err = deposit.GetBalance(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting deposit pool balance: %w", err)
@@ -256,6 +332,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.DepositPoolExcess, err = deposit.GetExcessBalance(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting deposit pool excess: %w", err)
@@ -264,6 +341,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.QueueCapacity, err = minipool.GetQueueCapacity(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting minipool queue capacity: %w", err)
@@ -272,6 +350,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.RPLInflationIntervalRate, err = tokens.GetRPLInflationIntervalRate(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting RPL inflation interval: %w", err)
@@ -280,6 +359,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.RPLTotalSupply, err = tokens.GetRPLTotalSupply(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting total RPL supply: %w", err)
@@ -288,6 +368,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.PricesBlock, err = network.GetPricesBlock(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting ETH1 prices block: %w", err)
@@ -305,6 +386,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.ETHUtilizationRate, err = network.GetETHUtilizationRate(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting ETH utilization rate: %w", err)
@@ -313,6 +395,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.StakingETHBalance, err = network.GetStakingETHBalance(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting total ETH staking balance: %w", err)
@@ -321,6 +404,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.RETHExchangeRate, err = tokens.GetRETHExchangeRate(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting ETH-rETH exchange rate: %w", err)
@@ -329,6 +413,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.TotalETHBalance, err = network.GetTotalETHBalance(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting total ETH balance (TVL): %w", err)
@@ -337,6 +422,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		rethAddress := cfg.Smartnode.GetRethAddress()
 		state.NetworkDetails.RETHBalance, err = rp.Client.BalanceAt(context.Background(), rethAddress, opts.BlockNumber)
 		if err != nil {
@@ -346,6 +432,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.TotalRETHSupply, err = tokens.GetRETHTotalSupply(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting total rETH supply: %w", err)
@@ -354,6 +441,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.TotalRPLStake, err = node.GetTotalRPLStake(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting total amount of RPL staked on the network: %w", err)
@@ -362,6 +450,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	})
 
 	wg.Go(func() error {
+		var err error
 		state.NetworkDetails.NodeFee, err = network.GetNodeFee(rp, opts)
 		if err != nil {
 			return fmt.Errorf("error getting current node fee for new minipools: %w", err)
@@ -371,69 +460,187 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return nil, err
+		return err
 	}
 
-	// Node details
-	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
-	start := time.Now()
-
-	nodeDetails, err := node.GetAllNativeNodeDetails(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	state.NodeDetails = nodeDetails
-	state.logLine("1/4 - Retrieved node details (%s so far)", time.Since(start))
-
-	// Minipool details
-	minipoolDetails, err := minipool.GetAllNativeMinipoolDetails(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	state.logLine("2/4 - Retrieved minipool details (%s so far)", time.Since(start))
-
-	// Create the node lookup
-	for _, details := range nodeDetails {
-		state.NodeDetailsByAddress[details.NodeAddress] = &details
-	}
-
-	// Create the minipool lookups
-	pubkeys := make([]types.ValidatorPubkey, 0, len(minipoolDetails))
-	emptyPubkey := types.ValidatorPubkey{}
-	for _, details := range minipoolDetails {
-		state.MinipoolDetailsByAddress[details.MinipoolAddress] = &details
-		if details.Pubkey != emptyPubkey {
-			pubkeys = append(pubkeys, details.Pubkey)
-		}
-
-		// The map of nodes to minipools
-		nodeList, exists := state.MinipoolDetailsByNode[details.NodeAddress]
-		if !exists {
-			nodeList = []*minipool.NativeMinipoolDetails{}
-		}
-		nodeList = append(nodeList, &details)
-		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
-	}
-	state.logLine("3/4 - Created lookups (%s so far)", time.Since(start))
-
-	// Get the validator stats from Beacon
-	statusMap, err := bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
-		Slot: &slotNumber,
-	})
-	if err != nil {
-		return nil, err
-	}
-	state.ValidatorDetails = statusMap
-	state.logLine("4/4 - Retrieved validator details (total time: %s)", time.Since(start))
-
-	return state, nil
+	return nil
 }
 
-// Logs a line if the logger is specified
-func (s *NetworkState) logLine(format string, v ...interface{}) {
-	if s.log != nil {
-		s.log.Printlnf(format, v...)
+// Get the details for the network
+func (state *NetworkState) getNodeDetails(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, opts *bind.CallOpts, isAtlasDeployed bool) error {
+
+	var nodeDetails []node.NativeNodeDetails
+	if isAtlasDeployed {
+		// Use the uber getter
+		var err error
+		nodeDetails, err = node.GetAllNativeNodeDetails(rp, opts)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Use the old-school method
+		addresses, err := node.GetNodeAddresses(rp, opts)
+		if err != nil {
+			return fmt.Errorf("error getting node addresses: %w", err)
+		}
+		nodeDetails := make([]node.NativeNodeDetails, len(addresses))
+
+		zero := big.NewInt(0)
+		two := big.NewInt(2)
+		oneInWei := eth.EthToWei(1)
+		var wg errgroup.Group
+		wg.SetLimit(threadLimit)
+
+		for i := 0; i < len(addresses); i++ {
+			i := i
+			address := addresses[i]
+			nodeDetails[i].NodeAddress = address
+
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].Exists, err = node.GetNodeExists(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].RegistrationTime, err = node.GetNodeRegistrationTimeRaw(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].TimezoneLocation, err = node.GetNodeTimezoneLocation(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].FeeDistributorInitialised, err = node.GetFeeDistributorInitialized(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				// Get the fee distributor address
+				nodeDetails[i].FeeDistributorAddress, err = node.GetDistributorAddress(rp, address, opts)
+				if err != nil {
+					return err
+				}
+
+				// Get the average node fee
+				avgFee, err := node.GetNodeAverageFeeRaw(rp, address, opts)
+				if err != nil {
+					return err
+				}
+
+				// Get the user and node portions of the distributor balance
+				distributorBalance, err := rp.Client.BalanceAt(context.Background(), nodeDetails[i].FeeDistributorAddress, opts.BlockNumber)
+				if err != nil {
+					return err
+				}
+				if distributorBalance.Cmp(zero) == 0 {
+					return nil
+				}
+				halfBalance := big.NewInt(0)
+				halfBalance.Div(distributorBalance, two)
+				nodeShare := big.NewInt(0)
+				nodeShare.Mul(halfBalance, avgFee)
+				nodeShare.Div(nodeShare, oneInWei)
+				nodeShare.Add(nodeShare, halfBalance)
+				nodeDetails[i].DistributorBalanceNodeETH = nodeShare
+				userShare := big.NewInt(0)
+				userShare.Sub(distributorBalance, nodeShare)
+				nodeDetails[i].DistributorBalanceUserETH = userShare
+				return nil
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].RewardNetwork, err = node.GetRewardNetworkRaw(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].RplStake, err = node.GetNodeRPLStake(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].EffectiveRPLStake, err = node.GetNodeEffectiveRPLStake(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].MinimumRPLStake, err = node.GetNodeMinimumRPLStake(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].MaximumRPLStake, err = node.GetNodeMaximumRPLStake(rp, address, opts)
+				return err
+			})
+			/*
+				wg.Go(func() error {
+					var err error
+					nodeDetails[i].EthMatched, err = node.GetNodeEthMatched(rp, address, opts)
+					return err
+				})
+				wg.Go(func() error {
+					var err error
+					nodeDetails[i].EthMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, address, opts)
+					return err
+				})
+			*/
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].MinipoolCount, err = minipool.GetNodeMinipoolCountRaw(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				balances, err := tokens.GetBalances(rp, address, opts)
+				if err != nil {
+					return fmt.Errorf("error getting balances for node %s: %w", address.Hex(), err)
+				}
+				nodeDetails[i].BalanceETH = balances.ETH
+				nodeDetails[i].BalanceRETH = balances.RETH
+				nodeDetails[i].BalanceRPL = balances.RPL
+				nodeDetails[i].BalanceOldRPL = balances.FixedSupplyRPL
+				return nil
+			})
+			/*
+				wg.Go(func() error {
+					var err error
+					nodeDetails[i].DepositCreditBalance, err = node.GetNodeDepositCredit(rp, address, opts)
+					return err
+				})
+			*/
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].WithdrawalAddress, err = storage.GetNodeWithdrawalAddress(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].PendingWithdrawalAddress, err = storage.GetNodePendingWithdrawalAddress(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].SmoothingPoolRegistrationState, err = node.GetSmoothingPoolRegistrationState(rp, address, opts)
+				return err
+			})
+			wg.Go(func() error {
+				var err error
+				nodeDetails[i].SmoothingPoolRegistrationChanged, err = node.GetSmoothingPoolRegistrationChangedRaw(rp, address, opts)
+				return err
+			})
+		}
+
+		if err := wg.Wait(); err != nil {
+			return fmt.Errorf("error getting node details: %w", err)
+		}
+
 	}
+
+	state.NodeDetails = nodeDetails
+	return nil
 }
 
 // Calculate the effective stakes of all nodes in the state
@@ -536,4 +743,11 @@ func (s *NetworkState) CalculateEffectiveStakes(scaleByParticipation bool) (map[
 
 	return effectiveStakes, totalEffectiveStake, nil
 
+}
+
+// Logs a line if the logger is specified
+func (s *NetworkState) logLine(format string, v ...interface{}) {
+	if s.log != nil {
+		s.log.Printlnf(format, v...)
+	}
 }
