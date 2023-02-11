@@ -63,6 +63,11 @@ func GetMinipoolAsV3(mp Minipool) (MinipoolV3, bool) {
 	return nil, false
 }
 
+// Get the contract
+func (mp *minipool_v3) GetContract() *rocketpool.Contract {
+	return mp.Contract
+}
+
 // Get the contract address
 func (mp *minipool_v3) GetAddress() common.Address {
 	return mp.Address
