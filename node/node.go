@@ -417,6 +417,19 @@ func GetRewardNetwork(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 	return (*rewardNetwork).Uint64(), nil
 }
 
+// Get the network ID for a node's rewards
+func GetRewardNetworkRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	rewardNetwork := new(*big.Int)
+	if err := rocketNodeManager.Call(opts, rewardNetwork, "getRewardNetwork", nodeAddress); err != nil {
+		return nil, fmt.Errorf("Could not get node %s reward network: %w", nodeAddress.Hex(), err)
+	}
+	return *rewardNetwork, nil
+}
+
 // Check if a node's fee distributor has been initialized yet
 func GetFeeDistributorInitialized(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, opts)
@@ -484,11 +497,24 @@ func GetNodeRegistrationTime(rp *rocketpool.RocketPool, address common.Address, 
 	if err != nil {
 		return time.Time{}, err
 	}
-	claimTime := new(*big.Int)
-	if err := rocketNodeManager.Call(opts, claimTime, "getNodeRegistrationTime", address); err != nil {
+	registrationTime := new(*big.Int)
+	if err := rocketNodeManager.Call(opts, registrationTime, "getNodeRegistrationTime", address); err != nil {
 		return time.Time{}, fmt.Errorf("Could not get registration time for %s: %w", address.Hex(), err)
 	}
-	return time.Unix((*claimTime).Int64(), 0), nil
+	return time.Unix((*registrationTime).Int64(), 0), nil
+}
+
+// Get the time that the user registered as a claimer
+func GetNodeRegistrationTimeRaw(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	registrationTime := new(*big.Int)
+	if err := rocketNodeManager.Call(opts, registrationTime, "getNodeRegistrationTime", address); err != nil {
+		return nil, fmt.Errorf("Could not get registration time for %s: %w", address.Hex(), err)
+	}
+	return *registrationTime, nil
 }
 
 // Returns an array of block numbers for prices submissions the given trusted node has submitted since fromBlock
@@ -903,6 +929,19 @@ func GetSmoothingPoolRegistrationChanged(rp *rocketpool.RocketPool, nodeAddress 
 		return time.Time{}, fmt.Errorf("Could not get node %s's last smoothing pool registration change time: %w", nodeAddress.Hex(), err)
 	}
 	return time.Unix((*timestamp).Int64(), 0), nil
+}
+
+// Get the time of the previous smoothing pool opt-in / opt-out
+func GetSmoothingPoolRegistrationChangedRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	timestamp := new(*big.Int)
+	if err := rocketNodeManager.Call(opts, timestamp, "getSmoothingPoolRegistrationChanged", nodeAddress); err != nil {
+		return nil, fmt.Errorf("Could not get node %s's last smoothing pool registration change time: %w", nodeAddress.Hex(), err)
+	}
+	return *timestamp, nil
 }
 
 // Estimate the gas for opting into / out of the smoothing pool
