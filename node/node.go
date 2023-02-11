@@ -68,6 +68,10 @@ type NativeNodeDetails struct {
 	NodeAddress                      common.Address `abi:"nodeAddress"`
 }
 
+type nndWrapper struct {
+	Details NativeNodeDetails
+}
+
 // Count of nodes belonging to a timezone
 type TimezoneCount struct {
 	Timezone string   `abi:"timezone"`
@@ -100,11 +104,11 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address,
 	if err != nil {
 		return NativeNodeDetails{}, err
 	}
-	details := new(NativeNodeDetails)
-	if err := rocketNodeManager.Call(opts, details, "getNodeDetails", nodeAddress); err != nil {
+	detailsWrapper := new(nndWrapper)
+	if err := rocketNodeManager.Call(opts, detailsWrapper, "getNodeDetails", nodeAddress); err != nil {
 		return NativeNodeDetails{}, fmt.Errorf("could not get details for node %s: %w", nodeAddress.Hex(), err)
 	}
-	return *details, nil
+	return (*detailsWrapper).Details, nil
 }
 
 // Get the details for every node in the network
