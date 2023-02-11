@@ -43,11 +43,11 @@ type NativeMinipoolDetails struct {
 	Exists                     bool                    `abi:"exists"`
 	MinipoolAddress            common.Address          `abi:"minipoolAddress"`
 	Pubkey                     rptypes.ValidatorPubkey `abi:"pubkey"`
-	Status                     rptypes.MinipoolStatus  `abi:"status"`
+	StatusRaw                  uint8                   `abi:"status"`
 	StatusBlock                *big.Int                `abi:"statusBlock"`
 	StatusTime                 *big.Int                `abi:"statusTime"`
 	Finalised                  bool                    `abi:"finalised"`
-	DepositType                rptypes.MinipoolDeposit `abi:"depositType"`
+	DepositTypeRaw             uint8                   `abi:"depositType"`
 	NodeFee                    *big.Int                `abi:"nodeFee"`
 	NodeDepositBalance         *big.Int                `abi:"nodeDepositBalance"`
 	NodeDepositAssigned        bool                    `abi:"nodeDepositAssigned"`
@@ -69,6 +69,16 @@ type NativeMinipoolDetails struct {
 	Version                    uint8                   `abi:"delegateVersion"`
 	Balance                    *big.Int                `abi:"balance"`   // Contract balance
 	NodeShareOfBalance         *big.Int                `abi:"nodeShare"` // Result of calculateNodeShare(contract balance)
+	ReduceBondTime             *big.Int                `abi:"reduceBondTime"`
+	ReduceBondCancelled        bool                    `abi:"reduceBondCancelled"`
+	ReduceBondValue            *big.Int                `abi:"reduceBondValue"`
+	WithdrawalCredentials      common.Hash             `abi:"withdrawalCredentials"`
+	Status                     rptypes.MinipoolStatus
+	DepositType                rptypes.MinipoolDeposit
+}
+
+type nmdWrapper struct {
+	Details NativeMinipoolDetails
 }
 
 // Get all minipool details
@@ -95,11 +105,14 @@ func GetNativeMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.
 	if err != nil {
 		return NativeMinipoolDetails{}, err
 	}
-	details := new(NativeMinipoolDetails)
-	if err := rocketMinipoolManager.Call(opts, details, "getMinipoolDetails", minipoolAddress); err != nil {
+	detailsWrapper := new(nmdWrapper)
+	if err := rocketMinipoolManager.Call(opts, detailsWrapper, "getMinipoolDetails", minipoolAddress); err != nil {
 		return NativeMinipoolDetails{}, fmt.Errorf("Could not get minipool %s details: %w", minipoolAddress.Hex(), err)
 	}
-	return *details, nil
+	details := (*detailsWrapper).Details
+	details.Status = rptypes.MinipoolStatus(details.StatusRaw)
+	details.DepositType = rptypes.MinipoolDeposit(details.DepositTypeRaw)
+	return details, nil
 }
 
 // Get the details for all of the minipools on a node
@@ -130,6 +143,11 @@ func GetNodeNativeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.
 
 		totalDetails = append(totalDetails, *details...)
 		index += NativeMinipoolDetailsBatchSize
+	}
+
+	for _, mpd := range totalDetails {
+		mpd.Status = rptypes.MinipoolStatus(mpd.StatusRaw)
+		mpd.DepositType = rptypes.MinipoolDeposit(mpd.DepositTypeRaw)
 	}
 
 	return totalDetails, nil
@@ -163,6 +181,11 @@ func GetAllNativeMinipoolDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 
 		totalDetails = append(totalDetails, *details...)
 		index += NativeMinipoolDetailsBatchSize
+	}
+
+	for _, mpd := range totalDetails {
+		mpd.Status = rptypes.MinipoolStatus(mpd.StatusRaw)
+		mpd.DepositType = rptypes.MinipoolDeposit(mpd.DepositTypeRaw)
 	}
 
 	return totalDetails, nil
