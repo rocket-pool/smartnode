@@ -1,3 +1,7 @@
+/*
+* This code was derived from https://github.com/depocket/multicall-go
+ */
+
 package multicall
 
 import (
@@ -76,7 +80,6 @@ func (caller *MultiCaller) AddCall(callName string, contract *rocketpool.Contrac
 func (caller *MultiCaller) Execute(requireSuccess bool) (map[string]CallResponse, error) {
 	var multiCalls = make([]MultiCall, 0, len(caller.calls))
 	for _, call := range caller.calls {
-		//fmt.Printf("Call:\n\tMethod: %s\n\tTarget: %s\n\tCallData: 0x%s\n", call.Method, call.Target.Hex(), hex.EncodeToString(call.CallData))
 		multiCalls = append(multiCalls, call.GetMultiCall())
 	}
 	callData, err := caller.Abi.Pack("tryAggregate", requireSuccess, multiCalls)
@@ -84,7 +87,6 @@ func (caller *MultiCaller) Execute(requireSuccess bool) (map[string]CallResponse
 		return nil, err
 	}
 
-	//fmt.Printf("Calling %s with calldata 0x%s\n", caller.ContractAddress.Hex(), hex.EncodeToString(callData))
 	resp, err := caller.Client.CallContract(context.Background(), ethereum.CallMsg{To: &caller.ContractAddress, Data: callData}, nil)
 	if err != nil {
 		return nil, err
