@@ -16,10 +16,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
-	"github.com/rocket-pool/rocketpool-go/storage"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -132,7 +131,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	state.logLine("2/5 - Retrieved node details (%s so far)", time.Since(start))
 
 	// Minipool details
-	minipoolDetails, err := minipool.GetAllNativeMinipoolDetails(rp, opts)
+	err = state.getMinipoolDetails(cfg, rp, opts, isAtlasDeployed)
 	if err != nil {
 		return nil, err
 	}
@@ -144,9 +143,9 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	}
 
 	// Create the minipool lookups
-	pubkeys := make([]types.ValidatorPubkey, 0, len(minipoolDetails))
+	pubkeys := make([]types.ValidatorPubkey, 0, len(state.MinipoolDetails))
 	emptyPubkey := types.ValidatorPubkey{}
-	for _, details := range minipoolDetails {
+	for _, details := range state.MinipoolDetails {
 		state.MinipoolDetailsByAddress[details.MinipoolAddress] = &details
 		if details.Pubkey != emptyPubkey {
 			pubkeys = append(pubkeys, details.Pubkey)
@@ -466,7 +465,7 @@ func (state *NetworkState) getNetworkDetails(cfg *config.RocketPoolConfig, rp *r
 	return nil
 }
 
-// Get the details for the network
+// Get the details for all nodes
 func (state *NetworkState) getNodeDetails(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, opts *bind.CallOpts, isAtlasDeployed bool) error {
 
 	var nodeDetails []node.NativeNodeDetails
@@ -479,167 +478,42 @@ func (state *NetworkState) getNodeDetails(cfg *config.RocketPoolConfig, rp *rock
 		}
 	} else {
 		// Use the old-school method
-		addresses, err := node.GetNodeAddresses(rp, opts)
+		var err error
+		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+		nodeDetails, err = rpstate.GetAllNativeNodeDetails_Legacy(rp, multicallerAddress, balanceBatcherAddress, opts)
 		if err != nil {
-			return fmt.Errorf("error getting node addresses: %w", err)
+			return err
 		}
-		nodeDetails := make([]node.NativeNodeDetails, len(addresses))
-
-		zero := big.NewInt(0)
-		two := big.NewInt(2)
-		oneInWei := eth.EthToWei(1)
-		var wg errgroup.Group
-		wg.SetLimit(threadLimit)
-
-		for i := 0; i < len(addresses); i++ {
-			i := i
-			address := addresses[i]
-			nodeDetails[i].NodeAddress = address
-
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].Exists, err = node.GetNodeExists(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].RegistrationTime, err = node.GetNodeRegistrationTimeRaw(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].TimezoneLocation, err = node.GetNodeTimezoneLocation(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].FeeDistributorInitialised, err = node.GetFeeDistributorInitialized(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				// Get the fee distributor address
-				nodeDetails[i].FeeDistributorAddress, err = node.GetDistributorAddress(rp, address, opts)
-				if err != nil {
-					return err
-				}
-
-				// Get the average node fee
-				avgFee, err := node.GetNodeAverageFeeRaw(rp, address, opts)
-				if err != nil {
-					return err
-				}
-
-				// Get the user and node portions of the distributor balance
-				distributorBalance, err := rp.Client.BalanceAt(context.Background(), nodeDetails[i].FeeDistributorAddress, opts.BlockNumber)
-				if err != nil {
-					return err
-				}
-				if distributorBalance.Cmp(zero) == 0 {
-					return nil
-				}
-				halfBalance := big.NewInt(0)
-				halfBalance.Div(distributorBalance, two)
-				nodeShare := big.NewInt(0)
-				nodeShare.Mul(halfBalance, avgFee)
-				nodeShare.Div(nodeShare, oneInWei)
-				nodeShare.Add(nodeShare, halfBalance)
-				nodeDetails[i].DistributorBalanceNodeETH = nodeShare
-				userShare := big.NewInt(0)
-				userShare.Sub(distributorBalance, nodeShare)
-				nodeDetails[i].DistributorBalanceUserETH = userShare
-				return nil
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].RewardNetwork, err = node.GetRewardNetworkRaw(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].RplStake, err = node.GetNodeRPLStake(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].EffectiveRPLStake, err = node.GetNodeEffectiveRPLStake(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].MinimumRPLStake, err = node.GetNodeMinimumRPLStake(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].MaximumRPLStake, err = node.GetNodeMaximumRPLStake(rp, address, opts)
-				return err
-			})
-			/*
-				wg.Go(func() error {
-					var err error
-					nodeDetails[i].EthMatched, err = node.GetNodeEthMatched(rp, address, opts)
-					return err
-				})
-				wg.Go(func() error {
-					var err error
-					nodeDetails[i].EthMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, address, opts)
-					return err
-				})
-			*/
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].MinipoolCount, err = minipool.GetNodeMinipoolCountRaw(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				balances, err := tokens.GetBalances(rp, address, opts)
-				if err != nil {
-					return fmt.Errorf("error getting balances for node %s: %w", address.Hex(), err)
-				}
-				nodeDetails[i].BalanceETH = balances.ETH
-				nodeDetails[i].BalanceRETH = balances.RETH
-				nodeDetails[i].BalanceRPL = balances.RPL
-				nodeDetails[i].BalanceOldRPL = balances.FixedSupplyRPL
-				return nil
-			})
-			/*
-				wg.Go(func() error {
-					var err error
-					nodeDetails[i].DepositCreditBalance, err = node.GetNodeDepositCredit(rp, address, opts)
-					return err
-				})
-			*/
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].WithdrawalAddress, err = storage.GetNodeWithdrawalAddress(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].PendingWithdrawalAddress, err = storage.GetNodePendingWithdrawalAddress(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].SmoothingPoolRegistrationState, err = node.GetSmoothingPoolRegistrationState(rp, address, opts)
-				return err
-			})
-			wg.Go(func() error {
-				var err error
-				nodeDetails[i].SmoothingPoolRegistrationChanged, err = node.GetSmoothingPoolRegistrationChangedRaw(rp, address, opts)
-				return err
-			})
-		}
-
-		if err := wg.Wait(); err != nil {
-			return fmt.Errorf("error getting node details: %w", err)
-		}
-
 	}
 
 	state.NodeDetails = nodeDetails
+	return nil
+}
+
+// Get the details for all minipools
+func (state *NetworkState) getMinipoolDetails(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, opts *bind.CallOpts, isAtlasDeployed bool) error {
+
+	var minipoolDetails []minipool.NativeMinipoolDetails
+	if isAtlasDeployed {
+		// Use the uber getter
+		var err error
+		minipoolDetails, err = minipool.GetAllNativeMinipoolDetails(rp, opts)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Use the old-school method
+		var err error
+		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+		minipoolDetails, err = rpstate.GetAllNativeMinipoolDetails_Legacy(rp, multicallerAddress, balanceBatcherAddress, opts)
+		if err != nil {
+			return err
+		}
+	}
+
+	state.MinipoolDetails = minipoolDetails
 	return nil
 }
 

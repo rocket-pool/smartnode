@@ -155,6 +155,12 @@ type SmartnodeConfig struct {
 
 	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
 	rplTwapPoolAddress map[config.Network]string `yaml:"-"`
+
+	// The multicall contract address
+	multicallAddress map[config.Network]string `yaml:"-"`
+
+	// The BalanceChecker contract address
+	balancebatcherAddress map[config.Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -465,6 +471,20 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Zhejiang: "0x7F6319248359AA354cB6c97Bd244f82E92aF546E",
 		},
 
+		multicallAddress: map[config.Network]string{
+			config.Network_Mainnet:  "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
+			config.Network_Prater:   "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
+			config.Network_Devnet:   "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
+			config.Network_Zhejiang: "",
+		},
+
+		balancebatcherAddress: map[config.Network]string{
+			config.Network_Mainnet:  "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
+			config.Network_Prater:   "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
+			config.Network_Devnet:   "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
+			config.Network_Zhejiang: "",
+		},
+
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
 			config.Network_Mainnet: {
 				15451165, 15637542, 15839520, 16038366, 16238906, 16439406, // 5
@@ -725,6 +745,14 @@ func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
 
 func (cfg *SmartnodeConfig) GetRplTwapPoolAddress() string {
 	return cfg.rplTwapPoolAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetMulticallAddress() string {
+	return cfg.multicallAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetBalanceBatcherAddress() string {
+	return cfg.balancebatcherAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetRewardsSubmissionBlockMaps() []uint64 {
