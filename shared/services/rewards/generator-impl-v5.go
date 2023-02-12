@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
@@ -41,7 +40,6 @@ type treeGeneratorImpl_v5 struct {
 	cfg                    *config.RocketPoolConfig
 	bc                     beacon.Client
 	opts                   *bind.CallOpts
-	nodeAddresses          []common.Address
 	nodeDetails            []*NodeSmoothingDetails
 	smoothingPoolBalance   *big.Int
 	smoothingPoolAddress   common.Address
@@ -55,7 +53,6 @@ type treeGeneratorImpl_v5 struct {
 	intervalSeconds        *big.Int
 	beaconConfig           beacon.Eth2Config
 	validatorStatusMap     map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
-	nodeStakes             []*big.Int
 	totalAttestationScore  *big.Int
 	successfulAttestations uint64
 }
@@ -123,13 +120,11 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	}
 
 	// Get a network snapshot
-	r.log.Printlnf("%s Creating a snapshot of the Rocket Pool network state...", r.logPrefix)
 	state, err := mgr.UpdateState(&r.rewardsFile.ConsensusEndBlock, isAtlasDeployed)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network state snapshot: %w", err)
 	}
 	r.networkState = state
-	r.log.Printlnf("%s Snapshot complete!", r.logPrefix)
 
 	// Provision some struct params
 	r.rp = rp
@@ -147,19 +142,10 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.beaconConfig = mgr.BeaconConfig
 	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
 
-	// Get the addresses for all nodes
-	r.opts = &bind.CallOpts{
-		BlockNumber: r.elSnapshotHeader.Number,
-	}
-	nodeAddresses := make([]common.Address, len(state.NodeDetails))
-	for i, node := range state.NodeDetails {
-		nodeAddresses[i] = node.NodeAddress
-	}
-	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(nodeAddresses))
-	r.nodeAddresses = nodeAddresses
+	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(state.NodeDetails))
 
 	// Get the minipool count - this will be used for an error epsilon due to division truncation
-	minipoolCount := uint64(len(state.MinipoolDetailsByNode))
+	minipoolCount := uint64(len(state.MinipoolDetails))
 	r.epsilon = big.NewInt(int64(minipoolCount))
 
 	// Calculate the RPL rewards
@@ -199,6 +185,25 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 func (r *treeGeneratorImpl_v5) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
+	// TODO - this should come from the creator of this generator
+	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, &r.log)
+	if err != nil {
+		return nil, fmt.Errorf("error creating network state manager: %w", err)
+	}
+	r.networkStateManager = mgr
+
+	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+	}
+
+	// Get a network snapshot
+	state, err := mgr.UpdateState(&r.rewardsFile.ConsensusEndBlock, isAtlasDeployed)
+	if err != nil {
+		return nil, fmt.Errorf("error creating network state snapshot: %w", err)
+	}
+	r.networkState = state
+
 	r.rp = rp
 	r.cfg = cfg
 	r.bc = bc
@@ -211,29 +216,13 @@ func (r *treeGeneratorImpl_v5) approximateStakerShareOfSmoothingPool(rp *rocketp
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
 
 	// Get the Beacon config
-	var err error
-	r.beaconConfig, err = r.bc.GetEth2Config()
-	if err != nil {
-		return nil, err
-	}
+	r.beaconConfig = mgr.BeaconConfig
 	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
 
-	// Get the addresses for all nodes
-	r.opts = &bind.CallOpts{
-		BlockNumber: r.elSnapshotHeader.Number,
-	}
-	nodeAddresses, err := node.GetNodeAddresses(rp, r.opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting node addresses: %w", err)
-	}
-	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(nodeAddresses))
-	r.nodeAddresses = nodeAddresses
+	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(state.NodeDetails))
 
 	// Get the minipool count - this will be used for an error epsilon due to division truncation
-	minipoolCount, err := minipool.GetMinipoolCount(rp, r.opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting minipool count: %w", err)
-	}
+	minipoolCount := uint64(len(state.MinipoolDetails))
 	r.epsilon = big.NewInt(int64(minipoolCount))
 
 	// Calculate the ETH rewards
@@ -363,8 +352,8 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculating individual collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
 	nodesDone := 0
 	startTime := time.Now()
-	nodeCount := len(r.nodeAddresses)
-	for i, address := range r.nodeAddresses {
+	nodeCount := len(r.networkState.NodeDetails)
+	for i, nodeDetails := range r.networkState.NodeDetails {
 		if nodesDone == 100 {
 			timeTaken := time.Since(startTime)
 			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
@@ -373,12 +362,12 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 
 		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
 		nodeRplRewards := big.NewInt(0)
-		nodeRplRewards.Mul(trueNodeEffectiveStakes[address], totalNodeRewards)
+		nodeRplRewards.Mul(trueNodeEffectiveStakes[nodeDetails.NodeAddress], totalNodeRewards)
 		nodeRplRewards.Div(nodeRplRewards, totalNodeEffectiveStake)
 
 		// If there are pending rewards, add it to the map
 		if nodeRplRewards.Cmp(big.NewInt(0)) == 1 {
-			rewardsForNode, exists := r.rewardsFile.NodeRewards[address]
+			rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeDetails.NodeAddress]
 			if !exists {
 				// Get the network the rewards should go to
 				network := r.networkState.NodeDetails[i].RewardNetwork.Uint64()
@@ -387,7 +376,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[address] = network
+					r.rewardsFile.InvalidNetworkNodes[nodeDetails.NodeAddress] = network
 					network = 0
 				}
 
@@ -397,7 +386,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 					OracleDaoRpl:     NewQuotedBigInt(0),
 					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
-				r.rewardsFile.NodeRewards[address] = rewardsForNode
+				r.rewardsFile.NodeRewards[nodeDetails.NodeAddress] = rewardsForNode
 			}
 			rewardsForNode.CollateralRpl.Add(&rewardsForNode.CollateralRpl.Int, nodeRplRewards)
 
@@ -1015,7 +1004,7 @@ func (r *treeGeneratorImpl_v5) getSmoothingPoolNodeDetails() error {
 	r.log.Printlnf("%s Getting details of nodes for Smoothing Pool calculation (progress is reported every 100 nodes)", r.logPrefix)
 
 	// For each NO, get their opt-in status and time of last change in batches
-	nodeCount := uint64(len(r.nodeAddresses))
+	nodeCount := uint64(len(r.networkState.NodeDetails))
 	r.nodeDetails = make([]*NodeSmoothingDetails, nodeCount)
 	for batchStartIndex := uint64(0); batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
 
@@ -1037,13 +1026,13 @@ func (r *treeGeneratorImpl_v5) getSmoothingPoolNodeDetails() error {
 		for iterationIndex := iterationStartIndex; iterationIndex < iterationEndIndex; iterationIndex++ {
 			iterationIndex := iterationIndex
 			wg.Go(func() error {
+				nativeNodeDetails := r.networkState.NodeDetails[iterationIndex]
 				nodeDetails := &NodeSmoothingDetails{
-					Address:          r.nodeAddresses[iterationIndex],
+					Address:          nativeNodeDetails.NodeAddress,
 					Minipools:        []*MinipoolInfo{},
 					SmoothingPoolEth: big.NewInt(0),
+					RewardsNetwork:   nativeNodeDetails.RewardNetwork.Uint64(),
 				}
-				nativeNodeDetails := r.networkState.NodeDetails[iterationIndex]
-				nodeDetails.RewardsNetwork = nativeNodeDetails.RewardNetwork.Uint64()
 
 				isOptedIn := nativeNodeDetails.SmoothingPoolRegistrationState
 				statusChangeTimeBig := nativeNodeDetails.SmoothingPoolRegistrationChanged
