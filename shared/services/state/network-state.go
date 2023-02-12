@@ -85,7 +85,8 @@ type NetworkState struct {
 	ValidatorDetails map[types.ValidatorPubkey]beacon.ValidatorStatus
 
 	// Internal fields
-	log *log.ColorLogger
+	log             *log.ColorLogger
+	isAtlasDeployed bool
 }
 
 func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, isAtlasDeployed bool) (*NetworkState, error) {
@@ -109,33 +110,36 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		NodeDetailsByAddress:     map[common.Address]*node.NativeNodeDetails{},
 		MinipoolDetailsByAddress: map[common.Address]*minipool.NativeMinipoolDetails{},
 		MinipoolDetailsByNode:    map[common.Address][]*minipool.NativeMinipoolDetails{},
+		BeaconSlotNumber:         slotNumber,
+		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
 		log:                      log,
+		isAtlasDeployed:          isAtlasDeployed,
 	}
 
 	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
 	start := time.Now()
 
 	// Network details
-	err = state.getNetworkDetails(cfg, rp, opts)
+	err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
+	state.logLine("1/4 - Retrieved network details (%s so far)", time.Since(start))
 
 	// Node details
 	err = state.getNodeDetails(cfg, rp, opts, isAtlasDeployed)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	state.logLine("2/5 - Retrieved node details (%s so far)", time.Since(start))
+	state.logLine("2/4 - Retrieved node details (%s so far)", time.Since(start))
 
 	// Minipool details
 	err = state.getMinipoolDetails(cfg, rp, opts, isAtlasDeployed)
 	if err != nil {
 		return nil, err
 	}
-	state.logLine("3/5 - Retrieved minipool details (%s so far)", time.Since(start))
+	state.logLine("3/4 - Retrieved minipool details (%s so far)", time.Since(start))
 
 	// Create the node lookup
 	for _, details := range state.NodeDetails {
@@ -145,8 +149,8 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	// Create the minipool lookups
 	pubkeys := make([]types.ValidatorPubkey, 0, len(state.MinipoolDetails))
 	emptyPubkey := types.ValidatorPubkey{}
-	for _, details := range state.MinipoolDetails {
-		state.MinipoolDetailsByAddress[details.MinipoolAddress] = &details
+	for i, details := range state.MinipoolDetails {
+		state.MinipoolDetailsByAddress[details.MinipoolAddress] = &state.MinipoolDetails[i]
 		if details.Pubkey != emptyPubkey {
 			pubkeys = append(pubkeys, details.Pubkey)
 		}
@@ -156,10 +160,9 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		if !exists {
 			nodeList = []*minipool.NativeMinipoolDetails{}
 		}
-		nodeList = append(nodeList, &details)
+		nodeList = append(nodeList, &state.MinipoolDetails[i])
 		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
 	}
-	state.logLine("4/5 - Created lookups (%s so far)", time.Since(start))
 
 	// Get the validator stats from Beacon
 	statusMap, err := bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
@@ -169,13 +172,13 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		return nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("5/5 - Retrieved validator details (total time: %s)", time.Since(start))
+	state.logLine("4/4 - Retrieved validator details (total time: %s)", time.Since(start))
 
 	return state, nil
 }
 
 // Get the details for the network
-func (state *NetworkState) getNetworkDetails(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, opts *bind.CallOpts) error {
+func (state *NetworkState) getNetworkDetails(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, opts *bind.CallOpts, isAtlasDeployed bool) error {
 
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
@@ -271,32 +274,34 @@ func (state *NetworkState) getNetworkDetails(cfg *config.RocketPoolConfig, rp *r
 		return nil
 	})
 
-	wg.Go(func() error {
-		promotionScrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(rp, opts)
-		if err != nil {
-			return fmt.Errorf("error getting promotion scrub period: %w", err)
-		}
-		state.NetworkDetails.PromotionScrubPeriod = time.Duration(promotionScrubPeriodSeconds) * time.Second
-		return nil
-	})
+	if isAtlasDeployed {
+		wg.Go(func() error {
+			promotionScrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(rp, opts)
+			if err != nil {
+				return fmt.Errorf("error getting promotion scrub period: %w", err)
+			}
+			state.NetworkDetails.PromotionScrubPeriod = time.Duration(promotionScrubPeriodSeconds) * time.Second
+			return nil
+		})
 
-	wg.Go(func() error {
-		windowStartRaw, err := trustednode.GetBondReductionWindowStart(rp, opts)
-		if err != nil {
-			return fmt.Errorf("error getting bond reduction window start: %w", err)
-		}
-		state.NetworkDetails.BondReductionWindowStart = time.Duration(windowStartRaw) * time.Second
-		return nil
-	})
+		wg.Go(func() error {
+			windowStartRaw, err := trustednode.GetBondReductionWindowStart(rp, opts)
+			if err != nil {
+				return fmt.Errorf("error getting bond reduction window start: %w", err)
+			}
+			state.NetworkDetails.BondReductionWindowStart = time.Duration(windowStartRaw) * time.Second
+			return nil
+		})
 
-	wg.Go(func() error {
-		windowLengthRaw, err := trustednode.GetBondReductionWindowLength(rp, opts)
-		if err != nil {
-			return fmt.Errorf("error getting bond reduction window length: %w", err)
-		}
-		state.NetworkDetails.BondReductionWindowLength = time.Duration(windowLengthRaw) * time.Second
-		return nil
-	})
+		wg.Go(func() error {
+			windowLengthRaw, err := trustednode.GetBondReductionWindowLength(rp, opts)
+			if err != nil {
+				return fmt.Errorf("error getting bond reduction window length: %w", err)
+			}
+			state.NetworkDetails.BondReductionWindowLength = time.Duration(windowLengthRaw) * time.Second
+			return nil
+		})
+	}
 
 	wg.Go(func() error {
 		scrubPeriodSeconds, err := trustednode.GetScrubPeriod(rp, opts)
@@ -522,7 +527,9 @@ func (s *NetworkState) CalculateEffectiveStakes(scaleByParticipation bool) (map[
 	effectiveStakes := make(map[common.Address]*big.Int, len(s.NodeDetails))
 	totalEffectiveStake := big.NewInt(0)
 	intervalDurationBig := big.NewInt(int64(s.NetworkDetails.IntervalDuration.Seconds()))
-	slotTime := time.Unix(int64(s.BeaconConfig.GenesisTime), 0).Add(time.Duration(s.BeaconSlotNumber*s.BeaconConfig.SecondsPerSlot) * time.Second)
+	genesisTime := time.Unix(int64(s.BeaconConfig.GenesisTime), 0)
+	slotOffset := time.Duration(s.BeaconSlotNumber*s.BeaconConfig.SecondsPerSlot) * time.Second
+	slotTime := genesisTime.Add(slotOffset)
 
 	nodeCount := uint64(len(s.NodeDetails))
 	effectiveStakeSlice := make([]*big.Int, nodeCount)

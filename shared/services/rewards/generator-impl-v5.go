@@ -23,6 +23,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
 	"golang.org/x/sync/errgroup"
@@ -116,9 +117,14 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	}
 	r.networkStateManager = mgr
 
+	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+	}
+
 	// Get a network snapshot
 	r.log.Printlnf("%s Creating a snapshot of the Rocket Pool network state...", r.logPrefix)
-	state, err := mgr.UpdateState(&r.rewardsFile.ExecutionEndBlock, true)
+	state, err := mgr.UpdateState(&r.rewardsFile.ConsensusEndBlock, isAtlasDeployed)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network state snapshot: %w", err)
 	}
@@ -1075,6 +1081,7 @@ func (r *treeGeneratorImpl_v5) getSmoothingPoolNodeDetails() error {
 							GoodAttestations:        0,
 							MissingAttestationSlots: map[uint64]bool{},
 							WasActive:               true,
+							AttestationScore:        big.NewInt(0),
 						})
 					}
 				}
