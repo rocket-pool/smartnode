@@ -278,9 +278,6 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 				return fmt.Errorf("error executing multicall: %w", err)
 			}
 
-			for j := i; j < max; j++ {
-				fixupMinipoolDetails(rp, &minipoolDetails[j], opts)
-			}
 			return nil
 		})
 	}
@@ -289,13 +286,14 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 		return nil, fmt.Errorf("error getting minipool details: %w", err)
 	}
 
-	// Get the balances of the minipools
+	// Get the balances of the minipools and do the postprocessing on them
 	balances, err := balanceBatcher.GetEthBalances(addresses, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting minipool balances: %w", err)
 	}
-	for i, details := range minipoolDetails {
-		details.Balance = balances[i]
+	for i := range minipoolDetails {
+		minipoolDetails[i].Balance = balances[i]
+		fixupMinipoolDetails(rp, &minipoolDetails[i], opts)
 	}
 
 	return minipoolDetails, nil
@@ -328,6 +326,7 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 	mc.AddCall(mpContract, &details.Delegate, "getDelegate")
 	mc.AddCall(mpContract, &details.PreviousDelegate, "getPreviousDelegate")
 	mc.AddCall(mpContract, &details.EffectiveDelegate, "getEffectiveDelegate")
+	mc.AddCall(mpContract, &details.NodeAddress, "getNodeAddress")
 
 	penaltyCountKey := crypto.Keccak256Hash([]byte("network.penalties.penalty"), address.Bytes())
 	mc.AddCall(contracts.RocketStorage, &details.PenaltyCount, "getUint", penaltyCountKey)
@@ -335,18 +334,26 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 	penaltyRatekey := crypto.Keccak256Hash([]byte("minipool.penalty.rate"), address.Bytes())
 	mc.AddCall(contracts.RocketStorage, &details.PenaltyRate, "getUint", penaltyRatekey)
 
-	// UserDistributed is v3+ only
-	// Slashed is v3+ only
-
-	mc.AddCall(mpContract, &details.NodeAddress, "getNodeAddress")
-
-	// LastBondReductionTime is v3+ only
-	// LastBondReductionPrevValue is v3+ only
-	// IsVacant is v3+ only
-	// NodeShareOfBalance is v3+ only
-	// ReduceBondTime is v3+ only
-	// ReduceBondCancelled is v3+ only
-	// ReduceBondValue is v3+ only
+	if version < 3 {
+		// UserDistributed is v3+ only
+		// Slashed is v3+ only
+		// LastBondReductionTime is v3+ only
+		// LastBondReductionPrevValue is v3+ only
+		// IsVacant is v3+ only
+		// NodeShareOfBalance is v3+ only
+		// ReduceBondTime is v3+ only
+		// ReduceBondCancelled is v3+ only
+		// ReduceBondValue is v3+ only
+		details.UserDistributed = false
+		details.Slashed = false
+		details.LastBondReductionTime = big.NewInt(0)
+		details.LastBondReductionPrevValue = big.NewInt(0)
+		details.IsVacant = false
+		details.NodeShareOfBalance = big.NewInt(0)
+		details.ReduceBondTime = big.NewInt(0)
+		details.ReduceBondCancelled = false
+		details.ReduceBondValue = big.NewInt(0)
+	}
 
 	mc.AddCall(contracts.RocketMinipoolManager, &details.WithdrawalCredentials, "getMinipoolWithdrawalCredentials", address)
 

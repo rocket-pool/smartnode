@@ -124,7 +124,7 @@ func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddres
 		return nil, fmt.Errorf("error getting node balances: %w", err)
 	}
 	for i, details := range nodeDetails {
-		details.BalanceETH = balances[i]
+		nodeDetails[i].BalanceETH = balances[i]
 		distributorAddresses[i] = details.FeeDistributorAddress
 	}
 
@@ -135,8 +135,8 @@ func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddres
 	}
 
 	// Do some postprocessing on the node data
-	for i, details := range nodeDetails {
-		fixupNodeDetails(rp, &details, avgFees[i], balances[i], opts)
+	for i := range nodeDetails {
+		fixupNodeDetails(rp, &nodeDetails[i], avgFees[i], balances[i], opts)
 	}
 
 	return nodeDetails, nil
@@ -197,10 +197,10 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 	mc.AddCall(contracts.RocketNodeDistributorFactory, &details.FeeDistributorAddress, "getProxyAddress", address)
 	mc.AddCall(contracts.RocketNodeManager, avgFee, "getAverageNodeFee", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.RewardNetwork, "getRewardNetwork", address)
-	mc.AddCall(contracts.RocketNodeManager, &details.RplStake, "getNodeRPLStake", address)
-	mc.AddCall(contracts.RocketNodeManager, &details.EffectiveRPLStake, "getNodeEffectiveRPLStake", address)
-	mc.AddCall(contracts.RocketNodeManager, &details.MinimumRPLStake, "getNodeMinimumRPLStake", address)
-	mc.AddCall(contracts.RocketNodeManager, &details.MaximumRPLStake, "getNodeMaximumRPLStake", address)
+	mc.AddCall(contracts.RocketNodeStaking, &details.RplStake, "getNodeRPLStake", address)
+	mc.AddCall(contracts.RocketNodeStaking, &details.EffectiveRPLStake, "getNodeEffectiveRPLStake", address)
+	mc.AddCall(contracts.RocketNodeStaking, &details.MinimumRPLStake, "getNodeMinimumRPLStake", address)
+	mc.AddCall(contracts.RocketNodeStaking, &details.MaximumRPLStake, "getNodeMaximumRPLStake", address)
 	mc.AddCall(contracts.RocketMinipoolManager, &details.MinipoolCount, "getNodeMinipoolCount", address)
 	mc.AddCall(contracts.RocketTokenRETH, &details.BalanceRETH, "balanceOf", address)
 	mc.AddCall(contracts.RocketTokenRPL, &details.BalanceRPL, "balanceOf", address)

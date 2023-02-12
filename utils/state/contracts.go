@@ -8,6 +8,7 @@ import (
 // Container for network contracts
 type NetworkContracts struct {
 	RocketNodeManager            *rocketpool.Contract
+	RocketNodeStaking            *rocketpool.Contract
 	RocketMinipoolManager        *rocketpool.Contract
 	RocketNodeDistributorFactory *rocketpool.Contract
 	RocketTokenRETH              *rocketpool.Contract
@@ -21,6 +22,10 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*Netwo
 	contracts := &NetworkContracts{}
 	var err error
 	contracts.RocketNodeManager, err = rp.GetContract("rocketNodeManager", opts)
+	if err != nil {
+		return nil, err
+	}
+	contracts.RocketNodeStaking, err = rp.GetContract("rocketNodeStaking", opts)
 	if err != nil {
 		return nil, err
 	}
