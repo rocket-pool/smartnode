@@ -146,7 +146,7 @@ func getNodeMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkC
 	}
 
 	if err := wg.Wait(); err != nil {
-		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
+		return nil, fmt.Errorf("error getting minipool addresses for node %s: %w", nodeAddress.Hex(), err)
 	}
 
 	return addresses, nil
@@ -192,7 +192,7 @@ func getAllMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkCo
 	}
 
 	if err := wg.Wait(); err != nil {
-		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
+		return nil, fmt.Errorf("error getting all minipool addresses: %w", err)
 	}
 
 	return addresses, nil
@@ -227,7 +227,12 @@ func getMinipoolVersionsFast(rp *rocketpool.RocketPool, contracts *NetworkContra
 				}
 				mc.AddCall(contract, &versions[j], "version")
 			}
-			_, err = mc.FlexibleCall(true)
+			results, err := mc.FlexibleCall(false) // Allow calls to fail - necessary for Prater
+			for j, result := range results {
+				if !result.Success {
+					versions[j+i] = 1 // Anything that failed the version check didn't have the method yet so it must be v1
+				}
+			}
 			if err != nil {
 				return fmt.Errorf("error executing multicall: %w", err)
 			}
@@ -236,7 +241,7 @@ func getMinipoolVersionsFast(rp *rocketpool.RocketPool, contracts *NetworkContra
 	}
 
 	if err := wg.Wait(); err != nil {
-		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
+		return nil, fmt.Errorf("error getting minipool versions: %w", err)
 	}
 
 	return versions, nil
