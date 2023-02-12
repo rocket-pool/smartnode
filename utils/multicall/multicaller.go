@@ -40,20 +40,20 @@ func (call Call) GetMultiCall() MultiCall {
 
 type MultiCaller struct {
 	Client          rocketpool.ExecutionClient
-	Abi             abi.ABI
+	ABI             abi.ABI
 	ContractAddress common.Address
 	calls           []Call
 }
 
 func NewMultiCaller(client rocketpool.ExecutionClient, multicallerAddress common.Address) (*MultiCaller, error) {
-	mcAbi, err := abi.JSON(strings.NewReader(MultiMetaData.ABI))
+	mcAbi, err := abi.JSON(strings.NewReader(MulticallABI))
 	if err != nil {
 		return nil, err
 	}
 
 	return &MultiCaller{
 		Client:          client,
-		Abi:             mcAbi,
+		ABI:             mcAbi,
 		ContractAddress: multicallerAddress,
 		calls:           []Call{},
 	}, nil
@@ -80,7 +80,7 @@ func (caller *MultiCaller) Execute(requireSuccess bool) ([]CallResponse, error) 
 	for _, call := range caller.calls {
 		multiCalls = append(multiCalls, call.GetMultiCall())
 	}
-	callData, err := caller.Abi.Pack("tryAggregate", requireSuccess, multiCalls)
+	callData, err := caller.ABI.Pack("tryAggregate", requireSuccess, multiCalls)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (caller *MultiCaller) Execute(requireSuccess bool) ([]CallResponse, error) 
 		return nil, err
 	}
 
-	responses, err := caller.Abi.Unpack("tryAggregate", resp)
+	responses, err := caller.ABI.Unpack("tryAggregate", resp)
 
 	if err != nil {
 		return nil, err

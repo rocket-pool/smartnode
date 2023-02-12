@@ -40,14 +40,32 @@ func GetNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.A
 		return node.NativeNodeDetails{}, fmt.Errorf("error executing multicall: %w", err)
 	}
 
-	fixupNodeDetails(rp, &details, avgFee, opts)
+	// Get the node's ETH balance
+	details.BalanceETH, err = rp.Client.BalanceAt(context.Background(), nodeAddress, opts.BlockNumber)
+	if err != nil {
+		return node.NativeNodeDetails{}, err
+	}
+
+	// Get the distributor balance
+	distributorBalance, err := rp.Client.BalanceAt(context.Background(), details.FeeDistributorAddress, opts.BlockNumber)
+	if err != nil {
+		return node.NativeNodeDetails{}, err
+	}
+
+	// Do some postprocessing on the node data
+	fixupNodeDetails(rp, &details, avgFee, distributorBalance, opts)
 
 	return details, nil
 }
 
 // Gets the details for all nodes using the efficient multicall contract
-func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddress common.Address, opts *bind.CallOpts) ([]node.NativeNodeDetails, error) {
+func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) ([]node.NativeNodeDetails, error) {
 	contracts, err := NewNetworkContracts(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	balanceBatcher, err := multicall.NewBalanceBatcher(rp.Client, balanceBatcherAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -57,14 +75,15 @@ func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddres
 	if err != nil {
 		return nil, fmt.Errorf("error getting node addresses: %w", err)
 	}
-	nodeDetails := make([]node.NativeNodeDetails, len(addresses))
+	count := len(addresses)
+	nodeDetails := make([]node.NativeNodeDetails, count)
+	avgFees := make([]*big.Int, count)
 
 	// Sync
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
 
 	// Run the getters in batches
-	count := len(addresses)
 	for i := 0; i < count; i += legacyNodeBatchSize {
 		i := i
 		max := i + legacyNodeBatchSize
@@ -72,7 +91,6 @@ func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddres
 			max = count
 		}
 
-		avgFees := make([]*big.Int, legacyNodeBatchSize)
 		wg.Go(func() error {
 			var err error
 			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
@@ -80,21 +98,16 @@ func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddres
 				return err
 			}
 			for j := i; j < max; j++ {
-
 				address := addresses[j]
 				details := &nodeDetails[j]
 				details.NodeAddress = address
 
-				avgFees[j-i] = big.NewInt(0)
-				addNodeDetailsCalls(contracts, mc, details, address, &avgFees[j-i])
+				avgFees[j] = big.NewInt(0)
+				addNodeDetailsCalls(contracts, mc, details, address, &avgFees[j])
 			}
 			_, err = mc.FlexibleCall(true)
 			if err != nil {
 				return fmt.Errorf("error executing multicall: %w", err)
-			}
-
-			for j := i; j < max; j++ {
-				fixupNodeDetails(rp, &nodeDetails[j], avgFees[j-i], opts)
 			}
 			return nil
 		})
@@ -102,6 +115,28 @@ func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddres
 
 	if err := wg.Wait(); err != nil {
 		return nil, fmt.Errorf("error getting node details: %w", err)
+	}
+
+	// Get the balances of the nodes
+	distributorAddresses := make([]common.Address, count)
+	balances, err := balanceBatcher.GetEthBalances(addresses, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting node balances: %w", err)
+	}
+	for i, details := range nodeDetails {
+		details.BalanceETH = balances[i]
+		distributorAddresses[i] = details.FeeDistributorAddress
+	}
+
+	// Get the balances of the distributors
+	balances, err = balanceBatcher.GetEthBalances(distributorAddresses, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting distributor balances: %w", err)
+	}
+
+	// Do some postprocessing on the node data
+	for i, details := range nodeDetails {
+		fixupNodeDetails(rp, &details, avgFees[i], balances[i], opts)
 	}
 
 	return nodeDetails, nil
@@ -177,27 +212,13 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 }
 
 // Fixes a legacy node details struct with supplemental logic
-func fixupNodeDetails(rp *rocketpool.RocketPool, details *node.NativeNodeDetails, avgFee *big.Int, opts *bind.CallOpts) error {
-	address := details.NodeAddress
-
-	var err error
-
-	// Get the node's ETH balance
-	details.BalanceETH, err = rp.Client.BalanceAt(context.Background(), address, opts.BlockNumber)
-	if err != nil {
-		return err
-	}
-
+func fixupNodeDetails(rp *rocketpool.RocketPool, details *node.NativeNodeDetails, avgFee *big.Int, distributorBalance *big.Int, opts *bind.CallOpts) error {
 	// Fix the effective stake
 	if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
 		details.EffectiveRPLStake.SetUint64(0)
 	}
 
 	// Get the user and node portions of the distributor balance
-	distributorBalance, err := rp.Client.BalanceAt(context.Background(), details.FeeDistributorAddress, opts.BlockNumber)
-	if err != nil {
-		return err
-	}
 	if distributorBalance.Cmp(zero) > 0 {
 		halfBalance := big.NewInt(0)
 		halfBalance.Div(distributorBalance, two)
