@@ -91,9 +91,6 @@ func (t *cancelBondReductions) run(isAtlasDeployed bool) error {
 		return nil
 	}
 
-	// Log
-	t.log.Println("Checking for bond reductions to cancel...")
-
 	// Get the latest state
 	t.s = t.m.GetLatestState()
 	opts := &bind.CallOpts{
@@ -114,6 +111,9 @@ func (t *cancelBondReductions) run(isAtlasDeployed bool) error {
 	if !(nodeTrusted) {
 		return nil
 	}
+
+	// Log
+	t.log.Println("Checking for bond reductions to cancel...")
 
 	// Check if the check is already running
 	t.lock.Lock()
@@ -152,7 +152,7 @@ func (t *cancelBondReductions) checkBondReductions() error {
 
 	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", t.s.BeaconSlotNumber, t.s.ElBlockNumber))
 
-	// Check if any of them have bond reduction requests
+	// Check if any of the minipools have bond reduction requests
 	zero := big.NewInt(0)
 	reductionMps := []*minipool.NativeMinipoolDetails{}
 	for i, mpd := range t.s.MinipoolDetails {

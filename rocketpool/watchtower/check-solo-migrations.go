@@ -1,7 +1,6 @@
 package watchtower
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	"sync"
@@ -21,9 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -45,7 +42,6 @@ type checkSoloMigrations struct {
 	lock             *sync.Mutex
 	isRunning        bool
 	generationPrefix string
-	isAtlasDeployed  bool
 	m                *state.NetworkStateManager
 	s                *state.NetworkState
 }
@@ -89,7 +85,6 @@ func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger 
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Solo Migration]",
-		isAtlasDeployed:  false,
 		m:                m,
 	}, nil
 
@@ -106,6 +101,17 @@ func (t *checkSoloMigrations) run(isAtlasDeployed bool) error {
 		return err
 	}
 
+	// Check if Atlas has been deployed yet
+	if !isAtlasDeployed {
+		return nil
+	}
+
+	// Get the latest state
+	t.s = t.m.GetLatestState()
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
+	}
+
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
@@ -119,18 +125,6 @@ func (t *checkSoloMigrations) run(isAtlasDeployed bool) error {
 	}
 	if !(nodeTrusted) {
 		return nil
-	}
-
-	// Check if Atlas is deployed
-	if !t.isAtlasDeployed {
-		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
-		if err != nil {
-			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
-		}
-		t.isAtlasDeployed = isAtlasDeployed
-		if !t.isAtlasDeployed {
-			return nil
-		}
 	}
 
 	// Log
@@ -152,7 +146,7 @@ func (t *checkSoloMigrations) run(isAtlasDeployed bool) error {
 		t.lock.Unlock()
 		t.printMessage("Starting solo migration check in a separate thread.")
 
-		err := t.checkSoloMigrations()
+		err := t.checkSoloMigrations(opts)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", t.generationPrefix, err))
 			return
@@ -169,160 +163,62 @@ func (t *checkSoloMigrations) run(isAtlasDeployed bool) error {
 }
 
 // Check for solo staker migration validity
-func (t *checkSoloMigrations) checkSoloMigrations() error {
+func (t *checkSoloMigrations) checkSoloMigrations(opts *bind.CallOpts) error {
 
-	// Data
-	var wg1 errgroup.Group
-	var eth2Config beacon.Eth2Config
-	var beaconHead beacon.BeaconHead
-
-	// Get eth2 config
-	wg1.Go(func() error {
-		var err error
-		eth2Config, err = t.bc.GetEth2Config()
-		if err != nil {
-			return fmt.Errorf("error getting Beacon config: %w", err)
-		}
-		return nil
-	})
-
-	// Get beacon head
-	wg1.Go(func() error {
-		var err error
-		beaconHead, err = t.bc.GetBeaconHead()
-		if err != nil {
-			return fmt.Errorf("error getting Beacon head: %w", err)
-		}
-		return nil
-	})
-
-	// Wait for data
-	if err := wg1.Wait(); err != nil {
-		return err
-	}
-
-	// Get the latest finalized slot that exists, and the EL block for it
-	finalizedEpoch := beaconHead.FinalizedEpoch
-	lastSlot := (finalizedEpoch+1)*eth2Config.SlotsPerEpoch - 1
-	var elBlock uint64
-	for lastSlot > 0 {
-		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(lastSlot))
-		if err != nil {
-			return fmt.Errorf("error getting Beacon block %d: %w", lastSlot, err)
-		}
-		if !exists {
-			lastSlot--
-		} else {
-			elBlock = block.ExecutionBlockNumber
-			break
-		}
-	}
-
-	t.printMessage(fmt.Sprintf("Latest finalized epoch is %d, checking for Beacon slot %d (EL block %d)", finalizedEpoch, lastSlot, elBlock))
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(elBlock),
-	}
-	beaconOpts := &beacon.ValidatorStatusOptions{
-		Slot: &lastSlot,
-	}
-
-	// Get vacant count
-	vacantCount, err := minipool.GetVacantMinipoolCount(t.rp, opts)
-	if err != nil {
-		return fmt.Errorf("error getting vacant minipool count: %w", err)
-	}
-
-	if vacantCount == 0 {
-		return nil
-	}
+	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", t.s.BeaconSlotNumber, t.s.ElBlockNumber))
+	oneGwei := eth.GweiToWei(1)
 
 	// Go through each minipool
-	// TODO: does this need to be multithreaded?
 	threshold := uint64(32000000000)
 	buffer := uint64(migrationBalanceBuffer * eth.WeiPerGwei)
-	for i := uint64(0); i < vacantCount; i++ {
-		address, err := minipool.GetVacantMinipoolAt(t.rp, i, opts)
-		if err != nil {
-			return fmt.Errorf("error getting vacant minipool %d address: %w", i, err)
-		}
-
-		mp, err := minipool.NewMinipool(t.rp, address, nil)
-		if err != nil {
-			return fmt.Errorf("error creating minipool binding for %s: %w", address.Hex(), err)
-		}
-
-		mpStatus, err := mp.GetStatus(opts)
-		if err != nil {
-			return fmt.Errorf("error checking minipool %s status: %w", err)
-		}
-		if mpStatus == types.Dissolved {
+	for _, mpd := range t.s.MinipoolDetails {
+		if mpd.Status == types.Dissolved {
 			// Ignore minipools that are already dissolved
 			continue
 		}
 
-		pubkey, err := minipool.GetMinipoolPubkey(t.rp, address, opts)
-		if err != nil {
-			return fmt.Errorf("error getting minipool %s pubkey: %w", address.Hex(), err)
+		if !mpd.IsVacant {
+			// Ignore minipools that aren't vacant
+			continue
 		}
 
-		status, err := t.bc.GetValidatorStatus(pubkey, beaconOpts)
-		if err != nil {
-			return fmt.Errorf("error getting minipool %s Beacon status: %w", address.Hex(), err)
-		}
-
-		// Check the status
-		if status.Status != beacon.ValidatorState_ActiveOngoing {
-			t.scrubVacantMinipool(address, fmt.Sprintf("minipool %s was in state %v, but is required to be active_ongoing for migration", address.Hex(), status.Status))
+		validator := t.s.ValidatorDetails[mpd.Pubkey]
+		if validator.Status != beacon.ValidatorState_ActiveOngoing {
+			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("minipool %s was in state %v, but is required to be active_ongoing for migration", mpd.MinipoolAddress.Hex(), validator.Status))
 			continue
 		}
 
 		// Check the withdrawal credentials
-		withdrawalCreds := status.WithdrawalCredentials
+		withdrawalCreds := validator.WithdrawalCredentials
 		switch withdrawalCreds[0] {
 		case blsPrefix:
 			// Hasn't migrated yet, so ignore for now
 			// TODO: Handle timeouts once they're added
 			continue
 		case elPrefix:
-			expectedCreds, err := minipool.GetMinipoolWithdrawalCredentials(t.rp, address, opts)
-			if err != nil {
-				return fmt.Errorf("error getting expected withdrawal credentials for minipool %s: %w", address.Hex(), err)
-			}
-			if withdrawalCreds != expectedCreds {
-				t.scrubVacantMinipool(address, fmt.Sprintf("withdrawal credentials do not match (expected %s, actual %s)", expectedCreds.Hex(), withdrawalCreds.Hex()))
+			if withdrawalCreds != mpd.WithdrawalCredentials {
+				t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("withdrawal credentials do not match (expected %s, actual %s)", mpd.WithdrawalCredentials.Hex(), withdrawalCreds.Hex()))
 				continue
 			}
 		default:
-			t.scrubVacantMinipool(address, fmt.Sprintf("unexpected prefix in withdrawal credentials: %s", withdrawalCreds.Hex()))
+			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("unexpected prefix in withdrawal credentials: %s", withdrawalCreds.Hex()))
 			continue
 		}
 
 		// Check the balance
-		mpv3, success := minipool.GetMinipoolAsV3(mp)
-		if !success {
-			return fmt.Errorf("getting pre-migration balance is not supported for minipool version %d; please upgrade the delegate for minipool %s to get it", mp.GetVersion(), address.Hex())
-		}
-		creationBalance, err := mpv3.GetPreMigrationBalance(nil)
-		if err != nil {
-			return fmt.Errorf("error checking pre-migration balance for %s: %w", address.Hex(), err)
-		}
-		creationBalanceGwei := big.NewInt(0).Div(creationBalance, big.NewInt(1e9)).Uint64()
-		currentBalance := status.Balance
+		creationBalanceGwei := big.NewInt(0).Div(mpd.PreMigrationBalance, oneGwei).Uint64()
+		currentBalance := validator.Balance
 
 		// Add the minipool balance to the Beacon balance in case it already got skimmed
-		minipoolBalance, err := t.ec.BalanceAt(context.Background(), mpv3.GetAddress(), opts.BlockNumber)
-		if err != nil {
-			return fmt.Errorf("error checking pre-migration balance of minipool %s: %w", mpv3.GetAddress().Hex(), err)
-		}
-		minipoolBalanceGwei := big.NewInt(0).Div(minipoolBalance, big.NewInt(1e9)).Uint64()
+		minipoolBalanceGwei := big.NewInt(0).Div(mpd.Balance, oneGwei).Uint64()
 		currentBalance += minipoolBalanceGwei
 
 		if currentBalance < threshold {
-			t.scrubVacantMinipool(address, fmt.Sprintf("current balance of %d is lower than the threshold of %d", currentBalance, threshold))
+			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("current balance of %d is lower than the threshold of %d", currentBalance, threshold))
 			continue
 		}
 		if currentBalance < (creationBalanceGwei - buffer) {
-			t.scrubVacantMinipool(address, fmt.Sprintf("current balance of %d is lower than the creation balance of %d, and below the acceptable buffer threshold of %d", currentBalance, creationBalanceGwei, buffer))
+			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("current balance of %d is lower than the creation balance of %d, and below the acceptable buffer threshold of %d", currentBalance, creationBalanceGwei, buffer))
 			continue
 		}
 

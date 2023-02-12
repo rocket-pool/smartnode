@@ -486,7 +486,7 @@ func (state *NetworkState) getNodeDetails(cfg *config.RocketPoolConfig, rp *rock
 		var err error
 		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
 		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-		nodeDetails, err = rpstate.GetAllNativeNodeDetails_Legacy(rp, multicallerAddress, balanceBatcherAddress, opts)
+		nodeDetails, err = rpstate.GetAllNativeNodeDetails_Legacy(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, opts)
 		if err != nil {
 			return err
 		}
@@ -512,7 +512,7 @@ func (state *NetworkState) getMinipoolDetails(cfg *config.RocketPoolConfig, rp *
 		var err error
 		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
 		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-		minipoolDetails, err = rpstate.GetAllNativeMinipoolDetails_Legacy(rp, multicallerAddress, balanceBatcherAddress, opts)
+		minipoolDetails, err = rpstate.GetAllNativeMinipoolDetails_Legacy(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, opts)
 		if err != nil {
 			return err
 		}
