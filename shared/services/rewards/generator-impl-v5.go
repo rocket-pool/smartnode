@@ -686,6 +686,7 @@ func (r *treeGeneratorImpl_v5) calculateNodeRewards() (*big.Int, *big.Int, error
 	totalNodeOpShare := big.NewInt(0)
 	totalNodeOpShare.Mul(r.smoothingPoolBalance, r.totalAttestationScore)
 	totalNodeOpShare.Div(totalNodeOpShare, big.NewInt(int64(r.successfulAttestations)))
+	totalNodeOpShare.Div(totalNodeOpShare, eth.EthToWei(1))
 
 	for _, nodeInfo := range r.nodeDetails {
 		nodeInfo.SmoothingPoolEth = big.NewInt(0)
