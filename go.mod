@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
-	github.com/ethereum/go-ethereum v1.10.25
+	github.com/ethereum/go-ethereum v1.10.26
 	github.com/ferranbt/fastssz v0.1.2 // indirect
 	github.com/hashicorp/go-version v1.6.0
 	github.com/minio/highwayhash v1.0.2 // indirect
