@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,7 +16,8 @@ import (
 )
 
 const (
-	legacyMinipoolBatchSize int = 10
+	legacyMinipoolBatchSize  int = 20
+	minipoolAddressBatchSize int = 1000
 )
 
 // Gets the details for a minipool using the efficient multicall contract
@@ -52,9 +54,9 @@ func GetNodeNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress 
 	}
 
 	// Get the list of minipool addresses for this node
-	addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress, opts)
+	addresses, err := getNodeMinipoolAddressesFast(rp, contracts, nodeAddress, multicallerAddress, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting node addresses: %w", err)
+		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
 	return getBulkMinipoolDetails(rp, contracts, multicallerAddress, addresses, opts)
 }
@@ -67,11 +69,103 @@ func GetAllNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress c
 	}
 
 	// Get the list of all minipool addresses
-	addresses, err := minipool.GetMinipoolAddresses(rp, opts)
+	addresses, err := getAllMinipoolAddressesFast(rp, contracts, multicallerAddress, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting node addresses: %w", err)
+		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
 	return getBulkMinipoolDetails(rp, contracts, multicallerAddress, addresses, opts)
+}
+
+// Get all minipool addresses using the multicaller
+func getNodeMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts, nodeAddress common.Address, multicallerAddress common.Address, opts *bind.CallOpts) ([]common.Address, error) {
+	// Get minipool count
+	minipoolCount, err := minipool.GetNodeMinipoolCount(rp, nodeAddress, opts)
+	if err != nil {
+		return []common.Address{}, err
+	}
+
+	// Sync
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+	addresses := make([]common.Address, minipoolCount)
+
+	// Run the getters in batches
+	count := int(minipoolCount)
+	for i := 0; i < count; i += minipoolAddressBatchSize {
+		i := i
+		max := i + minipoolAddressBatchSize
+		if max > count {
+			max = count
+		}
+
+		wg.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				mc.AddCall(contracts.RocketMinipoolManager, &addresses[j], "getNodeMinipoolAt", nodeAddress, big.NewInt(int64(j)))
+			}
+			_, err = mc.FlexibleCall(true)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+			return nil
+		})
+	}
+
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
+	}
+
+	return addresses, nil
+}
+
+// Get all minipool addresses using the multicaller
+func getAllMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts, multicallerAddress common.Address, opts *bind.CallOpts) ([]common.Address, error) {
+	// Get minipool count
+	minipoolCount, err := minipool.GetMinipoolCount(rp, opts)
+	if err != nil {
+		return []common.Address{}, err
+	}
+
+	// Sync
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+	addresses := make([]common.Address, minipoolCount)
+
+	// Run the getters in batches
+	count := int(minipoolCount)
+	for i := 0; i < count; i += minipoolAddressBatchSize {
+		i := i
+		max := i + minipoolAddressBatchSize
+		if max > count {
+			max = count
+		}
+
+		wg.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				mc.AddCall(contracts.RocketMinipoolManager, &addresses[j], "getMinipoolAt", big.NewInt(int64(j)))
+			}
+			_, err = mc.FlexibleCall(true)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+			return nil
+		})
+	}
+
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
+	}
+
+	return addresses, nil
 }
 
 // Get multiple minipool details at once
@@ -84,9 +178,9 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 
 	// Run the getters in batches
 	count := len(addresses)
-	for i := 0; i < count; i += legacyNodeBatchSize {
+	for i := 0; i < count; i += legacyMinipoolBatchSize {
 		i := i
-		max := i + legacyNodeBatchSize
+		max := i + legacyMinipoolBatchSize
 		if max > count {
 			max = count
 		}
@@ -118,7 +212,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 	}
 
 	if err := wg.Wait(); err != nil {
-		return nil, fmt.Errorf("error getting node details: %w", err)
+		return nil, fmt.Errorf("error getting minipool details: %w", err)
 	}
 
 	return minipoolDetails, nil

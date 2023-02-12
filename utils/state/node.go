@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	legacyNodeBatchSize int = 10
+	legacyNodeBatchSize  int = 20
+	nodeAddressBatchSize int = 1000
 )
 
 // Gets the details for a node using the efficient multicall contract
@@ -45,14 +46,14 @@ func GetNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.A
 }
 
 // Gets the details for all nodes using the efficient multicall contract
-func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, opts *bind.CallOpts) ([]node.NativeNodeDetails, error) {
+func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddress common.Address, opts *bind.CallOpts) ([]node.NativeNodeDetails, error) {
 	contracts, err := NewNetworkContracts(rp, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get the list of node addresses
-	addresses, err := node.GetNodeAddresses(rp, opts)
+	addresses, err := getNodeAddressesFast(rp, contracts, multicallerAddress, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting node addresses: %w", err)
 	}
@@ -104,6 +105,52 @@ func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress commo
 	}
 
 	return nodeDetails, nil
+}
+
+// Get all node addresses using the multicaller
+func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts, multicallerAddress common.Address, opts *bind.CallOpts) ([]common.Address, error) {
+	// Get minipool count
+	nodeCount, err := node.GetNodeCount(rp, opts)
+	if err != nil {
+		return []common.Address{}, err
+	}
+
+	// Sync
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+	addresses := make([]common.Address, nodeCount)
+
+	// Run the getters in batches
+	count := int(nodeCount)
+	for i := 0; i < count; i += nodeAddressBatchSize {
+		i := i
+		max := i + nodeAddressBatchSize
+		if max > count {
+			max = count
+		}
+
+		wg.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				mc.AddCall(contracts.RocketNodeManager, &addresses[j], "getNodeAt", big.NewInt(int64(j)))
+			}
+			_, err = mc.FlexibleCall(true)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+			return nil
+		})
+	}
+
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting node addresses: %w", err)
+	}
+
+	return addresses, nil
 }
 
 // Add all of the calls for the node details to the multicaller
