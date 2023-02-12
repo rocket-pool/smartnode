@@ -16,102 +16,15 @@ import (
 	"golang.org/x/crypto/openpgp"
 
 	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // Settings
 const (
-	ExporterContainerSuffix         string = "_exporter"
-	ValidatorContainerSuffix        string = "_validator"
-	BeaconContainerSuffix           string = "_eth2"
-	ExecutionContainerSuffix        string = "_eth1"
-	NodeContainerSuffix             string = "_node"
-	ApiContainerSuffix              string = "_api"
-	WatchtowerContainerSuffix       string = "_watchtower"
-	PruneProvisionerContainerSuffix string = "_prune_provisioner"
-	EcMigratorContainerSuffix       string = "_ec_migrator"
-	clientDataVolumeName            string = "/ethclient"
-	dataFolderVolumeName            string = "/.rocketpool/data"
-
-	PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
-	dockerImageRegex       string = ".*/(?P<image>.*):.*"
-	colorReset             string = "\033[0m"
-	colorBold              string = "\033[1m"
-	colorRed               string = "\033[31m"
-	colorYellow            string = "\033[33m"
-	colorGreen             string = "\033[32m"
-	colorLightBlue         string = "\033[36m"
-	clearLine              string = "\033[2K"
+	GithubAPIGetLatest string = "https://api.github.com/repos/rocket-pool/smartnode-install/releases/latest"
+	SigningKeyURL      string = "https://github.com/rocket-pool/smartnode-install/releases/download/v%s/smartnode-signing-key-v3.asc"
+	ReleaseBinaryURL   string = "https://github.com/rocket-pool/smartnode-install/releases/download/v%s/rocketpool-cli-%s-%s"
 )
-
-// Creates CLI argument flags from the parameters of the configuration struct
-func createFlagsFromConfigParams(sectionName string, params []*cfgtypes.Parameter, configFlags []cli.Flag, network cfgtypes.Network) []cli.Flag {
-	for _, param := range params {
-		var paramName string
-		if sectionName == "" {
-			paramName = param.ID
-		} else {
-			paramName = fmt.Sprintf("%s-%s", sectionName, param.ID)
-		}
-
-		defaultVal, err := param.GetDefault(network)
-		if err != nil {
-			panic(fmt.Sprintf("Error getting default value for [%s]: %s\n", paramName, err.Error()))
-		}
-
-		switch param.Type {
-		case cfgtypes.ParameterType_Bool:
-			configFlags = append(configFlags, cli.BoolFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: bool\n", param.Description),
-			})
-		case cfgtypes.ParameterType_Int:
-			configFlags = append(configFlags, cli.IntFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: int\n", param.Description),
-				Value: int(defaultVal.(int64)),
-			})
-		case cfgtypes.ParameterType_Float:
-			configFlags = append(configFlags, cli.Float64Flag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: float\n", param.Description),
-				Value: defaultVal.(float64),
-			})
-		case cfgtypes.ParameterType_String:
-			configFlags = append(configFlags, cli.StringFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: string\n", param.Description),
-				Value: defaultVal.(string),
-			})
-		case cfgtypes.ParameterType_Uint:
-			configFlags = append(configFlags, cli.UintFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: uint\n", param.Description),
-				Value: uint(defaultVal.(uint64)),
-			})
-		case cfgtypes.ParameterType_Uint16:
-			configFlags = append(configFlags, cli.UintFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: uint16\n", param.Description),
-				Value: uint(defaultVal.(uint16)),
-			})
-		case cfgtypes.ParameterType_Choice:
-			optionStrings := []string{}
-			for _, option := range param.Options {
-				optionStrings = append(optionStrings, fmt.Sprint(option.Value))
-			}
-			configFlags = append(configFlags, cli.StringFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: choice\n\tOptions: %s\n", param.Description, strings.Join(optionStrings, ", ")),
-				Value: fmt.Sprint(defaultVal),
-			})
-		}
-	}
-
-	return configFlags
-}
 
 func getHttpClientWithTimeout() *http.Client {
 	return &http.Client{
@@ -148,7 +61,7 @@ func checkSignature(signatureUrl string, pubkeyUrl string, verification_target *
 	}
 
 	for _, v := range entity.Identities {
-		fmt.Printf("Signed by: %s", v.Name)
+		fmt.Printf("Signature verified. Signed by: %s\n", v.Name)
 	}
 	return nil
 }
@@ -157,7 +70,7 @@ func checkSignature(signatureUrl string, pubkeyUrl string, verification_target *
 func updateCLI(c *cli.Context) error {
 	// Check the latest version published to the Github repository
 	client := getHttpClientWithTimeout()
-	resp, err := client.Get("https://api.github.com/repos/rocket-pool/smartnode-install/releases/latest")
+	resp, err := client.Get(GithubAPIGetLatest)
 	if err != nil {
 		return err
 	}
@@ -186,20 +99,20 @@ func updateCLI(c *cli.Context) error {
 		}
 		switch latestVersion.Compare(currentVersion) {
 		case 1:
-			fmt.Printf("Newer version avilable online (%s). Downloading...\n", latestVersion.String())
+			fmt.Printf("Newer version avilable online (v%s). Downloading...\n", latestVersion.String())
 		case 0:
-			fmt.Printf("Already on latest version (%s). Aborting update\n", latestVersion.String())
+			fmt.Printf("Already on latest version (v%s). Aborting update\n", latestVersion.String())
 			return nil
 		default:
-			fmt.Printf("Online version (%s) is lower than running version (%s). Aborting update\n", latestVersion.String(), currentVersion.String())
+			fmt.Printf("Online version (v%s) is lower than running version (v%s). Aborting update\n", latestVersion.String(), currentVersion.String())
 			return nil
 		}
 	} else {
-		fmt.Printf("Forced update to %s. Downloading...\n", latestVersion.String())
+		fmt.Printf("Forced update to v%s. Downloading...\n", latestVersion.String())
 	}
 
 	// Download the new binary to same folder as the running RP binary, as `rocketpool-vX.X.X`
-	var ClientURL = fmt.Sprintf("https://github.com/rocket-pool/smartnode-install/releases/download/v%s/rocketpool-cli-%s-%s", latestVersion.String(), runtime.GOOS, runtime.GOARCH)
+	var ClientURL = fmt.Sprintf(ReleaseBinaryURL, latestVersion.String(), runtime.GOOS, runtime.GOARCH)
 	resp, err = http.Get(ClientURL)
 	if err != nil {
 		return fmt.Errorf("error while downloading %s: %w", ClientURL, err)
@@ -228,7 +141,7 @@ func updateCLI(c *cli.Context) error {
 
 	// Verify the signature of the downloaded binary
 	if !c.Bool("skip-signature-verification") {
-		var pubkeyUrl = fmt.Sprintf("https://github.com/rocket-pool/smartnode-install/releases/download/v%s/smartnode-signing-key-v3.asc", latestVersion.String())
+		var pubkeyUrl = fmt.Sprintf(SigningKeyURL, latestVersion.String())
 		output.Seek(0, io.SeekStart)
 		err = checkSignature(ClientURL+".sig", pubkeyUrl, output)
 		if err != nil {
@@ -258,18 +171,6 @@ func updateCLI(c *cli.Context) error {
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-
-	configFlags := []cli.Flag{}
-	cfgTemplate := config.NewRocketPoolConfig("", false)
-	network := cfgTemplate.Smartnode.Network.Value.(cfgtypes.Network)
-
-	// Root params
-	configFlags = createFlagsFromConfigParams("", cfgTemplate.GetParameters(), configFlags, network)
-
-	// Subconfigs
-	for sectionName, subconfig := range cfgTemplate.GetSubconfigs() {
-		configFlags = createFlagsFromConfigParams(sectionName, subconfig.GetParameters(), configFlags, network)
-	}
 
 	app.Commands = append(app.Commands, cli.Command{
 		Name:    name,
