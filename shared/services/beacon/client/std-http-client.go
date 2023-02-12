@@ -42,7 +42,8 @@ const (
 	RequestValidatorProposerDuties         = "/eth/v1/validator/duties/proposer/%s"
 	RequestWithdrawalCredentialsChangePath = "/eth/v1/beacon/pool/bls_to_execution_changes"
 
-	MaxRequestValidatorsCount = 600
+	MaxRequestValidatorsCount     = 600
+	threadLimit               int = 6
 )
 
 // Beacon client using the standard Beacon HTTP REST API (https://ethereum.github.io/beacon-APIs/)
@@ -235,12 +236,9 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 	nullPubkey := types.ValidatorPubkey{}
 
 	// Filter out null pubkeys
-	nullPubkeyExists := false
 	realPubkeys := []types.ValidatorPubkey{}
 	for _, pubkey := range pubkeys {
-		if bytes.Equal(pubkey.Bytes(), nullPubkey.Bytes()) {
-			nullPubkeyExists = true
-		} else {
+		if !bytes.Equal(pubkey.Bytes(), nullPubkey.Bytes()) {
 			// Teku doesn't like invalid pubkeys, so filter them out to make it consistent with other clients
 			_, err := bls.PublicKeyFromBytes(pubkey.Bytes())
 
@@ -251,9 +249,9 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 	}
 
 	// Convert pubkeys into hex strings
-	pubkeysHex := make([]string, len(pubkeys))
-	for vi := 0; vi < len(pubkeys); vi++ {
-		pubkeysHex[vi] = hexutil.AddPrefix(pubkeys[vi].Hex())
+	pubkeysHex := make([]string, len(realPubkeys))
+	for vi := 0; vi < len(realPubkeys); vi++ {
+		pubkeysHex[vi] = hexutil.AddPrefix(realPubkeys[vi].Hex())
 	}
 
 	// Get validators
@@ -265,6 +263,11 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 	// Build validator status map
 	statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
 	for _, validator := range validators.Data {
+
+		// Ignore empty pubkeys
+		if bytes.Equal(validator.Validator.Pubkey, nullPubkey[:]) {
+			continue
+		}
 
 		// Get validator pubkey
 		pubkey := types.BytesToValidatorPubkey(validator.Validator.Pubkey)
@@ -287,10 +290,8 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 
 	}
 
-	// Add zero status for null pubkey if requested
-	if nullPubkeyExists {
-		statuses[nullPubkey] = beacon.ValidatorStatus{}
-	}
+	// Put an empty status in for null pubkeys
+	statuses[nullPubkey] = beacon.ValidatorStatus{}
 
 	// Return
 	return statuses, nil
@@ -705,33 +706,37 @@ func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts
 		return ValidatorsResponse{}, fmt.Errorf("must specify a slot or epoch when calling getValidatorsByOpts")
 	}
 
-	// Load validator data in batches & return
-	data := make([]Validator, 0, len(pubkeysOrIndices))
-	for bsi := 0; bsi < len(pubkeysOrIndices); bsi += MaxRequestValidatorsCount {
-
-		// Get batch start & end index
-		vsi := bsi
-		vei := bsi + MaxRequestValidatorsCount
-		if vei > len(pubkeysOrIndices) {
-			vei = len(pubkeysOrIndices)
+	count := len(pubkeysOrIndices)
+	data := make([]Validator, count)
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+	for i := 0; i < count; i += MaxRequestValidatorsCount {
+		i := i
+		max := i + MaxRequestValidatorsCount
+		if max > count {
+			max = count
 		}
 
-		// Get validator pubkeysOrIndices for batch request
-		batch := make([]string, vei-vsi)
-		for vi := vsi; vi < vei; vi++ {
-			batch[vi-vsi] = pubkeysOrIndices[vi]
-		}
-
-		// Get & add validators
-		validators, err := c.getValidators(stateId, batch)
-		if err != nil {
-			return ValidatorsResponse{}, err
-		}
-		data = append(data, validators.Data...)
+		wg.Go(func() error {
+			// Get & add validators
+			batch := pubkeysOrIndices[i:max]
+			validators, err := c.getValidators(stateId, batch)
+			if err != nil {
+				return fmt.Errorf("error getting validator statuses: %w", err)
+			}
+			for j, responseData := range validators.Data {
+				data[i+j] = responseData
+			}
+			return nil
+		})
 
 	}
-	return ValidatorsResponse{Data: data}, nil
 
+	if err := wg.Wait(); err != nil {
+		return ValidatorsResponse{}, fmt.Errorf("error getting validators by opts: %w", err)
+	}
+
+	return ValidatorsResponse{Data: data}, nil
 }
 
 // Send voluntary exit request
