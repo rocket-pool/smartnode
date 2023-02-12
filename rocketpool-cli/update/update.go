@@ -86,9 +86,19 @@ func updateCLI(c *cli.Context) error {
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
 		return fmt.Errorf("could not decode Github API response: %w", err)
 	}
-	latestVersion, err := semver.Make(strings.TrimLeft(apiResponse["name"].(string), "v"))
-	if err != nil {
-		return fmt.Errorf("could not parse latest Rocket Pool version number from API response '%s': %w", apiResponse["name"].(string), err)
+	var latestVersion semver.Version
+	if x, found := apiResponse["url"]; found {
+		var name string
+		var ok bool
+		if name, ok = x.(string); !ok {
+			return fmt.Errorf("unexpected Github API response format")
+		}
+		latestVersion, err = semver.Make(strings.TrimLeft(name, "v"))
+		if err != nil {
+			return fmt.Errorf("could not parse version number from release name '%s': %w", name, err)
+		}
+	} else {
+		return fmt.Errorf("unexpected Github API response format")
 	}
 
 	// Check this version against the currently installed version
