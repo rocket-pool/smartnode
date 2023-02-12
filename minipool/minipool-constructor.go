@@ -40,6 +40,18 @@ func NewMinipoolFromDetails(rp *rocketpool.RocketPool, mpd NativeMinipoolDetails
 	}
 }
 
+// Create a minipool binding from an explicit version number
+func NewMinipoolFromVersion(rp *rocketpool.RocketPool, address common.Address, version uint8, opts *bind.CallOpts) (Minipool, error) {
+	switch version {
+	case 1, 2:
+		return newMinipool_v2(rp, address)
+	case 3:
+		return newMinipool_v3(rp, address, opts)
+	default:
+		return nil, fmt.Errorf("unexpected minipool contract version [%d]", version)
+	}
+}
+
 // Create a minipool contract directly from its ABI - used for legacy minipools
 func createMinipoolContractFromAbi(rp *rocketpool.RocketPool, address common.Address, encodedAbi string) (*rocketpool.Contract, error) {
 	// Decode ABI

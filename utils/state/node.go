@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	legacyNodeBatchSize  int = 20
-	nodeAddressBatchSize int = 1000
+	legacyNodeBatchSize  int = 200
+	nodeAddressBatchSize int = 2000
 )
 
 // Gets the details for a node using the efficient multicall contract

@@ -11,10 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
-	balanceBatchSize int = 4000
+	balanceBatchSize int = 2000
+	threadLimit      int = 6
 )
 
 type BalanceBatcher struct {
@@ -38,23 +40,51 @@ func NewBalanceBatcher(client rocketpool.ExecutionClient, address common.Address
 
 func (b *BalanceBatcher) GetEthBalances(addresses []common.Address, opts *bind.CallOpts) ([]*big.Int, error) {
 
-	tokens := make([]common.Address, len(addresses)) // Array of nils
+	// Sync
+	count := len(addresses)
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+	balances := make([]*big.Int, count)
 
-	callData, err := b.ABI.Pack("balances", addresses, tokens)
-	if err != nil {
-		return nil, fmt.Errorf("error creating calldata for balances: %w", err)
+	// Run the getters in batches
+	for i := 0; i < count; i += balanceBatchSize {
+		i := i
+		max := i + balanceBatchSize
+		if max > count {
+			max = count
+		}
+
+		wg.Go(func() error {
+			subAddresses := addresses[i:max]
+			tokens := []common.Address{
+				{}, // Empty token for ETH balance
+			}
+			callData, err := b.ABI.Pack("balances", subAddresses, tokens)
+			if err != nil {
+				return fmt.Errorf("error creating calldata for balances: %w", err)
+			}
+
+			response, err := b.Client.CallContract(context.Background(), ethereum.CallMsg{To: &b.ContractAddress, Data: callData}, opts.BlockNumber)
+			if err != nil {
+				return fmt.Errorf("error calling balances: %w", err)
+			}
+
+			var subBalances []*big.Int
+			err = b.ABI.UnpackIntoInterface(&subBalances, "balances", response)
+			if err != nil {
+				return fmt.Errorf("error unpacking balances response: %w", err)
+			}
+			for j, balance := range subBalances {
+				balances[i+j] = balance
+			}
+
+			return nil
+		})
 	}
 
-	response, err := b.Client.CallContract(context.Background(), ethereum.CallMsg{To: &b.ContractAddress, Data: callData}, opts.BlockNumber)
-	if err != nil {
+	if err := wg.Wait(); err != nil {
 		return nil, fmt.Errorf("error getting balances: %w", err)
 	}
 
-	balances := new([]*big.Int)
-	err = b.ABI.UnpackIntoInterface(&balances, "balances", response)
-	if err != nil {
-		return nil, fmt.Errorf("error unpacking balances response: %w", err)
-	}
-
-	return *balances, nil
+	return balances, nil
 }

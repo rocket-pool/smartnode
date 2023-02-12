@@ -1,7 +1,6 @@
 package state
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 
@@ -16,8 +15,9 @@ import (
 )
 
 const (
-	legacyMinipoolBatchSize  int = 20
-	minipoolAddressBatchSize int = 1000
+	legacyMinipoolBatchSize  int = 200
+	minipoolAddressBatchSize int = 2000
+	minipoolVersionBatchSize int = 500
 )
 
 // Gets the details for a minipool using the efficient multicall contract
@@ -34,7 +34,11 @@ func GetNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, minipoolAddress 
 		return minipool.NativeMinipoolDetails{}, err
 	}
 
-	addMinipoolDetailsCalls(rp, contracts, mc, &details, minipoolAddress, opts)
+	version, err := rocketpool.GetContractVersion(rp, minipoolAddress, opts)
+	if err != nil {
+		return minipool.NativeMinipoolDetails{}, fmt.Errorf("error getting minipool version: %w", err)
+	}
+	addMinipoolDetailsCalls(rp, contracts, mc, &details, minipoolAddress, version, opts)
 
 	_, err = mc.FlexibleCall(true)
 	if err != nil {
@@ -47,8 +51,13 @@ func GetNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, minipoolAddress 
 }
 
 // Gets the minpool details for a node using the efficient multicall contract
-func GetNodeNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
+func GetNodeNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
 	contracts, err := NewNetworkContracts(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	balanceBatcher, err := multicall.NewBalanceBatcher(rp.Client, balanceBatcherAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -58,12 +67,25 @@ func GetNodeNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress 
 	if err != nil {
 		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
-	return getBulkMinipoolDetails(rp, contracts, multicallerAddress, addresses, opts)
+
+	// Get the list of minipool versions
+	versions, err := getMinipoolVersionsFast(rp, contracts, multicallerAddress, addresses, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool versions: %w", err)
+	}
+
+	// Get the minipool details
+	return getBulkMinipoolDetails(rp, contracts, multicallerAddress, addresses, versions, balanceBatcher, opts)
 }
 
 // Gets all minpool details using the efficient multicall contract
-func GetAllNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
+func GetAllNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
 	contracts, err := NewNetworkContracts(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	balanceBatcher, err := multicall.NewBalanceBatcher(rp.Client, balanceBatcherAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +95,15 @@ func GetAllNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress c
 	if err != nil {
 		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
-	return getBulkMinipoolDetails(rp, contracts, multicallerAddress, addresses, opts)
+
+	// Get the list of minipool versions
+	versions, err := getMinipoolVersionsFast(rp, contracts, multicallerAddress, addresses, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool versions: %w", err)
+	}
+
+	// Get the minipool details
+	return getBulkMinipoolDetails(rp, contracts, multicallerAddress, addresses, versions, balanceBatcher, opts)
 }
 
 // Get all minipool addresses using the multicaller
@@ -168,8 +198,52 @@ func getAllMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkCo
 	return addresses, nil
 }
 
+// Get minipool versions using the multicaller
+func getMinipoolVersionsFast(rp *rocketpool.RocketPool, contracts *NetworkContracts, multicallerAddress common.Address, addresses []common.Address, opts *bind.CallOpts) ([]uint8, error) {
+	// Sync
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+
+	// Run the getters in batches
+	count := len(addresses)
+	versions := make([]uint8, count)
+	for i := 0; i < count; i += minipoolVersionBatchSize {
+		i := i
+		max := i + minipoolVersionBatchSize
+		if max > count {
+			max = count
+		}
+
+		wg.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				contract, err := rocketpool.GetRocketVersionContractForAddress(rp, addresses[j])
+				if err != nil {
+					return fmt.Errorf("error creating version contract for minipool %s: %w", addresses[j].Hex(), err)
+				}
+				mc.AddCall(contract, &versions[j], "version")
+			}
+			_, err = mc.FlexibleCall(true)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+			return nil
+		})
+	}
+
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
+	}
+
+	return versions, nil
+}
+
 // Get multiple minipool details at once
-func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, multicallerAddress common.Address, addresses []common.Address, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
+func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, multicallerAddress common.Address, addresses []common.Address, versions []uint8, balanceBatcher *multicall.BalanceBatcher, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
 	minipoolDetails := make([]minipool.NativeMinipoolDetails, len(addresses))
 
 	// Sync
@@ -197,7 +271,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 				details := &minipoolDetails[j]
 				details.MinipoolAddress = address
 
-				addMinipoolDetailsCalls(rp, contracts, mc, details, address, opts)
+				addMinipoolDetailsCalls(rp, contracts, mc, details, address, versions[j], opts)
 			}
 			_, err = mc.FlexibleCall(true)
 			if err != nil {
@@ -215,13 +289,22 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 		return nil, fmt.Errorf("error getting minipool details: %w", err)
 	}
 
+	// Get the balances of the minipools
+	balances, err := balanceBatcher.GetEthBalances(addresses, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool balances: %w", err)
+	}
+	for i, details := range minipoolDetails {
+		details.Balance = balances[i]
+	}
+
 	return minipoolDetails, nil
 }
 
 // Add all of the calls for the minipool details to the multicaller
-func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc *multicall.MultiCaller, details *minipool.NativeMinipoolDetails, address common.Address, opts *bind.CallOpts) error {
+func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc *multicall.MultiCaller, details *minipool.NativeMinipoolDetails, address common.Address, version uint8, opts *bind.CallOpts) error {
 	// Create the minipool contract binding
-	mp, err := minipool.NewMinipool(rp, address, opts)
+	mp, err := minipool.NewMinipoolFromVersion(rp, address, version, opts)
 	if err != nil {
 		return err
 	}
@@ -272,15 +355,6 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 
 // Fixes a legacy minipool details struct with supplemental logic
 func fixupMinipoolDetails(rp *rocketpool.RocketPool, details *minipool.NativeMinipoolDetails, opts *bind.CallOpts) error {
-	address := details.MinipoolAddress
-
-	var err error
-
-	// Get the minipool's ETH balance
-	details.Balance, err = rp.Client.BalanceAt(context.Background(), address, opts.BlockNumber)
-	if err != nil {
-		return err
-	}
 
 	details.Status = types.MinipoolStatus(details.StatusRaw)
 	details.DepositType = types.MinipoolDeposit(details.DepositTypeRaw)
