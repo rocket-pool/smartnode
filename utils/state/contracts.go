@@ -15,10 +15,11 @@ type NetworkContracts struct {
 	RocketTokenRPL               *rocketpool.Contract
 	RocketTokenRPLFixedSupply    *rocketpool.Contract
 	RocketStorage                *rocketpool.Contract
+	RocketMinipoolBondReducer    *rocketpool.Contract
 }
 
 // Get a new network contracts container
-func NewNetworkContracts(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*NetworkContracts, error) {
+func NewNetworkContracts(rp *rocketpool.RocketPool, isAtlasDeployed bool, opts *bind.CallOpts) (*NetworkContracts, error) {
 	contracts := &NetworkContracts{}
 	var err error
 	contracts.RocketNodeManager, err = rp.GetContract("rocketNodeManager", opts)
@@ -50,6 +51,13 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*Netwo
 		return nil, err
 	}
 	contracts.RocketStorage = rp.RocketStorageContract
+
+	if isAtlasDeployed {
+		contracts.RocketMinipoolBondReducer, err = rp.GetContract("rocketMinipoolBondReducer", opts)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return contracts, nil
 }

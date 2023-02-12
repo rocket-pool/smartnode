@@ -21,8 +21,8 @@ const (
 )
 
 // Gets the details for a minipool using the efficient multicall contract
-func GetNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, minipoolAddress common.Address, multicallerAddress common.Address, opts *bind.CallOpts) (minipool.NativeMinipoolDetails, error) {
-	contracts, err := NewNetworkContracts(rp, opts)
+func GetNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, minipoolAddress common.Address, multicallerAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) (minipool.NativeMinipoolDetails, error) {
+	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
 	if err != nil {
 		return minipool.NativeMinipoolDetails{}, err
 	}
@@ -38,7 +38,7 @@ func GetNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, minipoolAddress 
 	if err != nil {
 		return minipool.NativeMinipoolDetails{}, fmt.Errorf("error getting minipool version: %w", err)
 	}
-	addMinipoolDetailsCalls(rp, contracts, mc, &details, minipoolAddress, version, opts)
+	addMinipoolDetailsCalls(rp, contracts, mc, &details, version, opts)
 
 	_, err = mc.FlexibleCall(true)
 	if err != nil {
@@ -51,8 +51,8 @@ func GetNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, minipoolAddress 
 }
 
 // Gets the minpool details for a node using the efficient multicall contract
-func GetNodeNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
-	contracts, err := NewNetworkContracts(rp, opts)
+func GetNodeNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, balanceBatcherAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
+	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -79,8 +79,8 @@ func GetNodeNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress 
 }
 
 // Gets all minpool details using the efficient multicall contract
-func GetAllNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
-	contracts, err := NewNetworkContracts(rp, opts)
+func GetAllNativeMinipoolDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
+	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -251,6 +251,15 @@ func getMinipoolVersionsFast(rp *rocketpool.RocketPool, contracts *NetworkContra
 func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, multicallerAddress common.Address, addresses []common.Address, versions []uint8, balanceBatcher *multicall.BalanceBatcher, opts *bind.CallOpts) ([]minipool.NativeMinipoolDetails, error) {
 	minipoolDetails := make([]minipool.NativeMinipoolDetails, len(addresses))
 
+	// Get the balances of the minipools
+	balances, err := balanceBatcher.GetEthBalances(addresses, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool balances: %w", err)
+	}
+	for i := range minipoolDetails {
+		minipoolDetails[i].Balance = balances[i]
+	}
+
 	// Sync
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
@@ -276,7 +285,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 				details := &minipoolDetails[j]
 				details.MinipoolAddress = address
 
-				addMinipoolDetailsCalls(rp, contracts, mc, details, address, versions[j], opts)
+				addMinipoolDetailsCalls(rp, contracts, mc, details, versions[j], opts)
 			}
 			_, err = mc.FlexibleCall(true)
 			if err != nil {
@@ -291,13 +300,8 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 		return nil, fmt.Errorf("error getting minipool details: %w", err)
 	}
 
-	// Get the balances of the minipools and do the postprocessing on them
-	balances, err := balanceBatcher.GetEthBalances(addresses, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error getting minipool balances: %w", err)
-	}
+	// Postprocess the minipools
 	for i := range minipoolDetails {
-		minipoolDetails[i].Balance = balances[i]
 		fixupMinipoolDetails(rp, &minipoolDetails[i], opts)
 	}
 
@@ -305,8 +309,9 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 }
 
 // Add all of the calls for the minipool details to the multicaller
-func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc *multicall.MultiCaller, details *minipool.NativeMinipoolDetails, address common.Address, version uint8, opts *bind.CallOpts) error {
+func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc *multicall.MultiCaller, details *minipool.NativeMinipoolDetails, version uint8, opts *bind.CallOpts) error {
 	// Create the minipool contract binding
+	address := details.MinipoolAddress
 	mp, err := minipool.NewMinipoolFromVersion(rp, address, version, opts)
 	if err != nil {
 		return err
@@ -316,6 +321,7 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 	details.Version = mp.GetVersion()
 	mc.AddCall(contracts.RocketMinipoolManager, &details.Exists, "getMinipoolExists", address)
 	mc.AddCall(contracts.RocketMinipoolManager, &details.Pubkey, "getMinipoolPubkey", address)
+	mc.AddCall(contracts.RocketMinipoolManager, &details.WithdrawalCredentials, "getMinipoolWithdrawalCredentials", address)
 	mc.AddCall(mpContract, &details.StatusRaw, "getStatus")
 	mc.AddCall(mpContract, &details.StatusBlock, "getStatusBlock")
 	mc.AddCall(mpContract, &details.StatusTime, "getStatusTime")
@@ -333,22 +339,8 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 	mc.AddCall(mpContract, &details.EffectiveDelegate, "getEffectiveDelegate")
 	mc.AddCall(mpContract, &details.NodeAddress, "getNodeAddress")
 
-	penaltyCountKey := crypto.Keccak256Hash([]byte("network.penalties.penalty"), address.Bytes())
-	mc.AddCall(contracts.RocketStorage, &details.PenaltyCount, "getUint", penaltyCountKey)
-
-	penaltyRatekey := crypto.Keccak256Hash([]byte("minipool.penalty.rate"), address.Bytes())
-	mc.AddCall(contracts.RocketStorage, &details.PenaltyRate, "getUint", penaltyRatekey)
-
 	if version < 3 {
-		// UserDistributed is v3+ only
-		// Slashed is v3+ only
-		// LastBondReductionTime is v3+ only
-		// LastBondReductionPrevValue is v3+ only
-		// IsVacant is v3+ only
-		// NodeShareOfBalance is v3+ only
-		// ReduceBondTime is v3+ only
-		// ReduceBondCancelled is v3+ only
-		// ReduceBondValue is v3+ only
+		// These fields are all v3+ only
 		details.UserDistributed = false
 		details.Slashed = false
 		details.LastBondReductionTime = big.NewInt(0)
@@ -358,9 +350,27 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 		details.ReduceBondTime = big.NewInt(0)
 		details.ReduceBondCancelled = false
 		details.ReduceBondValue = big.NewInt(0)
+		details.PreMigrationBalance = big.NewInt(0)
+	} else {
+		mc.AddCall(mpContract, &details.UserDistributed, "getUserDistributed")
+		mc.AddCall(mpContract, &details.Slashed, "getSlashed")
+		mc.AddCall(mpContract, &details.IsVacant, "getVacant")
+		mc.AddCall(mpContract, &details.NodeShareOfBalance, "calculateNodeShare", details.Balance)
+		mc.AddCall(mpContract, &details.PreMigrationBalance, "getPreMigrationBalance")
+
+		// If v3 exists, RocketMinipoolBondReducer exists so this is safe
+		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.ReduceBondTime, "getReduceBondTime", address)
+		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.ReduceBondCancelled, "getReduceBondCancelled", address)
+		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.LastBondReductionTime, "getLastBondReductionTime", address)
+		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.LastBondReductionPrevValue, "getLastBondReductionPrevValue", address)
+		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.ReduceBondValue, "getReduceBondValue", address)
 	}
 
-	mc.AddCall(contracts.RocketMinipoolManager, &details.WithdrawalCredentials, "getMinipoolWithdrawalCredentials", address)
+	penaltyCountKey := crypto.Keccak256Hash([]byte("network.penalties.penalty"), address.Bytes())
+	mc.AddCall(contracts.RocketStorage, &details.PenaltyCount, "getUint", penaltyCountKey)
+
+	penaltyRatekey := crypto.Keccak256Hash([]byte("minipool.penalty.rate"), address.Bytes())
+	mc.AddCall(contracts.RocketStorage, &details.PenaltyRate, "getUint", penaltyRatekey)
 
 	return nil
 }

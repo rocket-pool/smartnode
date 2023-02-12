@@ -59,6 +59,19 @@ func GetReduceBondTime(rp *rocketpool.RocketPool, minipoolAddress common.Address
 	return time.Unix((*reduceBondTime).Int64(), 0), nil
 }
 
+// Gets the amount of ETH a minipool is reducing its bond to
+func GetReduceBondValue(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	reduceBondValue := new(*big.Int)
+	if err := rocketMinipoolBondReducer.Call(opts, reduceBondValue, "getReduceBondValue", minipoolAddress); err != nil {
+		return nil, fmt.Errorf("Could not get reduce bond value for minipool %s: %w", minipoolAddress.Hex(), err)
+	}
+	return *reduceBondValue, nil
+}
+
 // Gets the timestamp at which the bond was last reduced
 func GetLastBondReductionTime(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
 	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)

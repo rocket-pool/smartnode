@@ -26,6 +26,8 @@ type MinipoolV3 interface {
 	Promote(opts *bind.TransactOpts) (common.Hash, error)
 	GetPreMigrationBalance(opts *bind.CallOpts) (*big.Int, error)
 	GetUserDistributed(opts *bind.CallOpts) (bool, error)
+	GetSlashed(opts *bind.CallOpts) (bool, error)
+	GetLastBondReductionTime(opts *bind.CallOpts) (*big.Int, error)
 }
 
 // Minipool contract
@@ -354,6 +356,15 @@ func (mp *minipool_v3) GetUserDistributed(opts *bind.CallOpts) (bool, error) {
 		return false, fmt.Errorf("Could not get user distributed status for minipool %s: %w", mp.Address.Hex(), err)
 	}
 	return *distributed, nil
+}
+
+// Check if the minipool's RPL has been slashed
+func (mp *minipool_v3) GetSlashed(opts *bind.CallOpts) (bool, error) {
+	slashed := new(bool)
+	if err := mp.Contract.Call(opts, slashed, "getSlashed"); err != nil {
+		return false, fmt.Errorf("Could not get slashed status for minipool %s: %w", mp.Address.Hex(), err)
+	}
+	return *slashed, nil
 }
 
 // Estimate the gas of DistributeBalance

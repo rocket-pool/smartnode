@@ -19,8 +19,8 @@ const (
 )
 
 // Gets the details for a node using the efficient multicall contract
-func GetNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, opts *bind.CallOpts) (node.NativeNodeDetails, error) {
-	contracts, err := NewNetworkContracts(rp, opts)
+func GetNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) (node.NativeNodeDetails, error) {
+	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
 	if err != nil {
 		return node.NativeNodeDetails{}, err
 	}
@@ -59,8 +59,8 @@ func GetNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.A
 }
 
 // Gets the details for all nodes using the efficient multicall contract
-func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) ([]node.NativeNodeDetails, error) {
-	contracts, err := NewNetworkContracts(rp, opts)
+func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) ([]node.NativeNodeDetails, error) {
+	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
 	if err != nil {
 		return nil, err
 	}

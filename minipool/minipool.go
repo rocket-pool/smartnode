@@ -73,6 +73,7 @@ type NativeMinipoolDetails struct {
 	ReduceBondCancelled        bool                    `abi:"reduceBondCancelled"`
 	ReduceBondValue            *big.Int                `abi:"reduceBondValue"`
 	WithdrawalCredentials      common.Hash             `abi:"withdrawalCredentials"`
+	PreMigrationBalance        *big.Int                `abi:"preMigrationBalance"`
 	Status                     rptypes.MinipoolStatus
 	DepositType                rptypes.MinipoolDeposit
 }
