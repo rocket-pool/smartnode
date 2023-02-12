@@ -23,6 +23,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli"
 )
@@ -38,10 +39,12 @@ type generateRewardsTree struct {
 	bc        beacon.Client
 	lock      *sync.Mutex
 	isRunning bool
+	m         *state.NetworkStateManager
+	s         *state.NetworkState
 }
 
 // Create generate rewards Merkle Tree task
-func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*generateRewardsTree, error) {
+func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*generateRewardsTree, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -72,13 +75,14 @@ func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger 
 		rp:        rp,
 		lock:      lock,
 		isRunning: false,
+		m:         m,
 	}
 
 	return generator, nil
 }
 
 // Check for generation requests
-func (t *generateRewardsTree) run() error {
+func (t *generateRewardsTree) run(isAtlasDeployed bool) error {
 	t.log.Println("Checking for manual rewards tree generation requests...")
 
 	// Check if rewards generation is already running

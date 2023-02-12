@@ -18,6 +18,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -34,10 +35,12 @@ type dissolveTimedOutMinipools struct {
 	w   *wallet.Wallet
 	ec  rocketpool.ExecutionClient
 	rp  *rocketpool.RocketPool
+	m   *state.NetworkStateManager
+	s   *state.NetworkState
 }
 
 // Create dissolve timed out minipools task
-func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*dissolveTimedOutMinipools, error) {
+func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*dissolveTimedOutMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -65,12 +68,13 @@ func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*diss
 		w:   w,
 		ec:  ec,
 		rp:  rp,
+		m:   m,
 	}, nil
 
 }
 
 // Dissolve timed out minipools
-func (t *dissolveTimedOutMinipools) run() error {
+func (t *dissolveTimedOutMinipools) run(isAtlasDeployed bool) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

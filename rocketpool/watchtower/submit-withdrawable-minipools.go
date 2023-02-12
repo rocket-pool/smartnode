@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
@@ -37,6 +38,8 @@ type submitWithdrawableMinipools struct {
 	w   *wallet.Wallet
 	rp  *rocketpool.RocketPool
 	bc  beacon.Client
+	m   *state.NetworkStateManager
+	s   *state.NetworkState
 }
 
 // Withdrawable minipool info
@@ -48,7 +51,7 @@ type minipoolWithdrawableDetails struct {
 }
 
 // Create submit withdrawable minipools task
-func newSubmitWithdrawableMinipools(c *cli.Context, logger log.ColorLogger) (*submitWithdrawableMinipools, error) {
+func newSubmitWithdrawableMinipools(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*submitWithdrawableMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -76,12 +79,13 @@ func newSubmitWithdrawableMinipools(c *cli.Context, logger log.ColorLogger) (*su
 		w:   w,
 		rp:  rp,
 		bc:  bc,
+		m:   m,
 	}, nil
 
 }
 
 // Submit withdrawable minipools
-func (t *submitWithdrawableMinipools) run() error {
+func (t *submitWithdrawableMinipools) run(isAtlasDeployed bool) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

@@ -24,6 +24,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -47,10 +48,12 @@ type submitRewardsTree struct {
 	lock             *sync.Mutex
 	isRunning        bool
 	generationPrefix string
+	m                *state.NetworkStateManager
+	s                *state.NetworkState
 }
 
 // Create submit rewards Merkle Tree task
-func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*submitRewardsTree, error) {
+func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*submitRewardsTree, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -87,13 +90,14 @@ func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger lo
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Merkle Tree]",
+		m:                m,
 	}
 
 	return generator, nil
 }
 
 // Submit rewards Merkle Tree
-func (t *submitRewardsTree) run() error {
+func (t *submitRewardsTree) run(isAtlasDeployed bool) error {
 
 	// Wait for clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

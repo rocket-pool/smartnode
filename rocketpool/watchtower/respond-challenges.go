@@ -10,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -22,10 +23,12 @@ type respondChallenges struct {
 	cfg *config.RocketPoolConfig
 	w   *wallet.Wallet
 	rp  *rocketpool.RocketPool
+	m   *state.NetworkStateManager
+	s   *state.NetworkState
 }
 
 // Create respond to challenges task
-func newRespondChallenges(c *cli.Context, logger log.ColorLogger) (*respondChallenges, error) {
+func newRespondChallenges(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*respondChallenges, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -48,12 +51,13 @@ func newRespondChallenges(c *cli.Context, logger log.ColorLogger) (*respondChall
 		cfg: cfg,
 		w:   w,
 		rp:  rp,
+		m:   m,
 	}, nil
 
 }
 
 // Respond to challenges
-func (t *respondChallenges) run() error {
+func (t *respondChallenges) run(isAtlasDeployed bool) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

@@ -29,6 +29,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -177,10 +178,12 @@ type submitRplPrice struct {
 	oio             *contracts.OneInchOracle
 	bc              beacon.Client
 	isAtlasDeployed bool
+	m               *state.NetworkStateManager
+	s               *state.NetworkState
 }
 
 // Create submit RPL price task
-func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice, error) {
+func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*submitRplPrice, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -219,12 +222,13 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
 		oio:             oio,
 		bc:              bc,
 		isAtlasDeployed: false,
+		m:               m,
 	}, nil
 
 }
 
 // Submit RPL price
-func (t *submitRplPrice) run() error {
+func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

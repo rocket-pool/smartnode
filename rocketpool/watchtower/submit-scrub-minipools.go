@@ -24,6 +24,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -50,6 +51,8 @@ type submitScrubMinipools struct {
 	coll      *collectors.ScrubCollector
 	lock      *sync.Mutex
 	isRunning bool
+	m         *state.NetworkStateManager
+	s         *state.NetworkState
 }
 
 type iterationData struct {
@@ -80,7 +83,7 @@ type minipoolDetails struct {
 }
 
 // Create submit scrub minipools task
-func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.ScrubCollector) (*submitScrubMinipools, error) {
+func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.ScrubCollector, m *state.NetworkStateManager) (*submitScrubMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -118,12 +121,13 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, errorLogger
 		coll:      coll,
 		lock:      lock,
 		isRunning: false,
+		m:         m,
 	}, nil
 
 }
 
 // Submit scrub minipools
-func (t *submitScrubMinipools) run() error {
+func (t *submitScrubMinipools) run(isAtlasDeployed bool) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

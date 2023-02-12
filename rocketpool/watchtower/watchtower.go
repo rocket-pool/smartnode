@@ -10,9 +10,12 @@ import (
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Config
@@ -29,7 +32,6 @@ const (
 	SubmitNetworkBalancesColor       = color.FgYellow
 	SubmitWithdrawableMinipoolsColor = color.FgBlue
 	DissolveTimedOutMinipoolsColor   = color.FgMagenta
-	ProcessWithdrawalsColor          = color.FgCyan
 	SubmitScrubMinipoolsColor        = color.FgHiGreen
 	ErrorColor                       = color.FgRed
 	MetricsColor                     = color.FgHiYellow
@@ -37,7 +39,8 @@ const (
 	WarningColor                     = color.FgYellow
 	ProcessPenaltiesColor            = color.FgHiMagenta
 	CancelBondsColor                 = color.FgGreen
-	CheckSoloMigrationsColor         = color.FgHiWhite
+	CheckSoloMigrationsColor         = color.FgCyan
+	UpdateColor                      = color.FgHiWhite
 )
 
 // Register watchtower command
@@ -63,42 +66,59 @@ func run(c *cli.Context) error {
 		return err
 	}
 
+	// Get services
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return err
+	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return err
+	}
+
 	// Initialize the scrub metrics reporter
 	scrubCollector := collectors.NewScrubCollector()
 
 	// Initialize error logger
 	errorLog := log.NewColorLogger(ErrorColor)
+	updateLog := log.NewColorLogger(UpdateColor)
+
+	// Create the state manager
+	m, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, &updateLog)
+	if err != nil {
+		return err
+	}
 
 	// Initialize tasks
-	respondChallenges, err := newRespondChallenges(c, log.NewColorLogger(RespondChallengesColor))
+	respondChallenges, err := newRespondChallenges(c, log.NewColorLogger(RespondChallengesColor), m)
 	if err != nil {
 		return fmt.Errorf("error during respond-to-challenges check: %w", err)
 	}
-	submitRplPrice, err := newSubmitRplPrice(c, log.NewColorLogger(SubmitRplPriceColor))
+	submitRplPrice, err := newSubmitRplPrice(c, log.NewColorLogger(SubmitRplPriceColor), m)
 	if err != nil {
 		return fmt.Errorf("error during rpl price check: %w", err)
 	}
-	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor))
+	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), m)
 	if err != nil {
 		return fmt.Errorf("error during network balances check: %w", err)
 	}
-	submitWithdrawableMinipools, err := newSubmitWithdrawableMinipools(c, log.NewColorLogger(SubmitWithdrawableMinipoolsColor))
+	submitWithdrawableMinipools, err := newSubmitWithdrawableMinipools(c, log.NewColorLogger(SubmitWithdrawableMinipoolsColor), m)
 	if err != nil {
 		return fmt.Errorf("error during withdrawable minipools check: %w", err)
 	}
-	dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
+	dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor), m)
 	if err != nil {
 		return fmt.Errorf("error during timed-out minipools check: %w", err)
 	}
-	processWithdrawals, err := newProcessWithdrawals(c, log.NewColorLogger(ProcessWithdrawalsColor))
-	if err != nil {
-		return fmt.Errorf("error during withdrawal processing check: %w", err)
-	}
-	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
+	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector, m)
 	if err != nil {
 		return fmt.Errorf("error during scrub check: %w", err)
 	}
-	submitRewardsTree, err := newSubmitRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
+	submitRewardsTree, err := newSubmitRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	if err != nil {
 		return fmt.Errorf("error during rewards tree check: %w", err)
 	}
@@ -106,15 +126,15 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during penalties check: %w", err)
 	}*/
-	generateRewardsTree, err := newGenerateRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
+	generateRewardsTree, err := newGenerateRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	if err != nil {
 		return fmt.Errorf("error during manual tree generation check: %w", err)
 	}
-	cancelBondReductions, err := newCancelBondReductions(c, log.NewColorLogger(CancelBondsColor), errorLog)
+	cancelBondReductions, err := newCancelBondReductions(c, log.NewColorLogger(CancelBondsColor), errorLog, m)
 	if err != nil {
 		return fmt.Errorf("error during bond reduction cancel check: %w", err)
 	}
-	checkSoloMigrations, err := newCheckSoloMigrations(c, log.NewColorLogger(CheckSoloMigrationsColor), errorLog)
+	checkSoloMigrations, err := newCheckSoloMigrations(c, log.NewColorLogger(CheckSoloMigrationsColor), errorLog, m)
 	if err != nil {
 		return fmt.Errorf("error during solo migration check: %w", err)
 	}
@@ -127,6 +147,7 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
+	isAtlasDeployedMasterFlag := false
 	go func() {
 		for {
 			// Randomize the next interval
@@ -137,85 +158,102 @@ func run(c *cli.Context) error {
 			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errorLog.Println(err)
-			} else {
-				// Check the BC status
-				err := services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+				time.Sleep(taskCooldown)
+				continue
+			}
+
+			// Check the BC status
+			err = services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+			if err != nil {
+				errorLog.Println(err)
+				time.Sleep(taskCooldown)
+				continue
+			}
+
+			// Check for Atlas
+			if !isAtlasDeployedMasterFlag {
+				isAtlasDeployed, err := checkIfAtlasIsDeployed(rp)
 				if err != nil {
 					errorLog.Println(err)
-				} else {
-					// Run the manual rewards tree generation
-					if err := generateRewardsTree.run(); err != nil {
-						errorLog.Println(err)
-					}
 					time.Sleep(taskCooldown)
-
-					// Run the challenge check
-					if err := respondChallenges.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the rewards tree submission check
-					if err := submitRewardsTree.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the price submission check
-					if err := submitRplPrice.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the network balance submission check
-					if err := submitNetworkBalances.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the withdrawable status submission check
-					if err := submitWithdrawableMinipools.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the minipool dissolve check
-					if err := dissolveTimedOutMinipools.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the withdrawal processing check
-					if err := processWithdrawals.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the minipool scrub check
-					if err := submitScrubMinipools.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the bond cancel check
-					if err := cancelBondReductions.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run the solo migration check
-					if err := checkSoloMigrations.run(); err != nil {
-						errorLog.Println(err)
-					}
-					/*time.Sleep(taskCooldown)
-
-					// Run the fee recipient penalty check
-					if err := processPenalties.run(); err != nil {
-						errorLog.Println(err)
-					}*/
-					// DISABLED until MEV-Boost can support it
+					continue
 				}
+				isAtlasDeployedMasterFlag = isAtlasDeployed
 			}
+
+			// Update the network state
+			if err := updateNetworkState(m, updateLog, isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+				time.Sleep(taskCooldown)
+				continue
+			}
+
+			// Run the manual rewards tree generation
+			if err := generateRewardsTree.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the challenge check
+			if err := respondChallenges.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the rewards tree submission check
+			if err := submitRewardsTree.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the price submission check
+			if err := submitRplPrice.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the network balance submission check
+			if err := submitNetworkBalances.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the withdrawable status submission check
+			if err := submitWithdrawableMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the minipool dissolve check
+			if err := dissolveTimedOutMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the minipool scrub check
+			if err := submitScrubMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the bond cancel check
+			if err := cancelBondReductions.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the solo migration check
+			if err := checkSoloMigrations.run(isAtlasDeployedMasterFlag); err != nil {
+				errorLog.Println(err)
+			}
+			/*time.Sleep(taskCooldown)
+
+			// Run the fee recipient penalty check
+			if err := processPenalties.run(); err != nil {
+				errorLog.Println(err)
+			}*/
+			// DISABLED until MEV-Boost can support it
+
 			time.Sleep(interval)
 		}
 		wg.Done()
@@ -243,4 +281,50 @@ func configureHTTP() {
 	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
 
+}
+
+// Check if Atlas has been deployed yet
+func checkIfAtlasIsDeployed(rpbinding *rocketpool.RocketPool) (bool, error) {
+	isAtlasDeployed, err := rp.IsAtlasDeployed(rpbinding)
+	if err != nil {
+		return false, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+	}
+
+	if isAtlasDeployed {
+		fmt.Println(`
+*       .
+*      / \
+*     |.'.|
+*     |'.'|
+*   ,'|   |'.
+*  |,-'-|-'-.|
+*   __|_| |         _        _      _____           _
+*  | ___ \|        | |      | |    | ___ \         | |
+*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
+*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
+*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
+*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
+* +---------------------------------------------------+
+* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
+* +---------------------------------------------------+
+*
+* ================ Atlas has launched! ================
+`)
+	}
+	return isAtlasDeployed, nil
+}
+
+// Update the latest network state at each cycle
+func updateNetworkState(m *state.NetworkStateManager, log log.ColorLogger, isAtlasDeployed bool) error {
+	log.Print("Getting latest network state... ")
+	start := time.Now()
+
+	// Get the state of the network
+	_, err := m.UpdateState(nil, isAtlasDeployed)
+	if err != nil {
+		return fmt.Errorf("error updating network state: %w", err)
+	}
+
+	log.Printlnf("done in %s", time.Since(start))
+	return nil
 }

@@ -28,6 +28,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -49,6 +50,8 @@ type submitNetworkBalances struct {
 	rp              *rocketpool.RocketPool
 	bc              beacon.Client
 	isAtlasDeployed bool
+	m               *state.NetworkStateManager
+	s               *state.NetworkState
 }
 
 // Network balance info
@@ -70,7 +73,7 @@ type minipoolBalanceDetails struct {
 }
 
 // Create submit network balances task
-func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNetworkBalances, error) {
+func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*submitNetworkBalances, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -104,12 +107,13 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNe
 		rp:              rp,
 		bc:              bc,
 		isAtlasDeployed: false,
+		m:               m,
 	}, nil
 
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) run() error {
+func (t *submitNetworkBalances) run(isAtlasDeployed bool) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

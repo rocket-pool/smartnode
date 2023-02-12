@@ -17,6 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -45,10 +46,12 @@ type checkSoloMigrations struct {
 	isRunning        bool
 	generationPrefix string
 	isAtlasDeployed  bool
+	m                *state.NetworkStateManager
+	s                *state.NetworkState
 }
 
 // Create check solo migrations task
-func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*checkSoloMigrations, error) {
+func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*checkSoloMigrations, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -87,12 +90,13 @@ func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger 
 		isRunning:        false,
 		generationPrefix: "[Solo Migration]",
 		isAtlasDeployed:  false,
+		m:                m,
 	}, nil
 
 }
 
 // Start the solo migration checking thread
-func (t *checkSoloMigrations) run() error {
+func (t *checkSoloMigrations) run(isAtlasDeployed bool) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

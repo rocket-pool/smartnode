@@ -14,12 +14,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 )
 
 type cancelBondReductions struct {
@@ -30,15 +29,15 @@ type cancelBondReductions struct {
 	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
 	ec               rocketpool.ExecutionClient
-	bc               beacon.Client
 	lock             *sync.Mutex
 	isRunning        bool
 	generationPrefix string
-	isAtlasDeployed  bool
+	m                *state.NetworkStateManager
+	s                *state.NetworkState
 }
 
 // Create cancel bond reductions task
-func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*cancelBondReductions, error) {
+func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*cancelBondReductions, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -57,10 +56,6 @@ func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger
 	if err != nil {
 		return nil, err
 	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
 
 	// Return task
 	lock := &sync.Mutex{}
@@ -72,17 +67,16 @@ func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger
 		w:                w,
 		rp:               rp,
 		ec:               ec,
-		bc:               bc,
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Bond Reduction]",
-		isAtlasDeployed:  false,
+		m:                m,
 	}, nil
 
 }
 
 // Start the bond reduction cancellation thread
-func (t *cancelBondReductions) run() error {
+func (t *cancelBondReductions) run(isAtlasDeployed bool) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -92,6 +86,20 @@ func (t *cancelBondReductions) run() error {
 		return err
 	}
 
+	// Check if Atlas has been deployed yet
+	if !isAtlasDeployed {
+		return nil
+	}
+
+	// Log
+	t.log.Println("Checking for bond reductions to cancel...")
+
+	// Get the latest state
+	t.s = t.m.GetLatestState()
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
+	}
+
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
@@ -99,28 +107,13 @@ func (t *cancelBondReductions) run() error {
 	}
 
 	// Get trusted node status
-	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
+	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, opts)
 	if err != nil {
 		return err
 	}
 	if !(nodeTrusted) {
 		return nil
 	}
-
-	// Check if Atlas is deployed
-	if !t.isAtlasDeployed {
-		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
-		if err != nil {
-			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
-		}
-		t.isAtlasDeployed = isAtlasDeployed
-		if !t.isAtlasDeployed {
-			return nil
-		}
-	}
-
-	// Log
-	t.log.Println("Checking for bond reductions to cancel...")
 
 	// Check if the check is already running
 	t.lock.Lock()
@@ -157,100 +150,14 @@ func (t *cancelBondReductions) run() error {
 // Check for bond reductions to cancel
 func (t *cancelBondReductions) checkBondReductions() error {
 
-	// Data
-	var wg1 errgroup.Group
-	var addresses []common.Address
-	var eth2Config beacon.Eth2Config
-	var beaconHead beacon.BeaconHead
-
-	// Get eth2 config
-	wg1.Go(func() error {
-		var err error
-		eth2Config, err = t.bc.GetEth2Config()
-		if err != nil {
-			return fmt.Errorf("error getting Beacon config: %w", err)
-		}
-		return nil
-	})
-
-	// Get beacon head
-	wg1.Go(func() error {
-		var err error
-		beaconHead, err = t.bc.GetBeaconHead()
-		if err != nil {
-			return fmt.Errorf("error getting Beacon head: %w", err)
-		}
-		return nil
-	})
-
-	// Wait for data
-	if err := wg1.Wait(); err != nil {
-		return err
-	}
-
-	// Get the latest finalized slot that exists, and the EL block for it
-	finalizedEpoch := beaconHead.FinalizedEpoch
-	lastSlot := (finalizedEpoch+1)*eth2Config.SlotsPerEpoch - 1
-	var elBlock uint64
-	for lastSlot > 0 {
-		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(lastSlot))
-		if err != nil {
-			return fmt.Errorf("error getting Beacon block %d: %w", lastSlot, err)
-		}
-		if !exists {
-			lastSlot--
-		} else {
-			elBlock = block.ExecutionBlockNumber
-			break
-		}
-	}
-
-	t.printMessage(fmt.Sprintf("Latest finalized epoch is %d, checking for Beacon slot %d (EL block %d)", finalizedEpoch, lastSlot, elBlock))
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(elBlock),
-	}
-
-	// Get minipool addresses
-	addresses, err := minipool.GetMinipoolAddresses(t.rp, opts)
-	if err != nil {
-		return fmt.Errorf("error getting minipool addresses: %w", err)
-	}
-
-	// Get the bond reduction time of each MP
-	addressCount := len(addresses)
-	reductionMpTimes := make([]int64, addressCount)
-	for bsi := 0; bsi < addressCount; bsi += MinipoolBalanceDetailsBatchSize {
-		// Get batch start & end index
-		msi := bsi
-		mei := bsi + MinipoolBalanceDetailsBatchSize
-		if mei > addressCount {
-			mei = addressCount
-		}
-
-		// Load details
-		var wg errgroup.Group
-		for mi := msi; mi < mei; mi++ {
-			mi := mi
-			wg.Go(func() error {
-				address := addresses[mi]
-				rawTime, err := minipool.GetReduceBondTime(t.rp, address, opts)
-				if err != nil {
-					return fmt.Errorf("error getting bond reduction time for minipool %s: %w", address.Hex(), err)
-				}
-				reductionMpTimes[mi] = rawTime.Unix()
-				return nil
-			})
-		}
-		if err := wg.Wait(); err != nil {
-			return err
-		}
-	}
+	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", t.s.BeaconSlotNumber, t.s.ElBlockNumber))
 
 	// Check if any of them have bond reduction requests
-	reductionMps := []common.Address{}
-	for i := 0; i < addressCount; i++ {
-		if reductionMpTimes[i] > 0 {
-			reductionMps = append(reductionMps, addresses[i])
+	zero := big.NewInt(0)
+	reductionMps := []*minipool.NativeMinipoolDetails{}
+	for i, mpd := range t.s.MinipoolDetails {
+		if mpd.ReduceBondTime.Cmp(zero) == 1 {
+			reductionMps = append(reductionMps, &t.s.MinipoolDetails[i])
 		}
 	}
 
@@ -260,16 +167,11 @@ func (t *cancelBondReductions) checkBondReductions() error {
 		return nil
 	}
 
-	// Get the statuses of minipools with bond reductions
-	validators, err := rp.GetMinipoolValidators(t.rp, t.bc, reductionMps, opts, &beacon.ValidatorStatusOptions{Slot: &lastSlot})
-	if err != nil {
-		return fmt.Errorf("error getting bond reduction validator statuses: %w", err)
-	}
-
 	// Check the status of each one
 	threshold := uint64(32000000000)
-	for address, status := range validators {
-		switch status.Status {
+	for _, mpd := range reductionMps {
+		validator := t.s.ValidatorDetails[mpd.Pubkey]
+		switch validator.Status {
 		case beacon.ValidatorState_PendingInitialized,
 			beacon.ValidatorState_PendingQueued:
 			// Do nothing because this validator isn't live yet
@@ -277,9 +179,9 @@ func (t *cancelBondReductions) checkBondReductions() error {
 
 		case beacon.ValidatorState_ActiveOngoing:
 			// Check the balance
-			if status.Balance < threshold {
+			if validator.Balance < threshold {
 				// Cancel because it's under-balance
-				t.cancelBondReduction(address, fmt.Sprintf("minipool balance is %d (below the threshold)", status.Balance))
+				t.cancelBondReduction(mpd.MinipoolAddress, fmt.Sprintf("minipool balance is %d (below the threshold)", validator.Balance))
 			}
 
 		case beacon.ValidatorState_ActiveExiting,
@@ -288,10 +190,10 @@ func (t *cancelBondReductions) checkBondReductions() error {
 			beacon.ValidatorState_ExitedSlashed,
 			beacon.ValidatorState_WithdrawalPossible,
 			beacon.ValidatorState_WithdrawalDone:
-			t.cancelBondReduction(address, "minipool is already slashed, exiting, or exited")
+			t.cancelBondReduction(mpd.MinipoolAddress, "minipool is already slashed, exiting, or exited")
 
 		default:
-			return fmt.Errorf("unknown validator state: %v", status.Status)
+			return fmt.Errorf("unknown validator state: %v", validator.Status)
 		}
 	}
 
