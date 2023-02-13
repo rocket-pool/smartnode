@@ -7,21 +7,39 @@ import (
 
 // Container for network contracts
 type NetworkContracts struct {
-	RocketNodeManager            *rocketpool.Contract
-	RocketNodeStaking            *rocketpool.Contract
-	RocketMinipoolManager        *rocketpool.Contract
-	RocketNodeDistributorFactory *rocketpool.Contract
-	RocketTokenRETH              *rocketpool.Contract
-	RocketTokenRPL               *rocketpool.Contract
-	RocketTokenRPLFixedSupply    *rocketpool.Contract
-	RocketStorage                *rocketpool.Contract
-	RocketMinipoolBondReducer    *rocketpool.Contract
+	// Redstone
+	RocketDAOProtocolSettingsNode *rocketpool.Contract
+	RocketMinipoolManager         *rocketpool.Contract
+	RocketNetworkPrices           *rocketpool.Contract
+	RocketNodeDistributorFactory  *rocketpool.Contract
+	RocketNodeManager             *rocketpool.Contract
+	RocketNodeStaking             *rocketpool.Contract
+	RocketRewardsPool             *rocketpool.Contract
+	RocketStorage                 *rocketpool.Contract
+	RocketTokenRETH               *rocketpool.Contract
+	RocketTokenRPL                *rocketpool.Contract
+	RocketTokenRPLFixedSupply     *rocketpool.Contract
+
+	// Atlas
+	RocketMinipoolBondReducer *rocketpool.Contract
 }
 
 // Get a new network contracts container
 func NewNetworkContracts(rp *rocketpool.RocketPool, isAtlasDeployed bool, opts *bind.CallOpts) (*NetworkContracts, error) {
 	contracts := &NetworkContracts{}
 	var err error
+	contracts.RocketRewardsPool, err = rp.GetContract("rocketRewardsPool", opts)
+	if err != nil {
+		return nil, err
+	}
+	contracts.RocketDAOProtocolSettingsNode, err = rp.GetContract("rocketDAOProtocolSettingsNode", opts)
+	if err != nil {
+		return nil, err
+	}
+	contracts.RocketNetworkPrices, err = rp.GetContract("rocketNetworkPrices", opts)
+	if err != nil {
+		return nil, err
+	}
 	contracts.RocketNodeManager, err = rp.GetContract("rocketNodeManager", opts)
 	if err != nil {
 		return nil, err

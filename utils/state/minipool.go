@@ -61,12 +61,7 @@ type NativeMinipoolDetails struct {
 }
 
 // Gets the details for a minipool using the efficient multicall contract
-func GetNativeMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, multicallerAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) (NativeMinipoolDetails, error) {
-	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
-	if err != nil {
-		return NativeMinipoolDetails{}, err
-	}
-
+func GetNativeMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, multicallerAddress common.Address, contracts *NetworkContracts, opts *bind.CallOpts) (NativeMinipoolDetails, error) {
 	details := NativeMinipoolDetails{}
 	details.MinipoolAddress = minipoolAddress
 	mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
@@ -91,12 +86,7 @@ func GetNativeMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.
 }
 
 // Gets the minpool details for a node using the efficient multicall contract
-func GetNodeNativeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, balanceBatcherAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) ([]NativeMinipoolDetails, error) {
-	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
-	if err != nil {
-		return nil, err
-	}
-
+func GetNodeNativeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, balanceBatcherAddress common.Address, contracts *NetworkContracts, opts *bind.CallOpts) ([]NativeMinipoolDetails, error) {
 	balanceBatcher, err := multicall.NewBalanceBatcher(rp.Client, balanceBatcherAddress)
 	if err != nil {
 		return nil, err
@@ -119,12 +109,7 @@ func GetNodeNativeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.
 }
 
 // Gets all minpool details using the efficient multicall contract
-func GetAllNativeMinipoolDetails(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) ([]NativeMinipoolDetails, error) {
-	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
-	if err != nil {
-		return nil, err
-	}
-
+func GetAllNativeMinipoolDetails(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, contracts *NetworkContracts, opts *bind.CallOpts) ([]NativeMinipoolDetails, error) {
 	balanceBatcher, err := multicall.NewBalanceBatcher(rp.Client, balanceBatcherAddress)
 	if err != nil {
 		return nil, err
@@ -398,7 +383,7 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 		mc.AddCall(mpContract, &details.NodeShareOfBalance, "calculateNodeShare", details.Balance)
 		mc.AddCall(mpContract, &details.PreMigrationBalance, "getPreMigrationBalance")
 
-		// If v3 exists, RocketMinipoolBondReducer exists so this is safe
+		// If minipool v3 exists, RocketMinipoolBondReducer exists so this is safe
 		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.ReduceBondTime, "getReduceBondTime", address)
 		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.ReduceBondCancelled, "getReduceBondCancelled", address)
 		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.LastBondReductionTime, "getLastBondReductionTime", address)

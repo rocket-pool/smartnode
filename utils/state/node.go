@@ -48,12 +48,7 @@ type NativeNodeDetails struct {
 }
 
 // Gets the details for a node using the efficient multicall contract
-func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) (NativeNodeDetails, error) {
-	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
-	if err != nil {
-		return NativeNodeDetails{}, err
-	}
-
+func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, contracts *NetworkContracts, opts *bind.CallOpts) (NativeNodeDetails, error) {
 	details := NativeNodeDetails{}
 	details.NodeAddress = nodeAddress
 	mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
@@ -88,12 +83,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address,
 }
 
 // Gets the details for all nodes using the efficient multicall contract
-func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) ([]NativeNodeDetails, error) {
-	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
-	if err != nil {
-		return nil, err
-	}
-
+func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, contracts *NetworkContracts, opts *bind.CallOpts) ([]NativeNodeDetails, error) {
 	balanceBatcher, err := multicall.NewBalanceBatcher(rp.Client, balanceBatcherAddress)
 	if err != nil {
 		return nil, err
