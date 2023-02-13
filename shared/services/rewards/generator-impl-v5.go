@@ -12,12 +12,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -1154,7 +1154,7 @@ func (r *treeGeneratorImpl_v5) getStartBlocksForInterval(previousIntervalEvent r
 }
 
 // Get the bond of a minipool for the specified time
-func (r *treeGeneratorImpl_v5) getMinipoolBond(details *minipool.NativeMinipoolDetails, blockTime time.Time) *big.Int {
+func (r *treeGeneratorImpl_v5) getMinipoolBond(details *rpstate.NativeMinipoolDetails, blockTime time.Time) *big.Int {
 	currentBond := details.NodeDepositBalance
 	var previousBond *big.Int = details.LastBondReductionPrevValue
 

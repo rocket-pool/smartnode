@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
@@ -187,10 +188,10 @@ func (t *reduceBonds) run(isAtlasDeployed bool) error {
 }
 
 // Get reduceable minipools
-func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, opts *bind.CallOpts) ([]*minipool.NativeMinipoolDetails, error) {
+func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
 	// Filter minipools
-	reduceableMinipools := []*minipool.NativeMinipoolDetails{}
+	reduceableMinipools := []*rpstate.NativeMinipoolDetails{}
 	for _, mpd := range t.s.MinipoolDetailsByNode[nodeAddress] {
 
 		// TEMP
@@ -225,7 +226,7 @@ func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowS
 }
 
 // Reduce a minipool's bond
-func (t *reduceBonds) reduceBond(mpd *minipool.NativeMinipoolDetails, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, callOpts *bind.CallOpts) (bool, error) {
+func (t *reduceBonds) reduceBond(mpd *rpstate.NativeMinipoolDetails, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, callOpts *bind.CallOpts) (bool, error) {
 
 	// Log
 	t.log.Printlnf("Reducing bond for minipool %s...", mpd.MinipoolAddress.Hex())
@@ -237,7 +238,7 @@ func (t *reduceBonds) reduceBond(mpd *minipool.NativeMinipoolDetails, windowStar
 	}
 
 	// Make the minipool binding
-	mpBinding, err := minipool.NewMinipoolFromDetails(t.rp, *mpd, nil)
+	mpBinding, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, nil)
 	if err != nil {
 		return false, fmt.Errorf("error creating minipool binding for %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}

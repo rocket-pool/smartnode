@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -424,7 +425,7 @@ func (t *stakePrelaunchMinipools) runImpl_Atlas() error {
 }
 
 // Get prelaunch minipools
-func (t *stakePrelaunchMinipools) getPrelaunchMinipools_Atlas(nodeAddress common.Address, opts *bind.CallOpts) ([]*minipool.NativeMinipoolDetails, error) {
+func (t *stakePrelaunchMinipools) getPrelaunchMinipools_Atlas(nodeAddress common.Address, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
 	// Get the scrub period
 	scrubPeriod := t.s.NetworkDetails.ScrubPeriod
@@ -437,7 +438,7 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools_Atlas(nodeAddress common
 	blockTime := time.Unix(int64(block.Time), 0)
 
 	// Filter minipools by status
-	prelaunchMinipools := []*minipool.NativeMinipoolDetails{}
+	prelaunchMinipools := []*rpstate.NativeMinipoolDetails{}
 	for _, mpd := range t.s.MinipoolDetailsByNode[nodeAddress] {
 		if mpd.Status == rptypes.Prelaunch {
 			if mpd.IsVacant {
@@ -460,12 +461,12 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools_Atlas(nodeAddress common
 }
 
 // Stake a minipool
-func (t *stakePrelaunchMinipools) stakeMinipool_Atlas(mpd *minipool.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
+func (t *stakePrelaunchMinipools) stakeMinipool_Atlas(mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
 
 	// Log
 	t.log.Printlnf("Staking minipool %s...", mpd.MinipoolAddress.Hex())
 
-	mp, err := minipool.NewMinipoolFromDetails(t.rp, *mpd, callOpts)
+	mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, callOpts)
 	if err != nil {
 		return false, fmt.Errorf("cannot create binding for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}

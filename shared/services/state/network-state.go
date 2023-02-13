@@ -29,40 +29,6 @@ const (
 	threadLimit int = 6
 )
 
-type NetworkDetails struct {
-	RplPrice                          *big.Int
-	MinCollateralFraction             *big.Int
-	MaxCollateralFraction             *big.Int
-	IntervalDuration                  time.Duration
-	IntervalStart                     time.Time
-	NodeOperatorRewardsPercent        *big.Int
-	TrustedNodeOperatorRewardsPercent *big.Int
-	ProtocolDaoRewardsPercent         *big.Int
-	PendingRPLRewards                 *big.Int
-	RewardIndex                       uint64
-	PromotionScrubPeriod              time.Duration
-	BondReductionWindowStart          time.Duration
-	BondReductionWindowLength         time.Duration
-	ScrubPeriod                       time.Duration
-	SmoothingPoolAddress              common.Address
-	DepositPoolBalance                *big.Int
-	DepositPoolExcess                 *big.Int
-	QueueCapacity                     minipool.QueueCapacity
-	RPLInflationIntervalRate          *big.Int
-	RPLTotalSupply                    *big.Int
-	PricesBlock                       uint64
-	LatestReportablePricesBlock       uint64
-	ETHUtilizationRate                float64
-	StakingETHBalance                 *big.Int
-	RETHExchangeRate                  float64
-	TotalETHBalance                   *big.Int
-	RETHBalance                       *big.Int
-	TotalRETHSupply                   *big.Int
-	TotalRPLStake                     *big.Int
-	SmoothingPoolBalance              *big.Int
-	NodeFee                           float64
-}
-
 type NetworkState struct {
 	// Block / slot for this state
 	ElBlockNumber    uint64
@@ -70,16 +36,16 @@ type NetworkState struct {
 	BeaconConfig     beacon.Eth2Config
 
 	// Network details
-	NetworkDetails NetworkDetails
+	NetworkDetails *rpstate.NetworkDetails
 
 	// Node details
-	NodeDetails          []node.NativeNodeDetails
-	NodeDetailsByAddress map[common.Address]*node.NativeNodeDetails
+	NodeDetails          []rpstate.NativeNodeDetails
+	NodeDetailsByAddress map[common.Address]*rpstate.NativeNodeDetails
 
 	// Minipool details
-	MinipoolDetails          []minipool.NativeMinipoolDetails
-	MinipoolDetailsByAddress map[common.Address]*minipool.NativeMinipoolDetails
-	MinipoolDetailsByNode    map[common.Address][]*minipool.NativeMinipoolDetails
+	MinipoolDetails          []rpstate.NativeMinipoolDetails
+	MinipoolDetailsByAddress map[common.Address]*rpstate.NativeMinipoolDetails
+	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails
 
 	// Validator details
 	ValidatorDetails map[types.ValidatorPubkey]beacon.ValidatorStatus
@@ -90,6 +56,10 @@ type NetworkState struct {
 }
 
 func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, isAtlasDeployed bool) (*NetworkState, error) {
+	// Get the relevant network contracts
+	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+
 	// Get the execution block for the given slot
 	beaconBlock, exists, err := bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
 	if err != nil {
@@ -107,9 +77,9 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 
 	// Create the state wrapper
 	state := &NetworkState{
-		NodeDetailsByAddress:     map[common.Address]*node.NativeNodeDetails{},
-		MinipoolDetailsByAddress: map[common.Address]*minipool.NativeMinipoolDetails{},
-		MinipoolDetailsByNode:    map[common.Address][]*minipool.NativeMinipoolDetails{},
+		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
+		MinipoolDetailsByAddress: map[common.Address]*rpstate.NativeMinipoolDetails{},
+		MinipoolDetailsByNode:    map[common.Address][]*rpstate.NativeMinipoolDetails{},
 		BeaconSlotNumber:         slotNumber,
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
@@ -120,7 +90,11 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
 	start := time.Now()
 
-	// Network details
+	// Network contracts and details
+	contracts, err := rpstate.NewNetworkContracts(rp, isAtlasDeployed, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting network contracts: %w", err)
+	}
 	err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
@@ -128,16 +102,16 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	state.logLine("1/4 - Retrieved network details (%s so far)", time.Since(start))
 
 	// Node details
-	err = state.getNodeDetails(cfg, rp, opts, isAtlasDeployed)
+	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, multicallerAddress, balanceBatcherAddress, contracts, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting network details: %w", err)
+		return nil, fmt.Errorf("error getting all node details: %w", err)
 	}
 	state.logLine("2/4 - Retrieved node details (%s so far)", time.Since(start))
 
 	// Minipool details
-	err = state.getMinipoolDetails(cfg, rp, opts, isAtlasDeployed)
+	state.MinipoolDetails, err = rpstate.GetAllNativeMinipoolDetails(rp, multicallerAddress, balanceBatcherAddress, contracts, opts)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
 	state.logLine("3/4 - Retrieved minipool details (%s so far)", time.Since(start))
 
@@ -158,7 +132,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		// The map of nodes to minipools
 		nodeList, exists := state.MinipoolDetailsByNode[details.NodeAddress]
 		if !exists {
-			nodeList = []*minipool.NativeMinipoolDetails{}
+			nodeList = []*rpstate.NativeMinipoolDetails{}
 		}
 		nodeList = append(nodeList, &state.MinipoolDetails[i])
 		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
@@ -179,6 +153,8 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 
 // Get the details for the network
 func (state *NetworkState) getNetworkDetails(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, opts *bind.CallOpts, isAtlasDeployed bool) error {
+
+	state.NetworkDetails = &rpstate.NetworkDetails{}
 
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
@@ -467,58 +443,6 @@ func (state *NetworkState) getNetworkDetails(cfg *config.RocketPoolConfig, rp *r
 		return err
 	}
 
-	return nil
-}
-
-// Get the details for all nodes
-func (state *NetworkState) getNodeDetails(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, opts *bind.CallOpts, isAtlasDeployed bool) error {
-
-	var nodeDetails []node.NativeNodeDetails
-	if isAtlasDeployed {
-		// Use the uber getter
-		var err error
-		nodeDetails, err = node.GetAllNativeNodeDetails(rp, opts)
-		if err != nil {
-			return err
-		}
-	} else {
-		// Use the old-school method
-		var err error
-		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-		nodeDetails, err = rpstate.GetAllNativeNodeDetails_Legacy(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, opts)
-		if err != nil {
-			return err
-		}
-	}
-
-	state.NodeDetails = nodeDetails
-	return nil
-}
-
-// Get the details for all minipools
-func (state *NetworkState) getMinipoolDetails(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, opts *bind.CallOpts, isAtlasDeployed bool) error {
-
-	var minipoolDetails []minipool.NativeMinipoolDetails
-	if isAtlasDeployed {
-		// Use the uber getter
-		var err error
-		minipoolDetails, err = minipool.GetAllNativeMinipoolDetails(rp, opts)
-		if err != nil {
-			return err
-		}
-	} else {
-		// Use the old-school method
-		var err error
-		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-		minipoolDetails, err = rpstate.GetAllNativeMinipoolDetails_Legacy(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, opts)
-		if err != nil {
-			return err
-		}
-	}
-
-	state.MinipoolDetails = minipoolDetails
 	return nil
 }
 

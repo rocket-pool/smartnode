@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -154,7 +155,7 @@ func (t *cancelBondReductions) checkBondReductions() error {
 
 	// Check if any of the minipools have bond reduction requests
 	zero := big.NewInt(0)
-	reductionMps := []*minipool.NativeMinipoolDetails{}
+	reductionMps := []*rpstate.NativeMinipoolDetails{}
 	for i, mpd := range t.s.MinipoolDetails {
 		if mpd.ReduceBondTime.Cmp(zero) == 1 {
 			reductionMps = append(reductionMps, &t.s.MinipoolDetails[i])

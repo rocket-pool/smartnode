@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -76,7 +77,7 @@ func GetBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []
 }
 
 // Get the balances of the minipools on the beacon chain
-func GetBeaconBalancesFromState(rp *rocketpool.RocketPool, mpds []*minipool.NativeMinipoolDetails, state *state.NetworkState, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
+func GetBeaconBalancesFromState(rp *rocketpool.RocketPool, mpds []*rpstate.NativeMinipoolDetails, state *state.NetworkState, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
 
 	// Load details in batches
 	details := make([]minipoolBalanceDetails, len(mpds))
@@ -198,10 +199,10 @@ func GetMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 }
 
 // Get minipool balance details
-func GetMinipoolBalanceDetailsFromState(rp *rocketpool.RocketPool, mpd *minipool.NativeMinipoolDetails, state *state.NetworkState, opts *bind.CallOpts, blockEpoch uint64) (minipoolBalanceDetails, error) {
+func GetMinipoolBalanceDetailsFromState(rp *rocketpool.RocketPool, mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, opts *bind.CallOpts, blockEpoch uint64) (minipoolBalanceDetails, error) {
 
 	// Create minipool
-	mp, err := minipool.NewMinipoolFromDetails(rp, *mpd, opts)
+	mp, err := minipool.NewMinipoolFromVersion(rp, mpd.MinipoolAddress, mpd.Version, opts)
 	if err != nil {
 		return minipoolBalanceDetails{}, err
 	}

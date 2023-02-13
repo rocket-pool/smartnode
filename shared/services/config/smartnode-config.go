@@ -475,14 +475,14 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet:  "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
 			config.Network_Prater:   "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
 			config.Network_Devnet:   "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
-			config.Network_Zhejiang: "",
+			config.Network_Zhejiang: "0x9f547A06af42eA0A6D134493B73700b449C72885",
 		},
 
 		balancebatcherAddress: map[config.Network]string{
 			config.Network_Mainnet:  "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
 			config.Network_Prater:   "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
 			config.Network_Devnet:   "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
-			config.Network_Zhejiang: "",
+			config.Network_Zhejiang: "0x95508DEe920bCf470fc61395EfcCcb011E6a875E",
 		},
 
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{

@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -160,9 +161,9 @@ func (t *promoteMinipools) run(isAtlasDeployed bool) error {
 }
 
 // Get vacant minipools
-func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address, opts *bind.CallOpts) ([]*minipool.NativeMinipoolDetails, error) {
+func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
-	vacantMinipools := []*minipool.NativeMinipoolDetails{}
+	vacantMinipools := []*rpstate.NativeMinipoolDetails{}
 
 	// Get the scrub period
 	scrubPeriod := t.s.NetworkDetails.PromotionScrubPeriod
@@ -194,13 +195,13 @@ func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address, opts *
 }
 
 // Promote a minipool
-func (t *promoteMinipools) promoteMinipool(mpd *minipool.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
+func (t *promoteMinipools) promoteMinipool(mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
 
 	// Log
 	t.log.Printlnf("Promoting minipool %s...", mpd.MinipoolAddress.Hex())
 
 	// Get the updated minipool interface
-	mp, err := minipool.NewMinipoolFromDetails(t.rp, *mpd, callOpts)
+	mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, callOpts)
 	if err != nil {
 		return false, fmt.Errorf("cannot create binding for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
