@@ -16,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/klauspost/compress/zstd"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -97,7 +96,7 @@ func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger lo
 }
 
 // Submit rewards Merkle Tree
-func (t *submitRewardsTree) run(isAtlasDeployed bool) error {
+func (t *submitRewardsTree) run(nodeTrusted bool, isAtlasDeployed bool) error {
 
 	// Wait for clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -107,6 +106,9 @@ func (t *submitRewardsTree) run(isAtlasDeployed bool) error {
 		return err
 	}
 
+	// Get the latest state
+	t.s = t.m.GetLatestState()
+
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
@@ -114,10 +116,6 @@ func (t *submitRewardsTree) run(isAtlasDeployed bool) error {
 	}
 
 	// Check node trusted status
-	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
-	if err != nil {
-		return err
-	}
 	if !nodeTrusted && t.cfg.Smartnode.RewardsTreeMode.Value.(cfgtypes.RewardsMode) != cfgtypes.RewardsMode_Generate {
 		return nil
 	}
@@ -126,22 +124,14 @@ func (t *submitRewardsTree) run(isAtlasDeployed bool) error {
 	t.log.Println("Checking for rewards checkpoint...")
 
 	// Check if a rewards interval has passed and needs to be calculated
-	startTime, err := rewards.GetClaimIntervalTimeStart(t.rp, nil)
-	if err != nil {
-		return fmt.Errorf("error getting claim interval start time: %w", err)
-	}
-	intervalTime, err := rewards.GetClaimIntervalTime(t.rp, nil)
-	if err != nil {
-		return fmt.Errorf("error getting claim interval time: %w", err)
-	}
+	startTime := t.s.NetworkDetails.IntervalStart
+	intervalTime := t.s.NetworkDetails.IntervalDuration
 
 	// Calculate the end time, which is the number of intervals that have gone by since the current one's start
-	latestBlockHeader, err := t.ec.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return fmt.Errorf("error getting latest block header: %w", err)
-	}
-	latestBlockTime := time.Unix(int64(latestBlockHeader.Time), 0)
-	timeSinceStart := latestBlockTime.Sub(startTime)
+	genesisTime := time.Unix(int64(t.s.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := time.Duration(t.s.BeaconConfig.SecondsPerSlot*t.s.BeaconSlotNumber) * time.Second
+	stateTime := genesisTime.Add(secondsSinceGenesis)
+	timeSinceStart := stateTime.Sub(startTime)
 	intervalsPassed := timeSinceStart / intervalTime
 	endTime := startTime.Add(intervalTime * intervalsPassed)
 	if intervalsPassed == 0 {
@@ -149,30 +139,21 @@ func (t *submitRewardsTree) run(isAtlasDeployed bool) error {
 	}
 
 	// Get the block and timestamp of the consensus block that best matches the end time
-	snapshotBeaconBlock, elBlockNumber, nextIntervalEpochTime, err := t.getSnapshotConsensusBlock(endTime)
+	snapshotBeaconBlock, elBlockNumber, err := t.getSnapshotConsensusBlock(endTime)
 	if err != nil {
 		return err
 	}
 
 	// Get the number of the EL block matching the CL snapshot block
-	var snapshotElBlockHeader *types.Header
-	if elBlockNumber == 0 {
-		// No EL data so the Merge hasn't happened yet, figure out the EL block based on the Epoch ending time
-		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(nextIntervalEpochTime, t.rp)
-	} else {
-		snapshotElBlockHeader, err = t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
-	}
+	snapshotElBlockHeader, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
 	if err != nil {
 		return err
 	}
 	elBlockIndex := snapshotElBlockHeader.Number.Uint64()
 
 	// Get the current interval
-	currentIndexBig, err := rewards.GetRewardIndex(t.rp, nil)
-	if err != nil {
-		return err
-	}
-	currentIndex := currentIndexBig.Uint64()
+	currentIndex := t.s.NetworkDetails.RewardIndex
+	currentIndexBig := big.NewInt(0).SetUint64(currentIndex)
 
 	// Check if rewards generation is already running
 	t.lock.Lock()
@@ -189,7 +170,7 @@ func (t *submitRewardsTree) run(isAtlasDeployed bool) error {
 	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
 	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
-	// Check if we can reuse an existing file fir this interval
+	// Check if we can reuse an existing file for this interval
 	if t.isExistingFileValid(rewardsTreePath, uint64(intervalsPassed)) {
 		if !nodeTrusted {
 			t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s.", currentIndex, rewardsTreePath)
@@ -328,7 +309,7 @@ func (t *submitRewardsTree) generateTreeImpl(rp *rocketpool.RocketPool, interval
 	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed))
+	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), t.s)
 	if err != nil {
 		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
 	}
@@ -532,21 +513,16 @@ func (t *submitRewardsTree) uploadFileToWeb3Storage(wrapperBytes []byte, compres
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
-func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64, uint64, time.Time, error) {
-
-	// Get the config
-	eth2Config, err := t.bc.GetEth2Config()
-	if err != nil {
-		return 0, 0, time.Time{}, fmt.Errorf("Error getting Beacon config: %w", err)
-	}
+func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64, uint64, error) {
 
 	// Get the beacon head
 	beaconHead, err := t.bc.GetBeaconHead()
 	if err != nil {
-		return 0, 0, time.Time{}, fmt.Errorf("Error getting Beacon head: %w", err)
+		return 0, 0, fmt.Errorf("Error getting Beacon head: %w", err)
 	}
 
 	// Get the target block number
+	eth2Config := t.s.BeaconConfig
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
 	totalTimespan := endTime.Sub(genesisTime)
 	targetSlot := uint64(math.Ceil(totalTimespan.Seconds() / float64(eth2Config.SecondsPerSlot)))
@@ -556,7 +532,7 @@ func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64
 
 	// Check if the required epoch is finalized yet
 	if beaconHead.FinalizedEpoch < requiredEpoch {
-		return 0, 0, time.Time{}, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
+		return 0, 0, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
 	}
 
 	// Get the first successful block
@@ -564,7 +540,7 @@ func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64
 		// Try to get the current block
 		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
 		if err != nil {
-			return 0, 0, time.Time{}, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
+			return 0, 0, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
 		}
 
 		// If the block was missing, try the previous one
@@ -573,8 +549,7 @@ func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64
 			targetSlot--
 		} else {
 			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
-			blockTime := genesisTime.Add(time.Duration(requiredEpoch*eth2Config.SecondsPerEpoch) * time.Second)
-			return targetSlot, block.ExecutionBlockNumber, blockTime, nil
+			return targetSlot, block.ExecutionBlockNumber, nil
 		}
 	}
 

@@ -330,7 +330,7 @@ func updateNetworkState(m *state.NetworkStateManager, log log.ColorLogger, isAtl
 	start := time.Now()
 
 	// Get the state of the network
-	_, err := m.UpdateState(nil, isAtlasDeployed)
+	_, err := m.UpdateStateToHead(isAtlasDeployed)
 	if err != nil {
 		return fmt.Errorf("error updating network state: %w", err)
 	}

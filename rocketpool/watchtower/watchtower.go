@@ -2,14 +2,18 @@ package watchtower
 
 import (
 	"fmt"
+	"math/big"
 	"math/rand"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -75,6 +79,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return err
+	}
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return err
@@ -91,6 +99,12 @@ func run(c *cli.Context) error {
 	m, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, &updateLog)
 	if err != nil {
 		return err
+	}
+
+	// Get the node address
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return fmt.Errorf("error getting node account: %w", err)
 	}
 
 	// Initialize tasks
@@ -194,11 +208,13 @@ func run(c *cli.Context) error {
 			}
 			time.Sleep(taskCooldown)
 
-			// Run the challenge check
-			if err := respondChallenges.run(isAtlasDeployedMasterFlag); err != nil {
+			// Check if on the Oracle DAO
+			isOnOdao, err := isOnOracleDAO(rp, nodeAccount.Address, m)
+			if err != nil {
 				errorLog.Println(err)
+				time.Sleep(taskCooldown)
+				continue
 			}
-			time.Sleep(taskCooldown)
 
 			// Run the rewards tree submission check
 			if err := submitRewardsTree.run(isAtlasDeployedMasterFlag); err != nil {
@@ -206,53 +222,61 @@ func run(c *cli.Context) error {
 			}
 			time.Sleep(taskCooldown)
 
-			// Run the price submission check
-			if err := submitRplPrice.run(isAtlasDeployedMasterFlag); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
+			if isOnOdao {
+				// Run the challenge check
+				if err := respondChallenges.run(isAtlasDeployedMasterFlag); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
 
-			// Run the network balance submission check
-			if err := submitNetworkBalances.run(isAtlasDeployedMasterFlag); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
+				// Run the price submission check
+				if err := submitRplPrice.run(isAtlasDeployedMasterFlag); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
 
-			// Run the withdrawable status submission check
-			if err := submitWithdrawableMinipools.run(isAtlasDeployedMasterFlag); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
+				// Run the network balance submission check
+				if err := submitNetworkBalances.run(isAtlasDeployedMasterFlag); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
 
-			// Run the minipool dissolve check
-			if err := dissolveTimedOutMinipools.run(isAtlasDeployedMasterFlag); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
+				// Run the withdrawable status submission check
+				if err := submitWithdrawableMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
 
-			// Run the minipool scrub check
-			if err := submitScrubMinipools.run(isAtlasDeployedMasterFlag); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
+				// Run the minipool dissolve check
+				if err := dissolveTimedOutMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
 
-			// Run the bond cancel check
-			if err := cancelBondReductions.run(isAtlasDeployedMasterFlag); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
+				// Run the minipool scrub check
+				if err := submitScrubMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
 
-			// Run the solo migration check
-			if err := checkSoloMigrations.run(isAtlasDeployedMasterFlag); err != nil {
-				errorLog.Println(err)
-			}
-			/*time.Sleep(taskCooldown)
+				// Run the bond cancel check
+				if err := cancelBondReductions.run(isAtlasDeployedMasterFlag); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
 
-			// Run the fee recipient penalty check
-			if err := processPenalties.run(); err != nil {
-				errorLog.Println(err)
-			}*/
-			// DISABLED until MEV-Boost can support it
+				// Run the solo migration check
+				if err := checkSoloMigrations.run(isAtlasDeployedMasterFlag); err != nil {
+					errorLog.Println(err)
+				}
+				/*time.Sleep(taskCooldown)
+
+				// Run the fee recipient penalty check
+				if err := processPenalties.run(); err != nil {
+					errorLog.Println(err)
+				}*/
+				// DISABLED until MEV-Boost can support it
+			}
 
 			time.Sleep(interval)
 		}
@@ -320,11 +344,25 @@ func updateNetworkState(m *state.NetworkStateManager, log log.ColorLogger, isAtl
 	start := time.Now()
 
 	// Get the state of the network
-	_, err := m.UpdateState(nil, isAtlasDeployed)
+	_, err := m.UpdateStateToFinalized(isAtlasDeployed)
 	if err != nil {
 		return fmt.Errorf("error updating network state: %w", err)
 	}
 
 	log.Printlnf("done in %s", time.Since(start))
 	return nil
+}
+
+// Check if this node is on the Oracle DAO
+func isOnOracleDAO(rp *rocketpool.RocketPool, nodeAddress common.Address, m *state.NetworkStateManager) (bool, error) {
+	state := m.GetLatestState()
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
+	}
+
+	nodeTrusted, err := trustednode.GetMemberExists(rp, nodeAddress, opts)
+	if err != nil {
+		return false, fmt.Errorf("error checking if node is in the Oracle DAO: %w", err)
+	}
+	return nodeTrusted, nil
 }

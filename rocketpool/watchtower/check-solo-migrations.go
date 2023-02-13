@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -110,21 +109,6 @@ func (t *checkSoloMigrations) run(isAtlasDeployed bool) error {
 	t.s = t.m.GetLatestState()
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
-	}
-
-	// Get node account
-	nodeAccount, err := t.w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
-
-	// Get trusted node status
-	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
-	if err != nil {
-		return err
-	}
-	if !(nodeTrusted) {
-		return nil
 	}
 
 	// Log

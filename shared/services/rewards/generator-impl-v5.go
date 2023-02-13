@@ -22,7 +22,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
 	"golang.org/x/sync/errgroup"
@@ -30,7 +29,6 @@ import (
 
 // Implementation for tree generator ruleset v5
 type treeGeneratorImpl_v5 struct {
-	networkStateManager    *state.NetworkStateManager
 	networkState           *state.NetworkState
 	rewardsFile            *RewardsFile
 	elSnapshotHeader       *types.Header
@@ -58,7 +56,7 @@ type treeGeneratorImpl_v5 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v5(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *treeGeneratorImpl_v5 {
+func newTreeGeneratorImpl_v5(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v5 {
 	return &treeGeneratorImpl_v5{
 		rewardsFile: &RewardsFile{
 			RewardsFileVersion: 1,
@@ -95,6 +93,7 @@ func newTreeGeneratorImpl_v5(log log.ColorLogger, logPrefix string, index uint64
 		log:                   log,
 		logPrefix:             logPrefix,
 		totalAttestationScore: big.NewInt(0),
+		networkState:          state,
 	}
 }
 
@@ -106,25 +105,6 @@ func (r *treeGeneratorImpl_v5) getRulesetVersion() uint64 {
 func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*RewardsFile, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
-
-	// TODO - this should come from the creator of this generator
-	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, &r.log)
-	if err != nil {
-		return nil, fmt.Errorf("error creating network state manager: %w", err)
-	}
-	r.networkStateManager = mgr
-
-	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-	}
-
-	// Get a network snapshot
-	state, err := mgr.UpdateState(&r.rewardsFile.ConsensusEndBlock, isAtlasDeployed)
-	if err != nil {
-		return nil, fmt.Errorf("error creating network state snapshot: %w", err)
-	}
-	r.networkState = state
 
 	// Provision some struct params
 	r.rp = rp
@@ -139,17 +119,17 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
 
 	// Get the Beacon config
-	r.beaconConfig = mgr.BeaconConfig
+	r.beaconConfig = r.networkState.BeaconConfig
 	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
 
-	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(state.NodeDetails))
+	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(r.networkState.NodeDetails))
 
 	// Get the minipool count - this will be used for an error epsilon due to division truncation
-	minipoolCount := uint64(len(state.MinipoolDetails))
+	minipoolCount := uint64(len(r.networkState.MinipoolDetails))
 	r.epsilon = big.NewInt(int64(minipoolCount))
 
 	// Calculate the RPL rewards
-	err = r.calculateRplRewards()
+	err := r.calculateRplRewards()
 	if err != nil {
 		return nil, fmt.Errorf("Error calculating RPL rewards: %w", err)
 	}
@@ -185,25 +165,6 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 func (r *treeGeneratorImpl_v5) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
-	// TODO - this should come from the creator of this generator
-	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, &r.log)
-	if err != nil {
-		return nil, fmt.Errorf("error creating network state manager: %w", err)
-	}
-	r.networkStateManager = mgr
-
-	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-	}
-
-	// Get a network snapshot
-	state, err := mgr.UpdateState(&r.rewardsFile.ConsensusEndBlock, isAtlasDeployed)
-	if err != nil {
-		return nil, fmt.Errorf("error creating network state snapshot: %w", err)
-	}
-	r.networkState = state
-
 	r.rp = rp
 	r.cfg = cfg
 	r.bc = bc
@@ -216,17 +177,17 @@ func (r *treeGeneratorImpl_v5) approximateStakerShareOfSmoothingPool(rp *rocketp
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
 
 	// Get the Beacon config
-	r.beaconConfig = mgr.BeaconConfig
+	r.beaconConfig = r.networkState.BeaconConfig
 	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
 
-	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(state.NodeDetails))
+	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(r.networkState.NodeDetails))
 
 	// Get the minipool count - this will be used for an error epsilon due to division truncation
-	minipoolCount := uint64(len(state.MinipoolDetails))
+	minipoolCount := uint64(len(r.networkState.MinipoolDetails))
 	r.epsilon = big.NewInt(int64(minipoolCount))
 
 	// Calculate the ETH rewards
-	err = r.calculateEthRewards(false)
+	err := r.calculateEthRewards(false)
 	if err != nil {
 		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
@@ -847,7 +808,7 @@ func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.Attestat
 		if exists {
 			rpCommittee, exists := slotInfo.Committees[attestation.CommitteeIndex]
 			if exists {
-				blockTime := time.Unix(int64(r.networkStateManager.BeaconConfig.GenesisTime), 0).Add(time.Second * time.Duration(r.networkStateManager.BeaconConfig.SecondsPerSlot*attestation.SlotIndex))
+				blockTime := time.Unix(int64(r.networkState.BeaconConfig.GenesisTime), 0).Add(time.Second * time.Duration(r.networkState.BeaconConfig.SecondsPerSlot*attestation.SlotIndex))
 
 				// Check if each RP validator attested successfully
 				for position, validator := range rpCommittee.Positions {

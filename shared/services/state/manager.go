@@ -1,8 +1,10 @@
 package state
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -51,43 +53,61 @@ func NewNetworkStateManager(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 
 }
 
-// Logs a line if the logger is specified
-func (m *NetworkStateManager) logLine(format string, v ...interface{}) {
-	if m.log != nil {
-		m.log.Printlnf(format, v)
+// Get the state of the network at the provided Beacon slot
+func (m *NetworkStateManager) UpdateStateToHead(isAtlasDeployed bool) (*NetworkState, error) {
+	// Get the latest EL block
+	latestBlockHeader, err := m.ec.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting latest EL block: %w", err)
+	}
+
+	// Get the corresponding Beacon slot based on the timestamp
+	latestBlockTime := time.Unix(int64(latestBlockHeader.Time), 0)
+	genesisTime := time.Unix(int64(m.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := uint64(latestBlockTime.Sub(genesisTime).Seconds())
+	targetSlot := secondsSinceGenesis / m.BeaconConfig.SecondsPerSlot
+
+	// Return
+	return m.updateState(targetSlot, isAtlasDeployed)
+}
+
+// Get the state of the network at the latest finalized Beacon slot
+func (m *NetworkStateManager) UpdateStateToFinalized(isAtlasDeployed bool) (*NetworkState, error) {
+	// Get the latest finalized slot
+	head, err := m.bc.GetBeaconHead()
+	if err != nil {
+		return nil, fmt.Errorf("error getting latest finalized slot: %w", err)
+	}
+	targetSlot := head.FinalizedEpoch*m.BeaconConfig.SlotsPerEpoch + (m.BeaconConfig.SlotsPerEpoch - 1)
+
+	// If that slot is missing, get the latest one that isn't
+	for {
+		// Try to get the current block
+		_, exists, err := m.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
+		if err != nil {
+			return nil, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
+		}
+
+		// If the block was missing, try the previous one
+		if !exists {
+			m.logLine("Slot %d was missing, trying the previous one...", targetSlot)
+			targetSlot--
+		} else {
+			return m.updateState(targetSlot, isAtlasDeployed)
+		}
 	}
 }
 
+// Gets the latest state in a thread-safe manner
+func (m *NetworkStateManager) GetLatestState() *NetworkState {
+	m.updateLock.Lock()
+	defer m.updateLock.Unlock()
+	return m.latestState
+}
+
 // Get the state of the network at the provided Beacon slot
-func (m *NetworkStateManager) UpdateState(slotNumber *uint64, isAtlasDeployed bool) (*NetworkState, error) {
-	if slotNumber == nil {
-		// Get the latest finalized slot
-		head, err := m.bc.GetBeaconHead()
-		if err != nil {
-			return nil, fmt.Errorf("error getting latest finalized slot: %w", err)
-		}
-		targetSlot := head.FinalizedEpoch*m.BeaconConfig.SlotsPerEpoch + (m.BeaconConfig.SlotsPerEpoch - 1)
-
-		// If that slot is missing, get the latest one that isn't
-		for {
-			// Try to get the current block
-			_, exists, err := m.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
-			if err != nil {
-				return nil, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
-			}
-
-			// If the block was missing, try the previous one
-			if !exists {
-				m.logLine("Slot %d was missing, trying the previous one...", targetSlot)
-				targetSlot--
-			} else {
-				slotNumber = &targetSlot
-				break
-			}
-		}
-	}
-
-	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, *slotNumber, m.BeaconConfig, isAtlasDeployed)
+func (m *NetworkStateManager) updateState(slotNumber uint64, isAtlasDeployed bool) (*NetworkState, error) {
+	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig, isAtlasDeployed)
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +118,9 @@ func (m *NetworkStateManager) UpdateState(slotNumber *uint64, isAtlasDeployed bo
 	return state, nil
 }
 
-// Gets the latest state in a thread-safe manner
-func (m *NetworkStateManager) GetLatestState() *NetworkState {
-	m.updateLock.Lock()
-	defer m.updateLock.Unlock()
-	return m.latestState
+// Logs a line if the logger is specified
+func (m *NetworkStateManager) logLine(format string, v ...interface{}) {
+	if m.log != nil {
+		m.log.Printlnf(format, v)
+	}
 }

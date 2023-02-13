@@ -250,35 +250,6 @@ func (state *NetworkState) getNetworkDetails(cfg *config.RocketPoolConfig, rp *r
 		return nil
 	})
 
-	if isAtlasDeployed {
-		wg.Go(func() error {
-			promotionScrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting promotion scrub period: %w", err)
-			}
-			state.NetworkDetails.PromotionScrubPeriod = time.Duration(promotionScrubPeriodSeconds) * time.Second
-			return nil
-		})
-
-		wg.Go(func() error {
-			windowStartRaw, err := trustednode.GetBondReductionWindowStart(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting bond reduction window start: %w", err)
-			}
-			state.NetworkDetails.BondReductionWindowStart = time.Duration(windowStartRaw) * time.Second
-			return nil
-		})
-
-		wg.Go(func() error {
-			windowLengthRaw, err := trustednode.GetBondReductionWindowLength(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting bond reduction window length: %w", err)
-			}
-			state.NetworkDetails.BondReductionWindowLength = time.Duration(windowLengthRaw) * time.Second
-			return nil
-		})
-	}
-
 	wg.Go(func() error {
 		scrubPeriodSeconds, err := trustednode.GetScrubPeriod(rp, opts)
 		if err != nil {
@@ -437,6 +408,71 @@ func (state *NetworkState) getNetworkDetails(cfg *config.RocketPoolConfig, rp *r
 		}
 		return nil
 	})
+
+	wg.Go(func() error {
+		var err error
+		state.NetworkDetails.BalancesBlock, err = network.GetBalancesBlockRaw(rp, opts)
+		if err != nil {
+			return fmt.Errorf("error getting balances block: %w", err)
+		}
+		return nil
+	})
+
+	wg.Go(func() error {
+		var err error
+		state.NetworkDetails.LatestReportableBalancesBlock, err = network.GetLatestReportableBalancesBlock(rp, opts)
+		if err != nil {
+			return fmt.Errorf("error getting latest reportable balances block: %w", err)
+		}
+		return nil
+	})
+
+	wg.Go(func() error {
+		var err error
+		state.NetworkDetails.SubmitBalancesEnabled, err = protocol.GetSubmitBalancesEnabled(rp, opts)
+		if err != nil {
+			return fmt.Errorf("error getting submit balances enabled status: %w", err)
+		}
+		return nil
+	})
+
+	if isAtlasDeployed {
+		wg.Go(func() error {
+			promotionScrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(rp, opts)
+			if err != nil {
+				return fmt.Errorf("error getting promotion scrub period: %w", err)
+			}
+			state.NetworkDetails.PromotionScrubPeriod = time.Duration(promotionScrubPeriodSeconds) * time.Second
+			return nil
+		})
+
+		wg.Go(func() error {
+			windowStartRaw, err := trustednode.GetBondReductionWindowStart(rp, opts)
+			if err != nil {
+				return fmt.Errorf("error getting bond reduction window start: %w", err)
+			}
+			state.NetworkDetails.BondReductionWindowStart = time.Duration(windowStartRaw) * time.Second
+			return nil
+		})
+
+		wg.Go(func() error {
+			windowLengthRaw, err := trustednode.GetBondReductionWindowLength(rp, opts)
+			if err != nil {
+				return fmt.Errorf("error getting bond reduction window length: %w", err)
+			}
+			state.NetworkDetails.BondReductionWindowLength = time.Duration(windowLengthRaw) * time.Second
+			return nil
+		})
+
+		wg.Go(func() error {
+			var err error
+			state.NetworkDetails.DepositPoolUserBalance, err = deposit.GetUserBalance(rp, opts)
+			if err != nil {
+				return fmt.Errorf("error getting deposit pool user balance: %w", err)
+			}
+			return nil
+		})
+	}
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
