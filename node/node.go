@@ -39,39 +39,6 @@ type NodeDetails struct {
 	TimezoneLocation         string         `json:"timezoneLocation"`
 }
 
-// Node details
-type NativeNodeDetails struct {
-	Exists                           bool           `abi:"exists"`
-	RegistrationTime                 *big.Int       `abi:"registrationTime"`
-	TimezoneLocation                 string         `abi:"timezoneLocation"`
-	FeeDistributorInitialised        bool           `abi:"feeDistributorInitialised"`
-	FeeDistributorAddress            common.Address `abi:"feeDistributorAddress"`
-	RewardNetwork                    *big.Int       `abi:"rewardNetwork"`
-	RplStake                         *big.Int       `abi:"rplStake"`
-	EffectiveRPLStake                *big.Int       `abi:"effectiveRPLStake"`
-	MinimumRPLStake                  *big.Int       `abi:"minimumRPLStake"`
-	MaximumRPLStake                  *big.Int       `abi:"maximumRPLStake"`
-	EthMatched                       *big.Int       `abi:"ethMatched"`
-	EthMatchedLimit                  *big.Int       `abi:"ethMatchedLimit"`
-	MinipoolCount                    *big.Int       `abi:"minipoolCount"`
-	BalanceETH                       *big.Int       `abi:"balanceETH"`
-	BalanceRETH                      *big.Int       `abi:"balanceRETH"`
-	BalanceRPL                       *big.Int       `abi:"balanceRPL"`
-	BalanceOldRPL                    *big.Int       `abi:"balanceOldRPL"`
-	DepositCreditBalance             *big.Int       `abi:"depositCreditBalance"`
-	DistributorBalanceUserETH        *big.Int       `abi:"distributorBalanceUserETH"`
-	DistributorBalanceNodeETH        *big.Int       `abi:"distributorBalanceNodeETH"`
-	WithdrawalAddress                common.Address `abi:"withdrawalAddress"`
-	PendingWithdrawalAddress         common.Address `abi:"pendingWithdrawalAddress"`
-	SmoothingPoolRegistrationState   bool           `abi:"smoothingPoolRegistrationState"`
-	SmoothingPoolRegistrationChanged *big.Int       `abi:"smoothingPoolRegistrationChanged"`
-	NodeAddress                      common.Address `abi:"nodeAddress"`
-}
-
-type nndWrapper struct {
-	Details NativeNodeDetails
-}
-
 // Count of nodes belonging to a timezone
 type TimezoneCount struct {
 	Timezone string   `abi:"timezone"`
@@ -96,52 +63,6 @@ func GetNodeManagerVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 		return 0, err
 	}
 	return rocketpool.GetContractVersion(rp, *rocketNodeManager.Address, nil)
-}
-
-// Get the details for a node
-func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (NativeNodeDetails, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp, opts)
-	if err != nil {
-		return NativeNodeDetails{}, err
-	}
-	detailsWrapper := new(nndWrapper)
-	if err := rocketNodeManager.Call(opts, detailsWrapper, "getNodeDetails", nodeAddress); err != nil {
-		return NativeNodeDetails{}, fmt.Errorf("could not get details for node %s: %w", nodeAddress.Hex(), err)
-	}
-	return (*detailsWrapper).Details, nil
-}
-
-// Get the details for every node in the network
-func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NativeNodeDetails, error) {
-	// Get the node count
-	nodeCount, err := GetNodeCount(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	totalDetails := make([]NativeNodeDetails, 0, nodeCount)
-
-	// Get the contract
-	rocketNodeManager, err := getRocketNodeManager(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get all of the nodes
-	index := uint64(0)
-	limit := big.NewInt(int64(NativeNodeDetailsBatchSize))
-	for index < nodeCount {
-		offset := big.NewInt(int64(index))
-
-		details := new([]NativeNodeDetails)
-		if err := rocketNodeManager.Call(opts, details, "getAllNodeDetails", offset, limit); err != nil {
-			return nil, fmt.Errorf("could not get details for node range %d to %d: %w", index, index+NativeNodeDetailsBatchSize, err)
-		}
-
-		totalDetails = append(totalDetails, *details...)
-		index += NativeNodeDetailsBatchSize
-	}
-
-	return totalDetails, nil
 }
 
 // Get all node details

@@ -18,18 +18,47 @@ const (
 	nodeAddressBatchSize int = 2000
 )
 
+// Complete details for a node
+type NativeNodeDetails struct {
+	Exists                           bool           `abi:"exists"`
+	RegistrationTime                 *big.Int       `abi:"registrationTime"`
+	TimezoneLocation                 string         `abi:"timezoneLocation"`
+	FeeDistributorInitialised        bool           `abi:"feeDistributorInitialised"`
+	FeeDistributorAddress            common.Address `abi:"feeDistributorAddress"`
+	RewardNetwork                    *big.Int       `abi:"rewardNetwork"`
+	RplStake                         *big.Int       `abi:"rplStake"`
+	EffectiveRPLStake                *big.Int       `abi:"effectiveRPLStake"`
+	MinimumRPLStake                  *big.Int       `abi:"minimumRPLStake"`
+	MaximumRPLStake                  *big.Int       `abi:"maximumRPLStake"`
+	EthMatched                       *big.Int       `abi:"ethMatched"`
+	EthMatchedLimit                  *big.Int       `abi:"ethMatchedLimit"`
+	MinipoolCount                    *big.Int       `abi:"minipoolCount"`
+	BalanceETH                       *big.Int       `abi:"balanceETH"`
+	BalanceRETH                      *big.Int       `abi:"balanceRETH"`
+	BalanceRPL                       *big.Int       `abi:"balanceRPL"`
+	BalanceOldRPL                    *big.Int       `abi:"balanceOldRPL"`
+	DepositCreditBalance             *big.Int       `abi:"depositCreditBalance"`
+	DistributorBalanceUserETH        *big.Int       `abi:"distributorBalanceUserETH"`
+	DistributorBalanceNodeETH        *big.Int       `abi:"distributorBalanceNodeETH"`
+	WithdrawalAddress                common.Address `abi:"withdrawalAddress"`
+	PendingWithdrawalAddress         common.Address `abi:"pendingWithdrawalAddress"`
+	SmoothingPoolRegistrationState   bool           `abi:"smoothingPoolRegistrationState"`
+	SmoothingPoolRegistrationChanged *big.Int       `abi:"smoothingPoolRegistrationChanged"`
+	NodeAddress                      common.Address `abi:"nodeAddress"`
+}
+
 // Gets the details for a node using the efficient multicall contract
-func GetNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) (node.NativeNodeDetails, error) {
+func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) (NativeNodeDetails, error) {
 	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
 	if err != nil {
-		return node.NativeNodeDetails{}, err
+		return NativeNodeDetails{}, err
 	}
 
-	details := node.NativeNodeDetails{}
+	details := NativeNodeDetails{}
 	details.NodeAddress = nodeAddress
 	mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
 	if err != nil {
-		return node.NativeNodeDetails{}, err
+		return NativeNodeDetails{}, err
 	}
 
 	avgFee := big.NewInt(0)
@@ -37,19 +66,19 @@ func GetNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.A
 
 	_, err = mc.FlexibleCall(true)
 	if err != nil {
-		return node.NativeNodeDetails{}, fmt.Errorf("error executing multicall: %w", err)
+		return NativeNodeDetails{}, fmt.Errorf("error executing multicall: %w", err)
 	}
 
 	// Get the node's ETH balance
 	details.BalanceETH, err = rp.Client.BalanceAt(context.Background(), nodeAddress, opts.BlockNumber)
 	if err != nil {
-		return node.NativeNodeDetails{}, err
+		return NativeNodeDetails{}, err
 	}
 
 	// Get the distributor balance
 	distributorBalance, err := rp.Client.BalanceAt(context.Background(), details.FeeDistributorAddress, opts.BlockNumber)
 	if err != nil {
-		return node.NativeNodeDetails{}, err
+		return NativeNodeDetails{}, err
 	}
 
 	// Do some postprocessing on the node data
@@ -59,7 +88,7 @@ func GetNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, nodeAddress common.A
 }
 
 // Gets the details for all nodes using the efficient multicall contract
-func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) ([]node.NativeNodeDetails, error) {
+func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) ([]NativeNodeDetails, error) {
 	contracts, err := NewNetworkContracts(rp, isAtlasDeployed, opts)
 	if err != nil {
 		return nil, err
@@ -76,7 +105,7 @@ func GetAllNativeNodeDetails_Legacy(rp *rocketpool.RocketPool, multicallerAddres
 		return nil, fmt.Errorf("error getting node addresses: %w", err)
 	}
 	count := len(addresses)
-	nodeDetails := make([]node.NativeNodeDetails, count)
+	nodeDetails := make([]NativeNodeDetails, count)
 	avgFees := make([]*big.Int, count)
 
 	// Sync
@@ -189,7 +218,7 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 }
 
 // Add all of the calls for the node details to the multicaller
-func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *node.NativeNodeDetails, address common.Address, avgFee **big.Int) {
+func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeNodeDetails, address common.Address, avgFee **big.Int) {
 	mc.AddCall(contracts.RocketNodeManager, &details.Exists, "getNodeExists", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.RegistrationTime, "getNodeRegistrationTime", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.TimezoneLocation, "getNodeTimezoneLocation", address)
@@ -212,7 +241,7 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 }
 
 // Fixes a legacy node details struct with supplemental logic
-func fixupNodeDetails(rp *rocketpool.RocketPool, details *node.NativeNodeDetails, avgFee *big.Int, distributorBalance *big.Int, opts *bind.CallOpts) error {
+func fixupNodeDetails(rp *rocketpool.RocketPool, details *NativeNodeDetails, avgFee *big.Int, distributorBalance *big.Int, opts *bind.CallOpts) error {
 	// Fix the effective stake
 	if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
 		details.EffectiveRPLStake.SetUint64(0)

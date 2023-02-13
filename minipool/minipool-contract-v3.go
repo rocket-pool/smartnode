@@ -27,7 +27,6 @@ type MinipoolV3 interface {
 	GetPreMigrationBalance(opts *bind.CallOpts) (*big.Int, error)
 	GetUserDistributed(opts *bind.CallOpts) (bool, error)
 	GetSlashed(opts *bind.CallOpts) (bool, error)
-	GetLastBondReductionTime(opts *bind.CallOpts) (*big.Int, error)
 }
 
 // Minipool contract
