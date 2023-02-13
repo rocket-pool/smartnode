@@ -22,42 +22,47 @@ const (
 
 // Complete details for a minipool
 type NativeMinipoolDetails struct {
-	Exists                     bool                  `abi:"exists"`
-	MinipoolAddress            common.Address        `abi:"minipoolAddress"`
-	Pubkey                     types.ValidatorPubkey `abi:"pubkey"`
-	StatusRaw                  uint8                 `abi:"status"`
-	StatusBlock                *big.Int              `abi:"statusBlock"`
-	StatusTime                 *big.Int              `abi:"statusTime"`
-	Finalised                  bool                  `abi:"finalised"`
-	DepositTypeRaw             uint8                 `abi:"depositType"`
-	NodeFee                    *big.Int              `abi:"nodeFee"`
-	NodeDepositBalance         *big.Int              `abi:"nodeDepositBalance"`
-	NodeDepositAssigned        bool                  `abi:"nodeDepositAssigned"`
-	UserDepositBalance         *big.Int              `abi:"userDepositBalance"`
-	UserDepositAssigned        bool                  `abi:"userDepositAssigned"`
-	UserDepositAssignedTime    *big.Int              `abi:"userDepositAssignedTime"`
-	UseLatestDelegate          bool                  `abi:"useLatestDelegate"`
-	Delegate                   common.Address        `abi:"delegate"`
-	PreviousDelegate           common.Address        `abi:"previousDelegate"`
-	EffectiveDelegate          common.Address        `abi:"effectiveDelegate"`
-	PenaltyCount               *big.Int              `abi:"penaltyCount"`
-	PenaltyRate                *big.Int              `abi:"penaltyRate"`
-	UserDistributed            bool                  `abi:"userDistributed"`
-	Slashed                    bool                  `abi:"slashed"`
-	NodeAddress                common.Address        `abi:"nodeAddress"`
-	LastBondReductionTime      *big.Int              `abi:"lastBondReductionTime"`
-	LastBondReductionPrevValue *big.Int              `abi:"lastBondReductionPrevValue"`
-	IsVacant                   bool                  `abi:"vacant"`
-	Version                    uint8                 `abi:"delegateVersion"`
-	Balance                    *big.Int              `abi:"balance"`   // Contract balance
-	NodeShareOfBalance         *big.Int              `abi:"nodeShare"` // Result of calculateNodeShare(contract balance)
-	ReduceBondTime             *big.Int              `abi:"reduceBondTime"`
-	ReduceBondCancelled        bool                  `abi:"reduceBondCancelled"`
-	ReduceBondValue            *big.Int              `abi:"reduceBondValue"`
-	WithdrawalCredentials      common.Hash           `abi:"withdrawalCredentials"`
-	PreMigrationBalance        *big.Int              `abi:"preMigrationBalance"`
-	Status                     types.MinipoolStatus
-	DepositType                types.MinipoolDeposit
+	// Redstone
+	Exists                  bool                  `abi:"exists"`
+	MinipoolAddress         common.Address        `abi:"minipoolAddress"`
+	Pubkey                  types.ValidatorPubkey `abi:"pubkey"`
+	StatusRaw               uint8                 `abi:"status"`
+	StatusBlock             *big.Int              `abi:"statusBlock"`
+	StatusTime              *big.Int              `abi:"statusTime"`
+	Finalised               bool                  `abi:"finalised"`
+	DepositTypeRaw          uint8                 `abi:"depositType"`
+	NodeFee                 *big.Int              `abi:"nodeFee"`
+	NodeDepositBalance      *big.Int              `abi:"nodeDepositBalance"`
+	NodeDepositAssigned     bool                  `abi:"nodeDepositAssigned"`
+	UserDepositBalance      *big.Int              `abi:"userDepositBalance"`
+	UserDepositAssigned     bool                  `abi:"userDepositAssigned"`
+	UserDepositAssignedTime *big.Int              `abi:"userDepositAssignedTime"`
+	UseLatestDelegate       bool                  `abi:"useLatestDelegate"`
+	Delegate                common.Address        `abi:"delegate"`
+	PreviousDelegate        common.Address        `abi:"previousDelegate"`
+	EffectiveDelegate       common.Address        `abi:"effectiveDelegate"`
+	PenaltyCount            *big.Int              `abi:"penaltyCount"`
+	PenaltyRate             *big.Int              `abi:"penaltyRate"`
+	NodeAddress             common.Address        `abi:"nodeAddress"`
+	Version                 uint8                 `abi:"delegateVersion"`
+	Balance                 *big.Int              `abi:"balance"`   // Contract balance
+	NodeShareOfBalance      *big.Int              `abi:"nodeShare"` // Result of calculateNodeShare(contract balance)
+	UserShareOfBalance      *big.Int              `abi:"userShare"` // Result of calculateUserShare(contract balance)
+	NodeRefundBalance       *big.Int              `abi:"nodeRefundBalance"`
+	WithdrawalCredentials   common.Hash           `abi:"withdrawalCredentials"`
+	Status                  types.MinipoolStatus
+	DepositType             types.MinipoolDeposit
+
+	// Atlas
+	UserDistributed            bool     `abi:"userDistributed"`
+	Slashed                    bool     `abi:"slashed"`
+	IsVacant                   bool     `abi:"vacant"`
+	LastBondReductionTime      *big.Int `abi:"lastBondReductionTime"`
+	LastBondReductionPrevValue *big.Int `abi:"lastBondReductionPrevValue"`
+	ReduceBondTime             *big.Int `abi:"reduceBondTime"`
+	ReduceBondCancelled        bool     `abi:"reduceBondCancelled"`
+	ReduceBondValue            *big.Int `abi:"reduceBondValue"`
+	PreMigrationBalance        *big.Int `abi:"preMigrationBalance"`
 }
 
 // Gets the details for a minipool using the efficient multicall contract
@@ -285,11 +290,9 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 		minipoolDetails[i].Balance = balances[i]
 	}
 
-	// Sync
+	// Round 1: most of the details
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
-
-	// Run the getters in batches
 	count := len(addresses)
 	for i := 0; i < count; i += legacyMinipoolBatchSize {
 		i := i
@@ -322,7 +325,40 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 	}
 
 	if err := wg.Wait(); err != nil {
-		return nil, fmt.Errorf("error getting minipool details: %w", err)
+		return nil, fmt.Errorf("error getting minipool details r1: %w", err)
+	}
+
+	// Round 2: NodeShare and UserShare once the refund amount has been populated
+	var wg2 errgroup.Group
+	wg2.SetLimit(threadLimit)
+	for i := 0; i < count; i += legacyMinipoolBatchSize {
+		i := i
+		max := i + legacyMinipoolBatchSize
+		if max > count {
+			max = count
+		}
+
+		wg2.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				details := &minipoolDetails[j]
+				addMinipoolShareCalls(rp, contracts, mc, details, versions[j], opts)
+			}
+			_, err = mc.FlexibleCall(true)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+
+			return nil
+		})
+	}
+
+	if err := wg2.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting minipool details r2: %w", err)
 	}
 
 	// Postprocess the minipools
@@ -363,6 +399,7 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 	mc.AddCall(mpContract, &details.PreviousDelegate, "getPreviousDelegate")
 	mc.AddCall(mpContract, &details.EffectiveDelegate, "getEffectiveDelegate")
 	mc.AddCall(mpContract, &details.NodeAddress, "getNodeAddress")
+	mc.AddCall(mpContract, &details.NodeRefundBalance, "getNodeRefundBalance")
 
 	if version < 3 {
 		// These fields are all v3+ only
@@ -371,7 +408,6 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 		details.LastBondReductionTime = big.NewInt(0)
 		details.LastBondReductionPrevValue = big.NewInt(0)
 		details.IsVacant = false
-		details.NodeShareOfBalance = big.NewInt(0)
 		details.ReduceBondTime = big.NewInt(0)
 		details.ReduceBondCancelled = false
 		details.ReduceBondValue = big.NewInt(0)
@@ -380,7 +416,6 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 		mc.AddCall(mpContract, &details.UserDistributed, "getUserDistributed")
 		mc.AddCall(mpContract, &details.Slashed, "getSlashed")
 		mc.AddCall(mpContract, &details.IsVacant, "getVacant")
-		mc.AddCall(mpContract, &details.NodeShareOfBalance, "calculateNodeShare", details.Balance)
 		mc.AddCall(mpContract, &details.PreMigrationBalance, "getPreMigrationBalance")
 
 		// If minipool v3 exists, RocketMinipoolBondReducer exists so this is safe
@@ -396,6 +431,23 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 
 	penaltyRatekey := crypto.Keccak256Hash([]byte("minipool.penalty.rate"), address.Bytes())
 	mc.AddCall(contracts.RocketStorage, &details.PenaltyRate, "getUint", penaltyRatekey)
+
+	return nil
+}
+
+// Add the calls for the minipool node and user share to the multicaller
+func addMinipoolShareCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeMinipoolDetails, version uint8, opts *bind.CallOpts) error {
+	// Create the minipool contract binding
+	address := details.MinipoolAddress
+	mp, err := minipool.NewMinipoolFromVersion(rp, address, version, opts)
+	if err != nil {
+		return err
+	}
+	mpContract := mp.GetContract()
+
+	properBalance := big.NewInt(0).Sub(details.Balance, details.NodeRefundBalance)
+	mc.AddCall(mpContract, &details.NodeShareOfBalance, "calculateNodeShare", properBalance)
+	mc.AddCall(mpContract, &details.UserShareOfBalance, "calculateUserShare", properBalance)
 
 	return nil
 }

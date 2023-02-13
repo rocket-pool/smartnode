@@ -12,6 +12,7 @@ import (
 )
 
 type NetworkDetails struct {
+	// Redstone
 	RplPrice                          *big.Int
 	MinCollateralFraction             *big.Int
 	MaxCollateralFraction             *big.Int
@@ -22,9 +23,6 @@ type NetworkDetails struct {
 	ProtocolDaoRewardsPercent         *big.Int
 	PendingRPLRewards                 *big.Int
 	RewardIndex                       uint64
-	PromotionScrubPeriod              time.Duration
-	BondReductionWindowStart          time.Duration
-	BondReductionWindowLength         time.Duration
 	ScrubPeriod                       time.Duration
 	SmoothingPoolAddress              common.Address
 	DepositPoolBalance                *big.Int
@@ -43,6 +41,15 @@ type NetworkDetails struct {
 	TotalRPLStake                     *big.Int
 	SmoothingPoolBalance              *big.Int
 	NodeFee                           float64
+	BalancesBlock                     *big.Int
+	LatestReportableBalancesBlock     *big.Int
+	SubmitBalancesEnabled             bool
+
+	// Atlas
+	PromotionScrubPeriod      time.Duration
+	BondReductionWindowStart  time.Duration
+	BondReductionWindowLength time.Duration
+	DepositPoolUserBalance    *big.Int
 }
 
 // TODO: Finish this, involves porting e.g. GetClaimIntervalTime() over

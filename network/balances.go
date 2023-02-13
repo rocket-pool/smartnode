@@ -25,6 +25,19 @@ func GetBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
 	return (*balancesBlock).Uint64(), nil
 }
 
+// Get the block number which network balances are current for
+func GetBalancesBlockRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	balancesBlock := new(*big.Int)
+	if err := rocketNetworkBalances.Call(opts, balancesBlock, "getBalancesBlock"); err != nil {
+		return nil, fmt.Errorf("Could not get network balances block: %w", err)
+	}
+	return *balancesBlock, nil
+}
+
 // Get the current network total ETH balance
 func GetTotalETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)

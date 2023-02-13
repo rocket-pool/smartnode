@@ -241,14 +241,20 @@ func fixupNodeDetails(rp *rocketpool.RocketPool, details *NativeNodeDetails, avg
 	if distributorBalance.Cmp(zero) > 0 {
 		halfBalance := big.NewInt(0)
 		halfBalance.Div(distributorBalance, two)
-		nodeShare := big.NewInt(0)
-		nodeShare.Mul(halfBalance, avgFee)
-		nodeShare.Div(nodeShare, oneInWei)
-		nodeShare.Add(nodeShare, halfBalance)
-		details.DistributorBalanceNodeETH = nodeShare
-		userShare := big.NewInt(0)
-		userShare.Sub(distributorBalance, nodeShare)
-		details.DistributorBalanceUserETH = userShare
+		if details.MinipoolCount.Cmp(zero) == 0 {
+			// Split it 50/50 if there are no minipools
+			details.DistributorBalanceNodeETH = big.NewInt(0).Set(halfBalance)
+			details.DistributorBalanceUserETH = big.NewInt(0).Sub(distributorBalance, halfBalance)
+		} else {
+			nodeShare := big.NewInt(0)
+			nodeShare.Mul(halfBalance, avgFee)
+			nodeShare.Div(nodeShare, oneInWei)
+			nodeShare.Add(nodeShare, halfBalance)
+			details.DistributorBalanceNodeETH = nodeShare
+			userShare := big.NewInt(0)
+			userShare.Sub(distributorBalance, nodeShare)
+			details.DistributorBalanceUserETH = userShare
+		}
 	}
 
 	return nil
