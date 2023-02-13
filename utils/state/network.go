@@ -44,6 +44,8 @@ type NetworkDetails struct {
 	BalancesBlock                     *big.Int
 	LatestReportableBalancesBlock     *big.Int
 	SubmitBalancesEnabled             bool
+	SubmitPricesEnabled               bool
+	MinipoolLaunchTimeout             *big.Int
 
 	// Atlas
 	PromotionScrubPeriod      time.Duration

@@ -128,6 +128,19 @@ func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (t
 	seconds := time.Duration((*value).Int64()) * time.Second
 	return seconds, nil
 }
+
+// Timeout period in seconds for prelaunch minipools to launch
+func GetMinipoolLaunchTimeoutRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := minipoolSettingsContract.Call(opts, value, "getLaunchTimeout"); err != nil {
+		return nil, fmt.Errorf("Could not get minipool launch timeout: %w", err)
+	}
+	return *value, nil
+}
 func BootstrapMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value time.Duration, opts *bind.TransactOpts) (common.Hash, error) {
 	return protocoldao.BootstrapUint(rp, MinipoolSettingsContractName, "minipool.launch.timeout", big.NewInt(int64(value.Seconds())), opts)
 }
