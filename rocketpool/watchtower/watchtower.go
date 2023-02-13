@@ -217,7 +217,7 @@ func run(c *cli.Context) error {
 			}
 
 			// Run the rewards tree submission check
-			if err := submitRewardsTree.run(isAtlasDeployedMasterFlag); err != nil {
+			if err := submitRewardsTree.run(isOnOdao, isAtlasDeployedMasterFlag); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
