@@ -436,6 +436,24 @@ func (state *NetworkState) getNetworkDetails(cfg *config.RocketPoolConfig, rp *r
 		return nil
 	})
 
+	wg.Go(func() error {
+		var err error
+		state.NetworkDetails.SubmitPricesEnabled, err = protocol.GetSubmitPricesEnabled(rp, opts)
+		if err != nil {
+			return fmt.Errorf("error getting submit prices enabled status: %w", err)
+		}
+		return nil
+	})
+
+	wg.Go(func() error {
+		var err error
+		state.NetworkDetails.MinipoolLaunchTimeout, err = protocol.GetMinipoolLaunchTimeoutRaw(rp, opts)
+		if err != nil {
+			return fmt.Errorf("error getting minipool launch timeout %w", err)
+		}
+		return nil
+	})
+
 	if isAtlasDeployed {
 		wg.Go(func() error {
 			promotionScrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(rp, opts)

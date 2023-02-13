@@ -15,15 +15,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
-	network_v110 "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/network"
+	v110_network "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/network"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -36,7 +34,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 const (
@@ -169,17 +166,16 @@ type poolObserveResponse struct {
 
 // Submit RPL price task
 type submitRplPrice struct {
-	c               *cli.Context
-	log             log.ColorLogger
-	cfg             *config.RocketPoolConfig
-	ec              rocketpool.ExecutionClient
-	w               *wallet.Wallet
-	rp              *rocketpool.RocketPool
-	oio             *contracts.OneInchOracle
-	bc              beacon.Client
-	isAtlasDeployed bool
-	m               *state.NetworkStateManager
-	s               *state.NetworkState
+	c   *cli.Context
+	log log.ColorLogger
+	cfg *config.RocketPoolConfig
+	ec  rocketpool.ExecutionClient
+	w   *wallet.Wallet
+	rp  *rocketpool.RocketPool
+	oio *contracts.OneInchOracle
+	bc  beacon.Client
+	m   *state.NetworkStateManager
+	s   *state.NetworkState
 }
 
 // Create submit RPL price task
@@ -213,16 +209,15 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, m *state.NetworkS
 
 	// Return task
 	return &submitRplPrice{
-		c:               c,
-		log:             logger,
-		cfg:             cfg,
-		ec:              ec,
-		w:               w,
-		rp:              rp,
-		oio:             oio,
-		bc:              bc,
-		isAtlasDeployed: false,
-		m:               m,
+		c:   c,
+		log: logger,
+		cfg: cfg,
+		ec:  ec,
+		w:   w,
+		rp:  rp,
+		oio: oio,
+		bc:  bc,
+		m:   m,
 	}, nil
 
 }
@@ -241,40 +236,12 @@ func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 		return err
 	}
 
-	// Data
-	var wg errgroup.Group
-	var nodeTrusted bool
-	var submitPricesEnabled bool
+	// Get the latest state
+	t.s = t.m.GetLatestState()
 
-	// Get data
-	wg.Go(func() error {
-		var err error
-		nodeTrusted, err = trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		submitPricesEnabled, err = protocol.GetSubmitPricesEnabled(t.rp, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return err
-	}
-
-	// Check node trusted status & settings
-	if !(nodeTrusted && submitPricesEnabled) {
+	// Check if submission is enabled
+	if !t.s.NetworkDetails.SubmitPricesEnabled {
 		return nil
-	}
-
-	// Check if Atlas is deployed
-	if !t.isAtlasDeployed {
-		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
-		if err != nil {
-			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
-		}
-		t.isAtlasDeployed = isAtlasDeployed
 	}
 
 	// Check if Optimism rate is stale and submit
@@ -302,16 +269,10 @@ func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 	t.log.Println("Checking for RPL price checkpoint...")
 
 	// Get block to submit price for
-	blockNumber, err := t.getLatestReportableBlock()
-	if err != nil {
-		return err
-	}
+	blockNumber := t.s.NetworkDetails.LatestReportablePricesBlock
 
 	// Check if a submission needs to be made
-	pricesBlock, err := network.GetPricesBlock(t.rp, nil)
-	if err != nil {
-		return err
-	}
+	pricesBlock := t.s.NetworkDetails.PricesBlock
 	if blockNumber <= pricesBlock {
 		return nil
 	}
@@ -324,23 +285,16 @@ func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 	blockTime := time.Unix(int64(header.Time), 0)
 
 	// Get the Beacon block corresponding to this time
-	eth2Config, err := t.bc.GetEth2Config()
-	if err != nil {
-		return err
-	}
+	eth2Config := t.s.BeaconConfig
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
 	timeSinceGenesis := blockTime.Sub(genesisTime)
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 
-	// Check if the epoch is finalized yet
-	epoch := slotNumber / eth2Config.SlotsPerEpoch
-	beaconHead, err := t.bc.GetBeaconHead()
-	if err != nil {
-		return err
-	}
-	finalizedEpoch := beaconHead.FinalizedEpoch
-	if epoch > finalizedEpoch {
-		t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, epoch, finalizedEpoch)
+	// Check if the targetEpoch is finalized yet
+	targetEpoch := slotNumber / eth2Config.SlotsPerEpoch
+	stateEpoch := t.s.BeaconSlotNumber / eth2Config.SlotsPerEpoch
+	if targetEpoch > stateEpoch {
+		t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, targetEpoch, stateEpoch)
 		return nil
 	}
 
@@ -349,7 +303,7 @@ func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 
 	// Get RPL price at block
 	var rplPrice *big.Int
-	if finalizedEpoch < t.getTwapEpoch() {
+	if stateEpoch < t.getTwapEpoch() {
 		rplPrice, err = t.getRplPrice(blockNumber)
 	} else {
 		rplPrice, err = t.getRplTwap(blockNumber)
@@ -361,10 +315,16 @@ func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 	// Calculate the total effective RPL stake on the network
 	zero := new(big.Int).SetUint64(0)
 	var effectiveRplStake *big.Int
-	if !t.isAtlasDeployed {
-		effectiveRplStake, err = node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil)
+	if !isAtlasDeployed {
+		nodeStakingAddress := t.cfg.Smartnode.GetV110NodeStakingAddress()
+		effectiveRplStake, err = v110_node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil, &nodeStakingAddress)
 		if err != nil {
 			return fmt.Errorf("Error getting total effective RPL stake: %w", err)
+		}
+	} else {
+		_, effectiveRplStake, err = t.s.CalculateEffectiveStakes(false)
+		if err != nil {
+			return fmt.Errorf("error getting total effective RPL stake: %w", err)
 		}
 	}
 
@@ -372,7 +332,7 @@ func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 	t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
 
 	// Check if we have reported these specific values before
-	hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice, effectiveRplStake)
+	hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice, effectiveRplStake, isAtlasDeployed)
 	if err != nil {
 		return err
 	}
@@ -393,28 +353,12 @@ func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 	t.log.Println("Submitting RPL price...")
 
 	// Submit RPL price
-	if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake); err != nil {
+	if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake, isAtlasDeployed); err != nil {
 		return fmt.Errorf("Could not submit RPL price: %w", err)
 	}
 
 	// Return
 	return nil
-
-}
-
-// Get the latest block number to report RPL price for
-func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
-
-	// Require eth client synced
-	if err := services.RequireEthClientSynced(t.c); err != nil {
-		return 0, err
-	}
-
-	latestBlock, err := network.GetLatestReportablePricesBlock(t.rp, nil)
-	if err != nil {
-		return 0, fmt.Errorf("Error getting latest reportable block: %w", err)
-	}
-	return latestBlock.Uint64(), nil
 
 }
 
@@ -428,8 +372,8 @@ func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blo
 }
 
 // Check whether specific prices for a block has already been submitted by the node
-func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice, effectiveRplStake *big.Int) (bool, error) {
-	if t.isAtlasDeployed {
+func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice, effectiveRplStake *big.Int, isAtlasDeployed bool) (bool, error) {
+	if isAtlasDeployed {
 		blockNumberBuf := make([]byte, 32)
 		big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
 
@@ -486,10 +430,7 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 	}
 
 	// Get the previously reported price
-	previousPrice, err := network.GetRPLPrice(t.rp, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Could not get previous RPL price at block %d: %w", blockNumber, err)
-	}
+	previousPrice := t.s.NetworkDetails.RplPrice
 
 	// See if the new price is lower than the decrease threshold
 	one := eth.EthToWei(1)
@@ -593,7 +534,7 @@ func (t *submitRplPrice) printMessage(message string) {
 }
 
 // Submit RPL price and total effective RPL stake
-func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveRplStake *big.Int) error {
+func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveRplStake *big.Int, isAtlasDeployed bool) error {
 
 	// Log
 	t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
@@ -605,7 +546,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
 	}
 
 	var hash common.Hash
-	if t.isAtlasDeployed {
+	if isAtlasDeployed {
 		// Get the gas limit
 		gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, opts)
 		if err != nil {
@@ -631,7 +572,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
 	} else {
 		legacyNetworkPricesAddress := t.cfg.Smartnode.GetV110NetworkPricesAddress()
 		// Get the gas limit
-		gasInfo, err := network_v110.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, effectiveRplStake, opts, &legacyNetworkPricesAddress)
+		gasInfo, err := v110_network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, effectiveRplStake, opts, &legacyNetworkPricesAddress)
 		if err != nil {
 			return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
 		}
@@ -648,7 +589,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
 		opts.GasLimit = gasInfo.SafeGasLimit
 
 		// Submit RPL price
-		hash, err = network_v110.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts, &legacyNetworkPricesAddress)
+		hash, err = v110_network.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts, &legacyNetworkPricesAddress)
 		if err != nil {
 			return err
 		}

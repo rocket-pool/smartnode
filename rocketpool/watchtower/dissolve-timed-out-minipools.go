@@ -1,20 +1,16 @@
 package watchtower
 
 import (
-	"context"
 	"fmt"
+	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -81,26 +77,17 @@ func (t *dissolveTimedOutMinipools) run(isAtlasDeployed bool) error {
 		return err
 	}
 
-	// Get node account
-	nodeAccount, err := t.w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
-
-	// Check node trusted status
-	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
-	if err != nil {
-		return err
-	}
-	if !nodeTrusted {
-		return nil
+	// Get the latest state
+	t.s = t.m.GetLatestState()
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
 	}
 
 	// Log
 	t.log.Println("Checking for timed out minipools to dissolve...")
 
 	// Get timed out minipools
-	minipools, err := t.getTimedOutMinipools()
+	minipools, err := t.getTimedOutMinipools(opts)
 	if err != nil {
 		return err
 	}
@@ -124,85 +111,23 @@ func (t *dissolveTimedOutMinipools) run(isAtlasDeployed bool) error {
 }
 
 // Get timed out minipools
-func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]minipool.Minipool, error) {
+func (t *dissolveTimedOutMinipools) getTimedOutMinipools(opts *bind.CallOpts) ([]minipool.Minipool, error) {
 
-	// Data
-	var wg1 errgroup.Group
-	var addresses []common.Address
-	var launchTimeout time.Duration
-	var latestEth1Block *types.Header
-
-	// Get minipool addresses
-	wg1.Go(func() error {
-		var err error
-		addresses, err = minipool.GetMinipoolAddresses(t.rp, nil)
-		return err
-	})
-
-	// Get launch timeout
-	wg1.Go(func() error {
-		var err error
-		launchTimeout, err = protocol.GetMinipoolLaunchTimeout(t.rp, nil)
-		return err
-	})
-
-	// Get latest block
-	wg1.Go(func() error {
-		var err error
-		latestEth1Block, err = t.ec.HeaderByNumber(context.Background(), nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg1.Wait(); err != nil {
-		return []minipool.Minipool{}, err
-	}
-
-	// Create minipool contracts
-	minipools := make([]minipool.Minipool, len(addresses))
-	for mi, address := range addresses {
-		mp, err := minipool.NewMinipool(t.rp, address, nil)
-		if err != nil {
-			return []minipool.Minipool{}, err
-		}
-		minipools[mi] = mp
-	}
-
-	// Load minipool statuses in batches
-	statuses := make([]minipool.StatusDetails, len(minipools))
-	for bsi := 0; bsi < len(minipools); bsi += MinipoolStatusBatchSize {
-
-		// Get batch start & end index
-		msi := bsi
-		mei := bsi + MinipoolStatusBatchSize
-		if mei > len(minipools) {
-			mei = len(minipools)
-		}
-
-		// Load statuses
-		var wg errgroup.Group
-		for mi := msi; mi < mei; mi++ {
-			mi := mi
-			wg.Go(func() error {
-				mp := minipools[mi]
-				status, err := mp.GetStatusDetails(nil)
-				if err == nil {
-					statuses[mi] = status
-				}
-				return err
-			})
-		}
-		if err := wg.Wait(); err != nil {
-			return []minipool.Minipool{}, err
-		}
-
-	}
+	timedOutMinipools := []minipool.Minipool{}
+	genesisTime := time.Unix(int64(t.s.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := time.Duration(t.s.BeaconSlotNumber*t.s.BeaconConfig.SecondsPerSlot) * time.Second
+	blockTime := genesisTime.Add(secondsSinceGenesis)
 
 	// Filter minipools by status
-	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
-	timedOutMinipools := []minipool.Minipool{}
-	for mi, mp := range minipools {
-		if statuses[mi].Status == rptypes.Prelaunch && latestBlockTime.Sub(statuses[mi].StatusTime) >= launchTimeout {
+	launchTimeoutBig := t.s.NetworkDetails.MinipoolLaunchTimeout
+	launchTimeout := time.Duration(launchTimeoutBig.Uint64()) * time.Second
+	for _, mpd := range t.s.MinipoolDetails {
+		statusTime := time.Unix(mpd.StatusBlock.Int64(), 0)
+		if mpd.Status == rptypes.Prelaunch && blockTime.Sub(statusTime) >= launchTimeout {
+			mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error creating binding for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+			}
 			timedOutMinipools = append(timedOutMinipools, mp)
 		}
 	}

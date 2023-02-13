@@ -283,8 +283,11 @@ func reduceBondAmount(c *cli.Context) error {
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanReduceBondAmount(minipool.Address)
 		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for reducing bond on minipool %s: %s)", minipool.Address.Hex(), err.Error())
-			break
+			return fmt.Errorf("error checking if minipool %s can have its bond reduced: %w", minipool.Address.Hex(), err)
+		} else if !canResponse.CanReduce {
+			fmt.Printf("Minipool %s cannot have its bond reduced:\n", minipool.Address.Hex())
+			fmt.Println("The minipool version is too low. Please run `rocketpool minipool delegate-upgrade` to update it.")
+			return nil
 		} else {
 			gasInfo = canResponse.GasInfo
 			totalGas += canResponse.GasInfo.EstGasLimit

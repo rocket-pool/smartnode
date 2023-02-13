@@ -139,6 +139,9 @@ func (t *generateRewardsTree) run(isAtlasDeployed bool) error {
 }
 
 func (t *generateRewardsTree) generateRewardsTree(index uint64) {
+	// Get the latest state
+	t.s = t.m.GetLatestState()
+
 	// Begin generation of the tree
 	generationPrefix := fmt.Sprintf("[Interval %d Tree]", index)
 	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)

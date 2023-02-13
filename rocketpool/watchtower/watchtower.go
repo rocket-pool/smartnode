@@ -30,21 +30,20 @@ var taskCooldown, _ = time.ParseDuration("5s")
 const (
 	MaxConcurrentEth1Requests = 200
 
-	RespondChallengesColor           = color.FgWhite
-	ClaimRplRewardsColor             = color.FgGreen
-	SubmitRplPriceColor              = color.FgYellow
-	SubmitNetworkBalancesColor       = color.FgYellow
-	SubmitWithdrawableMinipoolsColor = color.FgBlue
-	DissolveTimedOutMinipoolsColor   = color.FgMagenta
-	SubmitScrubMinipoolsColor        = color.FgHiGreen
-	ErrorColor                       = color.FgRed
-	MetricsColor                     = color.FgHiYellow
-	SubmitRewardsTreeColor           = color.FgHiCyan
-	WarningColor                     = color.FgYellow
-	ProcessPenaltiesColor            = color.FgHiMagenta
-	CancelBondsColor                 = color.FgGreen
-	CheckSoloMigrationsColor         = color.FgCyan
-	UpdateColor                      = color.FgHiWhite
+	RespondChallengesColor         = color.FgWhite
+	ClaimRplRewardsColor           = color.FgGreen
+	SubmitRplPriceColor            = color.FgYellow
+	SubmitNetworkBalancesColor     = color.FgYellow
+	DissolveTimedOutMinipoolsColor = color.FgMagenta
+	SubmitScrubMinipoolsColor      = color.FgHiGreen
+	ErrorColor                     = color.FgRed
+	MetricsColor                   = color.FgHiYellow
+	SubmitRewardsTreeColor         = color.FgHiCyan
+	WarningColor                   = color.FgYellow
+	ProcessPenaltiesColor          = color.FgHiMagenta
+	CancelBondsColor               = color.FgGreen
+	CheckSoloMigrationsColor       = color.FgCyan
+	UpdateColor                    = color.FgHiWhite
 )
 
 // Register watchtower command
@@ -119,10 +118,6 @@ func run(c *cli.Context) error {
 	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), m)
 	if err != nil {
 		return fmt.Errorf("error during network balances check: %w", err)
-	}
-	submitWithdrawableMinipools, err := newSubmitWithdrawableMinipools(c, log.NewColorLogger(SubmitWithdrawableMinipoolsColor), m)
-	if err != nil {
-		return fmt.Errorf("error during withdrawable minipools check: %w", err)
 	}
 	dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor), m)
 	if err != nil {
@@ -237,12 +232,6 @@ func run(c *cli.Context) error {
 
 				// Run the network balance submission check
 				if err := submitNetworkBalances.run(isAtlasDeployedMasterFlag); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
-
-				// Run the withdrawable status submission check
-				if err := submitWithdrawableMinipools.run(isAtlasDeployedMasterFlag); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)

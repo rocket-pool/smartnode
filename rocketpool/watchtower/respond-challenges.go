@@ -24,7 +24,6 @@ type respondChallenges struct {
 	w   *wallet.Wallet
 	rp  *rocketpool.RocketPool
 	m   *state.NetworkStateManager
-	s   *state.NetworkState
 }
 
 // Create respond to challenges task
@@ -68,15 +67,6 @@ func (t *respondChallenges) run(isAtlasDeployed bool) error {
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
 		return err
-	}
-
-	// Check node trusted status
-	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
-	if err != nil {
-		return err
-	}
-	if !nodeTrusted {
-		return nil
 	}
 
 	// Log

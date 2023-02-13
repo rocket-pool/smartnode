@@ -5,9 +5,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -94,24 +92,6 @@ func (t *cancelBondReductions) run(isAtlasDeployed bool) error {
 
 	// Get the latest state
 	t.s = t.m.GetLatestState()
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
-	}
-
-	// Get node account
-	nodeAccount, err := t.w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
-
-	// Get trusted node status
-	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, opts)
-	if err != nil {
-		return err
-	}
-	if !(nodeTrusted) {
-		return nil
-	}
 
 	// Log
 	t.log.Println("Checking for bond reductions to cancel...")

@@ -7,16 +7,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/prysm/v3/beacon-chain/core/signing"
 	prdeposit "github.com/prysmaticlabs/prysm/v3/contracts/deposit"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/urfave/cli"
 
 	ethpb "github.com/prysmaticlabs/prysm/v3/proto/prysm/v1alpha1"
@@ -74,7 +74,7 @@ type iterationData struct {
 	startBlock       *big.Int
 	eventLogInterval *big.Int
 	depositDomain    []byte
-	latestBlockTime  time.Time
+	stateBlockTime   time.Time
 }
 
 type minipoolDetails struct {
@@ -137,21 +137,6 @@ func (t *submitScrubMinipools) run(isAtlasDeployed bool) error {
 		return err
 	}
 
-	// Get node account
-	nodeAccount, err := t.w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
-
-	// Get trusted node status
-	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
-	if err != nil {
-		return err
-	}
-	if !(nodeTrusted) {
-		return nil
-	}
-
 	// Log
 	t.log.Println("Checking for minipools to scrub...")
 
@@ -174,13 +159,21 @@ func (t *submitScrubMinipools) run(isAtlasDeployed bool) error {
 
 		t.it = new(iterationData)
 
-		// Get minipools in prelaunch status
-		minipoolAddresses, err := minipool.GetPrelaunchMinipoolAddresses(t.rp, nil)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
-			return
+		// Get the latest state
+		t.s = t.m.GetLatestState()
+		opts := &bind.CallOpts{
+			BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
 		}
-		t.it.totalMinipools = len(minipoolAddresses)
+
+		// Get minipools in prelaunch status
+		prelaunchMinipools := []rpstate.NativeMinipoolDetails{}
+		for _, mpd := range t.s.MinipoolDetails {
+			if mpd.Status == types.Prelaunch {
+				prelaunchMinipools = append(prelaunchMinipools, mpd)
+			}
+		}
+
+		t.it.totalMinipools = len(prelaunchMinipools)
 		if t.it.totalMinipools == 0 {
 			t.log.Printlnf("%s No minipools in prelaunch.", checkPrefix)
 			t.lock.Lock()
@@ -192,14 +185,10 @@ func (t *submitScrubMinipools) run(isAtlasDeployed bool) error {
 		t.it.minipools = make(map[minipool.Minipool]*minipoolDetails, t.it.totalMinipools)
 
 		// Get the correct withdrawal credentials and validator pubkeys for each minipool
-		pubkeys := t.initializeMinipoolDetails(minipoolAddresses)
+		t.initializeMinipoolDetails(prelaunchMinipools, opts)
 
 		// Step 1: Verify the Beacon credentials if they exist
-		err = t.verifyBeaconWithdrawalCredentials(pubkeys)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
-			return
-		}
+		t.verifyBeaconWithdrawalCredentials()
 
 		// If there aren't any minipools left to check, print the final tally and exit
 		if len(t.it.minipools) == 0 {
@@ -211,7 +200,7 @@ func (t *submitScrubMinipools) run(isAtlasDeployed bool) error {
 		}
 
 		// Get various elements needed to do eth1 prestake and deposit contract searches
-		err = t.getEth1SearchArtifacts()
+		err := t.getEth1SearchArtifacts()
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
 			return
@@ -274,60 +263,32 @@ func (t *submitScrubMinipools) handleError(err error) {
 }
 
 // Get the correct withdrawal credentials and pubkeys for each minipool
-func (t *submitScrubMinipools) initializeMinipoolDetails(minipoolAddresses []common.Address) []types.ValidatorPubkey {
-
-	pubkeys := []types.ValidatorPubkey{}
-
-	for _, minipoolAddress := range minipoolAddresses {
+func (t *submitScrubMinipools) initializeMinipoolDetails(minipools []rpstate.NativeMinipoolDetails, opts *bind.CallOpts) {
+	for _, mpd := range minipools {
 		// Create a minipool contract wrapper for the given address
-		mp, err := minipool.NewMinipool(t.rp, minipoolAddress, nil)
+		mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, opts)
 		if err != nil {
-			t.log.Printf("Error creating minipool wrapper for %s: %s", minipoolAddress.Hex(), err.Error())
+			t.log.Printf("Error creating minipool wrapper for %s: %s", mpd.MinipoolAddress.Hex(), err.Error())
 			continue
 		}
-
-		// Get the correct withdrawal credentials
-		expectedCreds, err := minipool.GetMinipoolWithdrawalCredentials(t.rp, minipoolAddress, nil)
-		if err != nil {
-			t.log.Printf("Error getting expected withdrawal creds for minipool %s: %s", minipoolAddress.Hex(), err.Error())
-			continue
-		}
-
-		// Get the validator pubkey
-		pubkey, err := minipool.GetMinipoolPubkey(t.rp, minipoolAddress, nil)
-		if err != nil {
-			t.log.Printf("Error getting validator pubkey for minipool %s: %s", minipoolAddress.Hex(), err.Error())
-			continue
-		}
-		pubkeys = append(pubkeys, pubkey)
 
 		// Create a new details entry for this minipool
 		t.it.minipools[mp] = &minipoolDetails{
-			expectedWithdrawalCredentials: expectedCreds,
-			pubkey:                        pubkey,
+			expectedWithdrawalCredentials: mpd.WithdrawalCredentials,
+			pubkey:                        mpd.Pubkey,
 		}
 	}
-
-	return pubkeys
-
 }
 
 // Step 1: Verify the Beacon Chain credentials for a minipool if they're present
-func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(pubkeys []types.ValidatorPubkey) error {
-
+func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials() error {
 	minipoolsToScrub := []minipool.Minipool{}
-
-	// Get the status of the validators on the Beacon chain
-	statuses, err := t.bc.GetValidatorStatuses(pubkeys, nil)
-	if err != nil {
-		return fmt.Errorf("error getting validator statuses from the Beacon chain: %w", err)
-	}
 
 	// Get the withdrawal credentials on Beacon for each validator if they exist
 	for minipool, details := range t.it.minipools {
 		pubkey := details.pubkey
 
-		status := statuses[pubkey]
+		status := t.s.ValidatorDetails[pubkey]
 		if status.Exists {
 			// This minipool's deposit has been seen on the Beacon Chain
 			expectedCreds := details.expectedWithdrawalCredentials
@@ -353,29 +314,30 @@ func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(pubkeys []types
 
 	// Scrub the offending minipools
 	for _, minipool := range minipoolsToScrub {
-		err = t.submitVoteScrubMinipool(minipool)
+		err := t.submitVoteScrubMinipool(minipool)
 		if err != nil {
 			t.log.Printlnf("ALERT: Couldn't scrub minipool %s: %s", minipool.GetAddress().Hex(), err.Error())
 		}
 	}
 
 	return nil
-
 }
 
 // Get various elements needed to do eth1 prestake and deposit contract searches
 func (t *submitScrubMinipools) getEth1SearchArtifacts() error {
 
-	latestEth1Block, err := t.ec.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return fmt.Errorf("error getting latest EL block: %w", err)
+	// Get the time of the state's EL block
+	genesisTime := time.Unix(int64(t.s.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := time.Duration(t.s.BeaconSlotNumber*t.s.BeaconConfig.SecondsPerSlot) * time.Second
+	t.it.stateBlockTime = genesisTime.Add(secondsSinceGenesis)
+
+	// Get the block to start searching the deposit contract from
+	stateBlockNumber := big.NewInt(0).SetUint64(t.s.ElBlockNumber)
+	offset := big.NewInt(BlockStartOffset)
+	if stateBlockNumber.Cmp(offset) < 0 {
+		offset = stateBlockNumber // Deal with chains that aren't old enough, looking at you Zhejiang
 	}
-	t.it.latestBlockTime = time.Unix(int64(latestEth1Block.Time), 0)
-	startBlock := big.NewInt(BlockStartOffset)
-	if latestEth1Block.Number.Cmp(startBlock) < 0 {
-		startBlock = latestEth1Block.Number // Deal with chains that aren't old enough, looking at you Zhejiang
-	}
-	targetBlockNumber := big.NewInt(0).Sub(latestEth1Block.Number, startBlock)
+	targetBlockNumber := big.NewInt(0).Sub(stateBlockNumber, offset)
 	targetBlock, err := t.ec.HeaderByNumber(context.Background(), targetBlockNumber)
 	if err != nil {
 		return fmt.Errorf("error getting header for EL block %d: %w", targetBlockNumber, err)
@@ -390,10 +352,7 @@ func (t *submitScrubMinipools) getEth1SearchArtifacts() error {
 	t.it.eventLogInterval = big.NewInt(int64(eventLogInterval))
 
 	// Put together the signature validation data
-	eth2Config, err := t.bc.GetEth2Config()
-	if err != nil {
-		return fmt.Errorf("error getting Beacon config: %w", err)
-	}
+	eth2Config := t.s.BeaconConfig
 	depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
 	if err != nil {
 		return fmt.Errorf("error computing deposit domain: %w", err)
@@ -552,11 +511,7 @@ func (t *submitScrubMinipools) checkSafetyScrub() error {
 	}
 
 	// Get the scrub period
-	scrubPeriodUint, err := tnsettings.GetScrubPeriod(t.rp, nil)
-	if err != nil {
-		return fmt.Errorf("error getting scrub period: %w", err)
-	}
-	scrubPeriod := time.Duration(scrubPeriodUint) * time.Second
+	scrubPeriod := t.s.NetworkDetails.ScrubPeriod
 
 	// Get the safety period where minipools can be scrubbed without a valid deposit
 	safetyPeriod := scrubPeriod / ScrubSafetyDivider
@@ -566,23 +521,20 @@ func (t *submitScrubMinipools) checkSafetyScrub() error {
 
 	for minipool := range t.it.minipools {
 		// Get the minipool's status
-		statusDetails, err := minipool.GetStatusDetails(nil)
-		if err != nil {
-			t.log.Printlnf("Error getting status for minipool %s: %s", minipool.GetAddress().Hex(), err.Error())
-			continue
-		}
+		mpd := t.s.MinipoolDetailsByAddress[minipool.GetAddress()]
 
 		// Verify this is actually a prelaunch minipool
-		if statusDetails.Status != types.Prelaunch {
-			t.log.Printlnf("\tMinipool %s is under review but is in %d status?", minipool.GetAddress().Hex(), types.MinipoolDepositTypes[statusDetails.Status])
+		if mpd.Status != types.Prelaunch {
+			t.log.Printlnf("\tMinipool %s is under review but is in %d status?", minipool.GetAddress().Hex(), types.MinipoolDepositTypes[mpd.Status])
 			continue
 		}
 
 		// Check the time it entered prelaunch against the safety period
-		if (t.it.latestBlockTime.Sub(statusDetails.StatusTime)) > safetyPeriod {
+		statusTime := time.Unix(mpd.StatusTime.Int64(), 0)
+		if t.it.stateBlockTime.Sub(statusTime) > safetyPeriod {
 			t.log.Println("=== SAFETY SCRUB DETECTED ===")
 			t.log.Printlnf("\tMinipool: %s", minipool.GetAddress().Hex())
-			t.log.Printlnf("\tTime since prelaunch: %s", time.Since(statusDetails.StatusTime))
+			t.log.Printlnf("\tTime since prelaunch: %s", time.Since(statusTime))
 			t.log.Printlnf("\tSafety scrub period: %s", safetyPeriod)
 			t.log.Println("=============================")
 			minipoolsToScrub = append(minipoolsToScrub, minipool)
@@ -678,6 +630,6 @@ func (t *submitScrubMinipools) printFinalTally(prefix string) {
 		t.coll.BadOnDepositContract = float64(t.it.badOnDepositContract)
 		t.coll.DepositlessMinipools = float64(t.it.unknownMinipools)
 		t.coll.UncoveredMinipools = float64(len(t.it.minipools))
-		t.coll.LatestBlockTime = float64(t.it.latestBlockTime.Unix())
+		t.coll.LatestBlockTime = float64(t.it.stateBlockTime.Unix())
 	}
 }
