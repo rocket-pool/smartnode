@@ -92,7 +92,7 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 				})
 				wg2.Go(func() error {
 					status, err := mp.GetStatus(nil)
-					minipoolDetails.InvalidStatus = (status == types.Dissolved)
+					minipoolDetails.InvalidStatus = (status != types.Staking)
 					return err
 				})
 				wg2.Go(func() error {
