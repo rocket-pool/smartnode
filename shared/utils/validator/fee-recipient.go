@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -70,7 +71,8 @@ func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.C
 		}
 
 		// Restart validator container
-		if err := d.ContainerRestart(context.Background(), validatorContainerId, &validatorRestartTimeout); err != nil {
+		timeout := int(validatorRestartTimeout.Seconds())
+		if err := d.ContainerRestart(context.Background(), validatorContainerId, container.StopOptions{Timeout: &timeout}); err != nil {
 			return fmt.Errorf("Could not restart validator container: %w", err)
 		}
 
