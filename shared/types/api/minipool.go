@@ -294,6 +294,8 @@ type CanBeginReduceBondAmountResponse struct {
 	Status                string             `json:"status"`
 	Error                 string             `json:"error"`
 	BondReductionDisabled bool               `json:"bondReductionDisabled"`
+	MinipoolVersionTooLow bool               `json:"minipoolVersionTooLow"`
+	CanReduce             bool               `json:"canReduce"`
 	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
 }
 type BeginReduceBondAmountResponse struct {

@@ -136,9 +136,14 @@ func beginReduceBondAmount(c *cli.Context) error {
 			fmt.Printf("WARNING: Couldn't get gas price for beginning bond reduction on minipool %s: %s)", minipool.Address.Hex(), err.Error())
 			break
 		} else {
-			if canResponse.BondReductionDisabled {
-				fmt.Println("Cannot reduce minipool bonds:")
-				fmt.Println("Bond reductions are currently disabled.")
+			if !canResponse.CanReduce {
+				fmt.Printf("Cannot reduce bond for minipool %s:\n", minipool.Address.Hex())
+				if canResponse.BondReductionDisabled {
+					fmt.Println("Bond reductions are currently disabled.")
+				}
+				if canResponse.MinipoolVersionTooLow {
+					fmt.Println("The minipool version is too low. It must be upgraded first using `rocketpool minipool delegate-upgrade`.")
+				}
 				return nil
 			}
 			gasInfo = canResponse.GasInfo

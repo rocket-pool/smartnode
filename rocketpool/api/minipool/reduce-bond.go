@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -36,6 +37,15 @@ func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, ne
 		return nil, err
 	}
 	response.BondReductionDisabled = !bondReductionEnabled
+
+	// Check the minipool version
+	version, err := rocketpool.GetContractVersion(rp, minipoolAddress, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool %s contract version: %w", minipoolAddress.Hex(), err)
+	}
+	response.MinipoolVersionTooLow = (version < 3)
+
+	response.CanReduce = !(response.BondReductionDisabled || response.MinipoolVersionTooLow)
 
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
