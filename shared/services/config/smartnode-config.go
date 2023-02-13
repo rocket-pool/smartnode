@@ -472,10 +472,10 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		multicallAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
-			config.Network_Prater:   "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
-			config.Network_Devnet:   "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
-			config.Network_Zhejiang: "0x9f547A06af42eA0A6D134493B73700b449C72885",
+			config.Network_Mainnet:  "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
+			config.Network_Prater:   "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
+			config.Network_Devnet:   "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
+			config.Network_Zhejiang: "0xF7D8B2D41972F434a400F3d5Fb5406D2AC18fFE3",
 		},
 
 		balancebatcherAddress: map[config.Network]string{
