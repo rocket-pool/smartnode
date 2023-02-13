@@ -227,7 +227,7 @@ func reduceBondAmount(c *cli.Context) error {
 	for _, minipool := range status.Minipools {
 		timeSinceBondReductionStart := time.Since(minipool.ReduceBondTime)
 		nodeDepositBalance := eth.WeiToEth(minipool.Node.DepositBalance)
-		if nodeDepositBalance == 16 && timeSinceBondReductionStart > time.Duration(settingsResponse.BondReductionWindowStart) && timeSinceBondReductionStart < time.Duration(settingsResponse.BondReductionWindowStart+settingsResponse.BondReductionWindowLength) && !minipool.ReduceBondCancelled {
+		if nodeDepositBalance == 16 && timeSinceBondReductionStart > (time.Duration(settingsResponse.BondReductionWindowStart)*time.Second) && timeSinceBondReductionStart < (time.Duration(settingsResponse.BondReductionWindowStart+settingsResponse.BondReductionWindowLength)*time.Second) && !minipool.ReduceBondCancelled {
 			reduceableMinipools = append(reduceableMinipools, minipool)
 		}
 	}
