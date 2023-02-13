@@ -9,6 +9,7 @@ import (
 	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -27,6 +28,23 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 		return err
 	}
 
+	// Get minipool statuses
+	status, err := rp.MinipoolStatus()
+	if err != nil {
+		return err
+	}
+	latestDelegateResponse, err := rp.GetLatestDelegate()
+	if err != nil {
+		return err
+	}
+
+	minipools := []api.MinipoolDetails{}
+	for _, mp := range status.Minipools {
+		if mp.Delegate != latestDelegateResponse.Address && !mp.UseLatestDelegate {
+			minipools = append(minipools, mp)
+		}
+	}
+
 	// Get selected minipools
 	var selectedMinipools []common.Address
 
@@ -34,13 +52,6 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 		selectedAddress := common.HexToAddress(c.String("minipool"))
 		selectedMinipools = []common.Address{selectedAddress}
 	} else {
-		// Get minipool statuses
-		status, err := rp.MinipoolStatus()
-		if err != nil {
-			return err
-		}
-		minipools := status.Minipools
-
 		if c.String("minipool") == "" {
 			// Prompt for minipool selection
 			options := make([]string, len(minipools)+1)

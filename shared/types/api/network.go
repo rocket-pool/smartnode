@@ -82,3 +82,9 @@ type IsAtlasDeployedResponse struct {
 	Error           string `json:"error"`
 	IsAtlasDeployed bool   `json:"isAtlasDeployed"`
 }
+
+type GetLatestDelegateResponse struct {
+	Status  string         `json:"status"`
+	Error   string         `json:"error"`
+	Address common.Address `json:"address"`
+}

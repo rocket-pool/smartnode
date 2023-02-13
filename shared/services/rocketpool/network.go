@@ -144,3 +144,19 @@ func (c *Client) IsAtlasDeployed() (api.IsAtlasDeployedResponse, error) {
 	}
 	return response, nil
 }
+
+// Get the address of the latest minipool delegate contract
+func (c *Client) GetLatestDelegate() (api.GetLatestDelegateResponse, error) {
+	responseBytes, err := c.callAPI("network latest-delegate")
+	if err != nil {
+		return api.GetLatestDelegateResponse{}, fmt.Errorf("could not get latest delegate: %w", err)
+	}
+	var response api.GetLatestDelegateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetLatestDelegateResponse{}, fmt.Errorf("could not decode get-latest-delegate response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetLatestDelegateResponse{}, fmt.Errorf("could not get latest delegate: %s", response.Error)
+	}
+	return response, nil
+}

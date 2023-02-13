@@ -174,6 +174,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "latest-delegate",
+				Usage:     "Get the address of the latest minipool delegate contract.",
+				UsageText: "rocketpool api network latest-delegate",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getLatestDelegate(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }
