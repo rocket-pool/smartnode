@@ -576,6 +576,19 @@ func GetVacantMinipoolAt(rp *rocketpool.RocketPool, index uint64, opts *bind.Cal
 	return *vacantMinipoolAddress, nil
 }
 
+// Get a minipool's RPL slashing status
+func GetMinipoolRPLSlashed(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (bool, error) {
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := rocketMinipoolManager.Call(opts, value, "getMinipoolRPLSlashed", minipoolAddress); err != nil {
+		return false, fmt.Errorf("Could not get minipool %s slashed status: %w", minipoolAddress.Hex(), err)
+	}
+	return *value, nil
+}
+
 // Get contracts
 var rocketMinipoolManagerLock sync.Mutex
 

@@ -383,6 +383,7 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 	mc.AddCall(contracts.RocketMinipoolManager, &details.Exists, "getMinipoolExists", address)
 	mc.AddCall(contracts.RocketMinipoolManager, &details.Pubkey, "getMinipoolPubkey", address)
 	mc.AddCall(contracts.RocketMinipoolManager, &details.WithdrawalCredentials, "getMinipoolWithdrawalCredentials", address)
+	mc.AddCall(contracts.RocketMinipoolManager, &details.Slashed, "getMinipoolRPLSlashed", address)
 	mc.AddCall(mpContract, &details.StatusRaw, "getStatus")
 	mc.AddCall(mpContract, &details.StatusBlock, "getStatusBlock")
 	mc.AddCall(mpContract, &details.StatusTime, "getStatusTime")
@@ -404,7 +405,6 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 	if version < 3 {
 		// These fields are all v3+ only
 		details.UserDistributed = false
-		details.Slashed = false
 		details.LastBondReductionTime = big.NewInt(0)
 		details.LastBondReductionPrevValue = big.NewInt(0)
 		details.IsVacant = false
@@ -414,7 +414,6 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 		details.PreMigrationBalance = big.NewInt(0)
 	} else {
 		mc.AddCall(mpContract, &details.UserDistributed, "getUserDistributed")
-		mc.AddCall(mpContract, &details.Slashed, "getSlashed")
 		mc.AddCall(mpContract, &details.IsVacant, "getVacant")
 		mc.AddCall(mpContract, &details.PreMigrationBalance, "getPreMigrationBalance")
 
