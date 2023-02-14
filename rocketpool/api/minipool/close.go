@@ -149,6 +149,10 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		return err
 	})
 
+	if err := wg.Wait(); err != nil {
+		return api.MinipoolCloseDetails{}, err
+	}
+
 	// Can't close a minipool that's already finalized
 	if details.IsFinalized {
 		details.CanClose = false
