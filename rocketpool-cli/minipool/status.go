@@ -119,7 +119,7 @@ func getStatus(c *cli.Context) error {
 	if len(closeableMinipools) > 0 {
 		fmt.Printf("%d dissolved minipool(s) can be closed once Beacon Chain withdrawals are enabled:\n", len(closeableMinipools))
 		for _, minipool := range closeableMinipools {
-			fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
+			fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balances.ETH), 6))
 		}
 		fmt.Println("")
 	}
