@@ -607,18 +607,19 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 // Start the Rocket Pool service
 func (c *Client) StartService(composeFiles []string) error {
 
-	// Start the API container first
-	cmd, err := c.compose([]string{}, "up -d --quiet-pull")
-	if err != nil {
-		return fmt.Errorf("error creating compose command for API container: %w", err)
-	}
-	err = c.printOutput(cmd)
-	if err != nil {
-		return fmt.Errorf("error starting API container: %w", err)
-	}
-
+	/*
+		// Start the API container first
+		cmd, err := c.compose([]string{}, "up -d --quiet-pull")
+		if err != nil {
+			return fmt.Errorf("error creating compose command for API container: %w", err)
+		}
+		err = c.printOutput(cmd)
+		if err != nil {
+			return fmt.Errorf("error starting API container: %w", err)
+		}
+	*/
 	// Start all of the containers
-	cmd, err = c.compose(composeFiles, "up -d --remove-orphans --quiet-pull")
+	cmd, err := c.compose(composeFiles, "up -d --remove-orphans --quiet-pull")
 	if err != nil {
 		return err
 	}
