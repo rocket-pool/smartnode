@@ -708,6 +708,7 @@ func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts
 
 	count := len(pubkeysOrIndices)
 	data := make([]Validator, count)
+	validFlags := make([]bool, count)
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
 	for i := 0; i < count; i += MaxRequestValidatorsCount {
@@ -726,17 +727,25 @@ func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts
 			}
 			for j, responseData := range validators.Data {
 				data[i+j] = responseData
+				validFlags[i+j] = true
 			}
 			return nil
 		})
-
 	}
 
 	if err := wg.Wait(); err != nil {
 		return ValidatorsResponse{}, fmt.Errorf("error getting validators by opts: %w", err)
 	}
 
-	return ValidatorsResponse{Data: data}, nil
+	// Clip all of the empty responses so only the valid pubkeys get returned
+	trueData := make([]Validator, 0, count)
+	for i, valid := range validFlags {
+		if valid {
+			trueData = append(trueData, data[i])
+		}
+	}
+
+	return ValidatorsResponse{Data: trueData}, nil
 }
 
 // Send voluntary exit request

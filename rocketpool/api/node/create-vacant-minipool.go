@@ -128,7 +128,7 @@ func canCreateVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee floa
 	if err != nil {
 		return nil, fmt.Errorf("error checking status of existing validator: %w", err)
 	}
-	if !validatorStatus.Exists || string(validatorStatus.Status) == "" {
+	if !validatorStatus.Exists {
 		return nil, fmt.Errorf("validator %s does not exist on the Beacon chain. If you recently created it, please wait until the Consensus layer has processed your deposits.", pubkey.Hex())
 	}
 	if validatorStatus.Status != beacon.ValidatorState_ActiveOngoing {
