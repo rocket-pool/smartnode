@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/prysmaticlabs/prysm/v3/beacon-chain/core/signing"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/deposit"
 	v110_network "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/network"
 	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	v110_utils "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/utils"
@@ -101,6 +103,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	var ethMatched *big.Int
 	var ethMatchedLimit *big.Int
 	var minipoolAddress common.Address
+	var depositPoolBalance *big.Int
 
 	// Check credit balance
 	wg1.Go(func() error {
@@ -141,6 +144,13 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return err
 	})
 
+	// Get deposit pool balance
+	wg1.Go(func() error {
+		var err error
+		depositPoolBalance, err = deposit.GetBalance(rp, nil)
+		return err
+	})
+
 	// Wait for data
 	if err := wg1.Wait(); err != nil {
 		return nil, err
@@ -149,6 +159,10 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	// Check for insufficient balance
 	totalBalance := big.NewInt(0).Add(response.NodeBalance, response.CreditBalance)
 	response.InsufficientBalance = (amountWei.Cmp(totalBalance) > 0)
+
+	// Check if the credit balance can be used
+	response.DepositBalance = depositPoolBalance
+	response.CanUseCredit = (depositPoolBalance.Cmp(eth.EthToWei(1)) >= 0)
 
 	// Check data
 	validatorEthWei := eth.EthToWei(ValidatorEth)
@@ -227,11 +241,19 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	}
 
 	// Run the deposit gas estimator
-	gasInfo, err := node.EstimateDepositGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
-	if err != nil {
-		return nil, err
+	if response.CanUseCredit {
+		gasInfo, err := node.EstimateDepositWithCreditGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+		if err != nil {
+			return nil, err
+		}
+		response.GasInfo = gasInfo
+	} else {
+		gasInfo, err := node.EstimateDepositGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+		if err != nil {
+			return nil, err
+		}
+		response.GasInfo = gasInfo
 	}
-	response.GasInfo = gasInfo
 
 	return &response, nil
 
@@ -442,7 +464,7 @@ func legacyCanNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64
 
 }
 
-func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, submit bool) (*api.NodeDepositResponse, error) {
+func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, submit bool) (*api.NodeDepositResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -611,7 +633,12 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	opts.NoSend = !submit
 
 	// Deposit
-	tx, err := node.Deposit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+	var tx *types.Transaction
+	if useCreditBalance {
+		tx, err = node.DepositWithCredit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+	} else {
+		tx, err = node.Deposit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+	}
 	if err != nil {
 		return nil, err
 	}

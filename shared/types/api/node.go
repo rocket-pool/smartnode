@@ -204,6 +204,8 @@ type CanNodeDepositResponse struct {
 	Error                  string             `json:"error"`
 	CanDeposit             bool               `json:"canDeposit"`
 	CreditBalance          *big.Int           `json:"creditBalance"`
+	DepositBalance         *big.Int           `json:"depositBalance"`
+	CanUseCredit           bool               `json:"canUseCredit"`
 	NodeBalance            *big.Int           `json:"nodeBalance"`
 	InsufficientBalance    bool               `json:"insufficientBalance"`
 	InsufficientRplStake   bool               `json:"insufficientRplStake"`

@@ -567,11 +567,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "deposit",
 				Aliases:   []string{"d"},
 				Usage:     "Make a deposit and create a minipool, or just make and sign the transaction (when submit = false)",
-				UsageText: "rocketpool api node deposit amount min-fee salt submit",
+				UsageText: "rocketpool api node deposit amount min-fee salt use-credit-balance submit",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 4); err != nil {
+					if err := cliutils.ValidateArgCount(c, 5); err != nil {
 						return err
 					}
 					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
@@ -586,13 +586,17 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					submit, err := cliutils.ValidateBool("submit", c.Args().Get(3))
+					useCreditBalance, err := cliutils.ValidateBool("use-credit-balance", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					submit, err := cliutils.ValidateBool("submit", c.Args().Get(4))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					response, err := nodeDeposit(c, amountWei, minNodeFee, salt, submit)
+					response, err := nodeDeposit(c, amountWei, minNodeFee, salt, useCreditBalance, submit)
 					if submit {
 						api.PrintResponse(response, err)
 					} // else nodeDeposit already printed the encoded transaction
