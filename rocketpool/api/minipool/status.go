@@ -6,8 +6,8 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
@@ -40,7 +40,7 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 	response := api.MinipoolStatusResponse{}
 
 	// Check if Atlas is deployed
-	response.IsAtlasDeployed, err = rputils.IsAtlasDeployed(rp)
+	response.IsAtlasDeployed, err = state.IsAtlasDeployed(rp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
 	}

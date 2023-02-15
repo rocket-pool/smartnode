@@ -17,6 +17,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
@@ -64,7 +65,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	response.AccountAddressFormatted = formatResolvedAddress(c, response.AccountAddress)
 
 	// Check if Atlas is deployed
-	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
 	}

@@ -30,6 +30,9 @@ const (
 )
 
 type NetworkState struct {
+	// Network version
+	IsAtlasDeployed bool
+
 	// Block / slot for this state
 	ElBlockNumber    uint64
 	BeaconSlotNumber uint64
@@ -51,11 +54,10 @@ type NetworkState struct {
 	ValidatorDetails map[types.ValidatorPubkey]beacon.ValidatorStatus
 
 	// Internal fields
-	log             *log.ColorLogger
-	isAtlasDeployed bool
+	log *log.ColorLogger
 }
 
-func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, isAtlasDeployed bool) (*NetworkState, error) {
+func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config) (*NetworkState, error) {
 	// Get the relevant network contracts
 	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
 	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
@@ -75,6 +77,11 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
+	isAtlasDeployed, err := IsAtlasDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+	}
+
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -84,7 +91,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
 		log:                      log,
-		isAtlasDeployed:          isAtlasDeployed,
+		IsAtlasDeployed:          isAtlasDeployed,
 	}
 
 	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)

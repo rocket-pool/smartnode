@@ -12,9 +12,9 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplResponse, error) {
@@ -45,7 +45,7 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 		return nil, err
 	}
 
-	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
 	}

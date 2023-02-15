@@ -13,9 +13,9 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetailsForNodeResponse, error) {
@@ -37,7 +37,7 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 	response := api.GetMinipoolCloseDetailsForNodeResponse{}
 
 	// Check if Atlas has been deployed
-	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
 	}
@@ -257,7 +257,7 @@ func closeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CloseMi
 	}
 
 	// Check if Atlas has been deployed
-	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
 	}

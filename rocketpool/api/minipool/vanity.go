@@ -13,9 +13,9 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 const (
@@ -69,7 +69,7 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 	}
 	var minipoolBytecode []byte
 
-	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
 	}

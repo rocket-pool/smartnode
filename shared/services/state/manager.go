@@ -54,7 +54,7 @@ func NewNetworkStateManager(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 }
 
 // Get the state of the network at the provided Beacon slot
-func (m *NetworkStateManager) UpdateStateToHead(isAtlasDeployed bool) (*NetworkState, error) {
+func (m *NetworkStateManager) UpdateStateToHead() (*NetworkState, error) {
 	// Get the latest EL block
 	latestBlockHeader, err := m.ec.HeaderByNumber(context.Background(), nil)
 	if err != nil {
@@ -68,11 +68,11 @@ func (m *NetworkStateManager) UpdateStateToHead(isAtlasDeployed bool) (*NetworkS
 	targetSlot := secondsSinceGenesis / m.BeaconConfig.SecondsPerSlot
 
 	// Return
-	return m.updateState(targetSlot, isAtlasDeployed)
+	return m.updateState(targetSlot)
 }
 
 // Get the state of the network at the latest finalized Beacon slot
-func (m *NetworkStateManager) UpdateStateToFinalized(isAtlasDeployed bool) (*NetworkState, error) {
+func (m *NetworkStateManager) UpdateStateToFinalized() (*NetworkState, error) {
 	// Get the latest finalized slot
 	head, err := m.bc.GetBeaconHead()
 	if err != nil {
@@ -93,9 +93,14 @@ func (m *NetworkStateManager) UpdateStateToFinalized(isAtlasDeployed bool) (*Net
 			m.logLine("Slot %d was missing, trying the previous one...", targetSlot)
 			targetSlot--
 		} else {
-			return m.updateState(targetSlot, isAtlasDeployed)
+			return m.updateState(targetSlot)
 		}
 	}
+}
+
+// Get the state of the network at the provided Beacon slot
+func (m *NetworkStateManager) UpdateStateToSlot(slotNumber uint64) (*NetworkState, error) {
+	return m.updateState(slotNumber)
 }
 
 // Gets the latest state in a thread-safe manner
@@ -106,8 +111,8 @@ func (m *NetworkStateManager) GetLatestState() *NetworkState {
 }
 
 // Get the state of the network at the provided Beacon slot
-func (m *NetworkStateManager) updateState(slotNumber uint64, isAtlasDeployed bool) (*NetworkState, error) {
-	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig, isAtlasDeployed)
+func (m *NetworkStateManager) updateState(slotNumber uint64) (*NetworkState, error) {
+	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig)
 	if err != nil {
 		return nil, err
 	}

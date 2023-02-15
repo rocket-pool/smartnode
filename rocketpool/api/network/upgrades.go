@@ -2,8 +2,8 @@ package network
 
 import (
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/urfave/cli"
 )
 
@@ -21,7 +21,7 @@ func isAtlasDeployed(c *cli.Context) (*api.IsAtlasDeployedResponse, error) {
 	// Response
 	response := api.IsAtlasDeployedResponse{}
 
-	isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}

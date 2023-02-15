@@ -15,8 +15,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
@@ -126,7 +126,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 
 	// Get total effective RPL staked
 	wg.Go(func() error {
-		isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+		isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
 		if err != nil {
 			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
 		}

@@ -19,7 +19,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Config
@@ -179,22 +178,17 @@ func run(c *cli.Context) error {
 				continue
 			}
 
-			// Check for Atlas
-			if !isAtlasDeployedMasterFlag {
-				isAtlasDeployed, err := checkIfAtlasIsDeployed(rp)
-				if err != nil {
-					errorLog.Println(err)
-					time.Sleep(taskCooldown)
-					continue
-				}
-				isAtlasDeployedMasterFlag = isAtlasDeployed
-			}
-
 			// Update the network state
-			if err := updateNetworkState(m, updateLog, isAtlasDeployedMasterFlag); err != nil {
+			if err := updateNetworkState(m, &updateLog); err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
 				continue
+			}
+
+			// Check for Atlas
+			if !isAtlasDeployedMasterFlag && m.GetLatestState().IsAtlasDeployed {
+				printAtlasMessage(&updateLog)
+				isAtlasDeployedMasterFlag = true
 			}
 
 			// Run the manual rewards tree generation
@@ -297,14 +291,8 @@ func configureHTTP() {
 }
 
 // Check if Atlas has been deployed yet
-func checkIfAtlasIsDeployed(rpbinding *rocketpool.RocketPool) (bool, error) {
-	isAtlasDeployed, err := rp.IsAtlasDeployed(rpbinding)
-	if err != nil {
-		return false, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-	}
-
-	if isAtlasDeployed {
-		fmt.Println(`
+func printAtlasMessage(log *log.ColorLogger) {
+	log.Println(`
 *       .
 *      / \
 *     |.'.|
@@ -323,17 +311,15 @@ func checkIfAtlasIsDeployed(rpbinding *rocketpool.RocketPool) (bool, error) {
 *
 * ================ Atlas has launched! ================
 `)
-	}
-	return isAtlasDeployed, nil
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m *state.NetworkStateManager, log log.ColorLogger, isAtlasDeployed bool) error {
+func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger) error {
 	log.Print("Getting latest network state... ")
 	start := time.Now()
 
 	// Get the state of the network
-	_, err := m.UpdateStateToFinalized(isAtlasDeployed)
+	_, err := m.UpdateStateToHead()
 	if err != nil {
 		return fmt.Errorf("error updating network state: %w", err)
 	}

@@ -20,9 +20,9 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
@@ -210,7 +210,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 	// Get the total network effective stake
 	wg.Go(func() error {
-		isAtlasDeployed, err := rputils.IsAtlasDeployed(rp)
+		isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
 		if err != nil {
 			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
 		}

@@ -1,14 +1,15 @@
-package rp
+package state
 
 import (
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/hashicorp/go-version"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils"
 )
 
 // Check if Redstone has been deployed
-func IsRedstoneDeployed(rp *rocketpool.RocketPool) (bool, error) {
-	currentVersion, err := utils.GetCurrentVersion(rp)
+func IsRedstoneDeployed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	currentVersion, err := utils.GetCurrentVersion(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -18,8 +19,8 @@ func IsRedstoneDeployed(rp *rocketpool.RocketPool) (bool, error) {
 }
 
 // Check if Atlas has been deployed
-func IsAtlasDeployed(rp *rocketpool.RocketPool) (bool, error) {
-	currentVersion, err := utils.GetCurrentVersion(rp)
+func IsAtlasDeployed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	currentVersion, err := utils.GetCurrentVersion(rp, opts)
 	if err != nil {
 		return false, err
 	}
