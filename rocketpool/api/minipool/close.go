@@ -202,17 +202,22 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 			}
 
 		} else {
-			// Check if it's a vanilla / Redstone-era minipool
-			mpv2, success := minipool.GetMinipoolAsV2(mp)
-			if !success {
-				return api.MinipoolCloseDetails{}, fmt.Errorf("minipool version %d doesn't have a proper close binding", mp.GetVersion())
-			}
-			// Distribute and finalize
-			gasInfo, err := mpv2.EstimateDistributeBalanceAndFinaliseGas(opts)
-			if err != nil {
-				return api.MinipoolCloseDetails{}, err
-			}
-			details.GasInfo = gasInfo
+			details.CanClose = false
+			/*
+				// NOTE: v2 minipools are not allowed to be closed right now
+				// =======================
+				// Check if it's a vanilla / Redstone-era minipool
+				mpv2, success := minipool.GetMinipoolAsV2(mp)
+				if !success {
+					return api.MinipoolCloseDetails{}, fmt.Errorf("minipool version %d doesn't have a proper close binding", mp.GetVersion())
+				}
+				// Distribute and finalize
+				gasInfo, err := mpv2.EstimateDistributeBalanceAndFinaliseGas(opts)
+				if err != nil {
+					return api.MinipoolCloseDetails{}, err
+				}
+				details.GasInfo = gasInfo
+			*/
 		}
 	}
 
