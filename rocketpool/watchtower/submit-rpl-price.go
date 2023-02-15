@@ -151,7 +151,7 @@ const (
 	RplPriceDecreaseDeviationThreshold float64 = 0.5 // Error out if price drops >50%
 	RplPriceIncreaseDeviationThreshold float64 = 1.6 // Error out if price rises >60%
 
-	twapNumberOfSeconds        uint32 = 60 * 60 * 3 // 3 hours
+	twapNumberOfSeconds        uint32 = 60 * 60 * 12 // 12 hours
 	twapTransitionEpochMainnet uint64 = 999999999999999
 	twapTransitionEpochPrater  uint64 = 999999999999999
 	twapTransitionEpochDevnet  uint64 = 999999999999999
