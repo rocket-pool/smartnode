@@ -386,6 +386,7 @@ type NodeDistributeResponse struct {
 type NodeGetRewardsInfoResponse struct {
 	Status             string                 `json:"status"`
 	Error              string                 `json:"error"`
+	Registered         bool                   `json:"registered"`
 	ClaimedIntervals   []uint64               `json:"claimedIntervals"`
 	UnclaimedIntervals []rewards.IntervalInfo `json:"unclaimedIntervals"`
 	InvalidIntervals   []rewards.IntervalInfo `json:"invalidIntervals"`

@@ -45,6 +45,11 @@ func nodeClaimRewards(c *cli.Context) error {
 		return fmt.Errorf("error getting rewards info: %w", err)
 	}
 
+	if !rewardsInfoResponse.Registered {
+		fmt.Printf("This node is not currently registered.\n")
+		return nil
+	}
+
 	// Check for missing Merkle trees with rewards available
 	missingIntervals := []rprewards.IntervalInfo{}
 	invalidIntervals := []rprewards.IntervalInfo{}
