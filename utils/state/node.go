@@ -255,6 +255,9 @@ func fixupNodeDetails(rp *rocketpool.RocketPool, details *NativeNodeDetails, avg
 			userShare.Sub(distributorBalance, nodeShare)
 			details.DistributorBalanceUserETH = userShare
 		}
+	} else {
+		details.DistributorBalanceNodeETH = big.NewInt(0)
+		details.DistributorBalanceUserETH = big.NewInt(0)
 	}
 
 	return nil
