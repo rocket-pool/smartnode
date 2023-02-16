@@ -11,6 +11,7 @@ type NetworkContracts struct {
 	RocketDAOProtocolSettingsNode *rocketpool.Contract
 	RocketMinipoolManager         *rocketpool.Contract
 	RocketNetworkPrices           *rocketpool.Contract
+	RocketNodeDeposit             *rocketpool.Contract
 	RocketNodeDistributorFactory  *rocketpool.Contract
 	RocketNodeManager             *rocketpool.Contract
 	RocketNodeStaking             *rocketpool.Contract
@@ -65,6 +66,10 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, isAtlasDeployed bool, opts *
 		return nil, err
 	}
 	contracts.RocketTokenRPLFixedSupply, err = rp.GetContract("rocketTokenRPLFixedSupply", opts)
+	if err != nil {
+		return nil, err
+	}
+	contracts.RocketNodeDeposit, err = rp.GetContract("rocketNodeDeposit", opts)
 	if err != nil {
 		return nil, err
 	}

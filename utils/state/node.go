@@ -48,7 +48,7 @@ type NativeNodeDetails struct {
 }
 
 // Gets the details for a node using the efficient multicall contract
-func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, contracts *NetworkContracts, opts *bind.CallOpts) (NativeNodeDetails, error) {
+func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, contracts *NetworkContracts, isAtlasDeployed bool, opts *bind.CallOpts) (NativeNodeDetails, error) {
 	details := NativeNodeDetails{}
 	details.NodeAddress = nodeAddress
 	mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
@@ -57,7 +57,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address,
 	}
 
 	avgFee := big.NewInt(0)
-	addNodeDetailsCalls(contracts, mc, &details, nodeAddress, &avgFee)
+	addNodeDetailsCalls(contracts, mc, &details, nodeAddress, &avgFee, isAtlasDeployed)
 
 	_, err = mc.FlexibleCall(true)
 	if err != nil {
@@ -83,7 +83,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address,
 }
 
 // Gets the details for all nodes using the efficient multicall contract
-func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, contracts *NetworkContracts, opts *bind.CallOpts) ([]NativeNodeDetails, error) {
+func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, contracts *NetworkContracts, isAtlasDeployed bool, opts *bind.CallOpts) ([]NativeNodeDetails, error) {
 	balanceBatcher, err := multicall.NewBalanceBatcher(rp.Client, balanceBatcherAddress)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress commo
 				details.NodeAddress = address
 
 				avgFees[j] = big.NewInt(0)
-				addNodeDetailsCalls(contracts, mc, details, address, &avgFees[j])
+				addNodeDetailsCalls(contracts, mc, details, address, &avgFees[j], isAtlasDeployed)
 			}
 			_, err = mc.FlexibleCall(true)
 			if err != nil {
@@ -208,7 +208,7 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 }
 
 // Add all of the calls for the node details to the multicaller
-func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeNodeDetails, address common.Address, avgFee **big.Int) {
+func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeNodeDetails, address common.Address, avgFee **big.Int, isAtlasDeployed bool) {
 	mc.AddCall(contracts.RocketNodeManager, &details.Exists, "getNodeExists", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.RegistrationTime, "getNodeRegistrationTime", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.TimezoneLocation, "getNodeTimezoneLocation", address)
@@ -228,6 +228,10 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 	mc.AddCall(contracts.RocketStorage, &details.PendingWithdrawalAddress, "getNodePendingWithdrawalAddress", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.SmoothingPoolRegistrationState, "getSmoothingPoolRegistrationState", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.SmoothingPoolRegistrationChanged, "getSmoothingPoolRegistrationChanged", address)
+
+	if isAtlasDeployed {
+		mc.AddCall(contracts.RocketNodeDeposit, &details.DepositCreditBalance, "getNodeDepositCredit", address)
+	}
 }
 
 // Fixes a legacy node details struct with supplemental logic
