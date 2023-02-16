@@ -58,8 +58,6 @@ type networkBalances struct {
 type minipoolBalanceDetails struct {
 	IsStaking   bool
 	UserBalance *big.Int
-	NodeAddress common.Address
-	NodeFee     *big.Int
 }
 
 // Create submit network balances task
@@ -363,16 +361,19 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 	status := mpd.Status
 	userDepositBalance := mpd.UserDepositBalance
 	mpType := mpd.DepositType
-	nodeFee := mpd.NodeFee
-	nodeAddress := mpd.NodeAddress
 	validator := t.s.ValidatorDetails[mpd.Pubkey]
+
+	// Ignore vacant minipools
+	if mpd.IsVacant {
+		return minipoolBalanceDetails{
+			UserBalance: big.NewInt(0),
+		}
+	}
 
 	// Use user deposit balance if initialized or prelaunch
 	if status == rptypes.Initialized || status == rptypes.Prelaunch {
 		return minipoolBalanceDetails{
 			UserBalance: userDepositBalance,
-			NodeAddress: nodeAddress,
-			NodeFee:     nodeFee,
 		}
 	}
 
@@ -380,26 +381,20 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 	if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
 		return minipoolBalanceDetails{
 			UserBalance: userDepositBalance,
-			NodeAddress: nodeAddress,
-			NodeFee:     nodeFee,
 		}
 	}
 
-	userBalance := mpd.UserShareOfBalance
+	userBalance := mpd.UserShareOfBalanceIncludingBeacon
 	// Return
 	if userDepositBalance.Cmp(big.NewInt(0)) == 0 && mpType == rptypes.Full {
 		return minipoolBalanceDetails{
 			IsStaking:   (validator.ExitEpoch > blockEpoch),
 			UserBalance: big.NewInt(0).Sub(userBalance, eth.EthToWei(16)), // Remove 16 ETH from the user balance for full minipools in the refund queue
-			NodeAddress: nodeAddress,
-			NodeFee:     nodeFee,
 		}
 	} else {
 		return minipoolBalanceDetails{
 			IsStaking:   (validator.ExitEpoch > blockEpoch),
 			UserBalance: userBalance,
-			NodeAddress: nodeAddress,
-			NodeFee:     nodeFee,
 		}
 	}
 

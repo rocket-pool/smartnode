@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -106,21 +107,21 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	state.logLine("1/4 - Retrieved network details (%s so far)", time.Since(start))
+	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
 
 	// Node details
 	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, multicallerAddress, balanceBatcherAddress, contracts, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all node details: %w", err)
 	}
-	state.logLine("2/4 - Retrieved node details (%s so far)", time.Since(start))
+	state.logLine("2/5 - Retrieved node details (%s so far)", time.Since(start))
 
 	// Minipool details
 	state.MinipoolDetails, err = rpstate.GetAllNativeMinipoolDetails(rp, multicallerAddress, balanceBatcherAddress, contracts, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
-	state.logLine("3/4 - Retrieved minipool details (%s so far)", time.Since(start))
+	state.logLine("3/5 - Retrieved minipool details (%s so far)", time.Since(start))
 
 	// Create the node lookup
 	for _, details := range state.NodeDetails {
@@ -153,7 +154,26 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		return nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("4/4 - Retrieved validator details (total time: %s)", time.Since(start))
+	state.logLine("4/5 - Retrieved validator details (total time: %s)", time.Since(start))
+
+	// Get the complete node and user shares
+	mpds := make([]*rpstate.NativeMinipoolDetails, len(state.MinipoolDetails))
+	beaconBalances := make([]*big.Int, len(state.MinipoolDetails))
+	for i, mpd := range state.MinipoolDetails {
+		mpds[i] = &state.MinipoolDetails[i]
+		validator, exists := state.ValidatorDetails[mpd.Pubkey]
+		if !exists {
+			beaconBalances[i] = big.NewInt(0)
+		} else {
+			beaconBalances[i] = eth.GweiToWei(float64(validator.Balance))
+		}
+	}
+	err = rpstate.CalculateCompleteMinipoolShares(rp, contracts, multicallerAddress, mpds, beaconBalances, opts)
+	if err != nil {
+		return nil, err
+	}
+	state.ValidatorDetails = statusMap
+	state.logLine("5/5 - Calculated complate node and user balance shares (total time: %s)", time.Since(start))
 
 	return state, nil
 }
