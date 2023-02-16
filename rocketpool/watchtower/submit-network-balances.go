@@ -54,6 +54,7 @@ type networkBalances struct {
 	SmoothingPoolShare    *big.Int
 	RETHContract          *big.Int
 	RETHSupply            *big.Int
+	NodeCreditBalance     *big.Int
 }
 type minipoolBalanceDetails struct {
 	IsStaking   bool
@@ -168,6 +169,7 @@ func (t *submitNetworkBalances) run(isAtlasDeployed bool) error {
 
 	// Log
 	t.log.Printlnf("Deposit pool balance: %s wei", balances.DepositPool.String())
+	t.log.Printlnf("Node credit balance: %s wei", balances.NodeCreditBalance.String())
 	t.log.Printlnf("Total minipool user balance: %s wei", balances.MinipoolsTotal.String())
 	t.log.Printlnf("Staking minipool user balance: %s wei", balances.MinipoolsStaking.String())
 	t.log.Printlnf("Fee distributor user balance: %s wei", balances.DistributorShareTotal.String())
@@ -220,6 +222,7 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
+	totalEth.Sub(totalEth, balances.NodeCreditBalance)
 	totalEth.Add(totalEth, balances.DepositPool)
 	totalEth.Add(totalEth, balances.MinipoolsTotal)
 	totalEth.Add(totalEth, balances.RETHContract)
@@ -335,6 +338,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		SmoothingPoolShare:    smoothingPoolShare,
 		RETHContract:          rethContractBalance,
 		RETHSupply:            rethTotalSupply,
+		NodeCreditBalance:     big.NewInt(0),
 	}
 
 	// Add minipool balances
@@ -343,6 +347,11 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		if mp.IsStaking {
 			balances.MinipoolsStaking.Add(balances.MinipoolsStaking, mp.UserBalance)
 		}
+	}
+
+	// Add node credits
+	for _, node := range t.s.NodeDetails {
+		balances.NodeCreditBalance.Add(balances.NodeCreditBalance, node.DepositCreditBalance)
 	}
 
 	// Add distributor shares
@@ -405,6 +414,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
+	totalEth.Sub(totalEth, balances.NodeCreditBalance)
 	totalEth.Add(totalEth, balances.DepositPool)
 	totalEth.Add(totalEth, balances.MinipoolsTotal)
 	totalEth.Add(totalEth, balances.RETHContract)
