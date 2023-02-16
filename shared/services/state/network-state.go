@@ -173,7 +173,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		return nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("5/5 - Calculated complate node and user balance shares (total time: %s)", time.Since(start))
+	state.logLine("5/5 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
 
 	return state, nil
 }
