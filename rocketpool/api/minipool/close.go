@@ -128,6 +128,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	if err != nil {
 		return api.MinipoolCloseDetails{}, fmt.Errorf("error getting balance of minipool %s: %w", mp.GetAddress().Hex(), err)
 	}
+	details.Balance = balance
 	wg.Go(func() error {
 		var err error
 		details.NodeShare, err = mp.CalculateNodeShare(balance, nil)
