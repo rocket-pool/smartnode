@@ -95,7 +95,7 @@ func canChangeWithdrawalCreds(c *cli.Context, minipoolAddress common.Address, mn
 		return nil, fmt.Errorf("minipool %s (pubkey %s) was in state %v, but is required to be active_ongoing for migration", minipoolAddress.Hex(), pubkey.Hex(), beaconStatus.Status)
 	}
 	if beaconStatus.WithdrawalCredentials[0] != 0x00 {
-		return nil, fmt.Errorf("minipool %s (pubkey %s) has already been migrated - its withdrawal credentials are %s", beaconStatus.WithdrawalCredentials.Hex())
+		return nil, fmt.Errorf("minipool %s (pubkey %s) has already been migrated - its withdrawal credentials are %s", minipoolAddress.Hex(), pubkey.Hex(), beaconStatus.WithdrawalCredentials.Hex())
 	}
 
 	// Get the index for this validator based on the mnemonic
