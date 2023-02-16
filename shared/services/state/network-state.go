@@ -110,7 +110,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
 
 	// Node details
-	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, multicallerAddress, balanceBatcherAddress, contracts, opts)
+	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, multicallerAddress, balanceBatcherAddress, contracts, isAtlasDeployed, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all node details: %w", err)
 	}
