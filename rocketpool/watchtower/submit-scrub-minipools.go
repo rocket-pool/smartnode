@@ -265,6 +265,11 @@ func (t *submitScrubMinipools) handleError(err error) {
 // Get the correct withdrawal credentials and pubkeys for each minipool
 func (t *submitScrubMinipools) initializeMinipoolDetails(minipools []rpstate.NativeMinipoolDetails, opts *bind.CallOpts) {
 	for _, mpd := range minipools {
+		// Ignore vacant minipools - they have the wrong withdrawal creds (temporarily) by design
+		if mpd.IsVacant {
+			continue
+		}
+
 		// Create a minipool contract wrapper for the given address
 		mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, opts)
 		if err != nil {
