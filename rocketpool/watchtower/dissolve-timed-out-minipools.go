@@ -122,7 +122,7 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools(opts *bind.CallOpts) ([
 	launchTimeoutBig := t.s.NetworkDetails.MinipoolLaunchTimeout
 	launchTimeout := time.Duration(launchTimeoutBig.Uint64()) * time.Second
 	for _, mpd := range t.s.MinipoolDetails {
-		statusTime := time.Unix(mpd.StatusBlock.Int64(), 0)
+		statusTime := time.Unix(mpd.StatusTime.Int64(), 0)
 		if mpd.Status == rptypes.Prelaunch && blockTime.Sub(statusTime) >= launchTimeout {
 			mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, opts)
 			if err != nil {
