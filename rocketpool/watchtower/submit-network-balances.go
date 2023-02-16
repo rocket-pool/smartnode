@@ -190,7 +190,7 @@ func (t *submitNetworkBalances) run(isAtlasDeployed bool) error {
 		return err
 	}
 	if hasSubmitted {
-		t.log.Printlnf("Have previously submitted out-of-date balances for block $d, trying again...", blockNumber)
+		t.log.Printlnf("Have previously submitted out-of-date balances for block %d, trying again...", blockNumber)
 	}
 
 	// Log
@@ -403,9 +403,6 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 // Submit network balances
 func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 
-	// Log
-	t.log.Printlnf("Submitting network balances for block %d...", balances.Block)
-
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
 	totalEth.Add(totalEth, balances.DepositPool)
@@ -413,6 +410,12 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	totalEth.Add(totalEth, balances.RETHContract)
 	totalEth.Add(totalEth, balances.DistributorShareTotal)
 	totalEth.Add(totalEth, balances.SmoothingPoolShare)
+
+	ratio := eth.WeiToEth(balances.RETHSupply) / eth.WeiToEth(totalEth)
+	t.log.Printlnf("Calculated ratio = %.6f\n", ratio)
+
+	// Log
+	t.log.Printlnf("Submitting network balances for block %d...", balances.Block)
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
