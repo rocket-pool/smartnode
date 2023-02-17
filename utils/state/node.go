@@ -59,7 +59,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address,
 	avgFee := big.NewInt(0)
 	addNodeDetailsCalls(contracts, mc, &details, nodeAddress, &avgFee, isAtlasDeployed)
 
-	_, err = mc.FlexibleCall(true)
+	_, err = mc.FlexibleCall(true, opts)
 	if err != nil {
 		return NativeNodeDetails{}, fmt.Errorf("error executing multicall: %w", err)
 	}
@@ -124,7 +124,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress commo
 				avgFees[j] = big.NewInt(0)
 				addNodeDetailsCalls(contracts, mc, details, address, &avgFees[j], isAtlasDeployed)
 			}
-			_, err = mc.FlexibleCall(true)
+			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
 				return fmt.Errorf("error executing multicall: %w", err)
 			}
@@ -192,7 +192,7 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 			for j := i; j < max; j++ {
 				mc.AddCall(contracts.RocketNodeManager, &addresses[j], "getNodeAt", big.NewInt(int64(j)))
 			}
-			_, err = mc.FlexibleCall(true)
+			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
 				return fmt.Errorf("error executing multicall: %w", err)
 			}

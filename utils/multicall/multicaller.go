@@ -11,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
@@ -75,7 +76,7 @@ func (caller *MultiCaller) AddCall(contract *rocketpool.Contract, output interfa
 	return nil
 }
 
-func (caller *MultiCaller) Execute(requireSuccess bool) ([]CallResponse, error) {
+func (caller *MultiCaller) Execute(requireSuccess bool, opts *bind.CallOpts) ([]CallResponse, error) {
 	var multiCalls = make([]MultiCall, 0, len(caller.calls))
 	for _, call := range caller.calls {
 		multiCalls = append(multiCalls, call.GetMultiCall())
@@ -85,7 +86,7 @@ func (caller *MultiCaller) Execute(requireSuccess bool) ([]CallResponse, error) 
 		return nil, err
 	}
 
-	resp, err := caller.Client.CallContract(context.Background(), ethereum.CallMsg{To: &caller.ContractAddress, Data: callData}, nil)
+	resp, err := caller.Client.CallContract(context.Background(), ethereum.CallMsg{To: &caller.ContractAddress, Data: callData}, opts.BlockNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -108,9 +109,9 @@ func (caller *MultiCaller) Execute(requireSuccess bool) ([]CallResponse, error) 
 	return results, nil
 }
 
-func (caller *MultiCaller) FlexibleCall(requireSuccess bool) ([]Result, error) {
+func (caller *MultiCaller) FlexibleCall(requireSuccess bool, opts *bind.CallOpts) ([]Result, error) {
 	res := make([]Result, len(caller.calls))
-	results, err := caller.Execute(requireSuccess)
+	results, err := caller.Execute(requireSuccess, opts)
 	if err != nil {
 		caller.calls = []Call{}
 		return nil, err

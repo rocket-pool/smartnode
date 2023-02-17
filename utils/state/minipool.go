@@ -84,7 +84,7 @@ func GetNativeMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.
 	details.Version = version
 	addMinipoolDetailsCalls(rp, contracts, mc, &details, opts)
 
-	_, err = mc.FlexibleCall(true)
+	_, err = mc.FlexibleCall(true, opts)
 	if err != nil {
 		return NativeMinipoolDetails{}, fmt.Errorf("error executing multicall: %w", err)
 	}
@@ -182,7 +182,7 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 					details.UserShareOfBalanceIncludingBeacon = big.NewInt(0)
 				}
 			}
-			_, err = mc.FlexibleCall(true)
+			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
 				return fmt.Errorf("error executing multicall: %w", err)
 			}
@@ -229,7 +229,7 @@ func getNodeMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkC
 			for j := i; j < max; j++ {
 				mc.AddCall(contracts.RocketMinipoolManager, &addresses[j], "getNodeMinipoolAt", nodeAddress, big.NewInt(int64(j)))
 			}
-			_, err = mc.FlexibleCall(true)
+			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
 				return fmt.Errorf("error executing multicall: %w", err)
 			}
@@ -275,7 +275,7 @@ func getAllMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkCo
 			for j := i; j < max; j++ {
 				mc.AddCall(contracts.RocketMinipoolManager, &addresses[j], "getMinipoolAt", big.NewInt(int64(j)))
 			}
-			_, err = mc.FlexibleCall(true)
+			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
 				return fmt.Errorf("error executing multicall: %w", err)
 			}
@@ -319,7 +319,7 @@ func getMinipoolVersionsFast(rp *rocketpool.RocketPool, contracts *NetworkContra
 				}
 				mc.AddCall(contract, &versions[j], "version")
 			}
-			results, err := mc.FlexibleCall(false) // Allow calls to fail - necessary for Prater
+			results, err := mc.FlexibleCall(false, opts) // Allow calls to fail - necessary for Prater
 			for j, result := range results {
 				if !result.Success {
 					versions[j+i] = 1 // Anything that failed the version check didn't have the method yet so it must be v1
@@ -378,7 +378,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 
 				addMinipoolDetailsCalls(rp, contracts, mc, details, opts)
 			}
-			_, err = mc.FlexibleCall(true)
+			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
 				return fmt.Errorf("error executing multicall: %w", err)
 			}
@@ -412,7 +412,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 				details.Version = versions[j]
 				addMinipoolShareCalls(rp, contracts, mc, details, opts)
 			}
-			_, err = mc.FlexibleCall(true)
+			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
 				return fmt.Errorf("error executing multicall: %w", err)
 			}
