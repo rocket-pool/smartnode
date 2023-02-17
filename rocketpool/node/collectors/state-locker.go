@@ -14,7 +14,9 @@ type StateLocker struct {
 }
 
 func NewStateLocker() *StateLocker {
-	return &StateLocker{}
+	return &StateLocker{
+		lock: &sync.Mutex{},
+	}
 }
 
 func (l *StateLocker) UpdateState(state *state.NetworkState) {
