@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"math/big"
 	"time"
 
@@ -9,6 +10,11 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/multicall"
+	"golang.org/x/sync/errgroup"
+)
+
+const (
+	networkEffectiveStakeBatchSize int = 2000
 )
 
 type NetworkDetails struct {
@@ -324,4 +330,62 @@ func _getNetworkDetailsFast(rp *rocketpool.RocketPool, multicallerAddress common
 	*/
 
 	return details, nil
+}
+
+// Gets the details for a node using the efficient multicall contract
+func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, multicallerAddress common.Address, contracts *NetworkContracts, opts *bind.CallOpts) (*big.Int, error) {
+	// Get the list of node addresses
+	addresses, err := getNodeAddressesFast(rp, contracts, multicallerAddress, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting node addresses: %w", err)
+	}
+	count := len(addresses)
+	minimumStakes := make([]*big.Int, count)
+	effectiveStakes := make([]*big.Int, count)
+
+	// Sync
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+
+	// Run the getters in batches
+	for i := 0; i < count; i += networkEffectiveStakeBatchSize {
+		i := i
+		max := i + networkEffectiveStakeBatchSize
+		if max > count {
+			max = count
+		}
+
+		wg.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				address := addresses[j]
+				mc.AddCall(contracts.RocketNodeStaking, &minimumStakes[j], "getNodeMinimumRPLStake", address)
+				mc.AddCall(contracts.RocketNodeStaking, &effectiveStakes[j], "getNodeEffectiveRPLStake", address)
+			}
+			_, err = mc.FlexibleCall(true, opts)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+			return nil
+		})
+	}
+
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting effective stakes for all nodes: %w", err)
+	}
+
+	totalEffectiveStake := big.NewInt(0)
+	for i, effectiveStake := range effectiveStakes {
+		minimumStake := minimumStakes[i]
+		// Fix the effective stake
+		if effectiveStake.Cmp(minimumStake) >= 0 {
+			totalEffectiveStake.Add(totalEffectiveStake, effectiveStake)
+		}
+	}
+
+	return totalEffectiveStake, nil
 }
