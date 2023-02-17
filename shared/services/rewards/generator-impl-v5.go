@@ -558,7 +558,7 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 		for _, nodeInfo := range r.nodeDetails {
 			if nodeInfo.IsEligible {
 				for _, minipool := range nodeInfo.Minipools {
-					minipool.GoodAttestations = 1
+					minipool.CompletedAttestations = map[uint64]bool{0: true}
 				}
 			}
 		}
@@ -600,17 +600,19 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 
 			// Add minipool rewards to the JSON
 			for _, minipoolInfo := range nodeInfo.Minipools {
+				successfulAttestations := uint64(len(minipoolInfo.CompletedAttestations))
+				missingAttestations := uint64(len(minipoolInfo.MissingAttestationSlots))
 				performance := &SmoothingPoolMinipoolPerformance{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
-					SuccessfulAttestations:  minipoolInfo.GoodAttestations,
-					MissedAttestations:      minipoolInfo.MissedAttestations,
+					SuccessfulAttestations:  successfulAttestations,
+					MissedAttestations:      missingAttestations,
 					EthEarned:               eth.WeiToEth(minipoolInfo.MinipoolShare),
 					MissingAttestationSlots: []uint64{},
 				}
-				if minipoolInfo.GoodAttestations+minipoolInfo.MissedAttestations == 0 {
+				if successfulAttestations+missingAttestations == 0 {
 					performance.ParticipationRate = 0
 				} else {
-					performance.ParticipationRate = float64(minipoolInfo.GoodAttestations) / float64(minipoolInfo.GoodAttestations+minipoolInfo.MissedAttestations)
+					performance.ParticipationRate = float64(successfulAttestations) / float64(successfulAttestations+missingAttestations)
 				}
 				for slot := range minipoolInfo.MissingAttestationSlots {
 					performance.MissingAttestationSlots = append(performance.MissingAttestationSlots, slot)
@@ -653,7 +655,7 @@ func (r *treeGeneratorImpl_v5) calculateNodeRewards() (*big.Int, *big.Int, error
 		nodeInfo.SmoothingPoolEth = big.NewInt(0)
 		if nodeInfo.IsEligible {
 			for _, minipool := range nodeInfo.Minipools {
-				if minipool.GoodAttestations+minipool.MissedAttestations == 0 || !minipool.WasActive {
+				if len(minipool.CompletedAttestations)+len(minipool.MissingAttestationSlots) == 0 || !minipool.WasActive {
 					// Ignore minipools that weren't active for the interval
 					minipool.WasActive = false
 					minipool.MinipoolShare = big.NewInt(0)
@@ -784,9 +786,10 @@ func (r *treeGeneratorImpl_v5) processEpoch(getDuties bool, epoch uint64) error 
 
 	// Process all of the slots in the epoch
 	for i := uint64(0); i < r.slotsPerEpoch; i++ {
+		slot := epoch*r.slotsPerEpoch + i
 		attestations := attestationsPerSlot[i]
 		if len(attestations) > 0 {
-			r.checkDutiesForSlot(attestations)
+			r.checkDutiesForSlot(attestations, slot)
 		}
 	}
 
@@ -795,7 +798,7 @@ func (r *treeGeneratorImpl_v5) processEpoch(getDuties bool, epoch uint64) error 
 }
 
 // Handle all of the attestations in the given slot
-func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.AttestationInfo) error {
+func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.AttestationInfo, slot uint64) error {
 
 	one := eth.EthToWei(1)
 	validatorReq := eth.EthToWei(32)
@@ -813,17 +816,7 @@ func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.Attestat
 				// Check if each RP validator attested successfully
 				for position, validator := range rpCommittee.Positions {
 					if attestation.AggregationBits.BitAt(uint64(position)) {
-						// This was seen, so remove it from the missing attestations at least
-						validator.MissedAttestations--
-
-						// Check if this minipool was opted into the SP for this block
-						nodeDetails := r.nodeDetails[validator.NodeIndex]
-						if blockTime.Sub(nodeDetails.OptInTime) < 0 || nodeDetails.OptOutTime.Sub(blockTime) < 0 {
-							// Not opted in
-							continue
-						}
-
-						// We have a winner - remove this duty and update the scores
+						// This was seen, so remove it from the missing attestations and add it to the completed ones
 						delete(rpCommittee.Positions, position)
 						if len(rpCommittee.Positions) == 0 {
 							delete(slotInfo.Committees, attestation.CommitteeIndex)
@@ -831,8 +824,15 @@ func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.Attestat
 						if len(slotInfo.Committees) == 0 {
 							delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
 						}
-						validator.GoodAttestations++
+						validator.CompletedAttestations[attestation.SlotIndex] = true
 						delete(validator.MissingAttestationSlots, attestation.SlotIndex)
+
+						// Check if this minipool was opted into the SP for this block
+						nodeDetails := r.nodeDetails[validator.NodeIndex]
+						if blockTime.Sub(nodeDetails.OptInTime) < 0 || nodeDetails.OptOutTime.Sub(blockTime) < 0 {
+							// Not opted in
+							continue
+						}
 
 						// Get the pseudoscore for this attestation
 						details := r.networkState.MinipoolDetailsByAddress[validator.Address]
@@ -875,7 +875,6 @@ func (r *treeGeneratorImpl_v5) getDutiesForEpoch(committees []beacon.Committee) 
 			minipoolInfo, exists := r.validatorIndexMap[validator]
 			if exists {
 				rpValidators[position] = minipoolInfo
-				minipoolInfo.MissedAttestations += 1 // Consider this attestation missed until it's seen later
 				minipoolInfo.MissingAttestationSlots[slotIndex] = true
 			}
 		}
@@ -1023,14 +1022,15 @@ func (r *treeGeneratorImpl_v5) getSmoothingPoolNodeDetails() error {
 
 						// This minipool is below the penalty count, so include it
 						nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
-							Address:                 mpd.MinipoolAddress,
-							ValidatorPubkey:         mpd.Pubkey,
-							NodeAddress:             nodeDetails.Address,
-							NodeIndex:               iterationIndex,
-							Fee:                     nativeMinipoolDetails.NodeFee,
-							MissedAttestations:      0,
-							GoodAttestations:        0,
+							Address:         mpd.MinipoolAddress,
+							ValidatorPubkey: mpd.Pubkey,
+							NodeAddress:     nodeDetails.Address,
+							NodeIndex:       iterationIndex,
+							Fee:             nativeMinipoolDetails.NodeFee,
+							//MissedAttestations:      0,
+							//GoodAttestations:        0,
 							MissingAttestationSlots: map[uint64]bool{},
+							CompletedAttestations:   map[uint64]bool{},
 							WasActive:               true,
 							AttestationScore:        big.NewInt(0),
 						})

@@ -41,6 +41,7 @@ type MinipoolInfo struct {
 	StartSlot               uint64
 	EndSlot                 uint64
 	AttestationScore        *big.Int
+	CompletedAttestations   map[uint64]bool
 }
 
 type IntervalDutiesInfo struct {
