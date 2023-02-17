@@ -36,15 +36,15 @@ type BeaconCollector struct {
 	// The node's address
 	nodeAddress common.Address
 
-	// The manager for the network state in Atlas
-	m *state.NetworkStateManager
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
 
 	// Prefix for logging
 	logPrefix string
 }
 
 // Create a new BeaconCollector instance
-func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpool.ExecutionClient, nodeAddress common.Address, m *state.NetworkStateManager) *BeaconCollector {
+func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpool.ExecutionClient, nodeAddress common.Address, stateLocker *StateLocker) *BeaconCollector {
 	subsystem := "beacon"
 	return &BeaconCollector{
 		activeSyncCommittee: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "active_sync_committee"),
@@ -63,7 +63,7 @@ func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpo
 		bc:          bc,
 		ec:          ec,
 		nodeAddress: nodeAddress,
-		m:           m,
+		stateLocker: stateLocker,
 		logPrefix:   "Beacon Collector",
 	}
 }
@@ -77,7 +77,7 @@ func (collector *BeaconCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
-	latestState := collector.m.GetLatestState()
+	latestState := collector.stateLocker.GetState()
 	if latestState == nil {
 		collector.collectImpl_Legacy(channel)
 	} else {
@@ -244,7 +244,7 @@ func (collector *BeaconCollector) collectImpl_Atlas(state *state.NetworkState, c
 
 	wg.Go(func() error {
 		// Get epochs per sync committee period config to query next period
-		config := collector.m.BeaconConfig
+		config := state.BeaconConfig
 
 		// Get upcoming duties
 		duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch+config.EpochsPerSyncCommitteePeriod)

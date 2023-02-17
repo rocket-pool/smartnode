@@ -28,11 +28,10 @@ type manageFeeRecipient struct {
 	rp  *rocketpool.RocketPool
 	d   *client.Client
 	bc  beacon.Client
-	m   *state.NetworkStateManager
 }
 
 // Create manage fee recipient task
-func newManageFeeRecipient(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*manageFeeRecipient, error) {
+func newManageFeeRecipient(c *cli.Context, logger log.ColorLogger) (*manageFeeRecipient, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -65,13 +64,12 @@ func newManageFeeRecipient(c *cli.Context, logger log.ColorLogger, m *state.Netw
 		rp:  rp,
 		d:   d,
 		bc:  bc,
-		m:   m,
 	}, nil
 
 }
 
 // Manage fee recipient
-func (m *manageFeeRecipient) run(isAtlasDeployed bool) error {
+func (m *manageFeeRecipient) run(state *state.NetworkState, isAtlasDeployed bool) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(m.c, true); err != nil {
@@ -92,7 +90,7 @@ func (m *manageFeeRecipient) run(isAtlasDeployed bool) error {
 	if !isAtlasDeployed {
 		feeRecipientInfo, err = rputils.GetFeeRecipientInfo_Legacy(m.rp, m.bc, nodeAccount.Address, nil)
 	} else {
-		feeRecipientInfo, err = rputils.GetFeeRecipientInfo_Atlas(m.rp, m.bc, nodeAccount.Address, m.m.GetLatestState(), nil)
+		feeRecipientInfo, err = rputils.GetFeeRecipientInfo_Atlas(m.rp, m.bc, nodeAccount.Address, state, nil)
 	}
 	if err != nil {
 		return fmt.Errorf("error getting fee recipient info: %w", err)

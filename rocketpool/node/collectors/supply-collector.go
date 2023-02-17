@@ -32,15 +32,15 @@ type SupplyCollector struct {
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
-	// The manager for the network state in Atlas
-	m *state.NetworkStateManager
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
 
 	// Prefix for logging
 	logPrefix string
 }
 
 // Create a new PerformanceCollector instance
-func NewSupplyCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager) *SupplyCollector {
+func NewSupplyCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *SupplyCollector {
 	subsystem := "supply"
 	return &SupplyCollector{
 		nodeCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "node_count"),
@@ -63,9 +63,9 @@ func NewSupplyCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager)
 			"The number of active (non-finalized) Rocket Pool minipools",
 			nil, nil,
 		),
-		rp:        rp,
-		m:         m,
-		logPrefix: "Supply Collector",
+		rp:          rp,
+		stateLocker: stateLocker,
+		logPrefix:   "Supply Collector",
 	}
 }
 
@@ -80,7 +80,7 @@ func (collector *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
-	latestState := collector.m.GetLatestState()
+	latestState := collector.stateLocker.GetState()
 	if latestState == nil {
 		collector.collectImpl_Legacy(channel)
 	} else {

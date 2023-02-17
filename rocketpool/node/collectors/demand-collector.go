@@ -31,15 +31,15 @@ type DemandCollector struct {
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
-	// The manager for the network state in Atlas
-	m *state.NetworkStateManager
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
 
 	// Prefix for logging
 	logPrefix string
 }
 
 // Create a new DemandCollector instance
-func NewDemandCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager) *DemandCollector {
+func NewDemandCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *DemandCollector {
 	subsystem := "demand"
 	return &DemandCollector{
 		depositPoolBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "deposit_pool_balance"),
@@ -58,9 +58,9 @@ func NewDemandCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager)
 			"The effective ETH capacity of the Minipool queue",
 			nil, nil,
 		),
-		rp:        rp,
-		m:         m,
-		logPrefix: "Demand Collector",
+		rp:          rp,
+		stateLocker: stateLocker,
+		logPrefix:   "Demand Collector",
 	}
 }
 
@@ -74,7 +74,7 @@ func (collector *DemandCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
-	latestState := collector.m.GetLatestState()
+	latestState := collector.stateLocker.GetState()
 	if latestState == nil {
 		collector.collectImpl_Legacy(channel)
 	} else {

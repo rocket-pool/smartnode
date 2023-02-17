@@ -12,6 +12,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -99,25 +100,26 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	stateLocker := collectors.NewStateLocker()
 
 	// Initialize tasks
-	manageFeeRecipient, err := newManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor), m)
+	manageFeeRecipient, err := newManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor))
 	if err != nil {
 		return err
 	}
-	stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor), m)
+	stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
 	if err != nil {
 		return err
 	}
-	promoteMinipools, err := newPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor), m)
+	promoteMinipools, err := newPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor))
 	if err != nil {
 		return err
 	}
-	downloadRewardsTrees, err := newDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor), m)
+	downloadRewardsTrees, err := newDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor))
 	if err != nil {
 		return err
 	}
-	reduceBonds, err := newReduceBonds(c, log.NewColorLogger(ReduceBondAmountColor), m)
+	reduceBonds, err := newReduceBonds(c, log.NewColorLogger(ReduceBondAmountColor))
 	if err != nil {
 		return err
 	}
@@ -147,44 +149,46 @@ func run(c *cli.Context) error {
 			}
 
 			// Update the network state
-			if err := updateNetworkState(m, &updateLog); err != nil {
+			state, err := updateNetworkState(m, &updateLog)
+			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
 				continue
 			}
+			stateLocker.UpdateState(state)
 
 			// Check for Atlas
-			if !isAtlasDeployedMasterFlag && m.GetLatestState().IsAtlasDeployed {
+			if !isAtlasDeployedMasterFlag && state.IsAtlasDeployed {
 				printAtlasMessage(&updateLog)
 				isAtlasDeployedMasterFlag = true
 			}
 
 			// Manage the fee recipient for the node
-			if err := manageFeeRecipient.run(isAtlasDeployedMasterFlag); err != nil {
+			if err := manageFeeRecipient.run(state, isAtlasDeployedMasterFlag); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the rewards download check
-			if err := downloadRewardsTrees.run(isAtlasDeployedMasterFlag); err != nil {
+			if err := downloadRewardsTrees.run(state, isAtlasDeployedMasterFlag); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the minipool stake check
-			if err := stakePrelaunchMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+			if err := stakePrelaunchMinipools.run(state, isAtlasDeployedMasterFlag); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the reduce bond check
-			if err := reduceBonds.run(isAtlasDeployedMasterFlag); err != nil {
+			if err := reduceBonds.run(state, isAtlasDeployedMasterFlag); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the minipool promotion check
-			if err := promoteMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+			if err := promoteMinipools.run(state, isAtlasDeployedMasterFlag); err != nil {
 				errorLog.Println(err)
 			}
 
@@ -195,7 +199,7 @@ func run(c *cli.Context) error {
 
 	// Run metrics loop
 	go func() {
-		err := runMetricsServer(c, log.NewColorLogger(MetricsColor), m)
+		err := runMetricsServer(c, log.NewColorLogger(MetricsColor), stateLocker)
 		if err != nil {
 			errorLog.Println(err)
 		}
@@ -310,16 +314,16 @@ func printAtlasMessage(log *log.ColorLogger) {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger) error {
+func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger) (*state.NetworkState, error) {
 	log.Print("Getting latest network state... ")
 	start := time.Now()
 
 	// Get the state of the network
-	_, err := m.UpdateStateToHead()
+	state, err := m.GetHeadState()
 	if err != nil {
-		return fmt.Errorf("error updating network state: %w", err)
+		return nil, fmt.Errorf("error updating network state: %w", err)
 	}
 
 	log.Printlnf("done in %s", time.Since(start))
-	return nil
+	return state, nil
 }

@@ -37,12 +37,10 @@ type promoteMinipools struct {
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
 	gasLimit       uint64
-	m              *state.NetworkStateManager
-	s              *state.NetworkState
 }
 
 // Create promote minipools task
-func newPromoteMinipools(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*promoteMinipools, error) {
+func newPromoteMinipools(c *cli.Context, logger log.ColorLogger) (*promoteMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -96,13 +94,12 @@ func newPromoteMinipools(c *cli.Context, logger log.ColorLogger, m *state.Networ
 		maxFee:         maxFee,
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
-		m:              m,
 	}, nil
 
 }
 
 // Stake prelaunch minipools
-func (t *promoteMinipools) run(isAtlasDeployed bool) error {
+func (t *promoteMinipools) run(state *state.NetworkState, isAtlasDeployed bool) error {
 
 	// Reload the wallet (in case a call to `node deposit` changed it)
 	if err := t.w.Reload(); err != nil {
@@ -123,9 +120,8 @@ func (t *promoteMinipools) run(isAtlasDeployed bool) error {
 	t.log.Println("Checking for minipools to promote...")
 
 	// Get the latest state
-	t.s = t.m.GetLatestState()
 	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
+		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
 	}
 
 	// Get node account
@@ -135,7 +131,7 @@ func (t *promoteMinipools) run(isAtlasDeployed bool) error {
 	}
 
 	// Get prelaunch minipools
-	minipools, err := t.getVacantMinipools(nodeAccount.Address, opts)
+	minipools, err := t.getVacantMinipools(nodeAccount.Address, state, opts)
 	if err != nil {
 		return err
 	}
@@ -161,12 +157,12 @@ func (t *promoteMinipools) run(isAtlasDeployed bool) error {
 }
 
 // Get vacant minipools
-func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
+func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
 	vacantMinipools := []*rpstate.NativeMinipoolDetails{}
 
 	// Get the scrub period
-	scrubPeriod := t.s.NetworkDetails.PromotionScrubPeriod
+	scrubPeriod := state.NetworkDetails.PromotionScrubPeriod
 
 	// Get the time of the target block
 	block, err := t.rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
@@ -176,7 +172,7 @@ func (t *promoteMinipools) getVacantMinipools(nodeAddress common.Address, opts *
 	blockTime := time.Unix(int64(block.Time), 0)
 
 	// Filter by vacancy
-	mpds := t.s.MinipoolDetailsByNode[nodeAddress]
+	mpds := state.MinipoolDetailsByNode[nodeAddress]
 	for _, mpd := range mpds {
 		if mpd.IsVacant && mpd.Status == types.Prelaunch {
 			creationTime := time.Unix(mpd.StatusTime.Int64(), 0)

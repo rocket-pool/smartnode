@@ -97,15 +97,15 @@ type NodeCollector struct {
 	// The Rocket Pool config
 	cfg *config.RocketPoolConfig
 
-	// The manager for the network state in Atlas
-	m *state.NetworkStateManager
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
 
 	// Prefix for logging
 	logPrefix string
 }
 
 // Create a new NodeCollector instance
-func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig, m *state.NetworkStateManager) *NodeCollector {
+func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *NodeCollector {
 
 	// Get the event log interval
 	eventLogInterval, err := cfg.GetEventLogInterval()
@@ -178,7 +178,7 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 		eventLogInterval: big.NewInt(int64(eventLogInterval)),
 		handledIntervals: map[uint64]bool{},
 		cfg:              cfg,
-		m:                m,
+		stateLocker:      stateLocker,
 		logPrefix:        "Node Collector",
 	}
 }
@@ -201,7 +201,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
-	latestState := collector.m.GetLatestState()
+	latestState := collector.stateLocker.GetState()
 	if latestState == nil {
 		collector.collectImpl_Legacy(channel)
 	} else {

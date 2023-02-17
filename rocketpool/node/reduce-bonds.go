@@ -40,8 +40,6 @@ type reduceBonds struct {
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
 	gasLimit       uint64
-	m              *state.NetworkStateManager
-	s              *state.NetworkState
 }
 
 // Details required to check for bond reduction eligibility
@@ -54,7 +52,7 @@ type minipoolBondReductionDetails struct {
 }
 
 // Create reduce bonds task
-func newReduceBonds(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*reduceBonds, error) {
+func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -108,13 +106,12 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger, m *state.NetworkStat
 		maxFee:         maxFee,
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
-		m:              m,
 	}, nil
 
 }
 
 // Reduce bonds
-func (t *reduceBonds) run(isAtlasDeployed bool) error {
+func (t *reduceBonds) run(state *state.NetworkState, isAtlasDeployed bool) error {
 
 	// Reload the wallet (in case a call to `node deposit` changed it)
 	if err := t.w.Reload(); err != nil {
@@ -135,9 +132,8 @@ func (t *reduceBonds) run(isAtlasDeployed bool) error {
 	t.log.Println("Checking for minipool bonds to reduce...")
 
 	// Get the latest state
-	t.s = t.m.GetLatestState()
 	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
+		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
 	}
 
 	// Get node account
@@ -147,8 +143,8 @@ func (t *reduceBonds) run(isAtlasDeployed bool) error {
 	}
 
 	// Get the bond reduction details
-	windowStart := t.s.NetworkDetails.BondReductionWindowStart
-	windowLength := t.s.NetworkDetails.BondReductionWindowLength
+	windowStart := state.NetworkDetails.BondReductionWindowStart
+	windowLength := state.NetworkDetails.BondReductionWindowLength
 
 	// Get the time of the latest block
 	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
@@ -158,7 +154,7 @@ func (t *reduceBonds) run(isAtlasDeployed bool) error {
 	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
 
 	// Get reduceable minipools
-	minipools, err := t.getReduceableMinipools(nodeAccount.Address, windowStart, windowLength, latestBlockTime, opts)
+	minipools, err := t.getReduceableMinipools(nodeAccount.Address, windowStart, windowLength, latestBlockTime, state, opts)
 	if err != nil {
 		return err
 	}
@@ -188,11 +184,11 @@ func (t *reduceBonds) run(isAtlasDeployed bool) error {
 }
 
 // Get reduceable minipools
-func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
+func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
 	// Filter minipools
 	reduceableMinipools := []*rpstate.NativeMinipoolDetails{}
-	for _, mpd := range t.s.MinipoolDetailsByNode[nodeAddress] {
+	for _, mpd := range state.MinipoolDetailsByNode[nodeAddress] {
 
 		// TEMP
 		reduceBondTime, err := minipool.GetReduceBondTime(t.rp, mpd.MinipoolAddress, opts)

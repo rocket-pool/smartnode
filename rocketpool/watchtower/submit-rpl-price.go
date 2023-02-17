@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -166,20 +167,21 @@ type poolObserveResponse struct {
 
 // Submit RPL price task
 type submitRplPrice struct {
-	c   *cli.Context
-	log log.ColorLogger
-	cfg *config.RocketPoolConfig
-	ec  rocketpool.ExecutionClient
-	w   *wallet.Wallet
-	rp  *rocketpool.RocketPool
-	oio *contracts.OneInchOracle
-	bc  beacon.Client
-	m   *state.NetworkStateManager
-	s   *state.NetworkState
+	c         *cli.Context
+	log       log.ColorLogger
+	errLog    log.ColorLogger
+	cfg       *config.RocketPoolConfig
+	ec        rocketpool.ExecutionClient
+	w         *wallet.Wallet
+	rp        *rocketpool.RocketPool
+	oio       *contracts.OneInchOracle
+	bc        beacon.Client
+	lock      *sync.Mutex
+	isRunning bool
 }
 
 // Create submit RPL price task
-func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*submitRplPrice, error) {
+func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*submitRplPrice, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -209,21 +211,21 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, m *state.NetworkS
 
 	// Return task
 	return &submitRplPrice{
-		c:   c,
-		log: logger,
-		cfg: cfg,
-		ec:  ec,
-		w:   w,
-		rp:  rp,
-		oio: oio,
-		bc:  bc,
-		m:   m,
+		c:      c,
+		log:    logger,
+		errLog: errorLogger,
+		cfg:    cfg,
+		ec:     ec,
+		w:      w,
+		rp:     rp,
+		oio:    oio,
+		bc:     bc,
 	}, nil
 
 }
 
 // Submit RPL price
-func (t *submitRplPrice) run(isAtlasDeployed bool) error {
+func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -236,11 +238,8 @@ func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 		return err
 	}
 
-	// Get the latest state
-	t.s = t.m.GetLatestState()
-
 	// Check if submission is enabled
-	if !t.s.NetworkDetails.SubmitPricesEnabled {
+	if !state.NetworkDetails.SubmitPricesEnabled {
 		return nil
 	}
 
@@ -269,10 +268,10 @@ func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 	t.log.Println("Checking for RPL price checkpoint...")
 
 	// Get block to submit price for
-	blockNumber := t.s.NetworkDetails.LatestReportablePricesBlock
+	blockNumber := state.NetworkDetails.LatestReportablePricesBlock
 
 	// Check if a submission needs to be made
-	pricesBlock := t.s.NetworkDetails.PricesBlock
+	pricesBlock := state.NetworkDetails.PricesBlock
 	if blockNumber <= pricesBlock {
 		return nil
 	}
@@ -285,81 +284,113 @@ func (t *submitRplPrice) run(isAtlasDeployed bool) error {
 	blockTime := time.Unix(int64(header.Time), 0)
 
 	// Get the Beacon block corresponding to this time
-	eth2Config := t.s.BeaconConfig
+	eth2Config := state.BeaconConfig
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
 	timeSinceGenesis := blockTime.Sub(genesisTime)
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 
 	// Check if the targetEpoch is finalized yet
 	targetEpoch := slotNumber / eth2Config.SlotsPerEpoch
-	stateEpoch := t.s.BeaconSlotNumber / eth2Config.SlotsPerEpoch
+	stateEpoch := state.BeaconSlotNumber / eth2Config.SlotsPerEpoch
 	if targetEpoch > stateEpoch {
 		t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, targetEpoch, stateEpoch)
 		return nil
 	}
 
-	// Log
-	t.log.Printlnf("Getting RPL price for block %d...", blockNumber)
-
-	// Get RPL price at block
-	var rplPrice *big.Int
-	if stateEpoch < t.getTwapEpoch() {
-		rplPrice, err = t.getRplPrice(blockNumber)
-	} else {
-		rplPrice, err = t.getRplTwap(blockNumber)
-	}
-	if err != nil {
-		return err
-	}
-
-	// Calculate the total effective RPL stake on the network
-	zero := new(big.Int).SetUint64(0)
-	var effectiveRplStake *big.Int
-	if !isAtlasDeployed {
-		nodeStakingAddress := t.cfg.Smartnode.GetV110NodeStakingAddress()
-		effectiveRplStake, err = v110_node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil, &nodeStakingAddress)
-		if err != nil {
-			return fmt.Errorf("Error getting total effective RPL stake: %w", err)
-		}
-	} else {
-		_, effectiveRplStake, err = t.s.CalculateEffectiveStakes(false)
-		if err != nil {
-			return fmt.Errorf("error getting total effective RPL stake: %w", err)
-		}
-	}
-
-	// Log
-	t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
-
-	// Check if we have reported these specific values before
-	hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice, effectiveRplStake, isAtlasDeployed)
-	if err != nil {
-		return err
-	}
-	if hasSubmittedSpecific {
+	// Check if the process is already running
+	t.lock.Lock()
+	if t.isRunning {
+		t.log.Println("Prices report is already running in the background.")
+		t.lock.Unlock()
 		return nil
 	}
+	t.lock.Unlock()
 
-	// We haven't submitted these values, check if we've submitted any for this block so we can log it
-	hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
-	if err != nil {
-		return err
-	}
-	if hasSubmitted {
-		t.log.Printlnf("Have previously submitted out-of-date prices for block %d, trying again...", blockNumber)
-	}
+	go func() {
+		t.lock.Lock()
+		t.isRunning = true
+		t.lock.Unlock()
+		logPrefix := "[Price Report]"
+		t.log.Printlnf("%s Starting price report in a separate thread.", logPrefix)
 
-	// Log
-	t.log.Println("Submitting RPL price...")
+		// Log
+		t.log.Printlnf("Getting RPL price for block %d...", blockNumber)
 
-	// Submit RPL price
-	if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake, isAtlasDeployed); err != nil {
-		return fmt.Errorf("Could not submit RPL price: %w", err)
-	}
+		// Get RPL price at block
+		var rplPrice *big.Int
+		if stateEpoch < t.getTwapEpoch() {
+			rplPrice, err = t.getRplPrice(blockNumber)
+		} else {
+			rplPrice, err = t.getRplTwap(blockNumber)
+		}
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			return
+		}
+
+		// Calculate the total effective RPL stake on the network
+		zero := new(big.Int).SetUint64(0)
+		var effectiveRplStake *big.Int
+		if !isAtlasDeployed {
+			nodeStakingAddress := t.cfg.Smartnode.GetV110NodeStakingAddress()
+			effectiveRplStake, err = v110_node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil, &nodeStakingAddress)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s error getting total effective RPL stake: %w", logPrefix, err))
+				return
+			}
+		} else {
+			_, effectiveRplStake, err = state.CalculateEffectiveStakes(false)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s error getting total effective RPL stake: %w", logPrefix, err))
+				return
+			}
+		}
+
+		// Log
+		t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
+
+		// Check if we have reported these specific values before
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice, effectiveRplStake, isAtlasDeployed)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			return
+		}
+		if hasSubmittedSpecific {
+			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			return
+		}
+
+		// We haven't submitted these values, check if we've submitted any for this block so we can log it
+		hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			return
+		}
+		if hasSubmitted {
+			t.log.Printlnf("Have previously submitted out-of-date prices for block %d, trying again...", blockNumber)
+		}
+
+		// Log
+		t.log.Println("Submitting RPL price...")
+
+		// Submit RPL price
+		if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake, isAtlasDeployed); err != nil {
+			t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
+			return
+		}
+	}()
 
 	// Return
 	return nil
 
+}
+
+func (t *submitRplPrice) handleError(err error) {
+	t.errLog.Println(err)
+	t.errLog.Println("*** Price report failed. ***")
+	t.lock.Lock()
+	t.isRunning = false
+	t.lock.Unlock()
 }
 
 // Check whether prices for a block has already been submitted by the node
@@ -426,11 +457,14 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 	// Get RPL price
 	rplPrice, err := oio.GetRateToEth(opts, rplAddress, true)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get RPL price at block %d: %w", blockNumber, err)
+		return nil, fmt.Errorf("could not get RPL price at block %d: %w", blockNumber, err)
 	}
 
 	// Get the previously reported price
-	previousPrice := t.s.NetworkDetails.RplPrice
+	previousPrice, err := network.GetRPLPrice(t.rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("could not get previous RPL price at block %d: %w", blockNumber, err)
+	}
 
 	// See if the new price is lower than the decrease threshold
 	one := eth.EthToWei(1)

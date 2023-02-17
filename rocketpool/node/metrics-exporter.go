@@ -10,12 +10,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli"
 )
 
-func runMetricsServer(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) error {
+func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -58,15 +57,15 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, m *state.NetworkSt
 	}
 
 	// Create the collectors
-	demandCollector := collectors.NewDemandCollector(rp, m)
-	performanceCollector := collectors.NewPerformanceCollector(rp, m)
-	supplyCollector := collectors.NewSupplyCollector(rp, m)
-	rplCollector := collectors.NewRplCollector(rp, cfg, m)
-	odaoCollector := collectors.NewOdaoCollector(rp, m)
-	nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg, m)
-	trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg, m)
-	beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address, m)
-	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(rp, ec, m)
+	demandCollector := collectors.NewDemandCollector(rp, stateLocker)
+	performanceCollector := collectors.NewPerformanceCollector(rp, stateLocker)
+	supplyCollector := collectors.NewSupplyCollector(rp, stateLocker)
+	rplCollector := collectors.NewRplCollector(rp, cfg, stateLocker)
+	odaoCollector := collectors.NewOdaoCollector(rp, stateLocker)
+	nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg, stateLocker)
+	trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg, stateLocker)
+	beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address, stateLocker)
+	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(rp, ec, stateLocker)
 
 	// Set up Prometheus
 	registry := prometheus.NewRegistry()

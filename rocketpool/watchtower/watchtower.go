@@ -17,6 +17,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -110,19 +111,19 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during respond-to-challenges check: %w", err)
 	}
-	submitRplPrice, err := newSubmitRplPrice(c, log.NewColorLogger(SubmitRplPriceColor), m)
+	submitRplPrice, err := newSubmitRplPrice(c, log.NewColorLogger(SubmitRplPriceColor), errorLog)
 	if err != nil {
 		return fmt.Errorf("error during rpl price check: %w", err)
 	}
-	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), m)
+	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog, m)
 	if err != nil {
 		return fmt.Errorf("error during network balances check: %w", err)
 	}
-	dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor), m)
+	dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
 	if err != nil {
 		return fmt.Errorf("error during timed-out minipools check: %w", err)
 	}
-	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector, m)
+	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
 	if err != nil {
 		return fmt.Errorf("error during scrub check: %w", err)
 	}
@@ -138,11 +139,11 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during manual tree generation check: %w", err)
 	}
-	cancelBondReductions, err := newCancelBondReductions(c, log.NewColorLogger(CancelBondsColor), errorLog, m)
+	cancelBondReductions, err := newCancelBondReductions(c, log.NewColorLogger(CancelBondsColor), errorLog)
 	if err != nil {
 		return fmt.Errorf("error during bond reduction cancel check: %w", err)
 	}
-	checkSoloMigrations, err := newCheckSoloMigrations(c, log.NewColorLogger(CheckSoloMigrationsColor), errorLog, m)
+	checkSoloMigrations, err := newCheckSoloMigrations(c, log.NewColorLogger(CheckSoloMigrationsColor), errorLog)
 	if err != nil {
 		return fmt.Errorf("error during solo migration check: %w", err)
 	}
@@ -178,40 +179,49 @@ func run(c *cli.Context) error {
 				continue
 			}
 
-			// Update the network state
-			if err := updateNetworkState(m, &updateLog); err != nil {
-				errorLog.Println(err)
+			// Get the latest Beacon head
+			latestFinalizedBlock, err := m.GetLatestFinalizedBeaconBlock()
+			if err != nil {
+				errorLog.Println(fmt.Errorf("error getting latest finalized Beacon block: %w", err))
 				time.Sleep(taskCooldown)
 				continue
 			}
 
-			// Check for Atlas
-			if !isAtlasDeployedMasterFlag && m.GetLatestState().IsAtlasDeployed {
-				printAtlasMessage(&updateLog)
-				isAtlasDeployedMasterFlag = true
-			}
-
-			// Run the manual rewards tree generation
-			if err := generateRewardsTree.run(isAtlasDeployedMasterFlag); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-
 			// Check if on the Oracle DAO
-			isOnOdao, err := isOnOracleDAO(rp, nodeAccount.Address, m)
+			isOnOdao, err := isOnOracleDAO(rp, nodeAccount.Address, latestFinalizedBlock)
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
 				continue
 			}
 
-			// Run the rewards tree submission check
-			if err := submitRewardsTree.run(isOnOdao, isAtlasDeployedMasterFlag); err != nil {
+			// Run the manual rewards tree generation
+			if err := generateRewardsTree.run(); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			if isOnOdao {
+				// Update the network state
+				state, err := updateNetworkState(m, &updateLog, latestFinalizedBlock)
+				if err != nil {
+					errorLog.Println(err)
+					time.Sleep(taskCooldown)
+					continue
+				}
+
+				// Check for Atlas
+				if !isAtlasDeployedMasterFlag && state.IsAtlasDeployed {
+					printAtlasMessage(&updateLog)
+					isAtlasDeployedMasterFlag = true
+				}
+
+				// Run the rewards tree submission check
+				if err := submitRewardsTree.run(isOnOdao, state, latestFinalizedBlock.Slot, isAtlasDeployedMasterFlag); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
 				// Run the challenge check
 				if err := respondChallenges.run(isAtlasDeployedMasterFlag); err != nil {
 					errorLog.Println(err)
@@ -219,37 +229,37 @@ func run(c *cli.Context) error {
 				time.Sleep(taskCooldown)
 
 				// Run the price submission check
-				if err := submitRplPrice.run(isAtlasDeployedMasterFlag); err != nil {
+				if err := submitRplPrice.run(state, isAtlasDeployedMasterFlag); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the network balance submission check
-				if err := submitNetworkBalances.run(isAtlasDeployedMasterFlag); err != nil {
+				if err := submitNetworkBalances.run(state, isAtlasDeployedMasterFlag); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the minipool dissolve check
-				if err := dissolveTimedOutMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+				if err := dissolveTimedOutMinipools.run(state, isAtlasDeployedMasterFlag); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the minipool scrub check
-				if err := submitScrubMinipools.run(isAtlasDeployedMasterFlag); err != nil {
+				if err := submitScrubMinipools.run(state, isAtlasDeployedMasterFlag); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the bond cancel check
-				if err := cancelBondReductions.run(isAtlasDeployedMasterFlag); err != nil {
+				if err := cancelBondReductions.run(state, isAtlasDeployedMasterFlag); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the solo migration check
-				if err := checkSoloMigrations.run(isAtlasDeployedMasterFlag); err != nil {
+				if err := checkSoloMigrations.run(state, isAtlasDeployedMasterFlag); err != nil {
 					errorLog.Println(err)
 				}
 				/*time.Sleep(taskCooldown)
@@ -259,6 +269,21 @@ func run(c *cli.Context) error {
 					errorLog.Println(err)
 				}*/
 				// DISABLED until MEV-Boost can support it
+			} else {
+				// Check for Atlas
+				isAtlasDeployed, err := state.IsAtlasDeployed(rp, &bind.CallOpts{
+					BlockNumber: big.NewInt(0).SetUint64(latestFinalizedBlock.ExecutionBlockNumber),
+				})
+				if err != nil {
+					errorLog.Println(fmt.Errorf("error checking if Atlas is deployed: %w", err))
+					time.Sleep(taskCooldown)
+					continue
+				}
+
+				// Run the rewards tree submission check
+				if err := submitRewardsTree.run(isOnOdao, nil, latestFinalizedBlock.Slot, isAtlasDeployed); err != nil {
+					errorLog.Println(err)
+				}
 			}
 
 			time.Sleep(interval)
@@ -314,25 +339,20 @@ func printAtlasMessage(log *log.ColorLogger) {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger) error {
-	log.Print("Getting latest network state... ")
-	start := time.Now()
-
+func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, block beacon.BeaconBlock) (*state.NetworkState, error) {
+	log.Print("Getting latest finalized network state... ")
 	// Get the state of the network
-	_, err := m.UpdateStateToHead()
+	state, err := m.GetStateForSlot(block.Slot)
 	if err != nil {
-		return fmt.Errorf("error updating network state: %w", err)
+		return nil, fmt.Errorf("error getting network state: %w", err)
 	}
-
-	log.Printlnf("done in %s", time.Since(start))
-	return nil
+	return state, nil
 }
 
 // Check if this node is on the Oracle DAO
-func isOnOracleDAO(rp *rocketpool.RocketPool, nodeAddress common.Address, m *state.NetworkStateManager) (bool, error) {
-	state := m.GetLatestState()
+func isOnOracleDAO(rp *rocketpool.RocketPool, nodeAddress common.Address, block beacon.BeaconBlock) (bool, error) {
 	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
+		BlockNumber: big.NewInt(0).SetUint64(block.ExecutionBlockNumber),
 	}
 
 	nodeTrusted, err := trustednode.GetMemberExists(rp, nodeAddress, opts)

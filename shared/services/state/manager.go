@@ -23,8 +23,8 @@ type NetworkStateManager struct {
 	Network      cfgtypes.Network
 	ChainID      uint
 	BeaconConfig beacon.Eth2Config
-	latestState  *NetworkState
-	updateLock   sync.Mutex
+	//latestState  *NetworkState
+	updateLock sync.Mutex
 }
 
 // Create a new manager for the network state
@@ -53,8 +53,8 @@ func NewNetworkStateManager(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 
 }
 
-// Get the state of the network at the provided Beacon slot
-func (m *NetworkStateManager) UpdateStateToHead() (*NetworkState, error) {
+// Get the state of the network using the latest Execution layer block
+func (m *NetworkStateManager) GetHeadState() (*NetworkState, error) {
 	// Get the latest EL block
 	latestBlockHeader, err := m.ec.HeaderByNumber(context.Background(), nil)
 	if err != nil {
@@ -68,50 +68,16 @@ func (m *NetworkStateManager) UpdateStateToHead() (*NetworkState, error) {
 	targetSlot := secondsSinceGenesis / m.BeaconConfig.SecondsPerSlot
 
 	// Return
-	return m.updateState(targetSlot)
-}
-
-// Get the state of the network at the latest finalized Beacon slot
-func (m *NetworkStateManager) UpdateStateToFinalized() (*NetworkState, error) {
-	// Get the latest finalized slot
-	head, err := m.bc.GetBeaconHead()
-	if err != nil {
-		return nil, fmt.Errorf("error getting latest finalized slot: %w", err)
-	}
-	targetSlot := head.FinalizedEpoch*m.BeaconConfig.SlotsPerEpoch + (m.BeaconConfig.SlotsPerEpoch - 1)
-
-	// If that slot is missing, get the latest one that isn't
-	for {
-		// Try to get the current block
-		_, exists, err := m.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
-		if err != nil {
-			return nil, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
-		}
-
-		// If the block was missing, try the previous one
-		if !exists {
-			m.logLine("Slot %d was missing, trying the previous one...", targetSlot)
-			targetSlot--
-		} else {
-			return m.updateState(targetSlot)
-		}
-	}
+	return m.getState(targetSlot)
 }
 
 // Get the state of the network at the provided Beacon slot
-func (m *NetworkStateManager) UpdateStateToSlot(slotNumber uint64) (*NetworkState, error) {
-	return m.updateState(slotNumber)
-}
-
-// Gets the latest state in a thread-safe manner
-func (m *NetworkStateManager) GetLatestState() *NetworkState {
-	m.updateLock.Lock()
-	defer m.updateLock.Unlock()
-	return m.latestState
+func (m *NetworkStateManager) GetStateForSlot(slotNumber uint64) (*NetworkState, error) {
+	return m.getState(slotNumber)
 }
 
 // Get the state of the network at the provided Beacon slot
-func (m *NetworkStateManager) updateState(slotNumber uint64) (*NetworkState, error) {
+func (m *NetworkStateManager) getState(slotNumber uint64) (*NetworkState, error) {
 	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig)
 	if err != nil {
 		return nil, err
@@ -119,7 +85,6 @@ func (m *NetworkStateManager) updateState(slotNumber uint64) (*NetworkState, err
 
 	m.updateLock.Lock()
 	defer m.updateLock.Unlock()
-	m.latestState = state
 	return state, nil
 }
 
@@ -127,5 +92,31 @@ func (m *NetworkStateManager) updateState(slotNumber uint64) (*NetworkState, err
 func (m *NetworkStateManager) logLine(format string, v ...interface{}) {
 	if m.log != nil {
 		m.log.Printlnf(format, v)
+	}
+}
+
+// Gets the latest valid finalized slot from the given Beacon Chain head info
+func (m *NetworkStateManager) GetLatestFinalizedBeaconBlock() (beacon.BeaconBlock, error) {
+	head, err := m.bc.GetBeaconHead()
+	if err != nil {
+		return beacon.BeaconBlock{}, fmt.Errorf("error getting Beacon chain head: %w", err)
+	}
+	targetSlot := head.FinalizedEpoch*m.BeaconConfig.SlotsPerEpoch + (m.BeaconConfig.SlotsPerEpoch - 1)
+
+	// If that slot is missing, get the latest one that isn't
+	for {
+		// Try to get the current block
+		block, exists, err := m.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
+		if err != nil {
+			return beacon.BeaconBlock{}, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
+		}
+
+		// If the block was missing, try the previous one
+		if !exists {
+			m.logLine("Slot %d was missing, trying the previous one...", targetSlot)
+			targetSlot--
+		} else {
+			return block, nil
+		}
 	}
 }

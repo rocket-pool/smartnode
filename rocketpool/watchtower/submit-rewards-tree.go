@@ -48,7 +48,6 @@ type submitRewardsTree struct {
 	isRunning        bool
 	generationPrefix string
 	m                *state.NetworkStateManager
-	s                *state.NetworkState
 }
 
 // Create submit rewards Merkle Tree task
@@ -96,7 +95,7 @@ func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger lo
 }
 
 // Submit rewards Merkle Tree
-func (t *submitRewardsTree) run(nodeTrusted bool, isAtlasDeployed bool) error {
+func (t *submitRewardsTree) run(nodeTrusted bool, state *state.NetworkState, beaconSlot uint64, isAtlasDeployed bool) error {
 
 	// Wait for clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -106,9 +105,6 @@ func (t *submitRewardsTree) run(nodeTrusted bool, isAtlasDeployed bool) error {
 		return err
 	}
 
-	// Get the latest state
-	t.s = t.m.GetLatestState()
-
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
@@ -116,20 +112,28 @@ func (t *submitRewardsTree) run(nodeTrusted bool, isAtlasDeployed bool) error {
 	}
 
 	// Check node trusted status
-	if !nodeTrusted && t.cfg.Smartnode.RewardsTreeMode.Value.(cfgtypes.RewardsMode) != cfgtypes.RewardsMode_Generate {
-		return nil
+	if !nodeTrusted {
+		if t.cfg.Smartnode.RewardsTreeMode.Value.(cfgtypes.RewardsMode) != cfgtypes.RewardsMode_Generate {
+			return nil
+		} else {
+			// Create the state, since it's not done except for manual generators
+			state, err = t.m.GetStateForSlot(beaconSlot)
+			if err != nil {
+				return fmt.Errorf("error getting state for beacon slot %d: %w", beaconSlot, err)
+			}
+		}
 	}
 
 	// Log
 	t.log.Println("Checking for rewards checkpoint...")
 
 	// Check if a rewards interval has passed and needs to be calculated
-	startTime := t.s.NetworkDetails.IntervalStart
-	intervalTime := t.s.NetworkDetails.IntervalDuration
+	startTime := state.NetworkDetails.IntervalStart
+	intervalTime := state.NetworkDetails.IntervalDuration
 
 	// Calculate the end time, which is the number of intervals that have gone by since the current one's start
-	genesisTime := time.Unix(int64(t.s.BeaconConfig.GenesisTime), 0)
-	secondsSinceGenesis := time.Duration(t.s.BeaconConfig.SecondsPerSlot*t.s.BeaconSlotNumber) * time.Second
+	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := time.Duration(state.BeaconConfig.SecondsPerSlot*state.BeaconSlotNumber) * time.Second
 	stateTime := genesisTime.Add(secondsSinceGenesis)
 	timeSinceStart := stateTime.Sub(startTime)
 	intervalsPassed := timeSinceStart / intervalTime
@@ -139,7 +143,7 @@ func (t *submitRewardsTree) run(nodeTrusted bool, isAtlasDeployed bool) error {
 	}
 
 	// Get the block and timestamp of the consensus block that best matches the end time
-	snapshotBeaconBlock, elBlockNumber, err := t.getSnapshotConsensusBlock(endTime)
+	snapshotBeaconBlock, elBlockNumber, err := t.getSnapshotConsensusBlock(endTime, state)
 	if err != nil {
 		return err
 	}
@@ -152,7 +156,7 @@ func (t *submitRewardsTree) run(nodeTrusted bool, isAtlasDeployed bool) error {
 	elBlockIndex := snapshotElBlockHeader.Number.Uint64()
 
 	// Get the current interval
-	currentIndex := t.s.NetworkDetails.RewardIndex
+	currentIndex := state.NetworkDetails.RewardIndex
 	currentIndexBig := big.NewInt(0).SetUint64(currentIndex)
 
 	// Check if rewards generation is already running
@@ -308,8 +312,14 @@ func (t *submitRewardsTree) generateTreeImpl(rp *rocketpool.RocketPool, interval
 	}
 	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
+	// Get the state of the network at the desired slot
+	state, err := t.m.GetStateForSlot(snapshotBeaconBlock)
+	if err != nil {
+		return fmt.Errorf("error getting state for beacon slot %d: %w", snapshotBeaconBlock, err)
+	}
+
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), t.s)
+	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state)
 	if err != nil {
 		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
 	}
@@ -513,7 +523,7 @@ func (t *submitRewardsTree) uploadFileToWeb3Storage(wrapperBytes []byte, compres
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
-func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64, uint64, error) {
+func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time, state *state.NetworkState) (uint64, uint64, error) {
 
 	// Get the beacon head
 	beaconHead, err := t.bc.GetBeaconHead()
@@ -522,7 +532,7 @@ func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64
 	}
 
 	// Get the target block number
-	eth2Config := t.s.BeaconConfig
+	eth2Config := state.BeaconConfig
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
 	totalTimespan := endTime.Sub(genesisTime)
 	targetSlot := uint64(math.Ceil(totalTimespan.Seconds() / float64(eth2Config.SecondsPerSlot)))

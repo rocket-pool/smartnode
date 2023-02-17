@@ -28,11 +28,10 @@ type downloadRewardsTrees struct {
 	rp  *rocketpool.RocketPool
 	d   *client.Client
 	bc  beacon.Client
-	m   *state.NetworkStateManager
 }
 
 // Create manage fee recipient task
-func newDownloadRewardsTrees(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*downloadRewardsTrees, error) {
+func newDownloadRewardsTrees(c *cli.Context, logger log.ColorLogger) (*downloadRewardsTrees, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -65,13 +64,12 @@ func newDownloadRewardsTrees(c *cli.Context, logger log.ColorLogger, m *state.Ne
 		rp:  rp,
 		d:   d,
 		bc:  bc,
-		m:   m,
 	}, nil
 
 }
 
 // Manage fee recipient
-func (d *downloadRewardsTrees) run(isAtlasDeployed bool) error {
+func (d *downloadRewardsTrees) run(state *state.NetworkState, isAtlasDeployed bool) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(d.c, true); err != nil {
@@ -101,7 +99,7 @@ func (d *downloadRewardsTrees) run(isAtlasDeployed bool) error {
 		}
 		currentIndex = currentIndexBig.Uint64()
 	} else {
-		currentIndex = d.m.GetLatestState().NetworkDetails.RewardIndex
+		currentIndex = state.NetworkDetails.RewardIndex
 	}
 
 	// Check for missing intervals

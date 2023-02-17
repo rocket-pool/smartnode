@@ -51,8 +51,6 @@ type submitScrubMinipools struct {
 	coll      *collectors.ScrubCollector
 	lock      *sync.Mutex
 	isRunning bool
-	m         *state.NetworkStateManager
-	s         *state.NetworkState
 }
 
 type iterationData struct {
@@ -83,7 +81,7 @@ type minipoolDetails struct {
 }
 
 // Create submit scrub minipools task
-func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.ScrubCollector, m *state.NetworkStateManager) (*submitScrubMinipools, error) {
+func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.ScrubCollector) (*submitScrubMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -121,13 +119,12 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, errorLogger
 		coll:      coll,
 		lock:      lock,
 		isRunning: false,
-		m:         m,
 	}, nil
 
 }
 
 // Submit scrub minipools
-func (t *submitScrubMinipools) run(isAtlasDeployed bool) error {
+func (t *submitScrubMinipools) run(state *state.NetworkState, isAtlasDeployed bool) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -159,15 +156,9 @@ func (t *submitScrubMinipools) run(isAtlasDeployed bool) error {
 
 		t.it = new(iterationData)
 
-		// Get the latest state
-		t.s = t.m.GetLatestState()
-		opts := &bind.CallOpts{
-			BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
-		}
-
 		// Get minipools in prelaunch status
 		prelaunchMinipools := []rpstate.NativeMinipoolDetails{}
-		for _, mpd := range t.s.MinipoolDetails {
+		for _, mpd := range state.MinipoolDetails {
 			if mpd.Status == types.Prelaunch {
 				prelaunchMinipools = append(prelaunchMinipools, mpd)
 			}
@@ -185,10 +176,13 @@ func (t *submitScrubMinipools) run(isAtlasDeployed bool) error {
 		t.it.minipools = make(map[minipool.Minipool]*minipoolDetails, t.it.totalMinipools)
 
 		// Get the correct withdrawal credentials and validator pubkeys for each minipool
+		opts := &bind.CallOpts{
+			BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
+		}
 		t.initializeMinipoolDetails(prelaunchMinipools, opts)
 
 		// Step 1: Verify the Beacon credentials if they exist
-		t.verifyBeaconWithdrawalCredentials()
+		t.verifyBeaconWithdrawalCredentials(state)
 
 		// If there aren't any minipools left to check, print the final tally and exit
 		if len(t.it.minipools) == 0 {
@@ -200,7 +194,7 @@ func (t *submitScrubMinipools) run(isAtlasDeployed bool) error {
 		}
 
 		// Get various elements needed to do eth1 prestake and deposit contract searches
-		err := t.getEth1SearchArtifacts()
+		err := t.getEth1SearchArtifacts(state)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
 			return
@@ -235,7 +229,7 @@ func (t *submitScrubMinipools) run(isAtlasDeployed bool) error {
 		}
 
 		// Step 4: Scrub all of the undeposited minipools after half the scrub period for safety
-		err = t.checkSafetyScrub()
+		err = t.checkSafetyScrub(state)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
 			return
@@ -286,14 +280,14 @@ func (t *submitScrubMinipools) initializeMinipoolDetails(minipools []rpstate.Nat
 }
 
 // Step 1: Verify the Beacon Chain credentials for a minipool if they're present
-func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials() error {
+func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(state *state.NetworkState) error {
 	minipoolsToScrub := []minipool.Minipool{}
 
 	// Get the withdrawal credentials on Beacon for each validator if they exist
 	for minipool, details := range t.it.minipools {
 		pubkey := details.pubkey
 
-		status := t.s.ValidatorDetails[pubkey]
+		status := state.ValidatorDetails[pubkey]
 		if status.Exists {
 			// This minipool's deposit has been seen on the Beacon Chain
 			expectedCreds := details.expectedWithdrawalCredentials
@@ -329,15 +323,15 @@ func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials() error {
 }
 
 // Get various elements needed to do eth1 prestake and deposit contract searches
-func (t *submitScrubMinipools) getEth1SearchArtifacts() error {
+func (t *submitScrubMinipools) getEth1SearchArtifacts(state *state.NetworkState) error {
 
 	// Get the time of the state's EL block
-	genesisTime := time.Unix(int64(t.s.BeaconConfig.GenesisTime), 0)
-	secondsSinceGenesis := time.Duration(t.s.BeaconSlotNumber*t.s.BeaconConfig.SecondsPerSlot) * time.Second
+	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := time.Duration(state.BeaconSlotNumber*state.BeaconConfig.SecondsPerSlot) * time.Second
 	t.it.stateBlockTime = genesisTime.Add(secondsSinceGenesis)
 
 	// Get the block to start searching the deposit contract from
-	stateBlockNumber := big.NewInt(0).SetUint64(t.s.ElBlockNumber)
+	stateBlockNumber := big.NewInt(0).SetUint64(state.ElBlockNumber)
 	offset := big.NewInt(BlockStartOffset)
 	if stateBlockNumber.Cmp(offset) < 0 {
 		offset = stateBlockNumber // Deal with chains that aren't old enough, looking at you Zhejiang
@@ -357,7 +351,7 @@ func (t *submitScrubMinipools) getEth1SearchArtifacts() error {
 	t.it.eventLogInterval = big.NewInt(int64(eventLogInterval))
 
 	// Put together the signature validation data
-	eth2Config := t.s.BeaconConfig
+	eth2Config := state.BeaconConfig
 	depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
 	if err != nil {
 		return fmt.Errorf("error computing deposit domain: %w", err)
@@ -503,7 +497,7 @@ func (t *submitScrubMinipools) verifyDeposits() error {
 
 // Step 4: Catch-all safety mechanism that scrubs minipools without valid deposits after a certain period of time
 // This should never be used, it's simply here as a redundant check
-func (t *submitScrubMinipools) checkSafetyScrub() error {
+func (t *submitScrubMinipools) checkSafetyScrub(state *state.NetworkState) error {
 
 	minipoolsToScrub := []minipool.Minipool{}
 
@@ -516,7 +510,7 @@ func (t *submitScrubMinipools) checkSafetyScrub() error {
 	}
 
 	// Get the scrub period
-	scrubPeriod := t.s.NetworkDetails.ScrubPeriod
+	scrubPeriod := state.NetworkDetails.ScrubPeriod
 
 	// Get the safety period where minipools can be scrubbed without a valid deposit
 	safetyPeriod := scrubPeriod / ScrubSafetyDivider
@@ -526,7 +520,7 @@ func (t *submitScrubMinipools) checkSafetyScrub() error {
 
 	for minipool := range t.it.minipools {
 		// Get the minipool's status
-		mpd := t.s.MinipoolDetailsByAddress[minipool.GetAddress()]
+		mpd := state.MinipoolDetailsByAddress[minipool.GetAddress()]
 
 		// Verify this is actually a prelaunch minipool
 		if mpd.Status != types.Prelaunch {

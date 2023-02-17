@@ -23,25 +23,25 @@ type SmoothingPoolCollector struct {
 	// The EC client
 	ec *services.ExecutionClientManager
 
-	// The manager for the network state in Atlas
-	m *state.NetworkStateManager
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
 
 	// Prefix for logging
 	logPrefix string
 }
 
 // Create a new SmoothingPoolCollector instance
-func NewSmoothingPoolCollector(rp *rocketpool.RocketPool, ec *services.ExecutionClientManager, m *state.NetworkStateManager) *SmoothingPoolCollector {
+func NewSmoothingPoolCollector(rp *rocketpool.RocketPool, ec *services.ExecutionClientManager, stateLocker *StateLocker) *SmoothingPoolCollector {
 	subsystem := "smoothing_pool"
 	return &SmoothingPoolCollector{
 		ethBalanceOnSmoothingPool: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_balance"),
 			"The ETH balance on the smoothing pool",
 			nil, nil,
 		),
-		rp:        rp,
-		ec:        ec,
-		m:         m,
-		logPrefix: "SP Collector",
+		rp:          rp,
+		ec:          ec,
+		stateLocker: stateLocker,
+		logPrefix:   "SP Collector",
 	}
 }
 
@@ -52,7 +52,7 @@ func (collector *SmoothingPoolCollector) Describe(channel chan<- *prometheus.Des
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metric) {
-	latestState := collector.m.GetLatestState()
+	latestState := collector.stateLocker.GetState()
 	if latestState == nil {
 		collector.collectImpl_Legacy(channel)
 	} else {

@@ -19,7 +19,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -62,15 +61,15 @@ type TrustedNodeCollector struct {
 	// The event log interval for the current eth1 client
 	eventLogInterval *big.Int
 
-	// The manager for the network state in Atlas
-	m *state.NetworkStateManager
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
 
 	// Prefix for logging
 	logPrefix string
 }
 
 // Create a new NodeCollector instance
-func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig, m *state.NetworkStateManager) *TrustedNodeCollector {
+func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *TrustedNodeCollector {
 
 	// Get the event log interval
 	eventLogInterval, err := cfg.GetEventLogInterval()
@@ -110,7 +109,7 @@ func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 		bc:               bc,
 		nodeAddress:      nodeAddress,
 		eventLogInterval: big.NewInt(int64(eventLogInterval)),
-		m:                m,
+		stateLocker:      stateLocker,
 		logPrefix:        "ODAO Stats Collector",
 	}
 }

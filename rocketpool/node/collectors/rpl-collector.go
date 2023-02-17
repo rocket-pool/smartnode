@@ -37,15 +37,15 @@ type RplCollector struct {
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
-	// The manager for the network state in Atlas
-	m *state.NetworkStateManager
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
 
 	// Prefix for logging
 	logPrefix string
 }
 
 // Create a new RplCollector instance
-func NewRplCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, m *state.NetworkStateManager) *RplCollector {
+func NewRplCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *RplCollector {
 	subsystem := "rpl"
 	return &RplCollector{
 		rplPrice: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rpl_price"),
@@ -64,10 +64,10 @@ func NewRplCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, m 
 			"The date and time of the next RPL rewards checkpoint",
 			nil, nil,
 		),
-		rp:        rp,
-		cfg:       cfg,
-		m:         m,
-		logPrefix: "RPL Collector",
+		rp:          rp,
+		cfg:         cfg,
+		stateLocker: stateLocker,
+		logPrefix:   "RPL Collector",
 	}
 }
 
@@ -81,7 +81,7 @@ func (collector *RplCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
-	latestState := collector.m.GetLatestState()
+	latestState := collector.stateLocker.GetState()
 	if latestState == nil {
 		collector.collectImpl_Legacy(channel)
 	} else {

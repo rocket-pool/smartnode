@@ -31,12 +31,10 @@ type dissolveTimedOutMinipools struct {
 	w   *wallet.Wallet
 	ec  rocketpool.ExecutionClient
 	rp  *rocketpool.RocketPool
-	m   *state.NetworkStateManager
-	s   *state.NetworkState
 }
 
 // Create dissolve timed out minipools task
-func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*dissolveTimedOutMinipools, error) {
+func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*dissolveTimedOutMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -64,30 +62,22 @@ func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger, m *sta
 		w:   w,
 		ec:  ec,
 		rp:  rp,
-		m:   m,
 	}, nil
 
 }
 
 // Dissolve timed out minipools
-func (t *dissolveTimedOutMinipools) run(isAtlasDeployed bool) error {
+func (t *dissolveTimedOutMinipools) run(state *state.NetworkState, isAtlasDeployed bool) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return err
 	}
-
-	// Get the latest state
-	t.s = t.m.GetLatestState()
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
-	}
-
 	// Log
 	t.log.Println("Checking for timed out minipools to dissolve...")
 
 	// Get timed out minipools
-	minipools, err := t.getTimedOutMinipools(opts)
+	minipools, err := t.getTimedOutMinipools(state)
 	if err != nil {
 		return err
 	}
@@ -111,17 +101,21 @@ func (t *dissolveTimedOutMinipools) run(isAtlasDeployed bool) error {
 }
 
 // Get timed out minipools
-func (t *dissolveTimedOutMinipools) getTimedOutMinipools(opts *bind.CallOpts) ([]minipool.Minipool, error) {
+func (t *dissolveTimedOutMinipools) getTimedOutMinipools(state *state.NetworkState) ([]minipool.Minipool, error) {
+
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
+	}
 
 	timedOutMinipools := []minipool.Minipool{}
-	genesisTime := time.Unix(int64(t.s.BeaconConfig.GenesisTime), 0)
-	secondsSinceGenesis := time.Duration(t.s.BeaconSlotNumber*t.s.BeaconConfig.SecondsPerSlot) * time.Second
+	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := time.Duration(state.BeaconSlotNumber*state.BeaconConfig.SecondsPerSlot) * time.Second
 	blockTime := genesisTime.Add(secondsSinceGenesis)
 
 	// Filter minipools by status
-	launchTimeoutBig := t.s.NetworkDetails.MinipoolLaunchTimeout
+	launchTimeoutBig := state.NetworkDetails.MinipoolLaunchTimeout
 	launchTimeout := time.Duration(launchTimeoutBig.Uint64()) * time.Second
-	for _, mpd := range t.s.MinipoolDetails {
+	for _, mpd := range state.MinipoolDetails {
 		statusTime := time.Unix(mpd.StatusTime.Int64(), 0)
 		if mpd.Status == rptypes.Prelaunch && blockTime.Sub(statusTime) >= launchTimeout {
 			mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, opts)

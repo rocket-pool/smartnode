@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -41,12 +40,10 @@ type checkSoloMigrations struct {
 	lock             *sync.Mutex
 	isRunning        bool
 	generationPrefix string
-	m                *state.NetworkStateManager
-	s                *state.NetworkState
 }
 
 // Create check solo migrations task
-func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*checkSoloMigrations, error) {
+func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*checkSoloMigrations, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -84,13 +81,12 @@ func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger 
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Solo Migration]",
-		m:                m,
 	}, nil
 
 }
 
 // Start the solo migration checking thread
-func (t *checkSoloMigrations) run(isAtlasDeployed bool) error {
+func (t *checkSoloMigrations) run(state *state.NetworkState, isAtlasDeployed bool) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -103,12 +99,6 @@ func (t *checkSoloMigrations) run(isAtlasDeployed bool) error {
 	// Check if Atlas has been deployed yet
 	if !isAtlasDeployed {
 		return nil
-	}
-
-	// Get the latest state
-	t.s = t.m.GetLatestState()
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
 	}
 
 	// Log
@@ -130,7 +120,7 @@ func (t *checkSoloMigrations) run(isAtlasDeployed bool) error {
 		t.lock.Unlock()
 		t.printMessage("Starting solo migration check in a separate thread.")
 
-		err := t.checkSoloMigrations(opts)
+		err := t.checkSoloMigrations(state)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", t.generationPrefix, err))
 			return
@@ -147,15 +137,15 @@ func (t *checkSoloMigrations) run(isAtlasDeployed bool) error {
 }
 
 // Check for solo staker migration validity
-func (t *checkSoloMigrations) checkSoloMigrations(opts *bind.CallOpts) error {
+func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) error {
 
-	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", t.s.BeaconSlotNumber, t.s.ElBlockNumber))
+	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", state.BeaconSlotNumber, state.ElBlockNumber))
 	oneGwei := eth.GweiToWei(1)
 
 	// Go through each minipool
 	threshold := uint64(32000000000)
 	buffer := uint64(migrationBalanceBuffer * eth.WeiPerGwei)
-	for _, mpd := range t.s.MinipoolDetails {
+	for _, mpd := range state.MinipoolDetails {
 		if mpd.Status == types.Dissolved {
 			// Ignore minipools that are already dissolved
 			continue
@@ -166,7 +156,7 @@ func (t *checkSoloMigrations) checkSoloMigrations(opts *bind.CallOpts) error {
 			continue
 		}
 
-		validator := t.s.ValidatorDetails[mpd.Pubkey]
+		validator := state.ValidatorDetails[mpd.Pubkey]
 		if validator.Status != beacon.ValidatorState_ActiveOngoing {
 			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("minipool %s was in state %v, but is required to be active_ongoing for migration", mpd.MinipoolAddress.Hex(), validator.Status))
 			continue

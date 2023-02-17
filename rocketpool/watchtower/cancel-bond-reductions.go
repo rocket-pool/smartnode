@@ -31,12 +31,10 @@ type cancelBondReductions struct {
 	lock             *sync.Mutex
 	isRunning        bool
 	generationPrefix string
-	m                *state.NetworkStateManager
-	s                *state.NetworkState
 }
 
 // Create cancel bond reductions task
-func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*cancelBondReductions, error) {
+func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*cancelBondReductions, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -69,13 +67,12 @@ func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Bond Reduction]",
-		m:                m,
 	}, nil
 
 }
 
 // Start the bond reduction cancellation thread
-func (t *cancelBondReductions) run(isAtlasDeployed bool) error {
+func (t *cancelBondReductions) run(state *state.NetworkState, isAtlasDeployed bool) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -89,9 +86,6 @@ func (t *cancelBondReductions) run(isAtlasDeployed bool) error {
 	if !isAtlasDeployed {
 		return nil
 	}
-
-	// Get the latest state
-	t.s = t.m.GetLatestState()
 
 	// Log
 	t.log.Println("Checking for bond reductions to cancel...")
@@ -112,7 +106,7 @@ func (t *cancelBondReductions) run(isAtlasDeployed bool) error {
 		t.lock.Unlock()
 		t.printMessage("Starting bond reduction cancel check in a separate thread.")
 
-		err := t.checkBondReductions()
+		err := t.checkBondReductions(state)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", t.generationPrefix, err))
 			return
@@ -129,16 +123,16 @@ func (t *cancelBondReductions) run(isAtlasDeployed bool) error {
 }
 
 // Check for bond reductions to cancel
-func (t *cancelBondReductions) checkBondReductions() error {
+func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) error {
 
-	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", t.s.BeaconSlotNumber, t.s.ElBlockNumber))
+	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", state.BeaconSlotNumber, state.ElBlockNumber))
 
 	// Check if any of the minipools have bond reduction requests
 	zero := big.NewInt(0)
 	reductionMps := []*rpstate.NativeMinipoolDetails{}
-	for i, mpd := range t.s.MinipoolDetails {
+	for i, mpd := range state.MinipoolDetails {
 		if mpd.ReduceBondTime.Cmp(zero) == 1 {
-			reductionMps = append(reductionMps, &t.s.MinipoolDetails[i])
+			reductionMps = append(reductionMps, &state.MinipoolDetails[i])
 		}
 	}
 
@@ -151,7 +145,7 @@ func (t *cancelBondReductions) checkBondReductions() error {
 	// Check the status of each one
 	threshold := uint64(32000000000)
 	for _, mpd := range reductionMps {
-		validator := t.s.ValidatorDetails[mpd.Pubkey]
+		validator := state.ValidatorDetails[mpd.Pubkey]
 		switch validator.Status {
 		case beacon.ValidatorState_PendingInitialized,
 			beacon.ValidatorState_PendingQueued:

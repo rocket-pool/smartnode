@@ -42,12 +42,10 @@ type stakePrelaunchMinipools struct {
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
 	gasLimit       uint64
-	m              *state.NetworkStateManager
-	s              *state.NetworkState
 }
 
 // Create stake prelaunch minipools task
-func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*stakePrelaunchMinipools, error) {
+func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakePrelaunchMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -106,13 +104,12 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger, m *state
 		maxFee:         maxFee,
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
-		m:              m,
 	}, nil
 
 }
 
 // Stake prelaunch minipools
-func (t *stakePrelaunchMinipools) run(isAtlasDeployed bool) error {
+func (t *stakePrelaunchMinipools) run(state *state.NetworkState, isAtlasDeployed bool) error {
 
 	// Reload the wallet (in case a call to `node deposit` changed it)
 	if err := t.w.Reload(); err != nil {
@@ -130,7 +127,7 @@ func (t *stakePrelaunchMinipools) run(isAtlasDeployed bool) error {
 	if !isAtlasDeployed {
 		return t.runImpl_Legacy()
 	}
-	return t.runImpl_Atlas()
+	return t.runImpl_Atlas(state)
 
 }
 
@@ -375,11 +372,10 @@ func (t *stakePrelaunchMinipools) stakeMinipool_Legacy(mp minipool.Minipool, eth
 
 }
 
-func (t *stakePrelaunchMinipools) runImpl_Atlas() error {
+func (t *stakePrelaunchMinipools) runImpl_Atlas(state *state.NetworkState) error {
 	// Get the latest state
-	t.s = t.m.GetLatestState()
 	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(t.s.ElBlockNumber),
+		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
 	}
 
 	// Get node account
@@ -389,7 +385,7 @@ func (t *stakePrelaunchMinipools) runImpl_Atlas() error {
 	}
 
 	// Get prelaunch minipools
-	minipools, err := t.getPrelaunchMinipools_Atlas(nodeAccount.Address, opts)
+	minipools, err := t.getPrelaunchMinipools_Atlas(nodeAccount.Address, state, opts)
 	if err != nil {
 		return err
 	}
@@ -403,7 +399,7 @@ func (t *stakePrelaunchMinipools) runImpl_Atlas() error {
 	// Stake minipools
 	successCount := 0
 	for _, mpd := range minipools {
-		success, err := t.stakeMinipool_Atlas(mpd, opts)
+		success, err := t.stakeMinipool_Atlas(mpd, state, opts)
 		if err != nil {
 			t.log.Println(fmt.Errorf("Could not stake minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
 			return err
@@ -425,10 +421,10 @@ func (t *stakePrelaunchMinipools) runImpl_Atlas() error {
 }
 
 // Get prelaunch minipools
-func (t *stakePrelaunchMinipools) getPrelaunchMinipools_Atlas(nodeAddress common.Address, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
+func (t *stakePrelaunchMinipools) getPrelaunchMinipools_Atlas(nodeAddress common.Address, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
 	// Get the scrub period
-	scrubPeriod := t.s.NetworkDetails.ScrubPeriod
+	scrubPeriod := state.NetworkDetails.ScrubPeriod
 
 	// Get the time of the target block
 	block, err := t.rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
@@ -439,7 +435,7 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools_Atlas(nodeAddress common
 
 	// Filter minipools by status
 	prelaunchMinipools := []*rpstate.NativeMinipoolDetails{}
-	for _, mpd := range t.s.MinipoolDetailsByNode[nodeAddress] {
+	for _, mpd := range state.MinipoolDetailsByNode[nodeAddress] {
 		if mpd.Status == rptypes.Prelaunch {
 			if mpd.IsVacant {
 				// Ignore vacant minipools
@@ -461,7 +457,7 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools_Atlas(nodeAddress common
 }
 
 // Stake a minipool
-func (t *stakePrelaunchMinipools) stakeMinipool_Atlas(mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
+func (t *stakePrelaunchMinipools) stakeMinipool_Atlas(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, callOpts *bind.CallOpts) (bool, error) {
 
 	// Log
 	t.log.Printlnf("Staking minipool %s...", mpd.MinipoolAddress.Hex())
@@ -500,7 +496,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool_Atlas(mpd *rpstate.NativeMinipoo
 	}
 
 	// Get validator deposit data
-	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, t.s.BeaconConfig, depositAmount)
+	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, state.BeaconConfig, depositAmount)
 	if err != nil {
 		return false, err
 	}

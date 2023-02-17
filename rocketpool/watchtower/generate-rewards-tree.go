@@ -40,7 +40,6 @@ type generateRewardsTree struct {
 	lock      *sync.Mutex
 	isRunning bool
 	m         *state.NetworkStateManager
-	s         *state.NetworkState
 }
 
 // Create generate rewards Merkle Tree task
@@ -82,7 +81,7 @@ func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger 
 }
 
 // Check for generation requests
-func (t *generateRewardsTree) run(isAtlasDeployed bool) error {
+func (t *generateRewardsTree) run() error {
 	t.log.Println("Checking for manual rewards tree generation requests...")
 
 	// Check if rewards generation is already running
@@ -139,8 +138,6 @@ func (t *generateRewardsTree) run(isAtlasDeployed bool) error {
 }
 
 func (t *generateRewardsTree) generateRewardsTree(index uint64) {
-	// Get the latest state
-	t.s = t.m.GetLatestState()
 
 	// Begin generation of the tree
 	generationPrefix := fmt.Sprintf("[Interval %d Tree]", index)
@@ -210,16 +207,23 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		return
 	}
 
+	// Get the state for the target slot
+	state, err := t.m.GetStateForSlot(rewardsEvent.ConsensusBlock.Uint64())
+	if err != nil {
+		t.handleError(fmt.Errorf("%s error getting state for beacon slot %d: %w", generationPrefix, rewardsEvent.ConsensusBlock.Uint64(), err))
+		return
+	}
+
 	// Generate the tree
-	t.generateRewardsTreeImpl(client, index, generationPrefix, rewardsEvent, elBlockHeader)
+	t.generateRewardsTreeImpl(client, index, generationPrefix, rewardsEvent, elBlockHeader, state)
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header) {
+func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
 
 	// Generate the rewards file
 	start := time.Now()
-	treegen, err := rprewards.NewTreeGenerator(t.log, generationPrefix, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), t.s)
+	treegen, err := rprewards.NewTreeGenerator(t.log, generationPrefix, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error creating Merkle tree generator: %w", generationPrefix, err))
 		return

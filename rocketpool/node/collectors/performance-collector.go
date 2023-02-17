@@ -36,15 +36,15 @@ type PerformanceCollector struct {
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
-	// The manager for the network state in Atlas
-	m *state.NetworkStateManager
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
 
 	// Prefix for logging
 	logPrefix string
 }
 
 // Create a new PerformanceCollector instance
-func NewPerformanceCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager) *PerformanceCollector {
+func NewPerformanceCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *PerformanceCollector {
 	subsystem := "performance"
 	return &PerformanceCollector{
 		ethUtilizationRate: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_utilization_rate"),
@@ -71,9 +71,9 @@ func NewPerformanceCollector(rp *rocketpool.RocketPool, m *state.NetworkStateMan
 			"The total rETH supply",
 			nil, nil,
 		),
-		rp:        rp,
-		m:         m,
-		logPrefix: "Performance Collector",
+		rp:          rp,
+		stateLocker: stateLocker,
+		logPrefix:   "Performance Collector",
 	}
 }
 
@@ -89,7 +89,7 @@ func (collector *PerformanceCollector) Describe(channel chan<- *prometheus.Desc)
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric) {
-	latestState := collector.m.GetLatestState()
+	latestState := collector.stateLocker.GetState()
 	if latestState == nil {
 		collector.collectImpl_Legacy(channel)
 	} else {

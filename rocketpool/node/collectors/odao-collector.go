@@ -28,15 +28,15 @@ type OdaoCollector struct {
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
-	// The manager for the network state in Atlas
-	m *state.NetworkStateManager
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
 
 	// Prefix for logging
 	logPrefix string
 }
 
 // Create a new DemandCollector instance
-func NewOdaoCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager) *OdaoCollector {
+func NewOdaoCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *OdaoCollector {
 	subsystem := "odao"
 	return &OdaoCollector{
 		currentEth1Block: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "current_eth1_block"),
@@ -55,9 +55,9 @@ func NewOdaoCollector(rp *rocketpool.RocketPool, m *state.NetworkStateManager) *
 			"The latest ETH1 block where network prices were reportable by the ODAO",
 			nil, nil,
 		),
-		rp:        rp,
-		m:         m,
-		logPrefix: "ODAO Collector",
+		rp:          rp,
+		stateLocker: stateLocker,
+		logPrefix:   "ODAO Collector",
 	}
 }
 
@@ -71,7 +71,7 @@ func (collector *OdaoCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
-	latestState := collector.m.GetLatestState()
+	latestState := collector.stateLocker.GetState()
 	if latestState == nil {
 		collector.collectImpl_Legacy(channel)
 	} else {
