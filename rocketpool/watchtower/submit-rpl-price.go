@@ -359,7 +359,7 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 		}
 		if hasSubmittedSpecific {
 			t.lock.Lock()
-			t.isRunning = true
+			t.isRunning = false
 			t.lock.Unlock()
 			return
 		}
