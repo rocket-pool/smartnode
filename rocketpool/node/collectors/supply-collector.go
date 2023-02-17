@@ -88,7 +88,6 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	initializedCount := float64(-1)
 	prelaunchCount := float64(-1)
 	stakingCount := float64(-1)
-	withdrawableCount := float64(-1)
 	dissolvedCount := float64(-1)
 	finalizedCount := float64(-1)
 
@@ -113,7 +112,6 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 		initializedCount = float64(minipoolCounts.Initialized.Uint64())
 		prelaunchCount = float64(minipoolCounts.Prelaunch.Uint64())
 		stakingCount = float64(minipoolCounts.Staking.Uint64())
-		withdrawableCount = float64(minipoolCounts.Withdrawable.Uint64())
 		dissolvedCount = float64(minipoolCounts.Dissolved.Uint64())
 
 		finalizedCountUint, err := minipool.GetFinalisedMinipoolCount(collector.rp, nil)
@@ -122,7 +120,6 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		finalizedCount = float64(finalizedCountUint)
-		withdrawableCount -= finalizedCount
 		return nil
 	})
 
@@ -143,14 +140,12 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.minipoolCount, prometheus.GaugeValue, stakingCount, "staking")
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, withdrawableCount, "withdrawable")
-	channel <- prometheus.MustNewConstMetric(
 		collector.minipoolCount, prometheus.GaugeValue, dissolvedCount, "dissolved")
 	channel <- prometheus.MustNewConstMetric(
 		collector.minipoolCount, prometheus.GaugeValue, finalizedCount, "finalized")
 
 	// Set the total and active count
-	totalMinipoolCount := initializedCount + prelaunchCount + stakingCount + withdrawableCount + dissolvedCount + finalizedCount
+	totalMinipoolCount := initializedCount + prelaunchCount + stakingCount + dissolvedCount + finalizedCount
 	activeMinipoolCount := totalMinipoolCount - finalizedCount
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalMinipools, prometheus.GaugeValue, totalMinipoolCount)
