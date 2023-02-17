@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/rocketpool-go/utils/multicall"
 	"golang.org/x/sync/errgroup"
 )
@@ -61,38 +62,118 @@ type NetworkDetails struct {
 }
 
 // TODO: Finish this, involves porting e.g. GetClaimIntervalTime() over
-func _getNetworkDetailsFast(rp *rocketpool.RocketPool, multicallerAddress common.Address, contracts *NetworkContracts, opts *bind.CallOpts) (*NetworkDetails, error) {
-
+func _getNetworkDetailsFast(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, contracts *NetworkContracts, isAtlasDeployed bool, opts *bind.CallOpts) (*NetworkDetails, error) {
+	// Create the multicaller
 	mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the balance batcher
+	balanceBatcher, err := multicall.NewBalanceBatcher(rp.Client, balanceBatcherAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	details := &NetworkDetails{}
 
+	// Local vars for things that need to be converted
 	var rewardIndex *big.Int
+	var scrubPeriodSeconds *big.Int
+	var totalQueueCapacity *big.Int
+	var effectiveQueueCapacity *big.Int
+	var pricesBlock *big.Int
+	var latestReportablePricesBlock *big.Int
+	var ethUtilizationRate *big.Int
+	var rETHExchangeRate *big.Int
+	var nodeFee *big.Int
+	var balancesBlock *big.Int
+	var latestReportableBalancesBlock *big.Int
+	var minipoolLaunchTimeout *big.Int
+	var promotionScrubPeriodSeconds *big.Int
+	var windowStartRaw *big.Int
+	var windowLengthRaw *big.Int
+
+	// Multicall getters
 	mc.AddCall(contracts.RocketNetworkPrices, &details.RplPrice, "getRPLPrice")
 	mc.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MinCollateralFraction, "getMinimumPerMinipoolStake")
 	mc.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MaxCollateralFraction, "getMaximumPerMinipoolStake")
 	mc.AddCall(contracts.RocketRewardsPool, &rewardIndex, "getRewardIndex")
 
-	details.RewardIndex = rewardIndex.Uint64()
+	mc.AddCall(contracts.RocketRewardsPool, &details.IntervalStart, "getClaimIntervalTimeStart")
+	mc.AddCall(contracts.RocketDAONodeTrustedSettingsMinipool, &scrubPeriodSeconds, "getScrubPeriod")
+	mc.AddCall(contracts.RocketDepositPool, &details.DepositPoolBalance, "getBalance")
+	mc.AddCall(contracts.RocketDepositPool, &details.DepositPoolExcess, "getExcessBalance")
+	mc.AddCall(contracts.RocketMinipoolQueue, &totalQueueCapacity, "getTotalCapacity")
+	mc.AddCall(contracts.RocketMinipoolQueue, &effectiveQueueCapacity, "getEffectiveCapacity")
+	mc.AddCall(contracts.RocketTokenRPL, &details.RPLInflationIntervalRate, "getInflationIntervalRate")
+	mc.AddCall(contracts.RocketTokenRPL, &details.RPLTotalSupply, "totalSupply")
+	mc.AddCall(contracts.RocketNetworkPrices, &pricesBlock, "getPricesBlock")
+	mc.AddCall(contracts.RocketNetworkPrices, &latestReportablePricesBlock, "getLatestReportableBlock")
+	mc.AddCall(contracts.RocketNetworkBalances, &ethUtilizationRate, "getETHUtilizationRate")
+	mc.AddCall(contracts.RocketNetworkBalances, &details.StakingETHBalance, "getStakingETHBalance")
+	mc.AddCall(contracts.RocketTokenRETH, &rETHExchangeRate, "getExchangeRate")
+	mc.AddCall(contracts.RocketNetworkBalances, &details.TotalETHBalance, "getTotalETHBalance")
+	mc.AddCall(contracts.RocketTokenRETH, &details.TotalRETHSupply, "totalSupply")
+	mc.AddCall(contracts.RocketNodeStaking, &details.TotalRPLStake, "getTotalRPLStake")
+	mc.AddCall(contracts.RocketNetworkFees, &nodeFee, "getNodeFee")
+	mc.AddCall(contracts.RocketNetworkBalances, &balancesBlock, "getBalancesBlock")
+	mc.AddCall(contracts.RocketNetworkBalances, &latestReportableBalancesBlock, "getLatestReportableBlock")
+	mc.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.SubmitBalancesEnabled, "getSubmitBalancesEnabled")
+	mc.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.SubmitPricesEnabled, "getSubmitPricesEnabled")
+	mc.AddCall(contracts.RocketDAOProtocolSettingsMinipool, &minipoolLaunchTimeout, "getLaunchTimeout")
 
+	if isAtlasDeployed {
+		mc.AddCall(contracts.RocketDAONodeTrustedSettingsMinipool, &promotionScrubPeriodSeconds, "getPromotionScrubPeriod")
+		mc.AddCall(contracts.RocketDAONodeTrustedSettingsMinipool, &windowStartRaw, "getBondReductionWindowStart")
+		mc.AddCall(contracts.RocketDAONodeTrustedSettingsMinipool, &windowLengthRaw, "getBondReductionWindowLength")
+		mc.AddCall(contracts.RocketDepositPool, &details.DepositPoolUserBalance, "getUserBalance")
+	}
+
+	_, err = mc.FlexibleCall(true, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error executing multicall: %w", err)
+	}
+
+	// Conversion for raw parameters
+	details.RewardIndex = rewardIndex.Uint64()
+	details.ScrubPeriod = time.Duration(scrubPeriodSeconds.Uint64()) * time.Second
+	details.SmoothingPoolAddress = *contracts.RocketSmoothingPool.Address
+	details.QueueCapacity = minipool.QueueCapacity{
+		Total:     totalQueueCapacity,
+		Effective: effectiveQueueCapacity,
+	}
+	details.PricesBlock = pricesBlock.Uint64()
+	details.LatestReportablePricesBlock = latestReportablePricesBlock.Uint64()
+	details.ETHUtilizationRate = eth.WeiToEth(ethUtilizationRate)
+	details.RETHExchangeRate = eth.WeiToEth(rETHExchangeRate)
+	details.NodeFee = eth.WeiToEth(nodeFee)
+	details.BalancesBlock = balancesBlock
+	details.LatestReportableBalancesBlock = latestReportableBalancesBlock
+	details.MinipoolLaunchTimeout = minipoolLaunchTimeout
+	details.PromotionScrubPeriod = time.Duration(promotionScrubPeriodSeconds.Uint64()) * time.Second
+	details.BondReductionWindowStart = time.Duration(windowStartRaw.Uint64()) * time.Second
+	details.BondReductionWindowLength = time.Duration(windowLengthRaw.Uint64()) * time.Second
+
+	// Get various balances
+	addresses := []common.Address{
+		*contracts.RocketSmoothingPool.Address,
+		*contracts.RocketTokenRETH.Address,
+	}
+	balances, err := balanceBatcher.GetEthBalances(addresses, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract balances: %w", err)
+	}
+	details.SmoothingPoolBalance = balances[0]
+	details.RETHBalance = balances[1]
+
+	// PORT THIS
 	/*
 		wg.Go(func() error {
 			var err error
 			state.NetworkDetails.IntervalDuration, err = GetClaimIntervalTime(cfg, state.NetworkDetails.RewardIndex, rp, opts)
 			if err != nil {
 				return fmt.Errorf("error getting interval duration: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.IntervalStart, err = rewards.GetClaimIntervalTimeStart(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting interval start: %w", err)
 			}
 			return nil
 		})
@@ -132,201 +213,6 @@ func _getNetworkDetailsFast(rp *rocketpool.RocketPool, multicallerAddress common
 			}
 			return nil
 		})
-
-		if isAtlasDeployed {
-			wg.Go(func() error {
-				promotionScrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(rp, opts)
-				if err != nil {
-					return fmt.Errorf("error getting promotion scrub period: %w", err)
-				}
-				state.NetworkDetails.PromotionScrubPeriod = time.Duration(promotionScrubPeriodSeconds) * time.Second
-				return nil
-			})
-
-			wg.Go(func() error {
-				windowStartRaw, err := trustednode.GetBondReductionWindowStart(rp, opts)
-				if err != nil {
-					return fmt.Errorf("error getting bond reduction window start: %w", err)
-				}
-				state.NetworkDetails.BondReductionWindowStart = time.Duration(windowStartRaw) * time.Second
-				return nil
-			})
-
-			wg.Go(func() error {
-				windowLengthRaw, err := trustednode.GetBondReductionWindowLength(rp, opts)
-				if err != nil {
-					return fmt.Errorf("error getting bond reduction window length: %w", err)
-				}
-				state.NetworkDetails.BondReductionWindowLength = time.Duration(windowLengthRaw) * time.Second
-				return nil
-			})
-		}
-
-		wg.Go(func() error {
-			scrubPeriodSeconds, err := trustednode.GetScrubPeriod(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting scrub period: %w", err)
-			}
-			state.NetworkDetails.ScrubPeriod = time.Duration(scrubPeriodSeconds) * time.Second
-			return nil
-		})
-
-		wg.Go(func() error {
-			smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool", opts)
-			if err != nil {
-				return fmt.Errorf("error getting smoothing pool contract: %w", err)
-			}
-			state.NetworkDetails.SmoothingPoolAddress = *smoothingPoolContract.Address
-
-			state.NetworkDetails.SmoothingPoolBalance, err = rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, opts.BlockNumber)
-			if err != nil {
-				return fmt.Errorf("error getting smoothing pool balance: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.DepositPoolBalance, err = deposit.GetBalance(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting deposit pool balance: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.DepositPoolExcess, err = deposit.GetExcessBalance(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting deposit pool excess: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.QueueCapacity, err = minipool.GetQueueCapacity(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting minipool queue capacity: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.RPLInflationIntervalRate, err = tokens.GetRPLInflationIntervalRate(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting RPL inflation interval: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.RPLTotalSupply, err = tokens.GetRPLTotalSupply(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting total RPL supply: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.PricesBlock, err = network.GetPricesBlock(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting ETH1 prices block: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			latestReportableBlock, err := network.GetLatestReportablePricesBlock(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting ETH1 latest reportable block: %w", err)
-			}
-			state.NetworkDetails.LatestReportablePricesBlock = latestReportableBlock.Uint64()
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.ETHUtilizationRate, err = network.GetETHUtilizationRate(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting ETH utilization rate: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.StakingETHBalance, err = network.GetStakingETHBalance(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting total ETH staking balance: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.RETHExchangeRate, err = tokens.GetRETHExchangeRate(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting ETH-rETH exchange rate: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.TotalETHBalance, err = network.GetTotalETHBalance(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting total ETH balance (TVL): %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			rethAddress := cfg.Smartnode.GetRethAddress()
-			state.NetworkDetails.RETHBalance, err = rp.Client.BalanceAt(context.Background(), rethAddress, opts.BlockNumber)
-			if err != nil {
-				return fmt.Errorf("error getting ETH balance of rETH staking contract: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.TotalRETHSupply, err = tokens.GetRETHTotalSupply(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting total rETH supply: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.TotalRPLStake, err = node.GetTotalRPLStake(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting total amount of RPL staked on the network: %w", err)
-			}
-			return nil
-		})
-
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.NodeFee, err = network.GetNodeFee(rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting current node fee for new minipools: %w", err)
-			}
-			return nil
-		})
-
-		// Wait for data
-		if err := wg.Wait(); err != nil {
-			return err
-		}
-
-		return nil
 	*/
 
 	return details, nil
