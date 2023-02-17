@@ -42,7 +42,6 @@ type submitNetworkBalances struct {
 	ec        rocketpool.ExecutionClient
 	rp        *rocketpool.RocketPool
 	bc        beacon.Client
-	m         *state.NetworkStateManager
 	lock      *sync.Mutex
 	isRunning bool
 }
@@ -65,7 +64,7 @@ type minipoolBalanceDetails struct {
 }
 
 // Create submit network balances task
-func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*submitNetworkBalances, error) {
+func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*submitNetworkBalances, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -100,7 +99,6 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogge
 		ec:        ec,
 		rp:        rp,
 		bc:        bc,
-		m:         m,
 		lock:      lock,
 		isRunning: false,
 	}, nil
@@ -302,9 +300,15 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	}
 
 	// Create a new state gen manager
-	state, err := t.m.GetStateForSlot(beaconBlock)
+	mgr, err := state.NewNetworkStateManager(client, t.cfg, client.Client, t.bc, &t.log)
 	if err != nil {
-		return networkBalances{}, fmt.Errorf("couldn't get network state for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock)
+		return networkBalances{}, fmt.Errorf("error creating network state manager for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
+	}
+
+	// Create a new state for the target block
+	state, err := mgr.GetStateForSlot(beaconBlock)
+	if err != nil {
+		return networkBalances{}, fmt.Errorf("couldn't get network state for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
 	}
 
 	// Data

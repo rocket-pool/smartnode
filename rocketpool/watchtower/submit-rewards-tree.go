@@ -312,10 +312,16 @@ func (t *submitRewardsTree) generateTreeImpl(rp *rocketpool.RocketPool, interval
 	}
 	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
-	// Get the state of the network at the desired slot
-	state, err := t.m.GetStateForSlot(snapshotBeaconBlock)
+	// Create a new state gen manager
+	mgr, err := state.NewNetworkStateManager(rp, t.cfg, rp.Client, t.bc, &t.log)
 	if err != nil {
-		return fmt.Errorf("error getting state for beacon slot %d: %w", snapshotBeaconBlock, err)
+		return fmt.Errorf("error creating network state manager for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
+	}
+
+	// Create a new state for the target block
+	state, err := mgr.GetStateForSlot(snapshotBeaconBlock)
+	if err != nil {
+		return fmt.Errorf("couldn't get network state for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
 	}
 
 	// Generate the rewards file

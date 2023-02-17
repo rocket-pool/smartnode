@@ -115,7 +115,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during rpl price check: %w", err)
 	}
-	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog, m)
+	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
 	if err != nil {
 		return fmt.Errorf("error during network balances check: %w", err)
 	}
