@@ -69,7 +69,7 @@ func newManageFeeRecipient(c *cli.Context, logger log.ColorLogger) (*manageFeeRe
 }
 
 // Manage fee recipient
-func (m *manageFeeRecipient) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(m.c, true); err != nil {
@@ -87,10 +87,10 @@ func (m *manageFeeRecipient) run(state *state.NetworkState, isAtlasDeployed bool
 
 	// Get the fee recipient info for the node
 	var feeRecipientInfo *rputils.FeeRecipientInfo
-	if !isAtlasDeployed {
+	if !state.IsAtlasDeployed {
 		feeRecipientInfo, err = rputils.GetFeeRecipientInfo_Legacy(m.rp, m.bc, nodeAccount.Address, nil)
 	} else {
-		feeRecipientInfo, err = rputils.GetFeeRecipientInfo_Atlas(m.rp, m.bc, nodeAccount.Address, state, nil)
+		feeRecipientInfo, err = rputils.GetFeeRecipientInfo_Atlas(m.rp, m.bc, nodeAccount.Address, state)
 	}
 	if err != nil {
 		return fmt.Errorf("error getting fee recipient info: %w", err)

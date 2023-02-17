@@ -6,10 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/rocketpool/api/node"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"golang.org/x/sync/errgroup"
 )
 
 // Represents the collector for Smoothing Pool metrics
@@ -52,44 +49,8 @@ func (collector *SmoothingPoolCollector) Describe(channel chan<- *prometheus.Des
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metric) {
-	latestState := collector.stateLocker.GetState()
-	if latestState == nil {
-		collector.collectImpl_Legacy(channel)
-	} else {
-		collector.collectImpl_Atlas(latestState, channel)
-	}
-}
-
-// Collect the latest metric values and pass them to Prometheus
-func (collector *SmoothingPoolCollector) collectImpl_Legacy(channel chan<- prometheus.Metric) {
-
-	// Sync
-	var wg errgroup.Group
-	ethBalanceOnSmoothingPool := float64(0)
-
-	// Get the ETH balance in the smoothing pool
-	wg.Go(func() error {
-		balanceResponse, err := node.GetSmoothingPoolBalance(collector.rp, collector.ec)
-		if err != nil {
-			return fmt.Errorf("Error getting smoothing pool balance: %w", err)
-		}
-		ethBalanceOnSmoothingPool = eth.WeiToEth(balanceResponse.EthBalance)
-
-		return nil
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		collector.logError(err)
-		return
-	}
-
-	channel <- prometheus.MustNewConstMetric(
-		collector.ethBalanceOnSmoothingPool, prometheus.GaugeValue, ethBalanceOnSmoothingPool)
-}
-
-// Collect the latest metric values and pass them to Prometheus
-func (collector *SmoothingPoolCollector) collectImpl_Atlas(state *state.NetworkState, channel chan<- prometheus.Metric) {
+	// Get the latest state
+	state := collector.stateLocker.GetState()
 
 	ethBalanceOnSmoothingPool := eth.WeiToEth(state.NetworkDetails.SmoothingPoolBalance)
 

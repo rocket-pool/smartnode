@@ -69,7 +69,7 @@ func newDownloadRewardsTrees(c *cli.Context, logger log.ColorLogger) (*downloadR
 }
 
 // Manage fee recipient
-func (d *downloadRewardsTrees) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (d *downloadRewardsTrees) run(state *state.NetworkState) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(d.c, true); err != nil {
@@ -92,7 +92,7 @@ func (d *downloadRewardsTrees) run(state *state.NetworkState, isAtlasDeployed bo
 
 	// Get the current interval
 	var currentIndex uint64
-	if !isAtlasDeployed {
+	if !state.IsAtlasDeployed {
 		currentIndexBig, err := rewards.GetRewardIndex(d.rp, nil)
 		if err != nil {
 			return err

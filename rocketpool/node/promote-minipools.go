@@ -99,7 +99,7 @@ func newPromoteMinipools(c *cli.Context, logger log.ColorLogger) (*promoteMinipo
 }
 
 // Stake prelaunch minipools
-func (t *promoteMinipools) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (t *promoteMinipools) run(state *state.NetworkState) error {
 
 	// Reload the wallet (in case a call to `node deposit` changed it)
 	if err := t.w.Reload(); err != nil {
@@ -112,7 +112,7 @@ func (t *promoteMinipools) run(state *state.NetworkState, isAtlasDeployed bool) 
 	}
 
 	// Check if Atlas has been deployed yet
-	if !isAtlasDeployed {
+	if !state.IsAtlasDeployed {
 		return nil
 	}
 

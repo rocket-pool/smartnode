@@ -111,7 +111,7 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 }
 
 // Reduce bonds
-func (t *reduceBonds) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (t *reduceBonds) run(state *state.NetworkState) error {
 
 	// Reload the wallet (in case a call to `node deposit` changed it)
 	if err := t.w.Reload(); err != nil {
@@ -124,7 +124,7 @@ func (t *reduceBonds) run(state *state.NetworkState, isAtlasDeployed bool) error
 	}
 
 	// Check if Atlas has been deployed yet
-	if !isAtlasDeployed {
+	if !state.IsAtlasDeployed {
 		return nil
 	}
 
@@ -234,7 +234,7 @@ func (t *reduceBonds) reduceBond(mpd *rpstate.NativeMinipoolDetails, windowStart
 	}
 
 	// Make the minipool binding
-	mpBinding, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, nil)
+	mpBinding, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, callOpts)
 	if err != nil {
 		return false, fmt.Errorf("error creating minipool binding for %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}

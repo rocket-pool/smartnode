@@ -3,9 +3,10 @@ package state
 import (
 	"context"
 	"fmt"
-	"sync"
+	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -23,8 +24,6 @@ type NetworkStateManager struct {
 	Network      cfgtypes.Network
 	ChainID      uint
 	BeaconConfig beacon.Eth2Config
-	//latestState  *NetworkState
-	updateLock sync.Mutex
 }
 
 // Create a new manager for the network state
@@ -55,44 +54,25 @@ func NewNetworkStateManager(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 
 // Get the state of the network using the latest Execution layer block
 func (m *NetworkStateManager) GetHeadState() (*NetworkState, error) {
-	// Get the latest EL block
-	latestBlockHeader, err := m.ec.HeaderByNumber(context.Background(), nil)
+	targetSlot, err := m.GetHeadSlot()
 	if err != nil {
-		return nil, fmt.Errorf("error getting latest EL block: %w", err)
+		return nil, fmt.Errorf("error getting latest Beacon slot: %w", err)
 	}
-
-	// Get the corresponding Beacon slot based on the timestamp
-	latestBlockTime := time.Unix(int64(latestBlockHeader.Time), 0)
-	genesisTime := time.Unix(int64(m.BeaconConfig.GenesisTime), 0)
-	secondsSinceGenesis := uint64(latestBlockTime.Sub(genesisTime).Seconds())
-	targetSlot := secondsSinceGenesis / m.BeaconConfig.SecondsPerSlot
-
-	// Return
 	return m.getState(targetSlot)
+}
+
+// Get the state of the network for a single node using the latest Execution layer block, along with the total effective RPL stake for the network
+func (m *NetworkStateManager) GetHeadStateForNode(nodeAddress common.Address) (*NetworkState, *big.Int, error) {
+	targetSlot, err := m.GetHeadSlot()
+	if err != nil {
+		return nil, nil, fmt.Errorf("error getting latest Beacon slot: %w", err)
+	}
+	return m.getStateForNode(nodeAddress, targetSlot)
 }
 
 // Get the state of the network at the provided Beacon slot
 func (m *NetworkStateManager) GetStateForSlot(slotNumber uint64) (*NetworkState, error) {
 	return m.getState(slotNumber)
-}
-
-// Get the state of the network at the provided Beacon slot
-func (m *NetworkStateManager) getState(slotNumber uint64) (*NetworkState, error) {
-	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	m.updateLock.Lock()
-	defer m.updateLock.Unlock()
-	return state, nil
-}
-
-// Logs a line if the logger is specified
-func (m *NetworkStateManager) logLine(format string, v ...interface{}) {
-	if m.log != nil {
-		m.log.Printlnf(format, v)
-	}
 }
 
 // Gets the latest valid finalized slot from the given Beacon Chain head info
@@ -118,5 +98,46 @@ func (m *NetworkStateManager) GetLatestFinalizedBeaconBlock() (beacon.BeaconBloc
 		} else {
 			return block, nil
 		}
+	}
+}
+
+// Gets the Beacon slot for the latest execution layer block
+func (m *NetworkStateManager) GetHeadSlot() (uint64, error) {
+	// Get the latest EL block
+	latestBlockHeader, err := m.ec.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return 0, fmt.Errorf("error getting latest EL block: %w", err)
+	}
+
+	// Get the corresponding Beacon slot based on the timestamp
+	latestBlockTime := time.Unix(int64(latestBlockHeader.Time), 0)
+	genesisTime := time.Unix(int64(m.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := uint64(latestBlockTime.Sub(genesisTime).Seconds())
+	targetSlot := secondsSinceGenesis / m.BeaconConfig.SecondsPerSlot
+	return targetSlot, nil
+}
+
+// Get the state of the network at the provided Beacon slot
+func (m *NetworkStateManager) getState(slotNumber uint64) (*NetworkState, error) {
+	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig)
+	if err != nil {
+		return nil, err
+	}
+	return state, nil
+}
+
+// Get the state of the network for a specific node only at the provided Beacon slot
+func (m *NetworkStateManager) getStateForNode(nodeAddress common.Address, slotNumber uint64) (*NetworkState, *big.Int, error) {
+	state, totalEffectiveStake, err := CreateNetworkStateForNode(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig, nodeAddress)
+	if err != nil {
+		return nil, nil, err
+	}
+	return state, totalEffectiveStake, nil
+}
+
+// Logs a line if the logger is specified
+func (m *NetworkStateManager) logLine(format string, v ...interface{}) {
+	if m.log != nil {
+		m.log.Printlnf(format, v)
 	}
 }

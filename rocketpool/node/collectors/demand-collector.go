@@ -4,12 +4,8 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rocket-pool/rocketpool-go/deposit"
-	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"golang.org/x/sync/errgroup"
 )
 
 const namespace = "rocketpool"
@@ -74,76 +70,8 @@ func (collector *DemandCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
-	latestState := collector.stateLocker.GetState()
-	if latestState == nil {
-		collector.collectImpl_Legacy(channel)
-	} else {
-		collector.collectImpl_Atlas(latestState, channel)
-	}
-}
-
-// Collect the latest metric values and pass them to Prometheus
-func (collector *DemandCollector) collectImpl_Legacy(channel chan<- prometheus.Metric) {
-
-	// Sync
-	var wg errgroup.Group
-	balanceFloat := float64(-1)
-	excessFloat := float64(-1)
-	totalFloat := float64(-1)
-	effectiveFloat := float64(-1)
-
-	// Get the Deposit Pool balance
-	wg.Go(func() error {
-		depositPoolBalance, err := deposit.GetBalance(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting deposit pool balance: %w", err)
-		}
-
-		balanceFloat = eth.WeiToEth(depositPoolBalance)
-		return nil
-	})
-
-	// Get the deposit pool excess
-	wg.Go(func() error {
-		depositPoolExcess, err := deposit.GetExcessBalance(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting deposit pool excess: %w", err)
-		}
-
-		excessFloat = eth.WeiToEth(depositPoolExcess)
-		return nil
-	})
-
-	// Get the total and effective minipool capacities
-	wg.Go(func() error {
-		minipoolQueueCapacity, err := minipool.GetQueueCapacity(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting minipool queue capacity: %w", err)
-		}
-		totalFloat = eth.WeiToEth(minipoolQueueCapacity.Total)
-		effectiveFloat = eth.WeiToEth(minipoolQueueCapacity.Effective)
-		return nil
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		collector.logError(err)
-		return
-	}
-
-	channel <- prometheus.MustNewConstMetric(
-		collector.depositPoolBalance, prometheus.GaugeValue, balanceFloat)
-	channel <- prometheus.MustNewConstMetric(
-		collector.depositPoolExcess, prometheus.GaugeValue, excessFloat)
-	channel <- prometheus.MustNewConstMetric(
-		collector.totalMinipoolCapacity, prometheus.GaugeValue, totalFloat)
-	channel <- prometheus.MustNewConstMetric(
-		collector.effectiveMinipoolCapacity, prometheus.GaugeValue, effectiveFloat)
-
-}
-
-// Collect the latest metric values and pass them to Prometheus
-func (collector *DemandCollector) collectImpl_Atlas(state *state.NetworkState, channel chan<- prometheus.Metric) {
+	// Get the latest state
+	state := collector.stateLocker.GetState()
 
 	balanceFloat := eth.WeiToEth(state.NetworkDetails.DepositPoolBalance)
 	excessFloat := eth.WeiToEth(state.NetworkDetails.DepositPoolExcess)
@@ -158,7 +86,6 @@ func (collector *DemandCollector) collectImpl_Atlas(state *state.NetworkState, c
 		collector.totalMinipoolCapacity, prometheus.GaugeValue, totalFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.effectiveMinipoolCapacity, prometheus.GaugeValue, effectiveFloat)
-
 }
 
 // Log error messages

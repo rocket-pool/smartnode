@@ -3,12 +3,14 @@ package node
 import (
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 
@@ -86,9 +88,18 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return err
+	}
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return err
+	}
+
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return fmt.Errorf("error getting node account: %w", err)
 	}
 
 	// Initialize loggers
@@ -149,13 +160,13 @@ func run(c *cli.Context) error {
 			}
 
 			// Update the network state
-			state, err := updateNetworkState(m, &updateLog)
+			state, totalEffectiveStake, err := updateNetworkState(m, &updateLog, nodeAccount.Address)
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
 				continue
 			}
-			stateLocker.UpdateState(state)
+			stateLocker.UpdateState(state, totalEffectiveStake)
 
 			// Check for Atlas
 			if !isAtlasDeployedMasterFlag && state.IsAtlasDeployed {
@@ -164,31 +175,31 @@ func run(c *cli.Context) error {
 			}
 
 			// Manage the fee recipient for the node
-			if err := manageFeeRecipient.run(state, isAtlasDeployedMasterFlag); err != nil {
+			if err := manageFeeRecipient.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the rewards download check
-			if err := downloadRewardsTrees.run(state, isAtlasDeployedMasterFlag); err != nil {
+			if err := downloadRewardsTrees.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the minipool stake check
-			if err := stakePrelaunchMinipools.run(state, isAtlasDeployedMasterFlag); err != nil {
+			if err := stakePrelaunchMinipools.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the reduce bond check
-			if err := reduceBonds.run(state, isAtlasDeployedMasterFlag); err != nil {
+			if err := reduceBonds.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the minipool promotion check
-			if err := promoteMinipools.run(state, isAtlasDeployedMasterFlag); err != nil {
+			if err := promoteMinipools.run(state); err != nil {
 				errorLog.Println(err)
 			}
 
@@ -314,16 +325,11 @@ func printAtlasMessage(log *log.ColorLogger) {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger) (*state.NetworkState, error) {
-	log.Print("Getting latest network state... ")
-	start := time.Now()
-
+func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, nodeAddress common.Address) (*state.NetworkState, *big.Int, error) {
 	// Get the state of the network
-	state, err := m.GetHeadState()
+	state, totalEffectiveStake, err := m.GetHeadStateForNode(nodeAddress)
 	if err != nil {
-		return nil, fmt.Errorf("error updating network state: %w", err)
+		return nil, nil, fmt.Errorf("error updating network state: %w", err)
 	}
-
-	log.Printlnf("done in %s", time.Since(start))
-	return state, nil
+	return state, totalEffectiveStake, nil
 }

@@ -43,7 +43,7 @@ func GetFeeRecipientInfo_Legacy(rp *rocketpool.RocketPool, bc beacon.Client, nod
 
 	// Get the node's fee distributor
 	wg.Go(func() error {
-		distributorAddress, err := node.GetDistributorAddress(rp, nodeAddress, nil)
+		distributorAddress, err := node.GetDistributorAddress(rp, nodeAddress, opts)
 		if err != nil {
 			return fmt.Errorf("Error getting the fee distributor for %s: %w", nodeAddress.Hex(), err)
 		}
@@ -53,7 +53,7 @@ func GetFeeRecipientInfo_Legacy(rp *rocketpool.RocketPool, bc beacon.Client, nod
 
 	// Check if the user's opted into the smoothing pool
 	wg.Go(func() error {
-		isOptedIn, err := node.GetSmoothingPoolRegistrationState(rp, nodeAddress, nil)
+		isOptedIn, err := node.GetSmoothingPoolRegistrationState(rp, nodeAddress, opts)
 		if err != nil {
 			return err
 		}
@@ -69,7 +69,7 @@ func GetFeeRecipientInfo_Legacy(rp *rocketpool.RocketPool, bc beacon.Client, nod
 	// Calculate the safe opt-out epoch if applicable
 	if !info.IsInSmoothingPool {
 		// Get the opt out time
-		optOutTime, err := node.GetSmoothingPoolRegistrationChanged(rp, nodeAddress, nil)
+		optOutTime, err := node.GetSmoothingPoolRegistrationChanged(rp, nodeAddress, opts)
 		if err != nil {
 			return nil, fmt.Errorf("Error getting smoothing pool opt-out time: %w", err)
 		}
@@ -104,7 +104,7 @@ func GetFeeRecipientInfo_Legacy(rp *rocketpool.RocketPool, bc beacon.Client, nod
 
 }
 
-func GetFeeRecipientInfo_Atlas(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, state *state.NetworkState, opts *bind.CallOpts) (*FeeRecipientInfo, error) {
+func GetFeeRecipientInfo_Atlas(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, state *state.NetworkState) (*FeeRecipientInfo, error) {
 
 	info := &FeeRecipientInfo{
 		IsInOptOutCooldown: false,

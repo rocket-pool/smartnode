@@ -58,6 +58,7 @@ type NetworkState struct {
 	log *log.ColorLogger
 }
 
+// Creates a snapshot of the entire Rocket Pool network state, on both the Execution and Consensus layers
 func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config) (*NetworkState, error) {
 	// Get the relevant network contracts
 	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
@@ -176,6 +177,135 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	state.logLine("5/5 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
 
 	return state, nil
+}
+
+// Creates a snapshot of the Rocket Pool network, but only for a single node
+// Also gets the total effective RPL stake of the network for convenience since this is required by several node routines
+func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address) (*NetworkState, *big.Int, error) {
+	// Get the relevant network contracts
+	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+
+	// Get the execution block for the given slot
+	beaconBlock, exists, err := bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
+	if err != nil {
+		return nil, nil, fmt.Errorf("error getting Beacon block for slot %d: %w", slotNumber, err)
+	}
+	if !exists {
+		return nil, nil, fmt.Errorf("slot %d did not have a Beacon block", slotNumber)
+	}
+
+	// Get the corresponding block on the EL
+	elBlockNumber := beaconBlock.ExecutionBlockNumber
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
+	}
+
+	isAtlasDeployed, err := IsAtlasDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
+	if err != nil {
+		return nil, nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+	}
+
+	// Create the state wrapper
+	state := &NetworkState{
+		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
+		MinipoolDetailsByAddress: map[common.Address]*rpstate.NativeMinipoolDetails{},
+		MinipoolDetailsByNode:    map[common.Address][]*rpstate.NativeMinipoolDetails{},
+		BeaconSlotNumber:         slotNumber,
+		ElBlockNumber:            elBlockNumber,
+		BeaconConfig:             beaconConfig,
+		log:                      log,
+		IsAtlasDeployed:          isAtlasDeployed,
+	}
+
+	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
+	start := time.Now()
+
+	// Network contracts and details
+	contracts, err := rpstate.NewNetworkContracts(rp, isAtlasDeployed, opts)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
+	}
+	err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error getting network details: %w", err)
+	}
+	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
+
+	// Node details
+	nodeDetails, err := rpstate.GetNativeNodeDetails(rp, nodeAddress, multicallerAddress, contracts, isAtlasDeployed, opts)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error getting node details: %w", err)
+	}
+	state.NodeDetails = []rpstate.NativeNodeDetails{nodeDetails}
+	state.logLine("2/5 - Retrieved node details (%s so far)", time.Since(start))
+
+	// Minipool details
+	state.MinipoolDetails, err = rpstate.GetNodeNativeMinipoolDetails(rp, nodeAddress, multicallerAddress, balanceBatcherAddress, contracts, opts)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error getting all minipool details: %w", err)
+	}
+	state.logLine("3/5 - Retrieved minipool details (%s so far)", time.Since(start))
+
+	// Create the node lookup
+	for _, details := range state.NodeDetails {
+		state.NodeDetailsByAddress[details.NodeAddress] = &details
+	}
+
+	// Create the minipool lookups
+	pubkeys := make([]types.ValidatorPubkey, 0, len(state.MinipoolDetails))
+	emptyPubkey := types.ValidatorPubkey{}
+	for i, details := range state.MinipoolDetails {
+		state.MinipoolDetailsByAddress[details.MinipoolAddress] = &state.MinipoolDetails[i]
+		if details.Pubkey != emptyPubkey {
+			pubkeys = append(pubkeys, details.Pubkey)
+		}
+
+		// The map of nodes to minipools
+		nodeList, exists := state.MinipoolDetailsByNode[details.NodeAddress]
+		if !exists {
+			nodeList = []*rpstate.NativeMinipoolDetails{}
+		}
+		nodeList = append(nodeList, &state.MinipoolDetails[i])
+		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
+	}
+
+	// Get the total network effective RPL stake
+	totalEffectiveStake, err := rpstate.GetTotalEffectiveRplStake(rp, multicallerAddress, contracts, opts)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error calculating total effective RPL stake for the network: %w", err)
+	}
+
+	// Get the validator stats from Beacon
+	statusMap, err := bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
+		Slot: &slotNumber,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	state.ValidatorDetails = statusMap
+	state.logLine("4/5 - Retrieved validator details (total time: %s)", time.Since(start))
+
+	// Get the complete node and user shares
+	mpds := make([]*rpstate.NativeMinipoolDetails, len(state.MinipoolDetails))
+	beaconBalances := make([]*big.Int, len(state.MinipoolDetails))
+	for i, mpd := range state.MinipoolDetails {
+		mpds[i] = &state.MinipoolDetails[i]
+		validator, exists := state.ValidatorDetails[mpd.Pubkey]
+		if !exists {
+			beaconBalances[i] = big.NewInt(0)
+		} else {
+			beaconBalances[i] = eth.GweiToWei(float64(validator.Balance))
+		}
+	}
+	err = rpstate.CalculateCompleteMinipoolShares(rp, contracts, multicallerAddress, mpds, beaconBalances, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	state.ValidatorDetails = statusMap
+	state.logLine("5/5 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
+
+	return state, totalEffectiveStake, nil
 }
 
 // Get the details for the network
