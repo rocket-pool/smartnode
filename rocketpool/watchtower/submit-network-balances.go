@@ -421,7 +421,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	totalEth.Add(totalEth, balances.DistributorShareTotal)
 	totalEth.Add(totalEth, balances.SmoothingPoolShare)
 
-	ratio := eth.WeiToEth(balances.RETHSupply) / eth.WeiToEth(totalEth)
+	ratio := eth.WeiToEth(totalEth) / eth.WeiToEth(balances.RETHSupply)
 	t.log.Printlnf("Calculated ratio = %.6f\n", ratio)
 
 	// Log
