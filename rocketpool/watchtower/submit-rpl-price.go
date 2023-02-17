@@ -382,6 +382,12 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 			t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
 			return
 		}
+
+		// Log and return
+		t.log.Printlnf("%s Price report complete.", logPrefix)
+		t.lock.Lock()
+		t.isRunning = false
+		t.lock.Unlock()
 	}()
 
 	// Return
