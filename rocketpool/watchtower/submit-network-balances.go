@@ -205,6 +205,9 @@ func (t *submitNetworkBalances) run(state *state.NetworkState, isAtlasDeployed b
 			return
 		}
 		if hasSubmittedSpecific {
+			t.lock.Lock()
+			t.isRunning = false
+			t.lock.Unlock()
 			return
 		}
 

@@ -210,6 +210,7 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.C
 	}
 
 	// Return task
+	lock := &sync.Mutex{}
 	return &submitRplPrice{
 		c:      c,
 		log:    logger,
@@ -220,6 +221,7 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.C
 		rp:     rp,
 		oio:    oio,
 		bc:     bc,
+		lock:   lock,
 	}, nil
 
 }
@@ -356,7 +358,9 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 			return
 		}
 		if hasSubmittedSpecific {
-			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			t.lock.Lock()
+			t.isRunning = true
+			t.lock.Unlock()
 			return
 		}
 
