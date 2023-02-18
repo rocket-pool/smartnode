@@ -167,18 +167,6 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	details.SmoothingPoolBalance = balances[0]
 	details.RETHBalance = balances[1]
 
-	// PORT THIS
-	/*
-		wg.Go(func() error {
-			var err error
-			state.NetworkDetails.PendingRPLRewards, err = GetPendingRPLRewards(cfg, state.NetworkDetails.RewardIndex, rp, opts)
-			if err != nil {
-				return fmt.Errorf("error getting pending RPL rewards")
-			}
-			return nil
-		})
-	*/
-
 	return details, nil
 }
 

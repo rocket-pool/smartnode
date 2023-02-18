@@ -23,10 +23,10 @@ type NetworkContracts struct {
 	Version *version.Version
 
 	// Redstone
+	RocketDAONodeTrustedSettingsMinipool *rocketpool.Contract
 	RocketDAOProtocolSettingsMinipool    *rocketpool.Contract
 	RocketDAOProtocolSettingsNetwork     *rocketpool.Contract
 	RocketDAOProtocolSettingsNode        *rocketpool.Contract
-	RocketDAONodeTrustedSettingsMinipool *rocketpool.Contract
 	RocketDepositPool                    *rocketpool.Contract
 	RocketMinipoolManager                *rocketpool.Contract
 	RocketMinipoolQueue                  *rocketpool.Contract
@@ -79,50 +79,23 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 	// Create the contract wrappers for Redstone
 	wrappers := []contractArtifacts{
 		{
-			name:     "rocketDAOProtocolSettingsNode",
-			contract: &contracts.RocketDAOProtocolSettingsNode,
-		}, {
-			name:     "rocketDAOProtocolSettingsNode",
-			contract: &contracts.RocketDAOProtocolSettingsNode,
-		}, {
-			name:     "rocketRewardsPool",
-			contract: &contracts.RocketRewardsPool,
-		}, {
-			name:     "rocketNetworkPrices",
-			contract: &contracts.RocketNetworkPrices,
-		}, {
-			name:     "rocketNodeManager",
-			contract: &contracts.RocketNodeManager,
-		}, {
-			name:     "rocketNodeStaking",
-			contract: &contracts.RocketNodeStaking,
-		}, {
-			name:     "rocketMinipoolManager",
-			contract: &contracts.RocketMinipoolManager,
-		}, {
-			name:     "rocketNodeDistributorFactory",
-			contract: &contracts.RocketNodeDistributorFactory,
-		}, {
-			name:     "rocketTokenRETH",
-			contract: &contracts.RocketTokenRETH,
-		}, {
-			name:     "rocketTokenRPL",
-			contract: &contracts.RocketTokenRPL,
-		}, {
-			name:     "rocketTokenRPLFixedSupply",
-			contract: &contracts.RocketTokenRPLFixedSupply,
-		}, {
-			name:     "rocketNodeDeposit",
-			contract: &contracts.RocketNodeDeposit,
-		}, {
 			name:     "rocketDAONodeTrustedSettingsMinipool",
 			contract: &contracts.RocketDAONodeTrustedSettingsMinipool,
 		}, {
-			name:     "rocketSmoothingPool",
-			contract: &contracts.RocketSmoothingPool,
+			name:     "rocketDAOProtocolSettingsMinipool",
+			contract: &contracts.RocketDAOProtocolSettingsMinipool,
+		}, {
+			name:     "rocketDAOProtocolSettingsNetwork",
+			contract: &contracts.RocketDAOProtocolSettingsNetwork,
+		}, {
+			name:     "rocketDAOProtocolSettingsNode",
+			contract: &contracts.RocketDAOProtocolSettingsNode,
 		}, {
 			name:     "rocketDepositPool",
 			contract: &contracts.RocketDepositPool,
+		}, {
+			name:     "rocketMinipoolManager",
+			contract: &contracts.RocketMinipoolManager,
 		}, {
 			name:     "rocketMinipoolQueue",
 			contract: &contracts.RocketMinipoolQueue,
@@ -133,11 +106,35 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 			name:     "rocketNetworkFees",
 			contract: &contracts.RocketNetworkFees,
 		}, {
-			name:     "rocketDAOProtocolSettingsNetwork",
-			contract: &contracts.RocketDAOProtocolSettingsNetwork,
+			name:     "rocketNetworkPrices",
+			contract: &contracts.RocketNetworkPrices,
 		}, {
-			name:     "rocketDAOProtocolSettingsMinipool",
-			contract: &contracts.RocketDAOProtocolSettingsMinipool,
+			name:     "rocketNodeDeposit",
+			contract: &contracts.RocketNodeDeposit,
+		}, {
+			name:     "rocketNodeDistributorFactory",
+			contract: &contracts.RocketNodeDistributorFactory,
+		}, {
+			name:     "rocketNodeManager",
+			contract: &contracts.RocketNodeManager,
+		}, {
+			name:     "rocketNodeStaking",
+			contract: &contracts.RocketNodeStaking,
+		}, {
+			name:     "rocketRewardsPool",
+			contract: &contracts.RocketRewardsPool,
+		}, {
+			name:     "rocketSmoothingPool",
+			contract: &contracts.RocketSmoothingPool,
+		}, {
+			name:     "rocketTokenRETH",
+			contract: &contracts.RocketTokenRETH,
+		}, {
+			name:     "rocketTokenRPL",
+			contract: &contracts.RocketTokenRPL,
+		}, {
+			name:     "rocketTokenRPLFixedSupply",
+			contract: &contracts.RocketTokenRPLFixedSupply,
 		},
 	}
 
@@ -150,12 +147,12 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 	}
 
 	// Add the address and ABI getters to multicall
-	for _, wrapper := range wrappers {
+	for i, wrapper := range wrappers {
 		// Add the address getter
-		contracts.Multicaller.AddCall(contracts.RocketStorage, &wrapper.address, "getAddress", crypto.Keccak256Hash([]byte("contract.address"), []byte(wrapper.name)))
+		contracts.Multicaller.AddCall(contracts.RocketStorage, &wrappers[i].address, "getAddress", [32]byte(crypto.Keccak256Hash([]byte("contract.address"), []byte(wrapper.name))))
 
 		// Add the ABI getter
-		contracts.Multicaller.AddCall(contracts.RocketStorage, &wrapper.abiEncoded, "getString", crypto.Keccak256Hash([]byte("contract.abi"), []byte(wrapper.name)))
+		contracts.Multicaller.AddCall(contracts.RocketStorage, &wrappers[i].abiEncoded, "getString", [32]byte(crypto.Keccak256Hash([]byte("contract.abi"), []byte(wrapper.name))))
 	}
 
 	// Run the multi-getter
@@ -165,7 +162,7 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 	}
 
 	// Postprocess the contracts
-	for _, wrapper := range wrappers {
+	for i, wrapper := range wrappers {
 		// Decode the ABI
 		abi, err := rocketpool.DecodeAbi(wrapper.abiEncoded)
 		if err != nil {
@@ -175,13 +172,13 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 		// Create the contract binding
 		contract := &rocketpool.Contract{
 			Contract: bind.NewBoundContract(wrapper.address, *abi, rp.Client, rp.Client, rp.Client),
-			Address:  &wrapper.address,
+			Address:  &wrappers[i].address,
 			ABI:      abi,
 			Client:   rp.Client,
 		}
 
 		// Set the contract in the main wrapper object
-		*wrapper.contract = contract
+		*wrappers[i].contract = contract
 	}
 
 	err = contracts.getCurrentVersion(rp)
