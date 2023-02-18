@@ -48,18 +48,17 @@ type NativeNodeDetails struct {
 }
 
 // Gets the details for a node using the efficient multicall contract
-func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, multicallerAddress common.Address, contracts *NetworkContracts, isAtlasDeployed bool, opts *bind.CallOpts) (NativeNodeDetails, error) {
+func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, nodeAddress common.Address, isAtlasDeployed bool) (NativeNodeDetails, error) {
+	opts := &bind.CallOpts{
+		BlockNumber: contracts.ElBlockNumber,
+	}
 	details := NativeNodeDetails{}
 	details.NodeAddress = nodeAddress
-	mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
-	if err != nil {
-		return NativeNodeDetails{}, err
-	}
 
 	avgFee := big.NewInt(0)
-	addNodeDetailsCalls(contracts, mc, &details, nodeAddress, &avgFee, isAtlasDeployed)
+	addNodeDetailsCalls(contracts, contracts.Multicaller, &details, nodeAddress, &avgFee, isAtlasDeployed)
 
-	_, err = mc.FlexibleCall(true, opts)
+	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
 		return NativeNodeDetails{}, fmt.Errorf("error executing multicall: %w", err)
 	}
@@ -83,14 +82,13 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address,
 }
 
 // Gets the details for all nodes using the efficient multicall contract
-func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, contracts *NetworkContracts, isAtlasDeployed bool, opts *bind.CallOpts) ([]NativeNodeDetails, error) {
-	balanceBatcher, err := multicall.NewBalanceBatcher(rp.Client, balanceBatcherAddress)
-	if err != nil {
-		return nil, err
+func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, isAtlasDeployed bool) ([]NativeNodeDetails, error) {
+	opts := &bind.CallOpts{
+		BlockNumber: contracts.ElBlockNumber,
 	}
 
 	// Get the list of node addresses
-	addresses, err := getNodeAddressesFast(rp, contracts, multicallerAddress, opts)
+	addresses, err := getNodeAddressesFast(rp, contracts, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting node addresses: %w", err)
 	}
@@ -112,7 +110,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress commo
 
 		wg.Go(func() error {
 			var err error
-			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+			mc, err := multicall.NewMultiCaller(rp.Client, contracts.Multicaller.ContractAddress)
 			if err != nil {
 				return err
 			}
@@ -138,7 +136,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress commo
 
 	// Get the balances of the nodes
 	distributorAddresses := make([]common.Address, count)
-	balances, err := balanceBatcher.GetEthBalances(addresses, opts)
+	balances, err := contracts.BalanceBatcher.GetEthBalances(addresses, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting node balances: %w", err)
 	}
@@ -148,7 +146,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress commo
 	}
 
 	// Get the balances of the distributors
-	balances, err = balanceBatcher.GetEthBalances(distributorAddresses, opts)
+	balances, err = contracts.BalanceBatcher.GetEthBalances(distributorAddresses, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting distributor balances: %w", err)
 	}
@@ -162,7 +160,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, multicallerAddress commo
 }
 
 // Get all node addresses using the multicaller
-func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts, multicallerAddress common.Address, opts *bind.CallOpts) ([]common.Address, error) {
+func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts, opts *bind.CallOpts) ([]common.Address, error) {
 	// Get minipool count
 	nodeCount, err := node.GetNodeCount(rp, opts)
 	if err != nil {
@@ -185,7 +183,7 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 
 		wg.Go(func() error {
 			var err error
-			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
+			mc, err := multicall.NewMultiCaller(rp.Client, contracts.Multicaller.ContractAddress)
 			if err != nil {
 				return err
 			}
