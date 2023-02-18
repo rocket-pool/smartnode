@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
+	util "github.com/wealdtech/go-eth2-util"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -124,7 +124,8 @@ func canChangeWithdrawalCreds(c *cli.Context, minipoolAddress common.Address, mn
 		return nil, err
 	}
 	withdrawalPubkey := withdrawalKey.PublicKey().Marshal()
-	withdrawalPubkeyHash := crypto.Keccak256Hash(withdrawalPubkey)
+	withdrawalPubkeyHashBytes := util.SHA256(withdrawalPubkey) // Withdrawal creds use sha256, *not* Keccak
+	withdrawalPubkeyHash := common.BytesToHash(withdrawalPubkeyHashBytes)
 	withdrawalPubkeyHash[0] = 0x00 // BLS prefix
 
 	// Make sure they match what's on Beacon
