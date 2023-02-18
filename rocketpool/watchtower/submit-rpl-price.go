@@ -341,7 +341,7 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 				return
 			}
 		} else {
-			_, effectiveRplStake, err = state.CalculateEffectiveStakes(false)
+			_, effectiveRplStake, err = state.CalculateTrueEffectiveStakes(false)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s error getting total effective RPL stake: %w", logPrefix, err))
 				return

@@ -305,7 +305,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 	r.log.Printlnf("%s Approx. total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
 
 	// Calculate the effective stake of each node, scaling by their participation in this interval
-	trueNodeEffectiveStakes, totalNodeEffectiveStake, err := r.networkState.CalculateEffectiveStakes(true)
+	trueNodeEffectiveStakes, totalNodeEffectiveStake, err := r.networkState.CalculateTrueEffectiveStakes(true)
 	if err != nil {
 		return fmt.Errorf("error calculating effective RPL stakes: %w", err)
 	}
