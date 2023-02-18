@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/hashicorp/go-version"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/multicall"
 )
@@ -17,6 +18,9 @@ type NetworkContracts struct {
 	BalanceBatcher *multicall.BalanceBatcher
 	Multicaller    *multicall.MultiCaller
 	ElBlockNumber  *big.Int
+
+	// Network version
+	Version *version.Version
 
 	// Redstone
 	RocketDAOProtocolSettingsMinipool    *rocketpool.Contract
@@ -180,5 +184,48 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 		*wrapper.contract = contract
 	}
 
+	err = contracts.getCurrentVersion(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error getting network contract version: %w", err)
+	}
+
 	return contracts, nil
+}
+
+// Returns whether or not Atlas has been deployed
+// TODO: refactor this so it comes first and we don't need to pass this check around everywhere
+func (c *NetworkContracts) _isAtlasDeployed() bool {
+	constraint, _ := version.NewConstraint("== 1.2.0")
+	return constraint.Check(c.Version)
+}
+
+// Get the current version of the network
+func (c *NetworkContracts) getCurrentVersion(rp *rocketpool.RocketPool) error {
+	opts := &bind.CallOpts{
+		BlockNumber: c.ElBlockNumber,
+	}
+
+	// Check for v1.2
+	nodeStakingVersion, err := rocketpool.GetContractVersion(rp, *c.RocketNodeStaking.Address, opts)
+	if err != nil {
+		return fmt.Errorf("error checking node staking version: %w", err)
+	}
+	if nodeStakingVersion > 3 {
+		c.Version, err = version.NewSemver("1.2.0")
+		return err
+	}
+
+	// Check for v1.1
+	nodeMgrVersion, err := rocketpool.GetContractVersion(rp, *c.RocketNodeManager.Address, opts)
+	if err != nil {
+		return fmt.Errorf("error checking node manager version: %w", err)
+	}
+	if nodeMgrVersion > 1 {
+		c.Version, err = version.NewSemver("1.1.0")
+		return err
+	}
+
+	// v1.0
+	c.Version, err = version.NewSemver("1.0.0")
+	return err
 }

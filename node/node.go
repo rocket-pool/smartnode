@@ -62,7 +62,7 @@ func GetNodeManagerVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 	if err != nil {
 		return 0, err
 	}
-	return rocketpool.GetContractVersion(rp, *rocketNodeManager.Address, nil)
+	return rocketpool.GetContractVersion(rp, *rocketNodeManager.Address, opts)
 }
 
 // Get all node details

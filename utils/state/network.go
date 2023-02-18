@@ -183,7 +183,11 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 }
 
 // Gets the details for a node using the efficient multicall contract
-func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkContracts, opts *bind.CallOpts) (*big.Int, error) {
+func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkContracts) (*big.Int, error) {
+	opts := &bind.CallOpts{
+		BlockNumber: contracts.ElBlockNumber,
+	}
+
 	// Get the list of node addresses
 	addresses, err := getNodeAddressesFast(rp, contracts, opts)
 	if err != nil {
