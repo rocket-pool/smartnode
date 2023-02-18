@@ -100,25 +100,31 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, isAtlasDeployed, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, isAtlasDeployed)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
+	/*
+		err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
+		if err != nil {
+			return nil, fmt.Errorf("error getting network details: %w", err)
+		}
+	*/
 	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
 
 	// Node details
-	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, multicallerAddress, balanceBatcherAddress, contracts, isAtlasDeployed, opts)
+	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, contracts, isAtlasDeployed)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all node details: %w", err)
 	}
 	state.logLine("2/5 - Retrieved node details (%s so far)", time.Since(start))
 
 	// Minipool details
-	state.MinipoolDetails, err = rpstate.GetAllNativeMinipoolDetails(rp, multicallerAddress, balanceBatcherAddress, contracts, opts)
+	state.MinipoolDetails, err = rpstate.GetAllNativeMinipoolDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
@@ -169,7 +175,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 			beaconBalances[i] = eth.GweiToWei(float64(validator.Balance))
 		}
 	}
-	err = rpstate.CalculateCompleteMinipoolShares(rp, contracts, multicallerAddress, mpds, beaconBalances, opts)
+	err = rpstate.CalculateCompleteMinipoolShares(rp, contracts, mpds, beaconBalances)
 	if err != nil {
 		return nil, err
 	}
@@ -222,18 +228,24 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, isAtlasDeployed, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, isAtlasDeployed)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network details: %w", err)
 	}
+	/*
+		err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
+		if err != nil {
+			return nil, fmt.Errorf("error getting network details: %w", err)
+		}
+	*/
 	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
 
 	// Node details
-	nodeDetails, err := rpstate.GetNativeNodeDetails(rp, nodeAddress, multicallerAddress, contracts, isAtlasDeployed, opts)
+	nodeDetails, err := rpstate.GetNativeNodeDetails(rp, contracts, nodeAddress, isAtlasDeployed)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting node details: %w", err)
 	}
@@ -241,7 +253,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	state.logLine("2/5 - Retrieved node details (%s so far)", time.Since(start))
 
 	// Minipool details
-	state.MinipoolDetails, err = rpstate.GetNodeNativeMinipoolDetails(rp, nodeAddress, multicallerAddress, balanceBatcherAddress, contracts, opts)
+	state.MinipoolDetails, err = rpstate.GetNodeNativeMinipoolDetails(rp, contracts, nodeAddress)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
@@ -271,7 +283,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	}
 
 	// Get the total network effective RPL stake
-	totalEffectiveStake, err := rpstate.GetTotalEffectiveRplStake(rp, multicallerAddress, contracts, opts)
+	totalEffectiveStake, err := rpstate.GetTotalEffectiveRplStake(rp, contracts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error calculating total effective RPL stake for the network: %w", err)
 	}
@@ -298,7 +310,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 			beaconBalances[i] = eth.GweiToWei(float64(validator.Balance))
 		}
 	}
-	err = rpstate.CalculateCompleteMinipoolShares(rp, contracts, multicallerAddress, mpds, beaconBalances, opts)
+	err = rpstate.CalculateCompleteMinipoolShares(rp, contracts, mpds, beaconBalances)
 	if err != nil {
 		return nil, nil, err
 	}
