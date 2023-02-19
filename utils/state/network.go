@@ -126,6 +126,11 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 		contracts.Multicaller.AddCall(contracts.RocketDAONodeTrustedSettingsMinipool, &windowStartRaw, "getBondReductionWindowStart")
 		contracts.Multicaller.AddCall(contracts.RocketDAONodeTrustedSettingsMinipool, &windowLengthRaw, "getBondReductionWindowLength")
 		contracts.Multicaller.AddCall(contracts.RocketDepositPool, &details.DepositPoolUserBalance, "getUserBalance")
+	} else {
+		promotionScrubPeriodSeconds = big.NewInt(0)
+		windowStartRaw = big.NewInt(0)
+		windowLengthRaw = big.NewInt(0)
+		details.DepositPoolUserBalance = big.NewInt(0)
 	}
 
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
