@@ -653,6 +653,15 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(client *rocketpool.Roc
 		return minipoolBalanceDetails{}, err
 	}
 
+	// Dissolved minipools don't contribute to rETH
+	if status == rptypes.Dissolved {
+		return minipoolBalanceDetails{
+			UserBalance: big.NewInt(0),
+			NodeAddress: nodeAddress,
+			NodeFee:     nodeFee,
+		}, nil
+	}
+
 	// Use user deposit balance if initialized or prelaunch
 	if status == rptypes.Initialized || status == rptypes.Prelaunch {
 		return minipoolBalanceDetails{
