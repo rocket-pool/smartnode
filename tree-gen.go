@@ -22,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli/v2"
@@ -116,6 +117,20 @@ func GenerateTree(c *cli.Context) error {
 // Generates a preview / dry run of the tree for the current interval, using the latest finalized state as the endpoint instead of whatever the actual endpoint will end up being
 func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, outputDir string, prettyPrint bool, ruleset uint64) error {
 
+	// Get a snapshot of the network state
+	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bn, &log)
+	if err != nil {
+		return fmt.Errorf("error creating network state manager: %w", err)
+	}
+	block, err := mgr.GetLatestFinalizedBeaconBlock()
+	if err != nil {
+		return fmt.Errorf("error getting latest finalized Beacon block: %w", err)
+	}
+	state, err := mgr.GetStateForSlot(block.Slot)
+	if err != nil {
+		return fmt.Errorf("error getting network state: %w", err)
+	}
+
 	details, err := getSnapshotDetails(rp, bn, log, nil)
 	if err != nil {
 		return fmt.Errorf("error getting snapshot details: %w", err)
@@ -129,7 +144,7 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 	log.Printlnf("Snapshot Beacon block = %d, EL block = %d, running from %s to %s\n", details.snapshotBeaconBlock, elBlockIndex, details.startTime, details.endTime)
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, details.index, details.startTime, details.endTime, details.snapshotBeaconBlock, details.snapshotElBlockHeader, details.intervalsPassed)
+	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, details.index, details.startTime, details.endTime, details.snapshotBeaconBlock, details.snapshotElBlockHeader, details.intervalsPassed, state)
 	if err != nil {
 		return fmt.Errorf("error creating tree generator: %w", err)
 	}
@@ -197,6 +212,20 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 // Approximates the rETH stakers' share of the Smoothing Pool's current balance
 func approximateCurrentRethSpRewards(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, outputDir string, prettyPrint bool, ruleset uint64) error {
 
+	// Get a snapshot of the network state
+	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bn, &log)
+	if err != nil {
+		return fmt.Errorf("error creating network state manager: %w", err)
+	}
+	block, err := mgr.GetLatestFinalizedBeaconBlock()
+	if err != nil {
+		return fmt.Errorf("error getting latest finalized Beacon block: %w", err)
+	}
+	state, err := mgr.GetStateForSlot(block.Slot)
+	if err != nil {
+		return fmt.Errorf("error getting network state: %w", err)
+	}
+
 	details, err := getSnapshotDetails(rp, bn, log, nil)
 	if err != nil {
 		return fmt.Errorf("error getting snapshot details: %w", err)
@@ -218,7 +247,7 @@ func approximateCurrentRethSpRewards(log log.ColorLogger, rp *rocketpool.RocketP
 	}
 
 	// Approximate the balance
-	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, details.index, details.startTime, details.endTime, details.snapshotBeaconBlock, details.snapshotElBlockHeader, details.intervalsPassed)
+	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, details.index, details.startTime, details.endTime, details.snapshotBeaconBlock, details.snapshotElBlockHeader, details.intervalsPassed, state)
 	if err != nil {
 		return fmt.Errorf("error creating tree generator: %w", err)
 	}
@@ -248,6 +277,16 @@ func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *confi
 	}
 	log.Printlnf("Found rewards submission event: Beacon block %s, execution block %s", rewardsEvent.ConsensusBlock.String(), rewardsEvent.ExecutionBlock.String())
 
+	// Get a snapshot of the network state at that interval
+	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bn, &log)
+	if err != nil {
+		return fmt.Errorf("error creating network state manager: %w", err)
+	}
+	state, err := mgr.GetStateForSlot(rewardsEvent.ConsensusBlock.Uint64())
+	if err != nil {
+		return fmt.Errorf("error getting network state: %w", err)
+	}
+
 	// Get the EL block
 	elBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), rewardsEvent.ExecutionBlock)
 	if err != nil {
@@ -256,7 +295,7 @@ func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *confi
 
 	// Generate the rewards file
 	start := time.Now()
-	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64())
+	treegen, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state)
 	if err != nil {
 		return fmt.Errorf("error creating tree generator: %w", err)
 	}
@@ -457,7 +496,17 @@ func printNetworkInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, b
 		return fmt.Errorf("error getting network details for snapshot: %w", err)
 	}
 
-	generator, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, details.index, details.startTime, details.endTime, details.snapshotBeaconBlock, details.snapshotElBlockHeader, details.intervalsPassed)
+	// Get a snapshot of the network state at that interval
+	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bn, &log)
+	if err != nil {
+		return fmt.Errorf("error creating network state manager: %w", err)
+	}
+	state, err := mgr.GetStateForSlot(details.snapshotBeaconBlock)
+	if err != nil {
+		return fmt.Errorf("error getting network state: %w", err)
+	}
+
+	generator, err := rprewards.NewTreeGenerator(log, "", rp, cfg, bn, details.index, details.startTime, details.endTime, details.snapshotBeaconBlock, details.snapshotElBlockHeader, details.intervalsPassed, state)
 	if err != nil {
 		return fmt.Errorf("error creating generator: %w", err)
 	}
