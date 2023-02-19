@@ -5,8 +5,8 @@ go 1.19
 require (
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/fatih/color v1.14.1
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20230218061241-9b051d775c4c
-	github.com/rocket-pool/smartnode v1.7.6-0.20230219030035-42088a02e716
+	github.com/rocket-pool/rocketpool-go v1.10.1-0.20230219201355-5a0744fe224b
+	github.com/rocket-pool/smartnode v1.7.6-0.20230219204040-9e3015ea559d
 	github.com/urfave/cli/v2 v2.23.0
 )
 
