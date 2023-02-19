@@ -432,6 +432,13 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 		}
 	}
 
+	// Dissolved minipools don't contribute to rETH
+	if status == rptypes.Dissolved {
+		return minipoolBalanceDetails{
+			UserBalance: big.NewInt(0),
+		}
+	}
+
 	// Use user deposit balance if initialized or prelaunch
 	if status == rptypes.Initialized || status == rptypes.Prelaunch {
 		return minipoolBalanceDetails{
