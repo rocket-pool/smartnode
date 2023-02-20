@@ -146,29 +146,31 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 	threshold := uint64(32000000000)
 	for _, mpd := range reductionMps {
 		validator := state.ValidatorDetails[mpd.Pubkey]
-		switch validator.Status {
-		case beacon.ValidatorState_PendingInitialized,
-			beacon.ValidatorState_PendingQueued:
-			// Do nothing because this validator isn't live yet
-			continue
+		if validator.Exists {
+			switch validator.Status {
+			case beacon.ValidatorState_PendingInitialized,
+				beacon.ValidatorState_PendingQueued:
+				// Do nothing because this validator isn't live yet
+				continue
 
-		case beacon.ValidatorState_ActiveOngoing:
-			// Check the balance
-			if validator.Balance < threshold {
-				// Cancel because it's under-balance
-				t.cancelBondReduction(mpd.MinipoolAddress, fmt.Sprintf("minipool balance is %d (below the threshold)", validator.Balance))
+			case beacon.ValidatorState_ActiveOngoing:
+				// Check the balance
+				if validator.Balance < threshold {
+					// Cancel because it's under-balance
+					t.cancelBondReduction(mpd.MinipoolAddress, fmt.Sprintf("minipool balance is %d (below the threshold)", validator.Balance))
+				}
+
+			case beacon.ValidatorState_ActiveExiting,
+				beacon.ValidatorState_ActiveSlashed,
+				beacon.ValidatorState_ExitedUnslashed,
+				beacon.ValidatorState_ExitedSlashed,
+				beacon.ValidatorState_WithdrawalPossible,
+				beacon.ValidatorState_WithdrawalDone:
+				t.cancelBondReduction(mpd.MinipoolAddress, "minipool is already slashed, exiting, or exited")
+
+			default:
+				return fmt.Errorf("unknown validator state: %v", validator.Status)
 			}
-
-		case beacon.ValidatorState_ActiveExiting,
-			beacon.ValidatorState_ActiveSlashed,
-			beacon.ValidatorState_ExitedUnslashed,
-			beacon.ValidatorState_ExitedSlashed,
-			beacon.ValidatorState_WithdrawalPossible,
-			beacon.ValidatorState_WithdrawalDone:
-			t.cancelBondReduction(mpd.MinipoolAddress, "minipool is already slashed, exiting, or exited")
-
-		default:
-			return fmt.Errorf("unknown validator state: %v", validator.Status)
 		}
 	}
 
