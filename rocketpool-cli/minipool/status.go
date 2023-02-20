@@ -2,6 +2,7 @@ package minipool
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -154,6 +155,7 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 
 	// RP ETH deposit details - prelaunch & staking minipools
 	if minipool.Status.Status == types.Prelaunch || minipool.Status.Status == types.Staking {
+		totalRewards := big.NewInt(0).Add(minipool.NodeShareOfETHBalance, minipool.Node.RefundBalance)
 		if minipool.User.DepositAssigned {
 			fmt.Printf("RP ETH assigned:       %s\n", minipool.User.DepositAssignedTime.Format(TimeFormat))
 			fmt.Printf("RP deposit:            %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.User.DepositBalance), 6))
@@ -162,6 +164,8 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 		}
 		fmt.Printf("Minipool Balance (EL): %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Balances.ETH), 6))
 		fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.NodeShareOfETHBalance), 6))
+		fmt.Printf("Available refund:      %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Node.RefundBalance), 6))
+		fmt.Printf("Total EL rewards:      %.6f ETH\n", math.RoundDown(eth.WeiToEth(totalRewards), 6))
 	}
 
 	// Validator details - prelaunch and staking minipools
