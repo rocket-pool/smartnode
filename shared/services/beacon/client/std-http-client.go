@@ -393,7 +393,7 @@ func (c *StandardHttpClient) GetValidatorIndex(pubkey types.ValidatorPubkey) (ui
 }
 
 // Get domain data for a domain type at a given epoch
-func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64) ([]byte, error) {
+func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64, useGenesisFork bool) ([]byte, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -421,7 +421,9 @@ func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64) ([]b
 
 	// Get fork version
 	var forkVersion []byte
-	if epoch < uint64(fork.Data.Epoch) {
+	if useGenesisFork {
+		forkVersion = genesis.Data.GenesisForkVersion
+	} else if epoch < uint64(fork.Data.Epoch) {
 		forkVersion = fork.Data.PreviousVersion
 	} else {
 		forkVersion = fork.Data.CurrentVersion

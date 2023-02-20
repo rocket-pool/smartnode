@@ -199,7 +199,7 @@ func changeWithdrawalCreds(c *cli.Context, minipoolAddress common.Address, mnemo
 	}
 
 	// Get voluntary exit signature domain
-	signatureDomain, err := bc.GetDomainData(eth2types.DomainBlsToExecutionChange[:], head.Epoch)
+	signatureDomain, err := bc.GetDomainData(eth2types.DomainBlsToExecutionChange[:], head.Epoch, true)
 	if err != nil {
 		return nil, err
 	}

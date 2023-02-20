@@ -245,9 +245,9 @@ func (m *BeaconClientManager) GetValidatorProposerDuties(indices []uint64, epoch
 }
 
 // Get the Beacon chain's domain data
-func (m *BeaconClientManager) GetDomainData(domainType []byte, epoch uint64) ([]byte, error) {
+func (m *BeaconClientManager) GetDomainData(domainType []byte, epoch uint64, useGenesisFork bool) ([]byte, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
-		return client.GetDomainData(domainType, epoch)
+		return client.GetDomainData(domainType, epoch, useGenesisFork)
 	})
 	if err != nil {
 		return nil, err
