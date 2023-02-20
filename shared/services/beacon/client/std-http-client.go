@@ -820,7 +820,8 @@ func (c *StandardHttpClient) getCommittees(stateId string, epoch *uint64) (Commi
 
 // Send withdrawal credentials change request
 func (c *StandardHttpClient) postWithdrawalCredentialsChange(request BLSToExecutionChangeRequest) error {
-	responseBody, status, err := c.postRequest(RequestWithdrawalCredentialsChangePath, request)
+	requestArray := []BLSToExecutionChangeRequest{request} // This route must be wrapped in an array
+	responseBody, status, err := c.postRequest(RequestWithdrawalCredentialsChangePath, requestArray)
 	if err != nil {
 		return fmt.Errorf("Could not broadcast withdrawal credentials change for validator %d: %w", request.Message.ValidatorIndex, err)
 	}
