@@ -228,7 +228,6 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 		if err != nil {
 			return fmt.Errorf("error getting minipool %s balances: %w", minipoolAddress.Hex(), err)
 		}
-		details.NodeShareOfETHBalance, err = mp.CalculateNodeShare(details.Balances.ETH, nil)
 		return err
 	})
 	wg.Go(func() error {
@@ -294,6 +293,12 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return api.MinipoolDetails{}, err
+	}
+
+	effectiveBalance := big.NewInt(0).Sub(details.Balances.ETH, details.Node.RefundBalance)
+	details.NodeShareOfETHBalance, err = mp.CalculateNodeShare(effectiveBalance, nil)
+	if err != nil {
+		return api.MinipoolDetails{}, fmt.Errorf("error calculating node share: %w", err)
 	}
 
 	// Get validator details if staking
