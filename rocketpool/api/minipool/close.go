@@ -174,7 +174,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		// Get gas estimate
 		gasInfo, err := mp.EstimateCloseGas(opts)
 		if err != nil {
-			return api.MinipoolCloseDetails{}, err
+			return api.MinipoolCloseDetails{}, fmt.Errorf("error estimating close gas on minipool %s: %w", details.Address.Hex(), err)
 		}
 		details.GasInfo = gasInfo
 	} else {
@@ -184,20 +184,20 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 			// It is, so check if it's already been distributed
 			distributed, err := mpv3.GetUserDistributed(nil)
 			if err != nil {
-				return api.MinipoolCloseDetails{}, err
+				return api.MinipoolCloseDetails{}, fmt.Errorf("error checking if minipool %s has been distributed: %w", details.Address.Hex(), err)
 			}
 			if distributed {
 				// It's already been distributed so just finalize it
 				gasInfo, err := mpv3.EstimateFinaliseGas(opts)
 				if err != nil {
-					return api.MinipoolCloseDetails{}, err
+					return api.MinipoolCloseDetails{}, fmt.Errorf("error estimating finalise gas on minipool %s: %w", details.Address.Hex(), err)
 				}
 				details.GasInfo = gasInfo
 			} else {
 				// Do a distribution, which will finalize it
 				gasInfo, err := mpv3.EstimateDistributeBalanceGas(opts)
 				if err != nil {
-					return api.MinipoolCloseDetails{}, err
+					return api.MinipoolCloseDetails{}, fmt.Errorf("error estimating distribute-balance gas on minipool %s: %w", details.Address.Hex(), err)
 				}
 				details.GasInfo = gasInfo
 			}
