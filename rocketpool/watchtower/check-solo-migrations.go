@@ -22,10 +22,10 @@ import (
 )
 
 const (
-	soloMigrationCheckThreshold time.Duration = 24 * time.Hour
-	blsPrefix                   byte          = 0x00
-	elPrefix                    byte          = 0x01
-	migrationBalanceBuffer      float64       = 0.001
+	soloMigrationCheckThreshold float64 = 0.85 // Fraction of PromotionStakePeriod that can go before a minipool gets scrubbed for not having changed to 0x01
+	blsPrefix                   byte    = 0x00
+	elPrefix                    byte    = 0x01
+	migrationBalanceBuffer      float64 = 0.001
 )
 
 type checkSoloMigrations struct {
@@ -141,6 +141,11 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 
 	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", state.BeaconSlotNumber, state.ElBlockNumber))
 	oneGwei := eth.GweiToWei(1)
+	scrubThreshold := time.Duration(state.NetworkDetails.PromotionScrubPeriod.Seconds()*soloMigrationCheckThreshold) * time.Second
+
+	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
+	secondsForSlot := time.Duration(state.BeaconSlotNumber*state.BeaconConfig.SecondsPerSlot) * time.Second
+	blockTime := genesisTime.Add(secondsForSlot)
 
 	// Go through each minipool
 	threshold := uint64(32000000000)
@@ -172,8 +177,12 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 		withdrawalCreds := validator.WithdrawalCredentials
 		switch withdrawalCreds[0] {
 		case blsPrefix:
-			// Hasn't migrated yet, so ignore for now
-			// TODO: Handle timeouts once they're added
+			creationTime := time.Unix(mpd.StatusTime.Int64(), 0)
+			remainingTime := creationTime.Add(scrubThreshold).Sub(blockTime)
+			if remainingTime < 0 {
+				t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("minipool timed out (created %s, current time %s, scrubbed after %s)", creationTime, blockTime, scrubThreshold))
+				continue
+			}
 			continue
 		case elPrefix:
 			if withdrawalCreds != mpd.WithdrawalCredentials {
