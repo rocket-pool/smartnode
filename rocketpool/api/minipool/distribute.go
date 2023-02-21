@@ -3,6 +3,7 @@ package minipool
 import (
 	"context"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -87,8 +88,16 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 					if err != nil {
 						return fmt.Errorf("error getting balance of minipool %s: %w", address.Hex(), err)
 					}
-					minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(minipoolDetails.Balance, nil)
-					return err
+					minipoolDetails.Refund, err = mp.GetNodeRefundBalance(nil)
+					if err != nil {
+						return fmt.Errorf("error getting refund balance of minipool %s: %w", address.Hex(), err)
+					}
+					trueBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
+					minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(trueBalance, nil)
+					if err != nil {
+						return fmt.Errorf("error calculating node share for minipool %s: %w", address.Hex(), err)
+					}
+					return nil
 				})
 				wg2.Go(func() error {
 					status, err := mp.GetStatus(nil)

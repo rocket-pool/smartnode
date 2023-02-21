@@ -52,7 +52,7 @@ func closeMinipools(c *cli.Context) error {
 		options := make([]string, len(closableMinipools)+1)
 		options[0] = "All available minipools"
 		for mi, minipool := range closableMinipools {
-			options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH is yours)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6))
+			options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH is yours plus a refund of %.6f ETH)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), math.RoundDown(eth.WeiToEth(minipool.Refund), 6))
 		}
 		selected, _ := cliutils.Select("Please select a minipool to close:", options)
 

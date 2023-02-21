@@ -55,6 +55,7 @@ type ValidatorDetails struct {
 type MinipoolBalanceDistributionDetails struct {
 	Address            common.Address `json:"address"`
 	Balance            *big.Int       `json:"balance"`
+	Refund             *big.Int       `json:"refund"`
 	NodeShareOfBalance *big.Int       `json:"nodeShareOfBalance"`
 	VersionTooLow      bool           `json:"versionTooLow"`
 	InvalidStatus      bool           `json:"invalidStatus"`
@@ -144,6 +145,7 @@ type MinipoolCloseDetails struct {
 	MinipoolStatus types.MinipoolStatus `json:"minipoolStatus"`
 	CanClose       bool                 `json:"canClose"`
 	Balance        *big.Int             `json:"balance"`
+	Refund         *big.Int             `json:"refund"`
 	NodeShare      *big.Int             `json:"nodeShare"`
 	UserShare      *big.Int             `json:"userShare"`
 	GasInfo        rocketpool.GasInfo   `json:"gasInfo"`

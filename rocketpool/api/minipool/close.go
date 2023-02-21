@@ -3,6 +3,7 @@ package minipool
 import (
 	"context"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,15 +23,15 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error checking if node is registered: %w", err)
 	}
 	w, err := services.GetWallet(c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting wallet: %w", err)
 	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating Rocket Pool binding: %w", err)
 	}
 
 	// Response
@@ -48,19 +49,19 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting node account: %w", err)
 	}
 
 	// Get the minipool addresses for this node
 	addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAccount.Address, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting node minipool addresses: %w", err)
 	}
 
 	// Get the transaction opts
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting node account transactor: %w", err)
 	}
 
 	// Iterate over each minipool to get its close details
@@ -111,12 +112,12 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	// Create minipool
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
-		return api.MinipoolCloseDetails{}, err
+		return api.MinipoolCloseDetails{}, fmt.Errorf("error making minipool %s binding: %w", minipoolAddress.Hex(), err)
 	}
 
 	// Validate minipool owner
 	if err := validateMinipoolOwner(mp, nodeAddress); err != nil {
-		return api.MinipoolCloseDetails{}, err
+		return api.MinipoolCloseDetails{}, fmt.Errorf("error validating node %s owns minipool %s: %w", nodeAddress.Hex(), minipoolAddress.Hex(), err)
 	}
 
 	var details api.MinipoolCloseDetails
@@ -129,25 +130,43 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		return api.MinipoolCloseDetails{}, fmt.Errorf("error getting balance of minipool %s: %w", mp.GetAddress().Hex(), err)
 	}
 	details.Balance = balance
+	refund, err := mp.GetNodeRefundBalance(nil)
+	if err != nil {
+		return api.MinipoolCloseDetails{}, fmt.Errorf("error getting refund balance of minipool %s: %w", mp.GetAddress().Hex(), err)
+	}
+	details.Refund = refund
+	trueBalance := big.NewInt(0).Sub(balance, refund)
 	wg.Go(func() error {
 		var err error
-		details.NodeShare, err = mp.CalculateNodeShare(balance, nil)
-		return err
+		details.NodeShare, err = mp.CalculateNodeShare(trueBalance, nil)
+		if err != nil {
+			return fmt.Errorf("error calculating node share of minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
 	})
 	wg.Go(func() error {
 		var err error
-		details.UserShare, err = mp.CalculateUserShare(balance, nil)
-		return err
+		details.UserShare, err = mp.CalculateUserShare(trueBalance, nil)
+		if err != nil {
+			return fmt.Errorf("error calculating user share of minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
 	})
 	wg.Go(func() error {
 		var err error
 		details.IsFinalized, err = mp.GetFinalised(nil)
-		return err
+		if err != nil {
+			return fmt.Errorf("error getting finalized status of minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
 	})
 	wg.Go(func() error {
 		var err error
 		details.MinipoolStatus, err = mp.GetStatus(nil)
-		return err
+		if err != nil {
+			return fmt.Errorf("error getting status of minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
 	})
 
 	if err := wg.Wait(); err != nil {

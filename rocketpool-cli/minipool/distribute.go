@@ -49,12 +49,15 @@ func distributeBalance(c *cli.Context) error {
 	}
 
 	// Sort minipools by status
+	insufficientBalanceMinipools := []api.MinipoolBalanceDistributionDetails{}
 	eligibleMinipools := []api.MinipoolBalanceDistributionDetails{}
 	versionTooLowMinipools := []api.MinipoolBalanceDistributionDetails{}
 	zero := big.NewInt(0)
 	for _, mp := range details.Details {
 		if mp.InvalidStatus {
 			continue
+		} else if mp.Balance.Cmp(mp.Refund) != 1 {
+			insufficientBalanceMinipools = append(insufficientBalanceMinipools, mp)
 		} else if mp.VersionTooLow {
 			versionTooLowMinipools = append(versionTooLowMinipools, mp)
 		} else if mp.Balance.Cmp(zero) == 1 {
@@ -70,6 +73,12 @@ func distributeBalance(c *cli.Context) error {
 		}
 		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` in order to distribute their ETH balances.%s\n\n", colorReset)
 	}
+	if len(insufficientBalanceMinipools) > 0 {
+		fmt.Printf("%sWARNING: The following minipools have a refund larger than their current balance and cannot be distributed at this time:\n", colorYellow)
+		for _, mp := range insufficientBalanceMinipools {
+			fmt.Printf("\t%s\n", mp.Address)
+		}
+	}
 
 	if len(eligibleMinipools) == 0 {
 		fmt.Println("No minipools are eligible for balance distribution.")
@@ -84,7 +93,7 @@ func distributeBalance(c *cli.Context) error {
 		options := make([]string, len(eligibleMinipools)+1)
 		options[0] = "All available minipools"
 		for mi, minipool := range eligibleMinipools {
-			options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH goes to you)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfBalance), 6))
+			options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH goes to you plus a refund of %.6f ETH)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfBalance), 6), math.RoundDown(eth.WeiToEth(minipool.Refund), 6))
 		}
 		selected, _ := cliutils.Select("Please select a minipool to distribute the balance of:", options)
 
