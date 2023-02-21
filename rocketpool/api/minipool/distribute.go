@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -57,6 +57,7 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 	}
 
 	// Load details in batches
+	zero := big.NewInt(0)
 	details := make([]api.MinipoolBalanceDistributionDetails, len(addresses))
 	for bsi := 0; bsi < len(addresses); bsi += MinipoolDetailsBatchSize {
 
@@ -73,12 +74,18 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 			mi := mi
 			wg.Go(func() error {
 				address := addresses[mi]
-				minipoolDetails := api.MinipoolBalanceDistributionDetails{
-					Address: address,
-				}
+				minipoolDetails := &details[mi]
+				minipoolDetails.Address = address
 				mp, err := minipool.NewMinipool(rp, address, nil)
 				if err != nil {
 					return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
+				}
+				minipoolDetails.MinipoolVersion = mp.GetVersion()
+
+				// Ignore minipools that are too old
+				if minipoolDetails.MinipoolVersion < 3 {
+					minipoolDetails.CanDistribute = false
+					return nil
 				}
 
 				var wg2 errgroup.Group
@@ -88,25 +95,30 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 					if err != nil {
 						return fmt.Errorf("error getting balance of minipool %s: %w", address.Hex(), err)
 					}
+					return nil
+				})
+				wg2.Go(func() error {
+					var err error
 					minipoolDetails.Refund, err = mp.GetNodeRefundBalance(nil)
 					if err != nil {
 						return fmt.Errorf("error getting refund balance of minipool %s: %w", address.Hex(), err)
 					}
-					trueBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
-					minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(trueBalance, nil)
+					return nil
+				})
+				wg2.Go(func() error {
+					var err error
+					minipoolDetails.Status, err = mp.GetStatus(nil)
 					if err != nil {
-						return fmt.Errorf("error calculating node share for minipool %s: %w", address.Hex(), err)
+						return fmt.Errorf("error getting status of minipool %s: %w", address.Hex(), err)
 					}
 					return nil
 				})
 				wg2.Go(func() error {
-					status, err := mp.GetStatus(nil)
-					minipoolDetails.InvalidStatus = (status != types.Staking)
-					return err
-				})
-				wg2.Go(func() error {
-					version := mp.GetVersion()
-					minipoolDetails.VersionTooLow = (version < 3)
+					var err error
+					minipoolDetails.IsFinalized, err = mp.GetFinalised(nil)
+					if err != nil {
+						return fmt.Errorf("error getting finalized status of minipool %s: %w", address.Hex(), err)
+					}
 					return nil
 				})
 
@@ -115,7 +127,39 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 					return err
 				}
 
-				details[mi] = minipoolDetails
+				// Ignore minipools with 0 balance
+				if minipoolDetails.Balance.Cmp(zero) == 0 {
+					minipoolDetails.CanDistribute = false
+					return nil
+				}
+
+				// Ignore minipools with a balance lower than the refund
+				if minipoolDetails.Balance.Cmp(minipoolDetails.Refund) == -1 {
+					minipoolDetails.CanDistribute = false
+					return nil
+				}
+
+				// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
+				effectiveBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
+				eight := eth.EthToWei(8)
+				if effectiveBalance.Cmp(eight) >= 0 {
+					minipoolDetails.CanDistribute = false
+					return nil
+				}
+
+				// Can't distribute a minipool that's already finalized
+				if minipoolDetails.IsFinalized {
+					minipoolDetails.CanDistribute = false
+					return nil
+				}
+
+				// Get the node share of the balance
+				minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(effectiveBalance, nil)
+				if err != nil {
+					return fmt.Errorf("error calculating node share for minipool %s: %w", address.Hex(), err)
+				}
+
+				minipoolDetails.CanDistribute = true
 				return nil
 			})
 		}
@@ -129,106 +173,6 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 	response.Details = details
 	return &response, nil
 
-}
-
-func canDistributeBalance(c *cli.Context, minipoolAddress common.Address) (*api.CanDistributeBalanceResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.CanDistributeBalanceResponse{}
-
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-	response.IsAtlasDeployed = isAtlasDeployed
-
-	// Prevent distribution prior to Atlas
-	if !isAtlasDeployed {
-		return &response, nil
-	}
-
-	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check minipool status
-	status, err := mp.GetStatus(nil)
-	if err != nil {
-		return nil, err
-	}
-	response.MinipoolStatus = status
-
-	// Get minipool delegate version
-	version := mp.GetVersion()
-	response.MinipoolVersion = version
-
-	// Get gas estimate
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := mp.EstimateDistributeBalanceGas(opts)
-	if err == nil {
-		response.GasInfo = gasInfo
-	}
-
-	// Update & return response
-	response.CanDistribute = !(status == types.Dissolved || !isAtlasDeployed || version < 3)
-	return &response, nil
-
-}
-
-func estimateDistributeBalanceGas(c *cli.Context, minipoolAddress common.Address) (*api.EstimateDistributeBalanceGasResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.EstimateDistributeBalanceGasResponse{}
-
-	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get gas estimate
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := mp.EstimateDistributeBalanceGas(opts)
-	if err == nil {
-		response.GasInfo = gasInfo
-	}
-
-	// Return response
-	return &response, nil
 }
 
 func distributeBalance(c *cli.Context, minipoolAddress common.Address) (*api.CloseMinipoolResponse, error) {

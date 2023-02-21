@@ -295,10 +295,15 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 		return api.MinipoolDetails{}, err
 	}
 
-	effectiveBalance := big.NewInt(0).Sub(details.Balances.ETH, details.Node.RefundBalance)
-	details.NodeShareOfETHBalance, err = mp.CalculateNodeShare(effectiveBalance, nil)
-	if err != nil {
-		return api.MinipoolDetails{}, fmt.Errorf("error calculating node share: %w", err)
+	// Get node share of balance
+	if details.Balances.ETH.Cmp(details.Node.RefundBalance) == -1 {
+		details.NodeShareOfETHBalance = big.NewInt(0)
+	} else {
+		effectiveBalance := big.NewInt(0).Sub(details.Balances.ETH, details.Node.RefundBalance)
+		details.NodeShareOfETHBalance, err = mp.CalculateNodeShare(effectiveBalance, nil)
+		if err != nil {
+			return api.MinipoolDetails{}, fmt.Errorf("error calculating node share: %w", err)
+		}
 	}
 
 	// Get validator details if staking

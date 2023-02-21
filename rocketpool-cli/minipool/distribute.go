@@ -49,19 +49,26 @@ func distributeBalance(c *cli.Context) error {
 	}
 
 	// Sort minipools by status
-	insufficientBalanceMinipools := []api.MinipoolBalanceDistributionDetails{}
 	eligibleMinipools := []api.MinipoolBalanceDistributionDetails{}
 	versionTooLowMinipools := []api.MinipoolBalanceDistributionDetails{}
-	zero := big.NewInt(0)
+	balanceLessThanRefundMinipools := []api.MinipoolBalanceDistributionDetails{}
+	balanceTooBigMinipools := []api.MinipoolBalanceDistributionDetails{}
+	finalizationAmount := eth.EthToWei(finalizationThreshold)
+
 	for _, mp := range details.Details {
-		if mp.InvalidStatus {
-			continue
-		} else if mp.Balance.Cmp(mp.Refund) != 1 {
-			insufficientBalanceMinipools = append(insufficientBalanceMinipools, mp)
-		} else if mp.VersionTooLow {
-			versionTooLowMinipools = append(versionTooLowMinipools, mp)
-		} else if mp.Balance.Cmp(zero) == 1 {
+		if mp.CanDistribute {
 			eligibleMinipools = append(eligibleMinipools, mp)
+		} else {
+			if mp.MinipoolVersion < 3 {
+				versionTooLowMinipools = append(versionTooLowMinipools, mp)
+			}
+			if mp.Balance.Cmp(mp.Refund) == -1 {
+				balanceLessThanRefundMinipools = append(balanceLessThanRefundMinipools, mp)
+			}
+			effectiveBalance := big.NewInt(0).Sub(mp.Balance, mp.Refund)
+			if effectiveBalance.Cmp(finalizationAmount) >= 0 {
+				balanceTooBigMinipools = append(balanceTooBigMinipools, mp)
+			}
 		}
 	}
 
@@ -73,11 +80,19 @@ func distributeBalance(c *cli.Context) error {
 		}
 		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` in order to distribute their ETH balances.%s\n\n", colorReset)
 	}
-	if len(insufficientBalanceMinipools) > 0 {
-		fmt.Printf("%sWARNING: The following minipools have a refund larger than their current balance and cannot be distributed at this time:\n", colorYellow)
-		for _, mp := range insufficientBalanceMinipools {
+	if len(balanceLessThanRefundMinipools) > 0 {
+		fmt.Printf("%sWARNING: The following minipools have refunds larger than their current balances and cannot be distributed at this time:\n", colorYellow)
+		for _, mp := range balanceLessThanRefundMinipools {
 			fmt.Printf("\t%s\n", mp.Address)
 		}
+		fmt.Printf("\nIf you have recently migrated these minipools from solo validators, please wait until enough rewards have been sent from the Beacon Chain to your minipools to cover your refund amounts.%s\n\n", colorReset)
+	}
+	if len(balanceTooBigMinipools) > 0 {
+		fmt.Printf("%sWARNING: The following minipools have over 8 ETH in their balances (after accounting for refunds):\n", colorYellow)
+		for _, mp := range balanceTooBigMinipools {
+			fmt.Printf("\t%s\n", mp.Address)
+		}
+		fmt.Printf("\nDistributing these minipools will close them, effectively terminating them. If you're sure you want to do this, please use `rocketpool minipool close` on them instead.%s\n\n", colorReset)
 	}
 
 	if len(eligibleMinipools) == 0 {
@@ -124,37 +139,14 @@ func distributeBalance(c *cli.Context) error {
 
 	}
 
-	// Print a note if the balance is too high
-	highBalanceMinipools := []api.MinipoolBalanceDistributionDetails{}
-	balanceThreshold := eth.EthToWei(finalizationThreshold)
-	for _, mp := range selectedMinipools {
-		if mp.Balance.Cmp(balanceThreshold) == 1 {
-			highBalanceMinipools = append(highBalanceMinipools, mp)
-		}
-	}
-	if len(highBalanceMinipools) > 0 {
-		fmt.Printf("%sNOTE:\nThe following minipools have a balance higher than %.2f ETH; distributing their funds will close them:\n", colorYellow, finalizationThreshold)
-		for _, mp := range highBalanceMinipools {
-			fmt.Printf("\t%s (%.6f ETH)\n", mp.Address.Hex(), eth.WeiToEth(mp.Balance))
-		}
-		fmt.Println(colorReset)
-		fmt.Println()
-	}
-
 	// Get the total gas limit estimate
 	var totalGas uint64 = 0
 	var totalSafeGas uint64 = 0
 	var gasInfo rocketpoolapi.GasInfo
 	for _, minipool := range selectedMinipools {
-		estimateGasResponse, err := rp.EstimateDistributeBalanceGas(minipool.Address)
-		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for distribution transaction for minipool %s (%s)", minipool.Address.Hex(), err.Error())
-			break
-		} else {
-			gasInfo = estimateGasResponse.GasInfo
-			totalGas += estimateGasResponse.GasInfo.EstGasLimit
-			totalSafeGas += estimateGasResponse.GasInfo.SafeGasLimit
-		}
+		gasInfo = minipool.GasInfo
+		totalGas += gasInfo.EstGasLimit
+		totalSafeGas += gasInfo.SafeGasLimit
 	}
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas

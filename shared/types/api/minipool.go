@@ -53,12 +53,15 @@ type ValidatorDetails struct {
 	NodeBalance *big.Int `json:"nodeBalance"`
 }
 type MinipoolBalanceDistributionDetails struct {
-	Address            common.Address `json:"address"`
-	Balance            *big.Int       `json:"balance"`
-	Refund             *big.Int       `json:"refund"`
-	NodeShareOfBalance *big.Int       `json:"nodeShareOfBalance"`
-	VersionTooLow      bool           `json:"versionTooLow"`
-	InvalidStatus      bool           `json:"invalidStatus"`
+	Address            common.Address       `json:"address"`
+	Balance            *big.Int             `json:"balance"`
+	Refund             *big.Int             `json:"refund"`
+	NodeShareOfBalance *big.Int             `json:"nodeShareOfBalance"`
+	MinipoolVersion    uint8                `json:"minipoolVersion"`
+	Status             types.MinipoolStatus `json:"status"`
+	IsFinalized        bool                 `json:"isFinalized"`
+	CanDistribute      bool                 `json:"canDistribute"`
+	GasInfo            rocketpool.GasInfo   `json:"gasInfo"`
 }
 
 type CanRefundMinipoolResponse struct {
@@ -140,15 +143,16 @@ type ProcessWithdrawalAndFinaliseResponse struct {
 }
 
 type MinipoolCloseDetails struct {
-	Address        common.Address       `json:"address"`
-	IsFinalized    bool                 `json:"isFinalized"`
-	MinipoolStatus types.MinipoolStatus `json:"minipoolStatus"`
-	CanClose       bool                 `json:"canClose"`
-	Balance        *big.Int             `json:"balance"`
-	Refund         *big.Int             `json:"refund"`
-	NodeShare      *big.Int             `json:"nodeShare"`
-	UserShare      *big.Int             `json:"userShare"`
-	GasInfo        rocketpool.GasInfo   `json:"gasInfo"`
+	Address         common.Address       `json:"address"`
+	IsFinalized     bool                 `json:"isFinalized"`
+	MinipoolStatus  types.MinipoolStatus `json:"minipoolStatus"`
+	MinipoolVersion uint8                `json:"minipoolVersion"`
+	Distributed     bool                 `json:"distributed"`
+	CanClose        bool                 `json:"canClose"`
+	Balance         *big.Int             `json:"balance"`
+	Refund          *big.Int             `json:"refund"`
+	NodeShare       *big.Int             `json:"nodeShare"`
+	GasInfo         rocketpool.GasInfo   `json:"gasInfo"`
 }
 
 type GetMinipoolCloseDetailsForNodeResponse struct {

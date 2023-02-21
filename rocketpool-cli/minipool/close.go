@@ -36,7 +36,45 @@ func closeMinipools(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	closableMinipools := details.Details
+
+	// Exit if Atlas hasn't been deployed
+	if !details.IsAtlasDeployed {
+		fmt.Println("Minipools cannot be closed until the Atlas upgrade has been activated.")
+		return nil
+	}
+
+	closableMinipools := []api.MinipoolCloseDetails{}
+	versionTooLowMinipools := []api.MinipoolCloseDetails{}
+	balanceLessThanRefundMinipools := []api.MinipoolCloseDetails{}
+
+	for _, mp := range details.Details {
+		if mp.CanClose {
+			closableMinipools = append(closableMinipools, mp)
+		} else {
+			if mp.MinipoolVersion < 3 {
+				versionTooLowMinipools = append(versionTooLowMinipools, mp)
+			}
+			if mp.Balance.Cmp(mp.Refund) == -1 {
+				balanceLessThanRefundMinipools = append(balanceLessThanRefundMinipools, mp)
+			}
+		}
+	}
+
+	// Print ineligible ones
+	if len(versionTooLowMinipools) > 0 {
+		fmt.Printf("%sWARNING: The following minipools are using an old delegate and cannot be safely closed:\n", colorYellow)
+		for _, mp := range versionTooLowMinipools {
+			fmt.Printf("\t%s\n", mp.Address)
+		}
+		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` in order to close them.%s\n\n", colorReset)
+	}
+	if len(balanceLessThanRefundMinipools) > 0 {
+		fmt.Printf("%sWARNING: The following minipools have refunds larger than their current balances and cannot be closed at this time:\n", colorYellow)
+		for _, mp := range balanceLessThanRefundMinipools {
+			fmt.Printf("\t%s\n", mp.Address)
+		}
+		fmt.Printf("\nIf you have recently exited their validators from the Beacon Chain, please wait until their balances have been sent to the minipools before closing them.%s\n\n", colorReset)
+	}
 
 	// Check for closable minipools
 	if len(closableMinipools) == 0 {

@@ -248,38 +248,6 @@ func (c *Client) CloseMinipool(address common.Address) (api.CloseMinipoolRespons
 	return response, nil
 }
 
-// Check whether a minipool can be finalised
-func (c *Client) CanFinaliseMinipool(address common.Address) (api.CanFinaliseMinipoolResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-finalise %s", address.Hex()))
-	if err != nil {
-		return api.CanFinaliseMinipoolResponse{}, fmt.Errorf("Could not get can finalise minipool status: %w", err)
-	}
-	var response api.CanFinaliseMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanFinaliseMinipoolResponse{}, fmt.Errorf("Could not decode can finalise minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanFinaliseMinipoolResponse{}, fmt.Errorf("Could not get can finalise minipool status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Finalise a minipool
-func (c *Client) FinaliseMinipool(address common.Address) (api.FinaliseMinipoolResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool finalise %s", address.Hex()))
-	if err != nil {
-		return api.FinaliseMinipoolResponse{}, fmt.Errorf("Could not finalise minipool: %w", err)
-	}
-	var response api.FinaliseMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.FinaliseMinipoolResponse{}, fmt.Errorf("Could not decode finalise minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.FinaliseMinipoolResponse{}, fmt.Errorf("Could not finalise minipool: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Check whether a minipool can have its delegate upgraded
 func (c *Client) CanDelegateUpgradeMinipool(address common.Address) (api.CanDelegateUpgradeResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-delegate-upgrade %s", address.Hex()))
@@ -468,38 +436,6 @@ func (c *Client) GetDistributeBalanceDetails() (api.GetDistributeBalanceDetailsR
 	}
 	if response.Error != "" {
 		return api.GetDistributeBalanceDetailsResponse{}, fmt.Errorf("Could not get distribute balance details: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check if a minipool's ETH balance can be distributed
-func (c *Client) CanDistributeBalance(address common.Address) (api.CanDistributeBalanceResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-distribute-balance %s", address.Hex()))
-	if err != nil {
-		return api.CanDistributeBalanceResponse{}, fmt.Errorf("Could not get can distribute balance status: %w", err)
-	}
-	var response api.CanDistributeBalanceResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanDistributeBalanceResponse{}, fmt.Errorf("Could not decode can distribute balance response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanDistributeBalanceResponse{}, fmt.Errorf("Could not get can distribute balance status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Estimate the gas cost of ETH distribution for a minipool
-func (c *Client) EstimateDistributeBalanceGas(address common.Address) (api.EstimateDistributeBalanceGasResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool estimate-distribute-balance-gas %s", address.Hex()))
-	if err != nil {
-		return api.EstimateDistributeBalanceGasResponse{}, fmt.Errorf("Could not get estimate distribute balance gas status: %w", err)
-	}
-	var response api.EstimateDistributeBalanceGasResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.EstimateDistributeBalanceGasResponse{}, fmt.Errorf("Could not decode estimate distribute balance gas response: %w", err)
-	}
-	if response.Error != "" {
-		return api.EstimateDistributeBalanceGasResponse{}, fmt.Errorf("Could not get estimate distribute balance gas status: %s", response.Error)
 	}
 	return response, nil
 }

@@ -294,50 +294,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-finalize",
-				Usage:     "Check whether the minipool can be finalized",
-				UsageText: "rocketpool api minipool can-finalize minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canFinaliseMinipool(c, minipoolAddress))
-					return nil
-
-				},
-			},
-			{
-				Name:      "finalize",
-				Aliases:   []string{"f"},
-				Usage:     "Finalize a minipool after it has been withdrawn from, unlocking its RPL stake",
-				UsageText: "rocketpool api minipool finalize minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(finaliseMinipool(c, minipoolAddress))
-					return nil
-
-				},
-			},
-
-			{
 				Name:      "can-delegate-upgrade",
 				Usage:     "Check whether the minipool delegate can be upgraded",
 				UsageText: "rocketpool api minipool can-delegate-upgrade minipool-address",
@@ -693,48 +649,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(getDistributeBalanceDetails(c))
-					return nil
-
-				},
-			},
-			{
-				Name:      "can-distribute-balance",
-				Usage:     "Check if a minipool's ETH balance can be distributed",
-				UsageText: "rocketpool api minipool can-distribute-balance minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canDistributeBalance(c, minipoolAddress))
-					return nil
-
-				},
-			},
-			{
-				Name:      "estimate-distribute-balance-gas",
-				Usage:     "Estimate the gas cost of ETH distribution for a minipool",
-				UsageText: "rocketpool api minipool estimate-distribute-balance-gas minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(estimateDistributeBalanceGas(c, minipoolAddress))
 					return nil
 
 				},
