@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
@@ -53,6 +54,7 @@ func distributeBalance(c *cli.Context) error {
 	versionTooLowMinipools := []api.MinipoolBalanceDistributionDetails{}
 	balanceLessThanRefundMinipools := []api.MinipoolBalanceDistributionDetails{}
 	balanceTooBigMinipools := []api.MinipoolBalanceDistributionDetails{}
+	dissolvedMinipools := []api.MinipoolBalanceDistributionDetails{}
 	finalizationAmount := eth.EthToWei(finalizationThreshold)
 
 	for _, mp := range details.Details {
@@ -68,6 +70,9 @@ func distributeBalance(c *cli.Context) error {
 			effectiveBalance := big.NewInt(0).Sub(mp.Balance, mp.Refund)
 			if effectiveBalance.Cmp(finalizationAmount) >= 0 {
 				balanceTooBigMinipools = append(balanceTooBigMinipools, mp)
+			}
+			if mp.Status == types.Dissolved {
+				dissolvedMinipools = append(dissolvedMinipools, mp)
 			}
 		}
 	}
@@ -93,6 +98,13 @@ func distributeBalance(c *cli.Context) error {
 			fmt.Printf("\t%s\n", mp.Address)
 		}
 		fmt.Printf("\nDistributing these minipools will close them, effectively terminating them. If you're sure you want to do this, please use `rocketpool minipool close` on them instead.%s\n\n", colorReset)
+	}
+	if len(dissolvedMinipools) > 0 {
+		fmt.Printf("%sNOTE: The following minipools have been dissolved and cannot be distributed:\n", colorYellow)
+		for _, mp := range dissolvedMinipools {
+			fmt.Printf("\t%s\n", mp.Address)
+		}
+		fmt.Printf("\nPlease use `rocketpool minipool close` on them to retrieve your funds.%s\n\n", colorReset)
 	}
 
 	if len(eligibleMinipools) == 0 {

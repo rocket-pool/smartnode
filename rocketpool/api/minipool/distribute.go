@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -152,6 +153,12 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 
 				// Can't distribute a minipool that's already finalized
 				if minipoolDetails.IsFinalized {
+					minipoolDetails.CanDistribute = false
+					return nil
+				}
+
+				// Can't distribute minipools that aren't staking
+				if minipoolDetails.Status != types.Staking {
 					minipoolDetails.CanDistribute = false
 					return nil
 				}
