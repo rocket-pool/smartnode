@@ -12,8 +12,8 @@ const (
 	nimbusVcTagTest string = "rocketpool/nimbus-eth2:unstable-f3ddea6-vc"
 
 	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.1.1"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.1.1"
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.2.0"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.2.0"
 
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
