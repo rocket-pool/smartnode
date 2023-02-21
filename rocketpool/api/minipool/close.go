@@ -124,6 +124,9 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	var details api.MinipoolCloseDetails
 	details.Address = mp.GetAddress()
 	details.MinipoolVersion = mp.GetVersion()
+	details.Balance = big.NewInt(0)
+	details.Refund = big.NewInt(0)
+	details.NodeShare = big.NewInt(0)
 
 	// Ignore minipools that are too old
 	if details.MinipoolVersion < 3 {

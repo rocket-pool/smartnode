@@ -76,6 +76,9 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 				address := addresses[mi]
 				minipoolDetails := &details[mi]
 				minipoolDetails.Address = address
+				minipoolDetails.Balance = big.NewInt(0)
+				minipoolDetails.Refund = big.NewInt(0)
+				minipoolDetails.NodeShareOfBalance = big.NewInt(0)
 				mp, err := minipool.NewMinipool(rp, address, nil)
 				if err != nil {
 					return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
