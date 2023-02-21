@@ -173,20 +173,6 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		return api.MinipoolCloseDetails{}, err
 	}
 
-	// Ignore minipools with a balance lower than the refund
-	if details.Balance.Cmp(details.Refund) == -1 {
-		details.CanClose = false
-		return details, nil
-	}
-
-	// Ignore minipools with an effective balance lower than v3 rewards-vs-exit cap
-	effectiveBalance := big.NewInt(0).Sub(details.Balance, details.Refund)
-	eight := eth.EthToWei(8)
-	if effectiveBalance.Cmp(eight) == -1 {
-		details.CanClose = false
-		return details, nil
-	}
-
 	// Can't close a minipool that's already finalized
 	if details.IsFinalized {
 		details.CanClose = false
@@ -194,9 +180,27 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	}
 
 	// Make sure it's in a closeable state
+	effectiveBalance := big.NewInt(0).Sub(details.Balance, details.Refund)
 	switch details.MinipoolStatus {
-	case types.Staking, types.Withdrawable, types.Dissolved:
+	case types.Dissolved:
 		details.CanClose = true
+
+	case types.Staking, types.Withdrawable:
+		// Ignore minipools with a balance lower than the refund
+		if details.Balance.Cmp(details.Refund) == -1 {
+			details.CanClose = false
+			return details, nil
+		}
+
+		// Ignore minipools with an effective balance lower than v3 rewards-vs-exit cap
+		eight := eth.EthToWei(8)
+		if effectiveBalance.Cmp(eight) == -1 {
+			details.CanClose = false
+			return details, nil
+		}
+
+		details.CanClose = true
+
 	case types.Initialized, types.Prelaunch:
 		details.CanClose = false
 		return details, nil
