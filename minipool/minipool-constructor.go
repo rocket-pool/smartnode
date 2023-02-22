@@ -2,6 +2,7 @@ package minipool
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -15,7 +16,15 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
 	// Get the contract version
 	version, err := rocketpool.GetContractVersion(rp, address, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting minipool contract version: %w", err)
+		errMsg := err.Error()
+		errMsg = strings.ToLower(errMsg)
+		if strings.Contains(errMsg, "execution reverted") ||
+			strings.Contains(errMsg, "vm execution error") {
+			// Reversions happen for minipool v1 on Prater which didn't have version() yet
+			version = 1
+		} else {
+			return nil, fmt.Errorf("error getting minipool contract version: %w", err)
+		}
 	}
 
 	switch version {
