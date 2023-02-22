@@ -478,6 +478,18 @@ func (cfg *SmartnodeConfig) GetValidatorKeychainPath() string {
 	return filepath.Join(DaemonDataPath, "validators")
 }
 
+func (cfg *SmartnodeConfig) GetWalletPathInCLI() string {
+	return filepath.Join(cfg.DataPath.Value.(string), "wallet")
+}
+
+func (cfg *SmartnodeConfig) GetPasswordPathInCLI() string {
+	return filepath.Join(cfg.DataPath.Value.(string), "password")
+}
+
+func (cfg *SmartnodeConfig) GetValidatorKeychainPathInCLI() string {
+	return filepath.Join(cfg.DataPath.Value.(string), "validators")
+}
+
 func (config *SmartnodeConfig) GetWatchtowerStatePath() string {
 	if config.parent.IsNativeMode {
 		return filepath.Join(config.DataPath.Value.(string), WatchtowerFolder, "state.yml")

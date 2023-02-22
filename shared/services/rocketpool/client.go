@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -932,6 +933,85 @@ func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string, ima
 	return dirSize, nil
 }
 
+// Deletes the node wallet and all validator keys, and restarts the Docker containers
+func (c *Client) PurgeAllKeys(composeFiles []string) error {
+	// Get the command to run with root privileges
+	rootCmd, err := c.getEscalationCommand()
+	if err != nil {
+		return fmt.Errorf("could not get privilege escalation command: %w", err)
+	}
+
+	// Get the config
+	cfg, _, err := c.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading user settings: %w", err)
+	}
+
+	// Check for Native mode
+	if cfg.IsNativeMode {
+		return fmt.Errorf("this function is not supported in Native Mode; you will have to shut down your client and daemon services and remove the keys manually")
+	}
+
+	// Shut down the containers
+	fmt.Println("Stopping containers...")
+	err = c.PauseService(composeFiles)
+	if err != nil {
+		return fmt.Errorf("error stopping Docker containers: %w", err)
+	}
+
+	// Delete the wallet
+	walletPath, err := homedir.Expand(cfg.Smartnode.GetWalletPathInCLI())
+	if err != nil {
+		return fmt.Errorf("error loading wallet path: %w", err)
+	}
+	fmt.Println("Deleting wallet...")
+	cmd := fmt.Sprintf("%s rm -f %s", rootCmd, walletPath)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting wallet: %w", err)
+	}
+
+	// Delete the password
+	passwordPath, err := homedir.Expand(cfg.Smartnode.GetPasswordPathInCLI())
+	if err != nil {
+		return fmt.Errorf("error loading password path: %w", err)
+	}
+	fmt.Println("Deleting password...")
+	cmd = fmt.Sprintf("%s rm -f %s", rootCmd, passwordPath)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting password: %w", err)
+	}
+
+	// Delete the validators dir
+	validatorsPath, err := homedir.Expand(cfg.Smartnode.GetValidatorKeychainPathInCLI())
+	if err != nil {
+		return fmt.Errorf("error loading validators folder path: %w", err)
+	}
+	fmt.Println("Deleting validator keys...")
+	cmd = fmt.Sprintf("%s rm -rf %s/*", rootCmd, validatorsPath)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting validator keys: %w", err)
+	}
+	cmd = fmt.Sprintf("%s rm -rf %s/.[a-zA-Z0-9]*", rootCmd, validatorsPath)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting hidden files in validator folder: %w", err)
+	}
+
+	// Start the containers
+	fmt.Println("Starting containers...")
+	err = c.StartService(composeFiles)
+	if err != nil {
+		return fmt.Errorf("error starting Docker containers: %w", err)
+	}
+
+	fmt.Println("Purge complete.")
+
+	return nil
+}
+
 // Get the gas settings
 func (c *Client) GetGasSettings() (float64, float64, uint64) {
 	return c.maxFee, c.maxPrioFee, c.gasLimit
@@ -948,6 +1028,53 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 func (c *Client) SetClientStatusFlags(ignoreSyncCheck bool, forceFallbacks bool) {
 	c.ignoreSyncCheck = ignoreSyncCheck
 	c.forceFallbacks = forceFallbacks
+}
+
+// Get the command used to escalate privileges on the system
+func (c *Client) getEscalationCommand() (string, error) {
+	// Check for sudo first
+	sudo := "sudo"
+	exists, err := c.checkIfCommandExists(sudo)
+	if err != nil {
+		return "", fmt.Errorf("error checking if %s exists: %w", sudo, err)
+	}
+	if exists {
+		return sudo, nil
+	}
+
+	// Check for doas next
+	doas := "doas"
+	exists, err = c.checkIfCommandExists(doas)
+	if err != nil {
+		return "", fmt.Errorf("error checking if %s exists: %w", doas, err)
+	}
+	if exists {
+		return doas, nil
+	}
+
+	return "", fmt.Errorf("no privilege escalation command found")
+}
+
+func (c *Client) checkIfCommandExists(command string) (bool, error) {
+	// Run `type` to check for existence
+	cmd := fmt.Sprintf("type %s", command)
+	output, err := c.readOutput(cmd)
+
+	if err != nil {
+		exitErr, isExitErr := err.(*exec.ExitError)
+		if isExitErr && exitErr.ProcessState.ExitCode() == 127 {
+			// Command not found
+			return false, nil
+		} else {
+			return false, fmt.Errorf("error checking if %s exists: %w", command, err)
+		}
+	} else {
+		if strings.Contains(string(output), fmt.Sprintf("%s is", command)) {
+			return true, nil
+		} else {
+			return false, fmt.Errorf("unexpected output when checking for %s: %s", command, string(output))
+		}
+	}
 }
 
 // Get the provider mode and port from a legacy config's provider URL
