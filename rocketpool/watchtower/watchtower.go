@@ -179,8 +179,9 @@ func run(c *cli.Context) error {
 				continue
 			}
 
-			// Get the latest Beacon head
-			latestFinalizedBlock, err := m.GetLatestFinalizedBeaconBlock()
+			// Get the latest Beacon block
+			//latestBlock, err := m.GetLatestFinalizedBeaconBlock()
+			latestBlock, err := m.GetLatestBeaconBlock()
 			if err != nil {
 				errorLog.Println(fmt.Errorf("error getting latest finalized Beacon block: %w", err))
 				time.Sleep(taskCooldown)
@@ -188,7 +189,7 @@ func run(c *cli.Context) error {
 			}
 
 			// Check if on the Oracle DAO
-			isOnOdao, err := isOnOracleDAO(rp, nodeAccount.Address, latestFinalizedBlock)
+			isOnOdao, err := isOnOracleDAO(rp, nodeAccount.Address, latestBlock)
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
@@ -203,7 +204,7 @@ func run(c *cli.Context) error {
 
 			if isOnOdao {
 				// Update the network state
-				state, err := updateNetworkState(m, &updateLog, latestFinalizedBlock)
+				state, err := updateNetworkState(m, &updateLog, latestBlock)
 				if err != nil {
 					errorLog.Println(err)
 					time.Sleep(taskCooldown)
@@ -217,7 +218,7 @@ func run(c *cli.Context) error {
 				}
 
 				// Run the rewards tree submission check
-				if err := submitRewardsTree.run(isOnOdao, state, latestFinalizedBlock.Slot, isAtlasDeployedMasterFlag); err != nil {
+				if err := submitRewardsTree.run(isOnOdao, state, latestBlock.Slot, isAtlasDeployedMasterFlag); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
@@ -272,7 +273,7 @@ func run(c *cli.Context) error {
 			} else {
 				// Check for Atlas
 				isAtlasDeployed, err := state.IsAtlasDeployed(rp, &bind.CallOpts{
-					BlockNumber: big.NewInt(0).SetUint64(latestFinalizedBlock.ExecutionBlockNumber),
+					BlockNumber: big.NewInt(0).SetUint64(latestBlock.ExecutionBlockNumber),
 				})
 				if err != nil {
 					errorLog.Println(fmt.Errorf("error checking if Atlas is deployed: %w", err))
@@ -281,7 +282,7 @@ func run(c *cli.Context) error {
 				}
 
 				// Run the rewards tree submission check
-				if err := submitRewardsTree.run(isOnOdao, nil, latestFinalizedBlock.Slot, isAtlasDeployed); err != nil {
+				if err := submitRewardsTree.run(isOnOdao, nil, latestBlock.Slot, isAtlasDeployed); err != nil {
 					errorLog.Println(err)
 				}
 			}

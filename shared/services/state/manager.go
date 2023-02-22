@@ -75,30 +75,23 @@ func (m *NetworkStateManager) GetStateForSlot(slotNumber uint64) (*NetworkState,
 	return m.getState(slotNumber)
 }
 
-// Gets the latest valid finalized slot from the given Beacon Chain head info
+// Gets the latest valid block
+func (m *NetworkStateManager) GetLatestBeaconBlock() (beacon.BeaconBlock, error) {
+	targetSlot, err := m.GetHeadSlot()
+	if err != nil {
+		return beacon.BeaconBlock{}, fmt.Errorf("error getting head slot: %w", err)
+	}
+	return m.getLatestProposedBeaconBlock(targetSlot)
+}
+
+// Gets the latest valid finalized block
 func (m *NetworkStateManager) GetLatestFinalizedBeaconBlock() (beacon.BeaconBlock, error) {
 	head, err := m.bc.GetBeaconHead()
 	if err != nil {
 		return beacon.BeaconBlock{}, fmt.Errorf("error getting Beacon chain head: %w", err)
 	}
 	targetSlot := head.FinalizedEpoch*m.BeaconConfig.SlotsPerEpoch + (m.BeaconConfig.SlotsPerEpoch - 1)
-
-	// If that slot is missing, get the latest one that isn't
-	for {
-		// Try to get the current block
-		block, exists, err := m.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
-		if err != nil {
-			return beacon.BeaconBlock{}, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
-		}
-
-		// If the block was missing, try the previous one
-		if !exists {
-			m.logLine("Slot %d was missing, trying the previous one...", targetSlot)
-			targetSlot--
-		} else {
-			return block, nil
-		}
-	}
+	return m.getLatestProposedBeaconBlock(targetSlot)
 }
 
 // Gets the Beacon slot for the latest execution layer block
@@ -115,6 +108,25 @@ func (m *NetworkStateManager) GetHeadSlot() (uint64, error) {
 	secondsSinceGenesis := uint64(latestBlockTime.Sub(genesisTime).Seconds())
 	targetSlot := secondsSinceGenesis / m.BeaconConfig.SecondsPerSlot
 	return targetSlot, nil
+}
+
+// Gets the target Beacon block, or if it was missing, the first one under it that wasn't missing
+func (m *NetworkStateManager) getLatestProposedBeaconBlock(targetSlot uint64) (beacon.BeaconBlock, error) {
+	for {
+		// Try to get the current block
+		block, exists, err := m.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
+		if err != nil {
+			return beacon.BeaconBlock{}, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
+		}
+
+		// If the block was missing, try the previous one
+		if !exists {
+			m.logLine("Slot %d was missing, trying the previous one...", targetSlot)
+			targetSlot--
+		} else {
+			return block, nil
+		}
+	}
 }
 
 // Get the state of the network at the provided Beacon slot
