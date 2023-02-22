@@ -73,17 +73,9 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 
 	var primaryBc beacon.Client
 	var fallbackBc beacon.Client
-	switch selectedCC {
-	case cfgtypes.ConsensusClient_Nimbus:
-		primaryBc = client.NewNimbusClient(primaryProvider)
-		if fallbackProvider != "" {
-			fallbackBc = client.NewNimbusClient(fallbackProvider)
-		}
-	default:
-		primaryBc = client.NewStandardHttpClient(primaryProvider)
-		if fallbackProvider != "" {
-			fallbackBc = client.NewStandardHttpClient(fallbackProvider)
-		}
+	primaryBc = client.NewStandardHttpClient(primaryProvider)
+	if fallbackProvider != "" {
+		fallbackBc = client.NewStandardHttpClient(fallbackProvider)
 	}
 
 	return &BeaconClientManager{
