@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	legacyNodeBatchSize  int = 200
-	nodeAddressBatchSize int = 2000
+	legacyNodeBatchSize  int = 100
+	nodeAddressBatchSize int = 1000
 )
 
 // Complete details for a node
