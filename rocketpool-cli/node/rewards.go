@@ -59,28 +59,20 @@ func getRewards(c *cli.Context) error {
 			return nil
 		}
 
-		// Load the config file
-		cfg, _, err := rp.LoadConfig()
-		if err != nil {
-			return fmt.Errorf("error loading config: %w", err)
-		}
-
 		// Download the files
 		for _, missingInterval := range missingIntervals {
 			fmt.Printf("Downloading interval %d file... ", missingInterval.Index)
-			err := rprewards.DownloadRewardsFile(cfg, missingInterval.Index, missingInterval.CID, false)
+			_, err := rp.DownloadRewardsFile(missingInterval.Index)
 			if err != nil {
-				fmt.Println()
-				return err
+				return fmt.Errorf("error downloading rewards file for interval %d: %w", missingInterval.Index, err)
 			}
 			fmt.Println("done!")
 		}
 		for _, invalidInterval := range invalidIntervals {
 			fmt.Printf("Downloading interval %d file... ", invalidInterval.Index)
-			err := rprewards.DownloadRewardsFile(cfg, invalidInterval.Index, invalidInterval.CID, false)
+			_, err := rp.DownloadRewardsFile(invalidInterval.Index)
 			if err != nil {
-				fmt.Println()
-				return err
+				return fmt.Errorf("error downloading rewards file for interval %d: %w", invalidInterval.Index, err)
 			}
 			fmt.Println("done!")
 		}

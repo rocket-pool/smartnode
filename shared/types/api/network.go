@@ -76,3 +76,8 @@ type NetworkDAOProposalsResponse struct {
 	ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 }
+
+type DownloadRewardsFileResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}

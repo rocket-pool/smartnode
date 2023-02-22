@@ -155,6 +155,30 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "download-rewards-file",
+				Aliases:   []string{"drf"},
+				Usage:     "Download a rewards info file from IPFS for the given interval",
+				UsageText: "rocketpool api service download-rewards-file interval",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					interval, err := cliutils.ValidatePositiveUint("interval", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(downloadRewardsFile(c, interval))
+					return nil
+
+				},
+			},
 		},
 	})
 }

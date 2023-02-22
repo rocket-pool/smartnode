@@ -128,3 +128,19 @@ func (c *Client) GetActiveDAOProposals() (api.NetworkDAOProposalsResponse, error
 	}
 	return response, nil
 }
+
+// Download a rewards info file from IPFS for the given interval
+func (c *Client) DownloadRewardsFile(interval uint64) (api.DownloadRewardsFileResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("network download-rewards-file %d", interval))
+	if err != nil {
+		return api.DownloadRewardsFileResponse{}, fmt.Errorf("could not download rewards file: %w", err)
+	}
+	var response api.DownloadRewardsFileResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.DownloadRewardsFileResponse{}, fmt.Errorf("could not decode download-rewards-file response: %w", err)
+	}
+	if response.Error != "" {
+		return api.DownloadRewardsFileResponse{}, fmt.Errorf("error after downloading rewards file: %s", response.Error)
+	}
+	return response, nil
+}
