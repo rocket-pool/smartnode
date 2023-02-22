@@ -33,6 +33,7 @@ func purge(c *cli.Context) error {
 	// Purge
 	_, err = rp.Purge()
 	if err != nil {
+		fmt.Printf("%sTHERE WAS AN ERROR DELETING YOUR KEYS. They most likely have not been deleted. Proceed with caution.%s\n", colorRed, colorReset)
 		return err
 	}
 
