@@ -26,16 +26,10 @@ const (
 	ReleaseBinaryURL   string = "https://github.com/rocket-pool/smartnode-install/releases/download/v%s/rocketpool-cli-%s-%s"
 )
 
-func getHttpClientWithTimeout() *http.Client {
-	return &http.Client{
-		Timeout: time.Second * 5,
-	}
-}
-
 func checkSignature(signatureUrl string, pubkeyUrl string, verification_target *os.File) error {
 	pubkeyResponse, err := http.Get(pubkeyUrl)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while fetching public key: %w", err)
 	}
 	defer pubkeyResponse.Body.Close()
 	if pubkeyResponse.StatusCode != http.StatusOK {
@@ -48,7 +42,7 @@ func checkSignature(signatureUrl string, pubkeyUrl string, verification_target *
 
 	signatureResponse, err := http.Get(signatureUrl)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while fetching signature: %w", err)
 	}
 	defer signatureResponse.Body.Close()
 	if signatureResponse.StatusCode != http.StatusOK {
@@ -66,39 +60,94 @@ func checkSignature(signatureUrl string, pubkeyUrl string, verification_target *
 	return nil
 }
 
-// Update the Rocket Pool CLI
-func updateCLI(c *cli.Context) error {
-	// Check the latest version published to the Github repository
+func getHttpClientWithTimeout() *http.Client {
+	return &http.Client{
+		Timeout: time.Second * 5,
+	}
+}
+
+func getLatestRelease() (semver.Version, error) {
+	var latestVersion semver.Version
 	client := getHttpClientWithTimeout()
 	resp, err := client.Get(GithubAPIGetLatest)
 	if err != nil {
-		return err
+		return latestVersion, fmt.Errorf("error while fetching latest version: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("request failed with code %d", resp.StatusCode)
+		return latestVersion, fmt.Errorf("request failed with code %d", resp.StatusCode)
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return latestVersion, fmt.Errorf("error while reading Github API response: %w", err)
 	}
 	var apiResponse map[string]interface{}
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		return fmt.Errorf("could not decode Github API response: %w", err)
+		return latestVersion, fmt.Errorf("could not decode Github API response: %w", err)
 	}
-	var latestVersion semver.Version
-	if x, found := apiResponse["url"]; found {
+	if x, found := apiResponse["name"]; found {
 		var name string
 		var ok bool
 		if name, ok = x.(string); !ok {
-			return fmt.Errorf("unexpected Github API response format")
+			return latestVersion, fmt.Errorf("unexpected Github API response format")
 		}
 		latestVersion, err = semver.Make(strings.TrimLeft(name, "v"))
 		if err != nil {
-			return fmt.Errorf("could not parse version number from release name '%s': %w", name, err)
+			return latestVersion, fmt.Errorf("could not parse version number from release name '%s': %w", name, err)
 		}
 	} else {
-		return fmt.Errorf("unexpected Github API response format")
+		return latestVersion, fmt.Errorf("unexpected Github API response format")
+	}
+	return latestVersion, nil
+}
+
+func downloadRelease(version semver.Version, verify bool) (string, string, error) {
+	var ClientURL = fmt.Sprintf(ReleaseBinaryURL, version.String(), runtime.GOOS, runtime.GOARCH)
+	resp, err := http.Get(ClientURL)
+	if err != nil {
+		return "", "", fmt.Errorf("error while downloading %s: %w", ClientURL, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("request failed with code %d", resp.StatusCode)
+	}
+
+	ex, err := os.Executable()
+	if err != nil {
+		return "", "", fmt.Errorf("error while determining running rocketpool location: %w", err)
+	}
+	var rpBinDir = filepath.Dir(ex)
+	var fileName = filepath.Join(rpBinDir, "rocketpool-v"+version.String())
+	output, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return "", "", fmt.Errorf("error while creating %s: %w", fileName, err)
+	}
+	defer output.Close()
+
+	_, err = io.Copy(output, resp.Body)
+	if err != nil {
+		return "", "", fmt.Errorf("error while downloading %s: %w", ClientURL, err)
+	}
+
+	// Verify the signature of the downloaded binary
+	if verify {
+		var pubkeyUrl = fmt.Sprintf(SigningKeyURL, version.String())
+		output.Seek(0, io.SeekStart)
+		err = checkSignature(ClientURL+".sig", pubkeyUrl, output)
+		if err != nil {
+			return "", "", fmt.Errorf("error while verifying GPG signature: %w", err)
+		}
+	}
+	return fileName, ex, nil
+}
+
+// Update the Rocket Pool CLI
+func updateCLI(c *cli.Context) error {
+
+	// Check the latest version published to the Github repository
+	latestVersion, err := getLatestRelease()
+	if err != nil {
+		return fmt.Errorf("could not check latest version: %w", err)
 	}
 
 	// Check this version against the currently installed version
@@ -121,42 +170,10 @@ func updateCLI(c *cli.Context) error {
 		fmt.Printf("Forced update to v%s. Downloading...\n", latestVersion.String())
 	}
 
-	// Download the new binary to same folder as the running RP binary, as `rocketpool-vX.X.X`
-	var ClientURL = fmt.Sprintf(ReleaseBinaryURL, latestVersion.String(), runtime.GOOS, runtime.GOARCH)
-	resp, err = http.Get(ClientURL)
+	// Download the new binary to same folder as the running RP binary and check signature (unless skipped)
+	newFile, oldFile, err := downloadRelease(latestVersion, !c.Bool("skip-signature-verification"))
 	if err != nil {
-		return fmt.Errorf("error while downloading %s: %w", ClientURL, err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("request failed with code %d", resp.StatusCode)
-	}
-
-	ex, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("error while determining running rocketpool location: %w", err)
-	}
-	var rpBinDir = filepath.Dir(ex)
-	var fileName = filepath.Join(rpBinDir, "rocketpool-v"+latestVersion.String())
-	output, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-	if err != nil {
-		return fmt.Errorf("error while creating %s: %w", fileName, err)
-	}
-	defer output.Close()
-
-	_, err = io.Copy(output, resp.Body)
-	if err != nil {
-		return fmt.Errorf("error while downloading %s: %w", ClientURL, err)
-	}
-
-	// Verify the signature of the downloaded binary
-	if !c.Bool("skip-signature-verification") {
-		var pubkeyUrl = fmt.Sprintf(SigningKeyURL, latestVersion.String())
-		output.Seek(0, io.SeekStart)
-		err = checkSignature(ClientURL+".sig", pubkeyUrl, output)
-		if err != nil {
-			return fmt.Errorf("error while verifying GPG signature: %w", err)
-		}
+		return fmt.Errorf("error while downloading latest release: %w", err)
 	}
 
 	// Prompt for confirmation
@@ -166,11 +183,7 @@ func updateCLI(c *cli.Context) error {
 	}
 
 	// Do the switcheroo - move `rocketpool-vX.X.X` to the location of the current Rocketpool Client
-	err = os.Remove(ex)
-	if err != nil {
-		return fmt.Errorf("error while removing old rocketpool binary: %w", err)
-	}
-	err = os.Rename(fileName, ex)
+	err = os.Rename(newFile, oldFile)
 	if err != nil {
 		return fmt.Errorf("error while writing new rocketpool binary: %w", err)
 	}
