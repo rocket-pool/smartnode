@@ -357,7 +357,7 @@ func isOnOracleDAO(rp *rocketpool.RocketPool, nodeAddress common.Address, block 
 
 	nodeTrusted, err := trustednode.GetMemberExists(rp, nodeAddress, opts)
 	if err != nil {
-		return false, fmt.Errorf("error checking if node is in the Oracle DAO: %w", err)
+		return false, fmt.Errorf("error checking if node is in the Oracle DAO for Beacon block %d, EL block %d: %w", block.Slot, block.ExecutionBlockNumber, err)
 	}
 	return nodeTrusted, nil
 }

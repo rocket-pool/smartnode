@@ -452,15 +452,15 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		polygonPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet:  "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
-			config.Network_Prater:   "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
-			config.Network_Devnet:   "",
+			config.Network_Prater:   "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
+			config.Network_Devnet:   "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
 			config.Network_Zhejiang: "",
 		},
 
 		arbitrumPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet:  "0x05330300f829AD3fC8f33838BC88CFC4093baD53",
-			config.Network_Prater:   "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
-			config.Network_Devnet:   "",
+			config.Network_Prater:   "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
+			config.Network_Devnet:   "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
 			config.Network_Zhejiang: "",
 		},
 
