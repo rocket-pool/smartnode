@@ -49,22 +49,6 @@ func importKey(c *cli.Context, minipoolAddress common.Address) error {
 	success := migration.ImportKey(c, rp, minipoolAddress, mnemonic)
 	if !success {
 		fmt.Println("Importing the key failed.\nYou can try again later by using `rocketpool minipool import-key`.")
-		return nil
-	}
-
-	// Restart the VC if necessary
-	if c.Bool("no-restart") {
-		return nil
-	}
-	if c.Bool("yes") || cliutils.Confirm("Would you like to restart the Smartnode's Validator Client now so it loads your validator's key?") {
-		// Restart the VC
-		fmt.Print("Restarting Validator Client... ")
-		_, err := rp.RestartVc()
-		if err != nil {
-			fmt.Printf("failed!\n%sWARNING: error restarting validator client: %s\n\nPlease restart it manually so it picks up the new validator key for your minipool.%s", colorYellow, err.Error(), colorReset)
-			return nil
-		}
-		fmt.Println("done!\n")
 	}
 
 	return nil
