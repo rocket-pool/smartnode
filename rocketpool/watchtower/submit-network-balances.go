@@ -401,8 +401,10 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	}
 
 	// Add node credits
-	for _, node := range state.NodeDetails {
-		balances.NodeCreditBalance.Add(balances.NodeCreditBalance, node.DepositCreditBalance)
+	if state.IsAtlasDeployed {
+		for _, node := range state.NodeDetails {
+			balances.NodeCreditBalance.Add(balances.NodeCreditBalance, node.DepositCreditBalance)
+		}
 	}
 
 	// Add distributor shares
