@@ -77,6 +77,11 @@ type NetworkDAOProposalsResponse struct {
 	ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 }
 
+type DownloadRewardsFileResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
+
 type IsAtlasDeployedResponse struct {
 	Status          string `json:"status"`
 	Error           string `json:"error"`
