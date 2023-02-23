@@ -195,8 +195,7 @@ func delegateRollbackMinipools(c *cli.Context) error {
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanDelegateRollbackMinipool(minipool)
 		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for rollback transaction (%s)", err)
-			break
+			return fmt.Errorf("error checking if minipool %s could be rolled back: %w", minipool.Hex(), err)
 		} else {
 			fmt.Printf("Minipool %s will roll back to delegate contract %s.\n", minipool.Hex(), canResponse.RollbackAddress.Hex())
 			gasInfo = canResponse.GasInfo

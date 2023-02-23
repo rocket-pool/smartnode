@@ -448,7 +448,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 		}
 	}
 
-	// "Broken" LEBs with the Redstone delegates report 32 minus their node deposit balance
+	// "Broken" LEBs with the Redstone delegates report their total balance minus their node deposit balance
 	if mpd.DepositType == rptypes.Variable && mpd.Version == 2 {
 		brokenBalance := big.NewInt(0).Set(mpd.Balance)
 		brokenBalance.Add(brokenBalance, eth.GweiToWei(float64(validator.Balance)))
