@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -587,6 +588,19 @@ func GetMinipoolRPLSlashed(rp *rocketpool.RocketPool, minipoolAddress common.Add
 		return false, fmt.Errorf("Could not get minipool %s slashed status: %w", minipoolAddress.Hex(), err)
 	}
 	return *value, nil
+}
+
+// Get a minipool's deposit type invariant of its delegate version
+func GetMinipoolDepositType(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (types.MinipoolDeposit, error) {
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
+	if err != nil {
+		return types.None, err
+	}
+	value := new(uint8)
+	if err := rocketMinipoolManager.Call(opts, value, "getMinipoolDepositType", minipoolAddress); err != nil {
+		return types.None, fmt.Errorf("Could not get minipool %s slashed status: %w", minipoolAddress.Hex(), err)
+	}
+	return types.MinipoolDeposit(*value), nil
 }
 
 // Get contracts
