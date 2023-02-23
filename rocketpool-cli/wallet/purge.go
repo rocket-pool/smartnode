@@ -31,10 +31,10 @@ func purge(c *cli.Context) error {
 	}
 
 	fmt.Printf("Deleted the node wallet and all validator keys.\n**Please verify that the keys have been removed by looking at your validator logs before continuing.**\n\n")
-	fmt.Printf("%sWARNING: If you intend to use these keys for validating again on this or any other machine, you must wait **at least fifteen minutes** after running this command before you can safely begin validating with them again.\nFailure to wait **could cause you to be slashed!**%s\n", colorYellow, colorReset)
+	fmt.Printf("%sWARNING: If you intend to use these keys for validating again on this or any other machine, you must wait **at least fifteen minutes** after running this command before you can safely begin validating with them again.\nFailure to wait **could cause you to be slashed!**%s\n\n", colorYellow, colorReset)
 
 	// Warn about Reverse Hybrid
-	fmt.Printf("%sNOTE: If you have an externally managed validator client attached to your node (\"reverse hybrid\" mod), those keys *have not been deleted by this process.*%s\n\n", colorYellow, colorReset)
+	fmt.Printf("%sNOTE: If you have an externally managed validator client attached to your node (\"reverse hybrid\" mode), those keys *have not been deleted by this process.*%s\n\n", colorYellow, colorReset)
 	return nil
 
 }

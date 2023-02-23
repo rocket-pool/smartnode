@@ -1150,7 +1150,7 @@ func terminateService(c *cli.Context) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w\n%sTHERE WAS AN ERROR TERMINATING THE SMARTNODE SERVICE. Your keys have most likely not been deleted. Proceed with caution.%s", err, colorRed, colorReset)
 	}
 	defer rp.Close()
 
