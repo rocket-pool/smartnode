@@ -448,6 +448,18 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 		}
 	}
 
+	// "Broken" LEBs with the Redstone delegates report 32 minus their node deposit balance
+	if mpd.DepositType == rptypes.Variable && mpd.Version == 2 {
+		brokenBalance := big.NewInt(0).Set(mpd.Balance)
+		brokenBalance.Add(brokenBalance, eth.GweiToWei(float64(validator.Balance)))
+		brokenBalance.Sub(brokenBalance, mpd.NodeRefundBalance)
+		brokenBalance.Sub(brokenBalance, mpd.NodeDepositBalance)
+		return minipoolBalanceDetails{
+			IsStaking:   (validator.Exists && validator.ActivationEpoch < blockEpoch && validator.ExitEpoch > blockEpoch),
+			UserBalance: brokenBalance,
+		}
+	}
+
 	// Use user deposit balance if validator not yet active on beacon chain at block
 	if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
 		return minipoolBalanceDetails{
