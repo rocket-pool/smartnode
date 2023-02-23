@@ -209,7 +209,11 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	})
 	wg.Go(func() error {
 		var err error
-		details.DepositType, err = mp.GetDepositType(nil)
+		if !isAtlasDeployed {
+			details.DepositType, err = mp.GetDepositType(nil)
+		} else {
+			details.DepositType, err = minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
+		}
 		return err
 	})
 	wg.Go(func() error {
