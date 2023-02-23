@@ -124,12 +124,6 @@ func (configPage *ConsensusConfigPage) createContent() {
 			return
 		}
 		configPage.masterConfig.ConsensusClient.Value = configPage.masterConfig.ConsensusClient.Options[index].Value
-		switch configPage.masterConfig.ConsensusClient.Value.(cfgtypes.ConsensusClient) {
-		case cfgtypes.ConsensusClient_Lodestar:
-			// Temp until Lodestar support fallbacks
-			configPage.home.md.Config.UseFallbackClients.Value = false
-			configPage.home.refresh()
-		}
 		configPage.handleLocalCcChanged()
 	})
 	configPage.externalCcDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {

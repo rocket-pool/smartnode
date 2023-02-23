@@ -42,15 +42,7 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 		case cfgtypes.ConsensusClient_Prysm:
 			wiz.md.Config.ExternalPrysm.DoppelgangerDetection.Value = ddEnabled
 		}
-		cc, _ := wiz.md.Config.GetSelectedConsensusClient()
-		switch cc {
-		case cfgtypes.ConsensusClient_Lodestar:
-			// Temp until Lodestar support fallback clients
-			wiz.md.Config.UseFallbackClients.Value = false
-			wiz.metricsModal.show()
-		default:
-			wiz.useFallbackModal.show()
-		}
+		wiz.useFallbackModal.show()
 	}
 
 	back := func() {
