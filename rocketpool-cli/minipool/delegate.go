@@ -276,7 +276,7 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
 			for mi, minipool := range minipools {
 				options[mi+1] = fmt.Sprintf("%s (using delegate %s)", minipool.Address.Hex(), minipool.Delegate.Hex())
 			}
-			selected, _ := cliutils.Select("Please select a minipool to upgrade:", options)
+			selected, _ := cliutils.Select("Please select a minipool to change the flag for:", options)
 
 			// Get minipools
 			if selected == 0 {
@@ -303,8 +303,7 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanSetUseLatestDelegateMinipool(minipool, setting)
 		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for auto-upgrade setting transaction (%s)", err)
-			break
+			return fmt.Errorf("error checking if minipool %s could have its use-latest-delegate flag changed: %w", minipool.Hex(), err)
 		} else {
 			gasInfo = canResponse.GasInfo
 			totalGas += canResponse.GasInfo.EstGasLimit
