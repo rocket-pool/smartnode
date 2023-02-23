@@ -645,6 +645,41 @@ func (c *Client) StopService(composeFiles []string) error {
 	return c.printOutput(cmd)
 }
 
+// Stop the Rocket Pool service and remove the config folder
+func (c *Client) TerminateService(composeFiles []string, configPath string) error {
+	// Get the command to run with root privileges
+	rootCmd, err := c.getEscalationCommand()
+	if err != nil {
+		return fmt.Errorf("could not get privilege escalation command: %w", err)
+	}
+
+	// Terminate the Docker containers
+	cmd, err := c.compose(composeFiles, "down -v")
+	if err != nil {
+		return fmt.Errorf("error creating Docker artifact removal command: %w", err)
+	}
+	err = c.printOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error removing Docker artifacts: %w", err)
+	}
+
+	// Delete the RP directory
+	path, err := homedir.Expand(configPath)
+	if err != nil {
+		return fmt.Errorf("error loading Rocket Pool directory: %w", err)
+	}
+	fmt.Printf("Deleting Rocket Pool directory (%s)...\n", path)
+	cmd = fmt.Sprintf("%s rm -rf %s", rootCmd, path)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting Rocket Pool directory: %w", err)
+	}
+
+	fmt.Println("Termination complete.")
+
+	return nil
+}
+
 // Print the Rocket Pool service status
 func (c *Client) PrintServiceStatus(composeFiles []string) error {
 	cmd, err := c.compose(composeFiles, "ps")
