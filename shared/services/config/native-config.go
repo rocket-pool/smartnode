@@ -60,7 +60,7 @@ func NewNativeConfig(cfg *RocketPoolConfig) *NativeConfig {
 				Value:       config.ConsensusClient_Lighthouse,
 			}, {
 				Name:        "Lodestar",
-				Description: "<Insert description here>",
+				Description: "Lodestar is the fifth open-source Ethereum consensus client. It is written in Typescript maintained by ChainSafe Systems. Lodestar, their flagship product, is a production-capable Beacon Chain and Validator Client uniquely situated as the go-to for researchers and developers for rapid prototyping and browser usage.",
 				Value:       config.ConsensusClient_Lodestar,
 			}, {
 				Name:        "Nimbus",

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -11,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -139,7 +141,17 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 			response.EffectiveRplStaked = eth.WeiToEth(effectiveStaked)
 			return nil
 		} else {
-			// TODO once the getter is done
+			multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+			balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+			contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, nil)
+			if err != nil {
+				return fmt.Errorf("error getting network contracts: %w", err)
+			}
+			totalEffectiveStake, err := rpstate.GetTotalEffectiveRplStake(rp, contracts)
+			if err != nil {
+				return fmt.Errorf("error getting total effective stake: %w", err)
+			}
+			response.EffectiveRplStaked = eth.WeiToEth(totalEffectiveStake)
 			return nil
 		}
 	})

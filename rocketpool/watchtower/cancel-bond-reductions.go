@@ -143,7 +143,8 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 	}
 
 	// Check the status of each one
-	threshold := uint64(32000000000)
+	buffer := uint64(1000000) // 0.001 ETH
+	threshold := uint64(32000000000) - buffer
 	for _, mpd := range reductionMps {
 		validator := state.ValidatorDetails[mpd.Pubkey]
 		if validator.Exists {
