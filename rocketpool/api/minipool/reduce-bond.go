@@ -27,6 +27,10 @@ func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, ne
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.CanBeginReduceBondAmountResponse{}
@@ -45,7 +49,22 @@ func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, ne
 	}
 	response.MinipoolVersionTooLow = (version < 3)
 
-	response.CanReduce = !(response.BondReductionDisabled || response.MinipoolVersionTooLow)
+	// Check the balance on Beacon
+	pubkey, err := minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving pubkey for minipool %s: %w", minipoolAddress.Hex(), err)
+	}
+	status, err := bc.GetValidatorStatus(pubkey, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting validator status for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), pubkey.Hex(), err)
+	}
+	response.Balance = status.Balance
+
+	// Make sure the balance is high enough
+	threshold := uint64(32000000000)
+	response.BalanceTooLow = status.Balance < threshold
+
+	response.CanReduce = !(response.BondReductionDisabled || response.MinipoolVersionTooLow || response.BalanceTooLow)
 
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()

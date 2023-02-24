@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 	"github.com/urfave/cli"
 )
 
@@ -143,6 +144,9 @@ func beginReduceBondAmount(c *cli.Context) error {
 				}
 				if canResponse.MinipoolVersionTooLow {
 					fmt.Println("The minipool version is too low. It must be upgraded first using `rocketpool minipool delegate-upgrade`.")
+				}
+				if canResponse.BalanceTooLow {
+					fmt.Printf("The minipool's validator balance on the Beacon Chain is too low (must be 32 ETH or higher, currently %.6f ETH).\n", math.RoundDown(float64(canResponse.Balance)/1e9, 6))
 				}
 				return nil
 			}
