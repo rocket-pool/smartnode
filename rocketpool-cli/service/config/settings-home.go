@@ -77,14 +77,11 @@ func (home *settingsHome) createContent() {
 	// Create the category list
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-			if mainText == home.fallbackPage.page.title {
-				// Temp block of Lodestar for the fallback page until it supports fallback
-				cc, _ := home.md.Config.GetSelectedConsensusClient()
-				switch cc {
-				case cfgtypes.ConsensusClient_Lodestar:
-					layout.descriptionBox.SetText("You have Lodestar selected for your Consensus client.\n\nLodestar does not support fallback clients at this time, so this option is disabled.")
-					return
-				}
+			if mainText == home.mevBoostPage.page.title &&
+				home.md.Config.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Zhejiang {
+				// Disable MEV-Boost on Zhejiang
+				layout.descriptionBox.SetText("MEV-Boost is not available on Zhejiang.")
+				return
 			}
 			layout.descriptionBox.SetText(home.settingsSubpages[index].getPage().description)
 		})
@@ -106,13 +103,10 @@ func (home *settingsHome) createContent() {
 		categoryList.AddItem(subpage.getPage().title, "", 0, nil)
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
-		if s1 == home.fallbackPage.page.title {
-			// Temp block of Lodestar for the fallback page until it supports fallback
-			cc, _ := home.md.Config.GetSelectedConsensusClient()
-			switch cc {
-			case cfgtypes.ConsensusClient_Lodestar:
-				return
-			}
+		if s1 == home.mevBoostPage.page.title &&
+			home.md.Config.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Zhejiang {
+			// Disable MEV-Boost on Zhejiang
+			return
 		}
 		home.settingsSubpages[i].handleLayoutChanged()
 		home.md.setPage(home.settingsSubpages[i].getPage())
