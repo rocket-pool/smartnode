@@ -24,7 +24,7 @@ require (
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
-	github.com/prysmaticlabs/prysm/v3 v3.2.0
+	github.com/prysmaticlabs/prysm/v3 v3.2.1
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
 	github.com/rocket-pool/rocketpool-go v1.10.1-0.20230224043504-42ad09c17d82
 	github.com/sethvargo/go-password v0.2.0
