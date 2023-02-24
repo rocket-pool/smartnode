@@ -98,6 +98,19 @@ func GetLastBondReductionPrevValue(rp *rocketpool.RocketPool, minipoolAddress co
 	return *lastBondReductionPrevValue, nil
 }
 
+// Gets the previous node fee (commission) of the minipool prior to its last reduction
+func GetLastBondReductionPrevNodeFee(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	lastBondReductionPrevNodeFee := new(*big.Int)
+	if err := rocketMinipoolBondReducer.Call(opts, lastBondReductionPrevNodeFee, "getLastBondReductionPrevNodeFee", minipoolAddress); err != nil {
+		return nil, fmt.Errorf("Could not get last bond reduction previous node fee for minipool %s: %w", minipoolAddress.Hex(), err)
+	}
+	return *lastBondReductionPrevNodeFee, nil
+}
+
 // Estimate the gas required to begin a minipool bond reduction
 func EstimateBeginReduceBondAmountGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, newBondAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketMinipoolBondReducer, err := getRocketMinipoolBondReducer(rp, nil)

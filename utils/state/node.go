@@ -20,31 +20,31 @@ const (
 
 // Complete details for a node
 type NativeNodeDetails struct {
-	Exists                           bool           `abi:"exists"`
-	RegistrationTime                 *big.Int       `abi:"registrationTime"`
-	TimezoneLocation                 string         `abi:"timezoneLocation"`
-	FeeDistributorInitialised        bool           `abi:"feeDistributorInitialised"`
-	FeeDistributorAddress            common.Address `abi:"feeDistributorAddress"`
-	RewardNetwork                    *big.Int       `abi:"rewardNetwork"`
-	RplStake                         *big.Int       `abi:"rplStake"`
-	EffectiveRPLStake                *big.Int       `abi:"effectiveRPLStake"`
-	MinimumRPLStake                  *big.Int       `abi:"minimumRPLStake"`
-	MaximumRPLStake                  *big.Int       `abi:"maximumRPLStake"`
-	EthMatched                       *big.Int       `abi:"ethMatched"`
-	EthMatchedLimit                  *big.Int       `abi:"ethMatchedLimit"`
-	MinipoolCount                    *big.Int       `abi:"minipoolCount"`
-	BalanceETH                       *big.Int       `abi:"balanceETH"`
-	BalanceRETH                      *big.Int       `abi:"balanceRETH"`
-	BalanceRPL                       *big.Int       `abi:"balanceRPL"`
-	BalanceOldRPL                    *big.Int       `abi:"balanceOldRPL"`
-	DepositCreditBalance             *big.Int       `abi:"depositCreditBalance"`
-	DistributorBalanceUserETH        *big.Int       `abi:"distributorBalanceUserETH"`
-	DistributorBalanceNodeETH        *big.Int       `abi:"distributorBalanceNodeETH"`
-	WithdrawalAddress                common.Address `abi:"withdrawalAddress"`
-	PendingWithdrawalAddress         common.Address `abi:"pendingWithdrawalAddress"`
-	SmoothingPoolRegistrationState   bool           `abi:"smoothingPoolRegistrationState"`
-	SmoothingPoolRegistrationChanged *big.Int       `abi:"smoothingPoolRegistrationChanged"`
-	NodeAddress                      common.Address `abi:"nodeAddress"`
+	Exists                           bool
+	RegistrationTime                 *big.Int
+	TimezoneLocation                 string
+	FeeDistributorInitialised        bool
+	FeeDistributorAddress            common.Address
+	RewardNetwork                    *big.Int
+	RplStake                         *big.Int
+	EffectiveRPLStake                *big.Int
+	MinimumRPLStake                  *big.Int
+	MaximumRPLStake                  *big.Int
+	EthMatched                       *big.Int
+	EthMatchedLimit                  *big.Int
+	MinipoolCount                    *big.Int
+	BalanceETH                       *big.Int
+	BalanceRETH                      *big.Int
+	BalanceRPL                       *big.Int
+	BalanceOldRPL                    *big.Int
+	DepositCreditBalance             *big.Int
+	DistributorBalanceUserETH        *big.Int
+	DistributorBalanceNodeETH        *big.Int
+	WithdrawalAddress                common.Address
+	PendingWithdrawalAddress         common.Address
+	SmoothingPoolRegistrationState   bool
+	SmoothingPoolRegistrationChanged *big.Int
+	NodeAddress                      common.Address
 }
 
 // Gets the details for a node using the efficient multicall contract

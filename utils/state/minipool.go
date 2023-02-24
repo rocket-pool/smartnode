@@ -24,48 +24,49 @@ const (
 // Complete details for a minipool
 type NativeMinipoolDetails struct {
 	// Redstone
-	Exists                            bool                  `abi:"exists"`
-	MinipoolAddress                   common.Address        `abi:"minipoolAddress"`
-	Pubkey                            types.ValidatorPubkey `abi:"pubkey"`
-	StatusRaw                         uint8                 `abi:"status"`
-	StatusBlock                       *big.Int              `abi:"statusBlock"`
-	StatusTime                        *big.Int              `abi:"statusTime"`
-	Finalised                         bool                  `abi:"finalised"`
-	DepositTypeRaw                    uint8                 `abi:"depositType"`
-	NodeFee                           *big.Int              `abi:"nodeFee"`
-	NodeDepositBalance                *big.Int              `abi:"nodeDepositBalance"`
-	NodeDepositAssigned               bool                  `abi:"nodeDepositAssigned"`
-	UserDepositBalance                *big.Int              `abi:"userDepositBalance"`
-	UserDepositAssigned               bool                  `abi:"userDepositAssigned"`
-	UserDepositAssignedTime           *big.Int              `abi:"userDepositAssignedTime"`
-	UseLatestDelegate                 bool                  `abi:"useLatestDelegate"`
-	Delegate                          common.Address        `abi:"delegate"`
-	PreviousDelegate                  common.Address        `abi:"previousDelegate"`
-	EffectiveDelegate                 common.Address        `abi:"effectiveDelegate"`
-	PenaltyCount                      *big.Int              `abi:"penaltyCount"`
-	PenaltyRate                       *big.Int              `abi:"penaltyRate"`
-	NodeAddress                       common.Address        `abi:"nodeAddress"`
-	Version                           uint8                 `abi:"delegateVersion"`
-	Balance                           *big.Int              `abi:"balance"`   // Contract balance
-	NodeShareOfBalance                *big.Int              `abi:"nodeShare"` // Result of calculateNodeShare(contract balance)
-	UserShareOfBalance                *big.Int              `abi:"userShare"` // Result of calculateUserShare(contract balance)
-	NodeRefundBalance                 *big.Int              `abi:"nodeRefundBalance"`
-	WithdrawalCredentials             common.Hash           `abi:"withdrawalCredentials"`
+	Exists                            bool
+	MinipoolAddress                   common.Address
+	Pubkey                            types.ValidatorPubkey
+	StatusRaw                         uint8
+	StatusBlock                       *big.Int
+	StatusTime                        *big.Int
+	Finalised                         bool
+	DepositTypeRaw                    uint8
+	NodeFee                           *big.Int
+	NodeDepositBalance                *big.Int
+	NodeDepositAssigned               bool
+	UserDepositBalance                *big.Int
+	UserDepositAssigned               bool
+	UserDepositAssignedTime           *big.Int
+	UseLatestDelegate                 bool
+	Delegate                          common.Address
+	PreviousDelegate                  common.Address
+	EffectiveDelegate                 common.Address
+	PenaltyCount                      *big.Int
+	PenaltyRate                       *big.Int
+	NodeAddress                       common.Address
+	Version                           uint8
+	Balance                           *big.Int // Contract balance
+	NodeShareOfBalance                *big.Int // Result of calculateNodeShare(contract balance)
+	UserShareOfBalance                *big.Int // Result of calculateUserShare(contract balance)
+	NodeRefundBalance                 *big.Int
+	WithdrawalCredentials             common.Hash
 	Status                            types.MinipoolStatus
 	DepositType                       types.MinipoolDeposit
 	NodeShareOfBalanceIncludingBeacon *big.Int // Must call CalculateCompleteMinipoolShares to get this
 	UserShareOfBalanceIncludingBeacon *big.Int // Must call CalculateCompleteMinipoolShares to get this
 
 	// Atlas
-	UserDistributed            bool     `abi:"userDistributed"`
-	Slashed                    bool     `abi:"slashed"`
-	IsVacant                   bool     `abi:"vacant"`
-	LastBondReductionTime      *big.Int `abi:"lastBondReductionTime"`
-	LastBondReductionPrevValue *big.Int `abi:"lastBondReductionPrevValue"`
-	ReduceBondTime             *big.Int `abi:"reduceBondTime"`
-	ReduceBondCancelled        bool     `abi:"reduceBondCancelled"`
-	ReduceBondValue            *big.Int `abi:"reduceBondValue"`
-	PreMigrationBalance        *big.Int `abi:"preMigrationBalance"`
+	UserDistributed              bool
+	Slashed                      bool
+	IsVacant                     bool
+	LastBondReductionTime        *big.Int
+	LastBondReductionPrevValue   *big.Int
+	LastBondReductionPrevNodeFee *big.Int
+	ReduceBondTime               *big.Int
+	ReduceBondCancelled          bool
+	ReduceBondValue              *big.Int
+	PreMigrationBalance          *big.Int
 }
 
 // Gets the details for a minipool using the efficient multicall contract
@@ -472,6 +473,7 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 		details.UserDistributed = false
 		details.LastBondReductionTime = big.NewInt(0)
 		details.LastBondReductionPrevValue = big.NewInt(0)
+		details.LastBondReductionPrevNodeFee = big.NewInt(0)
 		details.IsVacant = false
 		details.ReduceBondTime = big.NewInt(0)
 		details.ReduceBondCancelled = false
@@ -487,6 +489,7 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.ReduceBondCancelled, "getReduceBondCancelled", address)
 		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.LastBondReductionTime, "getLastBondReductionTime", address)
 		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.LastBondReductionPrevValue, "getLastBondReductionPrevValue", address)
+		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.LastBondReductionPrevNodeFee, "getLastBondReductionPrevNodeFee", address)
 		mc.AddCall(contracts.RocketMinipoolBondReducer, &details.ReduceBondValue, "getReduceBondValue", address)
 	}
 
