@@ -132,7 +132,10 @@ func downloadRelease(version semver.Version, verify bool) (string, string, error
 	// Verify the signature of the downloaded binary
 	if verify {
 		var pubkeyUrl = fmt.Sprintf(SigningKeyURL, version.String())
-		output.Seek(0, io.SeekStart)
+		_, err = output.Seek(0, io.SeekStart)
+		if err != nil {
+			return "", "", fmt.Errorf("error while seeking in %s: %w", fileName, err)
+		}
 		err = checkSignature(ClientURL+".sig", pubkeyUrl, output)
 		if err != nil {
 			return "", "", fmt.Errorf("error while verifying GPG signature: %w", err)
