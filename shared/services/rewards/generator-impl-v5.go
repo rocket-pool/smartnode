@@ -53,11 +53,13 @@ type treeGeneratorImpl_v5 struct {
 	validatorStatusMap     map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
 	totalAttestationScore  *big.Int
 	successfulAttestations uint64
+	zero                   *big.Int
 }
 
 // Create a new tree generator
 func newTreeGeneratorImpl_v5(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v5 {
 	return &treeGeneratorImpl_v5{
+		zero: big.NewInt(0),
 		rewardsFile: &RewardsFile{
 			RewardsFileVersion: 1,
 			RulesetVersion:     5,
@@ -202,8 +204,7 @@ func (r *treeGeneratorImpl_v5) generateMerkleTree() error {
 	totalData := make([][]byte, 0, len(r.rewardsFile.NodeRewards))
 	for address, rewardsForNode := range r.rewardsFile.NodeRewards {
 		// Ignore nodes that didn't receive any rewards
-		zero := big.NewInt(0)
-		if rewardsForNode.CollateralRpl.Cmp(zero) == 0 && rewardsForNode.OracleDaoRpl.Cmp(zero) == 0 && rewardsForNode.SmoothingPoolEth.Cmp(zero) == 0 {
+		if rewardsForNode.CollateralRpl.Cmp(r.zero) == 0 && rewardsForNode.OracleDaoRpl.Cmp(r.zero) == 0 && rewardsForNode.SmoothingPoolEth.Cmp(r.zero) == 0 {
 			continue
 		}
 
@@ -327,7 +328,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 		nodeRplRewards.Div(nodeRplRewards, totalNodeEffectiveStake)
 
 		// If there are pending rewards, add it to the map
-		if nodeRplRewards.Cmp(big.NewInt(0)) == 1 {
+		if nodeRplRewards.Cmp(r.zero) == 1 {
 			rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeDetails.NodeAddress]
 			if !exists {
 				// Get the network the rewards should go to
@@ -505,7 +506,7 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 	r.log.Printlnf("%s Smoothing Pool Balance: %s (%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
 
 	// Ignore the ETH calculation if there are no rewards
-	if r.smoothingPoolBalance.Cmp(big.NewInt(0)) == 0 {
+	if r.smoothingPoolBalance.Cmp(r.zero) == 0 {
 		return nil
 	}
 
@@ -574,7 +575,7 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 
 	// Update the rewards maps
 	for _, nodeInfo := range r.nodeDetails {
-		if nodeInfo.IsEligible && nodeInfo.SmoothingPoolEth.Cmp(big.NewInt(0)) > 0 {
+		if nodeInfo.IsEligible && nodeInfo.SmoothingPoolEth.Cmp(r.zero) > 0 {
 			rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeInfo.Address]
 			if !exists {
 				network := nodeInfo.RewardsNetwork
@@ -836,8 +837,7 @@ func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.Attestat
 
 						// Get the pseudoscore for this attestation
 						details := r.networkState.MinipoolDetailsByAddress[validator.Address]
-						bond := r.getMinipoolBond(details, blockTime)
-						fee := details.NodeFee
+						bond, fee := r.getMinipoolBondAndNodeFee(details, blockTime)
 						minipoolScore := big.NewInt(0).Sub(one, fee)   // 1 - fee
 						minipoolScore.Mul(minipoolScore, bond)         // Multiply by bond
 						minipoolScore.Div(minipoolScore, validatorReq) // Divide by 32 to get the bond as a fraction of a total validator
@@ -1114,22 +1114,28 @@ func (r *treeGeneratorImpl_v5) getStartBlocksForInterval(previousIntervalEvent r
 	return startElHeader, nil
 }
 
-// Get the bond of a minipool for the specified time
-func (r *treeGeneratorImpl_v5) getMinipoolBond(details *rpstate.NativeMinipoolDetails, blockTime time.Time) *big.Int {
+// Get the bond and node fee of a minipool for the specified time
+func (r *treeGeneratorImpl_v5) getMinipoolBondAndNodeFee(details *rpstate.NativeMinipoolDetails, blockTime time.Time) (*big.Int, *big.Int) {
 	currentBond := details.NodeDepositBalance
-	var previousBond *big.Int = details.LastBondReductionPrevValue
+	currentFee := details.NodeFee
+	previousBond := details.LastBondReductionPrevValue
+	previousFee := details.LastBondReductionPrevNodeFee
 
 	var reductionTimeBig *big.Int = details.LastBondReductionTime
-	if reductionTimeBig.Cmp(big.NewInt(0)) == 0 {
+	if reductionTimeBig.Cmp(r.zero) == 0 {
 		// Never reduced
-		return currentBond
+		return currentBond, currentFee
 	} else {
 		reductionTime := time.Unix(reductionTimeBig.Int64(), 0)
 		if reductionTime.Sub(blockTime) > 0 {
 			// This block occurred before the reduction
-			return previousBond
+			if previousFee.Cmp(r.zero) == 0 {
+				// Catch for Zhejiang minipools that were created before this call existed
+				return previousBond, currentFee
+			}
+			return previousBond, previousFee
 		}
 	}
 
-	return currentBond
+	return currentBond, currentFee
 }
