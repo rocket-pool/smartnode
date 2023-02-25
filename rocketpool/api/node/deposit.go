@@ -184,10 +184,14 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	}
 
 	// Get how much credit to use
-	remainingAmount := big.NewInt(0).Sub(amountWei, response.CreditBalance)
-	if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-		// Assign the TX value to the amount required by the node
-		opts.Value = remainingAmount
+	if response.CanUseCredit {
+		remainingAmount := big.NewInt(0).Sub(amountWei, response.CreditBalance)
+		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
+			// Send the remaining amount if the credit isn't enough to cover the whole deposit
+			opts.Value = remainingAmount
+		}
+	} else {
+		opts.Value = amountWei
 	}
 
 	// Get the next validator key
@@ -554,10 +558,14 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Get how much credit to use
-	remainingAmount := big.NewInt(0).Sub(amountWei, creditBalanceWei)
-	if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-		// Assign the TX value to the amount required by the node
-		opts.Value = remainingAmount
+	if useCreditBalance {
+		remainingAmount := big.NewInt(0).Sub(amountWei, creditBalanceWei)
+		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
+			// Send the remaining amount if the credit isn't enough to cover the whole deposit
+			opts.Value = remainingAmount
+		}
+	} else {
+		opts.Value = amountWei
 	}
 
 	// Create and save a new validator key
