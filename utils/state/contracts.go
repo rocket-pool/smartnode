@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
@@ -57,6 +58,17 @@ type contractArtifacts struct {
 
 // Get a new network contracts container
 func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) (*NetworkContracts, error) {
+	// Get the latest block number if it's not provided
+	if opts == nil {
+		latestElBlock, err := rp.Client.BlockNumber(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("error getting latest block number: %w", err)
+		}
+		opts = &bind.CallOpts{
+			BlockNumber: big.NewInt(0).SetUint64(latestElBlock),
+		}
+	}
+
 	// Create the contract binding
 	contracts := &NetworkContracts{
 		RocketStorage: rp.RocketStorageContract,
