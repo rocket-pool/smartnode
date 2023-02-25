@@ -182,6 +182,10 @@ func updateCLI(c *cli.Context) error {
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to update? Current Rocketpool Client will be replaced.")) {
 		fmt.Println("Cancelled.")
+		err = os.Remove(newFile)
+		if err != nil {
+			return fmt.Errorf("error while cleaning up downloaded file: %w", err)
+		}
 		return nil
 	}
 
