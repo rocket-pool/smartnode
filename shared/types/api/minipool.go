@@ -303,6 +303,7 @@ type CanBeginReduceBondAmountResponse struct {
 	MinipoolVersionTooLow bool               `json:"minipoolVersionTooLow"`
 	Balance               uint64             `json:"balance"`
 	BalanceTooLow         bool               `json:"balanceTooLow"`
+	InsufficientRplStake  bool               `json:"insufficientRplStake"`
 	CanReduce             bool               `json:"canReduce"`
 	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
 }

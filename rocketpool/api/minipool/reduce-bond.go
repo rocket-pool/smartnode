@@ -6,12 +6,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 )
 
 func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, newBondAmountWei *big.Int) (*api.CanBeginReduceBondAmountResponse, error) {
@@ -35,36 +37,97 @@ func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, ne
 	// Response
 	response := api.CanBeginReduceBondAmountResponse{}
 
-	// Check if bond reduction is enabled
-	bondReductionEnabled, err := protocol.GetBondReductionEnabled(rp, nil)
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
 	}
-	response.BondReductionDisabled = !bondReductionEnabled
+
+	// Data
+	var wg errgroup.Group
+	var ethMatched *big.Int
+	var ethMatchedLimit *big.Int
+	var nodeDepositAmount *big.Int
+
+	// Check if bond reduction is enabled
+	wg.Go(func() error {
+		bondReductionEnabled, err := protocol.GetBondReductionEnabled(rp, nil)
+		if err != nil {
+			return fmt.Errorf("error checking if bond reduction is enabled: %w", err)
+		}
+		response.BondReductionDisabled = !bondReductionEnabled
+		return nil
+	})
 
 	// Check the minipool version
-	version, err := rocketpool.GetContractVersion(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting minipool %s contract version: %w", minipoolAddress.Hex(), err)
-	}
-	response.MinipoolVersionTooLow = (version < 3)
+	wg.Go(func() error {
+		version, err := rocketpool.GetContractVersion(rp, minipoolAddress, nil)
+		if err != nil {
+			return fmt.Errorf("error getting minipool %s contract version: %w", minipoolAddress.Hex(), err)
+		}
+		response.MinipoolVersionTooLow = (version < 3)
+		return nil
+	})
 
 	// Check the balance on Beacon
-	pubkey, err := minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving pubkey for minipool %s: %w", minipoolAddress.Hex(), err)
+	wg.Go(func() error {
+		var err error
+		pubkey, err := minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
+		if err != nil {
+			return fmt.Errorf("error retrieving pubkey for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		status, err := bc.GetValidatorStatus(pubkey, nil)
+		if err != nil {
+			return fmt.Errorf("error getting validator status for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), pubkey.Hex(), err)
+		}
+		response.Balance = status.Balance
+		return nil
+	})
+
+	// Get node staking information
+	wg.Go(func() error {
+		var err error
+		ethMatched, err = node.GetNodeEthMatched(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return fmt.Errorf("error getting node's matched ETH amount: %w", err)
+		}
+		return nil
+	})
+	wg.Go(func() error {
+		var err error
+		ethMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return fmt.Errorf("error getting how much ETH the node is able to borrow: %w", err)
+		}
+		return nil
+	})
+	wg.Go(func() error {
+		mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
+		if err != nil {
+			return fmt.Errorf("error creating binding for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		nodeDepositAmount, err = mp.GetNodeDepositBalance(nil)
+		if err != nil {
+			return fmt.Errorf("error getting node deposit balance for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return nil, err
 	}
-	status, err := bc.GetValidatorStatus(pubkey, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting validator status for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), pubkey.Hex(), err)
-	}
-	response.Balance = status.Balance
+
+	// Check data
+	matchRequest := big.NewInt(0).Sub(nodeDepositAmount, newBondAmountWei) // How much more ETH they're requesting from the staking pool
+	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)     // How much they can borrow
+	response.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
 
 	// Make sure the balance is high enough
 	threshold := uint64(32000000000)
-	response.BalanceTooLow = status.Balance < threshold
+	response.BalanceTooLow = response.Balance < threshold
 
-	response.CanReduce = !(response.BondReductionDisabled || response.MinipoolVersionTooLow || response.BalanceTooLow)
+	response.CanReduce = !(response.BondReductionDisabled || response.MinipoolVersionTooLow || response.BalanceTooLow || response.InsufficientRplStake)
 
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
