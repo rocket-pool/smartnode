@@ -149,7 +149,10 @@ func beginReduceBondAmount(c *cli.Context) error {
 					fmt.Printf("The minipool's validator balance on the Beacon Chain is too low (must be 32 ETH or higher, currently %.6f ETH).\n", math.RoundDown(float64(canResponse.Balance)/1e9, 6))
 				}
 				if canResponse.InsufficientRplStake {
-					fmt.Printf("You do not have enough RPL staked to support this bond reduction; it would bring you below the minimum RPL staking requirement. You will have to stake more RPL first.")
+					fmt.Println("You do not have enough RPL staked to support this bond reduction; it would bring you below the minimum RPL staking requirement. You will have to stake more RPL first.")
+				}
+				if canResponse.InvalidBeaconState {
+					fmt.Printf("The minipool's validator is not in a legal state on the Beacon Chain. It must be pending or active (current state: %s)\n", canResponse.BeaconState)
 				}
 				return nil
 			}

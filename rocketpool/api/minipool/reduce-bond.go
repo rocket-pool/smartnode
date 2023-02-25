@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli"
@@ -69,7 +70,7 @@ func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, ne
 		return nil
 	})
 
-	// Check the balance on Beacon
+	// Check the balance and status on Beacon
 	wg.Go(func() error {
 		var err error
 		pubkey, err := minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
@@ -81,6 +82,7 @@ func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, ne
 			return fmt.Errorf("error getting validator status for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), pubkey.Hex(), err)
 		}
 		response.Balance = status.Balance
+		response.BeaconState = status.Status
 		return nil
 	})
 
@@ -118,6 +120,11 @@ func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, ne
 		return nil, err
 	}
 
+	// Check the beacon state
+	response.InvalidBeaconState = !(response.BeaconState == beacon.ValidatorState_PendingInitialized ||
+		response.BeaconState == beacon.ValidatorState_PendingQueued ||
+		response.BeaconState == beacon.ValidatorState_ActiveOngoing)
+
 	// Check data
 	matchRequest := big.NewInt(0).Sub(nodeDepositAmount, newBondAmountWei) // How much more ETH they're requesting from the staking pool
 	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)     // How much they can borrow
@@ -127,7 +134,7 @@ func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, ne
 	threshold := uint64(32000000000)
 	response.BalanceTooLow = response.Balance < threshold
 
-	response.CanReduce = !(response.BondReductionDisabled || response.MinipoolVersionTooLow || response.BalanceTooLow || response.InsufficientRplStake)
+	response.CanReduce = !(response.BondReductionDisabled || response.MinipoolVersionTooLow || response.BalanceTooLow || response.InsufficientRplStake || response.InvalidBeaconState)
 
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()

@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
 type MinipoolStatusResponse struct {
@@ -297,15 +298,17 @@ type GetVanityArtifactsResponse struct {
 }
 
 type CanBeginReduceBondAmountResponse struct {
-	Status                string             `json:"status"`
-	Error                 string             `json:"error"`
-	BondReductionDisabled bool               `json:"bondReductionDisabled"`
-	MinipoolVersionTooLow bool               `json:"minipoolVersionTooLow"`
-	Balance               uint64             `json:"balance"`
-	BalanceTooLow         bool               `json:"balanceTooLow"`
-	InsufficientRplStake  bool               `json:"insufficientRplStake"`
-	CanReduce             bool               `json:"canReduce"`
-	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
+	Status                string                `json:"status"`
+	Error                 string                `json:"error"`
+	BondReductionDisabled bool                  `json:"bondReductionDisabled"`
+	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
+	Balance               uint64                `json:"balance"`
+	BalanceTooLow         bool                  `json:"balanceTooLow"`
+	InsufficientRplStake  bool                  `json:"insufficientRplStake"`
+	BeaconState           beacon.ValidatorState `json:"beaconState"`
+	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
+	CanReduce             bool                  `json:"canReduce"`
+	GasInfo               rocketpool.GasInfo    `json:"gasInfo"`
 }
 type BeginReduceBondAmountResponse struct {
 	Status string      `json:"status"`
