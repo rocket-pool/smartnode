@@ -35,7 +35,7 @@ require (
 	github.com/wealdtech/go-eth2-types/v2 v2.7.0
 	github.com/wealdtech/go-eth2-util v1.7.0
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.3.0
-	github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a
+	github.com/wealdtech/go-merkletree v1.0.1-0.20230205101955-ec7a95ea11ca
 	github.com/web3-storage/go-w3s-client v0.0.7
 	golang.org/x/crypto v0.4.0
 	golang.org/x/sync v0.1.0
@@ -181,7 +181,5 @@ require (
 	lukechampine.com/blake3 v1.1.7 // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
 )
-
-replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd
 
 // replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
