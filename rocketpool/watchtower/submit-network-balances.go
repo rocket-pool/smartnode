@@ -24,13 +24,20 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Settings
-const MinipoolBalanceDetailsBatchSize = 8
+const (
+	MinipoolBalanceDetailsBatchSize                 int    = 8
+	ignoreDissolvedMinipoolsTransitionEpochMainnet  uint64 = 999999999999999
+	ignoreDissolvedMinipoolsTransitionEpochPrater   uint64 = 162094 // 2023-03-14 00:01:36 UTC
+	ignoreDissolvedMinipoolsTransitionEpochDevnet   uint64 = 162094
+	ignoreDissolvedMinipoolsTransitionEpochZhejiang uint64 = 0
+)
 
 // Submit network balances task
 type submitNetworkBalances struct {
@@ -331,7 +338,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	wg.Go(func() error {
 		mpBalanceDetails = make([]minipoolBalanceDetails, len(state.MinipoolDetails))
 		for i, mpd := range state.MinipoolDetails {
-			mpBalanceDetails[i] = t.getMinipoolBalanceDetails(&mpd, state)
+			mpBalanceDetails[i] = t.getMinipoolBalanceDetails(&mpd, state, t.cfg)
 		}
 		return nil
 	})
@@ -418,7 +425,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 }
 
 // Get minipool balance details
-func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState) minipoolBalanceDetails {
+func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, cfg *config.RocketPoolConfig) minipoolBalanceDetails {
 
 	status := mpd.Status
 	userDepositBalance := mpd.UserDepositBalance
@@ -434,10 +441,25 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 		}
 	}
 
-	// Dissolved minipools don't contribute to rETH
-	if status == rptypes.Dissolved {
-		return minipoolBalanceDetails{
-			UserBalance: big.NewInt(0),
+	var ignoreDissolvedMinipoolsEpoch uint64
+	switch cfg.Smartnode.Network.Value.(cfgtypes.Network) {
+	case cfgtypes.Network_Mainnet:
+		ignoreDissolvedMinipoolsEpoch = ignoreDissolvedMinipoolsTransitionEpochMainnet
+	case cfgtypes.Network_Prater:
+		ignoreDissolvedMinipoolsEpoch = ignoreDissolvedMinipoolsTransitionEpochPrater
+	case cfgtypes.Network_Devnet:
+		ignoreDissolvedMinipoolsEpoch = ignoreDissolvedMinipoolsTransitionEpochDevnet
+	case cfgtypes.Network_Zhejiang:
+		ignoreDissolvedMinipoolsEpoch = ignoreDissolvedMinipoolsTransitionEpochZhejiang
+	default:
+		panic(fmt.Sprintf("can't get minipool balance details: unknown network [%v]\n", cfg.Smartnode.Network.Value))
+	}
+	if blockEpoch >= ignoreDissolvedMinipoolsEpoch {
+		// Dissolved minipools don't contribute to rETH
+		if status == rptypes.Dissolved {
+			return minipoolBalanceDetails{
+				UserBalance: big.NewInt(0),
+			}
 		}
 	}
 

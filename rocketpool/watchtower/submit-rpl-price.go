@@ -155,8 +155,8 @@ const (
 
 	twapNumberOfSeconds         uint32 = 60 * 60 * 12 // 12 hours
 	twapTransitionEpochMainnet  uint64 = 999999999999999
-	twapTransitionEpochPrater   uint64 = 999999999999999
-	twapTransitionEpochDevnet   uint64 = 999999999999999
+	twapTransitionEpochPrater   uint64 = 162094 // 2023-03-14 00:01:36 UTC
+	twapTransitionEpochDevnet   uint64 = 162094
 	twapTransitionEpochZhejiang uint64 = 0
 )
 
