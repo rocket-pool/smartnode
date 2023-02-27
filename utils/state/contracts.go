@@ -204,7 +204,7 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 // Returns whether or not Atlas has been deployed
 // TODO: refactor this so it comes first and we don't need to pass this check around everywhere
 func (c *NetworkContracts) _isAtlasDeployed() bool {
-	constraint, _ := version.NewConstraint("== 1.2.0")
+	constraint, _ := version.NewConstraint(">= 1.2.0")
 	return constraint.Check(c.Version)
 }
 
