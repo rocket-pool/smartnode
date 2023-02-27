@@ -122,8 +122,8 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	state.logLine("3/5 - Retrieved minipool details (%s so far)", time.Since(start))
 
 	// Create the node lookup
-	for _, details := range state.NodeDetails {
-		state.NodeDetailsByAddress[details.NodeAddress] = &details
+	for i, details := range state.NodeDetails {
+		state.NodeDetailsByAddress[details.NodeAddress] = &state.NodeDetails[i]
 	}
 
 	// Create the minipool lookups
@@ -251,8 +251,8 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	state.logLine("3/5 - Retrieved minipool details (%s so far)", time.Since(start))
 
 	// Create the node lookup
-	for _, details := range state.NodeDetails {
-		state.NodeDetailsByAddress[details.NodeAddress] = &details
+	for i, details := range state.NodeDetails {
+		state.NodeDetailsByAddress[details.NodeAddress] = &state.NodeDetails[i]
 	}
 
 	// Create the minipool lookups
