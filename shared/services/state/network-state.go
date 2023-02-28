@@ -144,6 +144,11 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
 	}
 
+	// Calculate avg node fees and distributor shares
+	for _, details := range state.NodeDetails {
+		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+	}
+
 	// Get the validator stats from Beacon
 	statusMap, err := bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &slotNumber,
@@ -159,8 +164,8 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	beaconBalances := make([]*big.Int, len(state.MinipoolDetails))
 	for i, mpd := range state.MinipoolDetails {
 		mpds[i] = &state.MinipoolDetails[i]
-		validator, exists := state.ValidatorDetails[mpd.Pubkey]
-		if !exists {
+		validator := state.ValidatorDetails[mpd.Pubkey]
+		if !validator.Exists {
 			beaconBalances[i] = big.NewInt(0)
 		} else {
 			beaconBalances[i] = eth.GweiToWei(float64(validator.Balance))
@@ -273,6 +278,11 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
 	}
 
+	// Calculate avg node fees and distributor shares
+	for _, details := range state.NodeDetails {
+		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+	}
+
 	// Get the total network effective RPL stake
 	totalEffectiveStake, err := rpstate.GetTotalEffectiveRplStake(rp, contracts)
 	if err != nil {
@@ -294,8 +304,8 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	beaconBalances := make([]*big.Int, len(state.MinipoolDetails))
 	for i, mpd := range state.MinipoolDetails {
 		mpds[i] = &state.MinipoolDetails[i]
-		validator, exists := state.ValidatorDetails[mpd.Pubkey]
-		if !exists {
+		validator := state.ValidatorDetails[mpd.Pubkey]
+		if !validator.Exists {
 			beaconBalances[i] = big.NewInt(0)
 		} else {
 			beaconBalances[i] = eth.GweiToWei(float64(validator.Balance))

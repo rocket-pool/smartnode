@@ -320,7 +320,7 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 
 		// Get RPL price at block
 		var rplPrice *big.Int
-		if stateEpoch < t.getTwapEpoch() {
+		if targetEpoch < t.getTwapEpoch() {
 			rplPrice, err = t.getRplPrice(blockNumber)
 		} else {
 			rplPrice, err = t.getRplTwap(blockNumber)

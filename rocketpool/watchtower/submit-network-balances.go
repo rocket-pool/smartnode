@@ -18,6 +18,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/legacy"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -32,25 +33,25 @@ import (
 
 // Settings
 const (
-	MinipoolBalanceDetailsBatchSize                 int    = 8
-	ignoreDissolvedMinipoolsTransitionEpochMainnet  uint64 = 999999999999999
-	ignoreDissolvedMinipoolsTransitionEpochPrater   uint64 = 162094 // 2023-03-14 00:01:36 UTC
-	ignoreDissolvedMinipoolsTransitionEpochDevnet   uint64 = 162094
-	ignoreDissolvedMinipoolsTransitionEpochZhejiang uint64 = 0
+	behaviorTransitionEpochMainnet  uint64 = 999999999999999
+	behaviorTransitionEpochPrater   uint64 = 162094 // 2023-03-14 00:01:36 UTC
+	behaviorTransitionEpochDevnet   uint64 = 162094
+	behaviorTransitionEpochZhejiang uint64 = 0
 )
 
 // Submit network balances task
 type submitNetworkBalances struct {
-	c         *cli.Context
-	log       log.ColorLogger
-	errLog    log.ColorLogger
-	cfg       *config.RocketPoolConfig
-	w         *wallet.Wallet
-	ec        rocketpool.ExecutionClient
-	rp        *rocketpool.RocketPool
-	bc        beacon.Client
-	lock      *sync.Mutex
-	isRunning bool
+	c          *cli.Context
+	log        log.ColorLogger
+	errLog     log.ColorLogger
+	cfg        *config.RocketPoolConfig
+	w          *wallet.Wallet
+	ec         rocketpool.ExecutionClient
+	rp         *rocketpool.RocketPool
+	bc         beacon.Client
+	lock       *sync.Mutex
+	isRunning  bool
+	legacyImpl *legacy.SubmitNetworkBalances
 }
 
 // Network balance info
@@ -95,19 +96,26 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogge
 		return nil, err
 	}
 
+	// Legacy implementation for prior to the changeover
+	legacyImpl, err := legacy.NewSubmitNetworkBalances(c, logger, WatchtowerMaxFee, WatchtowerMaxPriorityFee)
+	if err != nil {
+		return nil, fmt.Errorf("error creating legacy balance reporting implementation: %w", err)
+	}
+
 	// Return task
 	lock := &sync.Mutex{}
 	return &submitNetworkBalances{
-		c:         c,
-		log:       logger,
-		errLog:    errorLogger,
-		cfg:       cfg,
-		w:         w,
-		ec:        ec,
-		rp:        rp,
-		bc:        bc,
-		lock:      lock,
-		isRunning: false,
+		c:          c,
+		log:        logger,
+		errLog:     errorLogger,
+		cfg:        cfg,
+		w:          w,
+		ec:         ec,
+		rp:         rp,
+		bc:         bc,
+		lock:       lock,
+		isRunning:  false,
+		legacyImpl: legacyImpl,
 	}, nil
 
 }
@@ -165,6 +173,28 @@ func (t *submitNetworkBalances) run(state *state.NetworkState, isAtlasDeployed b
 	if requiredEpoch > stateEpoch {
 		t.log.Printlnf("Balances must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, requiredEpoch, stateEpoch)
 		return nil
+	}
+
+	// If the state epoch is before the changeover, run the legacy implementation
+	var transitionEpoch uint64
+	selectedNetwork := t.cfg.Smartnode.Network.Value.(cfgtypes.Network)
+	switch selectedNetwork {
+	case cfgtypes.Network_Mainnet:
+		transitionEpoch = behaviorTransitionEpochMainnet
+	case cfgtypes.Network_Prater:
+		transitionEpoch = behaviorTransitionEpochPrater
+	case cfgtypes.Network_Devnet:
+		transitionEpoch = behaviorTransitionEpochDevnet
+	case cfgtypes.Network_Zhejiang:
+		transitionEpoch = behaviorTransitionEpochZhejiang
+	default:
+		return fmt.Errorf("cannot determine proper balance check behavior: unknown network [%s]", selectedNetwork)
+	}
+
+	// Run the old behavior until we've flipped over to the new one
+	if requiredEpoch < transitionEpoch {
+		t.log.Printlnf("Current target epoch is %d, using legacy balance reporting behavior until epoch %d", requiredEpoch, transitionEpoch)
+		return t.legacyImpl.Run(state)
 	}
 
 	// Check if the process is already running
@@ -347,7 +377,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	wg.Go(func() error {
 		distributorShares = make([]*big.Int, len(state.NodeDetails))
 		for i, node := range state.NodeDetails {
-			distributorShares[i] = node.DistributorBalanceUserETH
+			distributorShares[i] = node.DistributorBalanceUserETH // Uses the go-lib based off-chain calculation method instead of the contract method
 		}
 
 		return nil
@@ -441,25 +471,10 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 		}
 	}
 
-	var ignoreDissolvedMinipoolsEpoch uint64
-	switch cfg.Smartnode.Network.Value.(cfgtypes.Network) {
-	case cfgtypes.Network_Mainnet:
-		ignoreDissolvedMinipoolsEpoch = ignoreDissolvedMinipoolsTransitionEpochMainnet
-	case cfgtypes.Network_Prater:
-		ignoreDissolvedMinipoolsEpoch = ignoreDissolvedMinipoolsTransitionEpochPrater
-	case cfgtypes.Network_Devnet:
-		ignoreDissolvedMinipoolsEpoch = ignoreDissolvedMinipoolsTransitionEpochDevnet
-	case cfgtypes.Network_Zhejiang:
-		ignoreDissolvedMinipoolsEpoch = ignoreDissolvedMinipoolsTransitionEpochZhejiang
-	default:
-		panic(fmt.Sprintf("can't get minipool balance details: unknown network [%v]\n", cfg.Smartnode.Network.Value))
-	}
-	if blockEpoch >= ignoreDissolvedMinipoolsEpoch {
-		// Dissolved minipools don't contribute to rETH
-		if status == rptypes.Dissolved {
-			return minipoolBalanceDetails{
-				UserBalance: big.NewInt(0),
-			}
+	// Dissolved minipools don't contribute to rETH
+	if status == rptypes.Dissolved {
+		return minipoolBalanceDetails{
+			UserBalance: big.NewInt(0),
 		}
 	}
 
@@ -489,8 +504,8 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 		}
 	}
 
+	// Here userBalance is CalculateUserShare(beaconBalance + minipoolBalance - refund)
 	userBalance := mpd.UserShareOfBalanceIncludingBeacon
-	// Return
 	if userDepositBalance.Cmp(big.NewInt(0)) == 0 && mpType == rptypes.Full {
 		return minipoolBalanceDetails{
 			IsStaking:   (validator.ExitEpoch > blockEpoch),
