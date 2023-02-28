@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -222,7 +223,16 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 			}
 			return nil
 		} else {
-			// TODO once the getter is done
+			multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+			balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+			contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, nil)
+			if err != nil {
+				return fmt.Errorf("error creating network contract binding: %w", err)
+			}
+			totalEffectiveStake, err = rpstate.GetTotalEffectiveRplStake(rp, contracts)
+			if err != nil {
+				return fmt.Errorf("error getting total effective RPL stake: %w", err)
+			}
 			return nil
 		}
 	})
