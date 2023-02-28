@@ -5,8 +5,8 @@ go 1.19
 require (
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/fatih/color v1.14.1
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20230219201355-5a0744fe224b
-	github.com/rocket-pool/smartnode v1.7.6-0.20230219204040-9e3015ea559d
+	github.com/rocket-pool/rocketpool-go v1.10.1-0.20230228020137-d5a680907dff
+	github.com/rocket-pool/smartnode v1.9.0-a1
 	github.com/urfave/cli/v2 v2.23.0
 )
 
@@ -26,7 +26,7 @@ require (
 	github.com/herumi/bls-eth-go-binary v1.28.1 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
@@ -35,7 +35,7 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prysmaticlabs/fastssz v0.0.0-20220628121656-93dfe28febab // indirect
+	github.com/prysmaticlabs/fastssz v0.0.0-20221107182844-78142813af44 // indirect
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7 // indirect
 	github.com/prysmaticlabs/gohashtree v0.0.2-alpha // indirect
 	github.com/prysmaticlabs/prysm/v3 v3.2.0 // indirect

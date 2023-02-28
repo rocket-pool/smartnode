@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	version    string = "1.1.2"
+	version    string = "1.2.0-a1"
 	colorReset string = "\033[0m"
 	colorRed   string = "\033[31m"
 )
@@ -28,7 +28,7 @@ func main() {
 			Email: "joe@rocketpool.net",
 		},
 	}
-	app.Copyright = "(c) 2022 Rocket Pool Pty Ltd"
+	app.Copyright = "(c) 2023 Rocket Pool Pty Ltd"
 
 	// Set application flags
 	app.Flags = []cli.Flag{
