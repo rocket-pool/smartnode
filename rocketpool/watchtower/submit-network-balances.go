@@ -194,7 +194,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState, isAtlasDeployed b
 	// Run the old behavior until we've flipped over to the new one
 	if requiredEpoch < transitionEpoch {
 		t.log.Printlnf("Current target epoch is %d, using legacy balance reporting behavior until epoch %d", requiredEpoch, transitionEpoch)
-		return t.legacyImpl.Run(state)
+		return t.legacyImpl.Run()
 	}
 
 	// Check if the process is already running
