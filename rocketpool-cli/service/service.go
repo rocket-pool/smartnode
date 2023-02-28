@@ -148,20 +148,14 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
+	fmt.Printf("%s=== Atlas! ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode now supports the Zhejiang testnet, which has our Atlas upgrade and the Ethereum Shapella hardfork applied! If you'd like to try out withdrawals, 8-ETH minipools, solo staker migration and more, please read the Atlas guide:\nhttps://docs.rocketpool.net/guides/atlas/whats-new.html\n")
+
 	fmt.Printf("%s=== Nimbus Changes ===%s\n", colorGreen, colorReset)
 	fmt.Println("Nimbus now supports running a separate Validator Client, which means it now supports fallback clients! If you're using Nimbus and would like to set up a fallback client pair for your node, simply go to the Consensus Client section of the `service config` TUI - you can now add one just like with the other clients!\nNote that if you want to check on your validator performance, you will need to look at the validator container instead of the eth2 container like you used to do.\n")
 
 	fmt.Printf("%s=== Lodestar ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now supports Lodestar - the Ethereum Consensus Client written in Typescript! If you'd like to switch to Lodestar, simply follow the instructions for changing consensus clients: https://docs.rocketpool.net/guides/node/change-clients.html#changing-consensus-clients\n")
-
-	fmt.Printf("%s=== Rewards Tree Changes ===%s\n", colorGreen, colorReset)
-	fmt.Println("Starting with Interval 6 on February 16th (on Mainnet), the Redstone Merkle rewards tree will no longer award RPL for minipools that have already exited the Beacon chain. Please see the DAO forum post for more info: https://dao.rocketpool.net/t/odao-rewards-tree-spec-v4/1389/1\n")
-
-	fmt.Printf("%s=== Nimbus Pruning ===%s\n", colorGreen, colorReset)
-	fmt.Println("Nimbus users can now use its new pruning feature to cull everything but the last 5 months of chain data. This will reduce disk usage and keep it relatively flat going forward. You'll find the option under the Nimbus settings in the `rocketpool service config` TUI.\n")
-
-	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
-	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
+	fmt.Println("The Smartnode now supports Lodestar - the Ethereum Consensus Client written in Typescript! If you'd like to switch to Lodestar, simply follow the instructions for changing consensus clients: https://docs.rocketpool.net/guides/node/change-clients.html#changing-consensus-clients")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard

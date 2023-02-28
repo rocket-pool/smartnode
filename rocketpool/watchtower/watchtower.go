@@ -183,7 +183,7 @@ func run(c *cli.Context) error {
 			//latestBlock, err := m.GetLatestFinalizedBeaconBlock()
 			latestBlock, err := m.GetLatestBeaconBlock()
 			if err != nil {
-				errorLog.Println(fmt.Errorf("error getting latest finalized Beacon block: %w", err))
+				errorLog.Println(fmt.Errorf("error getting latest Beacon block: %w", err))
 				time.Sleep(taskCooldown)
 				continue
 			}
@@ -341,7 +341,7 @@ func printAtlasMessage(log *log.ColorLogger) {
 
 // Update the latest network state at each cycle
 func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, block beacon.BeaconBlock) (*state.NetworkState, error) {
-	log.Print("Getting latest finalized network state... ")
+	log.Print("Getting latest network state... ")
 	// Get the state of the network
 	state, err := m.GetStateForSlot(block.Slot)
 	if err != nil {
