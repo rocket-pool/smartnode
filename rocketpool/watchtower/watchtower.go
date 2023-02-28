@@ -180,8 +180,8 @@ func run(c *cli.Context) error {
 			}
 
 			// Get the Beacon block
-			latestBlock, err := m.GetLatestFinalizedBeaconBlock()
-			//latestBlock, err := m.GetLatestBeaconBlock()
+			//latestBlock, err := m.GetLatestFinalizedBeaconBlock()
+			latestBlock, err := m.GetLatestBeaconBlock()
 			if err != nil {
 				errorLog.Println(fmt.Errorf("error getting latest finalized Beacon block: %w", err))
 				time.Sleep(taskCooldown)

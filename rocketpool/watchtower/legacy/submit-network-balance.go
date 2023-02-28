@@ -801,6 +801,10 @@ func (t *SubmitNetworkBalances) submitBalances(balances NetworkBalances) error {
 	totalEth.Add(totalEth, balances.DistributorShareTotal)
 	totalEth.Add(totalEth, balances.SmoothingPoolShare)
 
+	ratio := eth.WeiToEth(totalEth) / eth.WeiToEth(balances.RETHSupply)
+	t.log.Printlnf("Total ETH = %s\n", totalEth)
+	t.log.Printlnf("Calculated ratio = %.6f\n", ratio)
+
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
