@@ -1368,6 +1368,9 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	for _, container := range deployedContainers {
 		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
 	}
+	for _, container := range composeFiles {
+		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
+	}
 
 	// Return command
 	return fmt.Sprintf("%s docker compose --project-directory %s %s %s", strings.Join(env, " "), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
