@@ -293,9 +293,13 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 
 	// Check if the targetEpoch is finalized yet
 	targetEpoch := slotNumber / eth2Config.SlotsPerEpoch
-	stateEpoch := state.BeaconSlotNumber / eth2Config.SlotsPerEpoch
-	if targetEpoch > stateEpoch {
-		t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, targetEpoch, stateEpoch)
+	beaconHead, err := t.bc.GetBeaconHead()
+	if err != nil {
+		return err
+	}
+	finalizedEpoch := beaconHead.FinalizedEpoch
+	if targetEpoch > finalizedEpoch {
+		t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, targetEpoch, finalizedEpoch)
 		return nil
 	}
 

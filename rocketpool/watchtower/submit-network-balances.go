@@ -168,10 +168,14 @@ func (t *submitNetworkBalances) run(state *state.NetworkState, isAtlasDeployed b
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
 
-	// Check if the epoch in the snapshot is finalized yet
-	stateEpoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
-	if requiredEpoch > stateEpoch {
-		t.log.Printlnf("Balances must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, requiredEpoch, stateEpoch)
+	// Check if the required epoch is finalized yet
+	beaconHead, err := t.bc.GetBeaconHead()
+	if err != nil {
+		return err
+	}
+	finalizedEpoch := beaconHead.FinalizedEpoch
+	if requiredEpoch > finalizedEpoch {
+		t.log.Printlnf("Balances must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, requiredEpoch, finalizedEpoch)
 		return nil
 	}
 
