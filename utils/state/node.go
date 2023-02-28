@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/multicall"
 	"golang.org/x/sync/errgroup"
 )
@@ -38,13 +39,15 @@ type NativeNodeDetails struct {
 	BalanceRPL                       *big.Int
 	BalanceOldRPL                    *big.Int
 	DepositCreditBalance             *big.Int
-	DistributorBalanceUserETH        *big.Int
-	DistributorBalanceNodeETH        *big.Int
+	DistributorBalanceUserETH        *big.Int // Must call CalculateAverageFeeAndDistributorShares to get this
+	DistributorBalanceNodeETH        *big.Int // Must call CalculateAverageFeeAndDistributorShares to get this
 	WithdrawalAddress                common.Address
 	PendingWithdrawalAddress         common.Address
 	SmoothingPoolRegistrationState   bool
 	SmoothingPoolRegistrationChanged *big.Int
 	NodeAddress                      common.Address
+	AverageNodeFee                   *big.Int // Must call CalculateAverageFeeAndDistributorShares to get this
+	DistributorBalance               *big.Int
 }
 
 // Gets the details for a node using the efficient multicall contract
@@ -52,11 +55,14 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 	opts := &bind.CallOpts{
 		BlockNumber: contracts.ElBlockNumber,
 	}
-	details := NativeNodeDetails{}
-	details.NodeAddress = nodeAddress
+	details := NativeNodeDetails{
+		NodeAddress:               nodeAddress,
+		AverageNodeFee:            big.NewInt(0),
+		DistributorBalanceUserETH: big.NewInt(0),
+		DistributorBalanceNodeETH: big.NewInt(0),
+	}
 
-	avgFee := big.NewInt(0)
-	addNodeDetailsCalls(contracts, contracts.Multicaller, &details, nodeAddress, &avgFee, isAtlasDeployed)
+	addNodeDetailsCalls(contracts, contracts.Multicaller, &details, nodeAddress, isAtlasDeployed)
 
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
@@ -76,7 +82,12 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 	}
 
 	// Do some postprocessing on the node data
-	fixupNodeDetails(rp, &details, avgFee, distributorBalance, opts)
+	details.DistributorBalance = distributorBalance
+
+	// Fix the effective stake
+	if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
+		details.EffectiveRPLStake.SetUint64(0)
+	}
 
 	return details, nil
 }
@@ -94,7 +105,6 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 	}
 	count := len(addresses)
 	nodeDetails := make([]NativeNodeDetails, count)
-	avgFees := make([]*big.Int, count)
 
 	// Sync
 	var wg errgroup.Group
@@ -118,9 +128,11 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 				address := addresses[j]
 				details := &nodeDetails[j]
 				details.NodeAddress = address
+				details.AverageNodeFee = big.NewInt(0)
+				details.DistributorBalanceUserETH = big.NewInt(0)
+				details.DistributorBalanceNodeETH = big.NewInt(0)
 
-				avgFees[j] = big.NewInt(0)
-				addNodeDetailsCalls(contracts, mc, details, address, &avgFees[j], isAtlasDeployed)
+				addNodeDetailsCalls(contracts, mc, details, address, isAtlasDeployed)
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -153,10 +165,63 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 
 	// Do some postprocessing on the node data
 	for i := range nodeDetails {
-		fixupNodeDetails(rp, &nodeDetails[i], avgFees[i], balances[i], opts)
+		details := &nodeDetails[i]
+		details.DistributorBalance = balances[i]
+
+		// Fix the effective stake
+		if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
+			details.EffectiveRPLStake.SetUint64(0)
+		}
 	}
 
 	return nodeDetails, nil
+}
+
+// Calculate the average node fee and user/node shares of the distributor's balance
+func CalculateAverageFeeAndDistributorShares(rp *rocketpool.RocketPool, contracts *NetworkContracts, node NativeNodeDetails, minipoolDetails []*NativeMinipoolDetails) error {
+
+	// Calculate the total of all fees for staking minipools that aren't finalized
+	totalFee := big.NewInt(0)
+	eligibleMinipools := int64(0)
+	for _, mpd := range minipoolDetails {
+		if mpd.Status == types.Staking && !mpd.Finalised {
+			totalFee.Add(totalFee, mpd.NodeFee)
+			eligibleMinipools++
+		}
+	}
+
+	// Get the average fee (0 if there aren't any minipools)
+	if eligibleMinipools > 0 {
+		node.AverageNodeFee.Div(totalFee, big.NewInt(eligibleMinipools))
+	}
+
+	// Get the user and node portions of the distributor balance
+	distributorBalance := big.NewInt(0).Set(node.DistributorBalance)
+	if distributorBalance.Cmp(big.NewInt(0)) > 0 {
+		halfBalance := big.NewInt(0)
+		halfBalance.Div(distributorBalance, two)
+
+		if eligibleMinipools == 0 {
+			// Split it 50/50 if there are no minipools
+			node.DistributorBalanceNodeETH = big.NewInt(0).Set(halfBalance)
+			node.DistributorBalanceUserETH = big.NewInt(0).Sub(distributorBalance, halfBalance)
+		} else {
+			// Amount of ETH given to the NO as a commission
+			commissionEth := big.NewInt(0)
+			commissionEth.Mul(halfBalance, node.AverageNodeFee)
+			commissionEth.Div(commissionEth, big.NewInt(1e18))
+
+			node.DistributorBalanceNodeETH.Add(halfBalance, commissionEth)                         // Node gets half + commission
+			node.DistributorBalanceUserETH.Sub(distributorBalance, node.DistributorBalanceNodeETH) // User gets balance - node share
+		}
+
+	} else {
+		// No distributor balance
+		node.DistributorBalanceNodeETH = big.NewInt(0)
+		node.DistributorBalanceUserETH = big.NewInt(0)
+	}
+
+	return nil
 }
 
 // Get all node addresses using the multicaller
@@ -206,13 +271,12 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 }
 
 // Add all of the calls for the node details to the multicaller
-func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeNodeDetails, address common.Address, avgFee **big.Int, isAtlasDeployed bool) {
+func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeNodeDetails, address common.Address, isAtlasDeployed bool) {
 	mc.AddCall(contracts.RocketNodeManager, &details.Exists, "getNodeExists", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.RegistrationTime, "getNodeRegistrationTime", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.TimezoneLocation, "getNodeTimezoneLocation", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.FeeDistributorInitialised, "getFeeDistributorInitialised", address)
 	mc.AddCall(contracts.RocketNodeDistributorFactory, &details.FeeDistributorAddress, "getProxyAddress", address)
-	mc.AddCall(contracts.RocketNodeManager, avgFee, "getAverageNodeFee", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.RewardNetwork, "getRewardNetwork", address)
 	mc.AddCall(contracts.RocketNodeStaking, &details.RplStake, "getNodeRPLStake", address)
 	mc.AddCall(contracts.RocketNodeStaking, &details.EffectiveRPLStake, "getNodeEffectiveRPLStake", address)
@@ -230,37 +294,4 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 	if isAtlasDeployed {
 		mc.AddCall(contracts.RocketNodeDeposit, &details.DepositCreditBalance, "getNodeDepositCredit", address)
 	}
-}
-
-// Fixes a legacy node details struct with supplemental logic
-func fixupNodeDetails(rp *rocketpool.RocketPool, details *NativeNodeDetails, avgFee *big.Int, distributorBalance *big.Int, opts *bind.CallOpts) error {
-	// Fix the effective stake
-	if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
-		details.EffectiveRPLStake.SetUint64(0)
-	}
-
-	// Get the user and node portions of the distributor balance
-	if distributorBalance.Cmp(zero) > 0 {
-		halfBalance := big.NewInt(0)
-		halfBalance.Div(distributorBalance, two)
-		if details.MinipoolCount.Cmp(zero) == 0 {
-			// Split it 50/50 if there are no minipools
-			details.DistributorBalanceNodeETH = big.NewInt(0).Set(halfBalance)
-			details.DistributorBalanceUserETH = big.NewInt(0).Sub(distributorBalance, halfBalance)
-		} else {
-			nodeShare := big.NewInt(0)
-			nodeShare.Mul(halfBalance, avgFee)
-			nodeShare.Div(nodeShare, oneInWei)
-			nodeShare.Add(nodeShare, halfBalance)
-			details.DistributorBalanceNodeETH = nodeShare
-			userShare := big.NewInt(0)
-			userShare.Sub(distributorBalance, nodeShare)
-			details.DistributorBalanceUserETH = userShare
-		}
-	} else {
-		details.DistributorBalanceNodeETH = big.NewInt(0)
-		details.DistributorBalanceUserETH = big.NewInt(0)
-	}
-
-	return nil
 }
