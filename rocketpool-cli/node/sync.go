@@ -2,16 +2,58 @@ package node
 
 import (
 	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // Settings
 var ethClientRecentBlockThreshold, _ = time.ParseDuration("5m")
+
+// When printing sync percents, we should avoid printing 100%.
+// This function is only called if we're still syncing,
+// and the `%0.2f` token will round up if we're above 99.99%.
+func syncRatioToPercent(in float64) float64 {
+	return math.Min(99.99, in*100)
+}
+
+func printClientStatus(status *api.ClientStatus, name string) {
+
+	if status.Error != "" {
+		fmt.Printf("Your %s is unavailable (%s).\n", name, status.Error)
+		return
+	}
+
+	if status.IsSynced {
+		fmt.Printf("Your %s is fully synced.\n", name);
+		return
+	}
+
+	fmt.Printf("Your %s is still syncing (%0.2f%%).\n", name, syncRatioToPercent(status.SyncProgress))
+	if strings.Contains(name, "execution") && status.SyncProgress == 0 {
+		fmt.Printf("\tNOTE: your %s may not report sync progress.\n\tYou should check its logs to review it.\n", name)
+	}
+}
+
+func printSyncProgress(status *api.ClientManagerStatus, name string) {
+
+	// Print primary client status
+	printClientStatus(&status.PrimaryClientStatus, fmt.Sprintf("primary %s client", name))
+
+	if !status.FallbackEnabled {
+		fmt.Printf("You do not have a fallback %s client enabled.\n", name)
+		return
+	}
+
+	// A fallback is enabled, so print fallback client status
+	printClientStatus(&status.FallbackClientStatus, fmt.Sprintf("fallback %s client", name))
+}
 
 func getSyncProgress(c *cli.Context) error {
 
@@ -57,54 +99,10 @@ func getSyncProgress(c *cli.Context) error {
 	}
 
 	// Print EC status
-	if status.EcStatus.PrimaryClientStatus.Error != "" {
-		fmt.Printf("Your primary execution client is unavailable (%s).\n", status.EcStatus.PrimaryClientStatus.Error)
-	} else if status.EcStatus.PrimaryClientStatus.IsSynced {
-		fmt.Print("Your primary execution client is fully synced.\n")
-	} else {
-		fmt.Printf("Your primary execution client is still syncing (%0.2f%%).\n", status.EcStatus.PrimaryClientStatus.SyncProgress*100)
-		if status.EcStatus.PrimaryClientStatus.SyncProgress == 0 {
-			fmt.Println("\tNOTE: your execution client may not report sync progress.\n\tYou should check its logs to review it.")
-		}
-	}
-
-	// Print fallback EC status
-	if status.EcStatus.FallbackEnabled {
-		if status.EcStatus.FallbackClientStatus.Error != "" {
-			fmt.Printf("Your fallback execution client is unavailable (%s).\n", status.EcStatus.FallbackClientStatus.Error)
-		} else if status.EcStatus.FallbackClientStatus.IsSynced {
-			fmt.Print("Your fallback execution client is fully synced.\n")
-		} else {
-			fmt.Printf("Your fallback execution client is still syncing (%0.2f%%).\n", status.EcStatus.FallbackClientStatus.SyncProgress*100)
-			if status.EcStatus.FallbackClientStatus.SyncProgress == 0 {
-				fmt.Println("\tNOTE: your execution client may not report sync progress.\n\tYou should check your its logs to review it.")
-			}
-		}
-	} else {
-		fmt.Printf("You do not have a fallback execution client enabled.\n")
-	}
+	printSyncProgress(&status.EcStatus, "execution")
 
 	// Print CC status
-	if status.BcStatus.PrimaryClientStatus.Error != "" {
-		fmt.Printf("Your primary consensus client is unavailable (%s).\n", status.BcStatus.PrimaryClientStatus.Error)
-	} else if status.BcStatus.PrimaryClientStatus.IsSynced {
-		fmt.Print("Your primary consensus client is fully synced.\n")
-	} else {
-		fmt.Printf("Your primary consensus client is still syncing (%0.2f%%).\n", status.BcStatus.PrimaryClientStatus.SyncProgress*100)
-	}
-
-	// Print fallback CC status
-	if status.BcStatus.FallbackEnabled {
-		if status.BcStatus.FallbackClientStatus.Error != "" {
-			fmt.Printf("Your fallback consensus client is unavailable (%s).\n", status.BcStatus.FallbackClientStatus.Error)
-		} else if status.BcStatus.FallbackClientStatus.IsSynced {
-			fmt.Print("Your fallback consensus client is fully synced.\n")
-		} else {
-			fmt.Printf("Your fallback consensus client is still syncing (%0.2f%%).\n", status.BcStatus.FallbackClientStatus.SyncProgress*100)
-		}
-	} else {
-		fmt.Printf("You do not have a fallback consensus client enabled.\n")
-	}
+	printSyncProgress(&status.BcStatus, "consensus")
 
 	// Return
 	return nil
