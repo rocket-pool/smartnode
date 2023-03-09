@@ -556,16 +556,31 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 	} else {
 		// Attestation processing is disabled, just give each minipool 1 good attestation and complete slot activity so they're all scored the same
 		// Used for approximating rETH's share during balances calculation
+		one := eth.EthToWei(1)
+		validatorReq := eth.EthToWei(32)
 		for _, nodeInfo := range r.nodeDetails {
-			if nodeInfo.IsEligible {
+			// Check if the node is currently opted in for simplicity
+			if nodeInfo.IsEligible && nodeInfo.IsOptedIn && r.elEndTime.Sub(nodeInfo.OptInTime) > 0 {
 				for _, minipool := range nodeInfo.Minipools {
 					minipool.CompletedAttestations = map[uint64]bool{0: true}
+
+					// Make up an attestation
+					details := r.networkState.MinipoolDetailsByAddress[minipool.Address]
+					bond, fee := r.getMinipoolBondAndNodeFee(details, r.elEndTime)
+					minipoolScore := big.NewInt(0).Sub(one, fee)   // 1 - fee
+					minipoolScore.Mul(minipoolScore, bond)         // Multiply by bond
+					minipoolScore.Div(minipoolScore, validatorReq) // Divide by 32 to get the bond as a fraction of a total validator
+					minipoolScore.Add(minipoolScore, fee)          // Total = fee + (bond/32)(1 - fee)
+
+					// Add it to the minipool's score and the total score
+					minipool.AttestationScore.Add(minipool.AttestationScore, minipoolScore)
+					r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
+
+					r.successfulAttestations++
 				}
 			}
 		}
 	}
-
-	// TODO: RESUME HERE
 
 	// Determine how much ETH each node gets and how much the pool stakers get
 	poolStakerETH, nodeOpEth, err := r.calculateNodeRewards()
@@ -645,6 +660,12 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 
 // Calculate the distribution of Smoothing Pool ETH to each node
 func (r *treeGeneratorImpl_v5) calculateNodeRewards() (*big.Int, *big.Int, error) {
+
+	// If there weren't any successful attestations, everything goes to the pool stakers
+	if r.totalAttestationScore.Cmp(r.zero) == 0 || r.successfulAttestations == 0 {
+		r.log.Printlnf("WARNING: Total attestation score = %s, successful attestations = %d... sending the whole smoothing pool balance to the pool stakers.", r.totalAttestationScore.String(), r.successfulAttestations)
+		return r.smoothingPoolBalance, big.NewInt(0), nil
+	}
 
 	totalEthForMinipools := big.NewInt(0)
 	totalNodeOpShare := big.NewInt(0)
@@ -995,11 +1016,11 @@ func (r *treeGeneratorImpl_v5) getSmoothingPoolNodeDetails() error {
 					RewardsNetwork:   nativeNodeDetails.RewardNetwork.Uint64(),
 				}
 
-				isOptedIn := nativeNodeDetails.SmoothingPoolRegistrationState
+				nodeDetails.IsOptedIn = nativeNodeDetails.SmoothingPoolRegistrationState
 				statusChangeTimeBig := nativeNodeDetails.SmoothingPoolRegistrationChanged
 				statusChangeTime := time.Unix(statusChangeTimeBig.Int64(), 0)
 
-				if isOptedIn {
+				if nodeDetails.IsOptedIn {
 					nodeDetails.OptInTime = statusChangeTime
 					nodeDetails.OptOutTime = farFutureTime
 				} else {
