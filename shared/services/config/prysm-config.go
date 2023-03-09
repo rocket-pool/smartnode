@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	prysmBnTagAmd64Test string = "prysmaticlabs/prysm-beacon-chain:HEAD-ec13d5-debug"
-	prysmVcTagAmd64Test string = "prysmaticlabs/prysm-validator:HEAD-ec13d5-debug"
-	prysmTagArm64Test   string = "rocketpool/prysm:v3.2.1-ec13d52-arm64"
+	prysmBnTagAmd64Test string = "prysmaticlabs/prysm-beacon-chain:HEAD-e2fa7d-debug"
+	prysmVcTagAmd64Test string = "prysmaticlabs/prysm-validator:HEAD-e2fa7d-debug"
+	prysmTagArm64Test   string = "rocketpool/prysm:v3.2.2-rc.3"
 
 	prysmBnTagAmd64Prod     string = "prysmaticlabs/prysm-beacon-chain:HEAD-0cf1ca-debug"
 	prysmVcTagAmd64Prod     string = "prysmaticlabs/prysm-validator:HEAD-0cf1ca-debug"
