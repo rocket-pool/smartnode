@@ -212,7 +212,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Println()
 
 		// RPL stake details
-		fmt.Printf("%s=== RPL Stake and Minipools ===%s\n", colorGreen, colorReset)
+		fmt.Printf("%s=== RPL Stake ===%s\n", colorGreen, colorReset)
 		if !status.IsAtlasDeployed {
 			fmt.Printf(
 				"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL, allowing it to run %d minipool(s) in total.\n",
@@ -224,28 +224,33 @@ func getStatus(c *cli.Context) error {
 					"This is currently a %.2f%% collateral ratio.\n",
 					status.BorrowedCollateralRatio*100,
 				)
+
+				// RPL stake
+				fmt.Printf("The node must keep at least %.6f RPL staked to collateralize its minipools and claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
+				fmt.Println("")
 			}
 		} else {
 			fmt.Printf(
-				"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL, allowing it to take %.6f more ETH from the deposit pool for minipool deposits.\n",
+				"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL.\n",
 				math.RoundDown(eth.WeiToEth(status.RplStake), 6),
-				math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6),
-				math.RoundDown(eth.WeiToEth(status.EthMatchedLimit.Sub(status.EthMatchedLimit, status.EthMatched)), 6))
+				math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6))
 			if status.BorrowedCollateralRatio > 0 {
 				fmt.Printf(
-					"This is currently a %.2f%% collateral ratio on its borrowed ETH (%.2f%% ratio on its bonded ETH).\n",
-					status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100,
-				)
-				fmt.Printf("It can earn rewards on up to %.6f RPL (150%% of bonded ETH).\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
+					"This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n",
+					status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
+				fmt.Printf(
+					"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
+				fmt.Printf(
+					"It can earn rewards on up to %.6f RPL (150%% of bonded ETH).\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
 			}
+			fmt.Println()
+			fmt.Printf("The node can take %.6f more ETH from the deposit pool for minipool deposits.\n\n",
+				math.RoundDown(eth.WeiToEth(status.EthMatchedLimit.Sub(status.EthMatchedLimit, status.EthMatched)), 6))
 		}
 
 		// Minipool details
+		fmt.Printf("%s=== Minipools ===%s\n", colorGreen, colorReset)
 		if status.MinipoolCounts.Total > 0 {
-
-			// RPL stake
-			fmt.Printf("The node must keep at least %.6f RPL staked to collateralize its minipools and claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
-			fmt.Println("")
 
 			// Minipools
 			fmt.Printf("The node has a total of %d active minipool(s):\n", status.MinipoolCounts.Total-status.MinipoolCounts.Finalised)
