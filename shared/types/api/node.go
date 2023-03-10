@@ -31,7 +31,8 @@ type NodeStatusResponse struct {
 	EffectiveRplStake                 *big.Int        `json:"effectiveRplStake"`
 	MinimumRplStake                   *big.Int        `json:"minimumRplStake"`
 	MaximumRplStake                   *big.Int        `json:"maximumRplStake"`
-	CollateralRatio                   float64         `json:"collateralRatio"`
+	BorrowedCollateralRatio           float64         `json:"borrowedCollateralRatio"`
+	BondedCollateralRatio             float64         `json:"bondedCollateralRatio"`
 	VotingDelegate                    common.Address  `json:"votingDelegate"`
 	VotingDelegateFormatted           string          `json:"votingDelegateFormatted"`
 	IsAtlasDeployed                   bool            `json:"isAtlasDeployed"`

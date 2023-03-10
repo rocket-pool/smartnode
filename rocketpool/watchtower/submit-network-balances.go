@@ -399,7 +399,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 		timeSinceStart := slotTime.Sub(startTime)
 		intervalsPassed := timeSinceStart / intervalTime
-		endTime := time.Now()
+		endTime := slotTime
 
 		// Approximate the staker's share of the smoothing pool balance
 		treegen, err := rprewards.NewTreeGenerator(t.log, "[Balances]", client, t.cfg, t.bc, currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed), state)

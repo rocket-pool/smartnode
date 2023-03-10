@@ -258,9 +258,15 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	}
 	activeMinipools := response.MinipoolCounts.Total - response.MinipoolCounts.Finalised
 	if activeMinipools > 0 {
-		response.CollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools) * 16.0)
+		if isAtlasDeployed {
+			response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthMatched))
+			response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / eth.WeiToEth(response.EthMatched)
+		} else {
+			// Legacy behavior
+			response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools) * 16.0)
+		}
 	} else {
-		response.CollateralRatio = -1
+		response.BorrowedCollateralRatio = -1
 	}
 
 	// Return response
