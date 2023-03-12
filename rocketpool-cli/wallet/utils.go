@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -24,8 +26,28 @@ import (
 const bold string = "\033[1m"
 const unbold string = "\033[0m"
 
+// Generate a secure password with 32 bytes of entropy, encoded as a base64 string.
+func generatePassword() string {
+	randomBytes := make([]byte, 32)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		panic("failed to generate random bytes")
+	}
+
+	return base64.RawStdEncoding.EncodeToString(randomBytes)
+}
+
 // Prompt for a wallet password
 func promptPassword() string {
+	fmt.Println("Your keystore will be encrypted on disk using a password.")
+	fmt.Println("You do not need to store or remember this password.")
+	fmt.Print("You only need the seed phrase (from the next step) to recover your wallet.\n\n")
+
+	if cliutils.Confirm("Would you like the password to be automatically generated?") {
+		fmt.Print("Using randomly-generated password.\n\n")
+		return generatePassword()
+	}
+
 	for {
 		password := cliutils.PromptPassword(
 			"Please enter a password to secure your wallet with:",
@@ -36,8 +58,7 @@ func promptPassword() string {
 		if password == confirmation {
 			return password
 		}
-		fmt.Println("Password confirmation does not match.")
-		fmt.Println("")
+		fmt.Print("Password confirmation does not match.\n\n")
 	}
 }
 
