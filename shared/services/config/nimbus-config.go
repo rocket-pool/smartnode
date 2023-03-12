@@ -8,12 +8,12 @@ import (
 
 const (
 	// Prater
-	nimbusBnTagTest string = "rocketpool/nimbus-eth2:unstable-cdca079-bn"
-	nimbusVcTagTest string = "rocketpool/nimbus-eth2:unstable-cdca079-vc"
+	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.3.0"
+	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.3.0"
 
 	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.2.0"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.2.0"
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.3.0"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.3.0"
 
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
