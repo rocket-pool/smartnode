@@ -97,7 +97,7 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogge
 	}
 
 	// Legacy implementation for prior to the changeover
-	legacyImpl, err := legacy.NewSubmitNetworkBalances(c, logger, WatchtowerMaxFee, WatchtowerMaxPriorityFee)
+	legacyImpl, err := legacy.NewSubmitNetworkBalances(c, logger, getWatchtowerMaxFee(cfg), getWatchtowerPrioFee(cfg))
 	if err != nil {
 		return nil, fmt.Errorf("error creating legacy balance reporting implementation: %w", err)
 	}
@@ -556,14 +556,14 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(WatchtowerMaxFee)
+	maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+	opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Submit balances

@@ -458,13 +458,13 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(WatchtowerMaxFee)
+	maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+	opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Submit RPL price

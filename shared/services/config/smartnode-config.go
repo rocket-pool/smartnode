@@ -34,7 +34,11 @@ const (
 )
 
 // Defaults
-const defaultProjectName string = "rocketpool"
+const (
+	defaultProjectName       string = "rocketpool"
+	WatchtowerMaxFeeDefault  uint64 = 200
+	WatchtowerPrioFeeDefault uint64 = 3
+)
 
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
@@ -76,6 +80,12 @@ type SmartnodeConfig struct {
 
 	// Token for Oracle DAO members to use when uploading Merkle trees to Web3.Storage
 	Web3StorageApiToken config.Parameter `yaml:"web3StorageApiToken,omitempty"`
+
+	// Manual override for the watchtower's max fee
+	WatchtowerMaxFeeOverride config.Parameter `yaml:"watchtowerMaxFeeOverride,omitempty"`
+
+	// Manual override for the watchtower's priority fee
+	WatchtowerPrioFeeOverride config.Parameter `yaml:"watchtowerPrioFeeOverride,omitempty"`
 
 	///////////////////////////
 	// Non-editable settings //
@@ -245,9 +255,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		MinipoolStakeGasThreshold: config.Parameter{
 			ID:   "minipoolStakeGasThreshold",
-			Name: "Minipool Stake Gas Threshold",
-			Description: "Once a newly created minipool passes the scrub check and is ready to perform its second 16 ETH deposit (the `stake` transaction), your node will try to do so automatically using the `Rapid` suggestion from the gas estimator as its max fee. This threshold is a limit (in gwei) you can put on that suggestion; your node will not `stake` the new minipool until the suggestion is below this limit.\n\n" +
-				"Note that to ensure your minipool does not get dissolved, the node will ignore this limit and automatically execute the `stake` transaction at whatever the suggested fee happens to be once too much time has passed since its first deposit (currently 7 days).",
+			Name: "Automatic TX Gas Threshold",
+			Description: "Occasionally, the Smartnode will attempt to perform some automatic transactions (such as the second `stake` transaction to finish launching a minipool or the `reduce bond` transaction to convert a 16-ETH minipool to an 8-ETH one). During these, your node will use the `Rapid` suggestion from the gas estimator as its max fee.\n\nThis threshold is a limit (in gwei) you can put on that suggestion; your node will not `stake` the new minipool until the suggestion is below this limit.\n\n" +
+				"NOTE: the node will ignore this limit and automatically execute transactions at whatever the suggested fee happens to be once too much time has passed since those transactions were first eligible. You may end up paying more than you wanted to if you set this too low!",
 			Type:                 config.ParameterType_Float,
 			Default:              map[config.Network]interface{}{config.Network_All: float64(150)},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
@@ -299,6 +309,30 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			EnvironmentVariables: []string{},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
+		},
+
+		WatchtowerMaxFeeOverride: config.Parameter{
+			ID:                   "watchtowerMaxFeeOverride",
+			Name:                 "Watchtower Max Fee Override",
+			Description:          fmt.Sprintf("[orange]**For Oracle DAO members only.**\n\n[white]Use this to override the max fee (in gwei) for watchtower transactions. Note that if you set it below %d, the setting will be ignored; it can only be used to set the max fee higher than %d during times of extreme network stress.", WatchtowerMaxFeeDefault, WatchtowerMaxFeeDefault),
+			Type:                 config.ParameterType_Float,
+			Default:              map[config.Network]interface{}{config.Network_All: float64(WatchtowerMaxFeeDefault)},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   true,
+		},
+
+		WatchtowerPrioFeeOverride: config.Parameter{
+			ID:                   "watchtowerPrioFeeOverride",
+			Name:                 "Watchtower Priority Fee Override",
+			Description:          fmt.Sprintf("[orange]**For Oracle DAO members only.**\n\n[white]Use this to override the priority fee (in gwei) for watchtower transactions. Note that if you set it below %d, the setting will be ignored; it can only be used to set the priority fee higher than %d during times of extreme network stress.", WatchtowerPrioFeeDefault, WatchtowerPrioFeeDefault),
+			Type:                 config.ParameterType_Float,
+			Default:              map[config.Network]interface{}{config.Network_All: float64(WatchtowerPrioFeeDefault)},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   true,
 		},
 
 		txWatchUrl: map[config.Network]string{
@@ -532,6 +566,8 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.RewardsTreeMode,
 		&cfg.ArchiveECUrl,
 		&cfg.Web3StorageApiToken,
+		&cfg.WatchtowerMaxFeeOverride,
+		&cfg.WatchtowerPrioFeeOverride,
 	}
 }
 
