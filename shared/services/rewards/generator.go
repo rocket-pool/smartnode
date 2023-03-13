@@ -28,6 +28,7 @@ const (
 	PraterV2Interval uint64 = 37
 	PraterV3Interval uint64 = 49
 	PraterV4Interval uint64 = 60
+	PraterV5Interval uint64 = 76
 
 	// Zhejiang intervals
 	ZhejiangV4Interval uint64 = 0
@@ -77,7 +78,7 @@ func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.R
 		{
 			rewardsRulesetVersion: 5,
 			mainnetStartInterval:  TestingInterval,
-			praterStartInterval:   TestingInterval,
+			praterStartInterval:   PraterV5Interval,
 			zhejiangStartInterval: ZhejiangV5Interval,
 			generator:             newTreeGeneratorImpl_v5(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state),
 		}, {
