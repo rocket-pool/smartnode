@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -602,7 +603,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		// Do the client swap check
 		err := checkForValidatorChange(rp, cfg)
 		if err != nil {
-			fmt.Printf("%sWarning: couldn't verify that the validator container can be safely restarted:\n\t%s\n", colorYellow, err.Error())
+			fmt.Printf("%sWARNING: couldn't verify that the validator container can be safely restarted:\n\t%s\n", colorYellow, err.Error())
 			fmt.Println("If you are changing to a different ETH2 client, it may resubmit an attestation you have already submitted.")
 			fmt.Println("This will slash your validator!")
 			fmt.Println("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.\n")
@@ -670,13 +671,20 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 				return fmt.Errorf("error getting container prefix: %w", err)
 			}
 
+			successfulStop := true
 			eth2ContainerName := prefix + BeaconContainerSuffix
 			fmt.Printf("Stopping %s...\n", eth2ContainerName)
 			out, err := rp.StopContainer(eth2ContainerName)
 			if err != nil {
-				return fmt.Errorf("error stopping %s: %w", eth2ContainerName, err)
-			}
-			if out != eth2ContainerName {
+				exitErr, isExitErr := err.(*exec.ExitError)
+				if isExitErr && exitErr.ProcessState.ExitCode() == 1 && strings.Contains(out, "No such container:") {
+					// Handle errors where the container didn't exist
+					fmt.Printf("%sNOTE: couldn't shut down %s because it didn't exist.%s\n", colorYellow, eth2ContainerName, colorReset)
+					successfulStop = false
+				} else {
+					return fmt.Errorf("error stopping %s: %w", eth2ContainerName, err)
+				}
+			} else if out != eth2ContainerName {
 				return fmt.Errorf("unexpected output when trying to stop %s: [%s]", eth2ContainerName, out)
 			}
 
@@ -684,10 +692,24 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 			fmt.Printf("Stopping %s...\n", validatorContainerName)
 			out, err = rp.StopContainer(validatorContainerName)
 			if err != nil {
-				return fmt.Errorf("error stopping %s: %w", validatorContainerName, err)
-			}
-			if out != validatorContainerName {
+				exitErr, isExitErr := err.(*exec.ExitError)
+				if isExitErr && exitErr.ProcessState.ExitCode() == 1 && strings.Contains(out, "No such container:") {
+					// Handle errors where the container didn't exist
+					fmt.Printf("%sNOTE: couldn't shut down %s because it didn't exist.%s\n", colorYellow, validatorContainerName, colorReset)
+					successfulStop = false
+				} else {
+					return fmt.Errorf("error stopping %s: %w", validatorContainerName, err)
+				}
+			} else if out != validatorContainerName {
 				return fmt.Errorf("unexpected output when trying to stop %s: [%s]", validatorContainerName, out)
+			}
+
+			if !successfulStop {
+				fmt.Printf("Some of the containers couldn't be shut down safely.\nIf you just reinstalled Rocket Pool and have active validators, you **must ensure** you have waited 15 minutes since your last attestation and **missed at least two attestations** before continuing.\nIf you don't, you %sWILL BE SLASHED!%s\n\n", colorRed, colorReset)
+				if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+					fmt.Println("Cancelled.")
+					return nil
+				}
 			}
 		}
 	}
