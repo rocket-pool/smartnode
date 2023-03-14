@@ -255,7 +255,7 @@ func nodeDeposit(c *cli.Context) error {
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
 		"You are about to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%.\n"+
-			"%sARE YOU SURE YOU WANT TO DO THIS? Exiting this minipool and retrieving your capital cannot be done until both the Shapella hardfork of the Ethereum network and the Atlas upgrade of the Rocket Pool network have been deployed!%s",
+			"%sARE YOU SURE YOU WANT TO DO THIS? Exiting this minipool and retrieving your capital cannot be done until:\n- Your minipool has been *active* on the Beacon Chain for 256 epochs (approx. 27 hours)\n- The Shapella upgrade of the Ethereum network has been deployed\n- The Atlas upgrade of the Rocket Pool protocol has been deployed\n- Your minipool has been upgraded to use the Atlas delegate%s\n",
 		math.RoundDown(eth.WeiToEth(amountWei), 6),
 		minNodeFee*100,
 		colorYellow,

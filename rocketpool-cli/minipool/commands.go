@@ -500,7 +500,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 					cli.StringFlag{
 						Name:  "amount, a",
-						Usage: "The amount of ETH you will deposit: 16 or 32, (impacts vanity address generation)",
+						Usage: "The bond amount to be used for the minipool, in ETH (impacts vanity address generation)",
 					},
 				},
 				Action: func(c *cli.Context) error {
