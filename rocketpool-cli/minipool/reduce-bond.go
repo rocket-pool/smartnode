@@ -79,7 +79,8 @@ func beginReduceBondAmount(c *cli.Context) error {
 		if nodeDepositBalance == 16 &&
 			time.Since(minipool.ReduceBondTime) > bondReductionTimeout &&
 			!minipool.ReduceBondCancelled &&
-			minipool.Status.Status == types.Staking {
+			minipool.Status.Status == types.Staking &&
+			!minipool.Finalised {
 			reduceableMinipools = append(reduceableMinipools, minipool)
 		}
 	}
