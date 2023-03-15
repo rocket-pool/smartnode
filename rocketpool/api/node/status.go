@@ -268,7 +268,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			})
 			wg2.Go(func() error {
 				var err error
-				minStakeFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
+				maxStakeFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
 				return err
 			})
 
