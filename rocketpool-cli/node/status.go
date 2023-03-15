@@ -230,6 +230,7 @@ func getStatus(c *cli.Context) error {
 				fmt.Println("")
 			}
 		} else {
+			fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.\n")
 			fmt.Printf(
 				"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL.\n",
 				math.RoundDown(eth.WeiToEth(status.RplStake), 6),
@@ -244,8 +245,10 @@ func getStatus(c *cli.Context) error {
 					"It can earn rewards on up to %.6f RPL (150%% of bonded ETH).\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
 			}
 			fmt.Println()
+			remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
+			remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)
 			fmt.Printf("The node can take %.6f more ETH from the deposit pool for minipool deposits.\n\n",
-				math.RoundDown(eth.WeiToEth(status.EthMatchedLimit.Sub(status.EthMatchedLimit, status.EthMatched)), 6))
+				math.RoundDown(eth.WeiToEth(remainingAmount), 6))
 		}
 
 		// Minipool details

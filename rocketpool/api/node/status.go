@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -132,11 +134,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.MinipoolLimit, err = v110_node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil, &rocketNodeStakingAddress)
 			return err
 		} else {
-			response.EthMatched, err = node.GetNodeEthMatched(rp, nodeAccount.Address, nil)
-			if err != nil {
-				return err
-			}
-			response.EthMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAccount.Address, nil)
+			response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
 			return err
 		}
 	})
@@ -256,11 +254,53 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	activeMinipools := response.MinipoolCounts.Total - response.MinipoolCounts.Finalised
 	if activeMinipools > 0 {
 		if isAtlasDeployed {
-			response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthMatched))
-			response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / eth.WeiToEth(response.EthMatched)
+			var wg2 errgroup.Group
+			var minStakeFraction *big.Int
+			var maxStakeFraction *big.Int
+			wg2.Go(func() error {
+				var err error
+				minStakeFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
+				return err
+			})
+			wg2.Go(func() error {
+				var err error
+				minStakeFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
+				return err
+			})
+
+			// Wait for data
+			if err := wg2.Wait(); err != nil {
+				return nil, err
+			}
+
+			// Calculate the *real* minimum, including the pending bond reductions
+			trueMinimumStake := big.NewInt(0).Add(response.EthMatched, response.PendingMatchAmount)
+			trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
+			trueMinimumStake.Div(trueMinimumStake, rplPrice)
+
+			// Calculate the *real* maximum, including the pending bond reductions
+			trueMaximumStake := eth.EthToWei(32)
+			trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(activeMinipools)))
+			trueMaximumStake.Sub(trueMaximumStake, response.EthMatched)
+			trueMaximumStake.Sub(trueMaximumStake, response.PendingMatchAmount) // (32 * activeMinipools - ethMatched - pendingMatch)
+			trueMaximumStake.Mul(trueMaximumStake, maxStakeFraction)
+			trueMaximumStake.Div(trueMaximumStake, rplPrice)
+
+			response.MinimumRplStake = trueMinimumStake
+			response.MaximumRplStake = trueMaximumStake
+
+			if response.EffectiveRplStake.Cmp(trueMinimumStake) < 0 {
+				response.EffectiveRplStake.SetUint64(0)
+			} else if response.EffectiveRplStake.Cmp(trueMaximumStake) > 0 {
+				response.EffectiveRplStake.Set(trueMaximumStake)
+			}
+
+			response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthMatched) - eth.WeiToEth(response.PendingMatchAmount))
+			response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthMatched) + eth.WeiToEth(response.PendingMatchAmount))
 		} else {
 			// Legacy behavior
 			response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools) * 16.0)

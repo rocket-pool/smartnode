@@ -136,7 +136,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 	// Get node staking information
 	wg1.Go(func() error {
-		ethMatched, ethMatchedLimit, pendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address)
+		ethMatched, ethMatchedLimit, pendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
 		if err != nil {
 			return fmt.Errorf("error checking collateral for node %s: %w", nodeAccount.Address.Hex(), err)
 		}

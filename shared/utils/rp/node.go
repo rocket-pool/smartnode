@@ -63,9 +63,9 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionC
 }
 
 // Checks the given node's current matched ETH, its limit on matched ETH, and how much ETH is preparing to be matched by pending bond reductions
-func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address) (ethMatched *big.Int, ethMatchedLimit *big.Int, pendingMatchAmount *big.Int, err error) {
+func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (ethMatched *big.Int, ethMatchedLimit *big.Int, pendingMatchAmount *big.Int, err error) {
 	// Get the node's minipool addresses
-	addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress, nil)
+	addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress, opts)
 	if err != nil {
 		err = fmt.Errorf("error getting minipool addresses for node %s: %w", nodeAddress.Hex(), err)
 		return
@@ -77,7 +77,7 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address) (eth
 
 	wg.Go(func() error {
 		var err error
-		ethMatched, err = node.GetNodeEthMatched(rp, nodeAddress, nil)
+		ethMatched, err = node.GetNodeEthMatched(rp, nodeAddress, opts)
 		if err != nil {
 			return fmt.Errorf("error getting node's matched ETH amount: %w", err)
 		}
@@ -85,7 +85,7 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address) (eth
 	})
 	wg.Go(func() error {
 		var err error
-		ethMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAddress, nil)
+		ethMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAddress, opts)
 		if err != nil {
 			return fmt.Errorf("error getting how much ETH the node is able to borrow: %w", err)
 		}
@@ -95,7 +95,7 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address) (eth
 		i := i
 		address := address
 		wg.Go(func() error {
-			reduceBondTime, err := minipool.GetReduceBondTime(rp, address, nil)
+			reduceBondTime, err := minipool.GetReduceBondTime(rp, address, opts)
 			if err != nil {
 				return fmt.Errorf("error getting bond reduction time for minipool %s: %w", address.Hex(), err)
 			}
@@ -107,15 +107,15 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address) (eth
 			}
 
 			// Get the old and new (pending) bonds
-			mp, err := minipool.NewMinipool(rp, address, nil)
+			mp, err := minipool.NewMinipool(rp, address, opts)
 			if err != nil {
 				return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
 			}
-			oldBond, err := mp.GetNodeDepositBalance(nil)
+			oldBond, err := mp.GetNodeDepositBalance(opts)
 			if err != nil {
 				return fmt.Errorf("error getting node deposit balance for minipool %s: %w", address.Hex(), err)
 			}
-			newBond, err := minipool.GetReduceBondValue(rp, address, nil)
+			newBond, err := minipool.GetReduceBondValue(rp, address, opts)
 			if err != nil {
 				return fmt.Errorf("error getting pending bond reduced balance for minipool %s: %w", address.Hex(), err)
 			}

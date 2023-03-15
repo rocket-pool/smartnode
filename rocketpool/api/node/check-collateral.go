@@ -33,7 +33,7 @@ func checkCollateral(c *cli.Context) (*api.CheckCollateralResponse, error) {
 	}
 
 	// Check collateral
-	response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address)
+	response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}
