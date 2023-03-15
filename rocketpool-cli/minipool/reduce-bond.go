@@ -3,6 +3,7 @@ package minipool
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -131,6 +132,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 	var totalGas uint64 = 0
 	var totalSafeGas uint64 = 0
 	var gasInfo rocketpoolapi.GasInfo
+	totalMatchRequest := big.NewInt(0)
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanBeginReduceBondAmount(minipool.Address, newBondAmount)
 		if err != nil {
@@ -148,9 +150,6 @@ func beginReduceBondAmount(c *cli.Context) error {
 				if canResponse.BalanceTooLow {
 					fmt.Printf("The minipool's validator balance on the Beacon Chain is too low (must be 32 ETH or higher, currently %.6f ETH).\n", math.RoundDown(float64(canResponse.Balance)/1e9, 6))
 				}
-				if canResponse.InsufficientRplStake {
-					fmt.Println("You do not have enough RPL staked to support this bond reduction; it would bring you below the minimum RPL staking requirement. You will have to stake more RPL first.")
-				}
 				if canResponse.InvalidBeaconState {
 					fmt.Printf("The minipool's validator is not in a legal state on the Beacon Chain. It must be pending or active (current state: %s)\n", canResponse.BeaconState)
 				}
@@ -159,10 +158,23 @@ func beginReduceBondAmount(c *cli.Context) error {
 			gasInfo = canResponse.GasInfo
 			totalGas += canResponse.GasInfo.EstGasLimit
 			totalSafeGas += canResponse.GasInfo.SafeGasLimit
+			totalMatchRequest.Add(totalMatchRequest, canResponse.MatchRequest)
 		}
 	}
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
+
+	// Make sure there's enough collateral to cover all of the pending bond reductions
+	collateralResponse, err := rp.CheckCollateral()
+	if err != nil {
+		return fmt.Errorf("error checking the node's total collateral: %w", err)
+	}
+	totalMatchAvailable := big.NewInt(0).Sub(collateralResponse.EthMatchedLimit, collateralResponse.EthMatched)
+	totalMatchAvailable.Sub(totalMatchAvailable, collateralResponse.PendingMatchAmount)
+	if totalMatchAvailable.Cmp(totalMatchRequest) < 0 {
+		fmt.Printf("You do not have enough RPL staked to support all of the selected bond reductions.\nYou can borrow %.6f more ETH, but are requesting %.6f ETH with these bond reductions.\nIn total, they would bring you below the minimum RPL staking requirement (including the RPL required for any pending bond reductions you've already started).\nYou will have to stake more RPL first.\n", eth.WeiToEth(totalMatchAvailable), eth.WeiToEth(totalMatchRequest))
+		return nil
+	}
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))

@@ -33,6 +33,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
@@ -102,6 +103,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	var wg1 errgroup.Group
 	var ethMatched *big.Int
 	var ethMatchedLimit *big.Int
+	var pendingMatchAmount *big.Int
 	var minipoolAddress common.Address
 	var depositPoolBalance *big.Int
 
@@ -134,14 +136,11 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 	// Get node staking information
 	wg1.Go(func() error {
-		var err error
-		ethMatched, err = node.GetNodeEthMatched(rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg1.Go(func() error {
-		var err error
-		ethMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAccount.Address, nil)
-		return err
+		ethMatched, ethMatchedLimit, pendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address)
+		if err != nil {
+			return fmt.Errorf("error checking collateral for node %s: %w", nodeAccount.Address.Hex(), err)
+		}
+		return nil
 	})
 
 	// Get deposit pool balance
@@ -168,7 +167,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	validatorEthWei := eth.EthToWei(ValidatorEth)
 	matchRequest := big.NewInt(0).Sub(validatorEthWei, amountWei)
 	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)
-
+	availableToMatch.Sub(availableToMatch, pendingMatchAmount)
 	response.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
 
 	// Update response

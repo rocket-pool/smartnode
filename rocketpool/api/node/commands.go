@@ -1316,6 +1316,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "check-collateral",
+				Usage:     "Check if the node is above the minimum collateralization threshold, including pending bond reductions",
+				UsageText: "rocketpool api node check-collateral",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(checkCollateral(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }

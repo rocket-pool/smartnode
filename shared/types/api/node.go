@@ -489,3 +489,12 @@ type SmoothingRewardsResponse struct {
 	Error      string   `json:"error"`
 	EthBalance *big.Int `json:"eth_balance"`
 }
+
+type CheckCollateralResponse struct {
+	Status                 string   `json:"status"`
+	Error                  string   `json:"error"`
+	EthMatched             *big.Int `json:"ethMatched"`
+	EthMatchedLimit        *big.Int `json:"ethMatchedLimit"`
+	PendingMatchAmount     *big.Int `json:"pendingMatchAmount"`
+	InsufficientCollateral bool     `json:"insufficientCollateral"`
+}
