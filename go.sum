@@ -98,8 +98,8 @@ github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd h1:p9K
 github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd/go.mod h1:UE9fof8P7iESVtLn1K9CTSkNRYVFHZHlf96RKbU33kA=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20230228020137-d5a680907dff h1:rOZevts77yp6t7J9xPRxhM1s4xyp4vbfqQJlFIWdDGE=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20230228020137-d5a680907dff/go.mod h1:BL08w51uFHR1AbrnqMwPNSf8a3EpQoE3aGglxcDcw84=
-github.com/rocket-pool/smartnode v1.9.0-a1 h1:9IjZxyim0/ADHscy5N/lNhpRt91KZAiNCZn24cbLwuc=
-github.com/rocket-pool/smartnode v1.9.0-a1/go.mod h1:JcKkNKXETxOATM1FE5lJbuy+qUWQG7zy4yOw249KrN0=
+github.com/rocket-pool/smartnode v1.9.0-rc1.0.20230317054040-ae91ef90ba5f h1:wm4q4yMq1VF/hTJD+ccZRfiFAI1ghiCRkr33v38E67g=
+github.com/rocket-pool/smartnode v1.9.0-rc1.0.20230317054040-ae91ef90ba5f/go.mod h1:JcKkNKXETxOATM1FE5lJbuy+qUWQG7zy4yOw249KrN0=
 github.com/rogpeppe/go-internal v1.8.0 h1:FCbCCtXNOY3UtUuHUYaghJg4y7Fd14rXifAYUAtL9R8=
 github.com/rs/cors v1.7.0 h1:+88SsELBHx5r+hZ8TCkggzSstaWNbDvThkVK8H6f9ik=
 github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf35Ld67mk=

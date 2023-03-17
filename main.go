@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	version    string = "1.2.0-a1"
+	version    string = "1.2.0-a2"
 	colorReset string = "\033[0m"
 	colorRed   string = "\033[31m"
 )
