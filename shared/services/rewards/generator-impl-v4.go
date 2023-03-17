@@ -1323,6 +1323,15 @@ func (r *treeGeneratorImpl_v4) validateNetwork(network uint64) (bool, error) {
 
 // Gets the start blocks for the given interval
 func (r *treeGeneratorImpl_v4) getStartBlocksForInterval(previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
+	// Sanity check to confirm the BN can access the block from the previous interval
+	_, exists, err := r.bc.GetBeaconBlock(previousIntervalEvent.ConsensusBlock.String())
+	if err != nil {
+		return nil, fmt.Errorf("error verifying block from previous interval: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("couldn't retrieve CL block from previous interval (slot %d); this likely means you checkpoint sync'd your Beacon Node and it has not backfilled to the previous interval yet so it cannot be used for tree generation", previousIntervalEvent.ConsensusBlock.Uint64())
+	}
+
 	previousEpoch := previousIntervalEvent.ConsensusBlock.Uint64() / r.beaconConfig.SlotsPerEpoch
 	nextEpoch := previousEpoch + 1
 	r.rewardsFile.ConsensusStartBlock = nextEpoch * r.beaconConfig.SlotsPerEpoch
@@ -1345,7 +1354,6 @@ func (r *treeGeneratorImpl_v4) getStartBlocksForInterval(previousIntervalEvent r
 	}
 
 	var startElHeader *types.Header
-	var err error
 	if elBlockNumber == 0 {
 		// We are pre-merge, so get the first block after the one from the previous interval
 		r.rewardsFile.ExecutionStartBlock = previousIntervalEvent.ExecutionBlock.Uint64() + 1
