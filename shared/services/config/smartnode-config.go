@@ -87,6 +87,12 @@ type SmartnodeConfig struct {
 	// Manual override for the watchtower's priority fee
 	WatchtowerPrioFeeOverride config.Parameter `yaml:"watchtowerPrioFeeOverride,omitempty"`
 
+	// The epoch to switch over to TWAP for RPL price reporting
+	RplTwapEpoch config.Parameter `yaml:"rplTwapEpoch,omitempty"`
+
+	// The epoch to start using the new network balance calculation implementation
+	BalancesModernizationEpoch config.Parameter `yaml:"balancesModernizationEpoch,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -319,7 +325,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Default:              map[config.Network]interface{}{config.Network_All: float64(WatchtowerMaxFeeDefault)},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
-			CanBeBlank:           true,
+			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
 
@@ -331,7 +337,41 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Default:              map[config.Network]interface{}{config.Network_All: float64(WatchtowerPrioFeeDefault)},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
-			CanBeBlank:           true,
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		RplTwapEpoch: config.Parameter{
+			ID:          "rplTwapEpoch",
+			Name:        "RPL TWAP Epoch",
+			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from spot prices to TWAP for RPL price submission.",
+			Type:        config.ParameterType_Uint,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet:  uint64(999999999999999),
+				config.Network_Prater:   uint64(162094),
+				config.Network_Devnet:   uint64(162094),
+				config.Network_Zhejiang: uint64(0),
+			},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		BalancesModernizationEpoch: config.Parameter{
+			ID:          "balancesModernizationEpoch",
+			Name:        "Balances Modernization Epoch",
+			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from the old network balance calculation method to the new one.",
+			Type:        config.ParameterType_Uint,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet:  uint64(999999999999999),
+				config.Network_Prater:   uint64(162094),
+				config.Network_Devnet:   uint64(162094),
+				config.Network_Zhejiang: uint64(0),
+			},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
 
@@ -569,6 +609,8 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.Web3StorageApiToken,
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPrioFeeOverride,
+		&cfg.RplTwapEpoch,
+		&cfg.BalancesModernizationEpoch,
 	}
 }
 

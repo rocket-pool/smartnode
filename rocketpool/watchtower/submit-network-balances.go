@@ -25,18 +25,9 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-)
-
-// Settings
-const (
-	behaviorTransitionEpochMainnet  uint64 = 999999999999999
-	behaviorTransitionEpochPrater   uint64 = 162094 // 2023-03-14 00:01:36 UTC
-	behaviorTransitionEpochDevnet   uint64 = 162094
-	behaviorTransitionEpochZhejiang uint64 = 0
 )
 
 // Submit network balances task
@@ -180,20 +171,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState, isAtlasDeployed b
 	}
 
 	// If the state epoch is before the changeover, run the legacy implementation
-	var transitionEpoch uint64
-	selectedNetwork := t.cfg.Smartnode.Network.Value.(cfgtypes.Network)
-	switch selectedNetwork {
-	case cfgtypes.Network_Mainnet:
-		transitionEpoch = behaviorTransitionEpochMainnet
-	case cfgtypes.Network_Prater:
-		transitionEpoch = behaviorTransitionEpochPrater
-	case cfgtypes.Network_Devnet:
-		transitionEpoch = behaviorTransitionEpochDevnet
-	case cfgtypes.Network_Zhejiang:
-		transitionEpoch = behaviorTransitionEpochZhejiang
-	default:
-		return fmt.Errorf("cannot determine proper balance check behavior: unknown network [%s]", selectedNetwork)
-	}
+	transitionEpoch := t.cfg.Smartnode.BalancesModernizationEpoch.Value.(uint64)
 
 	// Run the old behavior until we've flipped over to the new one
 	if requiredEpoch < transitionEpoch {

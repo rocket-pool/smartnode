@@ -30,7 +30,6 @@ import (
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -153,11 +152,7 @@ const (
 	RplPriceDecreaseDeviationThreshold float64 = 0.5 // Error out if price drops >50%
 	RplPriceIncreaseDeviationThreshold float64 = 1.6 // Error out if price rises >60%
 
-	twapNumberOfSeconds         uint32 = 60 * 60 * 12 // 12 hours
-	twapTransitionEpochMainnet  uint64 = 999999999999999
-	twapTransitionEpochPrater   uint64 = 162094 // 2023-03-14 00:01:36 UTC
-	twapTransitionEpochDevnet   uint64 = 162094
-	twapTransitionEpochZhejiang uint64 = 0
+	twapNumberOfSeconds uint32 = 60 * 60 * 12 // 12 hours
 )
 
 type poolObserveResponse struct {
@@ -324,7 +319,8 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 
 		// Get RPL price at block
 		var rplPrice *big.Int
-		if targetEpoch < t.getTwapEpoch() {
+		twapEpoch := t.cfg.Smartnode.RplTwapEpoch.Value.(uint64)
+		if targetEpoch < twapEpoch {
 			rplPrice, err = t.getRplPrice(blockNumber)
 		} else {
 			rplPrice, err = t.getRplTwap(blockNumber)
@@ -1100,21 +1096,4 @@ func (t *submitRplPrice) submitArbitrumPrice() error {
 	}
 
 	return nil
-}
-
-// Get the epoch for using TWAP based on the selected network
-func (t *submitRplPrice) getTwapEpoch() uint64 {
-	network := t.cfg.Smartnode.Network.Value.(cfgtypes.Network)
-	switch network {
-	case cfgtypes.Network_Mainnet:
-		return twapTransitionEpochMainnet
-	case cfgtypes.Network_Prater:
-		return twapTransitionEpochPrater
-	case cfgtypes.Network_Devnet:
-		return twapTransitionEpochDevnet
-	case cfgtypes.Network_Zhejiang:
-		return twapTransitionEpochZhejiang
-	default:
-		panic(fmt.Sprintf("unknown network [%v]", network))
-	}
 }
