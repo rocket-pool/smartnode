@@ -313,6 +313,31 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "set-ens-avatar",
+				Usage:     "Set an avatar to the node wallet's ENS record",
+				UsageText: "rocketpool api node set-ens-avatar erc_type(erc721/erc1155) contract_address token_id",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+						return err
+					}
+
+					contractAddress, err := cliutils.ValidateAddress("contractAddress", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					tokenId, err := cliutils.ValidateBigInt("tokenId", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(setEnsAvatar(c, c.Args().Get(0), contractAddress, tokenId, false))
+					return nil
+
+				},
+			},
 		},
 	})
 }
