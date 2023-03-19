@@ -341,7 +341,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "set-ens-avatar",
 				Usage:     "Set an avatar to the node wallet's ENS record",
-				UsageText: "rocketpool api node set-ens-avatar erc_type(erc721/erc1155) contract_address token_id",
+				UsageText: "rocketpool api node set-ens-avatar erc721/erc1155 contractAddress tokenId",
 				Action: func(c *cli.Context) error {
 
 					// Validate args

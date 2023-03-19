@@ -233,7 +233,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "set-ens-avatar",
 				Usage:     "Set an avatar to the node wallet's ENS record",
-				UsageText: "rocketpool wallet set-ens-avatar ercType contractAddress tokenId",
+				UsageText: "rocketpool wallet set-ens-avatar erc721/erc1155 contractAddress tokenId",
 				Action: func(c *cli.Context) error {
 
 					// Validate args

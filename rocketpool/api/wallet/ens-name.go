@@ -133,10 +133,10 @@ func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address
 	if err != nil {
 		return nil, fmt.Errorf("error creating reverse registrar binding: %w", err)
 	}
-	avatarString := fmt.Sprintf("%s:%s:%d", ercType, contractAddress.String(), tokenId)
+	avatarString := fmt.Sprintf("eip155:1/%s:%s/%s", ercType, contractAddress.Hex(), tokenId.String())
 	tx, err := resolver.SetText(opts, "avatar", avatarString)
 	if err != nil {
-		return nil, fmt.Errorf("error setting ENS name: %w", err)
+		return nil, fmt.Errorf("error setting ENS avatar: %w", err)
 	}
 	response := api.SetEnsAvatarResponse{
 		Address:      account.Address,

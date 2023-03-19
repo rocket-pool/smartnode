@@ -231,7 +231,7 @@ func (c *Client) SetEnsName(name string) (api.SetEnsNameResponse, error) {
 
 // Set an avatar to the node wallet's ENS record
 func (c *Client) SetEnsAvatar(ercType string, contractAddress common.Address, tokenId *big.Int) (api.SetEnsAvatarResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-ens-avatar %s", ercType, contractAddress.Hex(), tokenId.String()))
+	responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-ens-avatar %s %s %s", ercType, contractAddress.Hex(), tokenId.String()))
 	if err != nil {
 		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not update ENS record: %w", err)
 	}
