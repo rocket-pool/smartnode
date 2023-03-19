@@ -230,7 +230,31 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "set-ens-avatar",
+				Usage:     "Set an avatar to the node wallet's ENS record",
+				UsageText: "rocketpool wallet set-ens-avatar ercType contractAddress tokenId",
+				Action: func(c *cli.Context) error {
 
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+						return err
+					}
+
+					contractAddress, err := cliutils.ValidateAddress("contractAddress", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					tokenId, err := cliutils.ValidateBigInt("tokenId", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return setEnsAvatar(c, c.Args().Get(0), contractAddress, tokenId)
+
+				},
+			},
 			{
 				Name:      "purge",
 				Usage:     fmt.Sprintf("%sDeletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!%s", colorRed, colorReset),

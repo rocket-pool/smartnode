@@ -3,6 +3,7 @@ package rocketpool
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -196,7 +197,23 @@ func (c *Client) EstimateGasSetEnsName(name string) (api.SetEnsNameResponse, err
 	return response, nil
 }
 
-//  Set an ENS reverse record to a name
+// Estimate the gas required to set an ENS avatar record
+func (c *Client) EstimateGasSetEnsAvatar(ercType string, contractAddress common.Address, tokenId *big.Int) (api.SetEnsAvatarResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("wallet estimate-gas-set-ens-avatar %s %s %s", ercType, contractAddress.Hex(), tokenId.String()))
+	if err != nil {
+		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-avatar response: %w", err)
+	}
+	var response api.SetEnsAvatarResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not decode estimate-gas-set-ens-avatar response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-avatar response: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Set an ENS reverse record to a name
 func (c *Client) SetEnsName(name string) (api.SetEnsNameResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-ens-name %s", name))
 	if err != nil {
@@ -208,6 +225,22 @@ func (c *Client) SetEnsName(name string) (api.SetEnsNameResponse, error) {
 	}
 	if response.Error != "" {
 		return api.SetEnsNameResponse{}, fmt.Errorf("Could not update ENS record: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Set an avatar to the node wallet's ENS record
+func (c *Client) SetEnsAvatar(ercType string, contractAddress common.Address, tokenId *big.Int) (api.SetEnsAvatarResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-ens-avatar %s", ercType, contractAddress.Hex(), tokenId.String()))
+	if err != nil {
+		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not update ENS record: %w", err)
+	}
+	var response api.SetEnsAvatarResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not decode set-ens-avatar response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not update ENS record: %s", response.Error)
 	}
 	return response, nil
 }
