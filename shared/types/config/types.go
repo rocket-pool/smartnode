@@ -94,6 +94,7 @@ const (
 	MevRelayID_Blocknative        MevRelayID = "blocknative"
 	MevRelayID_Eden               MevRelayID = "eden"
 	MevRelayID_Ultrasound         MevRelayID = "ultrasound"
+	MevRelayID_Aestus             MevRelayID = "aestus"
 )
 
 // Enum to describe MEV-Boost relay selection mode
