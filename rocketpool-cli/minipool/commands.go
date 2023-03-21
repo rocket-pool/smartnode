@@ -444,8 +444,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "set-use-latest-delegate",
 				Aliases:   []string{"l"},
-				Usage:     "If enabled, the minipool will ignore its current delegate contract and always use whatever the latest delegate is",
-				UsageText: "rocketpool minipool set-use-latest-delegate [options] setting",
+				Usage:     "Use this to enable or disable the \"use-latest-delegate\" flag on one or more minipools. If enabled, the minipool will ignore its current delegate contract and always use whatever the latest delegate is.",
+				UsageText: "rocketpool minipool set-use-latest-delegate [options] true/false",
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "minipool, m",
