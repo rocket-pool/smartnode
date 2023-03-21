@@ -1,6 +1,10 @@
 package wallet
 
 import (
+	"fmt"
+	"net/url"
+
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -300,24 +304,50 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "estimate-gas-set-ens-avatar",
 				Usage:     "Estimate the gas required to set an avatar for the node wallet's ENS record",
 				UsageText: "rocketpool api node estimate-gas-set-ens-avatar ercType contractAddress tokenId",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "use-url, u",
+						Usage: "Use an URL to specify the node's avatar",
+					},
+				},
 				Action: func(c *cli.Context) error {
 
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
-						return err
-					}
-					contractAddress, err := cliutils.ValidateAddress("contractAddress", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-					tokenId, err := cliutils.ValidateBigInt("tokenId", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
+					if c.Bool("use-url") {
+						// Args will be the URL
+						if err := cliutils.ValidateArgCount(c, 1); err != nil {
+							return err
+						}
+						imageUrl := c.Args().Get(0)
+						parsedUrl, err := url.Parse(imageUrl)
+						if err != nil {
+							return err
+						}
+						// Run
+						api.PrintResponse(setEnsAvatar(c, "", common.Address{}, nil, parsedUrl, true))
+						return nil
 
-					// Run
-					api.PrintResponse(setEnsAvatar(c, c.Args().Get(0), contractAddress, tokenId, true))
-					return nil
+					} else {
+						// Validate args (erc721/erc1155 contractAddress tokenId)
+						if err := cliutils.ValidateArgCount(c, 3); err != nil {
+							return err
+						}
+						ercType := c.Args().Get(0)
+						if ercType != "erc721" && ercType != "erc1155" {
+							return fmt.Errorf("invalid ERC type. Suppported types are 'erc721' and 'erc1155'.")
+						}
+						contractAddress, err := cliutils.ValidateAddress("contractAddress", c.Args().Get(1))
+						if err != nil {
+							return err
+						}
+						tokenId, err := cliutils.ValidateBigInt("tokenId", c.Args().Get(2))
+						if err != nil {
+							return err
+						}
+
+						// Run
+						api.PrintResponse(setEnsAvatar(c, ercType, contractAddress, tokenId, nil, true))
+						return nil
+					}
 
 				},
 			},
@@ -342,23 +372,44 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "set-ens-avatar",
 				Usage:     "Set an avatar to the node wallet's ENS record",
 				UsageText: "rocketpool api node set-ens-avatar erc721/erc1155 contractAddress tokenId",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "use-url, u",
+						Usage: "Use an URL to specify the node's avatar",
+					},
+				},
 				Action: func(c *cli.Context) error {
 
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
-						return err
+					if c.Bool("use-url") {
+						// Args will be only the URL
+						if err := cliutils.ValidateArgCount(c, 1); err != nil {
+							return err
+						}
+						imageUrl := c.Args().Get(0)
+						parsedUrl, err := url.Parse(imageUrl)
+						if err != nil {
+							return err
+						}
+						// Run
+						api.PrintResponse(setEnsAvatar(c, "", common.Address{}, nil, parsedUrl, false))
+					} else {
+						// Validate args (erc721/erc1155 contractAddress tokenId)
+						if err := cliutils.ValidateArgCount(c, 3); err != nil {
+							return err
+						}
+
+						contractAddress, err := cliutils.ValidateAddress("contractAddress", c.Args().Get(1))
+						if err != nil {
+							return err
+						}
+						tokenId, err := cliutils.ValidateBigInt("tokenId", c.Args().Get(2))
+						if err != nil {
+							return err
+						}
+						// Run
+						api.PrintResponse(setEnsAvatar(c, c.Args().Get(0), contractAddress, tokenId, nil, false))
 					}
 
-					contractAddress, err := cliutils.ValidateAddress("contractAddress", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-					tokenId, err := cliutils.ValidateBigInt("tokenId", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
-					// Run
-					api.PrintResponse(setEnsAvatar(c, c.Args().Get(0), contractAddress, tokenId, false))
 					return nil
 
 				},

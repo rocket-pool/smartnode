@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -198,6 +199,22 @@ func (c *Client) EstimateGasSetEnsName(name string) (api.SetEnsNameResponse, err
 }
 
 // Estimate the gas required to set an ENS avatar record
+func (c *Client) EstimateGasSetEnsAvatarURL(url string) (api.SetEnsAvatarResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("wallet estimate-gas-set-ens-avatar -u %s", url))
+	if err != nil {
+		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-avatar response: %w", err)
+	}
+	var response api.SetEnsAvatarResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not decode estimate-gas-set-ens-avatar response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-avatar response: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Estimate the gas required to set an ENS avatar record
 func (c *Client) EstimateGasSetEnsAvatar(ercType string, contractAddress common.Address, tokenId *big.Int) (api.SetEnsAvatarResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("wallet estimate-gas-set-ens-avatar %s %s %s", ercType, contractAddress.Hex(), tokenId.String()))
 	if err != nil {
@@ -230,10 +247,19 @@ func (c *Client) SetEnsName(name string) (api.SetEnsNameResponse, error) {
 }
 
 // Set an avatar to the node wallet's ENS record
-func (c *Client) SetEnsAvatar(ercType string, contractAddress common.Address, tokenId *big.Int) (api.SetEnsAvatarResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-ens-avatar %s %s %s", ercType, contractAddress.Hex(), tokenId.String()))
-	if err != nil {
-		return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not update ENS record: %w", err)
+func (c *Client) SetEnsAvatar(ercType string, contractAddress common.Address, tokenId *big.Int, imageURL *url.URL) (api.SetEnsAvatarResponse, error) {
+	var responseBytes []byte
+	var err error
+	if imageURL != nil {
+		responseBytes, err = c.callAPI(fmt.Sprintf("wallet set-ens-avatar %s", imageURL.String()))
+		if err != nil {
+			return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not update ENS record: %w", err)
+		}
+	} else {
+		responseBytes, err = c.callAPI(fmt.Sprintf("wallet set-ens-avatar %s %s %s", ercType, contractAddress.Hex(), tokenId.String()))
+		if err != nil {
+			return api.SetEnsAvatarResponse{}, fmt.Errorf("Could not update ENS record: %w", err)
+		}
 	}
 	var response api.SetEnsAvatarResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {

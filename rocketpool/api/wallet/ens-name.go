@@ -3,6 +3,7 @@ package wallet
 import (
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -94,7 +95,7 @@ func setEnsName(c *cli.Context, name string, onlyEstimateGas bool) (*api.SetEnsN
 }
 
 // Set an avatar to the node wallet's ENS record.
-func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address, tokenId *big.Int, onlyEstimateGas bool) (*api.SetEnsAvatarResponse, error) {
+func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address, tokenId *big.Int, imageUrl *url.URL, onlyEstimateGas bool) (*api.SetEnsAvatarResponse, error) {
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -115,11 +116,6 @@ func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address
 		return nil, fmt.Errorf("error reverse resolving %s to an ENS name: %w", account.Address.Hex(), err)
 	}
 
-	// NFT validation
-	if ercType != "erc721" && ercType != "erc1155" {
-		return nil, fmt.Errorf("invalid ERC type. Suppported types are 'erc721' and 'erc1155'.")
-	}
-
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
@@ -133,7 +129,13 @@ func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address
 	if err != nil {
 		return nil, fmt.Errorf("error creating reverse registrar binding: %w", err)
 	}
-	avatarString := fmt.Sprintf("eip155:1/%s:%s/%s", ercType, contractAddress.Hex(), tokenId.String())
+	var avatarString string
+	if imageUrl != nil {
+		avatarString = imageUrl.String()
+	} else {
+		avatarString = fmt.Sprintf("eip155:1/%s:%s/%s", ercType, contractAddress.Hex(), tokenId.String())
+	}
+
 	tx, err := resolver.SetText(opts, "avatar", avatarString)
 	if err != nil {
 		return nil, fmt.Errorf("error setting ENS avatar: %w", err)

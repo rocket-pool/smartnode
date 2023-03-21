@@ -3,10 +3,12 @@ package wallet
 import (
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/urfave/cli"
 )
@@ -56,7 +58,7 @@ func setEnsName(c *cli.Context, name string) error {
 
 }
 
-func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address, tokenId *big.Int) error {
+func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address, tokenId *big.Int, imageURL *url.URL) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
@@ -65,12 +67,20 @@ func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address
 	}
 	defer rp.Close()
 
-	fmt.Printf("This will confirm the node's ENS avatar as '%s:%s:%s'.\n\n%s\n\n", ercType, contractAddress.Hex(), tokenId.String(), colorReset)
-
 	// Get gas estimate
-	estimateGasSetName, err := rp.EstimateGasSetEnsAvatar(ercType, contractAddress, tokenId)
-	if err != nil {
-		return err
+	estimateGasSetName := api.SetEnsAvatarResponse{}
+	if imageURL != nil {
+		fmt.Printf("This will confirm the node's ENS avatar as '%s'.\n\n", imageURL.String())
+		estimateGasSetName, err = rp.EstimateGasSetEnsAvatarURL(imageURL.String())
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Printf("This will confirm the node's ENS avatar as '%s:%s:%s'.\n\n", ercType, contractAddress.Hex(), tokenId.String())
+		estimateGasSetName, err = rp.EstimateGasSetEnsAvatar(ercType, contractAddress, tokenId)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Assign max fees
@@ -85,9 +95,17 @@ func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address
 	}
 
 	// Set the avatar
-	response, err := rp.SetEnsAvatar(ercType, contractAddress, tokenId)
-	if err != nil {
-		return err
+	response := api.SetEnsAvatarResponse{}
+	if imageURL != nil {
+		response, err = rp.SetEnsAvatar("", common.Address{}, nil, imageURL)
+		if err != nil {
+			return err
+		}
+	} else {
+		response, err = rp.SetEnsAvatar(ercType, contractAddress, tokenId, nil)
+		if err != nil {
+			return err
+		}
 	}
 
 	fmt.Printf("Setting ENS avatar...\n")
