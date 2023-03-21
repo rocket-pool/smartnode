@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rivo/tview"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
@@ -33,11 +32,7 @@ func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *cho
 	}
 
 	back := func() {
-		if wiz.md.Config.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Zhejiang {
-			wiz.nativeMetricsModal.show()
-		} else {
-			wiz.nativeMevModal.show()
-		}
+		wiz.nativeMevModal.show()
 	}
 
 	return newChoiceStep(

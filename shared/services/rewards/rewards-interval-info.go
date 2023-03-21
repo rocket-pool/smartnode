@@ -10,7 +10,6 @@ type rewardsIntervalInfo struct {
 	rewardsRulesetVersion uint64
 	mainnetStartInterval  uint64
 	praterStartInterval   uint64
-	zhejiangStartInterval uint64
 	generator             treeGeneratorImpl
 }
 
@@ -22,8 +21,6 @@ func (r *rewardsIntervalInfo) GetStartInterval(network cfgtypes.Network) (uint64
 		return r.praterStartInterval, nil
 	case cfgtypes.Network_Devnet:
 		return 0, nil
-	case cfgtypes.Network_Zhejiang:
-		return r.zhejiangStartInterval, nil
 	default:
 		return 0, fmt.Errorf("unknown network: %s", string(network))
 	}

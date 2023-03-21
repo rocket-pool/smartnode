@@ -88,10 +88,9 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 			Description: "The tag name of the Teku container you want to use on Docker Hub.",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet:  tekuTagProd,
-				config.Network_Prater:   tekuTagTest,
-				config.Network_Devnet:   tekuTagTest,
-				config.Network_Zhejiang: tekuTagTest,
+				config.Network_Mainnet: tekuTagProd,
+				config.Network_Prater:  tekuTagTest,
+				config.Network_Devnet:  tekuTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},

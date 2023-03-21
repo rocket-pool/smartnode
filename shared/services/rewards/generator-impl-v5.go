@@ -1159,7 +1159,7 @@ func (r *treeGeneratorImpl_v5) getMinipoolBondAndNodeFee(details *rpstate.Native
 		if reductionTime.Sub(blockTime) > 0 {
 			// This block occurred before the reduction
 			if previousFee.Cmp(r.zero) == 0 {
-				// Catch for Zhejiang minipools that were created before this call existed
+				// Catch for minipools that were created before this call existed
 				return previousBond, currentFee
 			}
 			return previousBond, previousFee

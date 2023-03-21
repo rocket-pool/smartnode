@@ -133,10 +133,9 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			Description: "The tag name of the Nethermind container you want to use on Docker Hub.",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet:  nethermindTagProd,
-				config.Network_Prater:   nethermindTagTest,
-				config.Network_Devnet:   nethermindTagTest,
-				config.Network_Zhejiang: nethermindTagTest,
+				config.Network_Mainnet: nethermindTagProd,
+				config.Network_Prater:  nethermindTagTest,
+				config.Network_Devnet:  nethermindTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},

@@ -5,7 +5,6 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const settingsHomeID string = "settings-home"
@@ -77,12 +76,6 @@ func (home *settingsHome) createContent() {
 	// Create the category list
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-			if mainText == home.mevBoostPage.page.title &&
-				home.md.Config.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Zhejiang {
-				// Disable MEV-Boost on Zhejiang
-				layout.descriptionBox.SetText("MEV-Boost is not available on Zhejiang.")
-				return
-			}
 			layout.descriptionBox.SetText(home.settingsSubpages[index].getPage().description)
 		})
 	categoryList.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
@@ -103,11 +96,6 @@ func (home *settingsHome) createContent() {
 		categoryList.AddItem(subpage.getPage().title, "", 0, nil)
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
-		if s1 == home.mevBoostPage.page.title &&
-			home.md.Config.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Zhejiang {
-			// Disable MEV-Boost on Zhejiang
-			return
-		}
 		home.settingsSubpages[i].handleLayoutChanged()
 		home.md.setPage(home.settingsSubpages[i].getPage())
 	})

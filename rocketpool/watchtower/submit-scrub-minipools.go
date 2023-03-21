@@ -334,7 +334,7 @@ func (t *submitScrubMinipools) getEth1SearchArtifacts(state *state.NetworkState)
 	stateBlockNumber := big.NewInt(0).SetUint64(state.ElBlockNumber)
 	offset := big.NewInt(BlockStartOffset)
 	if stateBlockNumber.Cmp(offset) < 0 {
-		offset = stateBlockNumber // Deal with chains that aren't old enough, looking at you Zhejiang
+		offset = stateBlockNumber // Deal with chains that are younger than the look-behind interval
 	}
 	targetBlockNumber := big.NewInt(0).Sub(stateBlockNumber, offset)
 	targetBlock, err := t.ec.HeaderByNumber(context.Background(), targetBlockNumber)

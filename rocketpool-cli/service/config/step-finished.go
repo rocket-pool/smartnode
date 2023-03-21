@@ -33,11 +33,7 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	}
 
 	back := func() {
-		if wiz.md.Config.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Zhejiang {
-			wiz.metricsModal.show()
-		} else {
-			wiz.mevModeModal.show()
-		}
+		wiz.mevModeModal.show()
 	}
 
 	return newChoiceStep(

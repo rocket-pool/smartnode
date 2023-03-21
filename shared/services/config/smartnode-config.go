@@ -347,10 +347,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from spot prices to TWAP for RPL price submission.",
 			Type:        config.ParameterType_Uint,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet:  uint64(999999999999999),
-				config.Network_Prater:   uint64(162094),
-				config.Network_Devnet:   uint64(162094),
-				config.Network_Zhejiang: uint64(0),
+				config.Network_Mainnet: uint64(999999999999999),
+				config.Network_Prater:  uint64(162094),
+				config.Network_Devnet:  uint64(162094),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
@@ -364,10 +363,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from the old network balance calculation method to the new one.",
 			Type:        config.ParameterType_Uint,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet:  uint64(999999999999999),
-				config.Network_Prater:   uint64(162094),
-				config.Network_Devnet:   uint64(162094),
-				config.Network_Zhejiang: uint64(0),
+				config.Network_Mainnet: uint64(999999999999999),
+				config.Network_Prater:  uint64(162094),
+				config.Network_Devnet:  uint64(162094),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
@@ -388,122 +386,105 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		chainID: map[config.Network]uint{
-			config.Network_Mainnet:  1,       // Mainnet
-			config.Network_Prater:   5,       // Goerli
-			config.Network_Devnet:   5,       // Also goerli
-			config.Network_Zhejiang: 1337803, // Zhejiang
+			config.Network_Mainnet: 1, // Mainnet
+			config.Network_Prater:  5, // Goerli
+			config.Network_Devnet:  5, // Also goerli
 		},
 
 		storageAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Prater:   "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
-			config.Network_Devnet:   "0x6A18E47f8CcB453Dd0894AC003f74BEE7e47A368",
-			config.Network_Zhejiang: "0x56CD23Baaf2e7cb7056968d85E5EFe343b0E1DC2",
+			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
+			config.Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
+			config.Network_Devnet:  "0x6A18E47f8CcB453Dd0894AC003f74BEE7e47A368",
 		},
 
 		oneInchOracleAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x07D91f5fb9Bf7798734C3f606dB065549F6893bb",
-			config.Network_Prater:   "0x4eDC966Df24264C9C817295a0753804EcC46Dd22",
-			config.Network_Devnet:   "0x4eDC966Df24264C9C817295a0753804EcC46Dd22",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "0x07D91f5fb9Bf7798734C3f606dB065549F6893bb",
+			config.Network_Prater:  "0x4eDC966Df24264C9C817295a0753804EcC46Dd22",
+			config.Network_Devnet:  "0x4eDC966Df24264C9C817295a0753804EcC46Dd22",
 		},
 
 		rplTokenAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Prater:   "0x5e932688e81a182e3de211db6544f98b8e4f89c7",
-			config.Network_Devnet:   "0x09b6aEF57B580f5CB46746BA59ed312Ba80E8Ad4",
-			config.Network_Zhejiang: "0x119B413F73326B70377D774C18E071393A9D82A8",
+			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
+			config.Network_Prater:  "0x5e932688e81a182e3de211db6544f98b8e4f89c7",
+			config.Network_Devnet:  "0x09b6aEF57B580f5CB46746BA59ed312Ba80E8Ad4",
 		},
 
 		rplFaucetAddress: map[config.Network]string{
-			config.Network_Mainnet:  "",
-			config.Network_Prater:   "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
-			config.Network_Devnet:   "0x218a718A1B23B13737E2F566Dd45730E8DAD451b",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "",
+			config.Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
+			config.Network_Devnet:  "0x218a718A1B23B13737E2F566Dd45730E8DAD451b",
 		},
 
 		rethAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Prater:   "0x178E141a0E3b34152f73Ff610437A7bf9B83267A",
-			config.Network_Devnet:   "0x2DF914425da6d0067EF1775AfDBDd7B24fc8100E",
-			config.Network_Zhejiang: "0x9a0b5d3101d111EA0edD573d45ef2208CC97984a",
+			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
+			config.Network_Prater:  "0x178E141a0E3b34152f73Ff610437A7bf9B83267A",
+			config.Network_Devnet:  "0x2DF914425da6d0067EF1775AfDBDd7B24fc8100E",
 		},
 
 		v1_0_0_RewardsPoolAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
-			config.Network_Prater:   "0xf9aE18eB0CE4930Bc3d7d1A5E33e4286d4FB0f8B",
-			config.Network_Devnet:   "0x4A1b5Ab9F6C36E7168dE5F994172028Ca8554e02",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
+			config.Network_Prater:  "0xf9aE18eB0CE4930Bc3d7d1A5E33e4286d4FB0f8B",
+			config.Network_Devnet:  "0x4A1b5Ab9F6C36E7168dE5F994172028Ca8554e02",
 		},
 
 		v1_0_0_ClaimNodeAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x899336A2a86053705E65dB61f52C686dcFaeF548",
-			config.Network_Prater:   "0xc05b7A2a03A6d2736d1D0ebf4d4a0aFE2cc32cE1",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "0x899336A2a86053705E65dB61f52C686dcFaeF548",
+			config.Network_Prater:  "0xc05b7A2a03A6d2736d1D0ebf4d4a0aFE2cc32cE1",
+			config.Network_Devnet:  "",
 		},
 
 		v1_0_0_ClaimTrustedNodeAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x6af730deB0463b432433318dC8002C0A4e9315e8",
-			config.Network_Prater:   "0x730982F4439E5AC30292333ff7d0C478907f2219",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "0x6af730deB0463b432433318dC8002C0A4e9315e8",
+			config.Network_Prater:  "0x730982F4439E5AC30292333ff7d0C478907f2219",
+			config.Network_Devnet:  "",
 		},
 
 		v1_0_0_MinipoolManagerAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a",
-			config.Network_Prater:   "0xB815a94430f08dD2ab61143cE1D5739Ac81D3C6d",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a",
+			config.Network_Prater:  "0xB815a94430f08dD2ab61143cE1D5739Ac81D3C6d",
+			config.Network_Devnet:  "",
 		},
 
 		v1_1_0_NetworkPricesAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0xd3f500F550F46e504A4D2153127B47e007e11166",
-			config.Network_Prater:   "0x12f96dC173a806D18d71fAFe3C1BA2149c3E3Dc6",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "0x614A5be866A0EC908cA9aE0d7D3eB100492A9f4e",
+			config.Network_Mainnet: "0xd3f500F550F46e504A4D2153127B47e007e11166",
+			config.Network_Prater:  "0x12f96dC173a806D18d71fAFe3C1BA2149c3E3Dc6",
+			config.Network_Devnet:  "",
 		},
 
 		v1_1_0_NodeStakingAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
-			config.Network_Prater:   "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "0xfD33e53d0400f52C486B6d1484f1827AD2341405",
+			config.Network_Mainnet: "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
+			config.Network_Prater:  "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
+			config.Network_Devnet:  "",
 		},
 
 		v1_1_0_NodeDepositAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
-			config.Network_Prater:   "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "0x47B600D9127a473e45B693A7badD9F4d929d5b76",
+			config.Network_Mainnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
+			config.Network_Prater:  "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
+			config.Network_Devnet:  "",
 		},
 
 		v1_1_0_MinipoolQueueAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x5870dA524635D1310Dc0e6F256Ce331012C9C19E",
-			config.Network_Prater:   "0xEF5EF45bf1CC08D5694f87F8c4023f00CCCB7237",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "0x5ffe8bD3165e80D51ce834B32a6B6C02233494bF",
+			config.Network_Mainnet: "0x5870dA524635D1310Dc0e6F256Ce331012C9C19E",
+			config.Network_Prater:  "0xEF5EF45bf1CC08D5694f87F8c4023f00CCCB7237",
+			config.Network_Devnet:  "",
 		},
 
 		v1_1_0_MinipoolFactoryAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788",
-			config.Network_Prater:   "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "0xBD1E62AEbfA1E60797484916685E2B9e62ADbF7B",
+			config.Network_Mainnet: "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788",
+			config.Network_Prater:  "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788",
+			config.Network_Devnet:  "",
 		},
 
 		snapshotDelegationAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446",
-			config.Network_Prater:   "0xD0897D68Cd66A710dDCecDe30F7557972181BEDc",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446",
+			config.Network_Prater:  "0xD0897D68Cd66A710dDCecDe30F7557972181BEDc",
+			config.Network_Devnet:  "",
 		},
 
 		snapshotApiDomain: map[config.Network]string{
-			config.Network_Mainnet:  "hub.snapshot.org",
-			config.Network_Prater:   "testnet.snapshot.org",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "hub.snapshot.org",
+			config.Network_Prater:  "testnet.snapshot.org",
+			config.Network_Devnet:  "",
 		},
 
 		previousRewardsPoolAddresses: map[config.Network]map[string][]common.Address{
@@ -513,50 +494,43 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 					common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				},
 			},
-			config.Network_Devnet:   {},
-			config.Network_Zhejiang: {},
+			config.Network_Devnet: {},
 		},
 
 		optimismPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0xdddcf2c25d50ec22e67218e873d46938650d03a7",
-			config.Network_Prater:   "0x87E2deCE7d0A080D579f63cbcD7e1629BEcd7E7d",
-			config.Network_Devnet:   "",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "0xdddcf2c25d50ec22e67218e873d46938650d03a7",
+			config.Network_Prater:  "0x87E2deCE7d0A080D579f63cbcD7e1629BEcd7E7d",
+			config.Network_Devnet:  "",
 		},
 
 		polygonPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0xb1029Ac2Be4e08516697093e2AFeC435057f3511",
-			config.Network_Prater:   "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
-			config.Network_Devnet:   "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "0xb1029Ac2Be4e08516697093e2AFeC435057f3511",
+			config.Network_Prater:  "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
+			config.Network_Devnet:  "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
 		},
 
 		arbitrumPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x05330300f829AD3fC8f33838BC88CFC4093baD53",
-			config.Network_Prater:   "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
-			config.Network_Devnet:   "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
-			config.Network_Zhejiang: "",
+			config.Network_Mainnet: "0x05330300f829AD3fC8f33838BC88CFC4093baD53",
+			config.Network_Prater:  "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
+			config.Network_Devnet:  "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
 		},
 
 		rplTwapPoolAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Prater:   "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
-			config.Network_Devnet:   "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
-			config.Network_Zhejiang: "0x7F6319248359AA354cB6c97Bd244f82E92aF546E",
+			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
+			config.Network_Prater:  "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
+			config.Network_Devnet:  "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
 		},
 
 		multicallAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Prater:   "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Devnet:   "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Zhejiang: "0xF7D8B2D41972F434a400F3d5Fb5406D2AC18fFE3",
+			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
+			config.Network_Prater:  "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
+			config.Network_Devnet:  "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
 		},
 
 		balancebatcherAddress: map[config.Network]string{
-			config.Network_Mainnet:  "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
-			config.Network_Prater:   "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
-			config.Network_Devnet:   "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
-			config.Network_Zhejiang: "0x95508DEe920bCf470fc61395EfcCcb011E6a875E",
+			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
+			config.Network_Prater:  "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
+			config.Network_Devnet:  "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
 		},
 
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
@@ -585,10 +559,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				8189312, 8206689, 8223857, 8241269, 8257834, 8274178, // 17
 				8290333, 8307005, 8324055, 8341308, 8359051, 8376744, // 23
 				8394338, 8412142,
-			},
-			config.Network_Zhejiang: {
-				40991, 59134, 78978, 98831, 118875, 139518, // 5
-				160632, 181771, 205207, 226807, 248406, 265259, // 11
 			},
 		},
 	}
@@ -867,10 +837,6 @@ func getNetworkOptions() []config.ParameterOption {
 			Name:        "Prater Testnet",
 			Description: "This is the Prater test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to Mainnet.",
 			Value:       config.Network_Prater,
-		}, {
-			Name:        "Zhejiang Testnet",
-			Description: "This is the Zhejiang test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to test the upcoming Atlas upgrade to Rocket Pool, along with the Shanghai and Capella upgrades to Ethereum that enable validator withdrawals.",
-			Value:       config.Network_Zhejiang,
 		},
 	}
 
