@@ -77,7 +77,7 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 
 			// Deserialize the password file
 			passwordFile := cfg.Smartnode.GetCustomKeyPasswordFilePath()
-			fileBytes, err := ioutil.ReadFile(passwordFile)
+			fileBytes, err := os.ReadFile(passwordFile)
 			if err != nil {
 				return nil, fmt.Errorf("%d custom keystores were found but the password file could not be loaded: %w", len(files), err)
 			}
@@ -90,7 +90,7 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 			// Process every custom key
 			for _, file := range files {
 				// Read the file
-				bytes, err := ioutil.ReadFile(filepath.Join(customKeyDir, file.Name()))
+				bytes, err := os.ReadFile(filepath.Join(customKeyDir, file.Name()))
 				if err != nil {
 					return nil, fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
 				}

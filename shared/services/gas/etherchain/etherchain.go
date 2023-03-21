@@ -3,7 +3,7 @@ package etherchain
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/big"
 	"net/http"
 )
@@ -55,7 +55,7 @@ func GetGasPrices() (GasFeeSuggestion, error) {
 	}
 
 	// Get response
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return GasFeeSuggestion{}, err
 	}

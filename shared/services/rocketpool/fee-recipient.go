@@ -3,7 +3,6 @@ package rocketpool
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -30,7 +29,7 @@ func CheckFeeRecipientFile(feeRecipient common.Address, cfg *config.RocketPoolCo
 
 	// Compare the file contents with the expected string
 	expectedString := getFeeRecipientFileContents(feeRecipient, cfg)
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return false, false, fmt.Errorf("error reading fee recipient file: %w", err)
 	}
@@ -53,7 +52,7 @@ func UpdateFeeRecipientFile(feeRecipient common.Address, cfg *config.RocketPoolC
 
 	// Write the file
 	path := cfg.Smartnode.GetFeeRecipientFilePath()
-	err := ioutil.WriteFile(path, bytes, FileMode)
+	err := os.WriteFile(path, bytes, FileMode)
 	if err != nil {
 		return fmt.Errorf("error writing fee recipient file: %w", err)
 	}

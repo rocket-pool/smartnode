@@ -2,7 +2,7 @@ package rocketpool
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/alessio/shellescape"
 	"github.com/mitchellh/go-homedir"
@@ -47,7 +47,7 @@ func (c *Client) loadConfig_Legacy(path string) (config.LegacyRocketPoolConfig, 
 	if err != nil {
 		return config.LegacyRocketPoolConfig{}, err
 	}
-	configBytes, err := ioutil.ReadFile(expandedPath)
+	configBytes, err := os.ReadFile(expandedPath)
 	if err != nil {
 		return config.LegacyRocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at %s: %w", shellescape.Quote(path), err)
 	}

@@ -136,7 +136,7 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolCo
 	customPubkeys := []types.ValidatorPubkey{}
 	for _, file := range files {
 		// Read the file
-		bytes, err := ioutil.ReadFile(filepath.Join(customKeyDir, file.Name()))
+		bytes, err := os.ReadFile(filepath.Join(customKeyDir, file.Name()))
 		if err != nil {
 			return "", fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
 		}
@@ -173,7 +173,7 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolCo
 		return "", fmt.Errorf("error serializing keystore passwords file: %w", err)
 	}
 	passwordFile := filepath.Join(datapath, "custom-key-passwords")
-	err = ioutil.WriteFile(passwordFile, fileBytes, 0600)
+	err = os.WriteFile(passwordFile, fileBytes, 0600)
 	if err != nil {
 		return "", fmt.Errorf("error writing keystore passwords file: %w", err)
 	}

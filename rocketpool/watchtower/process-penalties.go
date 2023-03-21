@@ -3,7 +3,6 @@ package watchtower
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -142,7 +141,7 @@ func stateFileExists(path string) bool {
 func (s *state) loadState(path string) (*state, error) {
 
 	// Load file into memory
-	yamlFile, err := ioutil.ReadFile(path)
+	yamlFile, err := os.ReadFile(path)
 	if err != nil {
 		return s, err
 	}
@@ -170,7 +169,7 @@ func (s *state) saveState(path string) error {
 	if err != nil {
 		return fmt.Errorf("error creating watchtower directory: %w", err)
 	}
-	return ioutil.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0644)
 }
 
 // Process penalties

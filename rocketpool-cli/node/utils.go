@@ -3,7 +3,7 @@ package node
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -38,7 +38,7 @@ func promptTimezone() string {
 			defer func() {
 				_ = resp.Body.Close()
 			}()
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err == nil {
 				message := new(ipInfoResponse)
 				err := json.Unmarshal(body, message)
