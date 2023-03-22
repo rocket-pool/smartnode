@@ -236,19 +236,38 @@ func getStatus(c *cli.Context) error {
 				math.RoundDown(eth.WeiToEth(status.RplStake), 6),
 				math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6))
 			if status.BorrowedCollateralRatio > 0 {
-				fmt.Printf(
-					"This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n",
-					status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
+				rplTooLow := (status.RplStake.Cmp(status.MinimumRplStake) < 0)
+				if rplTooLow {
+					fmt.Printf(
+						"This is currently %s%.2f%% of its borrowed ETH%s and %.2f%% of its bonded ETH.\n",
+						colorRed, status.BorrowedCollateralRatio*100, colorReset, status.BondedCollateralRatio*100)
+				} else {
+					fmt.Printf(
+						"This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n",
+						status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
+				}
 				fmt.Printf(
 					"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
 				fmt.Printf(
 					"It can earn rewards on up to %.6f RPL (150%% of bonded ETH).\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
+				if rplTooLow {
+					fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n,", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.MinimumRplStake, status.RplStake)), 6), colorReset)
+				}
 			}
 			fmt.Println()
+
 			remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
 			remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)
-			fmt.Printf("The node can take %.6f more ETH from the deposit pool for minipool deposits.\n\n",
-				math.RoundDown(eth.WeiToEth(remainingAmount), 6))
+			remainingAmountEth := int(eth.WeiToEth(remainingAmount))
+			remainingFor8EB := remainingAmountEth / 24
+			if remainingFor8EB < 0 {
+				remainingFor8EB = 0
+			}
+			remainingFor16EB := remainingAmountEth / 16
+			if remainingFor16EB < 0 {
+				remainingFor16EB = 0
+			}
+			fmt.Printf("The node can borrow enough ETH to make %d more 8-ETH minipools (or %d more 16-ETH minipools).\n\n", remainingFor8EB, remainingFor16EB)
 		}
 
 		// Minipool details

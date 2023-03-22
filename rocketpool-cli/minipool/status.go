@@ -73,17 +73,25 @@ func getStatus(c *cli.Context) error {
 
 	}
 
-	// Print minipool details by status
+	// Return if there aren't any minipools
 	if len(status.Minipools) == 0 {
 		fmt.Println("The node does not have any minipools yet.")
+		return nil
 	}
+
+	// Return if all minipools are finalized and they are hidden
+	if len(status.Minipools) == len(finalisedMinipools) && !c.Bool("include-finalized") {
+		fmt.Println("All of this node's minipools have been finalized.\nTo show finalized minipools, re-run this command with the `-f` flag.")
+		return nil
+	}
+
+	// Print minipool details by status
 	for _, statusName := range types.MinipoolStatuses {
 		minipools, ok := statusMinipools[statusName]
 		if !ok {
 			continue
 		}
 
-		// Minipool status count & description
 		fmt.Printf("%d %s minipool(s):\n", len(minipools), statusName)
 		if statusName == "Withdrawable" {
 			fmt.Println("(Withdrawal may not be available until after withdrawal delay)")
@@ -92,19 +100,26 @@ func getStatus(c *cli.Context) error {
 
 		// Minipools
 		for _, minipool := range minipools {
-			printMinipoolDetails(minipool, status.LatestDelegate)
+			if !minipool.Finalised || c.Bool("include-finalized") {
+				printMinipoolDetails(minipool, status.LatestDelegate)
+			}
 		}
 
 		fmt.Println("")
 	}
 
 	// Handle finalized minipools
-	fmt.Printf("%d finalized minipool(s):\n", len(finalisedMinipools))
-	fmt.Println("")
+	if c.Bool("include-finalized") {
+		fmt.Printf("%d finalized minipool(s):\n", len(finalisedMinipools))
+		fmt.Println("")
 
-	// Minipools
-	for _, minipool := range finalisedMinipools {
-		printMinipoolDetails(minipool, status.LatestDelegate)
+		// Minipools
+		for _, minipool := range finalisedMinipools {
+			printMinipoolDetails(minipool, status.LatestDelegate)
+		}
+	} else {
+		fmt.Printf("%d finalized minipool(s) (hidden)\n", len(finalisedMinipools))
+		fmt.Println("")
 	}
 
 	fmt.Println("")

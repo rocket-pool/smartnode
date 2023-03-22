@@ -19,6 +19,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Aliases:   []string{"s"},
 				Usage:     "Get a list of the node's minipools",
 				UsageText: "rocketpool minipool status",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "include-finalized, f",
+						Usage: "Include finalized minipools in the list (default is to hide them).",
+					},
+				},
 				Action: func(c *cli.Context) error {
 
 					// Validate args
