@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	networkEffectiveStakeBatchSize int = 500
+	networkEffectiveStakeBatchSize int = 250
 )
 
 type NetworkDetails struct {
