@@ -157,10 +157,11 @@ type MinipoolCloseDetails struct {
 }
 
 type GetMinipoolCloseDetailsForNodeResponse struct {
-	Status          string                 `json:"status"`
-	Error           string                 `json:"error"`
-	IsAtlasDeployed bool                   `json:"isAtlasDeployed"`
-	Details         []MinipoolCloseDetails `json:"details"`
+	Status                      string                 `json:"status"`
+	Error                       string                 `json:"error"`
+	IsAtlasDeployed             bool                   `json:"isAtlasDeployed"`
+	IsFeeDistributorInitialized bool                   `json:"isFeeDistributorInitialized"`
+	Details                     []MinipoolCloseDetails `json:"details"`
 }
 type CloseMinipoolResponse struct {
 	Status string      `json:"status"`

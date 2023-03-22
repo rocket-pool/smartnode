@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -53,10 +54,19 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 		return nil, err
 	}
 
+	// Check the fee distributor
+	response.IsFeeDistributorInitialized, err = node.GetFeeDistributorInitialized(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if the node's fee distributor is initialized: %w", err)
+	}
+	if !response.IsFeeDistributorInitialized {
+		return &response, nil
+	}
+
 	// Get the minipool addresses for this node
 	addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAccount.Address, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
 
 	// Get the transaction opts
@@ -211,7 +221,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		// Get gas estimate
 		gasInfo, err := mp.EstimateCloseGas(opts)
 		if err != nil {
-			return api.MinipoolCloseDetails{}, err
+			return api.MinipoolCloseDetails{}, fmt.Errorf("error estimating close gas for MP %s: %w", minipoolAddress.Hex(), err)
 		}
 		details.GasInfo = gasInfo
 	} else {
@@ -245,14 +255,14 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 				// It's already been distributed so just finalize it
 				gasInfo, err := mpv3.EstimateFinaliseGas(opts)
 				if err != nil {
-					return api.MinipoolCloseDetails{}, err
+					return api.MinipoolCloseDetails{}, fmt.Errorf("error estimating finalise gas for MP %s: %w", minipoolAddress.Hex(), err)
 				}
 				details.GasInfo = gasInfo
 			} else {
 				// Do a distribution, which will finalize it
 				gasInfo, err := mpv3.EstimateDistributeBalanceGas(opts)
 				if err != nil {
-					return api.MinipoolCloseDetails{}, err
+					return api.MinipoolCloseDetails{}, fmt.Errorf("error estimating distribute balance gas for MP %s: %w", minipoolAddress.Hex(), err)
 				}
 				details.GasInfo = gasInfo
 			}

@@ -44,6 +44,12 @@ func closeMinipools(c *cli.Context) error {
 		return nil
 	}
 
+	// Exit if the fee distributor hasn't been initialized yet
+	if !details.IsFeeDistributorInitialized {
+		fmt.Println("Minipools cannot be closed until your fee distributor has been initialized.\nPlease run `rocketpool node initialize-fee-distributor` first, then return here to close your minipools.")
+		return nil
+	}
+
 	closableMinipools := []api.MinipoolCloseDetails{}
 	versionTooLowMinipools := []api.MinipoolCloseDetails{}
 	balanceLessThanRefundMinipools := []api.MinipoolCloseDetails{}
