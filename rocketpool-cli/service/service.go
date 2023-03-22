@@ -150,7 +150,7 @@ ______           _        _    ______           _
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
 	fmt.Printf("%s=== Atlas! ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now supports the Zhejiang testnet, which has our Atlas upgrade and the Ethereum Shapella hardfork applied! If you'd like to try out withdrawals, 8-ETH minipools, solo staker migration and more, please read the Atlas guide:\nhttps://docs.rocketpool.net/guides/atlas/whats-new.html\n")
+	fmt.Println("Atlas and the Shapella hardfork have been enabled on the Prater testnet! If you'd like to try out withdrawals, 8-ETH minipools, solo staker migration and more, please read the Atlas guide:\nhttps://docs.rocketpool.net/guides/atlas/whats-new.html\n")
 
 	fmt.Printf("%s=== Nimbus Changes ===%s\n", colorGreen, colorReset)
 	fmt.Println("Nimbus now supports running a separate Validator Client, which means it now supports fallback clients! If you're using Nimbus and would like to set up a fallback client pair for your node, simply go to the Consensus Client section of the `service config` TUI - you can now add one just like with the other clients!\nNote that if you want to check on your validator performance, you will need to look at the validator container instead of the eth2 container like you used to do.\n")
