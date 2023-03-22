@@ -499,3 +499,9 @@ type CheckCollateralResponse struct {
 	PendingMatchAmount     *big.Int `json:"pendingMatchAmount"`
 	InsufficientCollateral bool     `json:"insufficientCollateral"`
 }
+
+type NodeEthBalanceResponse struct {
+	Status  string   `json:"status"`
+	Error   string   `json:"error"`
+	Balance *big.Int `json:"balance"`
+}

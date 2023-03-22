@@ -1334,6 +1334,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "get-eth-balance",
+				Usage:     "Get the ETH balance of the node address",
+				UsageText: "rocketpool api node get-eth-balance",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getNodeEthBalance(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }

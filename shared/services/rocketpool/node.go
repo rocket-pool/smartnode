@@ -973,3 +973,19 @@ func (c *Client) CheckCollateral() (api.CheckCollateralResponse, error) {
 	}
 	return response, nil
 }
+
+// Get the ETH balance of the node address
+func (c *Client) GetEthBalance() (api.NodeEthBalanceResponse, error) {
+	responseBytes, err := c.callAPI("node get-eth-balance")
+	if err != nil {
+		return api.NodeEthBalanceResponse{}, fmt.Errorf("Could not get get-eth-balance status: %w", err)
+	}
+	var response api.NodeEthBalanceResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeEthBalanceResponse{}, fmt.Errorf("Could not decode get-eth-balance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeEthBalanceResponse{}, fmt.Errorf("Could not get get-eth-balance status: %s", response.Error)
+	}
+	return response, nil
+}
