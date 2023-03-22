@@ -51,6 +51,9 @@ func (collector *SmoothingPoolCollector) Describe(channel chan<- *prometheus.Des
 func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
 	state := collector.stateLocker.GetState()
+	if state == nil {
+		return
+	}
 
 	ethBalanceOnSmoothingPool := eth.WeiToEth(state.NetworkDetails.SmoothingPoolBalance)
 

@@ -80,6 +80,9 @@ func (collector *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
 func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
 	state := collector.stateLocker.GetState()
+	if state == nil {
+		return
+	}
 
 	// Sync
 	var wg errgroup.Group

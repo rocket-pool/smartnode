@@ -69,6 +69,9 @@ func (collector *OdaoCollector) Describe(channel chan<- *prometheus.Desc) {
 func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
 	state := collector.stateLocker.GetState()
+	if state == nil {
+		return
+	}
 
 	blockNumberFloat := float64(state.ElBlockNumber)
 	pricesBlockFloat := float64(state.NetworkDetails.PricesBlock)

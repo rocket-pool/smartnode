@@ -75,6 +75,9 @@ func (collector *RplCollector) Describe(channel chan<- *prometheus.Desc) {
 func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
 	state := collector.stateLocker.GetState()
+	if state == nil {
+		return
+	}
 
 	rplPriceFloat := eth.WeiToEth(state.NetworkDetails.RplPrice)
 	totalValueStakedFloat := eth.WeiToEth(state.NetworkDetails.TotalRPLStake)

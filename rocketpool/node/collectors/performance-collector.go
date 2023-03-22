@@ -86,6 +86,9 @@ func (collector *PerformanceCollector) Describe(channel chan<- *prometheus.Desc)
 func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
 	state := collector.stateLocker.GetState()
+	if state == nil {
+		return
+	}
 
 	ethUtilizationRate := state.NetworkDetails.ETHUtilizationRate
 	balanceFloat := eth.WeiToEth(state.NetworkDetails.StakingETHBalance)

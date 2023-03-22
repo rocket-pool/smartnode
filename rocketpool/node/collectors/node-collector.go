@@ -196,6 +196,9 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
 	state := collector.stateLocker.GetState()
+	if state == nil {
+		return
+	}
 
 	nd := state.NodeDetailsByAddress[collector.nodeAddress]
 	minipools := state.MinipoolDetailsByNode[collector.nodeAddress]
