@@ -34,6 +34,12 @@ func Confirm(initialPrompt string) bool {
 	return (strings.ToLower(response[:1]) == "y")
 }
 
+// Prompt for 'I agree' confirmation (used on important questions to avoid a quick 'y' response from the user)
+func ConfirmWithIAgree(initialPrompt string) bool {
+	response := Prompt(fmt.Sprintf("%s [Type 'I agree' or 'n']", initialPrompt), "(?i)^(i agree|n|no)$", "Please answer 'I agree' or 'n'")
+	return (len(response) == 7 && strings.ToLower(response[:7]) == "i agree")
+}
+
 // Prompt for user selection
 func Select(initialPrompt string, options []string) (int, string) {
 

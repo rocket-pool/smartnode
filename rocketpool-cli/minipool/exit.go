@@ -94,14 +94,8 @@ func exitMinipools(c *cli.Context) error {
 		fmt.Printf("You will no longer receive any rewards or penalties, but your validator's balance will be LOCKED on the Beacon Chain!\n")
 		fmt.Printf("You will NOT have access to your ETH until after the ETH1-ETH2 merge, when withdrawals are implemented!\n\n%s", colorReset)
 
-		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
-			fmt.Println("Cancelled.")
-			return nil
-		}
-
-		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sPlease confirm again that you understand you will no longer earn staking rewards, but your ETH balance will remain locked on the Beacon Chain until withdrawals are implemented by the Ethereum core developers.%s", colorRed, colorReset))) {
+		// Prompt for an 'I agree' confirmation
+		if !(c.Bool("yes") || cliutils.ConfirmWithIAgree(fmt.Sprintf("%sAre you sure you want to exit %d minipool(s)? This action cannot be undone!%s", colorRed, len(selectedMinipools), colorReset))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -114,7 +108,7 @@ func exitMinipools(c *cli.Context) error {
 		fmt.Printf("Once your funds have been withdrawn, you can run `rocketpool minipool close` to distribute them to your withdrawal address and close the minipool.\n\n%s", colorReset)
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
+		if !(c.Bool("yes") || cliutils.ConfirmWithIAgree(fmt.Sprintf("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
