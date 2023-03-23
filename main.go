@@ -37,7 +37,7 @@ func main() {
 		&cli.Int64Flag{
 			Name:    "interval",
 			Aliases: []string{"i"},
-			Usage:   "The rewards interval to generate the artifacts for. A value of -1 indicates that you want to do a \"dry run\" of generating the tree for the current (active) interval, using the current latest finalized block as the interval end.",
+			Usage:   "The rewards interval to generate the artifacts for. A value of -1 indicates that you want to do a \"dry run\" of generating the tree for the current (active) interval, using the current latest finalized block as the interval end (unless -t is passed).",
 			Value:   -1,
 		},
 		&cli.StringFlag{
@@ -63,13 +63,11 @@ func main() {
 			Usage:   "Toggle for saving the files in pretty-print format so they're human readable.",
 			Value:   true,
 		},
-		/*
-			&cli.Uint64Flag{
-				Name:    "target-epoch",
-				Aliases: []string{"t"},
-				Usage:   "If provided without -i, treegen will generate a dry-run tree for this epoch instead of whatever the latest finalized epoch is.",
-			},
-		*/
+		&cli.Uint64Flag{
+			Name:    "target-epoch",
+			Aliases: []string{"t"},
+			Usage:   "If provided, this flag will be used to override the last epoch of an interval, current or past. If passed with -i, the epoch must be part of the provided interval.",
+		},
 		&cli.Uint64Flag{
 			Name:    "ruleset",
 			Aliases: []string{"r"},
@@ -78,13 +76,13 @@ func main() {
 		&cli.BoolFlag{
 			Name:    "network-info",
 			Aliases: []string{"n"},
-			Usage:   "If provided, this will simply print out info about the network being used, the current rewards interval, and the current ruleset.",
+			Usage:   "If provided, this will simply print out info about the network being used, the current or targeted interval, and the current or targeted ruleset.",
 			Value:   false,
 		},
 		&cli.BoolFlag{
 			Name:    "approximate-only",
 			Aliases: []string{"a"},
-			Usage:   "Approximates the rETH stakers' share of the Smoothing Pool at the current block instead of generating the entire rewards tree. Ignores -i.",
+			Usage:   "Approximates the rETH stakers' share of the Smoothing Pool at the current or target block instead of generating the entire rewards tree.",
 			Value:   false,
 		},
 		&cli.StringFlag{
