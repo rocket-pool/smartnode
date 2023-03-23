@@ -46,6 +46,11 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 		}
 	}
 
+	if len(minipools) == 0 {
+		fmt.Println("No minipools are eligible for delegate upgrades.")
+		return nil
+	}
+
 	// Get selected minipools
 	var selectedMinipools []common.Address
 
@@ -161,6 +166,10 @@ func delegateRollbackMinipools(c *cli.Context) error {
 			return err
 		}
 		minipools := status.Minipools
+		if len(minipools) == 0 {
+			fmt.Println("No minipools are eligible for delegate rollbacks.")
+			return nil
+		}
 
 		if c.String("minipool") == "" {
 			// Prompt for minipool selection
@@ -169,7 +178,7 @@ func delegateRollbackMinipools(c *cli.Context) error {
 			for mi, minipool := range minipools {
 				options[mi+1] = fmt.Sprintf("%s (using delegate %s)", minipool.Address.Hex(), minipool.Delegate.Hex())
 			}
-			selected, _ := cliutils.Select("Please select a minipool to upgrade:", options)
+			selected, _ := cliutils.Select("Please select a minipool to rollback the delegate for:", options)
 
 			// Get minipools
 			if selected == 0 {
