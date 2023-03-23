@@ -13,10 +13,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/prysm/v3/crypto/bls"
-	"github.com/rocket-pool/rocketpool-go/types"
+	gec "github.com/umbracle/go-eth-consensus"
+	"github.com/valyala/fastjson"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
@@ -49,6 +51,7 @@ const (
 // Beacon client using the standard Beacon HTTP REST API (https://ethereum.github.io/beacon-APIs/)
 type StandardHttpClient struct {
 	providerAddress string
+	parsers         fastjson.ParserPool
 }
 
 // Create a new client instance
@@ -468,28 +471,111 @@ func (c *StandardHttpClient) GetEth1DataForEth2Block(blockId string) (beacon.Eth
 
 }
 
-func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.AttestationInfo, bool, error) {
-	attestations, exists, err := c.getAttestations(blockId)
+type attestationsResponseRaw struct {
+	body    []byte
+	version string
+}
+
+func (c *StandardHttpClient) GetAttestationsRaw(blockId string) (*attestationsResponseRaw, bool, error) {
+
+	// Build the request
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/eth/v2/beacon/blocks/%s", c.providerAddress, blockId), nil)
 	if err != nil {
 		return nil, false, err
 	}
-	if !exists {
+
+	req.Header.Set("accept", "application/octet-stream")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, false, err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, false, fmt.Errorf("Could not get attestations data for slot %s: HTTP status %d", blockId, resp.StatusCode)
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
 		return nil, false, nil
 	}
 
-	// Add attestation info
-	attestationInfo := make([]beacon.AttestationInfo, len(attestations.Data))
-	for i, attestation := range attestations.Data {
-		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
-		attestationInfo[i].SlotIndex = uint64(attestation.Data.Slot)
-		attestationInfo[i].CommitteeIndex = uint64(attestation.Data.Index)
-		attestationInfo[i].AggregationBits, err = hex.DecodeString(bitString)
-		if err != nil {
-			return nil, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
-		}
+	if resp.StatusCode != http.StatusOK {
+		return nil, false, fmt.Errorf("Could not get attestations data for slot %s: HTTP status %d; reponse body: '%s'", blockId, resp.StatusCode, string(body))
 	}
 
-	return attestationInfo, true, nil
+	return &attestationsResponseRaw{
+		body:    body,
+		version: resp.Header.Get("Eth-Consensus-Version"),
+	}, true, nil
+}
+
+func (c *StandardHttpClient) ParseAttestationsResponseRaw(resp *attestationsResponseRaw) ([]beacon.AttestationInfo, error) {
+	var attestations []*gec.Attestation
+
+	// Unmarshal block SSZ
+	if strings.EqualFold(resp.version, "phase0") {
+		block := new(gec.SignedBeaconBlockPhase0)
+		if err := block.UnmarshalSSZ(resp.body); err != nil {
+			return nil, err
+		}
+
+		attestations = block.Block.Body.Attestations
+	} else if strings.EqualFold(resp.version, "altair") {
+		block := new(gec.SignedBeaconBlockAltair)
+		if err := block.UnmarshalSSZ(resp.body); err != nil {
+			return nil, err
+		}
+
+		attestations = block.Block.Body.Attestations
+	} else if strings.EqualFold(resp.version, "bellatrix") {
+		block := new(gec.SignedBeaconBlockBellatrix)
+		if err := block.UnmarshalSSZ(resp.body); err != nil {
+			return nil, err
+		}
+
+		attestations = block.Block.Body.Attestations
+	} else if strings.EqualFold(resp.version, "capella") {
+		block := new(gec.SignedBeaconBlockCapella)
+		if err := block.UnmarshalSSZ(resp.body); err != nil {
+			return nil, err
+		}
+
+		attestations = block.Block.Body.Attestations
+	} else {
+		return nil, fmt.Errorf("unknown consensus version header: %s", resp.version)
+	}
+
+	out := make([]beacon.AttestationInfo, len(attestations))
+	for i := range attestations {
+		out[i].AggregationBits = attestations[i].AggregationBits
+		out[i].SlotIndex = attestations[i].Data.Slot
+		out[i].CommitteeIndex = attestations[i].Data.Index
+	}
+
+	return out, nil
+
+}
+
+func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.AttestationInfo, bool, error) {
+	resp, found, err := c.GetAttestationsRaw(blockId)
+	if err != nil {
+		return nil, found, err
+	}
+
+	if found == false {
+		return nil, found, err
+	}
+
+	out, err := c.ParseAttestationsResponseRaw(resp)
+	if err != nil {
+		return nil, found, err
+	}
+
+	return out, true, nil
 }
 
 func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error) {
@@ -532,27 +618,87 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 	return beaconBlock, true, nil
 }
 
-// Get the attestation committees for the given epoch, or the current epoch if nil
+type committeesResponseRaw []byte
+
+func (c *StandardHttpClient) GetCommitteesForEpochRaw(epoch *uint64) (committeesResponseRaw, error) {
+
+	query := ""
+	if epoch != nil {
+		query = fmt.Sprintf("?epoch=%d", *epoch)
+	}
+	resp, err := http.Get(fmt.Sprintf("%s/eth/v1/beacon/states/head/committees%s", c.providerAddress, query))
+	if err != nil {
+		return nil, fmt.Errorf("Could not get committees: %w", err)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get committees: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Could not get committees: HTTP status %d; response body: '%s'", resp.StatusCode, string(body))
+	}
+
+	return body, nil
+}
+
+// Use a faster json lib here
+func (c *StandardHttpClient) ParseCommitteesResponseRaw(body committeesResponseRaw) ([]beacon.Committee, error) {
+
+	p := c.parsers.Get()
+	defer c.parsers.Put(p)
+
+	v, err := p.ParseBytes(body)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get committees: error parsing json: %w\n", err)
+	}
+	v = v.Get("data")
+	committees, err := v.Array()
+	if err != nil {
+		return nil, fmt.Errorf("Could not get committees: error parsing json: %w\n", err)
+	}
+
+	out := make([]beacon.Committee, len(committees))
+
+	for i := range committees {
+		idx, err := strconv.ParseUint(string(committees[i].GetStringBytes("index")), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("Could not get committees: error converting idx to uint64: %w\n", err)
+		}
+		slot, err := strconv.ParseUint(string(committees[i].GetStringBytes("slot")), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("Could not get committees: error converting idx to uint64: %w\n", err)
+		}
+		out[i] = beacon.Committee{
+			Index: idx,
+			Slot:  slot,
+		}
+
+		validators, err := committees[i].Get("validators").Array()
+		if err != nil {
+			return nil, fmt.Errorf("Could not get committees: error parsing validators json: %w\n", err)
+		}
+
+		out[i].Validators = make([]uint64, len(validators))
+		for j, validator := range validators {
+			u64, err := strconv.ParseUint(string(validator.GetStringBytes()), 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Could not get committees: error parsing validator key json: %w\n", err)
+			}
+			out[i].Validators[j] = u64
+		}
+	}
+
+	return out, nil
+
+}
+
 func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Committee, error) {
-	response, err := c.getCommittees("head", epoch)
+	body, err := c.GetCommitteesForEpochRaw(epoch)
 	if err != nil {
 		return nil, err
 	}
 
-	committees := []beacon.Committee{}
-	for _, committee := range response.Data {
-		validators := []uint64{}
-		for _, validator := range committee.Validators {
-			validators = append(validators, uint64(validator))
-		}
-		committees = append(committees, beacon.Committee{
-			Index:      uint64(committee.Index),
-			Slot:       uint64(committee.Slot),
-			Validators: validators,
-		})
-	}
-
-	return committees, nil
+	return c.ParseCommitteesResponseRaw(body)
 }
 
 // Perform a withdrawal credentials change on a validator
