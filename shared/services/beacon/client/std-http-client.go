@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,9 +11,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 	"github.com/prysmaticlabs/prysm/v3/crypto/bls"
 	gec "github.com/umbracle/go-eth-consensus"
-	"github.com/valyala/fastjson"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
 
@@ -51,7 +50,6 @@ const (
 // Beacon client using the standard Beacon HTTP REST API (https://ethereum.github.io/beacon-APIs/)
 type StandardHttpClient struct {
 	providerAddress string
-	parsers         fastjson.ParserPool
 }
 
 // Create a new client instance
@@ -618,87 +616,27 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 	return beaconBlock, true, nil
 }
 
-type committeesResponseRaw []byte
-
-func (c *StandardHttpClient) GetCommitteesForEpochRaw(epoch *uint64) (committeesResponseRaw, error) {
-
-	query := ""
-	if epoch != nil {
-		query = fmt.Sprintf("?epoch=%d", *epoch)
-	}
-	resp, err := http.Get(fmt.Sprintf("%s/eth/v1/beacon/states/head/committees%s", c.providerAddress, query))
-	if err != nil {
-		return nil, fmt.Errorf("Could not get committees: %w", err)
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("Could not get committees: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Could not get committees: HTTP status %d; response body: '%s'", resp.StatusCode, string(body))
-	}
-
-	return body, nil
-}
-
-// Use a faster json lib here
-func (c *StandardHttpClient) ParseCommitteesResponseRaw(body committeesResponseRaw) ([]beacon.Committee, error) {
-
-	p := c.parsers.Get()
-	defer c.parsers.Put(p)
-
-	v, err := p.ParseBytes(body)
-	if err != nil {
-		return nil, fmt.Errorf("Could not get committees: error parsing json: %w\n", err)
-	}
-	v = v.Get("data")
-	committees, err := v.Array()
-	if err != nil {
-		return nil, fmt.Errorf("Could not get committees: error parsing json: %w\n", err)
-	}
-
-	out := make([]beacon.Committee, len(committees))
-
-	for i := range committees {
-		idx, err := strconv.ParseUint(string(committees[i].GetStringBytes("index")), 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("Could not get committees: error converting idx to uint64: %w\n", err)
-		}
-		slot, err := strconv.ParseUint(string(committees[i].GetStringBytes("slot")), 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("Could not get committees: error converting idx to uint64: %w\n", err)
-		}
-		out[i] = beacon.Committee{
-			Index: idx,
-			Slot:  slot,
-		}
-
-		validators, err := committees[i].Get("validators").Array()
-		if err != nil {
-			return nil, fmt.Errorf("Could not get committees: error parsing validators json: %w\n", err)
-		}
-
-		out[i].Validators = make([]uint64, len(validators))
-		for j, validator := range validators {
-			u64, err := strconv.ParseUint(string(validator.GetStringBytes()), 10, 64)
-			if err != nil {
-				return nil, fmt.Errorf("Could not get committees: error parsing validator key json: %w\n", err)
-			}
-			out[i].Validators[j] = u64
-		}
-	}
-
-	return out, nil
-
-}
-
 func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Committee, error) {
-	body, err := c.GetCommitteesForEpochRaw(epoch)
+	response, err := c.getCommittees("head", epoch)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.ParseCommitteesResponseRaw(body)
+	out := make([]beacon.Committee, len(response.Data))
+	for i, committee := range response.Data {
+		validators := make([]uint64, len(committee.Validators))
+
+		for j, validator := range committee.Validators {
+			validators[j] = uint64(validator)
+		}
+		out[i] = beacon.Committee{
+			Index:      uint64(committee.Index),
+			Slot:       uint64(committee.Slot),
+			Validators: validators,
+		}
+	}
+
+	return out, nil
 }
 
 // Perform a withdrawal credentials change on a validator

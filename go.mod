@@ -15,6 +15,7 @@ require (
 	github.com/ferranbt/fastssz v0.1.3
 	github.com/gdamore/tcell/v2 v2.6.0
 	github.com/glendc/go-external-ip v0.1.0
+	github.com/goccy/go-json v0.10.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/imdario/mergo v0.3.13
@@ -30,8 +31,8 @@ require (
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/tyler-smith/go-bip39 v1.1.0
+	github.com/umbracle/go-eth-consensus v0.1.2
 	github.com/urfave/cli v1.22.12
-	github.com/valyala/fastjson v1.6.4
 	github.com/wealdtech/go-ens/v3 v3.5.5
 	github.com/wealdtech/go-eth2-types/v2 v2.8.1-0.20230131115251-b93cf60cee26
 	github.com/wealdtech/go-eth2-util v1.8.0
@@ -154,7 +155,6 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 // indirect
-	github.com/umbracle/go-eth-consensus v0.1.2 // indirect
 	github.com/wealdtech/go-bytesutil v1.2.0 // indirect
 	github.com/wealdtech/go-multicodec v1.4.0 // indirect
 	github.com/whyrusleeping/cbor v0.0.0-20171005072247-63513f603b11 // indirect
