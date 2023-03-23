@@ -252,12 +252,12 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 	// Write the files
 	path := t.cfg.Smartnode.GetRewardsTreePath(index, true)
 	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(index, true)
-	err = ioutil.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
+	err = os.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error saving minipool performance file to %s: %w", generationPrefix, minipoolPerformancePath, err))
 		return
 	}
-	err = ioutil.WriteFile(path, wrapperBytes, 0644)
+	err = os.WriteFile(path, wrapperBytes, 0644)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error saving rewards file to %s: %w", generationPrefix, path, err))
 		return

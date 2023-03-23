@@ -3,7 +3,7 @@ package etherscan
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -45,7 +45,7 @@ func GetGasPrices() (GasFeeSuggestion, error) {
 	}
 
 	// Get response
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return GasFeeSuggestion{}, err
 	}

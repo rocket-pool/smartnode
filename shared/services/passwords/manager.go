@@ -3,7 +3,6 @@ package passwords
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -27,7 +26,7 @@ func NewPasswordManager(passwordPath string) *PasswordManager {
 
 // Check if the password has been set
 func (pm *PasswordManager) IsPasswordSet() bool {
-	_, err := ioutil.ReadFile(pm.passwordPath)
+	_, err := os.ReadFile(pm.passwordPath)
 	return (err == nil)
 }
 
@@ -35,7 +34,7 @@ func (pm *PasswordManager) IsPasswordSet() bool {
 func (pm *PasswordManager) GetPassword() (string, error) {
 
 	// Read from disk
-	password, err := ioutil.ReadFile(pm.passwordPath)
+	password, err := os.ReadFile(pm.passwordPath)
 	if err != nil {
 		return "", fmt.Errorf("Could not read password from disk: %w", err)
 	}
@@ -59,7 +58,7 @@ func (pm *PasswordManager) SetPassword(password string) error {
 	}
 
 	// Write to disk
-	if err := ioutil.WriteFile(pm.passwordPath, []byte(password), FileMode); err != nil {
+	if err := os.WriteFile(pm.passwordPath, []byte(password), FileMode); err != nil {
 		return fmt.Errorf("Could not write password to disk: %w", err)
 	}
 

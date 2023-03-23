@@ -3,7 +3,6 @@ package nimbus
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -100,7 +99,7 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
 	}
 
 	// Write secret to disk
-	if err := ioutil.WriteFile(secretFilePath, []byte(password), FileMode); err != nil {
+	if err := os.WriteFile(secretFilePath, []byte(password), FileMode); err != nil {
 		return fmt.Errorf("Could not write validator secret to disk: %w", err)
 	}
 
@@ -113,7 +112,7 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
 	}
 
 	// Write key store to disk
-	if err := ioutil.WriteFile(keyFilePath, keyStoreBytes, FileMode); err != nil {
+	if err := os.WriteFile(keyFilePath, keyStoreBytes, FileMode); err != nil {
 		return fmt.Errorf("Could not write validator key to disk: %w", err)
 	}
 

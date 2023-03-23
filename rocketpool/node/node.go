@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -181,7 +180,7 @@ func deployDefaultFeeRecipientFile(c *cli.Context) error {
 			// Docker and Hybrid just need the address itself
 			defaultFeeRecipientFileContents = cfg.Smartnode.GetRethAddress().Hex()
 		}
-		err := ioutil.WriteFile(feeRecipientPath, []byte(defaultFeeRecipientFileContents), 0664)
+		err := os.WriteFile(feeRecipientPath, []byte(defaultFeeRecipientFileContents), 0664)
 		if err != nil {
 			return fmt.Errorf("could not write default fee recipient file to %s: %w", feeRecipientPath, err)
 		}

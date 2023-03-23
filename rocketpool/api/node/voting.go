@@ -3,7 +3,7 @@ package node
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -273,7 +273,7 @@ func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.A
 	}
 
 	// Get response
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 	}
 
 	// Get response
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +363,7 @@ func GetSnapshotProposals(apiDomain string, space string, state string) (*api.Sn
 	}
 
 	// Get response
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -99,7 +98,7 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
 
 	// Get the keystore account password
 	passwordFilePath := filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystorePasswordFileName)
-	passwordBytes, err := ioutil.ReadFile(passwordFilePath)
+	passwordBytes, err := os.ReadFile(passwordFilePath)
 	if err != nil {
 		return fmt.Errorf("Error reading account password file: %w", err)
 	}
@@ -135,7 +134,7 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
 	}
 
 	// Write keystore to disk
-	if err := ioutil.WriteFile(keystoreFilePath, ksBytes, FileMode); err != nil {
+	if err := os.WriteFile(keystoreFilePath, ksBytes, FileMode); err != nil {
 		return fmt.Errorf("Could not write keystore to disk: %w", err)
 	}
 
@@ -153,7 +152,7 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
 	}
 
 	// Write wallet config to disk
-	if err := ioutil.WriteFile(configFilePath, configBytes, FileMode); err != nil {
+	if err := os.WriteFile(configFilePath, configBytes, FileMode); err != nil {
 		return fmt.Errorf("Could not write wallet config to disk: %w", err)
 	}
 
@@ -189,21 +188,21 @@ func (ks *Keystore) initialize() error {
 		if err != nil {
 			return fmt.Errorf("Error creating account password directory: %w", err)
 		}
-		err = ioutil.WriteFile(passwordFilePath, passwordBytes, FileMode)
+		err = os.WriteFile(passwordFilePath, passwordBytes, FileMode)
 		if err != nil {
 			return fmt.Errorf("Error writing account password file: %w", err)
 		}
 	}
 
 	// Get the random keystore password
-	passwordBytes, err := ioutil.ReadFile(passwordFilePath)
+	passwordBytes, err := os.ReadFile(passwordFilePath)
 	if err != nil {
 		return fmt.Errorf("Error opening account password file: %w", err)
 	}
 	password = string(passwordBytes)
 
 	// Read keystore file; initialize empty account store if it doesn't exist
-	ksBytes, err := ioutil.ReadFile(filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystoreFileName))
+	ksBytes, err := os.ReadFile(filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystoreFileName))
 	if err != nil {
 		ks.as = &accountStore{}
 		return nil

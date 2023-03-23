@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"os"
 
@@ -245,7 +244,7 @@ func (w *Wallet) Save() error {
 	}
 
 	// Write wallet store to disk
-	if err := ioutil.WriteFile(w.walletPath, wsBytes, FileMode); err != nil {
+	if err := os.WriteFile(w.walletPath, wsBytes, FileMode); err != nil {
 		return fmt.Errorf("Could not write wallet to disk: %w", err)
 	}
 
@@ -328,7 +327,7 @@ func (w *Wallet) Reload() error {
 func (w *Wallet) loadStore() (bool, error) {
 
 	// Read wallet store from disk; cancel if not found
-	wsBytes, err := ioutil.ReadFile(w.walletPath)
+	wsBytes, err := os.ReadFile(w.walletPath)
 	if err != nil {
 		return false, nil
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"math/big"
 	"os"
@@ -204,7 +203,7 @@ func (t *submitRewardsTree) run() error {
 		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, rewardsTreePath)
 
 		// Deserialize the file
-		wrapperBytes, err := ioutil.ReadFile(rewardsTreePath)
+		wrapperBytes, err := os.ReadFile(rewardsTreePath)
 		if err != nil {
 			return fmt.Errorf("Error reading rewards tree file: %w", err)
 		}
@@ -260,7 +259,7 @@ func (t *submitRewardsTree) isExistingFileValid(rewardsTreePath string, interval
 	if !os.IsNotExist(err) {
 		// The file already exists, attempt to read it
 		var proofWrapper rprewards.RewardsFile
-		fileBytes, err := ioutil.ReadFile(rewardsTreePath)
+		fileBytes, err := os.ReadFile(rewardsTreePath)
 		if err != nil {
 			t.log.Printlnf("WARNING: failed to read %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
 			return false
@@ -343,7 +342,7 @@ func (t *submitRewardsTree) generateTreeImpl(rp *rocketpool.RocketPool, interval
 	}
 
 	// Write it to disk
-	err = ioutil.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
+	err = os.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
 	if err != nil {
 		return fmt.Errorf("Error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
 	}
@@ -370,7 +369,7 @@ func (t *submitRewardsTree) generateTreeImpl(rp *rocketpool.RocketPool, interval
 	t.printMessage("Generation complete! Saving tree...")
 
 	// Write the rewards tree to disk
-	err = ioutil.WriteFile(rewardsTreePath, wrapperBytes, 0644)
+	err = os.WriteFile(rewardsTreePath, wrapperBytes, 0644)
 	if err != nil {
 		return fmt.Errorf("Error saving rewards tree file to %s: %w", rewardsTreePath, err)
 	}

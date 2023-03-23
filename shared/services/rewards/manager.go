@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"math/big"
 	"net/http"
@@ -107,7 +107,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.TreeFileExists = true
 
 	// Unmarshal it
-	fileBytes, err := ioutil.ReadFile(info.TreeFilePath)
+	fileBytes, err := os.ReadFile(info.TreeFilePath)
 	if err != nil {
 		err = fmt.Errorf("error reading %s: %w", info.TreeFilePath, err)
 		return
@@ -363,7 +363,7 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 			continue
 		} else {
 			// If we got here, we have a successful download
-			bytes, err := ioutil.ReadAll(resp.Body)
+			bytes, err := io.ReadAll(resp.Body)
 			if err != nil {
 				errBuilder.WriteString(fmt.Sprintf("Error reading response bytes from %s: %s\n", url, err.Error()))
 				continue
@@ -377,7 +377,7 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 			}
 
 			// Write the file
-			err = ioutil.WriteFile(rewardsTreePath, decompressedBytes, 0644)
+			err = os.WriteFile(rewardsTreePath, decompressedBytes, 0644)
 			if err != nil {
 				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 			}
