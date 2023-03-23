@@ -77,6 +77,15 @@ type SetEnsNameResponse struct {
 	GasInfo rocketpool.GasInfo `json:"gasInfo"`
 }
 
+type SetEnsAvatarResponse struct {
+	Status       string             `json:"status"`
+	Error        string             `json:"error"`
+	Address      common.Address     `json:"address"`
+	AvatarString string             `json:"avatarString"`
+	TxHash       common.Hash        `json:"txHash"`
+	GasInfo      rocketpool.GasInfo `json:"gasInfo"`
+}
+
 type TestMnemonicResponse struct {
 	Status           string         `json:"status"`
 	Error            string         `json:"error"`

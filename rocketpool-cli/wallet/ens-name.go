@@ -2,9 +2,13 @@ package wallet
 
 import (
 	"fmt"
+	"math/big"
+	"net/url"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/urfave/cli"
 )
@@ -50,6 +54,67 @@ func setEnsName(c *cli.Context, name string) error {
 	}
 
 	fmt.Printf("The ENS name associated with your node account is now '%s'.\n\n", name)
+	return nil
+
+}
+
+func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address, tokenId *big.Int, imageURL *url.URL) error {
+
+	// Get RP client
+	rp, err := rocketpool.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
+	defer rp.Close()
+
+	// Get gas estimate
+	estimateGasSetName := api.SetEnsAvatarResponse{}
+	if imageURL != nil {
+		fmt.Printf("This will confirm the node's ENS avatar as '%s'.\n\n", imageURL.String())
+		estimateGasSetName, err = rp.EstimateGasSetEnsAvatarURL(imageURL.String())
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Printf("This will confirm the node's ENS avatar as '%s:%s:%s'.\n\n", ercType, contractAddress.Hex(), tokenId.String())
+		estimateGasSetName, err = rp.EstimateGasSetEnsAvatar(ercType, contractAddress, tokenId)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Assign max fees
+	err = gas.AssignMaxFeeAndLimit(estimateGasSetName.GasInfo, rp, c.Bool("yes"))
+	if err != nil {
+		return err
+	}
+
+	if !cliutils.Confirm("Are you sure you want to confirm your node's ENS avatar?") {
+		fmt.Println("Cancelled.")
+		return nil
+	}
+
+	// Set the avatar
+	response := api.SetEnsAvatarResponse{}
+	if imageURL != nil {
+		response, err = rp.SetEnsAvatar("", common.Address{}, nil, imageURL)
+		if err != nil {
+			return err
+		}
+	} else {
+		response, err = rp.SetEnsAvatar(ercType, contractAddress, tokenId, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	fmt.Printf("Setting ENS avatar...\n")
+	cliutils.PrintTransactionHash(rp, response.TxHash)
+	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+		return err
+	}
+
+	fmt.Printf("The ENS avatar associated with your node account is now '%s:%s:%s'.\n\n", ercType, contractAddress, tokenId)
 	return nil
 
 }

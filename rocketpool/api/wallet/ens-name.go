@@ -2,7 +2,10 @@ package wallet
 
 import (
 	"fmt"
+	"math/big"
+	"net/url"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -75,6 +78,72 @@ func setEnsName(c *cli.Context, name string, onlyEstimateGas bool) (*api.SetEnsN
 		Address: account.Address,
 		EnsName: name,
 		TxHash:  tx.Hash(),
+		GasInfo: rocketpool.GasInfo{
+			EstGasLimit:  tx.Gas(),
+			SafeGasLimit: uint64(float64(tx.Gas()) * GasLimitMultiplier),
+		},
+	}
+
+	if response.GasInfo.EstGasLimit > MaxGasLimit {
+		return nil, fmt.Errorf("estimated gas of %d is greater than the max gas limit of %d", response.GasInfo.EstGasLimit, MaxGasLimit)
+	}
+	if response.GasInfo.SafeGasLimit > MaxGasLimit {
+		response.GasInfo.SafeGasLimit = MaxGasLimit
+	}
+
+	return &response, nil
+}
+
+// Set an avatar to the node wallet's ENS record.
+func setEnsAvatar(c *cli.Context, ercType string, contractAddress common.Address, tokenId *big.Int, imageUrl *url.URL, onlyEstimateGas bool) (*api.SetEnsAvatarResponse, error) {
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the name is already in use
+	resolvedName, err := ens.ReverseResolve(rp.Client, account.Address)
+	if err != nil {
+		return nil, fmt.Errorf("error reverse resolving %s to an ENS name: %w", account.Address.Hex(), err)
+	}
+
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// If onlyEstimateGas is set, then don't send the tx, only simulates and returns the gas estimate
+	opts.NoSend = onlyEstimateGas
+
+	resolver, err := ens.NewResolver(rp.Client, resolvedName)
+	if err != nil {
+		return nil, fmt.Errorf("error creating reverse registrar binding: %w", err)
+	}
+	var avatarString string
+	if imageUrl != nil {
+		avatarString = imageUrl.String()
+	} else {
+		avatarString = fmt.Sprintf("eip155:1/%s:%s/%s", ercType, contractAddress.Hex(), tokenId.String())
+	}
+
+	tx, err := resolver.SetText(opts, "avatar", avatarString)
+	if err != nil {
+		return nil, fmt.Errorf("error setting ENS avatar: %w", err)
+	}
+	response := api.SetEnsAvatarResponse{
+		Address:      account.Address,
+		AvatarString: avatarString,
+		TxHash:       tx.Hash(),
 		GasInfo: rocketpool.GasInfo{
 			EstGasLimit:  tx.Gas(),
 			SafeGasLimit: uint64(float64(tx.Gas()) * GasLimitMultiplier),
