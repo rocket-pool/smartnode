@@ -43,15 +43,20 @@ func beginReduceBondAmount(c *cli.Context) error {
 		return nil
 	}
 
+	// Check the fee distributor
+	distribResponse, err := rp.IsFeeDistributorInitialized()
+	if err != nil {
+		return fmt.Errorf("error checking the node's fee distributor status: %w", err)
+	}
+	if !distribResponse.IsInitialized {
+		fmt.Println("Minipools cannot have their bonds reduced until your fee distributor has been initialized.\nPlease run `rocketpool node initialize-fee-distributor` first, then return here to reduce your bonds.")
+		return nil
+	}
+
 	// Get minipool statuses
 	status, err := rp.MinipoolStatus()
 	if err != nil {
 		return err
-	}
-
-	if !status.IsAtlasDeployed {
-		fmt.Println("You cannot reduce a minipool's bond until Atlas has been deployed.")
-		return nil
 	}
 
 	// Get the bond reduction variables
