@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"math/rand"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -82,10 +84,6 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return err
-	}
 
 	// Initialize the metrics reporters
 	scrubCollector := collectors.NewScrubCollector()
@@ -95,6 +93,20 @@ func run(c *cli.Context) error {
 	// Initialize error logger
 	errorLog := log.NewColorLogger(ErrorColor)
 	updateLog := log.NewColorLogger(UpdateColor)
+
+	var bc beacon.Client
+	// Override the beacon client, if requested
+	if beaconOverride := os.Getenv("TREEGEN_BEACON_CLIENT_ENDPOINT"); beaconOverride != "" {
+		updateLog.Printlnf("Overriding the Beacon Node URL to %s", beaconOverride)
+		bc = client.NewStandardHttpClient(beaconOverride)
+	} else {
+		var err error
+
+		bc, err = services.GetBeaconClient(c)
+		if err != nil {
+			return err
+		}
+	}
 
 	// Create the state manager
 	m, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, &updateLog)

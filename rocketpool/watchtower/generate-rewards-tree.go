@@ -20,6 +20,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -53,9 +54,18 @@ func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger 
 	if err != nil {
 		return nil, err
 	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
+	var bc beacon.Client
+	// Override the beacon client, if requested
+	if beaconOverride := os.Getenv("TREEGEN_BEACON_CLIENT_ENDPOINT"); beaconOverride != "" {
+		logger.Printlnf("Using %s as the Beacon Node for GenerateRewardsTree", beaconOverride)
+		bc = client.NewStandardHttpClient(beaconOverride)
+	} else {
+		var err error
+
+		bc, err = services.GetBeaconClient(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
