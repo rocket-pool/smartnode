@@ -3,7 +3,6 @@ package wallet
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -114,7 +113,7 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolCo
 	}
 
 	// Get the custom keystore files
-	files, err := ioutil.ReadDir(customKeyDir)
+	files, err := os.ReadDir(customKeyDir)
 	if err != nil {
 		return "", fmt.Errorf("error enumerating custom keystores: %w", err)
 	}
