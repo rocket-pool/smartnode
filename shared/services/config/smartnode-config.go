@@ -347,7 +347,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from spot prices to TWAP for RPL price submission.",
 			Type:        config.ParameterType_Uint,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: uint64(999999999999999),
+				config.Network_Mainnet: uint64(191823),
 				config.Network_Prater:  uint64(162094),
 				config.Network_Devnet:  uint64(162094),
 			},
@@ -363,7 +363,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from the old network balance calculation method to the new one.",
 			Type:        config.ParameterType_Uint,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: uint64(999999999999999),
+				config.Network_Mainnet: uint64(192492),
 				config.Network_Prater:  uint64(162094),
 				config.Network_Devnet:  uint64(162094),
 			},

@@ -23,6 +23,7 @@ const (
 	MainnetV2Interval uint64 = 4
 	MainnetV3Interval uint64 = 5
 	MainnetV4Interval uint64 = 6
+	MainnetV5Interval uint64 = 8
 
 	// Prater intervals
 	PraterV2Interval uint64 = 37
@@ -73,7 +74,7 @@ func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.R
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
 			rewardsRulesetVersion: 5,
-			mainnetStartInterval:  TestingInterval,
+			mainnetStartInterval:  MainnetV5Interval,
 			praterStartInterval:   PraterV5Interval,
 			generator:             newTreeGeneratorImpl_v5(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state),
 		}, {
