@@ -386,15 +386,24 @@ type NodeDistributeResponse struct {
 }
 
 type NodeGetRewardsInfoResponse struct {
-	Status             string                 `json:"status"`
-	Error              string                 `json:"error"`
-	Registered         bool                   `json:"registered"`
-	ClaimedIntervals   []uint64               `json:"claimedIntervals"`
-	UnclaimedIntervals []rewards.IntervalInfo `json:"unclaimedIntervals"`
-	InvalidIntervals   []rewards.IntervalInfo `json:"invalidIntervals"`
-	RplStake           *big.Int               `json:"rplStake"`
-	RplPrice           *big.Int               `json:"rplPrice"`
-	ActiveMinipools    int                    `json:"activeMinipools"`
+	Status                  string                 `json:"status"`
+	Error                   string                 `json:"error"`
+	Registered              bool                   `json:"registered"`
+	ClaimedIntervals        []uint64               `json:"claimedIntervals"`
+	UnclaimedIntervals      []rewards.IntervalInfo `json:"unclaimedIntervals"`
+	InvalidIntervals        []rewards.IntervalInfo `json:"invalidIntervals"`
+	RplStake                *big.Int               `json:"rplStake"`
+	RplPrice                *big.Int               `json:"rplPrice"`
+	ActiveMinipools         int                    `json:"activeMinipools"`
+	IsAtlasDeployed         bool                   `json:"isAtlasDeployed"`
+	EffectiveRplStake       *big.Int               `json:"effectiveRplStake"`
+	MinimumRplStake         *big.Int               `json:"minimumRplStake"`
+	MaximumRplStake         *big.Int               `json:"maximumRplStake"`
+	EthMatched              *big.Int               `json:"ethMatched"`
+	EthMatchedLimit         *big.Int               `json:"ethMatchedLimit"`
+	PendingMatchAmount      *big.Int               `json:"pendingMatchAmount"`
+	BorrowedCollateralRatio float64                `json:"borrowedCollateralRatio"`
+	BondedCollateralRatio   float64                `json:"bondedCollateralRatio"`
 }
 
 type CanNodeClaimRewardsResponse struct {

@@ -269,7 +269,8 @@ func nodeClaimRewards(c *cli.Context) error {
 func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfoResponse, claimRpl *big.Int) (*big.Int, error) {
 
 	// Get the current collateral
-	currentCollateral := float64(0)
+	currentBondedCollateral := float64(0)
+	currentBorrowedCollateral := float64(0)
 	rplToMaxCollateral := float64(0)
 	rplPrice := eth.WeiToEth(rewardsInfoResponse.RplPrice)
 	currentRplStake := eth.WeiToEth(rewardsInfoResponse.RplStake)
@@ -278,23 +279,42 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 
 	// Print info about autostaking RPL
 	var bestTotal float64
-	var bestCollateral float64
+	var bestBondedCollateral float64
+	var bestBorrowedCollateral float64
 	if rewardsInfoResponse.ActiveMinipools > 0 {
-		currentCollateral = rplPrice * currentRplStake / (activeMinipools * 16.0)
-		maxRplRequired := activeMinipools * 16.0 * 1.5 / rplPrice // NOTE: Assumes the max is 150%
+		currentBondedCollateral = rewardsInfoResponse.BondedCollateralRatio
+		currentBorrowedCollateral = rewardsInfoResponse.BorrowedCollateralRatio
+		maxRplRequired := eth.WeiToEth(rewardsInfoResponse.MaximumRplStake)
 		rplToMaxCollateral = maxRplRequired - currentRplStake
 
 		bestTotal = availableRpl + currentRplStake
-		bestCollateral = rplPrice * bestTotal / (activeMinipools * 16.0)
-
-		fmt.Printf("You currently have %.6f RPL staked (%.2f%% collateral).\n", currentRplStake, currentCollateral*100)
-		if rplToMaxCollateral <= 0 {
-			fmt.Println("You are already at maximum collateral. Restaking more RPL will not lead to more rewards.")
-		} else if availableRpl < rplToMaxCollateral {
-			fmt.Printf("You can restake a max of %.6f RPL which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", availableRpl, bestTotal, bestCollateral*100)
+		if !rewardsInfoResponse.IsAtlasDeployed {
+			bestBondedCollateral = rplPrice * bestTotal / (activeMinipools * 16.0)
 		} else {
-			total := rplToMaxCollateral + currentRplStake
-			fmt.Printf("If you restake %.6f RPL, you will have a total of %.6f RPL staked (the max collateral of 150%%).\nRestaking more than this will not result in higher rewards.\n\n", rplToMaxCollateral, total)
+			bestBondedCollateral = rplPrice * bestTotal / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthMatched) - eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+			bestBorrowedCollateral = rplPrice * bestTotal / (eth.WeiToEth(rewardsInfoResponse.EthMatched) + eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+		}
+
+		if !rewardsInfoResponse.IsAtlasDeployed {
+			fmt.Printf("You currently have %.6f RPL staked (%.2f%% collateral).\n", currentRplStake, currentBorrowedCollateral*100)
+			if rplToMaxCollateral <= 0 {
+				fmt.Println("You are already at maximum collateral. Restaking more RPL will not lead to more rewards.")
+			} else if availableRpl < rplToMaxCollateral {
+				fmt.Printf("You can restake a max of %.6f RPL which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", availableRpl, bestTotal, bestBondedCollateral*100)
+			} else {
+				total := rplToMaxCollateral + currentRplStake
+				fmt.Printf("If you restake %.6f RPL, you will have a total of %.6f RPL staked (the max collateral of 150%%).\nRestaking more than this will not result in higher rewards.\n\n", rplToMaxCollateral, total)
+			}
+		} else {
+			fmt.Printf("You currently have %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", currentRplStake, currentBorrowedCollateral*100, currentBondedCollateral*100)
+			if rplToMaxCollateral <= 0 {
+				fmt.Println("You are already at maximum collateral. Restaking more RPL will not lead to more rewards.")
+			} else if availableRpl < rplToMaxCollateral {
+				fmt.Printf("You can restake a max of %.6f RPL which will bring you to a total of %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", availableRpl, bestTotal, bestBorrowedCollateral*100, bestBondedCollateral*100)
+			} else {
+				total := rplToMaxCollateral + currentRplStake
+				fmt.Printf("If you restake %.6f RPL, you will have a total of %.6f RPL staked (the max bonded collateral of 150%%).\nRestaking more than this will not result in higher rewards.\n\n", rplToMaxCollateral, total)
+			}
 		}
 	} else {
 		fmt.Println("You do not have any active minipools, so restaking RPL will not lead to any rewards.")
@@ -310,18 +330,24 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 			fmt.Println("Ignoring automatic staking request since your collateral is already maximized.")
 			restakeAmountWei = nil
 		} else if availableRpl < rplToMaxCollateral {
-			fmt.Printf("Automatically restaking all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", bestTotal, bestCollateral*100)
+			fmt.Printf("Automatically restaking all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% bonded collateral).\n", bestTotal, bestBondedCollateral*100)
 			restakeAmountWei = claimRpl
 		} else {
 			total := rplToMaxCollateral + currentRplStake
-			fmt.Printf("Automatically restaking %.6f RPL, which will bring you to a total of %.6f RPL staked (150%% collateral).\n", rplToMaxCollateral, total)
+			fmt.Printf("Automatically restaking %.6f RPL, which will bring you to a total of %.6f RPL staked (150%% bonded collateral).\n", rplToMaxCollateral, total)
 			restakeAmountWei = eth.EthToWei(rplToMaxCollateral)
 		}
 	} else if restakeAmountFlag == "all" {
 		// Restake everything with no regard for collateral level
 		total := availableRpl + currentRplStake
-		totalCollateral := rplPrice * total / (activeMinipools * 16.0)
-		fmt.Printf("Automatically restaking all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", total, totalCollateral*100)
+		if !rewardsInfoResponse.IsAtlasDeployed {
+			totalCollateral := rplPrice * total / (activeMinipools * 16.0)
+			fmt.Printf("Automatically restaking all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% bonded collateral).\n", total, totalCollateral*100)
+		} else {
+			totalBondedCollateral := rplPrice * total / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthMatched) - eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+			totalBorrowedCollateral := rplPrice * total / (eth.WeiToEth(rewardsInfoResponse.EthMatched) + eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+			fmt.Printf("Automatically restaking all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", total, totalBorrowedCollateral*100, totalBondedCollateral*100)
+		}
 		restakeAmountWei = claimRpl
 	} else if restakeAmountFlag != "" {
 		// Restake a specific amount, capped at how much is available to claim
@@ -330,12 +356,18 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 			return nil, fmt.Errorf("invalid restake amount '%s': %w", restakeAmountFlag, err)
 		}
 		if availableRpl < stakeAmount {
-			fmt.Printf("Limiting the automatic restake to all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", bestTotal, bestCollateral*100)
+			fmt.Printf("Limiting the automatic restake to all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", bestTotal, bestBondedCollateral*100)
 			restakeAmountWei = claimRpl
 		} else {
 			total := stakeAmount + currentRplStake
-			totalCollateral := rplPrice * total / (activeMinipools * 16.0)
-			fmt.Printf("Automatically restaking %.6f RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", stakeAmount, total, totalCollateral*100)
+			if !rewardsInfoResponse.IsAtlasDeployed {
+				totalCollateral := rplPrice * total / (activeMinipools * 16.0)
+				fmt.Printf("Automatically restaking %.6f RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", stakeAmount, total, totalCollateral*100)
+			} else {
+				totalBondedCollateral := rplPrice * total / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthMatched) - eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+				totalBorrowedCollateral := rplPrice * total / (eth.WeiToEth(rewardsInfoResponse.EthMatched) + eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+				fmt.Printf("Automatically restaking %.6f RPL, which will bring you to a total of %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", stakeAmount, total, totalBorrowedCollateral*100, totalBondedCollateral*100)
+			}
 			restakeAmountWei = eth.EthToWei(stakeAmount)
 		}
 	} else if c.Bool("yes") {
@@ -345,9 +377,16 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 	} else {
 		// Prompt the user
 		if rplToMaxCollateral <= 0 || availableRpl < rplToMaxCollateral {
+			var collateralString string
+			if !rewardsInfoResponse.IsAtlasDeployed {
+				collateralString = fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% collateral", availableRpl, bestBondedCollateral*100)
+			} else {
+				collateralString = fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% borrowed collateral (%.2f%% bonded collateral)", availableRpl, bestBorrowedCollateral*100, bestBondedCollateral*100)
+			}
+
 			amountOptions := []string{
 				"None (do not restake any RPL)",
-				fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% collateral", availableRpl, bestCollateral*100),
+				collateralString,
 				"A custom amount",
 			}
 			selected, _ := cliutils.Select("Please choose an amount to restake here:", amountOptions)
@@ -374,11 +413,19 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 			}
 		} else {
 			bestTotal = availableRpl + currentRplStake
-			bestCollateral = rplPrice * bestTotal / (activeMinipools * 16.0)
+			var collateralString string
+			if !rewardsInfoResponse.IsAtlasDeployed {
+				bestBondedCollateral = rplPrice * bestTotal / (activeMinipools * 16.0)
+				collateralString = fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% collateral", availableRpl, bestBondedCollateral*100)
+			} else {
+				bestBondedCollateral = rplPrice * bestTotal / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthMatched) - eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+				bestBorrowedCollateral = rplPrice * bestTotal / (eth.WeiToEth(rewardsInfoResponse.EthMatched) + eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+				collateralString = fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% borrowed collateral (%.2f%% bonded collateral)", availableRpl, bestBorrowedCollateral*100, bestBondedCollateral*100)
+			}
 			amountOptions := []string{
 				"None (do not restake any RPL)",
-				fmt.Sprintf("Enough to get to 150%% collateral (%.6f RPL)", rplToMaxCollateral),
-				fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% collateral", availableRpl, bestCollateral*100),
+				fmt.Sprintf("Enough to get to 150%% bonded collateral (%.6f RPL)", rplToMaxCollateral),
+				collateralString,
 				"A custom amount",
 			}
 			selected, _ := cliutils.Select("Please choose an amount to restake here:", amountOptions)
