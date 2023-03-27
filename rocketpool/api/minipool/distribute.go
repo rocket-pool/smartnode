@@ -169,6 +169,16 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 					return fmt.Errorf("error calculating node share for minipool %s: %w", address.Hex(), err)
 				}
 
+				// Get gas estimate
+				opts, err := w.GetNodeAccountTransactor()
+				if err != nil {
+					return err
+				}
+				minipoolDetails.GasInfo, err = mp.EstimateDistributeBalanceGas(opts)
+				if err != nil {
+					return fmt.Errorf("error estimating gas to distribute minipool %s: %w", address.Hex(), err)
+				}
+
 				minipoolDetails.CanDistribute = true
 				return nil
 			})
