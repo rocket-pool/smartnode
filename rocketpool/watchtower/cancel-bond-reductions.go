@@ -20,6 +20,10 @@ import (
 	"github.com/urfave/cli"
 )
 
+const (
+	scrubBuffer uint64 = 10000000 // 0.01 ETH
+)
+
 type cancelBondReductions struct {
 	c                *cli.Context
 	log              log.ColorLogger
@@ -143,8 +147,7 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 	}
 
 	// Check the status of each one
-	buffer := uint64(1000000) // 0.001 ETH
-	threshold := uint64(32000000000) - buffer
+	threshold := uint64(32000000000) - scrubBuffer
 	for _, mpd := range reductionMps {
 		validator := state.ValidatorDetails[mpd.Pubkey]
 		if validator.Exists {
