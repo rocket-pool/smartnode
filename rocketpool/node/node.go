@@ -31,13 +31,13 @@ var taskCooldown, _ = time.ParseDuration("10s")
 const (
 	MaxConcurrentEth1Requests = 200
 
-	ClaimRplRewardsColor         = color.FgGreen
 	StakePrelaunchMinipoolsColor = color.FgBlue
 	DownloadRewardsTreesColor    = color.FgGreen
 	MetricsColor                 = color.FgHiYellow
 	ManageFeeRecipientColor      = color.FgHiCyan
 	PromoteMinipoolsColor        = color.FgMagenta
 	ReduceBondAmountColor        = color.FgHiBlue
+	DistributeMinipoolsColor     = color.FgHiGreen
 	ErrorColor                   = color.FgRed
 	WarningColor                 = color.FgYellow
 	UpdateColor                  = color.FgHiWhite
@@ -117,6 +117,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	distributeMinipools, err := newDistributeMinipools(c, log.NewColorLogger(DistributeMinipoolsColor))
+	if err != nil {
+		return err
+	}
 	stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
 	if err != nil {
 		return err
@@ -187,6 +191,12 @@ func run(c *cli.Context) error {
 
 			// Run the minipool stake check
 			if err := stakePrelaunchMinipools.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the balance distribution check
+			if err := distributeMinipools.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)

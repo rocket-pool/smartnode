@@ -73,7 +73,7 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 	}
 
 	// Check if auto-staking is disabled
-	gasThreshold := cfg.Smartnode.MinipoolStakeGasThreshold.Value.(float64)
+	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
 
 	// Get the user-requested max fee
 	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
@@ -112,16 +112,6 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 
 // Reduce bonds
 func (t *reduceBonds) run(state *state.NetworkState) error {
-
-	// Reload the wallet (in case a call to `node deposit` changed it)
-	if err := t.w.Reload(); err != nil {
-		return err
-	}
-
-	// Wait for eth client to sync
-	if err := services.WaitEthClientSynced(t.c, true); err != nil {
-		return err
-	}
 
 	// Check if Atlas has been deployed yet
 	if !state.IsAtlasDeployed {

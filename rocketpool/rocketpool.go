@@ -120,6 +120,10 @@ func main() {
 			Name:  "force-fallbacks",
 			Usage: "Set this to true if you know the primary EC or CC is offline and want to bypass its health checks, and just use the fallback EC and CC instead",
 		},
+		cli.BoolFlag{
+			Name:  "use-protected-api",
+			Usage: "Set this to true to use the Flashbots Protect RPC instead of your local Execution Client. Useful to ensure your transactions aren't front-run.",
+		},
 	}
 
 	// Register commands

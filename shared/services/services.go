@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
@@ -102,7 +103,13 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
 	if err != nil {
 		return nil, err
 	}
-	ec, err := getEthClient(c, cfg)
+	var ec rocketpool.ExecutionClient
+	if c.GlobalBool("use-protected-api") {
+		url := cfg.Smartnode.GetFlashbotsProtectUrl()
+		ec, err = ethclient.Dial(url)
+	} else {
+		ec, err = getEthClient(c, cfg)
+	}
 	if err != nil {
 		return nil, err
 	}
