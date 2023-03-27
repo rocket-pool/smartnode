@@ -6,8 +6,8 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:23.1.0"
-	besuTagProd          string = "hyperledger/besu:23.1.0"
+	besuTagTest          string = "hyperledger/besu:23.1.2"
+	besuTagProd          string = "hyperledger/besu:23.1.2"
 	besuEventLogInterval int    = 1000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"
@@ -51,6 +51,7 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 
 		CompatibleConsensusClients: []config.ConsensusClient{
 			config.ConsensusClient_Lighthouse,
+			config.ConsensusClient_Lodestar,
 			config.ConsensusClient_Nimbus,
 			config.ConsensusClient_Prysm,
 			config.ConsensusClient_Teku,

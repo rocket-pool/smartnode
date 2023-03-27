@@ -14,7 +14,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
+func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -55,22 +55,17 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 	if err != nil {
 		return fmt.Errorf("Error getting node account: %w", err)
 	}
-	votingId := cfg.Smartnode.GetVotingSnapshotID()
-	votingDelegate, err := s.Delegation(nil, nodeAccount.Address, votingId)
-	if err != nil {
-		return fmt.Errorf("Error getting node delegate: %w", err)
-	}
+
 	// Create the collectors
-	demandCollector := collectors.NewDemandCollector(rp)
-	performanceCollector := collectors.NewPerformanceCollector(rp)
-	supplyCollector := collectors.NewSupplyCollector(rp)
-	rplCollector := collectors.NewRplCollector(rp)
-	odaoCollector := collectors.NewOdaoCollector(rp)
-	nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg)
-	trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg)
-	beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address)
-	snapshotCollector := collectors.NewSnapshotCollector(rp, cfg, nodeAccount.Address, votingDelegate)
-	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(rp, ec)
+	demandCollector := collectors.NewDemandCollector(rp, stateLocker)
+	performanceCollector := collectors.NewPerformanceCollector(rp, stateLocker)
+	supplyCollector := collectors.NewSupplyCollector(rp, stateLocker)
+	rplCollector := collectors.NewRplCollector(rp, cfg, stateLocker)
+	odaoCollector := collectors.NewOdaoCollector(rp, stateLocker)
+	nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg, stateLocker)
+	trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg, stateLocker)
+	beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address, stateLocker)
+	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(rp, ec, stateLocker)
 
 	// Set up Prometheus
 	registry := prometheus.NewRegistry()
@@ -82,11 +77,21 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 	registry.MustRegister(nodeCollector)
 	registry.MustRegister(trustedNodeCollector)
 	registry.MustRegister(beaconCollector)
-	registry.MustRegister(snapshotCollector)
 	registry.MustRegister(smoothingPoolCollector)
-	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
+
+	// Set up snapshot checking if enabled
+	votingId := cfg.Smartnode.GetVotingSnapshotID()
+	if s != nil {
+		votingDelegate, err := s.Delegation(nil, nodeAccount.Address, votingId)
+		if err != nil {
+			return fmt.Errorf("Error getting node delegate: %w", err)
+		}
+		snapshotCollector := collectors.NewSnapshotCollector(rp, cfg, nodeAccount.Address, votingDelegate)
+		registry.MustRegister(snapshotCollector)
+	}
 
 	// Start the HTTP server
+	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	metricsAddress := c.GlobalString("metricsAddress")
 	metricsPort := c.GlobalUint("metricsPort")
 	logger.Printlnf("Starting metrics exporter on %s:%d.", metricsAddress, metricsPort)

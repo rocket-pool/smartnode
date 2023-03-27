@@ -22,6 +22,7 @@ type CanProcessQueueResponse struct {
 	AssignDepositsDisabled     bool               `json:"assignDepositsDisabled"`
 	NoMinipoolsAvailable       bool               `json:"noMinipoolsAvailable"`
 	InsufficientDepositBalance bool               `json:"insufficientDepositBalance"`
+	IsAtlasDeployed            bool               `json:"isAtlasDeployed"`
 	GasInfo                    rocketpool.GasInfo `json:"gasInfo"`
 }
 type ProcessQueueResponse struct {

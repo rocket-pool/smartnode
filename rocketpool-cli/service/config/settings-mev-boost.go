@@ -29,6 +29,7 @@ type MevBoostConfigPage struct {
 	blocknativeBox           *parameterizedFormItem
 	edenBox                  *parameterizedFormItem
 	ultrasoundBox            *parameterizedFormItem
+	aestusBox                *parameterizedFormItem
 }
 
 // Creates a new page for the MEV-Boost settings
@@ -106,10 +107,11 @@ func (configPage *MevBoostConfigPage) createContent() {
 	configPage.blocknativeBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BlocknativeRelay)
 	configPage.edenBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EdenRelay)
 	configPage.ultrasoundBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.UltrasoundRelay)
+	configPage.aestusBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.AestusRelay)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox, configPage.selectionModeBox)
-	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteEthicalBox, configPage.bloxrouteRegulatedBox, configPage.blocknativeBox, configPage.edenBox, configPage.ultrasoundBox)
+	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteEthicalBox, configPage.bloxrouteRegulatedBox, configPage.blocknativeBox, configPage.edenBox, configPage.ultrasoundBox, configPage.aestusBox)
 	configPage.layout.mapParameterizedFormItems(configPage.localItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalItems...)
 
@@ -204,6 +206,8 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 				configPage.layout.form.AddFormItem(configPage.edenBox.item)
 			case cfgtypes.MevRelayID_Ultrasound:
 				configPage.layout.form.AddFormItem(configPage.ultrasoundBox.item)
+			case cfgtypes.MevRelayID_Aestus:
+				configPage.layout.form.AddFormItem(configPage.aestusBox.item)
 			}
 		}
 	}

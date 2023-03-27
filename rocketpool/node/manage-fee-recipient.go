@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpsvc "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -68,7 +69,7 @@ func newManageFeeRecipient(c *cli.Context, logger log.ColorLogger) (*manageFeeRe
 }
 
 // Manage fee recipient
-func (m *manageFeeRecipient) run() error {
+func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(m.c, true); err != nil {
@@ -85,7 +86,12 @@ func (m *manageFeeRecipient) run() error {
 	}
 
 	// Get the fee recipient info for the node
-	feeRecipientInfo, err := rputils.GetFeeRecipientInfo(m.rp, m.bc, nodeAccount.Address, nil)
+	var feeRecipientInfo *rputils.FeeRecipientInfo
+	if !state.IsAtlasDeployed {
+		feeRecipientInfo, err = rputils.GetFeeRecipientInfo_Legacy(m.rp, m.bc, nodeAccount.Address, nil)
+	} else {
+		feeRecipientInfo, err = rputils.GetFeeRecipientInfo_Atlas(m.rp, m.bc, nodeAccount.Address, state)
+	}
 	if err != nil {
 		return fmt.Errorf("error getting fee recipient info: %w", err)
 	}

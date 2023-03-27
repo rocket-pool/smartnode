@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -73,17 +74,9 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 
 	var primaryBc beacon.Client
 	var fallbackBc beacon.Client
-	switch selectedCC {
-	case cfgtypes.ConsensusClient_Nimbus:
-		primaryBc = client.NewNimbusClient(primaryProvider)
-		if fallbackProvider != "" {
-			fallbackBc = client.NewNimbusClient(fallbackProvider)
-		}
-	default:
-		primaryBc = client.NewStandardHttpClient(primaryProvider)
-		if fallbackProvider != "" {
-			fallbackBc = client.NewStandardHttpClient(fallbackProvider)
-		}
+	primaryBc = client.NewStandardHttpClient(primaryProvider)
+	if fallbackProvider != "" {
+		fallbackBc = client.NewStandardHttpClient(fallbackProvider)
 	}
 
 	return &BeaconClientManager{
@@ -244,9 +237,9 @@ func (m *BeaconClientManager) GetValidatorProposerDuties(indices []uint64, epoch
 }
 
 // Get the Beacon chain's domain data
-func (m *BeaconClientManager) GetDomainData(domainType []byte, epoch uint64) ([]byte, error) {
+func (m *BeaconClientManager) GetDomainData(domainType []byte, epoch uint64, useGenesisFork bool) ([]byte, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
-		return client.GetDomainData(domainType, epoch)
+		return client.GetDomainData(domainType, epoch, useGenesisFork)
 	})
 	if err != nil {
 		return nil, err
@@ -290,6 +283,17 @@ func (m *BeaconClientManager) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Com
 		return nil, err
 	}
 	return result.([]beacon.Committee), nil
+}
+
+// Change the withdrawal credentials for a validator
+func (m *BeaconClientManager) ChangeWithdrawalCredentials(validatorIndex uint64, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
+	err := m.runFunction0(func(client beacon.Client) error {
+		return client.ChangeWithdrawalCredentials(validatorIndex, fromBlsPubkey, toExecutionAddress, signature)
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 /// ==================

@@ -23,6 +23,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli"
 )
@@ -38,10 +39,11 @@ type generateRewardsTree struct {
 	bc        beacon.Client
 	lock      *sync.Mutex
 	isRunning bool
+	m         *state.NetworkStateManager
 }
 
 // Create generate rewards Merkle Tree task
-func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*generateRewardsTree, error) {
+func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*generateRewardsTree, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -72,6 +74,7 @@ func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger 
 		rp:        rp,
 		lock:      lock,
 		isRunning: false,
+		m:         m,
 	}
 
 	return generator, nil
@@ -135,6 +138,7 @@ func (t *generateRewardsTree) run() error {
 }
 
 func (t *generateRewardsTree) generateRewardsTree(index uint64) {
+
 	// Begin generation of the tree
 	generationPrefix := fmt.Sprintf("[Interval %d Tree]", index)
 	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)
@@ -203,16 +207,23 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		return
 	}
 
+	// Get the state for the target slot
+	state, err := t.m.GetStateForSlot(rewardsEvent.ConsensusBlock.Uint64())
+	if err != nil {
+		t.handleError(fmt.Errorf("%s error getting state for beacon slot %d: %w", generationPrefix, rewardsEvent.ConsensusBlock.Uint64(), err))
+		return
+	}
+
 	// Generate the tree
-	t.generateRewardsTreeImpl(client, index, generationPrefix, rewardsEvent, elBlockHeader)
+	t.generateRewardsTreeImpl(client, index, generationPrefix, rewardsEvent, elBlockHeader, state)
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header) {
+func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
 
 	// Generate the rewards file
 	start := time.Now()
-	treegen, err := rprewards.NewTreeGenerator(t.log, generationPrefix, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64())
+	treegen, err := rprewards.NewTreeGenerator(t.log, generationPrefix, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error creating Merkle tree generator: %w", generationPrefix, err))
 		return

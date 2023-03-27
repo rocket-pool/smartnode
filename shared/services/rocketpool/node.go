@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -430,8 +431,8 @@ func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.In
 }
 
 // Make a node deposit
-func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, submit bool) (api.NodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t", amountWei.String(), minFee, salt.String(), submit))
+func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, submit bool) (api.NodeDepositResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t %t", amountWei.String(), minFee, salt.String(), useCreditBalance, submit))
 	if err != nil {
 		return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
 	}
@@ -921,6 +922,70 @@ func (c *Client) SignMessage(message string) (api.NodeSignResponse, error) {
 	}
 	if response.Error != "" {
 		return api.NodeSignResponse{}, fmt.Errorf("Could not sign message: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether a vacant minipool can be created for solo staker migration
+func (c *Client) CanCreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey) (api.CanCreateVacantMinipoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-create-vacant-minipool %s %f %s %s", amountWei.String(), minFee, salt.String(), pubkey.Hex()))
+	if err != nil {
+		return api.CanCreateVacantMinipoolResponse{}, fmt.Errorf("Could not get can create vacant minipool status: %w", err)
+	}
+	var response api.CanCreateVacantMinipoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanCreateVacantMinipoolResponse{}, fmt.Errorf("Could not decode can create vacant minipool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanCreateVacantMinipoolResponse{}, fmt.Errorf("Could not get can create vacant minipool status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Create a vacant minipool, which can be used to migrate a solo staker
+func (c *Client) CreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey) (api.CreateVacantMinipoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node create-vacant-minipool %s %f %s %s", amountWei.String(), minFee, salt.String(), pubkey.Hex()))
+	if err != nil {
+		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %w", err)
+	}
+	var response api.CreateVacantMinipoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not decode create vacant minipool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Get the node's collateral info, including pending bond reductions
+func (c *Client) CheckCollateral() (api.CheckCollateralResponse, error) {
+	responseBytes, err := c.callAPI("node check-collateral")
+	if err != nil {
+		return api.CheckCollateralResponse{}, fmt.Errorf("Could not get check-collateral status: %w", err)
+	}
+	var response api.CheckCollateralResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CheckCollateralResponse{}, fmt.Errorf("Could not decode check-collateral response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CheckCollateralResponse{}, fmt.Errorf("Could not get check-collateral status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Get the ETH balance of the node address
+func (c *Client) GetEthBalance() (api.NodeEthBalanceResponse, error) {
+	responseBytes, err := c.callAPI("node get-eth-balance")
+	if err != nil {
+		return api.NodeEthBalanceResponse{}, fmt.Errorf("Could not get get-eth-balance status: %w", err)
+	}
+	var response api.NodeEthBalanceResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeEthBalanceResponse{}, fmt.Errorf("Could not decode get-eth-balance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeEthBalanceResponse{}, fmt.Errorf("Could not get get-eth-balance status: %s", response.Error)
 	}
 	return response, nil
 }

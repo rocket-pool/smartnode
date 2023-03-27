@@ -23,6 +23,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
@@ -345,7 +346,7 @@ func (r *treeGeneratorImpl_v4) updateNetworksAndTotals() {
 func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 
 	snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
-	intervalDuration, err := GetClaimIntervalTime(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	intervalDuration, err := state.GetClaimIntervalTime(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return fmt.Errorf("error getting required registration time: %w", err)
 	}
@@ -365,11 +366,11 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	}
 
 	// Handle node operator rewards
-	nodeOpPercent, err := GetNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	nodeOpPercent, err := state.GetNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
-	pendingRewards, err := GetPendingRPLRewards(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	pendingRewards, err := state.GetPendingRPLRewards(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
@@ -436,7 +437,9 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
 		nodeRplRewards := big.NewInt(0)
 		nodeRplRewards.Mul(trueNodeEffectiveStakes[address], totalNodeRewards)
-		nodeRplRewards.Div(nodeRplRewards, totalNodeEffectiveStake)
+		if totalNodeEffectiveStake.Cmp(big.NewInt(0)) > 0 {
+			nodeRplRewards.Div(nodeRplRewards, totalNodeEffectiveStake)
+		}
 
 		// If there are pending rewards, add it to the map
 		if nodeRplRewards.Cmp(big.NewInt(0)) == 1 {
@@ -483,20 +486,23 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	}
 
 	// Sanity check to make sure we arrived at the correct total
+
 	delta := big.NewInt(0)
 	totalCalculatedNodeRewards := big.NewInt(0)
 	for _, networkRewards := range r.rewardsFile.NetworkRewards {
 		totalCalculatedNodeRewards.Add(totalCalculatedNodeRewards, &networkRewards.CollateralRpl.Int)
 	}
 	delta.Sub(totalNodeRewards, totalCalculatedNodeRewards).Abs(delta)
-	if delta.Cmp(r.epsilon) == 1 {
-		return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
+	if totalNodeEffectiveStake.Cmp(big.NewInt(0)) > 0 {
+		if delta.Cmp(r.epsilon) == 1 {
+			return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
+		}
 	}
 	r.rewardsFile.TotalRewards.TotalCollateralRpl.Int = *totalCalculatedNodeRewards
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 
 	// Handle Oracle DAO rewards
-	oDaoPercent, err := GetTrustedNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	oDaoPercent, err := state.GetTrustedNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
@@ -579,6 +585,9 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	}
 
 	// Sanity check to make sure we arrived at the correct total
+	if big.NewInt(int64(len(oDaoAddresses))).Cmp(r.epsilon) > 0 {
+		r.epsilon.SetUint64(uint64(len(oDaoAddresses)))
+	}
 	totalCalculatedOdaoRewards := big.NewInt(0)
 	delta = big.NewInt(0)
 	for _, networkRewards := range r.rewardsFile.NetworkRewards {
@@ -592,7 +601,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get expected Protocol DAO rewards
-	pDaoPercent, err := GetProtocolDaoRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	pDaoPercent, err := state.GetProtocolDaoRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
@@ -1314,6 +1323,15 @@ func (r *treeGeneratorImpl_v4) validateNetwork(network uint64) (bool, error) {
 
 // Gets the start blocks for the given interval
 func (r *treeGeneratorImpl_v4) getStartBlocksForInterval(previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
+	// Sanity check to confirm the BN can access the block from the previous interval
+	_, exists, err := r.bc.GetBeaconBlock(previousIntervalEvent.ConsensusBlock.String())
+	if err != nil {
+		return nil, fmt.Errorf("error verifying block from previous interval: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("couldn't retrieve CL block from previous interval (slot %d); this likely means you checkpoint sync'd your Beacon Node and it has not backfilled to the previous interval yet so it cannot be used for tree generation", previousIntervalEvent.ConsensusBlock.Uint64())
+	}
+
 	previousEpoch := previousIntervalEvent.ConsensusBlock.Uint64() / r.beaconConfig.SlotsPerEpoch
 	nextEpoch := previousEpoch + 1
 	r.rewardsFile.ConsensusStartBlock = nextEpoch * r.beaconConfig.SlotsPerEpoch
@@ -1336,7 +1354,6 @@ func (r *treeGeneratorImpl_v4) getStartBlocksForInterval(previousIntervalEvent r
 	}
 
 	var startElHeader *types.Header
-	var err error
 	if elBlockNumber == 0 {
 		// We are pre-merge, so get the first block after the one from the previous interval
 		r.rewardsFile.ExecutionStartBlock = previousIntervalEvent.ExecutionBlock.Uint64() + 1
@@ -1427,10 +1444,10 @@ func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 
 				return nil
 			})
+		}
 
-			if err := wg.Wait(); err != nil {
-				return err
-			}
+		if err := wg.Wait(); err != nil {
+			return err
 		}
 
 		nodesDone += SmoothingPoolDetailsBatchSize

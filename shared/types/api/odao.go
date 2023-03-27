@@ -261,6 +261,30 @@ type ProposeTNDAOSettingScrubPeriodResponse struct {
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
+type ProposeTNDAOSettingPromotionScrubPeriodResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+type ProposeTNDAOSettingScrubPenaltyEnabledResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+type ProposeTNDAOSettingBondReductionWindowStartResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+type ProposeTNDAOSettingBondReductionWindowLengthResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
 
 type GetTNDAOMemberSettingsResponse struct {
 	Status              string   `json:"status"`
@@ -282,7 +306,11 @@ type GetTNDAOProposalSettingsResponse struct {
 	ActionTime    uint64 `json:"actionTime"`
 }
 type GetTNDAOMinipoolSettingsResponse struct {
-	Status      string `json:"status"`
-	Error       string `json:"error"`
-	ScrubPeriod uint64 `json:"scrubPeriod"`
+	Status                    string `json:"status"`
+	Error                     string `json:"error"`
+	ScrubPeriod               uint64 `json:"scrubPeriod"`
+	PromotionScrubPeriod      uint64 `json:"promotionScrubPeriod"`
+	ScrubPenaltyEnabled       bool   `json:"scrubPenaltyEnabled"`
+	BondReductionWindowStart  uint64 `json:"bondReductionWindowStart"`
+	BondReductionWindowLength uint64 `json:"bondReductionWindowLength"`
 }

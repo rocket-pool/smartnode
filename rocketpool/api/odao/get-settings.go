@@ -13,9 +13,6 @@ import (
 func getMemberSettings(c *cli.Context) (*api.GetTNDAOMemberSettingsResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -68,9 +65,6 @@ func getMemberSettings(c *cli.Context) (*api.GetTNDAOMemberSettingsResponse, err
 func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -117,9 +111,6 @@ func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse,
 func getMinipoolSettings(c *cli.Context) (*api.GetTNDAOMinipoolSettingsResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -132,8 +123,28 @@ func getMinipoolSettings(c *cli.Context) (*api.GetTNDAOMinipoolSettingsResponse,
 	if err != nil {
 		return nil, fmt.Errorf("Error getting scrub period: %w", err)
 	}
+	promotionScrubPeriod, err := trustednode.GetPromotionScrubPeriod(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting promotion scrub period: %w", err)
+	}
+	scrubPenaltyEnabled, err := trustednode.GetScrubPenaltyEnabled(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting scrub penalty flag: %w", err)
+	}
+	bondReductionWindowStart, err := trustednode.GetBondReductionWindowStart(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting bond reduction window start: %w", err)
+	}
+	bondReductionWindowLength, err := trustednode.GetBondReductionWindowLength(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting bond reduction window length: %w", err)
+	}
 
 	response.ScrubPeriod = scrubPeriod
+	response.PromotionScrubPeriod = promotionScrubPeriod
+	response.ScrubPenaltyEnabled = scrubPenaltyEnabled
+	response.BondReductionWindowStart = bondReductionWindowStart
+	response.BondReductionWindowLength = bondReductionWindowLength
 
 	// Return response
 	return &response, nil

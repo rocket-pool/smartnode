@@ -27,21 +27,23 @@ const (
 	RequestUrlFormat   = "%s%s"
 	RequestContentType = "application/json"
 
-	RequestSyncStatusPath            = "/eth/v1/node/syncing"
-	RequestEth2ConfigPath            = "/eth/v1/config/spec"
-	RequestEth2DepositContractMethod = "/eth/v1/config/deposit_contract"
-	RequestGenesisPath               = "/eth/v1/beacon/genesis"
-	RequestCommitteePath             = "/eth/v1/beacon/states/%s/committees"
-	RequestFinalityCheckpointsPath   = "/eth/v1/beacon/states/%s/finality_checkpoints"
-	RequestForkPath                  = "/eth/v1/beacon/states/%s/fork"
-	RequestValidatorsPath            = "/eth/v1/beacon/states/%s/validators"
-	RequestVoluntaryExitPath         = "/eth/v1/beacon/pool/voluntary_exits"
-	RequestAttestationsPath          = "/eth/v1/beacon/blocks/%s/attestations"
-	RequestBeaconBlockPath           = "/eth/v2/beacon/blocks/%s"
-	RequestValidatorSyncDuties       = "/eth/v1/validator/duties/sync/%s"
-	RequestValidatorProposerDuties   = "/eth/v1/validator/duties/proposer/%s"
+	RequestSyncStatusPath                  = "/eth/v1/node/syncing"
+	RequestEth2ConfigPath                  = "/eth/v1/config/spec"
+	RequestEth2DepositContractMethod       = "/eth/v1/config/deposit_contract"
+	RequestGenesisPath                     = "/eth/v1/beacon/genesis"
+	RequestCommitteePath                   = "/eth/v1/beacon/states/%s/committees"
+	RequestFinalityCheckpointsPath         = "/eth/v1/beacon/states/%s/finality_checkpoints"
+	RequestForkPath                        = "/eth/v1/beacon/states/%s/fork"
+	RequestValidatorsPath                  = "/eth/v1/beacon/states/%s/validators"
+	RequestVoluntaryExitPath               = "/eth/v1/beacon/pool/voluntary_exits"
+	RequestAttestationsPath                = "/eth/v1/beacon/blocks/%s/attestations"
+	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%s"
+	RequestValidatorSyncDuties             = "/eth/v1/validator/duties/sync/%s"
+	RequestValidatorProposerDuties         = "/eth/v1/validator/duties/proposer/%s"
+	RequestWithdrawalCredentialsChangePath = "/eth/v1/beacon/pool/bls_to_execution_changes"
 
-	MaxRequestValidatorsCount = 600
+	MaxRequestValidatorsCount     = 600
+	threadLimit               int = 6
 )
 
 // Beacon client using the standard Beacon HTTP REST API (https://ethereum.github.io/beacon-APIs/)
@@ -234,12 +236,9 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 	nullPubkey := types.ValidatorPubkey{}
 
 	// Filter out null pubkeys
-	nullPubkeyExists := false
 	realPubkeys := []types.ValidatorPubkey{}
 	for _, pubkey := range pubkeys {
-		if bytes.Equal(pubkey.Bytes(), nullPubkey.Bytes()) {
-			nullPubkeyExists = true
-		} else {
+		if !bytes.Equal(pubkey.Bytes(), nullPubkey.Bytes()) {
 			// Teku doesn't like invalid pubkeys, so filter them out to make it consistent with other clients
 			_, err := bls.PublicKeyFromBytes(pubkey.Bytes())
 
@@ -250,9 +249,9 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 	}
 
 	// Convert pubkeys into hex strings
-	pubkeysHex := make([]string, len(pubkeys))
-	for vi := 0; vi < len(pubkeys); vi++ {
-		pubkeysHex[vi] = hexutil.AddPrefix(pubkeys[vi].Hex())
+	pubkeysHex := make([]string, len(realPubkeys))
+	for vi := 0; vi < len(realPubkeys); vi++ {
+		pubkeysHex[vi] = hexutil.AddPrefix(realPubkeys[vi].Hex())
 	}
 
 	// Get validators
@@ -264,6 +263,11 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 	// Build validator status map
 	statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
 	for _, validator := range validators.Data {
+
+		// Ignore empty pubkeys
+		if bytes.Equal(validator.Validator.Pubkey, nullPubkey[:]) {
+			continue
+		}
 
 		// Get validator pubkey
 		pubkey := types.BytesToValidatorPubkey(validator.Validator.Pubkey)
@@ -286,10 +290,8 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 
 	}
 
-	// Add zero status for null pubkey if requested
-	if nullPubkeyExists {
-		statuses[nullPubkey] = beacon.ValidatorStatus{}
-	}
+	// Put an empty status in for null pubkeys
+	statuses[nullPubkey] = beacon.ValidatorStatus{}
 
 	// Return
 	return statuses, nil
@@ -391,7 +393,7 @@ func (c *StandardHttpClient) GetValidatorIndex(pubkey types.ValidatorPubkey) (ui
 }
 
 // Get domain data for a domain type at a given epoch
-func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64) ([]byte, error) {
+func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64, useGenesisFork bool) ([]byte, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -419,7 +421,9 @@ func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64) ([]b
 
 	// Get fork version
 	var forkVersion []byte
-	if epoch < uint64(fork.Data.Epoch) {
+	if useGenesisFork {
+		forkVersion = genesis.Data.GenesisForkVersion
+	} else if epoch < uint64(fork.Data.Epoch) {
 		forkVersion = fork.Data.PreviousVersion
 	} else {
 		forkVersion = fork.Data.CurrentVersion
@@ -549,6 +553,18 @@ func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Comm
 	}
 
 	return committees, nil
+}
+
+// Perform a withdrawal credentials change on a validator
+func (c *StandardHttpClient) ChangeWithdrawalCredentials(validatorIndex uint64, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
+	return c.postWithdrawalCredentialsChange(BLSToExecutionChangeRequest{
+		Message: BLSToExecutionChangeMessage{
+			ValidatorIndex:     uinteger(validatorIndex),
+			FromBLSPubkey:      fromBlsPubkey[:],
+			ToExecutionAddress: toExecutionAddress[:],
+		},
+		Signature: signature.Bytes(),
+	})
 }
 
 // Get sync status
@@ -692,33 +708,46 @@ func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts
 		return ValidatorsResponse{}, fmt.Errorf("must specify a slot or epoch when calling getValidatorsByOpts")
 	}
 
-	// Load validator data in batches & return
-	data := make([]Validator, 0, len(pubkeysOrIndices))
-	for bsi := 0; bsi < len(pubkeysOrIndices); bsi += MaxRequestValidatorsCount {
-
-		// Get batch start & end index
-		vsi := bsi
-		vei := bsi + MaxRequestValidatorsCount
-		if vei > len(pubkeysOrIndices) {
-			vei = len(pubkeysOrIndices)
+	count := len(pubkeysOrIndices)
+	data := make([]Validator, count)
+	validFlags := make([]bool, count)
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+	for i := 0; i < count; i += MaxRequestValidatorsCount {
+		i := i
+		max := i + MaxRequestValidatorsCount
+		if max > count {
+			max = count
 		}
 
-		// Get validator pubkeysOrIndices for batch request
-		batch := make([]string, vei-vsi)
-		for vi := vsi; vi < vei; vi++ {
-			batch[vi-vsi] = pubkeysOrIndices[vi]
-		}
-
-		// Get & add validators
-		validators, err := c.getValidators(stateId, batch)
-		if err != nil {
-			return ValidatorsResponse{}, err
-		}
-		data = append(data, validators.Data...)
-
+		wg.Go(func() error {
+			// Get & add validators
+			batch := pubkeysOrIndices[i:max]
+			validators, err := c.getValidators(stateId, batch)
+			if err != nil {
+				return fmt.Errorf("error getting validator statuses: %w", err)
+			}
+			for j, responseData := range validators.Data {
+				data[i+j] = responseData
+				validFlags[i+j] = true
+			}
+			return nil
+		})
 	}
-	return ValidatorsResponse{Data: data}, nil
 
+	if err := wg.Wait(); err != nil {
+		return ValidatorsResponse{}, fmt.Errorf("error getting validators by opts: %w", err)
+	}
+
+	// Clip all of the empty responses so only the valid pubkeys get returned
+	trueData := make([]Validator, 0, count)
+	for i, valid := range validFlags {
+		if valid {
+			trueData = append(trueData, data[i])
+		}
+	}
+
+	return ValidatorsResponse{Data: trueData}, nil
 }
 
 // Send voluntary exit request
@@ -789,6 +818,19 @@ func (c *StandardHttpClient) getCommittees(stateId string, epoch *uint64) (Commi
 		return CommitteesResponse{}, fmt.Errorf("Could not decode committees: %w", err)
 	}
 	return committees, nil
+}
+
+// Send withdrawal credentials change request
+func (c *StandardHttpClient) postWithdrawalCredentialsChange(request BLSToExecutionChangeRequest) error {
+	requestArray := []BLSToExecutionChangeRequest{request} // This route must be wrapped in an array
+	responseBody, status, err := c.postRequest(RequestWithdrawalCredentialsChangePath, requestArray)
+	if err != nil {
+		return fmt.Errorf("Could not broadcast withdrawal credentials change for validator %d: %w", request.Message.ValidatorIndex, err)
+	}
+	if status != http.StatusOK {
+		return fmt.Errorf("Could not broadcast withdrawal credentials change for validator %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
+	}
+	return nil
 }
 
 // Make a GET request to the beacon node

@@ -60,10 +60,16 @@ type TrustedNodeCollector struct {
 
 	// The event log interval for the current eth1 client
 	eventLogInterval *big.Int
+
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new NodeCollector instance
-func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig) *TrustedNodeCollector {
+func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *TrustedNodeCollector {
 
 	// Get the event log interval
 	eventLogInterval, err := cfg.GetEventLogInterval()
@@ -103,6 +109,8 @@ func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 		bc:               bc,
 		nodeAddress:      nodeAddress,
 		eventLogInterval: big.NewInt(int64(eventLogInterval)),
+		stateLocker:      stateLocker,
+		logPrefix:        "ODAO Stats Collector",
 	}
 }
 
@@ -154,7 +162,7 @@ func (collector *TrustedNodeCollector) collectSlowMetrics(memberIds map[common.A
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -231,7 +239,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -256,7 +264,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+		collector.logError(err)
 		return
 	}
 
@@ -324,4 +332,9 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	for _, metric := range collector.cachedMetrics {
 		channel <- metric
 	}
+}
+
+// Log error messages
+func (collector *TrustedNodeCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

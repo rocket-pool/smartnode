@@ -9,7 +9,8 @@ import (
 
 // Constants
 const (
-	gethTag              string = "ethereum/client-go:v1.10.26"
+	gethTagProd          string = "ethereum/client-go:v1.11.5"
+	gethTagTest          string = "ethereum/client-go:v1.11.5"
 	gethEventLogInterval int    = 1000
 	gethStopSignal       string = "SIGTERM"
 )
@@ -33,6 +34,9 @@ type GethConfig struct {
 	// Max number of P2P peers to connect to
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
 
+	// Flag for using Pebble as the DB
+	UsePebble config.Parameter `yaml:"usePebble,omitempty"`
+
 	// The Docker Hub tag for Geth
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -49,6 +53,7 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 
 		CompatibleConsensusClients: []config.ConsensusClient{
 			config.ConsensusClient_Lighthouse,
+			config.ConsensusClient_Lodestar,
 			config.ConsensusClient_Nimbus,
 			config.ConsensusClient_Prysm,
 			config.ConsensusClient_Teku,
@@ -80,12 +85,28 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		UsePebble: config.Parameter{
+			ID:                   "usePebble",
+			Name:                 "Use Pebble DB",
+			Description:          "Use the new Pebble database for Geth instead of the old LevelDB database. Pebble offers better performance and stability, and reduces the number of instances where a crash causes database corruption that requires a resync.\n\n[orange]NOTE: You will need to resync Geth after enabling this by running `rocketpool service resync-eth1`.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
+			EnvironmentVariables: []string{"GETH_USE_PEBBLE"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		ContainerTag: config.Parameter{
-			ID:                   "containerTag",
-			Name:                 "Container Tag",
-			Description:          "The tag name of the Geth container you want to use on Docker Hub.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: gethTag},
+			ID:          "containerTag",
+			Name:        "Container Tag",
+			Description: "The tag name of the Geth container you want to use on Docker Hub.",
+			Type:        config.ParameterType_String,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: gethTagProd,
+				config.Network_Prater:  gethTagTest,
+				config.Network_Devnet:  gethTagTest,
+			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -140,6 +161,7 @@ func (cfg *GethConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.CacheSize,
 		&cfg.MaxPeers,
+		&cfg.UsePebble,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,
 	}

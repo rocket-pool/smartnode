@@ -79,6 +79,49 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "can-promote",
+				Usage:     "Check whether a vacant minipool is ready to be promoted",
+				UsageText: "rocketpool api minipool can-promote minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canPromoteMinipool(c, minipoolAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "promote",
+				Usage:     "Promote a vacant minipool",
+				UsageText: "rocketpool api minipool promote minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(promoteMinipool(c, minipoolAddress))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "can-refund",
 				Usage:     "Check whether the node can refund ETH from the minipool",
 				UsageText: "rocketpool api minipool can-refund minipool-address",
@@ -211,22 +254,18 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-close",
-				Usage:     "Check whether the minipool can be closed",
-				UsageText: "rocketpool api minipool can-close minipool-address",
+				Name:      "get-minipool-close-details-for-node",
+				Usage:     "Check all of the node's minipools for closure eligibility, and return the details of the closeable ones",
+				UsageText: "rocketpool api minipool get-minipool-close-details-for-node",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canCloseMinipool(c, minipoolAddress))
+					api.PrintResponse(getMinipoolCloseDetailsForNode(c))
 					return nil
 
 				},
@@ -249,50 +288,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(closeMinipool(c, minipoolAddress))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "can-finalize",
-				Usage:     "Check whether the minipool can be finalized",
-				UsageText: "rocketpool api minipool can-finalize minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canFinaliseMinipool(c, minipoolAddress))
-					return nil
-
-				},
-			},
-			{
-				Name:      "finalize",
-				Aliases:   []string{"f"},
-				Usage:     "Finalize a minipool after it has been withdrawn from, unlocking its RPL stake",
-				UsageText: "rocketpool api minipool finalize minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(finaliseMinipool(c, minipoolAddress))
 					return nil
 
 				},
@@ -534,7 +529,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					depositAmount, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
+					depositAmount, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -542,6 +537,216 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(getVanityArtifacts(c, depositAmount, nodeAddressStr))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-begin-reduce-bond-amount",
+				Usage:     "Check whether the minipool can begin the bond reduction process",
+				UsageText: "rocketpool api minipool can-begin-reduce-bond-amount minipool-address new-bond-amount-wei",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					newBondAmountWei, err := cliutils.ValidateWeiAmount("new bond amount", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canBeginReduceBondAmount(c, minipoolAddress, newBondAmountWei))
+					return nil
+
+				},
+			},
+			{
+				Name:      "begin-reduce-bond-amount",
+				Usage:     "Begin the bond reduction process for a minipool",
+				UsageText: "rocketpool api minipool begin-reduce-bond-amount minipool-address new-bond-amount-wei",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					newBondAmountWei, err := cliutils.ValidateWeiAmount("new bond amount", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(beginReduceBondAmount(c, minipoolAddress, newBondAmountWei))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-reduce-bond-amount",
+				Usage:     "Check if a minipool's bond can be reduced",
+				UsageText: "rocketpool api minipool can-reduce-bond-amount minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canReduceBondAmount(c, minipoolAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "reduce-bond-amount",
+				Usage:     "Reduce a minipool's bond",
+				UsageText: "rocketpool api minipool reduce-bond-amount minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(reduceBondAmount(c, minipoolAddress))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "get-distribute-balance-details",
+				Usage:     "Get the balance distribution details for all of the node's minipools",
+				UsageText: "rocketpool api minipool get-distribute-balance-details",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getDistributeBalanceDetails(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "distribute-balance",
+				Usage:     "Distribute a minipool's ETH balance",
+				UsageText: "rocketpool api minipool distribute-balance minipool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(distributeBalance(c, minipoolAddress))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "import-key",
+				Usage:     "Import a validator private key for a vacant minipool",
+				UsageText: "rocketpool api minipool import-key minipool-address mnemonic",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(importKey(c, minipoolAddress, mnemonic))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-change-withdrawal-creds",
+				Usage:     "Check whether a solo validator's withdrawal credentials can be changed to a minipool address",
+				UsageText: "rocketpool api minipool can-change-withdrawal-creds minipool-address mnemonic",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canChangeWithdrawalCreds(c, minipoolAddress, mnemonic))
+					return nil
+
+				},
+			},
+			{
+				Name:      "change-withdrawal-creds",
+				Usage:     "Change a solo validator's withdrawal credentials to a minipool address",
+				UsageText: "rocketpool api minipool change-withdrawal-creds minipool-address mnemonic",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(changeWithdrawalCreds(c, minipoolAddress, mnemonic))
 					return nil
 
 				},

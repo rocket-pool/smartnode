@@ -5,7 +5,6 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const settingsHomeID string = "settings-home"
@@ -77,15 +76,6 @@ func (home *settingsHome) createContent() {
 	// Create the category list
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-			if mainText == home.fallbackPage.page.title {
-				// Temp block of Nimbus for the fallback page until it supports fallback
-				cc, _ := home.md.Config.GetSelectedConsensusClient()
-				switch cc {
-				case cfgtypes.ConsensusClient_Nimbus:
-					layout.descriptionBox.SetText("You have Nimbus selected for your Consensus client.\n\nNimbus does not support fallback clients at this time, so this option is disabled.")
-					return
-				}
-			}
 			layout.descriptionBox.SetText(home.settingsSubpages[index].getPage().description)
 		})
 	categoryList.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
@@ -106,14 +96,6 @@ func (home *settingsHome) createContent() {
 		categoryList.AddItem(subpage.getPage().title, "", 0, nil)
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
-		if s1 == home.fallbackPage.page.title {
-			// Temp block of Nimbus for the fallback page until it supports fallback
-			cc, _ := home.md.Config.GetSelectedConsensusClient()
-			switch cc {
-			case cfgtypes.ConsensusClient_Nimbus:
-				return
-			}
-		}
 		home.settingsSubpages[i].handleLayoutChanged()
 		home.md.setPage(home.settingsSubpages[i].getPage())
 	})

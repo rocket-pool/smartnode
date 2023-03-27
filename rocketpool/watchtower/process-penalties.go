@@ -22,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 
@@ -50,14 +51,16 @@ type processPenalties struct {
 	maxPriorityFee *big.Int
 	gasLimit       uint64
 	beaconConfig   beacon.Eth2Config
+	m              *state.NetworkStateManager
+	s              *state.NetworkState
 }
 
-type state struct {
+type penaltyState struct {
 	LatestPenaltySlot uint64 `yaml:"latestPenaltySlot"`
 }
 
 // Create process penalties task
-func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*processPenalties, error) {
+func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*processPenalties, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -122,6 +125,7 @@ func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
 		beaconConfig:   beaconConfig,
+		m:              m,
 	}, nil
 }
 
@@ -138,7 +142,7 @@ func stateFileExists(path string) bool {
 	return true
 }
 
-func (s *state) loadState(path string) (*state, error) {
+func (s *penaltyState) loadState(path string) (*penaltyState, error) {
 
 	// Load file into memory
 	yamlFile, err := os.ReadFile(path)
@@ -155,7 +159,7 @@ func (s *state) loadState(path string) (*state, error) {
 	return s, nil
 }
 
-func (s *state) saveState(path string) error {
+func (s *penaltyState) saveState(path string) error {
 	// Marshal state object
 	data, err := yaml.Marshal(s)
 
@@ -173,7 +177,7 @@ func (s *state) saveState(path string) error {
 }
 
 // Process penalties
-func (t *processPenalties) run() error {
+func (t *processPenalties) run(isAtlasDeployed bool) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -236,7 +240,7 @@ func (t *processPenalties) run() error {
 
 		// Read state from file or create if this is the first run
 		watchtowerStatePath := t.cfg.Smartnode.GetWatchtowerStatePath()
-		var s state
+		var s penaltyState
 
 		if stateFileExists(watchtowerStatePath) {
 			_, err := s.loadState(watchtowerStatePath)

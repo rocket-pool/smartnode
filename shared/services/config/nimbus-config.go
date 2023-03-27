@@ -7,8 +7,14 @@ import (
 )
 
 const (
-	nimbusTagTest            string = "statusim/nimbus-eth2:multiarch-v23.1.1"
-	nimbusTagProd            string = "statusim/nimbus-eth2:multiarch-v23.1.1"
+	// Prater
+	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.3.2"
+	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.3.2"
+
+	// Mainnet
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.3.2"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.3.2"
+
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
 )
@@ -23,14 +29,20 @@ type NimbusConfig struct {
 	// Common parameters that Nimbus doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"-"`
 
+	// The Docker Hub tag for the BN
+	BnContainerTag config.Parameter `yaml:"bnContainerTag,omitempty"`
+
+	// The Docker Hub tag for the VC
+	VcContainerTag config.Parameter `yaml:"vcContainerTag,omitempty"`
+
 	// The pruning mode to use in the BN
 	PruningMode config.Parameter `yaml:"pruningMode,omitempty"`
 
-	// The Docker Hub tag for Nimbus
-	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
+	// Custom command line flags for the BN
+	AdditionalBnFlags config.Parameter `yaml:"additionalBnFlags,omitempty"`
 
-	// Custom command line flags for Nimbus
-	AdditionalFlags config.Parameter `yaml:"additionalFlags,omitempty"`
+	// Custom command line flags for the VC
+	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
 // Generates a new Nimbus configuration
@@ -48,6 +60,38 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 			EnvironmentVariables: []string{"BN_MAX_PEERS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+		},
+
+		BnContainerTag: config.Parameter{
+			ID:          "bnContainerTag",
+			Name:        "Beacon Node Container Tag",
+			Description: "The tag name of the Nimbus Beacon Node container you want to use on Docker Hub.",
+			Type:        config.ParameterType_String,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: nimbusBnTagProd,
+				config.Network_Prater:  nimbusBnTagTest,
+				config.Network_Devnet:  nimbusBnTagTest,
+			},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
+			EnvironmentVariables: []string{"BN_CONTAINER_TAG"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		VcContainerTag: config.Parameter{
+			ID:          "containerTag",
+			Name:        "Validator Client Container Tag",
+			Description: "The tag name of the Nimbus Validator Client container you want to use on Docker Hub.",
+			Type:        config.ParameterType_String,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: nimbusVcTagProd,
+				config.Network_Prater:  nimbusVcTagTest,
+				config.Network_Devnet:  nimbusVcTagTest,
+			},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
+			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
 		},
 
 		PruningMode: config.Parameter{
@@ -71,30 +115,26 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 			}},
 		},
 
-		ContainerTag: config.Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the Nimbus container you want to use on Docker Hub.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: nimbusTagProd,
-				config.Network_Prater:  nimbusTagTest,
-				config.Network_Devnet:  nimbusTagTest,
-			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
-			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
-		},
-
-		AdditionalFlags: config.Parameter{
-			ID:                   "additionalFlags",
-			Name:                 "Additional Flags",
-			Description:          "Additional custom command line flags you want to pass to Nimbus, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+		AdditionalBnFlags: config.Parameter{
+			ID:                   "additionalBnFlags",
+			Name:                 "Additional Beacon Client Flags",
+			Description:          "Additional custom command line flags you want to pass Nimbus's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_ADDITIONAL_FLAGS"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		AdditionalVcFlags: config.Parameter{
+			ID:                   "additionalVcFlags",
+			Name:                 "Additional Validator Client Flags",
+			Description:          "Additional custom command line flags you want to pass Nimbus's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
+			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
@@ -106,8 +146,10 @@ func (cfg *NimbusConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.MaxPeers,
 		&cfg.PruningMode,
-		&cfg.ContainerTag,
-		&cfg.AdditionalFlags,
+		&cfg.BnContainerTag,
+		&cfg.VcContainerTag,
+		&cfg.AdditionalBnFlags,
+		&cfg.AdditionalVcFlags,
 	}
 }
 
@@ -118,7 +160,7 @@ func (cfg *NimbusConfig) GetUnsupportedCommonParams() []string {
 
 // Get the Docker container name of the validator client
 func (cfg *NimbusConfig) GetValidatorImage() string {
-	return cfg.ContainerTag.Value.(string)
+	return cfg.VcContainerTag.Value.(string)
 }
 
 // Get the name of the client

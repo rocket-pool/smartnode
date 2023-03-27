@@ -1,16 +1,11 @@
 package collectors
 
 import (
-	"context"
 	"fmt"
-	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"golang.org/x/sync/errgroup"
 )
 
 // Represents the collector for the Performance metrics
@@ -35,10 +30,16 @@ type PerformanceCollector struct {
 
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
+
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new PerformanceCollector instance
-func NewPerformanceCollector(rp *rocketpool.RocketPool) *PerformanceCollector {
+func NewPerformanceCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *PerformanceCollector {
 	subsystem := "performance"
 	return &PerformanceCollector{
 		ethUtilizationRate: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_utilization_rate"),
@@ -65,7 +66,9 @@ func NewPerformanceCollector(rp *rocketpool.RocketPool) *PerformanceCollector {
 			"The total rETH supply",
 			nil, nil,
 		),
-		rp: rp,
+		rp:          rp,
+		stateLocker: stateLocker,
+		logPrefix:   "Performance Collector",
 	}
 }
 
@@ -81,92 +84,18 @@ func (collector *PerformanceCollector) Describe(channel chan<- *prometheus.Desc)
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric) {
-
-	// Sync
-	var wg errgroup.Group
-	ethUtilizationRate := float64(-1)
-	balanceFloat := float64(-1)
-	exchangeRate := float64(-1)
-	tvlFloat := float64(-1)
-	rETHBalance := float64(-1)
-	rethFloat := float64(-1)
-
-	// Get the ETH utilization rate
-	wg.Go(func() error {
-		_ethUtilizationRate, err := network.GetETHUtilizationRate(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting ETH utilization rate: %w", err)
-		}
-
-		ethUtilizationRate = _ethUtilizationRate
-		return nil
-	})
-
-	// Get the total ETH staking balance
-	wg.Go(func() error {
-		totalStakingBalance, err := network.GetStakingETHBalance(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting total ETH staking balance: %w", err)
-		}
-
-		balanceFloat = eth.WeiToEth(totalStakingBalance)
-		return nil
-	})
-
-	// Get the ETH-rETH exchange rate
-	wg.Go(func() error {
-		_exchangeRate, err := tokens.GetRETHExchangeRate(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting ETH-rETH exchange rate: %w", err)
-		}
-
-		exchangeRate = _exchangeRate
-		return nil
-	})
-
-	// Get the total ETH balance (TVL)
-	wg.Go(func() error {
-		tvl, err := network.GetTotalETHBalance(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting total ETH balance (TVL): %w", err)
-		}
-
-		tvlFloat = eth.WeiToEth(tvl)
-		return nil
-	})
-
-	// Get the ETH balance of the rETH contract
-	wg.Go(func() error {
-		rETHContract, err := collector.rp.GetContract("rocketTokenRETH", nil)
-		if err != nil {
-			return fmt.Errorf("Error getting ETH balance of rETH staking contract: %w", err)
-		}
-
-		balance, err := collector.rp.Client.BalanceAt(context.Background(), *rETHContract.Address, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting ETH balance of rETH staking contract: %w", err)
-		}
-
-		rETHBalance = eth.WeiToEth(balance)
-		return nil
-	})
-
-	// Get the total rETH supply
-	wg.Go(func() error {
-		totalRethSupply, err := tokens.GetRETHTotalSupply(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting total rETH supply: %w", err)
-		}
-
-		rethFloat = eth.WeiToEth(totalRethSupply)
-		return nil
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+	// Get the latest state
+	state := collector.stateLocker.GetState()
+	if state == nil {
 		return
 	}
+
+	ethUtilizationRate := state.NetworkDetails.ETHUtilizationRate
+	balanceFloat := eth.WeiToEth(state.NetworkDetails.StakingETHBalance)
+	exchangeRate := state.NetworkDetails.RETHExchangeRate
+	tvlFloat := eth.WeiToEth(state.NetworkDetails.TotalETHBalance)
+	rETHBalance := eth.WeiToEth(state.NetworkDetails.RETHBalance)
+	rethFloat := eth.WeiToEth(state.NetworkDetails.TotalRETHSupply)
 
 	channel <- prometheus.MustNewConstMetric(
 		collector.ethUtilizationRate, prometheus.GaugeValue, ethUtilizationRate)
@@ -180,5 +109,9 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 		collector.rethContractBalance, prometheus.GaugeValue, rETHBalance)
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalRethSupply, prometheus.GaugeValue, rethFloat)
+}
 
+// Log error messages
+func (collector *PerformanceCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

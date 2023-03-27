@@ -155,6 +155,67 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "download-rewards-file",
+				Aliases:   []string{"drf"},
+				Usage:     "Download a rewards info file from IPFS for the given interval",
+				UsageText: "rocketpool api service download-rewards-file interval",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					interval, err := cliutils.ValidatePositiveUint("interval", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(downloadRewardsFile(c, interval))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "is-atlas-deployed",
+				Aliases:   []string{"iad"},
+				Usage:     "Checks if Atlas has been deployed yet.",
+				UsageText: "rocketpool api network is-atlas-deployed",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(isAtlasDeployed(c))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "latest-delegate",
+				Usage:     "Get the address of the latest minipool delegate contract.",
+				UsageText: "rocketpool api network latest-delegate",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getLatestDelegate(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }

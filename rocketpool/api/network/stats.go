@@ -4,16 +4,20 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/deposit"
+	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -24,6 +28,10 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
 	}
@@ -120,11 +128,32 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 
 	// Get total effective RPL staked
 	wg.Go(func() error {
-		effectiveStaked, err := node.GetTotalEffectiveRPLStake(rp, nil)
-		if err == nil {
-			response.EffectiveRplStaked = eth.WeiToEth(effectiveStaked)
+		isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+		if err != nil {
+			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
 		}
-		return err
+		if !isAtlasDeployed {
+			legacyNodeStakingAddress := cfg.Smartnode.GetV110NodeStakingAddress()
+			effectiveStaked, err := v110_node.GetTotalEffectiveRPLStake(rp, nil, &legacyNodeStakingAddress)
+			if err != nil {
+				return err
+			}
+			response.EffectiveRplStaked = eth.WeiToEth(effectiveStaked)
+			return nil
+		} else {
+			multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+			balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+			contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, nil)
+			if err != nil {
+				return fmt.Errorf("error getting network contracts: %w", err)
+			}
+			totalEffectiveStake, err := rpstate.GetTotalEffectiveRplStake(rp, contracts)
+			if err != nil {
+				return fmt.Errorf("error getting total effective stake: %w", err)
+			}
+			response.EffectiveRplStaked = eth.WeiToEth(totalEffectiveStake)
+			return nil
+		}
 	})
 
 	// Get rETH price

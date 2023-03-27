@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -445,7 +446,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 			cfg.Lighthouse.ContainerTag.Value = option.Image
 			cfg.ExternalLighthouse.ContainerTag.Value = option.Image
 		case "nimbus":
-			cfg.Nimbus.ContainerTag.Value = option.Image
+			cfg.Nimbus.BnContainerTag.Value = option.Image
 		case "prysm":
 			cfg.Prysm.BnContainerTag.Value = option.BeaconImage
 			cfg.Prysm.VcContainerTag.Value = option.ValidatorImage
@@ -606,18 +607,19 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 // Start the Rocket Pool service
 func (c *Client) StartService(composeFiles []string) error {
 
-	// Start the API container first
-	cmd, err := c.compose([]string{}, "up -d --quiet-pull")
-	if err != nil {
-		return fmt.Errorf("error creating compose command for API container: %w", err)
-	}
-	err = c.printOutput(cmd)
-	if err != nil {
-		return fmt.Errorf("error starting API container: %w", err)
-	}
-
+	/*
+		// Start the API container first
+		cmd, err := c.compose([]string{}, "up -d --quiet-pull")
+		if err != nil {
+			return fmt.Errorf("error creating compose command for API container: %w", err)
+		}
+		err = c.printOutput(cmd)
+		if err != nil {
+			return fmt.Errorf("error starting API container: %w", err)
+		}
+	*/
 	// Start all of the containers
-	cmd, err = c.compose(composeFiles, "up -d --remove-orphans --quiet-pull")
+	cmd, err := c.compose(composeFiles, "up -d --remove-orphans --quiet-pull")
 	if err != nil {
 		return err
 	}
@@ -640,6 +642,41 @@ func (c *Client) StopService(composeFiles []string) error {
 		return err
 	}
 	return c.printOutput(cmd)
+}
+
+// Stop the Rocket Pool service and remove the config folder
+func (c *Client) TerminateService(composeFiles []string, configPath string) error {
+	// Get the command to run with root privileges
+	rootCmd, err := c.getEscalationCommand()
+	if err != nil {
+		return fmt.Errorf("could not get privilege escalation command: %w", err)
+	}
+
+	// Terminate the Docker containers
+	cmd, err := c.compose(composeFiles, "down -v")
+	if err != nil {
+		return fmt.Errorf("error creating Docker artifact removal command: %w", err)
+	}
+	err = c.printOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error removing Docker artifacts: %w", err)
+	}
+
+	// Delete the RP directory
+	path, err := homedir.Expand(configPath)
+	if err != nil {
+		return fmt.Errorf("error loading Rocket Pool directory: %w", err)
+	}
+	fmt.Printf("Deleting Rocket Pool directory (%s)...\n", path)
+	cmd = fmt.Sprintf("%s rm -rf %s", rootCmd, path)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting Rocket Pool directory: %w", err)
+	}
+
+	fmt.Println("Termination complete.")
+
+	return nil
 }
 
 // Print the Rocket Pool service status
@@ -930,6 +967,85 @@ func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string, ima
 	return dirSize, nil
 }
 
+// Deletes the node wallet and all validator keys, and restarts the Docker containers
+func (c *Client) PurgeAllKeys(composeFiles []string) error {
+	// Get the command to run with root privileges
+	rootCmd, err := c.getEscalationCommand()
+	if err != nil {
+		return fmt.Errorf("could not get privilege escalation command: %w", err)
+	}
+
+	// Get the config
+	cfg, _, err := c.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading user settings: %w", err)
+	}
+
+	// Check for Native mode
+	if cfg.IsNativeMode {
+		return fmt.Errorf("this function is not supported in Native Mode; you will have to shut down your client and daemon services and remove the keys manually")
+	}
+
+	// Shut down the containers
+	fmt.Println("Stopping containers...")
+	err = c.PauseService(composeFiles)
+	if err != nil {
+		return fmt.Errorf("error stopping Docker containers: %w", err)
+	}
+
+	// Delete the wallet
+	walletPath, err := homedir.Expand(cfg.Smartnode.GetWalletPathInCLI())
+	if err != nil {
+		return fmt.Errorf("error loading wallet path: %w", err)
+	}
+	fmt.Println("Deleting wallet...")
+	cmd := fmt.Sprintf("%s rm -f %s", rootCmd, walletPath)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting wallet: %w", err)
+	}
+
+	// Delete the password
+	passwordPath, err := homedir.Expand(cfg.Smartnode.GetPasswordPathInCLI())
+	if err != nil {
+		return fmt.Errorf("error loading password path: %w", err)
+	}
+	fmt.Println("Deleting password...")
+	cmd = fmt.Sprintf("%s rm -f %s", rootCmd, passwordPath)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting password: %w", err)
+	}
+
+	// Delete the validators dir
+	validatorsPath, err := homedir.Expand(cfg.Smartnode.GetValidatorKeychainPathInCLI())
+	if err != nil {
+		return fmt.Errorf("error loading validators folder path: %w", err)
+	}
+	fmt.Println("Deleting validator keys...")
+	cmd = fmt.Sprintf("%s rm -rf %s/*", rootCmd, validatorsPath)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting validator keys: %w", err)
+	}
+	cmd = fmt.Sprintf("%s rm -rf %s/.[a-zA-Z0-9]*", rootCmd, validatorsPath)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting hidden files in validator folder: %w", err)
+	}
+
+	// Start the containers
+	fmt.Println("Starting containers...")
+	err = c.StartService(composeFiles)
+	if err != nil {
+		return fmt.Errorf("error starting Docker containers: %w", err)
+	}
+
+	fmt.Println("Purge complete.")
+
+	return nil
+}
+
 // Get the gas settings
 func (c *Client) GetGasSettings() (float64, float64, uint64) {
 	return c.maxFee, c.maxPrioFee, c.gasLimit
@@ -946,6 +1062,53 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 func (c *Client) SetClientStatusFlags(ignoreSyncCheck bool, forceFallbacks bool) {
 	c.ignoreSyncCheck = ignoreSyncCheck
 	c.forceFallbacks = forceFallbacks
+}
+
+// Get the command used to escalate privileges on the system
+func (c *Client) getEscalationCommand() (string, error) {
+	// Check for sudo first
+	sudo := "sudo"
+	exists, err := c.checkIfCommandExists(sudo)
+	if err != nil {
+		return "", fmt.Errorf("error checking if %s exists: %w", sudo, err)
+	}
+	if exists {
+		return sudo, nil
+	}
+
+	// Check for doas next
+	doas := "doas"
+	exists, err = c.checkIfCommandExists(doas)
+	if err != nil {
+		return "", fmt.Errorf("error checking if %s exists: %w", doas, err)
+	}
+	if exists {
+		return doas, nil
+	}
+
+	return "", fmt.Errorf("no privilege escalation command found")
+}
+
+func (c *Client) checkIfCommandExists(command string) (bool, error) {
+	// Run `type` to check for existence
+	cmd := fmt.Sprintf("type %s", command)
+	output, err := c.readOutput(cmd)
+
+	if err != nil {
+		exitErr, isExitErr := err.(*exec.ExitError)
+		if isExitErr && exitErr.ProcessState.ExitCode() == 127 {
+			// Command not found
+			return false, nil
+		} else {
+			return false, fmt.Errorf("error checking if %s exists: %w", command, err)
+		}
+	} else {
+		if strings.Contains(string(output), fmt.Sprintf("%s is", command)) {
+			return true, nil
+		} else {
+			return false, fmt.Errorf("unexpected output when checking for %s: %s", command, string(output))
+		}
+	}
 }
 
 // Get the provider mode and port from a legacy config's provider URL
@@ -1202,6 +1365,9 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	// Include all of the relevant docker compose definition files
 	composeFileFlags := []string{}
 	for _, container := range deployedContainers {
+		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
+	}
+	for _, container := range composeFiles {
 		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
 	}
 

@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
@@ -55,6 +56,56 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 	for _, pubkey := range pubkeys {
 		pubkeyMap[pubkey] = true
 	}
+
+	pubkeyMap, err = CheckForAndRecoverCustomMinipoolKeys(cfg, pubkeyMap, w, testOnly)
+	if err != nil {
+		return nil, fmt.Errorf("error checking for or recovering custom validator keys: %w", err)
+	}
+
+	// Recover conventionally generated keys
+	bucketStart := uint(0)
+	for {
+		if bucketStart >= bucketLimit {
+			return nil, fmt.Errorf("attempt limit exceeded (%d keys)", bucketLimit)
+		}
+		bucketEnd := bucketStart + bucketSize
+		if bucketEnd > bucketLimit {
+			bucketEnd = bucketLimit
+		}
+
+		// Get the keys for this bucket
+		keys, err := w.GetValidatorKeys(bucketStart, bucketEnd-bucketStart)
+		if err != nil {
+			return nil, err
+		}
+		for _, validatorKey := range keys {
+			_, exists := pubkeyMap[validatorKey.PublicKey]
+			if exists {
+				// Found one!
+				delete(pubkeyMap, validatorKey.PublicKey)
+				if !testOnly {
+					err := w.SaveValidatorKey(validatorKey)
+					if err != nil {
+						return nil, fmt.Errorf("error recovering validator keys: %w", err)
+					}
+				}
+			}
+		}
+
+		if len(pubkeyMap) == 0 {
+			// All keys recovered!
+			break
+		}
+
+		// Run another iteration with the next bucket
+		bucketStart = bucketEnd
+	}
+
+	return pubkeys, nil
+
+}
+
+func CheckForAndRecoverCustomMinipoolKeys(cfg *config.RocketPoolConfig, pubkeyMap map[types.ValidatorPubkey]bool, w *wallet.Wallet, testOnly bool) (map[types.ValidatorPubkey]bool, error) {
 
 	// Load custom validator keys
 	customKeyDir := cfg.Smartnode.GetCustomKeyPath()
@@ -159,45 +210,6 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 		}
 	}
 
-	// Recover conventionally generated keys
-	bucketStart := uint(0)
-	for {
-		if bucketStart >= bucketLimit {
-			return nil, fmt.Errorf("attempt limit exceeded (%d keys)", bucketLimit)
-		}
-		bucketEnd := bucketStart + bucketSize
-		if bucketEnd > bucketLimit {
-			bucketEnd = bucketLimit
-		}
-
-		// Get the keys for this bucket
-		keys, err := w.GetValidatorKeys(bucketStart, bucketEnd-bucketStart)
-		if err != nil {
-			return nil, err
-		}
-		for _, validatorKey := range keys {
-			_, exists := pubkeyMap[validatorKey.PublicKey]
-			if exists {
-				// Found one!
-				delete(pubkeyMap, validatorKey.PublicKey)
-				if !testOnly {
-					err := w.SaveValidatorKey(validatorKey)
-					if err != nil {
-						return nil, fmt.Errorf("error recovering validator keys: %w", err)
-					}
-				}
-			}
-		}
-
-		if len(pubkeyMap) == 0 {
-			// All keys recovered!
-			break
-		}
-
-		// Run another iteration with the next bucket
-		bucketStart = bucketEnd
-	}
-
-	return pubkeys, nil
+	return pubkeyMap, nil
 
 }

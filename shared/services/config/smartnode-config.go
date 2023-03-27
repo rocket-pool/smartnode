@@ -34,7 +34,11 @@ const (
 )
 
 // Defaults
-const defaultProjectName string = "rocketpool"
+const (
+	defaultProjectName       string = "rocketpool"
+	WatchtowerMaxFeeDefault  uint64 = 200
+	WatchtowerPrioFeeDefault uint64 = 3
+)
 
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
@@ -77,6 +81,18 @@ type SmartnodeConfig struct {
 	// Token for Oracle DAO members to use when uploading Merkle trees to Web3.Storage
 	Web3StorageApiToken config.Parameter `yaml:"web3StorageApiToken,omitempty"`
 
+	// Manual override for the watchtower's max fee
+	WatchtowerMaxFeeOverride config.Parameter `yaml:"watchtowerMaxFeeOverride,omitempty"`
+
+	// Manual override for the watchtower's priority fee
+	WatchtowerPrioFeeOverride config.Parameter `yaml:"watchtowerPrioFeeOverride,omitempty"`
+
+	// The epoch to switch over to TWAP for RPL price reporting
+	RplTwapEpoch config.Parameter `yaml:"rplTwapEpoch,omitempty"`
+
+	// The epoch to start using the new network balance calculation implementation
+	BalancesModernizationEpoch config.Parameter `yaml:"balancesModernizationEpoch,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -112,16 +128,31 @@ type SmartnodeConfig struct {
 	rethAddress map[config.Network]string `yaml:"-"`
 
 	// The contract address of rocketRewardsPool from v1.0.0
-	legacyRewardsPoolAddress map[config.Network]string `yaml:"-"`
+	v1_0_0_RewardsPoolAddress map[config.Network]string `yaml:"-"`
 
 	// The contract address of rocketClaimNode from v1.0.0
-	legacyClaimNodeAddress map[config.Network]string `yaml:"-"`
+	v1_0_0_ClaimNodeAddress map[config.Network]string `yaml:"-"`
 
 	// The contract address of rocketClaimTrustedNode from v1.0.0
-	legacyClaimTrustedNodeAddress map[config.Network]string `yaml:"-"`
+	v1_0_0_ClaimTrustedNodeAddress map[config.Network]string `yaml:"-"`
 
 	// The contract address of rocketMinipoolManager from v1.0.0
-	legacyMinipoolManagerAddress map[config.Network]string `yaml:"-"`
+	v1_0_0_MinipoolManagerAddress map[config.Network]string `yaml:"-"`
+
+	// The contract address of rocketNetworkPrices from v1.1.0
+	v1_1_0_NetworkPricesAddress map[config.Network]string `yaml:"-"`
+
+	// The contract address of rocketNodeStaking from v1.1.0
+	v1_1_0_NodeStakingAddress map[config.Network]string `yaml:"-"`
+
+	// The contract address of rocketNodeDeposit from v1.1.0
+	v1_1_0_NodeDepositAddress map[config.Network]string `yaml:"-"`
+
+	// The contract address of rocketMinipoolQueue from v1.1.0
+	v1_1_0_MinipoolQueueAddress map[config.Network]string `yaml:"-"`
+
+	// The contract address of rocketMinipoolFactory from v1.1.0
+	v1_1_0_MinipoolFactoryAddress map[config.Network]string `yaml:"-"`
 
 	// Addresses for RocketRewardsPool that have been upgraded during development
 	previousRewardsPoolAddresses map[config.Network]map[string][]common.Address `yaml:"-"`
@@ -140,6 +171,12 @@ type SmartnodeConfig struct {
 
 	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
 	rplTwapPoolAddress map[config.Network]string `yaml:"-"`
+
+	// The multicall contract address
+	multicallAddress map[config.Network]string `yaml:"-"`
+
+	// The BalanceChecker contract address
+	balancebatcherAddress map[config.Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -224,9 +261,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		MinipoolStakeGasThreshold: config.Parameter{
 			ID:   "minipoolStakeGasThreshold",
-			Name: "Minipool Stake Gas Threshold",
-			Description: "Once a newly created minipool passes the scrub check and is ready to perform its second 16 ETH deposit (the `stake` transaction), your node will try to do so automatically using the `Rapid` suggestion from the gas estimator as its max fee. This threshold is a limit (in gwei) you can put on that suggestion; your node will not `stake` the new minipool until the suggestion is below this limit.\n\n" +
-				"Note that to ensure your minipool does not get dissolved, the node will ignore this limit and automatically execute the `stake` transaction at whatever the suggested fee happens to be once too much time has passed since its first deposit (currently 7 days).",
+			Name: "Automatic TX Gas Threshold",
+			Description: "Occasionally, the Smartnode will attempt to perform some automatic transactions (such as the second `stake` transaction to finish launching a minipool or the `reduce bond` transaction to convert a 16-ETH minipool to an 8-ETH one). During these, your node will use the `Rapid` suggestion from the gas estimator as its max fee.\n\nThis threshold is a limit (in gwei) you can put on that suggestion; your node will not `stake` the new minipool until the suggestion is below this limit.\n\n" +
+				"NOTE: the node will ignore this limit and automatically execute transactions at whatever the suggested fee happens to be once too much time has passed since those transactions were first eligible. You may end up paying more than you wanted to if you set this too low!",
 			Type:                 config.ParameterType_Float,
 			Default:              map[config.Network]interface{}{config.Network_All: float64(150)},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
@@ -280,6 +317,62 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		WatchtowerMaxFeeOverride: config.Parameter{
+			ID:                   "watchtowerMaxFeeOverride",
+			Name:                 "Watchtower Max Fee Override",
+			Description:          fmt.Sprintf("[orange]**For Oracle DAO members only.**\n\n[white]Use this to override the max fee (in gwei) for watchtower transactions. Note that if you set it below %d, the setting will be ignored; it can only be used to set the max fee higher than %d during times of extreme network stress.", WatchtowerMaxFeeDefault, WatchtowerMaxFeeDefault),
+			Type:                 config.ParameterType_Float,
+			Default:              map[config.Network]interface{}{config.Network_All: float64(WatchtowerMaxFeeDefault)},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		WatchtowerPrioFeeOverride: config.Parameter{
+			ID:                   "watchtowerPrioFeeOverride",
+			Name:                 "Watchtower Priority Fee Override",
+			Description:          fmt.Sprintf("[orange]**For Oracle DAO members only.**\n\n[white]Use this to override the priority fee (in gwei) for watchtower transactions. Note that if you set it below %d, the setting will be ignored; it can only be used to set the priority fee higher than %d during times of extreme network stress.", WatchtowerPrioFeeDefault, WatchtowerPrioFeeDefault),
+			Type:                 config.ParameterType_Float,
+			Default:              map[config.Network]interface{}{config.Network_All: float64(WatchtowerPrioFeeDefault)},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		RplTwapEpoch: config.Parameter{
+			ID:          "rplTwapEpoch",
+			Name:        "RPL TWAP Epoch",
+			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from spot prices to TWAP for RPL price submission.",
+			Type:        config.ParameterType_Uint,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: uint64(191823),
+				config.Network_Prater:  uint64(162094),
+				config.Network_Devnet:  uint64(162094),
+			},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		BalancesModernizationEpoch: config.Parameter{
+			ID:          "balancesModernizationEpoch",
+			Name:        "Balances Modernization Epoch",
+			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from the old network balance calculation method to the new one.",
+			Type:        config.ParameterType_Uint,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: uint64(192492),
+				config.Network_Prater:  uint64(162094),
+				config.Network_Devnet:  uint64(162094),
+			},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
 			config.Network_Prater:  "https://goerli.etherscan.io/tx",
@@ -328,27 +421,57 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Devnet:  "0x2DF914425da6d0067EF1775AfDBDd7B24fc8100E",
 		},
 
-		legacyRewardsPoolAddress: map[config.Network]string{
+		v1_0_0_RewardsPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
 			config.Network_Prater:  "0xf9aE18eB0CE4930Bc3d7d1A5E33e4286d4FB0f8B",
 			config.Network_Devnet:  "0x4A1b5Ab9F6C36E7168dE5F994172028Ca8554e02",
 		},
 
-		legacyClaimNodeAddress: map[config.Network]string{
+		v1_0_0_ClaimNodeAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x899336A2a86053705E65dB61f52C686dcFaeF548",
 			config.Network_Prater:  "0xc05b7A2a03A6d2736d1D0ebf4d4a0aFE2cc32cE1",
 			config.Network_Devnet:  "",
 		},
 
-		legacyClaimTrustedNodeAddress: map[config.Network]string{
+		v1_0_0_ClaimTrustedNodeAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6af730deB0463b432433318dC8002C0A4e9315e8",
 			config.Network_Prater:  "0x730982F4439E5AC30292333ff7d0C478907f2219",
 			config.Network_Devnet:  "",
 		},
 
-		legacyMinipoolManagerAddress: map[config.Network]string{
+		v1_0_0_MinipoolManagerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a",
 			config.Network_Prater:  "0xB815a94430f08dD2ab61143cE1D5739Ac81D3C6d",
+			config.Network_Devnet:  "",
+		},
+
+		v1_1_0_NetworkPricesAddress: map[config.Network]string{
+			config.Network_Mainnet: "0xd3f500F550F46e504A4D2153127B47e007e11166",
+			config.Network_Prater:  "0x12f96dC173a806D18d71fAFe3C1BA2149c3E3Dc6",
+			config.Network_Devnet:  "",
+		},
+
+		v1_1_0_NodeStakingAddress: map[config.Network]string{
+			config.Network_Mainnet: "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
+			config.Network_Prater:  "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
+			config.Network_Devnet:  "",
+		},
+
+		v1_1_0_NodeDepositAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
+			config.Network_Prater:  "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
+			config.Network_Devnet:  "",
+		},
+
+		v1_1_0_MinipoolQueueAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x5870dA524635D1310Dc0e6F256Ce331012C9C19E",
+			config.Network_Prater:  "0xEF5EF45bf1CC08D5694f87F8c4023f00CCCB7237",
+			config.Network_Devnet:  "",
+		},
+
+		v1_1_0_MinipoolFactoryAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788",
+			config.Network_Prater:  "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788",
 			config.Network_Devnet:  "",
 		},
 
@@ -367,7 +490,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		previousRewardsPoolAddresses: map[config.Network]map[string][]common.Address{
 			config.Network_Mainnet: {},
 			config.Network_Prater: {
-				"v1.5.0-rc1": []common.Address{
+				"v1.1.0-rc1": []common.Address{
 					common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				},
 			},
@@ -381,15 +504,15 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		polygonPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
-			config.Network_Prater:  "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
-			config.Network_Devnet:  "",
+			config.Network_Mainnet: "0xb1029Ac2Be4e08516697093e2AFeC435057f3511",
+			config.Network_Prater:  "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
+			config.Network_Devnet:  "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
 		},
 
 		arbitrumPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x05330300f829AD3fC8f33838BC88CFC4093baD53",
-			config.Network_Prater:  "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
-			config.Network_Devnet:  "",
+			config.Network_Prater:  "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
+			config.Network_Devnet:  "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
 		},
 
 		rplTwapPoolAddress: map[config.Network]string{
@@ -398,9 +521,22 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Devnet:  "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
 		},
 
+		multicallAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
+			config.Network_Prater:  "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
+			config.Network_Devnet:  "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
+		},
+
+		balancebatcherAddress: map[config.Network]string{
+			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
+			config.Network_Prater:  "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
+			config.Network_Devnet:  "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
+		},
+
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
 			config.Network_Mainnet: {
 				15451165, 15637542, 15839520, 16038366, 16238906, 16439406, // 5
+				16639856, 16841781,
 			},
 			config.Network_Prater: {
 				7287326, 7297026, 7314231, 7331462, 7387271, 7412366, // 5
@@ -413,12 +549,16 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				8063957, 8082659, 8101400, 8119473, 8136892, 8154565, // 47
 				8172349, 8189717, 8207105, 8224279, 8241674, 8258210, // 53
 				8274526, 8290763, 8307407, 8324452, 8341708, 8359470, // 59
+				8377175, 8394786, 8412599, 8430221, 8447800, 8465317, // 65
+				8482337, 8499227, 8516593, 8533890, 8551379, 8569494, // 71
+				8587146, 8604666, 8621961, 8639563, 8656830, 8673617, // 77
 			},
 			config.Network_Devnet: {
 				7955303, 7972424, 8009064, 8026821, 8045113, 8063501, // 5
 				8082186, 8100941, 8119074, 8136452, 8154152, 8171923, // 11
 				8189312, 8206689, 8223857, 8241269, 8257834, 8274178, // 17
-				8290333, 8307005, 8324055, 8341308, 8359051,
+				8290333, 8307005, 8324055, 8341308, 8359051, 8376744, // 23
+				8394338, 8412142,
 			},
 		},
 	}
@@ -437,6 +577,10 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.RewardsTreeMode,
 		&cfg.ArchiveECUrl,
 		&cfg.Web3StorageApiToken,
+		&cfg.WatchtowerMaxFeeOverride,
+		&cfg.WatchtowerPrioFeeOverride,
+		&cfg.RplTwapEpoch,
+		&cfg.BalancesModernizationEpoch,
 	}
 }
 
@@ -476,6 +620,18 @@ func (cfg *SmartnodeConfig) GetValidatorKeychainPath() string {
 	}
 
 	return filepath.Join(DaemonDataPath, "validators")
+}
+
+func (cfg *SmartnodeConfig) GetWalletPathInCLI() string {
+	return filepath.Join(cfg.DataPath.Value.(string), "wallet")
+}
+
+func (cfg *SmartnodeConfig) GetPasswordPathInCLI() string {
+	return filepath.Join(cfg.DataPath.Value.(string), "password")
+}
+
+func (cfg *SmartnodeConfig) GetValidatorKeychainPathInCLI() string {
+	return filepath.Join(cfg.DataPath.Value.(string), "validators")
 }
 
 func (config *SmartnodeConfig) GetWatchtowerStatePath() string {
@@ -603,20 +759,40 @@ func (cfg *SmartnodeConfig) GetFeeRecipientFilePath() string {
 	return filepath.Join(cfg.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
 }
 
-func (cfg *SmartnodeConfig) GetLegacyRewardsPoolAddress() common.Address {
-	return common.HexToAddress(cfg.legacyRewardsPoolAddress[cfg.Network.Value.(config.Network)])
+func (cfg *SmartnodeConfig) GetV100RewardsPoolAddress() common.Address {
+	return common.HexToAddress(cfg.v1_0_0_RewardsPoolAddress[cfg.Network.Value.(config.Network)])
 }
 
-func (cfg *SmartnodeConfig) GetLegacyClaimNodeAddress() common.Address {
-	return common.HexToAddress(cfg.legacyClaimNodeAddress[cfg.Network.Value.(config.Network)])
+func (cfg *SmartnodeConfig) GetV100ClaimNodeAddress() common.Address {
+	return common.HexToAddress(cfg.v1_0_0_ClaimNodeAddress[cfg.Network.Value.(config.Network)])
 }
 
-func (cfg *SmartnodeConfig) GetLegacyClaimTrustedNodeAddress() common.Address {
-	return common.HexToAddress(cfg.legacyClaimTrustedNodeAddress[cfg.Network.Value.(config.Network)])
+func (cfg *SmartnodeConfig) GetV100ClaimTrustedNodeAddress() common.Address {
+	return common.HexToAddress(cfg.v1_0_0_ClaimTrustedNodeAddress[cfg.Network.Value.(config.Network)])
 }
 
-func (cfg *SmartnodeConfig) GetLegacyMinipoolManagerAddress() common.Address {
-	return common.HexToAddress(cfg.legacyMinipoolManagerAddress[cfg.Network.Value.(config.Network)])
+func (cfg *SmartnodeConfig) GetV100MinipoolManagerAddress() common.Address {
+	return common.HexToAddress(cfg.v1_0_0_MinipoolManagerAddress[cfg.Network.Value.(config.Network)])
+}
+
+func (cfg *SmartnodeConfig) GetV110NetworkPricesAddress() common.Address {
+	return common.HexToAddress(cfg.v1_1_0_NetworkPricesAddress[cfg.Network.Value.(config.Network)])
+}
+
+func (cfg *SmartnodeConfig) GetV110NodeStakingAddress() common.Address {
+	return common.HexToAddress(cfg.v1_1_0_NodeStakingAddress[cfg.Network.Value.(config.Network)])
+}
+
+func (cfg *SmartnodeConfig) GetV110NodeDepositAddress() common.Address {
+	return common.HexToAddress(cfg.v1_1_0_NodeDepositAddress[cfg.Network.Value.(config.Network)])
+}
+
+func (cfg *SmartnodeConfig) GetV110MinipoolQueueAddress() common.Address {
+	return common.HexToAddress(cfg.v1_1_0_MinipoolQueueAddress[cfg.Network.Value.(config.Network)])
+}
+
+func (cfg *SmartnodeConfig) GetV110MinipoolFactoryAddress() common.Address {
+	return common.HexToAddress(cfg.v1_1_0_MinipoolFactoryAddress[cfg.Network.Value.(config.Network)])
 }
 
 func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() map[string][]common.Address {
@@ -637,6 +813,14 @@ func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
 
 func (cfg *SmartnodeConfig) GetRplTwapPoolAddress() string {
 	return cfg.rplTwapPoolAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetMulticallAddress() string {
+	return cfg.multicallAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetBalanceBatcherAddress() string {
+	return cfg.balancebatcherAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetRewardsSubmissionBlockMaps() []uint64 {

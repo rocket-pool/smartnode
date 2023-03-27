@@ -51,6 +51,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "restart-vc",
+				Usage:     "Restarts the validator client",
+				UsageText: "rocketpool api service restart-vc",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(restartVc(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }

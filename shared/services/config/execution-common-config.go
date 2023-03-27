@@ -52,8 +52,8 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 
 		HttpPort: config.Parameter{
 			ID:                   ecHttpPortID,
-			Name:                 "HTTP Port",
-			Description:          "The port your Execution client should use for its HTTP RPC endpoint.",
+			Name:                 "HTTP API Port",
+			Description:          "The port your Execution client should use for its HTTP API endpoint (also known as HTTP RPC API endpoint).",
 			Type:                 config.ParameterType_Uint16,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultEcHttpPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2},
@@ -64,8 +64,8 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 
 		WsPort: config.Parameter{
 			ID:                   ecWsPortID,
-			Name:                 "Websocket Port",
-			Description:          "The port your Execution client should use for its Websocket RPC endpoint.",
+			Name:                 "Websocket API Port",
+			Description:          "The port your Execution client should use for its Websocket API endpoint (also known as Websocket RPC API endpoint).",
 			Type:                 config.ParameterType_Uint16,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultEcWsPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Eth2},

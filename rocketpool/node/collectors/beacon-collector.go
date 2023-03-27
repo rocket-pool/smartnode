@@ -2,11 +2,9 @@ package collectors
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -35,10 +33,16 @@ type BeaconCollector struct {
 
 	// The node's address
 	nodeAddress common.Address
+
+	// The thread-safe locker for the network state
+	stateLocker *StateLocker
+
+	// Prefix for logging
+	logPrefix string
 }
 
 // Create a new BeaconCollector instance
-func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpool.ExecutionClient, nodeAddress common.Address) *BeaconCollector {
+func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpool.ExecutionClient, nodeAddress common.Address, stateLocker *StateLocker) *BeaconCollector {
 	subsystem := "beacon"
 	return &BeaconCollector{
 		activeSyncCommittee: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "active_sync_committee"),
@@ -57,6 +61,8 @@ func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpo
 		bc:          bc,
 		ec:          ec,
 		nodeAddress: nodeAddress,
+		stateLocker: stateLocker,
+		logPrefix:   "Beacon Collector",
 	}
 }
 
@@ -69,11 +75,13 @@ func (collector *BeaconCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
+	// Get the latest state
+	state := collector.stateLocker.GetState()
+	if state == nil {
+		return
+	}
 
-	// Sync
 	var wg errgroup.Group
-	var wg2 errgroup.Group
-
 	activeSyncCommittee := float64(0)
 	upcomingSyncCommittee := float64(0)
 	upcomingProposals := float64(0)
@@ -82,31 +90,20 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 	var head beacon.BeaconHead
 
 	// Get sync committee duties
-	wg.Go(func() error {
-		var err error
-		validatorIndices, err = rp.GetNodeValidatorIndices(collector.rp, collector.ec, collector.bc, collector.nodeAddress)
-		if err != nil {
-			return fmt.Errorf("Error getting validator indices: %w", err)
+	for _, mpd := range state.MinipoolDetailsByNode[collector.nodeAddress] {
+		validator := state.ValidatorDetails[mpd.Pubkey]
+		if validator.Exists {
+			validatorIndices = append(validatorIndices, validator.Index)
 		}
-		return nil
-	})
+	}
 
-	wg.Go(func() error {
-		var err error
-		head, err = collector.bc.GetBeaconHead()
-		if err != nil {
-			return fmt.Errorf("Error getting beaconchain head: %w", err)
-		}
-		return nil
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+	head, err := collector.bc.GetBeaconHead()
+	if err != nil {
+		collector.logError(fmt.Errorf("error getting Beacon chain head: %w", err))
 		return
 	}
 
-	wg2.Go(func() error {
+	wg.Go(func() error {
 		// Get current duties
 		duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch)
 		if err != nil {
@@ -122,12 +119,9 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
-	wg2.Go(func() error {
+	wg.Go(func() error {
 		// Get epochs per sync committee period config to query next period
-		config, err := collector.bc.GetEth2Config()
-		if err != nil {
-			return fmt.Errorf("Error getting ETH2 config: %w", err)
-		}
+		config := state.BeaconConfig
 
 		// Get upcoming duties
 		duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch+config.EpochsPerSyncCommitteePeriod)
@@ -144,7 +138,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
-	wg2.Go(func() error {
+	wg.Go(func() error {
 		// Get proposals in this epoch
 		duties, err := collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch)
 		if err != nil {
@@ -173,8 +167,8 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 	})
 
 	// Wait for data
-	if err := wg2.Wait(); err != nil {
-		log.Printf("%s\n", err.Error())
+	if err := wg.Wait(); err != nil {
+		collector.logError(err)
 		return
 	}
 
@@ -184,4 +178,10 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.upcomingSyncCommittee, prometheus.GaugeValue, upcomingSyncCommittee)
 	channel <- prometheus.MustNewConstMetric(
 		collector.upcomingProposals, prometheus.GaugeValue, upcomingProposals)
+
+}
+
+// Log error messages
+func (collector *BeaconCollector) logError(err error) {
+	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

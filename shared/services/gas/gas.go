@@ -102,6 +102,22 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 	if maxPriorityFeeGwei > maxFeeGwei {
 		return fmt.Errorf("Priority fee cannot be greater than max fee.")
 	}
+
+	// Verify the node has enough ETH to use this max fee
+	maxFee := eth.GweiToWei(maxFeeGwei)
+	ethRequired := big.NewInt(0)
+	if gasLimit != 0 {
+		ethRequired.Mul(maxFee, big.NewInt(int64(gasLimit)))
+	} else {
+		ethRequired.Mul(maxFee, big.NewInt(int64(gasInfo.SafeGasLimit)))
+	}
+	response, err := rp.GetEthBalance()
+	if err != nil {
+		fmt.Printf("%sWARNING: couldn't check the ETH balance of the node (%s)\nPlease ensure your node wallet has enough ETH to pay for this transaction.%s\n\n", colorYellow, err.Error(), colorReset)
+	} else if response.Balance.Cmp(ethRequired) < 0 {
+		return fmt.Errorf("Your node has %.6f ETH in its wallet, which is not enough to pay for this transaction with a max fee of %.4f gwei; you require at least %.6f more ETH.", eth.WeiToEth(response.Balance), maxFeeGwei, eth.WeiToEth(big.NewInt(0).Sub(ethRequired, response.Balance)))
+	}
+
 	rp.AssignGasSettings(maxFeeGwei, maxPriorityFeeGwei, gasLimit)
 	return nil
 

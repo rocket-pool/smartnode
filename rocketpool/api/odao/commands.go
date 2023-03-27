@@ -858,6 +858,178 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "can-propose-promotion-scrub-period",
+				Usage:     "Check whether the node can propose the minipool.promotion.scrub.period setting",
+				UsageText: "rocketpool api odao can-propose-promotion-scrub-period value",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					scrubPeriod, err := cliutils.ValidateUint("promotion scrub period", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeSettingPromotionScrubPeriod(c, scrubPeriod))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-promotion-scrub-period",
+				Usage:     "Propose updating the minipool.promotion.scrub.period setting",
+				UsageText: "rocketpool api odao propose-promotion-scrub-period value",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					scrubPeriod, err := cliutils.ValidateUint("promotion scrub period", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeSettingPromotionScrubPeriod(c, scrubPeriod))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-propose-scrub-penalty-enabled",
+				Usage:     "Check whether the node can propose the minipool.scrub.penalty.enabled setting",
+				UsageText: "rocketpool api odao can-propose-scrub-penalty-enabled value",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					enabled, err := cliutils.ValidateBool("scrub penalty enabled", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeSettingScrubPenaltyEnabled(c, enabled))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-scrub-penalty-enabled",
+				Usage:     "Propose updating the minipool.scrub.penalty.enabled setting",
+				UsageText: "rocketpool api odao propose-scrub-penalty-enabled value",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					enabled, err := cliutils.ValidateBool("scrub penalty enabled", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeSettingScrubPenaltyEnabled(c, enabled))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-propose-bond-reduction-window-start",
+				Usage:     "Check whether the node can propose the minipool.bond.reduction.window.start setting",
+				UsageText: "rocketpool api odao can-propose-bond-reduction-window-start value",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					windowStart, err := cliutils.ValidateUint("window start", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeSettingBondReductionWindowStart(c, windowStart))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-bond-reduction-window-start",
+				Usage:     "Propose updating the minipool.bond.reduction.window.start setting",
+				UsageText: "rocketpool api odao propose-bond-reduction-window-start value",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					windowStart, err := cliutils.ValidateUint("window start", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeSettingBondReductionWindowStart(c, windowStart))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-propose-bond-reduction-window-length",
+				Usage:     "Check whether the node can propose the minipool.bond.reduction.window.length setting",
+				UsageText: "rocketpool api odao can-propose-bond-reduction-window-length value",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					windowLength, err := cliutils.ValidateUint("window length", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeSettingBondReductionWindowLength(c, windowLength))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-bond-reduction-window-length",
+				Usage:     "Propose updating the minipool.bond.reduction.window.length setting",
+				UsageText: "rocketpool api odao propose-bond-reduction-window-length value",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					windowLength, err := cliutils.ValidateUint("window length", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeSettingBondReductionWindowLength(c, windowLength))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "get-member-settings",
 				Usage:     "Get the ODAO settings related to ODAO members",
 				UsageText: "rocketpool api odao get-member-settings",

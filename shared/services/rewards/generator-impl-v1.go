@@ -21,6 +21,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
@@ -306,17 +307,17 @@ func (r *treeGeneratorImpl_v1) updateNetworksAndTotals() {
 func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 
 	snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
-	intervalDuration, err := GetClaimIntervalTime(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	intervalDuration, err := state.GetClaimIntervalTime(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return fmt.Errorf("error getting required registration time: %w", err)
 	}
 
 	// Handle node operator rewards
-	nodeOpPercent, err := GetNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	nodeOpPercent, err := state.GetNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
-	pendingRewards, err := GetPendingRPLRewards(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	pendingRewards, err := state.GetPendingRPLRewards(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
@@ -440,7 +441,7 @@ func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 
 	// Handle Oracle DAO rewards
-	oDaoPercent, err := GetTrustedNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	oDaoPercent, err := state.GetTrustedNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
@@ -536,7 +537,7 @@ func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get expected Protocol DAO rewards
-	pDaoPercent, err := GetProtocolDaoRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	pDaoPercent, err := state.GetProtocolDaoRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}

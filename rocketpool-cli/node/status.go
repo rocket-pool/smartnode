@@ -68,6 +68,12 @@ func getStatus(c *cli.Context) error {
 	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 		fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
 	}
+	if status.IsAtlasDeployed {
+		fmt.Printf(
+			"The node has %.6f ETH in its credit balance, which can be used to make new minipools.\n",
+			math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
+		)
+	}
 
 	// Registered node details
 	if status.Registered {
@@ -206,25 +212,67 @@ func getStatus(c *cli.Context) error {
 		fmt.Println()
 
 		// RPL stake details
-		fmt.Printf("%s=== RPL Stake and Minipools ===%s\n", colorGreen, colorReset)
-		fmt.Printf(
-			"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL, allowing it to run %d minipool(s) in total.\n",
-			math.RoundDown(eth.WeiToEth(status.RplStake), 6),
-			math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6),
-			status.MinipoolLimit)
-		if status.CollateralRatio > 0 {
+		fmt.Printf("%s=== RPL Stake ===%s\n", colorGreen, colorReset)
+		if !status.IsAtlasDeployed {
 			fmt.Printf(
-				"This is currently a %.2f%% collateral ratio.\n",
-				status.CollateralRatio*100,
-			)
+				"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL, allowing it to run %d minipool(s) in total.\n",
+				math.RoundDown(eth.WeiToEth(status.RplStake), 6),
+				math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6),
+				status.MinipoolLimit)
+			if status.BorrowedCollateralRatio > 0 {
+				fmt.Printf(
+					"This is currently a %.2f%% collateral ratio.\n",
+					status.BorrowedCollateralRatio*100,
+				)
+
+				// RPL stake
+				fmt.Printf("The node must keep at least %.6f RPL staked to collateralize its minipools and claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
+				fmt.Println("")
+			}
+		} else {
+			fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.\n")
+			fmt.Printf(
+				"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL.\n",
+				math.RoundDown(eth.WeiToEth(status.RplStake), 6),
+				math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6))
+			if status.BorrowedCollateralRatio > 0 {
+				rplTooLow := (status.RplStake.Cmp(status.MinimumRplStake) < 0)
+				if rplTooLow {
+					fmt.Printf(
+						"This is currently %s%.2f%% of its borrowed ETH%s and %.2f%% of its bonded ETH.\n",
+						colorRed, status.BorrowedCollateralRatio*100, colorReset, status.BondedCollateralRatio*100)
+				} else {
+					fmt.Printf(
+						"This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n",
+						status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
+				}
+				fmt.Printf(
+					"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
+				fmt.Printf(
+					"It can earn rewards on up to %.6f RPL (150%% of bonded ETH).\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
+				if rplTooLow {
+					fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n,", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.MinimumRplStake, status.RplStake)), 6), colorReset)
+				}
+			}
+			fmt.Println()
+
+			remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
+			remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)
+			remainingAmountEth := int(eth.WeiToEth(remainingAmount))
+			remainingFor8EB := remainingAmountEth / 24
+			if remainingFor8EB < 0 {
+				remainingFor8EB = 0
+			}
+			remainingFor16EB := remainingAmountEth / 16
+			if remainingFor16EB < 0 {
+				remainingFor16EB = 0
+			}
+			fmt.Printf("The node can borrow enough ETH to make %d more 8-ETH minipools (or %d more 16-ETH minipools).\n\n", remainingFor8EB, remainingFor16EB)
 		}
 
 		// Minipool details
+		fmt.Printf("%s=== Minipools ===%s\n", colorGreen, colorReset)
 		if status.MinipoolCounts.Total > 0 {
-
-			// RPL stake
-			fmt.Printf("The node must keep at least %.6f RPL staked to collateralize its minipools and claim RPL rewards.\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
-			fmt.Println("")
 
 			// Minipools
 			fmt.Printf("The node has a total of %d active minipool(s):\n", status.MinipoolCounts.Total-status.MinipoolCounts.Finalised)
@@ -246,11 +294,20 @@ func getStatus(c *cli.Context) error {
 			if status.MinipoolCounts.RefundAvailable > 0 {
 				fmt.Printf("* %d minipool(s) have refunds available!\n", status.MinipoolCounts.RefundAvailable)
 			}
-			if status.MinipoolCounts.WithdrawalAvailable > 0 {
-				fmt.Printf("* %d minipool(s) are ready for withdrawal once Beacon Chain withdrawals are enabled!\n", status.MinipoolCounts.WithdrawalAvailable)
-			}
-			if status.MinipoolCounts.CloseAvailable > 0 {
-				fmt.Printf("* %d dissolved minipool(s) can be closed once Beacon Chain withdrawals are enabled!\n", status.MinipoolCounts.CloseAvailable)
+			if !status.IsAtlasDeployed {
+				if status.MinipoolCounts.WithdrawalAvailable > 0 {
+					fmt.Printf("* %d minipool(s) are ready for withdrawal once Beacon Chain withdrawals are enabled!\n", status.MinipoolCounts.WithdrawalAvailable)
+				}
+				if status.MinipoolCounts.CloseAvailable > 0 {
+					fmt.Printf("* %d dissolved minipool(s) can be closed once Beacon Chain withdrawals are enabled!\n", status.MinipoolCounts.CloseAvailable)
+				}
+			} else {
+				if status.MinipoolCounts.WithdrawalAvailable > 0 {
+					fmt.Printf("* %d minipool(s) are ready for withdrawal!\n", status.MinipoolCounts.WithdrawalAvailable)
+				}
+				if status.MinipoolCounts.CloseAvailable > 0 {
+					fmt.Printf("* %d dissolved minipool(s) can be closed and your deposit (minus the prelaunch amount) refunded!\n", status.MinipoolCounts.CloseAvailable)
+				}
 			}
 			if status.MinipoolCounts.Finalised > 0 {
 				fmt.Printf("* %d minipool(s) are finalized and no longer active.\n", status.MinipoolCounts.Finalised)

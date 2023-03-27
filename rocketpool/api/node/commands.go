@@ -544,7 +544,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					amountWei, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -567,14 +567,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "deposit",
 				Aliases:   []string{"d"},
 				Usage:     "Make a deposit and create a minipool, or just make and sign the transaction (when submit = false)",
-				UsageText: "rocketpool api node deposit amount min-fee salt submit",
+				UsageText: "rocketpool api node deposit amount min-fee salt use-credit-balance submit",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 4); err != nil {
+					if err := cliutils.ValidateArgCount(c, 5); err != nil {
 						return err
 					}
-					amountWei, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -586,13 +586,17 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					submit, err := cliutils.ValidateBool("submit", c.Args().Get(3))
+					useCreditBalance, err := cliutils.ValidateBool("use-credit-balance", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					submit, err := cliutils.ValidateBool("submit", c.Args().Get(4))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					response, err := nodeDeposit(c, amountWei, minNodeFee, salt, submit)
+					response, err := nodeDeposit(c, amountWei, minNodeFee, salt, useCreditBalance, submit)
 					if submit {
 						api.PrintResponse(response, err)
 					} // else nodeDeposit already printed the encoded transaction
@@ -1241,6 +1245,109 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 					// Run
 					api.PrintResponse(reverseResolveEnsName(c, address))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-create-vacant-minipool",
+				Usage:     "Check whether a vacant minipool can be created for solo staker migration",
+				UsageText: "rocketpool api node can-create-vacant-minipool amount min-fee salt pubkey",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					pubkey, err := cliutils.ValidatePubkey("pubkey", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canCreateVacantMinipool(c, amountWei, minNodeFee, salt, pubkey))
+					return nil
+
+				},
+			},
+			{
+				Name:      "create-vacant-minipool",
+				Usage:     "Create a vacant minipool, which can be used to migrate a solo staker",
+				UsageText: "rocketpool api node create-vacant-minipool amount min-fee salt pubkey",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					pubkey, err := cliutils.ValidatePubkey("pubkey", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(createVacantMinipool(c, amountWei, minNodeFee, salt, pubkey))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "check-collateral",
+				Usage:     "Check if the node is above the minimum collateralization threshold, including pending bond reductions",
+				UsageText: "rocketpool api node check-collateral",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(checkCollateral(c))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "get-eth-balance",
+				Usage:     "Get the ETH balance of the node address",
+				UsageText: "rocketpool api node get-eth-balance",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getNodeEthBalance(c))
 					return nil
 
 				},

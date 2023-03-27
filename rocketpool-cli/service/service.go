@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -148,14 +149,14 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== Rewards Tree Changes ===%s\n", colorGreen, colorReset)
-	fmt.Println("Starting with Interval 6 on February 16th (on Mainnet), the Redstone Merkle rewards tree will no longer award RPL for minipools that have already exited the Beacon chain. Please see the DAO forum post for more info: https://dao.rocketpool.net/t/odao-rewards-tree-spec-v4/1389/1\n")
+	fmt.Printf("%s=== Atlas! ===%s\n", colorGreen, colorReset)
+	fmt.Println("Atlas and the Shapella hardfork have been enabled on the Prater testnet! If you'd like to try out withdrawals, 8-ETH minipools, solo staker migration and more, please read the Atlas guide:\nhttps://docs.rocketpool.net/guides/atlas/whats-new.html\n")
 
-	fmt.Printf("%s=== Nimbus Pruning ===%s\n", colorGreen, colorReset)
-	fmt.Println("Nimbus users can now use its new pruning feature to cull everything but the last 5 months of chain data. This will reduce disk usage and keep it relatively flat going forward. You'll find the option under the Nimbus settings in the `rocketpool service config` TUI.\n")
+	fmt.Printf("%s=== Nimbus Changes ===%s\n", colorGreen, colorReset)
+	fmt.Println("Nimbus now supports running a separate Validator Client, which means it now supports fallback clients! If you're using Nimbus and would like to set up a fallback client pair for your node, simply go to the Consensus Client section of the `service config` TUI - you can now add one just like with the other clients!\nNote that if you want to check on your validator performance, you will need to look at the validator container instead of the eth2 container like you used to do.\n")
 
-	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
-	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
+	fmt.Printf("%s=== Lodestar ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode now supports Lodestar - the Ethereum Consensus Client written in Typescript! If you'd like to switch to Lodestar, simply follow the instructions for changing consensus clients: https://docs.rocketpool.net/guides/node/change-clients.html#changing-consensus-clients")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
@@ -602,7 +603,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		// Do the client swap check
 		err := checkForValidatorChange(rp, cfg)
 		if err != nil {
-			fmt.Printf("%sWarning: couldn't verify that the validator container can be safely restarted:\n\t%s\n", colorYellow, err.Error())
+			fmt.Printf("%sWARNING: couldn't verify that the validator container can be safely restarted:\n\t%s\n", colorYellow, err.Error())
 			fmt.Println("If you are changing to a different ETH2 client, it may resubmit an attestation you have already submitted.")
 			fmt.Println("This will slash your validator!")
 			fmt.Println("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.\n")
@@ -643,6 +644,18 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		}
 	}
 
+	// Force stop eth2 if using Nimbus prior to v1.8.0 so it ensures the container is shut down and thus lets go of the validator keys and slashing database
+	isLocalNimbus := (cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ConsensusClient.Value.(cfgtypes.ConsensusClient) == cfgtypes.ConsensusClient_Nimbus)
+	if isUpdate && !isNew && !cfg.IsNativeMode && isLocalNimbus {
+		proceed, err := handleNimbusSplitConversion(rp, cfg)
+		if err != nil {
+			return fmt.Errorf("error handling Nimbus split-mode upgrade: %w", err)
+		}
+		if !proceed {
+			return nil
+		}
+	}
+
 	// Write a note on doppelganger protection
 	doppelgangerEnabled, err := cfg.IsDoppelgangerEnabled()
 	if err != nil {
@@ -659,6 +672,109 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 	// Remove the upgrade flag if it's there
 	return rp.RemoveUpgradeFlagFile()
+
+}
+
+// Versions prior to v1.9.0 had Nimbus in single mode instead of split mode, so handle the conversion to ensure the user doesn't get slashed
+func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolConfig) (bool, error) {
+
+	previousVersion := "0.0.0"
+	backupCfg, err := rp.LoadBackupConfig()
+	if err != nil {
+		fmt.Printf("%sWARNING: Couldn't determine previous Smartnode version from backup settings: %s%s\n", colorYellow, err.Error(), colorReset)
+		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smartnode v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
+		fmt.Println()
+		if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+			fmt.Println("Cancelled.")
+			return false, nil
+		}
+		return true, nil
+	} else if backupCfg != nil {
+		previousVersion = backupCfg.Version
+	} else {
+		fmt.Printf("%sWARNING: Couldn't determine previous Smartnode version from backup settings because the backup configuration didn't exist.%s\n", colorYellow, colorReset)
+		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smartnode v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
+		fmt.Println()
+		if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+			fmt.Println("Cancelled.")
+			return false, nil
+		}
+		return true, nil
+	}
+
+	oldVersion, err := version.NewVersion(strings.TrimPrefix(previousVersion, "v"))
+	if err != nil {
+		fmt.Printf("%sWARNING: Backup configuration states the previous Smartnode installation used version %s, which is not a valid version%s\n", colorYellow, previousVersion, colorReset)
+		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smartnode v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
+		fmt.Println()
+		if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+			fmt.Println("Cancelled.")
+			return false, nil
+		}
+		return true, nil
+	}
+
+	vulnerableConstraint, _ := version.NewConstraint("< 1.8.0")
+	if vulnerableConstraint.Check(oldVersion) {
+		fmt.Println()
+		fmt.Printf("%sNOTE: You are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade. Your client's slashing database will be moved from the `eth2` container to the `validator` container automatically to ensure your node doesn't attest to the same duty twice and get slashed.\n\nIf you have *any concern at all* about this process, you may want to voluntarily shut down the Docker containers with `rocketpool service stop` and wait 15 minutes to ensure that you've missed at least two attestations before proceeding. If you do this, please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
+		fmt.Println()
+		if !cliutils.Confirm("Do you want to continue starting the service?") {
+			fmt.Println("Cancelled.")
+			return false, nil
+		}
+
+		// Ensure the eth2 and validator containers have stopped
+		prefix, err := getContainerPrefix(rp)
+		if err != nil {
+			return false, fmt.Errorf("error getting container prefix: %w", err)
+		}
+
+		successfulStop := true
+		eth2ContainerName := prefix + BeaconContainerSuffix
+		fmt.Printf("Stopping %s...\n", eth2ContainerName)
+		out, err := rp.StopContainer(eth2ContainerName)
+		if err != nil {
+			exitErr, isExitErr := err.(*exec.ExitError)
+			if isExitErr && exitErr.ProcessState.ExitCode() == 1 && strings.Contains(string(exitErr.Stderr), "No such container:") {
+				// Handle errors where the container didn't exist
+				fmt.Printf("%sNOTE: couldn't shut down %s because it didn't exist.%s\n", colorYellow, eth2ContainerName, colorReset)
+				successfulStop = false
+			} else {
+				return false, fmt.Errorf("error stopping %s: %w", eth2ContainerName, err)
+			}
+		} else if out != eth2ContainerName {
+			return false, fmt.Errorf("unexpected output when trying to stop %s: [%s]", eth2ContainerName, out)
+		}
+
+		validatorContainerName := prefix + ValidatorContainerSuffix
+		fmt.Printf("Stopping %s...\n", validatorContainerName)
+		out, err = rp.StopContainer(validatorContainerName)
+		if err != nil {
+			exitErr, isExitErr := err.(*exec.ExitError)
+			if isExitErr && exitErr.ProcessState.ExitCode() == 1 && strings.Contains(string(exitErr.Stderr), "No such container:") {
+				// Handle errors where the container didn't exist
+				fmt.Printf("%sNOTE: couldn't shut down %s because it didn't exist.%s\n", colorYellow, validatorContainerName, colorReset)
+				successfulStop = false
+			} else {
+				return false, fmt.Errorf("error stopping %s: %w", validatorContainerName, err)
+			}
+		} else if out != validatorContainerName {
+			return false, fmt.Errorf("unexpected output when trying to stop %s: [%s]", validatorContainerName, out)
+		}
+
+		if !successfulStop {
+			fmt.Println()
+			fmt.Printf("%sWARNING: Some of the Nimbus containers couldn't be shut down safely.\nThe Smartnode can't guarantee the safe transfer of the slashing database. If you have active validators, you **must ensure** you have waited 15 minutes since your last attestation and **missed at least two attestations** before continuing.\nIf you don't, you %sMAY BE SLASHED!%s\n\n", colorYellow, colorRed, colorReset)
+			fmt.Println()
+			if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+				fmt.Println("Cancelled.")
+				return false, nil
+			}
+		}
+	}
+
+	return true, nil
 
 }
 
@@ -769,7 +885,16 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 		fmt.Printf("Validator client [%s] was previously used - no slashing prevention delay necessary.\n", currentValidatorName)
 	} else if currentValidatorName == "" {
 		fmt.Println("This is the first time starting Rocket Pool - no slashing prevention delay necessary.")
+	} else if (currentValidatorName == "nimbus-eth2" && pendingValidatorName == "nimbus-validator-client") || (pendingValidatorName == "nimbus-eth2" && currentValidatorName == "nimbus-validator-client") {
+		// Handle the transition from Nimbus v22.11.x to Nimbus v22.12.x where they split the VC into its own container
+		fmt.Printf("Validator client [%s] was previously used, you are changing to [%s] but the Smartnode will migrate your slashing database automatically to this new client. No slashing prevention delay is necessary.\n", currentValidatorName, pendingValidatorName)
 	} else {
+
+		consensusClient, _ := cfg.GetSelectedConsensusClient()
+		// Warn about Lodestar
+		if consensusClient == cfgtypes.ConsensusClient_Lodestar {
+			fmt.Printf("%sNOTE:\nIf this is your first time running Lodestar and you have existing minipools, you must run `rocketpool wallet rebuild` after the Smartnode starts to generate the validator keys for it.\nIf you have run it before or you don't have any minipools, you can ignore this message.%s\n\n", colorYellow, colorReset)
+		}
 
 		// Get the time that the container responsible for validator duties exited
 		validatorDutyContainerName, err := getContainerNameForValidatorDuties(currentValidatorName, rp)
@@ -1074,11 +1199,11 @@ func pauseService(c *cli.Context) error {
 
 }
 
-// Stop the Rocket Pool service
-func stopService(c *cli.Context) error {
+// Terminate the Rocket Pool service
+func terminateService(c *cli.Context) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!%s", colorRed, colorReset))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smartnode uses `rocketpool service install -d` in order to use it again.%s", colorRed, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1086,12 +1211,12 @@ func stopService(c *cli.Context) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w\n%sTHERE WAS AN ERROR TERMINATING THE SMARTNODE SERVICE. Your keys have most likely not been deleted. Proceed with caution.%s", err, colorRed, colorReset)
 	}
 	defer rp.Close()
 
 	// Stop service
-	return rp.StopService(getComposeFiles(c))
+	return rp.TerminateService(getComposeFiles(c), c.GlobalString("config-path"))
 
 }
 
@@ -1214,10 +1339,11 @@ func serviceVersion(c *cli.Context) error {
 		switch eth2Client {
 		case cfgtypes.ConsensusClient_Lighthouse:
 			eth2ClientString = fmt.Sprintf(format, "Lighthouse", cfg.Lighthouse.ContainerTag.Value.(string))
+		case cfgtypes.ConsensusClient_Lodestar:
+			eth2ClientString = fmt.Sprintf(format, "Lodestar", cfg.Lodestar.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Nimbus:
-			eth2ClientString = fmt.Sprintf(format, "Nimbus", cfg.Nimbus.ContainerTag.Value.(string))
+			eth2ClientString = fmt.Sprintf(format+"\n\tVC image: %s", "Nimbus", cfg.Nimbus.BnContainerTag.Value.(string), cfg.Nimbus.VcContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Prysm:
-			// Prysm is a special case, as the BN and VC image versions may differ
 			eth2ClientString = fmt.Sprintf(format+"\n\tVC image: %s", "Prysm", cfg.Prysm.BnContainerTag.Value.(string), cfg.Prysm.VcContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Teku:
 			eth2ClientString = fmt.Sprintf(format, "Teku", cfg.Teku.ContainerTag.Value.(string))
@@ -1231,6 +1357,10 @@ func serviceVersion(c *cli.Context) error {
 		switch eth2Client {
 		case cfgtypes.ConsensusClient_Lighthouse:
 			eth2ClientString = fmt.Sprintf(format, "Lighthouse", cfg.ExternalLighthouse.ContainerTag.Value.(string))
+		case cfgtypes.ConsensusClient_Lodestar:
+			eth2ClientString = fmt.Sprintf(format, "Lodestar", cfg.ExternalLodestar.ContainerTag.Value.(string))
+		case cfgtypes.ConsensusClient_Nimbus:
+			eth2ClientString = fmt.Sprintf(format, "Nimbus", cfg.ExternalNimbus.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Prysm:
 			eth2ClientString = fmt.Sprintf(format, "Prysm", cfg.ExternalPrysm.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Teku:

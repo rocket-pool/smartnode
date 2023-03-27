@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -22,11 +23,13 @@ const (
 	MainnetV2Interval uint64 = 4
 	MainnetV3Interval uint64 = 5
 	MainnetV4Interval uint64 = 6
+	MainnetV5Interval uint64 = 8
 
 	// Prater intervals
 	PraterV2Interval uint64 = 37
 	PraterV3Interval uint64 = 49
 	PraterV4Interval uint64 = 60
+	PraterV5Interval uint64 = 76
 )
 
 type TreeGenerator struct {
@@ -52,7 +55,7 @@ type treeGeneratorImpl interface {
 	getRulesetVersion() uint64
 }
 
-func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) (*TreeGenerator, error) {
+func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) (*TreeGenerator, error) {
 	t := &TreeGenerator{
 		logger:           logger,
 		logPrefix:        logPrefix,
@@ -70,6 +73,11 @@ func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.R
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
+			rewardsRulesetVersion: 5,
+			mainnetStartInterval:  MainnetV5Interval,
+			praterStartInterval:   PraterV5Interval,
+			generator:             newTreeGeneratorImpl_v5(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state),
+		}, {
 			rewardsRulesetVersion: 4,
 			mainnetStartInterval:  MainnetV4Interval,
 			praterStartInterval:   PraterV4Interval,

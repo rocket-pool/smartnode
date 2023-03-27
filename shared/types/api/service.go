@@ -36,3 +36,8 @@ type ClientStatusResponse struct {
 	EcManagerStatus ClientManagerStatus `json:"ecManagerStatus"`
 	BcManagerStatus ClientManagerStatus `json:"bcManagerStatus"`
 }
+
+type RestartVcResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}

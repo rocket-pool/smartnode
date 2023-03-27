@@ -97,7 +97,7 @@ func refundMinipools(c *cli.Context) error {
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanRefundMinipool(minipool.Address)
 		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for refund transaction (%s)", err)
+			fmt.Printf("WARNING: Couldn't get gas price for refund transaction (%s)", err.Error())
 			break
 		} else {
 			gasInfo = canResponse.GasInfo
@@ -124,14 +124,14 @@ func refundMinipools(c *cli.Context) error {
 	for _, minipool := range selectedMinipools {
 		response, err := rp.RefundMinipool(minipool.Address)
 		if err != nil {
-			fmt.Printf("Could not refund ETH from minipool %s: %s.\n", minipool.Address.Hex(), err)
+			fmt.Printf("Could not refund ETH from minipool %s: %s.\n", minipool.Address.Hex(), err.Error())
 			continue
 		}
 
 		fmt.Printf("Refunding minipool %s...\n", minipool.Address.Hex())
 		cliutils.PrintTransactionHash(rp, response.TxHash)
 		if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-			fmt.Printf("Could not refund ETH from minipool %s: %s.\n", minipool.Address.Hex(), err)
+			fmt.Printf("Could not refund ETH from minipool %s: %s.\n", minipool.Address.Hex(), err.Error())
 		} else {
 			fmt.Printf("Successfully refunded ETH from minipool %s.\n", minipool.Address.Hex())
 		}

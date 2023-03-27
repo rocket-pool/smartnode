@@ -26,3 +26,10 @@ type VoluntaryExit struct {
 	Epoch          uint64 `json:"epoch"`
 	ValidatorIndex uint64 `json:"validator_index"`
 }
+
+// Withdrawal creds change message
+type WithdrawalCredentialsChange struct {
+	ValidatorIndex     uint64   `json:"validator_index"`
+	FromBLSPubkey      [48]byte `json:"from_bls_pubkey" ssz-size:"48"`
+	ToExecutionAddress [20]byte `json:"to_execution_address" ssz-size:"20"`
+}

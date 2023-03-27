@@ -10,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -22,10 +23,11 @@ type respondChallenges struct {
 	cfg *config.RocketPoolConfig
 	w   *wallet.Wallet
 	rp  *rocketpool.RocketPool
+	m   *state.NetworkStateManager
 }
 
 // Create respond to challenges task
-func newRespondChallenges(c *cli.Context, logger log.ColorLogger) (*respondChallenges, error) {
+func newRespondChallenges(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*respondChallenges, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -48,12 +50,13 @@ func newRespondChallenges(c *cli.Context, logger log.ColorLogger) (*respondChall
 		cfg: cfg,
 		w:   w,
 		rp:  rp,
+		m:   m,
 	}, nil
 
 }
 
 // Respond to challenges
-func (t *respondChallenges) run() error {
+func (t *respondChallenges) run(isAtlasDeployed bool) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -64,15 +67,6 @@ func (t *respondChallenges) run() error {
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
 		return err
-	}
-
-	// Check node trusted status
-	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
-	if err != nil {
-		return err
-	}
-	if !nodeTrusted {
-		return nil
 	}
 
 	// Log
@@ -103,14 +97,14 @@ func (t *respondChallenges) run() error {
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(WatchtowerMaxFee)
+	maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+	opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Respond to challenge

@@ -87,25 +87,31 @@ func exitMinipools(c *cli.Context) error {
 
 	}
 
-	colorReset := "\033[0m"
-	colorRed := "\033[31m"
+	if !status.IsAtlasDeployed {
+		// Show a warning message
+		fmt.Printf("%s***WARNING***\n", colorRed)
+		fmt.Printf("You are about to exit your minipool, which will tell its validator to stop all activities on the Beacon Chain.\n")
+		fmt.Printf("You will no longer receive any rewards or penalties, but your validator's balance will be LOCKED on the Beacon Chain!\n")
+		fmt.Printf("You will NOT have access to your ETH until after the ETH1-ETH2 merge, when withdrawals are implemented!\n\n%s", colorReset)
 
-	// Show a warning message
-	fmt.Printf("%s***WARNING***\n", colorRed)
-	fmt.Printf("You are about to exit your minipool, which will tell its validator to stop all activities on the Beacon Chain.\n")
-	fmt.Printf("You will no longer receive any rewards or penalties, but your validator's balance will be LOCKED on the Beacon Chain!\n")
-	fmt.Printf("You will NOT have access to your ETH until after the ETH1-ETH2 merge, when withdrawals are implemented!\n\n%s", colorReset)
+		// Prompt for an 'I agree' confirmation
+		if !(c.Bool("yes") || cliutils.ConfirmWithIAgree(fmt.Sprintf("%sAre you sure you want to exit %d minipool(s)? This action cannot be undone!%s", colorRed, len(selectedMinipools), colorReset))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	} else {
+		// Show a warning message
+		fmt.Printf("%sNOTE:\n", colorYellow)
+		fmt.Println("You are about to exit your minipool. This will tell each one's validator to stop all activities on the Beacon Chain.")
+		fmt.Println("Please continue to run your validators until each one you've exited has been processed by the exit queue.\nYou can watch their progress on the https://beaconcha.in explorer.")
+		fmt.Println("Your funds will be locked on the Beacon Chain until they've been withdrawn, which will happen automatically after the Shanghai / Capella chain hardfork.")
+		fmt.Printf("Once your funds have been withdrawn, you can run `rocketpool minipool close` to distribute them to your withdrawal address and close the minipool.\n\n%s", colorReset)
 
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sPlease confirm again that you understand you will no longer earn staking rewards, but your ETH balance will remain locked on the Beacon Chain until withdrawals are implemented by the Ethereum core developers.%s", colorRed, colorReset))) {
-		fmt.Println("Cancelled.")
-		return nil
+		// Prompt for confirmation
+		if !(c.Bool("yes") || cliutils.ConfirmWithIAgree(fmt.Sprintf("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
 	}
 
 	// Exit minipools

@@ -261,7 +261,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "restake-amount, a",
-						Usage: "The amount of RPL to automatically restake during claiming (or '150%%' to stake up to 150%% collateral, or 'all' for all available RPL)",
+						Usage: "The amount of RPL to automatically restake during claiming (or '150%' to stake up to 150% collateral, or 'all' for all available RPL)",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -322,10 +322,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Make a deposit and create a minipool",
 				UsageText: "rocketpool node deposit [options]",
 				Flags: []cli.Flag{
-					/*cli.StringFlag{
+					cli.StringFlag{
 						Name:  "amount, a",
-						Usage: "The amount of ETH to deposit (0, 16 or 32)",
-					},*/
+						Usage: "The amount of ETH to deposit (8 or 16)",
+					},
 					cli.StringFlag{
 						Name:  "max-slippage, s",
 						Usage: "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
@@ -348,7 +348,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Validate flags
 					if c.String("amount") != "" {
-						if _, err := cliutils.ValidateDepositEthAmount("deposit amount", c.String("amount")); err != nil {
+						if _, err := cliutils.ValidatePositiveEthAmount("deposit amount", c.String("amount")); err != nil {
 							return err
 						}
 					}
@@ -365,6 +365,71 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return nodeDeposit(c)
+
+				},
+			},
+
+			{
+				Name:      "create-vacant-minipool",
+				Aliases:   []string{"cvm"},
+				Usage:     "Create an empty minipool, which can be used to migrate an existing solo staking validator as part of the 0x00 to 0x01 withdrawal credentials upgrade",
+				UsageText: "rocketpool node create-vacant-minipool pubkey [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "amount, a",
+						Usage: "The amount of ETH to deposit (8 or 16)",
+					},
+					cli.StringFlag{
+						Name:  "max-slippage, s",
+						Usage: "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
+					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm all interactive questions",
+					},
+					cli.StringFlag{
+						Name:  "salt, l",
+						Usage: "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
+					},
+					cli.StringFlag{
+						Name:  "mnemonic, m",
+						Usage: "Use this flag if you want to recreate your validator's private key within the Smartnode's VC instead of running it via your own VC, and have the Smartnode reassign your validator's withdrawal credentials to the new minipool address automatically.",
+					},
+					cli.BoolFlag{
+						Name:  "no-restart",
+						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					pubkey, err := cliutils.ValidatePubkey("pubkey", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Validate flags
+					if c.String("amount") != "" {
+						if _, err := cliutils.ValidatePositiveEthAmount("deposit amount", c.String("amount")); err != nil {
+							return err
+						}
+					}
+					if c.String("max-slippage") != "" && c.String("max-slippage") != "auto" {
+						if _, err := cliutils.ValidatePercentage("maximum commission rate slippage", c.String("max-slippage")); err != nil {
+							return err
+						}
+					}
+					if c.String("salt") != "" {
+						if _, err := cliutils.ValidateBigInt("salt", c.String("salt")); err != nil {
+							return err
+						}
+					}
+
+					// Run
+					return createVacantMinipool(c, pubkey)
 
 				},
 			},

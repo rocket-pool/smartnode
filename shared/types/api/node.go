@@ -31,10 +31,16 @@ type NodeStatusResponse struct {
 	EffectiveRplStake                 *big.Int        `json:"effectiveRplStake"`
 	MinimumRplStake                   *big.Int        `json:"minimumRplStake"`
 	MaximumRplStake                   *big.Int        `json:"maximumRplStake"`
-	CollateralRatio                   float64         `json:"collateralRatio"`
+	BorrowedCollateralRatio           float64         `json:"borrowedCollateralRatio"`
+	BondedCollateralRatio             float64         `json:"bondedCollateralRatio"`
 	VotingDelegate                    common.Address  `json:"votingDelegate"`
 	VotingDelegateFormatted           string          `json:"votingDelegateFormatted"`
+	IsAtlasDeployed                   bool            `json:"isAtlasDeployed"`
 	MinipoolLimit                     uint64          `json:"minipoolLimit"`
+	EthMatched                        *big.Int        `json:"ethMatched"`
+	EthMatchedLimit                   *big.Int        `json:"ethMatchedLimit"`
+	PendingMatchAmount                *big.Int        `json:"pendingMatchAmount"`
+	CreditBalance                     *big.Int        `json:"creditBalance"`
 	MinipoolCounts                    struct {
 		Total               int `json:"total"`
 		Initialized         int `json:"initialized"`
@@ -153,6 +159,7 @@ type CanNodeStakeRplResponse struct {
 	Error               string             `json:"error"`
 	CanStake            bool               `json:"canStake"`
 	InsufficientBalance bool               `json:"insufficientBalance"`
+	IsAtlasDeployed     bool               `json:"isAtlasDeployed"`
 	InConsensus         bool               `json:"inConsensus"`
 	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
 }
@@ -185,6 +192,7 @@ type CanNodeWithdrawRplResponse struct {
 	MinipoolsUndercollateralized bool               `json:"minipoolsUndercollateralized"`
 	WithdrawalDelayActive        bool               `json:"withdrawalDelayActive"`
 	InConsensus                  bool               `json:"inConsensus"`
+	IsAtlasDeployed              bool               `json:"isAtlasDeployed"`
 	GasInfo                      rocketpool.GasInfo `json:"gasInfo"`
 }
 type NodeWithdrawRplResponse struct {
@@ -197,12 +205,17 @@ type CanNodeDepositResponse struct {
 	Status                 string             `json:"status"`
 	Error                  string             `json:"error"`
 	CanDeposit             bool               `json:"canDeposit"`
+	CreditBalance          *big.Int           `json:"creditBalance"`
+	DepositBalance         *big.Int           `json:"depositBalance"`
+	CanUseCredit           bool               `json:"canUseCredit"`
+	NodeBalance            *big.Int           `json:"nodeBalance"`
 	InsufficientBalance    bool               `json:"insufficientBalance"`
 	InsufficientRplStake   bool               `json:"insufficientRplStake"`
 	InvalidAmount          bool               `json:"invalidAmount"`
 	UnbondedMinipoolsAtMax bool               `json:"unbondedMinipoolsAtMax"`
 	DepositDisabled        bool               `json:"depositDisabled"`
 	InConsensus            bool               `json:"inConsensus"`
+	IsAtlasDeployed        bool               `json:"isAtlasDeployed"`
 	MinipoolAddress        common.Address     `json:"minipoolAddress"`
 	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
 }
@@ -213,6 +226,25 @@ type NodeDepositResponse struct {
 	MinipoolAddress common.Address          `json:"minipoolAddress"`
 	ValidatorPubkey rptypes.ValidatorPubkey `json:"validatorPubkey"`
 	ScrubPeriod     time.Duration           `json:"scrubPeriod"`
+}
+
+type CanCreateVacantMinipoolResponse struct {
+	Status               string             `json:"status"`
+	Error                string             `json:"error"`
+	CanDeposit           bool               `json:"canDeposit"`
+	InsufficientRplStake bool               `json:"insufficientRplStake"`
+	InvalidAmount        bool               `json:"invalidAmount"`
+	DepositDisabled      bool               `json:"depositDisabled"`
+	MinipoolAddress      common.Address     `json:"minipoolAddress"`
+	GasInfo              rocketpool.GasInfo `json:"gasInfo"`
+}
+type CreateVacantMinipoolResponse struct {
+	Status                string         `json:"status"`
+	Error                 string         `json:"error"`
+	TxHash                common.Hash    `json:"txHash"`
+	MinipoolAddress       common.Address `json:"minipoolAddress"`
+	ScrubPeriod           time.Duration  `json:"scrubPeriod"`
+	WithdrawalCredentials common.Hash    `json:"withdrawalCredentials"`
 }
 
 type CanNodeSendResponse struct {
@@ -354,15 +386,24 @@ type NodeDistributeResponse struct {
 }
 
 type NodeGetRewardsInfoResponse struct {
-	Status             string                 `json:"status"`
-	Error              string                 `json:"error"`
-	Registered         bool                   `json:"registered"`
-	ClaimedIntervals   []uint64               `json:"claimedIntervals"`
-	UnclaimedIntervals []rewards.IntervalInfo `json:"unclaimedIntervals"`
-	InvalidIntervals   []rewards.IntervalInfo `json:"invalidIntervals"`
-	RplStake           *big.Int               `json:"rplStake"`
-	RplPrice           *big.Int               `json:"rplPrice"`
-	ActiveMinipools    int                    `json:"activeMinipools"`
+	Status                  string                 `json:"status"`
+	Error                   string                 `json:"error"`
+	Registered              bool                   `json:"registered"`
+	ClaimedIntervals        []uint64               `json:"claimedIntervals"`
+	UnclaimedIntervals      []rewards.IntervalInfo `json:"unclaimedIntervals"`
+	InvalidIntervals        []rewards.IntervalInfo `json:"invalidIntervals"`
+	RplStake                *big.Int               `json:"rplStake"`
+	RplPrice                *big.Int               `json:"rplPrice"`
+	ActiveMinipools         int                    `json:"activeMinipools"`
+	IsAtlasDeployed         bool                   `json:"isAtlasDeployed"`
+	EffectiveRplStake       *big.Int               `json:"effectiveRplStake"`
+	MinimumRplStake         *big.Int               `json:"minimumRplStake"`
+	MaximumRplStake         *big.Int               `json:"maximumRplStake"`
+	EthMatched              *big.Int               `json:"ethMatched"`
+	EthMatchedLimit         *big.Int               `json:"ethMatchedLimit"`
+	PendingMatchAmount      *big.Int               `json:"pendingMatchAmount"`
+	BorrowedCollateralRatio float64                `json:"borrowedCollateralRatio"`
+	BondedCollateralRatio   float64                `json:"bondedCollateralRatio"`
 }
 
 type CanNodeClaimRewardsResponse struct {
@@ -457,4 +498,19 @@ type SmoothingRewardsResponse struct {
 	Status     string   `json:"status"`
 	Error      string   `json:"error"`
 	EthBalance *big.Int `json:"eth_balance"`
+}
+
+type CheckCollateralResponse struct {
+	Status                 string   `json:"status"`
+	Error                  string   `json:"error"`
+	EthMatched             *big.Int `json:"ethMatched"`
+	EthMatchedLimit        *big.Int `json:"ethMatchedLimit"`
+	PendingMatchAmount     *big.Int `json:"pendingMatchAmount"`
+	InsufficientCollateral bool     `json:"insufficientCollateral"`
+}
+
+type NodeEthBalanceResponse struct {
+	Status  string   `json:"status"`
+	Error   string   `json:"error"`
+	Balance *big.Int `json:"balance"`
 }

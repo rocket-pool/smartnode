@@ -70,6 +70,7 @@ const (
 const (
 	ConsensusClient_Unknown    ConsensusClient = ""
 	ConsensusClient_Lighthouse ConsensusClient = "lighthouse"
+	ConsensusClient_Lodestar   ConsensusClient = "lodestar"
 	ConsensusClient_Nimbus     ConsensusClient = "nimbus"
 	ConsensusClient_Prysm      ConsensusClient = "prysm"
 	ConsensusClient_Teku       ConsensusClient = "teku"
@@ -92,6 +93,7 @@ const (
 	MevRelayID_Blocknative        MevRelayID = "blocknative"
 	MevRelayID_Eden               MevRelayID = "eden"
 	MevRelayID_Ultrasound         MevRelayID = "ultrasound"
+	MevRelayID_Aestus             MevRelayID = "aestus"
 )
 
 // Enum to describe MEV-Boost relay selection mode

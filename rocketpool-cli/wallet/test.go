@@ -42,7 +42,7 @@ func testRecovery(c *cli.Context) error {
 	if c.String("mnemonic") != "" {
 		mnemonic = c.String("mnemonic")
 	} else {
-		mnemonic = promptMnemonic()
+		mnemonic = PromptMnemonic()
 	}
 	mnemonic = strings.TrimSpace(mnemonic)
 

@@ -5,9 +5,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -130,6 +133,26 @@ func canDelegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.C
 		return nil, err
 	}
 
+	// Check the version and deposit type
+	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+	}
+	var depositType rptypes.MinipoolDeposit
+	if !isAtlasDeployed {
+		depositType, err = mp.GetDepositType(nil)
+	} else {
+		depositType, err = minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
+	}
+	version := mp.GetVersion()
+	if depositType == rptypes.Variable && version == 3 {
+		return nil, fmt.Errorf("you cannot rollback your delegate after reducing your bond, as this would render your minipool unable to distribute its balance")
+	}
+
+	// Get the previous delegate
 	rollbackAddress, err := mp.GetPreviousDelegate(nil)
 	if err != nil {
 		return nil, err
@@ -173,6 +196,25 @@ func delegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.Dele
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check the version and deposit type
+	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+	}
+	var depositType rptypes.MinipoolDeposit
+	if !isAtlasDeployed {
+		depositType, err = mp.GetDepositType(nil)
+	} else {
+		depositType, err = minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
+	}
+	version := mp.GetVersion()
+	if depositType == rptypes.Variable && version == 3 {
+		return nil, fmt.Errorf("you cannot rollback your delegate after reducing your bond, as this would render your minipool unable to distribute its balance")
 	}
 
 	// Get transactor
@@ -223,6 +265,41 @@ func canSetUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, set
 		return nil, err
 	}
 
+	if !setting {
+		// Get the version and deposit type
+		isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		var depositType rptypes.MinipoolDeposit
+		if !isAtlasDeployed {
+			depositType, err = mp.GetDepositType(nil)
+		} else {
+			depositType, err = minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
+		}
+		version := mp.GetVersion()
+		if depositType == rptypes.Variable && version == 3 {
+			// Get the previous delegate
+			oldDelegate, err := mp.GetDelegate(nil)
+			if err != nil {
+				return nil, fmt.Errorf("error getting old delegate for minipool %s: %w", minipoolAddress.Hex(), err)
+			}
+
+			// Get the version
+			oldDelegateVersion, err := rocketpool.GetContractVersion(rp, oldDelegate, nil)
+			if err != nil {
+				return nil, fmt.Errorf("error getting version of old delegate %s for minipool %s: %w", oldDelegate.Hex(), minipoolAddress.Hex(), err)
+			}
+
+			if oldDelegateVersion == 2 {
+				return nil, fmt.Errorf("you cannot unset 'use-latest-delegate' for minipool %s after reducing your ETH bond, as this would revert to the Redstone delegate and render your minipool unable to distribute its balance; please upgrade your minipool's delegate first before unsetting this flag", minipoolAddress.Hex())
+			}
+		}
+	}
+
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
@@ -260,6 +337,41 @@ func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, settin
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if !setting {
+		// Get the version and deposit type
+		isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		var depositType rptypes.MinipoolDeposit
+		if !isAtlasDeployed {
+			depositType, err = mp.GetDepositType(nil)
+		} else {
+			depositType, err = minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
+		}
+		version := mp.GetVersion()
+		if depositType == rptypes.Variable && version == 3 {
+			// Get the previous delegate
+			oldDelegate, err := mp.GetDelegate(nil)
+			if err != nil {
+				return nil, fmt.Errorf("error getting old delegate for minipool %s: %w", minipoolAddress.Hex(), err)
+			}
+
+			// Get the version
+			oldDelegateVersion, err := rocketpool.GetContractVersion(rp, oldDelegate, nil)
+			if err != nil {
+				return nil, fmt.Errorf("error getting version of old delegate %s for minipool %s: %w", oldDelegate.Hex(), minipoolAddress.Hex(), err)
+			}
+
+			if oldDelegateVersion == 2 {
+				return nil, fmt.Errorf("you cannot unset 'use-latest-delegate' for minipool %s after reducing your ETH bond, as this would revert to the Redstone delegate and render your minipool unable to distribute its balance; please upgrade your minipool's delegate first before unsetting this flag", minipoolAddress.Hex())
+			}
+		}
 	}
 
 	// Get transactor

@@ -5,13 +5,16 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"golang.org/x/sync/errgroup"
 )
 
 func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, nodeAddress common.Address) ([]uint64, error) {
@@ -57,4 +60,83 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionC
 	}
 
 	return validatorIndices, nil
+}
+
+// Checks the given node's current matched ETH, its limit on matched ETH, and how much ETH is preparing to be matched by pending bond reductions
+func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (ethMatched *big.Int, ethMatchedLimit *big.Int, pendingMatchAmount *big.Int, err error) {
+	// Get the node's minipool addresses
+	addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress, opts)
+	if err != nil {
+		err = fmt.Errorf("error getting minipool addresses for node %s: %w", nodeAddress.Hex(), err)
+		return
+	}
+
+	// Data
+	var wg errgroup.Group
+	deltas := make([]*big.Int, len(addresses))
+
+	wg.Go(func() error {
+		var err error
+		ethMatched, err = node.GetNodeEthMatched(rp, nodeAddress, opts)
+		if err != nil {
+			return fmt.Errorf("error getting node's matched ETH amount: %w", err)
+		}
+		return nil
+	})
+	wg.Go(func() error {
+		var err error
+		ethMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAddress, opts)
+		if err != nil {
+			return fmt.Errorf("error getting how much ETH the node is able to borrow: %w", err)
+		}
+		return nil
+	})
+	for i, address := range addresses {
+		i := i
+		address := address
+		wg.Go(func() error {
+			reduceBondTime, err := minipool.GetReduceBondTime(rp, address, opts)
+			if err != nil {
+				return fmt.Errorf("error getting bond reduction time for minipool %s: %w", address.Hex(), err)
+			}
+
+			// Ignore minipools that don't have a bond reduction pending
+			if reduceBondTime == time.Unix(0, 0) {
+				deltas[i] = big.NewInt(0)
+				return nil
+			}
+
+			// Get the old and new (pending) bonds
+			mp, err := minipool.NewMinipool(rp, address, opts)
+			if err != nil {
+				return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
+			}
+			oldBond, err := mp.GetNodeDepositBalance(opts)
+			if err != nil {
+				return fmt.Errorf("error getting node deposit balance for minipool %s: %w", address.Hex(), err)
+			}
+			newBond, err := minipool.GetReduceBondValue(rp, address, opts)
+			if err != nil {
+				return fmt.Errorf("error getting pending bond reduced balance for minipool %s: %w", address.Hex(), err)
+			}
+
+			// Delta = old - new
+			deltas[i] = big.NewInt(0).Sub(oldBond, newBond)
+			return nil
+		})
+	}
+
+	// Wait for data
+	if err = wg.Wait(); err != nil {
+		return
+	}
+
+	// Get the total pending match
+	totalDelta := big.NewInt(0)
+	for _, delta := range deltas {
+		totalDelta.Add(totalDelta, delta)
+	}
+	pendingMatchAmount = totalDelta
+
+	return
 }

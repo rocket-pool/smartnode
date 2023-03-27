@@ -8,16 +8,21 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
@@ -50,6 +55,13 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Check if Atlas is deployed
+	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+	}
+	response.IsAtlasDeployed = isAtlasDeployed
 
 	response.Registered, err = node.GetNodeExists(rp, nodeAccount.Address, nil)
 	if err != nil {
@@ -93,15 +105,100 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 			}
 		}
 	}
-	response.RplStake, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
-	if err != nil {
+	activeMinipools := totalMinipools - finalizedMinipools
+	response.ActiveMinipools = activeMinipools
+
+	// Sync
+	var wg errgroup.Group
+
+	wg.Go(func() error {
+		var err error
+		response.RplStake, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.RplPrice, err = network.GetRPLPrice(rp, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.MinimumRplStake, err = node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.MaximumRplStake, err = node.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.EffectiveRplStake, err = node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
+		return err
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
 		return nil, err
 	}
-	response.RplPrice, err = network.GetRPLPrice(rp, nil)
-	if err != nil {
-		return nil, err
+
+	if activeMinipools > 0 {
+		if isAtlasDeployed {
+			var wg2 errgroup.Group
+			var minStakeFraction *big.Int
+			var maxStakeFraction *big.Int
+			wg2.Go(func() error {
+				var err error
+				minStakeFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
+				return err
+			})
+			wg2.Go(func() error {
+				var err error
+				maxStakeFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
+				return err
+			})
+			wg2.Go(func() error {
+				var err error
+				response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
+				return err
+			})
+
+			// Wait for data
+			if err := wg2.Wait(); err != nil {
+				return nil, err
+			}
+
+			// Calculate the *real* minimum, including the pending bond reductions
+			trueMinimumStake := big.NewInt(0).Add(response.EthMatched, response.PendingMatchAmount)
+			trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
+			trueMinimumStake.Div(trueMinimumStake, response.RplPrice)
+
+			// Calculate the *real* maximum, including the pending bond reductions
+			trueMaximumStake := eth.EthToWei(32)
+			trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(activeMinipools)))
+			trueMaximumStake.Sub(trueMaximumStake, response.EthMatched)
+			trueMaximumStake.Sub(trueMaximumStake, response.PendingMatchAmount) // (32 * activeMinipools - ethMatched - pendingMatch)
+			trueMaximumStake.Mul(trueMaximumStake, maxStakeFraction)
+			trueMaximumStake.Div(trueMaximumStake, response.RplPrice)
+
+			response.MinimumRplStake = trueMinimumStake
+			response.MaximumRplStake = trueMaximumStake
+
+			if response.EffectiveRplStake.Cmp(trueMinimumStake) < 0 {
+				response.EffectiveRplStake.SetUint64(0)
+			} else if response.EffectiveRplStake.Cmp(trueMaximumStake) > 0 {
+				response.EffectiveRplStake.Set(trueMaximumStake)
+			}
+
+			response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthMatched) - eth.WeiToEth(response.PendingMatchAmount))
+			response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthMatched) + eth.WeiToEth(response.PendingMatchAmount))
+		} else {
+			// Legacy behavior
+			response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools) * 16.0)
+		}
+	} else {
+		response.BorrowedCollateralRatio = -1
 	}
-	response.ActiveMinipools = totalMinipools - finalizedMinipools
 
 	return &response, nil
 }

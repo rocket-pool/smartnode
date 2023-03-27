@@ -12,6 +12,7 @@ import (
 
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
@@ -58,6 +59,9 @@ func canStakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanS
 
 	// Check the minipool's status
 	status, err := mp.GetStatusDetails(nil)
+	if err != nil {
+		return nil, err
+	}
 
 	if status.Status == rptypes.Prelaunch {
 
@@ -90,13 +94,13 @@ func canStakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanS
 		}
 
 		// Get minipool withdrawal credentials
-		withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.Address, nil)
+		withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.GetAddress(), nil)
 		if err != nil {
 			return nil, err
 		}
 
 		// Get the validator key for the minipool
-		validatorPubkey, err := minipool.GetMinipoolPubkey(rp, mp.Address, nil)
+		validatorPubkey, err := minipool.GetMinipoolPubkey(rp, mp.GetAddress(), nil)
 		if err != nil {
 			return nil, err
 		}
@@ -105,8 +109,33 @@ func canStakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanS
 			return nil, err
 		}
 
+		// Get the minipool type
+		var depositType rptypes.MinipoolDeposit
+		isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		if !isAtlasDeployed {
+			depositType, err = mp.GetDepositType(nil)
+		} else {
+			depositType, err = minipool.GetMinipoolDepositType(rp, mp.GetAddress(), nil)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("error getting deposit type for minipool %s: %w", mp.GetAddress().Hex(), err)
+		}
+
+		var depositAmount uint64
+		switch depositType {
+		case rptypes.Full, rptypes.Half, rptypes.Empty:
+			depositAmount = uint64(16e9) // 16 ETH in gwei
+		case rptypes.Variable:
+			depositAmount = uint64(31e9) // 31 ETH in gwei
+		default:
+			return nil, fmt.Errorf("error staking minipool %s: unknown deposit type %d", mp.GetAddress().Hex(), depositType)
+		}
+
 		// Get validator deposit data
-		depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
+		depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 		if err != nil {
 			return nil, err
 		}
@@ -177,13 +206,13 @@ func stakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.StakeMi
 	}
 
 	// Get minipool withdrawal credentials
-	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.Address, nil)
+	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.GetAddress(), nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get the validator key for the minipool
-	validatorPubkey, err := minipool.GetMinipoolPubkey(rp, mp.Address, nil)
+	validatorPubkey, err := minipool.GetMinipoolPubkey(rp, mp.GetAddress(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -192,8 +221,33 @@ func stakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.StakeMi
 		return nil, err
 	}
 
+	// Get the minipool type
+	var depositType rptypes.MinipoolDeposit
+	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
+	}
+	if !isAtlasDeployed {
+		depositType, err = mp.GetDepositType(nil)
+	} else {
+		depositType, err = minipool.GetMinipoolDepositType(rp, mp.GetAddress(), nil)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error getting deposit type for minipool %s: %w", mp.GetAddress().Hex(), err)
+	}
+
+	var depositAmount uint64
+	switch depositType {
+	case rptypes.Full, rptypes.Half, rptypes.Empty:
+		depositAmount = uint64(16e9) // 16 ETH in gwei
+	case rptypes.Variable:
+		depositAmount = uint64(31e9) // 31 ETH in gwei
+	default:
+		return nil, fmt.Errorf("error staking minipool %s: unknown deposit type %d", mp.GetAddress().Hex(), depositType)
+	}
+
 	// Get validator deposit data
-	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
+	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 	if err != nil {
 		return nil, err
 	}

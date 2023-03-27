@@ -66,66 +66,44 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
+	// Check if Atlas has been deployed
+	atlasResponse, err := rp.IsAtlasDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Atlas has been deployed: %w", err)
+	}
+
 	// Get deposit amount
-	/*
-		var amount float64
-		if c.String("amount") != "" {
 
-			// Parse amount
-			depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
-			if err != nil {
-				return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
-			}
-			amount = depositAmount
-
-		} else {
-
-			// Get deposit amount options
-			amountOptions := []string{
-				"32 ETH (minipool begins staking immediately)",
-				"16 ETH (minipool begins staking after ETH is assigned)",
-			}
-
-			// Prompt for amount
-			selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
-			switch selected {
-			case 0:
-				amount = 32
-			case 1:
-				amount = 16
-			}
-
-			// Get node status
-			status, err := rp.NodeStatus()
-			if err != nil {
-				return err
-			}
-
-			// Get deposit amount options
-			amountOptions := []string{
-				"32 ETH (minipool begins staking immediately)",
-				"16 ETH (minipool begins staking after ETH is assigned)",
-			}
-			if status.Trusted {
-				amountOptions = append(amountOptions, "0 ETH  (minipool begins staking after ETH is assigned)")
-			}
-
-			// Prompt for amount
-			selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
-			switch selected {
-			case 0:
-				amount = 32
-			case 1:
-				amount = 16
-			case 2:
-				amount = 0
-			}
-
+	var amount float64
+	if c.String("amount") != "" {
+		// Parse amount
+		depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+		if err != nil {
+			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
 		}
-	*/
+		amount = depositAmount
+	} else {
+		if !atlasResponse.IsAtlasDeployed {
+			amount = 16
+		} else {
+			// Get deposit amount options
+			amountOptions := []string{
+				"8 ETH",
+				"16 ETH",
+			}
 
-	// Force 16 ETH minipools as the only option after much community discussion
-	amountWei := eth.EthToWei(16.0)
+			// Prompt for amount
+			selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
+			switch selected {
+			case 0:
+				amount = 8
+			case 1:
+				amount = 16
+			}
+		}
+	}
+
+	amountWei := eth.EthToWei(amount)
 
 	// Get network node fees
 	nodeFees, err := rp.NodeFee()
@@ -195,10 +173,12 @@ func nodeDeposit(c *cli.Context) error {
 	if !canDeposit.CanDeposit {
 		fmt.Println("Cannot make node deposit:")
 		if canDeposit.InsufficientBalance {
-			fmt.Println("The node's ETH balance is insufficient.")
+			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
+			creditBalance := eth.WeiToEth(canDeposit.CreditBalance)
+			fmt.Printf("The node's balance of %.6f ETH and credit balance of %.6f ETH are not enough to create a minipool with a %.1f ETH bond.", nodeBalance, creditBalance, amount)
 		}
 		if canDeposit.InsufficientRplStake {
-			fmt.Println("The node has not staked enough RPL to collateralize a new minipool.")
+			fmt.Printf("The node has not staked enough RPL to collateralize a new minipool with a bond of %d ETH (this also includes the RPL required to support any pending bond reductions).\n", int(amount))
 		}
 		if canDeposit.InvalidAmount {
 			fmt.Println("The deposit amount is invalid.")
@@ -209,10 +189,35 @@ func nodeDeposit(c *cli.Context) error {
 		if canDeposit.DepositDisabled {
 			fmt.Println("Node deposits are currently disabled.")
 		}
-		if !canDeposit.InConsensus {
+		if !canDeposit.IsAtlasDeployed && !canDeposit.InConsensus {
 			fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.\nPlease try again in a few minutes.")
 		}
 		return nil
+	}
+
+	useCreditBalance := false
+	if atlasResponse.IsAtlasDeployed {
+		fmt.Printf("You currently have %.2f ETH in your credit balance.\n", eth.WeiToEth(canDeposit.CreditBalance))
+		if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
+			if canDeposit.CanUseCredit {
+				useCreditBalance = true
+				// Get how much credit to use
+				remainingAmount := big.NewInt(0).Sub(amountWei, canDeposit.CreditBalance)
+				if remainingAmount.Cmp(big.NewInt(0)) > 0 {
+					fmt.Printf("This deposit will use all %.6f ETH from your credit balance and %.6f ETH from your node.\n\n", eth.WeiToEth(canDeposit.CreditBalance), eth.WeiToEth(remainingAmount))
+				} else {
+					fmt.Printf("This deposit will use %.6f ETH from your credit balance and will not require any ETH from your node.\n\n", amount)
+				}
+			} else {
+				fmt.Printf("%sNOTE: Your credit balance *cannot* currently be used to create a new minipool; there is not enough ETH in the staking pool to cover the initial deposit on your behalf (it needs at least 1 ETH but only has %.2f ETH).%s\nIf you want to continue creating this minipool now, you will have to pay for it in full.\n\n", colorYellow, eth.WeiToEth(canDeposit.DepositBalance), colorReset)
+
+				// Prompt for confirmation
+				if !(c.Bool("yes") || cliutils.Confirm("Would you like to continue?")) {
+					fmt.Println("Cancelled.")
+					return nil
+				}
+			}
+		}
 	}
 
 	if c.String("salt") != "" {
@@ -250,7 +255,7 @@ func nodeDeposit(c *cli.Context) error {
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
 		"You are about to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%.\n"+
-			"%sARE YOU SURE YOU WANT TO DO THIS? Running a minipool is a long-term commitment, and this action cannot be undone!%s",
+			"%sARE YOU SURE YOU WANT TO DO THIS? Exiting this minipool and retrieving your capital cannot be done until:\n- Your minipool has been *active* on the Beacon Chain for 256 epochs (approx. 27 hours)\n- The Shapella upgrade of the Ethereum network has been deployed\n- The Atlas upgrade of the Rocket Pool protocol has been deployed\n- Your minipool has been upgraded to use the Atlas delegate%s\n",
 		math.RoundDown(eth.WeiToEth(amountWei), 6),
 		minNodeFee*100,
 		colorYellow,
@@ -260,7 +265,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Make deposit
-	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt, true)
+	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt, useCreditBalance, true)
 	if err != nil {
 		return err
 	}
@@ -279,7 +284,7 @@ func nodeDeposit(c *cli.Context) error {
 	fmt.Printf("The validator pubkey is: %s\n\n", response.ValidatorPubkey.Hex())
 
 	fmt.Println("Your minipool is now in Initialized status.")
-	fmt.Println("Once the 16 ETH deposit has been matched by the staking pool, it will move to Prelaunch status.")
+	fmt.Println("Once the remaining ETH has been assigned to your minipool from the staking pool, it will move to Prelaunch status.")
 	fmt.Printf("After that, it will move to Staking status once %s have passed.\n", response.ScrubPeriod)
 	fmt.Println("You can watch its progress using `rocketpool service logs node`.")
 

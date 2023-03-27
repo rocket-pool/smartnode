@@ -295,7 +295,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		if canStake.InsufficientBalance {
 			fmt.Println("The node's RPL balance is insufficient.")
 		}
-		if !canStake.InConsensus {
+		if !canStake.IsAtlasDeployed && !canStake.InConsensus {
 			fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.\nPlease try again in a few minutes.")
 		}
 		return nil

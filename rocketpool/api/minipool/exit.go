@@ -102,7 +102,7 @@ func exitMinipool(c *cli.Context, minipoolAddress common.Address) (*api.ExitMini
 	}
 
 	// Get voluntary exit signature domain
-	signatureDomain, err := bc.GetDomainData(eth2types.DomainVoluntaryExit[:], head.Epoch)
+	signatureDomain, err := bc.GetDomainData(eth2types.DomainVoluntaryExit[:], head.Epoch, false)
 	if err != nil {
 		return nil, err
 	}

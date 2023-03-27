@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -68,7 +69,7 @@ func newDownloadRewardsTrees(c *cli.Context, logger log.ColorLogger) (*downloadR
 }
 
 // Manage fee recipient
-func (d *downloadRewardsTrees) run() error {
+func (d *downloadRewardsTrees) run(state *state.NetworkState) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(d.c, true); err != nil {
@@ -90,11 +91,16 @@ func (d *downloadRewardsTrees) run() error {
 	}
 
 	// Get the current interval
-	currentIndexBig, err := rewards.GetRewardIndex(d.rp, nil)
-	if err != nil {
-		return err
+	var currentIndex uint64
+	if !state.IsAtlasDeployed {
+		currentIndexBig, err := rewards.GetRewardIndex(d.rp, nil)
+		if err != nil {
+			return err
+		}
+		currentIndex = currentIndexBig.Uint64()
+	} else {
+		currentIndex = state.NetworkDetails.RewardIndex
 	}
-	currentIndex := currentIndexBig.Uint64()
 
 	// Check for missing intervals
 	missingIntervals := []uint64{}

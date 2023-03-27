@@ -6,18 +6,17 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2util "github.com/wealdtech/go-eth2-util"
 )
 
 // Config
 const (
-	ValidatorKeyPath               string = "m/12381/3600/%d/0/0"
-	MaxValidatorKeyRecoverAttempts uint   = 1000
+	MaxValidatorKeyRecoverAttempts uint = 1000
 )
 
 // A validator private/public key pair
@@ -302,7 +301,7 @@ func (w *Wallet) TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIn
 func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, string, error) {
 
 	// Get derivation path
-	derivationPath := fmt.Sprintf(ValidatorKeyPath, index)
+	derivationPath := fmt.Sprintf(validator.ValidatorKeyPath, index)
 
 	// Check for cached validator key
 	if validatorKey, ok := w.validatorKeys[index]; ok {
@@ -310,7 +309,7 @@ func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, s
 	}
 
 	// Initialize BLS support
-	if err := initializeBLS(); err != nil {
+	if err := validator.InitializeBLS(); err != nil {
 		return nil, "", fmt.Errorf("Could not initialize BLS library: %w", err)
 	}
 
@@ -326,15 +325,4 @@ func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, s
 	// Return
 	return privateKey, derivationPath, nil
 
-}
-
-// Initialize BLS support
-var initBLS sync.Once
-
-func initializeBLS() error {
-	var err error
-	initBLS.Do(func() {
-		err = eth2types.InitBLS()
-	})
-	return err
 }

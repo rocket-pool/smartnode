@@ -124,9 +124,10 @@ type Client interface {
 	GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error)
 	GetValidatorSyncDuties(indices []uint64, epoch uint64) (map[uint64]bool, error)
 	GetValidatorProposerDuties(indices []uint64, epoch uint64) (map[uint64]uint64, error)
-	GetDomainData(domainType []byte, epoch uint64) ([]byte, error)
+	GetDomainData(domainType []byte, epoch uint64, useGenesisFork bool) ([]byte, error)
 	ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error
 	Close() error
 	GetEth1DataForEth2Block(blockId string) (Eth1Data, bool, error)
 	GetCommitteesForEpoch(epoch *uint64) ([]Committee, error)
+	ChangeWithdrawalCredentials(validatorIndex uint64, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error
 }
