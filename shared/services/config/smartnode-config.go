@@ -69,8 +69,11 @@ type SmartnodeConfig struct {
 	// Manual priority fee override
 	PriorityFee config.Parameter `yaml:"priorityFee,omitempty"`
 
-	// Threshold for auto minipool stakes
-	MinipoolStakeGasThreshold config.Parameter `yaml:"minipoolStakeGasThreshold,omitempty"`
+	// Threshold for automatic transactions
+	AutoTxGasThreshold config.Parameter `yaml:"minipoolStakeGasThreshold,omitempty"`
+
+	// The amount of ETH in a minipool's balance before auto-distribute kicks in
+	DistributeThreshold config.Parameter `yaml:"distributeThreshold,omitempty"`
 
 	// Mode for acquiring Merkle rewards trees
 	RewardsTreeMode config.Parameter `yaml:"rewardsTreeMode,omitempty"`
@@ -177,6 +180,9 @@ type SmartnodeConfig struct {
 
 	// The BalanceChecker contract address
 	balancebatcherAddress map[config.Network]string `yaml:"-"`
+
+	// The FlashBots Protect RPC endpoint
+	flashbotsProtectUrl map[config.Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -259,13 +265,25 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		MinipoolStakeGasThreshold: config.Parameter{
+		AutoTxGasThreshold: config.Parameter{
 			ID:   "minipoolStakeGasThreshold",
 			Name: "Automatic TX Gas Threshold",
 			Description: "Occasionally, the Smartnode will attempt to perform some automatic transactions (such as the second `stake` transaction to finish launching a minipool or the `reduce bond` transaction to convert a 16-ETH minipool to an 8-ETH one). During these, your node will use the `Rapid` suggestion from the gas estimator as its max fee.\n\nThis threshold is a limit (in gwei) you can put on that suggestion; your node will not `stake` the new minipool until the suggestion is below this limit.\n\n" +
 				"NOTE: the node will ignore this limit and automatically execute transactions at whatever the suggested fee happens to be once too much time has passed since those transactions were first eligible. You may end up paying more than you wanted to if you set this too low!",
 			Type:                 config.ParameterType_Float,
 			Default:              map[config.Network]interface{}{config.Network_All: float64(150)},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		DistributeThreshold: config.Parameter{
+			ID:                   "distributeThreshold",
+			Name:                 "Auto-Distribute Threshold",
+			Description:          "The Smartnode will regularly check the balance of each of your minipools on the Execution Layer (**not** the Beacon Chain).\nIf any of them have a balance greater than this threshold (in ETH), the Smartnode will automatically distribute the balance. This will send your share of the balance to your withdrawal address.\n\nMust be less than 8 ETH.\n\nSet this to 0 to disable automatic distributes.\n[orange]WARNING: if you disable automatic distribution, you **must** ensure you distribute your minipool's balance before it reaches 8 ETH or you will no longer be able to distribute your rewards until you exit the minipool!",
+			Type:                 config.ParameterType_Float,
+			Default:              map[config.Network]interface{}{config.Network_All: float64(1)},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -533,6 +551,12 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Devnet:  "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
 		},
 
+		flashbotsProtectUrl: map[config.Network]string{
+			config.Network_Mainnet: "https://rpc.flashbots.net/",
+			config.Network_Prater:  "https://rpc-goerli.flashbots.net/",
+			config.Network_Devnet:  "https://rpc-goerli.flashbots.net/",
+		},
+
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
 			config.Network_Mainnet: {
 				15451165, 15637542, 15839520, 16038366, 16238906, 16439406, // 5
@@ -573,7 +597,8 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.DataPath,
 		&cfg.ManualMaxFee,
 		&cfg.PriorityFee,
-		&cfg.MinipoolStakeGasThreshold,
+		&cfg.AutoTxGasThreshold,
+		&cfg.DistributeThreshold,
 		&cfg.RewardsTreeMode,
 		&cfg.ArchiveECUrl,
 		&cfg.Web3StorageApiToken,
@@ -821,6 +846,10 @@ func (cfg *SmartnodeConfig) GetMulticallAddress() string {
 
 func (cfg *SmartnodeConfig) GetBalanceBatcherAddress() string {
 	return cfg.balancebatcherAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetFlashbotsProtectUrl() string {
+	return cfg.flashbotsProtectUrl[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetRewardsSubmissionBlockMaps() []uint64 {
