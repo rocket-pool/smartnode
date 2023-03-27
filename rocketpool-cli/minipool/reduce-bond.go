@@ -79,15 +79,29 @@ func beginReduceBondAmount(c *cli.Context) error {
 
 	// Get reduceable minipools
 	reduceableMinipools := []api.MinipoolDetails{}
+	scrubbedMinipools := []api.MinipoolDetails{}
+
 	for _, minipool := range status.Minipools {
-		nodeDepositBalance := eth.WeiToEth(minipool.Node.DepositBalance)
-		if nodeDepositBalance == 16 &&
-			time.Since(minipool.ReduceBondTime) > bondReductionTimeout &&
-			!minipool.ReduceBondCancelled &&
-			minipool.Status.Status == types.Staking &&
-			!minipool.Finalised {
-			reduceableMinipools = append(reduceableMinipools, minipool)
+		if minipool.ReduceBondCancelled {
+			scrubbedMinipools = append(scrubbedMinipools, minipool)
+		} else {
+			nodeDepositBalance := eth.WeiToEth(minipool.Node.DepositBalance)
+			if nodeDepositBalance == 16 &&
+				time.Since(minipool.ReduceBondTime) > bondReductionTimeout &&
+				minipool.Status.Status == types.Staking &&
+				!minipool.Finalised {
+				reduceableMinipools = append(reduceableMinipools, minipool)
+			}
 		}
+	}
+
+	// Print scrubs
+	if len(scrubbedMinipools) > 0 {
+		fmt.Printf("%sNOTE: The following minipools had a previous bond reducton attempt scrubbed by the Oracle DAO and are no longer reduceable:\n", colorYellow)
+		for _, mp := range scrubbedMinipools {
+			fmt.Printf("\t%s\n", mp.Address)
+		}
+		fmt.Printf("%s\n\n", colorReset)
 	}
 
 	if len(reduceableMinipools) == 0 {
@@ -142,8 +156,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanBeginReduceBondAmount(minipool.Address, newBondAmount)
 		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for beginning bond reduction on minipool %s: %s)", minipool.Address.Hex(), err.Error())
-			break
+			return fmt.Errorf("couldn't check if minipool %s could have its bond reduced: %s)", minipool.Address.Hex(), err.Error())
 		} else {
 			if !canResponse.CanReduce {
 				fmt.Printf("Cannot reduce bond for minipool %s:\n", minipool.Address.Hex())
