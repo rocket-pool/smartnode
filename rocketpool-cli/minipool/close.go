@@ -3,6 +3,7 @@ package minipool
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -130,6 +131,19 @@ func closeMinipools(c *cli.Context) error {
 			}
 		}
 
+	}
+
+	// Force confirmation of slashable minipools
+	eight := eth.EthToWei(8)
+	thirtyTwo := eth.EthToWei(32)
+	for _, minipool := range selectedMinipools {
+		distributableBalance := big.NewInt(0).Sub(minipool.Balance, minipool.Refund)
+		if distributableBalance.Cmp(eight) >= 0 && distributableBalance.Cmp(thirtyTwo) < 1 {
+			if !cliutils.ConfirmWithIAgree(fmt.Sprintf("%sWARNING: Minipool %s has an effective balance of %.6f ETH. Closing it in this state WILL RESULT in your initial ETH deposit being SLASHED. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), colorReset)) {
+				fmt.Println("Cancelled.")
+				return nil
+			}
+		}
 	}
 
 	// Get the total gas limit estimate

@@ -144,9 +144,9 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 				}
 
 				// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
-				effectiveBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
+				distributableBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
 				eight := eth.EthToWei(8)
-				if effectiveBalance.Cmp(eight) >= 0 {
+				if distributableBalance.Cmp(eight) >= 0 {
 					minipoolDetails.CanDistribute = false
 					return nil
 				}
@@ -164,7 +164,7 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 				}
 
 				// Get the node share of the balance
-				minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(effectiveBalance, nil)
+				minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(distributableBalance, nil)
 				if err != nil {
 					return fmt.Errorf("error calculating node share for minipool %s: %w", address.Hex(), err)
 				}
