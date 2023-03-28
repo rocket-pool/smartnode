@@ -462,7 +462,7 @@ type SnapshotProposal struct {
 	Scores        []float64 `json:"scores"`
 	ScoresTotal   float64   `json:"scores_total"`
 	ScoresUpdated int64     `json:"scores_updated"`
-	Quorum        int64     `json:"quorum"`
+	Quorum        float64   `json:"quorum"`
 	Link          string    `json:"link"`
 }
 type SnapshotResponse struct {
