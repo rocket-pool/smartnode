@@ -223,7 +223,11 @@ func (t *distributeMinipools) distributeMinipool(mpd *rpstate.NativeMinipoolDeta
 	}
 
 	// Get the gas limit
-	gasInfo, err := mp.EstimateDistributeBalanceGas(opts)
+	mpv3, success := minipool.GetMinipoolAsV3(mp)
+	if !success {
+		return false, fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", mpd.MinipoolAddress.Hex(), mp.GetVersion())
+	}
+	gasInfo, err := mpv3.EstimateDistributeBalanceGas(true, opts)
 	if err != nil {
 		return false, fmt.Errorf("Could not estimate the gas required to distribute minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
@@ -252,10 +256,8 @@ func (t *distributeMinipools) distributeMinipool(mpd *rpstate.NativeMinipoolDeta
 	opts.GasTipCap = t.maxPriorityFee
 	opts.GasLimit = gas.Uint64()
 
-	// Stake minipool
-	hash, err := mp.DistributeBalance(
-		opts,
-	)
+	// Distribute minipool
+	hash, err := mpv3.DistributeBalance(true, opts)
 	if err != nil {
 		return false, err
 	}

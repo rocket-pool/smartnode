@@ -144,16 +144,17 @@ type ProcessWithdrawalAndFinaliseResponse struct {
 }
 
 type MinipoolCloseDetails struct {
-	Address         common.Address       `json:"address"`
-	IsFinalized     bool                 `json:"isFinalized"`
-	MinipoolStatus  types.MinipoolStatus `json:"minipoolStatus"`
-	MinipoolVersion uint8                `json:"minipoolVersion"`
-	Distributed     bool                 `json:"distributed"`
-	CanClose        bool                 `json:"canClose"`
-	Balance         *big.Int             `json:"balance"`
-	Refund          *big.Int             `json:"refund"`
-	NodeShare       *big.Int             `json:"nodeShare"`
-	GasInfo         rocketpool.GasInfo   `json:"gasInfo"`
+	Address            common.Address       `json:"address"`
+	IsFinalized        bool                 `json:"isFinalized"`
+	MinipoolStatus     types.MinipoolStatus `json:"minipoolStatus"`
+	MinipoolVersion    uint8                `json:"minipoolVersion"`
+	Distributed        bool                 `json:"distributed"`
+	CanClose           bool                 `json:"canClose"`
+	Balance            *big.Int             `json:"balance"`
+	Refund             *big.Int             `json:"refund"`
+	UserDepositBalance *big.Int             `json:"userDepositBalance"`
+	NodeShare          *big.Int             `json:"nodeShare"`
+	GasInfo            rocketpool.GasInfo   `json:"gasInfo"`
 }
 
 type GetMinipoolCloseDetailsForNodeResponse struct {

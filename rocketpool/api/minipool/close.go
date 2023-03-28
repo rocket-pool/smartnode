@@ -178,6 +178,14 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		}
 		return nil
 	})
+	wg1.Go(func() error {
+		var err error
+		details.UserDepositBalance, err = mp.GetUserDepositBalance(nil)
+		if err != nil {
+			return fmt.Errorf("error getting user deposit balance of minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
+	})
 
 	if err := wg1.Wait(); err != nil {
 		return api.MinipoolCloseDetails{}, err
@@ -260,7 +268,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 				details.GasInfo = gasInfo
 			} else {
 				// Do a distribution, which will finalize it
-				gasInfo, err := mpv3.EstimateDistributeBalanceGas(opts)
+				gasInfo, err := mpv3.EstimateDistributeBalanceGas(false, opts)
 				if err != nil {
 					return api.MinipoolCloseDetails{}, fmt.Errorf("error estimating distribute balance gas for MP %s: %w", minipoolAddress.Hex(), err)
 				}
@@ -367,7 +375,7 @@ func closeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CloseMi
 		response.TxHash = hash
 	} else {
 		// Do a distribution, which will finalize it
-		hash, err := mpv3.DistributeBalance(opts)
+		hash, err := mpv3.DistributeBalance(false, opts)
 		if err != nil {
 			return nil, err
 		}

@@ -174,7 +174,11 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 				if err != nil {
 					return err
 				}
-				minipoolDetails.GasInfo, err = mp.EstimateDistributeBalanceGas(opts)
+				mpv3, success := minipool.GetMinipoolAsV3(mp)
+				if !success {
+					return fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", address.Hex(), minipoolDetails.MinipoolVersion)
+				}
+				minipoolDetails.GasInfo, err = mpv3.EstimateDistributeBalanceGas(true, opts)
 				if err != nil {
 					return fmt.Errorf("error estimating gas to distribute minipool %s: %w", address.Hex(), err)
 				}
@@ -232,7 +236,11 @@ func distributeBalance(c *cli.Context, minipoolAddress common.Address) (*api.Clo
 	}
 
 	// Distribute the minipool's balance
-	hash, err := mp.DistributeBalance(opts)
+	mpv3, success := minipool.GetMinipoolAsV3(mp)
+	if !success {
+		return nil, fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", minipoolAddress.Hex(), mp.GetVersion())
+	}
+	hash, err := mpv3.DistributeBalance(true, opts)
 	if err != nil {
 		return nil, err
 	}

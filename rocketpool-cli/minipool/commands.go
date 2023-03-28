@@ -364,6 +364,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "minipool, m",
 						Usage: "The minipool/s to close (address or 'all')",
 					},
+					cli.BoolFlag{
+						Name:  "confirm-slashing",
+						Usage: "Reserved for acknowledging situations where you've been slashed by the Beacon Chain, and closing a minipool will result in the complete loss of the ETH bond and your RPL collateral. DO NOT use this flag unless you have been explicitly instructed to do so.",
+					},
 				},
 				Action: func(c *cli.Context) error {
 
