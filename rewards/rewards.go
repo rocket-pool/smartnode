@@ -173,7 +173,89 @@ func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission
 	return tx.Hash(), nil
 }
 
+// Get the event info for a rewards snapshot using the Atlas getter
+func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, RewardsEvent, error) {
+	// Get contracts
+	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
+	if err != nil {
+		return false, RewardsEvent{}, err
+	}
+
+	// Get the block that the event was emitted on
+	indexBig := big.NewInt(0).SetUint64(index)
+	blockWrapper := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, blockWrapper, "getClaimIntervalExecutionBlock", indexBig); err != nil {
+		return false, RewardsEvent{}, fmt.Errorf("error getting the event block for interval %d: %w", index, err)
+	}
+	block := *blockWrapper
+
+	// Create the list of addresses to check
+	currentAddress := *rocketRewardsPool.Address
+	if rocketRewardsPoolAddresses == nil {
+		rocketRewardsPoolAddresses = []common.Address{currentAddress}
+	} else {
+		found := false
+		for _, address := range rocketRewardsPoolAddresses {
+			if address == currentAddress {
+				found = true
+				break
+			}
+		}
+		if !found {
+			rocketRewardsPoolAddresses = append(rocketRewardsPoolAddresses, currentAddress)
+		}
+	}
+
+	// Construct a filter query for relevant logs
+	indexBytes := [32]byte{}
+	indexBig.FillBytes(indexBytes[:])
+	addressFilter := rocketRewardsPoolAddresses
+	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {indexBytes}}
+
+	// Get the event logs
+	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), block, block, nil)
+	if err != nil {
+		return false, RewardsEvent{}, err
+	}
+
+	// Get the log info
+	values := make(map[string]interface{})
+	if len(logs) == 0 {
+		return false, RewardsEvent{}, nil
+	}
+	err = rocketRewardsPool.ABI.Events["RewardSnapshot"].Inputs.UnpackIntoMap(values, logs[0].Data)
+	if err != nil {
+		return false, RewardsEvent{}, err
+	}
+
+	// Get the decoded data
+	submissionPrototype := RewardSubmission{}
+	submissionType := reflect.TypeOf(submissionPrototype)
+	submission := reflect.ValueOf(values["submission"]).Convert(submissionType).Interface().(RewardSubmission)
+	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
+	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
+	submissionTime := values["time"].(*big.Int)
+	eventData := RewardsEvent{
+		Index:             indexBig,
+		ExecutionBlock:    submission.ExecutionBlock,
+		ConsensusBlock:    submission.ConsensusBlock,
+		IntervalsPassed:   submission.IntervalsPassed,
+		TreasuryRPL:       submission.TreasuryRPL,
+		TrustedNodeRPL:    submission.TrustedNodeRPL,
+		NodeRPL:           submission.NodeRPL,
+		NodeETH:           submission.NodeETH,
+		MerkleRoot:        common.BytesToHash(submission.MerkleRoot[:]),
+		MerkleTreeCID:     submission.MerkleTreeCID,
+		IntervalStartTime: time.Unix(eventIntervalStartTime.Int64(), 0),
+		IntervalEndTime:   time.Unix(eventIntervalEndTime.Int64(), 0),
+		SubmissionTime:    time.Unix(submissionTime.Int64(), 0),
+	}
+
+	return true, eventData, nil
+}
+
 // Get the event info for a rewards snapshot
+// NOTE: Deprecated, remove after Atlas
 func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) (RewardsEvent, error) {
 	// Get contracts
 	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
@@ -233,6 +315,7 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 }
 
 // Get the event info for a rewards snapshot
+// NOTE: Deprecated, remove after Atlas
 func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, RewardsEvent, error) {
 	// Get contracts
 	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
