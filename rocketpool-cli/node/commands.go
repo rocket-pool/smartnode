@@ -222,7 +222,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "amount, a",
-						Usage: "The amount of RPL to stake (or 'min', 'max', or 'all')",
+						Usage: "The amount of RPL to stake (also accepts 'min8' / 'max8' for 8-ETH minipools, 'min16' / 'max16' for 16-ETH minipools, or 'all' for all of your RPL)",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -241,7 +241,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Validate flags
-					if c.String("amount") != "" && c.String("amount") != "min" && c.String("amount") != "max" && c.String("amount") != "all" {
+					if c.String("amount") != "" &&
+						c.String("amount") != "min8" &&
+						c.String("amount") != "max8" &&
+						c.String("amount") != "min16" &&
+						c.String("amount") != "max16" &&
+						c.String("amount") != "all" {
 						if _, err := cliutils.ValidatePositiveEthAmount("stake amount", c.String("amount")); err != nil {
 							return err
 						}

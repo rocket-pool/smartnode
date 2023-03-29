@@ -16,12 +16,14 @@ type NodeFeeResponse struct {
 }
 
 type RplPriceResponse struct {
-	Status                 string   `json:"status"`
-	Error                  string   `json:"error"`
-	RplPrice               *big.Int `json:"rplPrice"`
-	RplPriceBlock          uint64   `json:"rplPriceBlock"`
-	MinPerMinipoolRplStake *big.Int `json:"minPerMinipoolRplStake"`
-	MaxPerMinipoolRplStake *big.Int `json:"maxPerMinipoolRplStake"`
+	Status                      string   `json:"status"`
+	Error                       string   `json:"error"`
+	RplPrice                    *big.Int `json:"rplPrice"`
+	RplPriceBlock               uint64   `json:"rplPriceBlock"`
+	MinPer8EthMinipoolRplStake  *big.Int `json:"minPer8EthMinipoolRplStake"`
+	MaxPer8EthMinipoolRplStake  *big.Int `json:"maxPer8EthMinipoolRplStake"`
+	MinPer16EthMinipoolRplStake *big.Int `json:"minPer16EthMinipoolRplStake"`
+	MaxPer16EthMinipoolRplStake *big.Int `json:"maxPer16EthMinipoolRplStake"`
 }
 
 type NetworkStatsResponse struct {

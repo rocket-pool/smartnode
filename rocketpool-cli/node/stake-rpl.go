@@ -158,23 +158,41 @@ func nodeStakeRpl(c *cli.Context) error {
 
 	// Get stake mount
 	var amountWei *big.Int
-	if c.String("amount") == "min" {
+	if c.String("amount") == "min8" {
 
-		// Set amount to min per minipool RPL stake
+		// Set amount to min per 8 ETH minipool RPL stake
 		rplPrice, err := rp.RplPrice()
 		if err != nil {
 			return err
 		}
-		amountWei = rplPrice.MinPerMinipoolRplStake
+		amountWei = rplPrice.MinPer8EthMinipoolRplStake
 
-	} else if c.String("amount") == "max" {
+	} else if c.String("amount") == "max8" {
 
-		// Set amount to max per minipool RPL stake
+		// Set amount to max per 8 ETH minipool RPL stake
 		rplPrice, err := rp.RplPrice()
 		if err != nil {
 			return err
 		}
-		amountWei = rplPrice.MaxPerMinipoolRplStake
+		amountWei = rplPrice.MaxPer8EthMinipoolRplStake
+
+	} else if c.String("amount") == "min16" {
+
+		// Set amount to min per 16 ETH minipool RPL stake
+		rplPrice, err := rp.RplPrice()
+		if err != nil {
+			return err
+		}
+		amountWei = rplPrice.MinPer16EthMinipoolRplStake
+
+	} else if c.String("amount") == "max16" {
+
+		// Set amount to max per 16 ETH minipool RPL stake
+		rplPrice, err := rp.RplPrice()
+		if err != nil {
+			return err
+		}
+		amountWei = rplPrice.MaxPer16EthMinipoolRplStake
 
 	} else if c.String("amount") == "all" {
 
@@ -197,23 +215,31 @@ func nodeStakeRpl(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		minAmount := rplPrice.MinPerMinipoolRplStake
-		maxAmount := rplPrice.MaxPerMinipoolRplStake
+		minAmount8 := rplPrice.MinPer8EthMinipoolRplStake
+		maxAmount8 := rplPrice.MaxPer8EthMinipoolRplStake
+		minAmount16 := rplPrice.MinPer16EthMinipoolRplStake
+		maxAmount16 := rplPrice.MaxPer16EthMinipoolRplStake
 
 		// Prompt for amount option
 		amountOptions := []string{
-			fmt.Sprintf("The minimum minipool stake amount (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount), 6)),
-			fmt.Sprintf("The maximum effective minipool stake amount (%.6f RPL)?", math.RoundUp(eth.WeiToEth(maxAmount), 6)),
+			fmt.Sprintf("The minimum minipool stake amount for an 8-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount8), 6)),
+			fmt.Sprintf("The maximum minipool stake amount for an 8-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(maxAmount8), 6)),
+			fmt.Sprintf("The minimum minipool stake amount for a 16-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount16), 6)),
+			fmt.Sprintf("The maximum minipool stake amount for a 16-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(maxAmount16), 6)),
 			fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&rplBalance), 6)),
 			"A custom amount",
 		}
 		selected, _ := cliutils.Select("Please choose an amount of RPL to stake:", amountOptions)
 		switch selected {
 		case 0:
-			amountWei = minAmount
+			amountWei = minAmount8
 		case 1:
-			amountWei = maxAmount
+			amountWei = maxAmount8
 		case 2:
+			amountWei = minAmount16
+		case 3:
+			amountWei = maxAmount16
+		case 4:
 			amountWei = &rplBalance
 		}
 
