@@ -16,6 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -32,6 +33,10 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -105,15 +110,39 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 
 	}
 
-	// Aggregate the closeable ones
-	closeableMinipools := []api.MinipoolCloseDetails{}
+	// Get the beacon statuses for each closeable minipool
+	pubkeys := []types.ValidatorPubkey{}
+	pubkeyMap := map[common.Address]types.ValidatorPubkey{}
 	for _, mp := range details {
-		if mp.CanClose {
-			closeableMinipools = append(closeableMinipools, mp)
+		if mp.MinipoolStatus == types.Dissolved {
+			// Ignore dissolved minipools
+			continue
+		}
+		pubkey, err := minipool.GetMinipoolPubkey(rp, mp.Address, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error getting pubkey for minipool %s: %w", mp.Address.Hex(), err)
+		}
+		pubkeyMap[mp.Address] = pubkey
+		pubkeys = append(pubkeys, pubkey)
+	}
+	statusMap, err := bc.GetValidatorStatuses(pubkeys, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting beacon status of minipools: %w", err)
+	}
+
+	// Review closeability based on validator status
+	for i, mp := range details {
+		pubkey := pubkeyMap[mp.Address]
+		validator := statusMap[pubkey]
+		if mp.MinipoolStatus != types.Dissolved {
+			details[i].BeaconState = validator.Status
+			if validator.Status != beacon.ValidatorState_WithdrawalDone {
+				details[i].CanClose = false
+			}
 		}
 	}
-	response.Details = closeableMinipools
 
+	response.Details = details
 	return &response, nil
 
 }

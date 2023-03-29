@@ -11,11 +11,16 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
+)
+
+const (
+	colorBlue string = "\033[36m"
 )
 
 func closeMinipools(c *cli.Context) error {
@@ -54,8 +59,13 @@ func closeMinipools(c *cli.Context) error {
 	closableMinipools := []api.MinipoolCloseDetails{}
 	versionTooLowMinipools := []api.MinipoolCloseDetails{}
 	balanceLessThanRefundMinipools := []api.MinipoolCloseDetails{}
+	unwithdrawnMinipools := []api.MinipoolCloseDetails{}
 
 	for _, mp := range details.Details {
+		if mp.IsFinalized {
+			// Ignore minipools that are already closed
+			continue
+		}
 		if mp.CanClose {
 			closableMinipools = append(closableMinipools, mp)
 		} else {
@@ -65,10 +75,21 @@ func closeMinipools(c *cli.Context) error {
 			if mp.Balance.Cmp(mp.Refund) == -1 {
 				balanceLessThanRefundMinipools = append(balanceLessThanRefundMinipools, mp)
 			}
+			if mp.MinipoolStatus != types.Dissolved &&
+				mp.BeaconState != beacon.ValidatorState_WithdrawalDone {
+				unwithdrawnMinipools = append(unwithdrawnMinipools, mp)
+			}
 		}
 	}
 
 	// Print ineligible ones
+	if len(unwithdrawnMinipools) > 0 {
+		fmt.Printf("%sNOTE: The following minipools have not had their full balances withdrawn from the Beacon Chain yet:\n", colorBlue)
+		for _, mp := range unwithdrawnMinipools {
+			fmt.Printf("\t%s\n", mp.Address)
+		}
+		fmt.Printf("\nTo close them, first run `rocketpool minipool exit` on them and wait until their balances have been withdrawn.%s\n\n", colorReset)
+	}
 	if len(versionTooLowMinipools) > 0 {
 		fmt.Printf("%sWARNING: The following minipools are using an old delegate and cannot be safely closed:\n", colorYellow)
 		for _, mp := range versionTooLowMinipools {
@@ -142,12 +163,12 @@ func closeMinipools(c *cli.Context) error {
 		if distributableBalance.Cmp(eight) >= 0 {
 			if distributableBalance.Cmp(minipool.UserDepositBalance) < 0 {
 				// Less than the user deposit balance, ETH + RPL will be slashed
-				fmt.Printf("%sWARNING: Minipool %s has an effective balance of %.6f ETH which is lower than the amount borrowed from the staking pool (%.6f ETH).\nYou have likely been targeted by a front-running attack, but your ETH is not lost. Please visit the Rocket Pool Discord's #support channel (https://discord.gg/rocketpool) to learn how to retrieve it safely.%s\n", colorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.UserDepositBalance), 6), colorReset)
+				fmt.Printf("%sWARNING: Minipool %s has an effective balance of %.6f ETH which is lower than the amount borrowed from the staking pool (%.6f ETH).\nPlease visit the Rocket Pool Discord's #support channel (https://discord.gg/rocketpool) if you are not expecting this.%s\n", colorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.UserDepositBalance), 6), colorReset)
 				if !c.Bool("confirm-slashing") {
 					fmt.Printf("\n%sIf you are *sure* you want to close the minipool anyway, rerun this command with the `--confirm-slashing` flag. Doing so WILL RESULT in both your ETH bond and your RPL collateral being slashed.%s\n", colorRed, colorReset)
 					return nil
 				} else {
-					if !cliutils.ConfirmWithIAgree(fmt.Sprintf("%sYou have the `--confirm-slashing` flag enabled. Closing this minipool WILL RESULT in the complete loss of your initial ETH bond and enough of your RPL stake to cover the losses to the staking pool. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, colorReset)) {
+					if !cliutils.ConfirmWithIAgree(fmt.Sprintf("\n%sYou have the `--confirm-slashing` flag enabled. Closing this minipool WILL RESULT in the complete loss of your initial ETH bond and enough of your RPL stake to cover the losses to the staking pool. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, colorReset)) {
 						fmt.Println("Cancelled.")
 						return nil
 					}
