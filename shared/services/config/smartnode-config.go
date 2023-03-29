@@ -511,6 +511,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				"v1.1.0-rc1": []common.Address{
 					common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				},
+				"v1.2.0-rc1": []common.Address{
+					common.HexToAddress("0x6e91E3416acf3d015358eeAAF247a0674F6c306f"),
+				},
 			},
 			config.Network_Devnet: {},
 		},

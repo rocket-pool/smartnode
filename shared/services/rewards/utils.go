@@ -27,6 +27,14 @@ func GetUpgradedRewardSnapshotEvent(cfg *config.RocketPoolConfig, rp *rocketpool
 			if found {
 				return update_v110rc1_to_v110(oldRewardsEvent), nil
 			}
+		case "v1.2.0-rc1":
+			found, event, err := rewards.GetRewardSnapshotEventWithUpgrades(rp, index, intervalSize, startBlock, endBlock, addresses, nil)
+			if err != nil {
+				return rewards.RewardsEvent{}, fmt.Errorf("error checking %s contracts for rewards event %d: %w", version, index, err)
+			}
+			if found {
+				return event, nil
+			}
 		}
 	}
 
