@@ -55,7 +55,7 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("    Staking:             %d\n", response.StakingMinipoolCount)
 	fmt.Printf("    Withdrawable:        %d\n", response.WithdrawableMinipoolCount)
 	fmt.Printf("    Dissolved:           %d\n", response.DissolvedMinipoolCount)
-	fmt.Printf("Inactive Minipools:      %d\n\n", response.FinalizedMinipoolCount)
+	fmt.Printf("Finalized Minipools:      %d\n\n", response.FinalizedMinipoolCount)
 
 	fmt.Printf("%s========== Smoothing Pool =========%s\n", colorGreen, colorReset)
 	fmt.Printf("Contract Address:        %s%s%s\n", colorBlue, response.SmoothingPoolAddress.Hex(), colorReset)
