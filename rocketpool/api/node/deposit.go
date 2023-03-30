@@ -176,6 +176,17 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return &response, nil
 	}
 
+	if response.CanDeposit && !response.CanUseCredit && response.NodeBalance.Cmp(amountWei) < 0 {
+		// Can't use credit and there's not enough ETH in the node wallet to deposit so error out
+		response.InsufficientBalanceWithoutCredit = true
+		response.CanDeposit = false
+	}
+
+	// Break before the gas estimator if depositing won't work
+	if !response.CanDeposit {
+		return &response, nil
+	}
+
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {

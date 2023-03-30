@@ -202,22 +202,23 @@ type NodeWithdrawRplResponse struct {
 }
 
 type CanNodeDepositResponse struct {
-	Status                 string             `json:"status"`
-	Error                  string             `json:"error"`
-	CanDeposit             bool               `json:"canDeposit"`
-	CreditBalance          *big.Int           `json:"creditBalance"`
-	DepositBalance         *big.Int           `json:"depositBalance"`
-	CanUseCredit           bool               `json:"canUseCredit"`
-	NodeBalance            *big.Int           `json:"nodeBalance"`
-	InsufficientBalance    bool               `json:"insufficientBalance"`
-	InsufficientRplStake   bool               `json:"insufficientRplStake"`
-	InvalidAmount          bool               `json:"invalidAmount"`
-	UnbondedMinipoolsAtMax bool               `json:"unbondedMinipoolsAtMax"`
-	DepositDisabled        bool               `json:"depositDisabled"`
-	InConsensus            bool               `json:"inConsensus"`
-	IsAtlasDeployed        bool               `json:"isAtlasDeployed"`
-	MinipoolAddress        common.Address     `json:"minipoolAddress"`
-	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	Status                           string             `json:"status"`
+	Error                            string             `json:"error"`
+	CanDeposit                       bool               `json:"canDeposit"`
+	CreditBalance                    *big.Int           `json:"creditBalance"`
+	DepositBalance                   *big.Int           `json:"depositBalance"`
+	CanUseCredit                     bool               `json:"canUseCredit"`
+	NodeBalance                      *big.Int           `json:"nodeBalance"`
+	InsufficientBalance              bool               `json:"insufficientBalance"`
+	InsufficientBalanceWithoutCredit bool               `json:"insufficientBalanceWithoutCredit"`
+	InsufficientRplStake             bool               `json:"insufficientRplStake"`
+	InvalidAmount                    bool               `json:"invalidAmount"`
+	UnbondedMinipoolsAtMax           bool               `json:"unbondedMinipoolsAtMax"`
+	DepositDisabled                  bool               `json:"depositDisabled"`
+	InConsensus                      bool               `json:"inConsensus"`
+	IsAtlasDeployed                  bool               `json:"isAtlasDeployed"`
+	MinipoolAddress                  common.Address     `json:"minipoolAddress"`
+	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
 }
 type NodeDepositResponse struct {
 	Status          string                  `json:"status"`
