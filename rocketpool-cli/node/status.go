@@ -267,7 +267,7 @@ func getStatus(c *cli.Context) error {
 			if remainingFor16EB < 0 {
 				remainingFor16EB = 0
 			}
-			fmt.Printf("The node can borrow enough ETH to make %d more 8-ETH minipools (or %d more 16-ETH minipools).\n\n", remainingFor8EB, remainingFor16EB)
+			fmt.Printf("The node has enough RPL staked to make %d more 8-ETH minipools (or %d more 16-ETH minipools).\n\n", remainingFor8EB, remainingFor16EB)
 		}
 
 		// Minipool details
