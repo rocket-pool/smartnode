@@ -323,13 +323,20 @@ func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64,
 		return false, RewardsEvent{}, err
 	}
 
-	rocketRewardsPoolAddresses = append(rocketRewardsPoolAddresses, *rocketRewardsPool.Address)
+	latestAddress := *rocketRewardsPool.Address
+	cleanedAddresses := []common.Address{latestAddress}
+	for _, address := range rocketRewardsPoolAddresses {
+		if address != latestAddress {
+			// Remove duplicates of the latest address, necessary for pre-Atlas support
+			cleanedAddresses = append(cleanedAddresses, address)
+		}
+	}
 
 	// Construct a filter query for relevant logs
 	indexBig := big.NewInt(0).SetUint64(index)
 	indexBytes := [32]byte{}
 	indexBig.FillBytes(indexBytes[:])
-	addressFilter := rocketRewardsPoolAddresses
+	addressFilter := cleanedAddresses
 	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {indexBytes}}
 
 	// Get the event logs
