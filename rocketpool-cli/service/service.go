@@ -149,14 +149,17 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== Atlas! ===%s\n", colorGreen, colorReset)
-	fmt.Println("Atlas and the Shapella hardfork have been enabled on the Prater testnet! If you'd like to try out withdrawals, 8-ETH minipools, solo staker migration and more, please read the Atlas guide:\nhttps://docs.rocketpool.net/guides/atlas/whats-new.html\n")
+	fmt.Printf("%s=== Atlas and Shapella ===%s\n", colorGreen, colorReset)
+	fmt.Println("This version has support for both the Atlas and Shapella network upgrades, bringing Beacon reward withdrawals, 8-ETH minipools, solo staker migration, and more! For more info, please read the Atlas guide:\nhttps://docs.rocketpool.net/guides/atlas/whats-new.html\n")
 
 	fmt.Printf("%s=== Nimbus Changes ===%s\n", colorGreen, colorReset)
 	fmt.Println("Nimbus now supports running a separate Validator Client, which means it now supports fallback clients! If you're using Nimbus and would like to set up a fallback client pair for your node, simply go to the Consensus Client section of the `service config` TUI - you can now add one just like with the other clients!\nNote that if you want to check on your validator performance, you will need to look at the validator container instead of the eth2 container like you used to do.\n")
 
 	fmt.Printf("%s=== Lodestar ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now supports Lodestar - the Ethereum Consensus Client written in Typescript! If you'd like to switch to Lodestar, simply follow the instructions for changing consensus clients: https://docs.rocketpool.net/guides/node/change-clients.html#changing-consensus-clients")
+	fmt.Println("The Smartnode now supports Lodestar - the Ethereum Consensus Client written in Typescript! If you'd like to switch to Lodestar, simply follow the instructions for changing consensus clients: https://docs.rocketpool.net/guides/node/change-clients.html#changing-consensus-clients\n")
+
+	fmt.Printf("%s=== Much, Much More ===%s\n", colorGreen, colorReset)
+	fmt.Println("There's just too much to fit into this little highlight section! Please see the official release on GitHub for the full rundown of changes.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
