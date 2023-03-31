@@ -25,9 +25,9 @@ import (
 )
 
 // Config
-var minTasksInterval, _ = time.ParseDuration("4m")
-var maxTasksInterval, _ = time.ParseDuration("6m")
-var taskCooldown, _ = time.ParseDuration("5s")
+var minTasksInterval, _ = time.ParseDuration("30s")
+var maxTasksInterval, _ = time.ParseDuration("1m")
+var taskCooldown, _ = time.ParseDuration("2s")
 
 const (
 	MaxConcurrentEth1Requests = 200
