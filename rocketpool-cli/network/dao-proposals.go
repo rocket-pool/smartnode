@@ -74,10 +74,10 @@ func getActiveDAOProposals(c *cli.Context) error {
 			}
 			fmt.Printf("Scores: %s\n", scoresBuilder.String())
 			quorumResult := ""
-			if proposal.ScoresTotal > float64(proposal.Quorum) {
+			if proposal.ScoresTotal > proposal.Quorum {
 				quorumResult += "✓"
 			}
-			fmt.Printf("Quorum: %.2f of %d needed %s\n", proposal.ScoresTotal, proposal.Quorum, quorumResult)
+			fmt.Printf("Quorum: %.2f of %.2f needed %s\n", proposal.ScoresTotal, proposal.Quorum, quorumResult)
 			voted := false
 			for _, proposalVote := range proposalsResponse.ProposalVotes {
 				if proposalVote.Proposal.Id == proposal.Id {
