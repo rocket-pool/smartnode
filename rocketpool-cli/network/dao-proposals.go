@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -112,13 +113,11 @@ func getActiveDAOProposals(c *cli.Context) error {
 					case map[string]interface{}:
 						choiceMap := proposalVote.Choice.(map[string]interface{})
 						choices := []string{}
-						for index, weight := range choiceMap {
-							choice := int(choiceMap[index].(float64))
-							if choice < len(proposal.Choices) && choice >= 0 {
-								choices = append(choices, fmt.Sprintf("%s: %.2f", proposal.Choices[choice], weight))
-							} else {
-								choices = append(choices, fmt.Sprintf("Unknown (%d is out of bounds)", choice))
-							}
+						for choice, weight := range choiceMap {
+							// choice here is 1-based
+							choiceInt, _ := strconv.Atoi(choice)
+							// here it is zero based, hence the -1
+							choices = append(choices, fmt.Sprintf("%s: %.2f", proposal.Choices[choiceInt-1], weight))
 						}
 						votedChoices = strings.Join(choices, ", ")
 
