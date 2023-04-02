@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -29,7 +28,7 @@ func terminateDataFolder(c *cli.Context) (*api.TerminateDataFolderResponse, erro
 	response.FolderExisted = true
 
 	// Traverse it
-	files, err := ioutil.ReadDir(dataFolder)
+	files, err := os.ReadDir(dataFolder)
 	if err != nil {
 		return nil, fmt.Errorf("error enumerating files: %w", err)
 	}
@@ -52,7 +51,7 @@ func terminateDataFolder(c *cli.Context) (*api.TerminateDataFolderResponse, erro
 
 	// Traverse the validators dir
 	validatorsDir := filepath.Join(dataFolder, "validators")
-	files, err = ioutil.ReadDir(validatorsDir)
+	files, err = os.ReadDir(validatorsDir)
 	if err != nil {
 		return nil, fmt.Errorf("error enumerating validator files: %w", err)
 	}
