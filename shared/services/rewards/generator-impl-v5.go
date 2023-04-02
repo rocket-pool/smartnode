@@ -124,6 +124,11 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.beaconConfig = r.networkState.BeaconConfig
 	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
 
+	// Set the EL client call opts
+	r.opts = &bind.CallOpts{
+		BlockNumber: r.elSnapshotHeader.Number,
+	}
+
 	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(r.networkState.NodeDetails))
 
 	// Get the minipool count - this will be used for an error epsilon due to division truncation
@@ -181,6 +186,11 @@ func (r *treeGeneratorImpl_v5) approximateStakerShareOfSmoothingPool(rp *rocketp
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
 	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
+
+	// Set the EL client call opts
+	r.opts = &bind.CallOpts{
+		BlockNumber: r.elSnapshotHeader.Number,
+	}
 
 	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(r.networkState.NodeDetails))
 
