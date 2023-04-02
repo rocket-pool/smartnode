@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -74,10 +75,10 @@ func getActiveDAOProposals(c *cli.Context) error {
 			}
 			fmt.Printf("Scores: %s\n", scoresBuilder.String())
 			quorumResult := ""
-			if proposal.ScoresTotal > float64(proposal.Quorum) {
+			if proposal.ScoresTotal > proposal.Quorum {
 				quorumResult += "✓"
 			}
-			fmt.Printf("Quorum: %.2f of %d needed %s\n", proposal.ScoresTotal, proposal.Quorum, quorumResult)
+			fmt.Printf("Quorum: %.2f of %.2f needed %s\n", proposal.ScoresTotal, proposal.Quorum, quorumResult)
 			voted := false
 			for _, proposalVote := range proposalsResponse.ProposalVotes {
 				if proposalVote.Proposal.Id == proposal.Id {
@@ -112,13 +113,11 @@ func getActiveDAOProposals(c *cli.Context) error {
 					case map[string]interface{}:
 						choiceMap := proposalVote.Choice.(map[string]interface{})
 						choices := []string{}
-						for index, weight := range choiceMap {
-							choice := int(choiceMap[index].(float64))
-							if choice < len(proposal.Choices) && choice >= 0 {
-								choices = append(choices, fmt.Sprintf("%s: %.2f", proposal.Choices[choice], weight))
-							} else {
-								choices = append(choices, fmt.Sprintf("Unknown (%d is out of bounds)", choice))
-							}
+						for choice, weight := range choiceMap {
+							// choice here is 1-based
+							choiceInt, _ := strconv.Atoi(choice)
+							// here it is zero based, hence the -1
+							choices = append(choices, fmt.Sprintf("%s: %.2f", proposal.Choices[choiceInt-1], weight))
 						}
 						votedChoices = strings.Join(choices, ", ")
 
