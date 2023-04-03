@@ -300,7 +300,10 @@ func configureService(c *cli.Context) error {
 	// Deal with saving the config and printing the changes
 	if md.ShouldSave {
 		// Save the config
-		rp.SaveConfig(md.Config)
+		err = rp.SaveConfig(md.Config)
+		if err != nil {
+			return fmt.Errorf("error saving config: %w", err)
+		}
 		fmt.Println("Your changes have been saved!")
 
 		// Exit immediately if we're in native mode
@@ -314,7 +317,10 @@ func configureService(c *cli.Context) error {
 		if md.ChangeNetworks {
 			// Remove the checkpoint sync provider
 			md.Config.ConsensusCommon.CheckpointSyncProvider.Value = ""
-			rp.SaveConfig(md.Config)
+			err = rp.SaveConfig(md.Config)
+			if err != nil {
+				return fmt.Errorf("error saving config: %w", err)
+			}
 
 			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed. If you had a Checkpoint Sync URL provided for your Consensus client, it will be removed and you will need to specify a different one that supports the new network.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
 
