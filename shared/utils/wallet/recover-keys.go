@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -113,7 +112,7 @@ func CheckForAndRecoverCustomMinipoolKeys(cfg *config.RocketPoolConfig, pubkeyMa
 	if !os.IsNotExist(err) && info.IsDir() {
 
 		// Get the custom keystore files
-		files, err := ioutil.ReadDir(customKeyDir)
+		files, err := os.ReadDir(customKeyDir)
 		if err != nil {
 			return nil, fmt.Errorf("error enumerating custom keystores: %w", err)
 		}

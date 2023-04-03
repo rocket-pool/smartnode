@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -95,7 +94,7 @@ func (t *generateRewardsTree) run() error {
 
 	// Check for requests
 	requestDir := t.cfg.Smartnode.GetWatchtowerFolder(true)
-	files, err := ioutil.ReadDir(requestDir)
+	files, err := os.ReadDir(requestDir)
 	if os.IsNotExist(err) {
 		t.log.Println("Watchtower storage directory doesn't exist, creating...")
 		err = os.Mkdir(requestDir, 0755)
