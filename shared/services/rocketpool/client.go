@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
@@ -544,19 +546,38 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version, path str
 // Install the update tracker
 func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 
-	// Get installation script downloader type
-	downloader, err := c.getDownloader()
-	if err != nil {
-		return err
-	}
-
 	// Get installation script flags
 	flags := []string{
 		"-v", fmt.Sprintf("%s", shellescape.Quote(version)),
 	}
 
+	// Download the installer package
+	url := fmt.Sprintf(UpdateTrackerURL, version)
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("error downloading installer package: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("downloading installer package failed with code %d - [%s]", resp.StatusCode, resp.Status)
+	}
+
+	// Create a temp file for it
+	path := filepath.Join(os.TempDir(), "install-update-tracker.sh")
+	tempFile, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating temporary file for installer script: %w", err)
+	}
+	defer tempFile.Close()
+	defer os.Remove(tempFile.Name())
+	_, err = io.Copy(tempFile, resp.Body)
+	if err != nil {
+		return fmt.Errorf("error writing installer package to disk: %w", err)
+	}
+	tempFile.Close()
+
 	// Initialize installation command
-	cmd, err := c.newCommand(fmt.Sprintf("%s %s | sh -s -- %s", downloader, fmt.Sprintf(UpdateTrackerURL, version), strings.Join(flags, " ")))
+	cmd, err := c.newCommand(fmt.Sprintf("sh -c \"%s %s\"", path, strings.Join(flags, " ")))
 	if err != nil {
 		return err
 	}
