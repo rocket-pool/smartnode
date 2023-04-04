@@ -11,20 +11,21 @@ const settingsHomeID string = "settings-home"
 
 // This is a container for the primary settings category selection home screen.
 type settingsHome struct {
-	homePage         *page
-	saveButton       *tview.Button
-	wizardButton     *tview.Button
-	smartnodePage    *SmartnodeConfigPage
-	ecPage           *ExecutionConfigPage
-	fallbackPage     *FallbackConfigPage
-	ccPage           *ConsensusConfigPage
-	mevBoostPage     *MevBoostConfigPage
-	metricsPage      *MetricsConfigPage
-	addonsPage       *AddonsPage
-	categoryList     *tview.List
-	settingsSubpages []settingsPage
-	content          tview.Primitive
-	md               *mainDisplay
+	homePage               *page
+	saveButton             *tview.Button
+	wizardButton           *tview.Button
+	smartnodePage          *SmartnodeConfigPage
+	ecPage                 *ExecutionConfigPage
+	fallbackPage           *FallbackConfigPage
+	ccPage                 *ConsensusConfigPage
+	mevBoostPage           *MevBoostConfigPage
+	metricsPage            *MetricsConfigPage
+	notificationsPage      *NotificationsConfigPage
+	addonsPage             *AddonsPage
+	categoryList           *tview.List
+	settingsSubpages       []settingsPage
+	content                tview.Primitive
+	md                     *mainDisplay
 }
 
 // Creates a new SettingsHome instance and adds (and its subpages) it to the main display.
@@ -45,6 +46,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	home.fallbackPage = NewFallbackConfigPage(home)
 	home.mevBoostPage = NewMevBoostConfigPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
+	home.notificationsPage = NewNotificationsConfigPage(home)
 	home.addonsPage = NewAddonsPage(home)
 	settingsSubpages := []settingsPage{
 		home.smartnodePage,
@@ -53,6 +55,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 		home.fallbackPage,
 		home.mevBoostPage,
 		home.metricsPage,
+		home.notificationsPage,
 		home.addonsPage,
 	}
 	home.settingsSubpages = settingsSubpages
@@ -233,5 +236,9 @@ func (home *settingsHome) refresh() {
 
 	if home.metricsPage != nil {
 		home.metricsPage.layout.refresh()
+	}
+
+	if home.notificationsPage != nil {
+		home.notificationsPage.layout.refresh()
 	}
 }

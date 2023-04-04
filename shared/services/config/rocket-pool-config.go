@@ -81,6 +81,9 @@ type RocketPoolConfig struct {
 	WatchtowerMetricsPort   config.Parameter `yaml:"watchtowerMetricsPort,omitempty"`
 	EnableBitflyNodeMetrics config.Parameter `yaml:"enableBitflyNodeMetrics,omitempty"`
 
+  // Notifications settings
+	EnableNotifications           config.Parameter `yaml:"enableNotifications,omitempty"`
+
 	// The Smartnode configuration
 	Smartnode *SmartnodeConfig `yaml:"smartnode,omitempty"`
 
@@ -423,6 +426,18 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
+
+    EnableNotifications: config.Parameter{
+      ID:                   "enableNotifications",
+      Name:                 "Enable Notifications",
+      Description:          "Enable the Smartnode's notification system.",
+      Type:                 config.ParameterType_Bool,
+      Default:              map[config.Network]interface{}{config.Network_All: true},
+      AffectsContainers:    []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter},
+      EnvironmentVariables: []string{"ENABLE_NOTIFICATIONS"},
+      CanBeBlank:           false,
+      OverwriteOnUpgrade:   false,
+    },
 
 		EnableMevBoost: config.Parameter{
 			ID:                   "enableMevBoost",
