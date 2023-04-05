@@ -16,9 +16,12 @@ import (
 	gec "github.com/umbracle/go-eth-consensus"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/beacon/client/pb"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
@@ -617,13 +620,35 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 }
 
 func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Committee, error) {
-	response, err := c.getCommittees("head", epoch)
+	query := ""
+	if epoch != nil {
+		query = fmt.Sprintf("?epoch=%d", *epoch)
+	}
+	responseBody, header, status, err := c.protoGetRequest(fmt.Sprintf(RequestCommitteePath, "head") + query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not get committees: %w", err)
+	}
+	if status != http.StatusOK {
+		return nil, fmt.Errorf("Could not get committees: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 
-	out := make([]beacon.Committee, len(response.Data))
-	for i, committee := range response.Data {
+	m := pb.CommitteesResponse{}
+	if header == nil || !strings.EqualFold(header.Get("Content-Type"), "application/protobuf") {
+		// Parse json
+		err := protojson.Unmarshal(responseBody, &m)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Parse proto
+		err = proto.Unmarshal(responseBody, &m)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	out := make([]beacon.Committee, len(m.Data))
+	for i, committee := range m.Data {
 		validators := make([]uint64, len(committee.Validators))
 
 		for j, validator := range committee.Validators {
@@ -884,26 +909,6 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 	return beaconBlock, true, nil
 }
 
-// Get the committees for the epoch
-func (c *StandardHttpClient) getCommittees(stateId string, epoch *uint64) (CommitteesResponse, error) {
-	query := ""
-	if epoch != nil {
-		query = fmt.Sprintf("?epoch=%d", *epoch)
-	}
-	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestCommitteePath, stateId) + query)
-	if err != nil {
-		return CommitteesResponse{}, fmt.Errorf("Could not get committees: %w", err)
-	}
-	if status != http.StatusOK {
-		return CommitteesResponse{}, fmt.Errorf("Could not get committees: HTTP status %d; response body: '%s'", status, string(responseBody))
-	}
-	var committees CommitteesResponse
-	if err := json.Unmarshal(responseBody, &committees); err != nil {
-		return CommitteesResponse{}, fmt.Errorf("Could not decode committees: %w", err)
-	}
-	return committees, nil
-}
-
 // Send withdrawal credentials change request
 func (c *StandardHttpClient) postWithdrawalCredentialsChange(request BLSToExecutionChangeRequest) error {
 	requestArray := []BLSToExecutionChangeRequest{request} // This route must be wrapped in an array
@@ -915,6 +920,29 @@ func (c *StandardHttpClient) postWithdrawalCredentialsChange(request BLSToExecut
 		return fmt.Errorf("Could not broadcast withdrawal credentials change for validator %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
 	}
 	return nil
+}
+
+func (c *StandardHttpClient) protoGetRequest(requestPath string) ([]byte, http.Header, int, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), nil)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	req.Header.Set("Accept", "application/protobuf")
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	return body, response.Header, response.StatusCode, nil
 }
 
 // Make a GET request to the beacon node

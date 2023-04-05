@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"os"
 	"runtime"
+	"runtime/pprof"
 	"sort"
 	"sync"
 	"time"
@@ -738,19 +740,15 @@ func (r *treeGeneratorImpl_v5) calculateNodeRewards() (*big.Int, *big.Int, error
 func getWorkerCount() uint64 {
 	nproc := runtime.NumCPU()
 
-	target := nproc / 2
+	target := nproc - 2
 	if target < 1 {
 		return 1
-	}
-
-	if target >= 4 {
-		return 4
 	}
 
 	return uint64(target)
 }
 
-func (r *treeGeneratorImpl_v5) fetchEpochs(startEpoch uint64, endEpoch uint64, resp chan *epochState, errChan chan error) {
+func (r *treeGeneratorImpl_v5) fetchEpochs(startEpoch uint64, endEpoch uint64, errChan chan error, startTime time.Time) {
 	// seq tracks the next expected epoch in the sequence to be sent to the caller
 	// Since we fetch epochs in parallel, each thread will sleep until it becomes its turn
 	// to publish an epoch to the caller via the resp channel. Every time seq is updated,
@@ -770,6 +768,7 @@ func (r *treeGeneratorImpl_v5) fetchEpochs(startEpoch uint64, endEpoch uint64, r
 
 	// seq should start with the first epoch the caller is expecting
 	seq = startEpoch
+
 	for j := uint64(0); j < workers; j++ {
 
 		id := j
@@ -804,18 +803,28 @@ func (r *treeGeneratorImpl_v5) fetchEpochs(startEpoch uint64, endEpoch uint64, r
 				}
 
 				// No error was encountered, and seq indicates it's this worker's turn
-				// to reply, so produce a result on resp
-				resp <- es
+				// to update the state, so process the epoch
+				r.processEpoch(es)
+
 				if epoch == endEpoch {
 					// The last result has been produced, so close the channels
 					close(errChan)
-					close(resp)
 					// This worker produced the last result, so
 					// signal to the other workers that it is time to exit
 					done = true
 				} else {
 					seq++
+					if seq%100 == 99 {
+						timeTaken := time.Since(startTime)
+						r.log.Printlnf("%s On Epoch %d of %d (%.2f%%)... (%s so far)",
+							r.logPrefix,
+							es.epoch,
+							endEpoch,
+							float64(es.epoch-startEpoch)/float64(endEpoch-startEpoch)*100.0,
+							timeTaken)
+					}
 				}
+
 				// Either seq has been updated or the last result was produced
 				// signal to the other workers to wake up and either do work,
 				// or exit now.
@@ -828,6 +837,14 @@ func (r *treeGeneratorImpl_v5) fetchEpochs(startEpoch uint64, endEpoch uint64, r
 
 // Get all of the duties for a range of epochs
 func (r *treeGeneratorImpl_v5) processAttestationsForInterval() error {
+	if os.Getenv("DUTIES_PPROF") != "" {
+		f, err := os.Create(os.Getenv("DUTIES_PPROF"))
+		if err != nil {
+			return err
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	startEpoch := r.rewardsFile.ConsensusStartBlock / r.beaconConfig.SlotsPerEpoch
 	endEpoch := r.rewardsFile.ConsensusEndBlock / r.beaconConfig.SlotsPerEpoch
@@ -842,61 +859,17 @@ func (r *treeGeneratorImpl_v5) processAttestationsForInterval() error {
 	r.log.Printlnf("%s Checking participation of %d minipools for epochs %d to %d", r.logPrefix, len(r.validatorIndexMap), startEpoch, endEpoch)
 	r.log.Printlnf("%s NOTE: this will take a long time, progress is reported every 100 epochs", r.logPrefix)
 
-	// Make a channel for fetchEpochs to reply on
-	// Buffer just 1 epoch in the channel- that way, workers don't block until
-	// the main thread is working on one epoch and has one on deck.
-	epochStates := make(chan *epochState, 1)
 	// Workers need a channel to send back errors
 	errs := make(chan error)
 
-	epochsDone := 0
 	reportStartTime := time.Now()
 
 	// Start populating epochStates
-	r.fetchEpochs(startEpoch, endEpoch, epochStates, errs)
+	r.fetchEpochs(startEpoch, endEpoch, errs, reportStartTime)
 
-	// Read until both channels are closed
-	for {
-		select {
-		case es, ok := <-epochStates:
-			if !ok {
-				// The channel has been closed.
-				// Clear the reference to it so we can exit
-				epochStates = nil
-			} else {
-				// We received work from the channel, process it.
-				if epochsDone == 100 {
-					timeTaken := time.Since(reportStartTime)
-					r.log.Printlnf("%s On Epoch %d of %d (%.2f%%)... (%s so far)",
-						r.logPrefix,
-						es.epoch,
-						endEpoch,
-						float64(es.epoch-startEpoch)/float64(endEpoch-startEpoch)*100.0,
-						timeTaken)
-					epochsDone = 0
-				}
-				// Process epoch state
-				r.processEpoch(es)
-				epochsDone++
-			}
-
-		case err, ok := <-errs:
-			if !ok {
-				// The error channel has been closed.
-				// Clear the reference so we can exit.
-				errs = nil
-			}
-
-			if err != nil {
-				// We received an error- exit and propagate it.
-				return err
-			}
-		}
-
-		// If both channels have been closed, stop polling.
-		if epochStates == nil && errs == nil {
-			break
-		}
+	// Read until the error channel is closed
+	for err := range errs {
+		return err
 	}
 
 	// Check the epoch after the end of the interval for any lingering attestations

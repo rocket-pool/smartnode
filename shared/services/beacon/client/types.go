@@ -2,10 +2,11 @@ package client
 
 import (
 	"encoding/hex"
-	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
@@ -150,6 +151,9 @@ type Attestation struct {
 	} `json:"data"`
 }
 
+// Don't mind meeeee
+const intSize = 32 << (^uint(0) >> 63)
+
 // Unsigned integer type
 type uinteger uint64
 
@@ -160,8 +164,29 @@ func (i *uinteger) UnmarshalJSON(data []byte) error {
 
 	// Unmarshal string
 	var dataStr string
-	if err := json.Unmarshal(data, &dataStr); err != nil {
+	/*if err := json.Unmarshal(data, &dataStr); err != nil {
 		return err
+	}*/
+	dataLen := len(data)
+	if dataLen <= 2 {
+		return fmt.Errorf("Invalid json uinteger '%s'", string(data))
+	}
+	dataStr = string(data[1 : dataLen-1])
+	sLen := dataLen - 2
+
+	// Check fast paths
+	if intSize == 32 && (0 < sLen && sLen < 10) ||
+		intSize == 64 && (0 < sLen && sLen < 19) {
+
+		if sLen > 0 && dataStr[0] != '-' {
+			signed, err := strconv.Atoi(dataStr)
+			if err == nil {
+				*i = uinteger(signed)
+				return nil
+			}
+		}
+
+		// If fast path failed just fall through
 	}
 
 	// Parse integer value
