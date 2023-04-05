@@ -122,6 +122,40 @@ const (
 		}
 	]`
 
+	zkSyncEraMessengerAbi string = `[
+		{
+			"inputs": [],
+			"name": "rateStale",
+			"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_l2GasLimit",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_l2GasPerPubdataByteLimit",
+				"type": "uint256"
+			}
+			],
+			"name": "submitRate",
+			"outputs": [],
+			"stateMutability": "payable",
+			"type": "function"
+		}
+	]`
+
 	RplTwapPoolAbi string = `[
 		{
 		"inputs": [{
@@ -1092,6 +1126,164 @@ func (t *submitRplPrice) submitArbitrumPrice() error {
 
 		// Log
 		t.log.Printlnf("Successfully submitted Arbitrum price for block %d.", blockNumber)
+
+	}
+
+	return nil
+}
+
+// Checks if zkSync Era rate is stale and if it's our turn to submit, calls submitRate on the messenger
+func (t *submitRplPrice) submitZkSyncEraPrice() error {
+	priceMessengerAddress := t.cfg.Smartnode.GetZkSyncEraMessengerAddress()
+
+	if priceMessengerAddress == "" {
+		// No price messenger deployed on the current network
+		return nil
+	}
+
+	// Get transactor
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return fmt.Errorf("Failed getting transactor: %q", err)
+	}
+
+	// Construct the price messenger contract instance
+	parsed, err := abi.JSON(strings.NewReader(zkSyncEraMessengerAbi))
+	if err != nil {
+		return fmt.Errorf("Failed decoding ABI: %q", err)
+	}
+
+	addr := common.HexToAddress(priceMessengerAddress)
+	priceMessengerContract := bind.NewBoundContract(addr, parsed, t.ec, t.ec, t.ec)
+	priceMessenger := rocketpool.Contract{
+		Contract: priceMessengerContract,
+		Address:  &addr,
+		ABI:      &parsed,
+		Client:   t.ec,
+	}
+
+	// Check if the rate is stale
+	var out []interface{}
+	err = priceMessengerContract.Call(nil, &out, "rateStale")
+
+	if err != nil {
+		return fmt.Errorf("Failed to query rate staleness for zkSync Era: %q", err)
+	}
+
+	rateStale := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	if !rateStale {
+		// Nothing to do
+		return nil
+	}
+
+	// Get total number of ODAO members
+	count, err := trustednode.GetMemberCount(t.rp, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to get member count: %q", err)
+	}
+
+	// Find out which index we are
+	var index = uint64(0)
+	for i := uint64(0); i < count; i++ {
+		addr, err := trustednode.GetMemberAt(t.rp, i, nil)
+		if err != nil {
+			return fmt.Errorf("Failed to get member at %d: %q", i, err)
+		}
+
+		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+			index = i
+			break
+		}
+	}
+
+	// Get current block number
+	blockNumber, err := t.ec.BlockNumber(context.Background())
+	if err != nil {
+		return fmt.Errorf("Failed to get block number: %q", err)
+	}
+
+	// Calculate whose turn it is to submit
+	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+
+	if index == indexToSubmit {
+
+		// Constants for zkSync Era
+		l1GasPerPubdataByte := big.NewInt(17)
+		fairL2GasPrice := eth.GweiToWei(0.5)
+		l2GasLimit := big.NewInt(750000)
+		gasPerPubdataByte := big.NewInt(800)
+		maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
+
+		// Value calculation on zkSync Era
+		pubdataPrice := big.NewInt(0).Mul(l1GasPerPubdataByte, maxFee)
+		minL2GasPrice := big.NewInt(0).Add(pubdataPrice, gasPerPubdataByte)
+		minL2GasPrice.Sub(minL2GasPrice, big.NewInt(1))
+		minL2GasPrice.Div(minL2GasPrice, gasPerPubdataByte)
+		gasPrice := big.NewInt(0).Set(fairL2GasPrice)
+		if minL2GasPrice.Cmp(gasPrice) > 0 {
+			gasPrice.Set(minL2GasPrice)
+		}
+		txValue := big.NewInt(0).Mul(l2GasLimit, gasPrice)
+		opts.Value = txValue
+
+		// Temporary gas calculations until this gets put into a binding
+		input, err := priceMessenger.ABI.Pack("submitRate", l2GasLimit, gasPerPubdataByte)
+		if err != nil {
+			return fmt.Errorf("Could not encode input data for zkSync Era price submission: %w", err)
+		}
+
+		// Estimate gas limit
+		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
+			From:     opts.From,
+			To:       priceMessenger.Address,
+			GasPrice: big.NewInt(0), // use 0 gwei for simulation
+			Value:    opts.Value,
+			Data:     input,
+		})
+		if err != nil {
+			return fmt.Errorf("Error estimating gas limit of submitZkSyncEraPrice: %w", err)
+		}
+
+		// Get the safe gas limit
+		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
+		if gasLimit > rocketpool.MaxGasLimit {
+			gasLimit = rocketpool.MaxGasLimit
+		}
+		if safeGasLimit > rocketpool.MaxGasLimit {
+			safeGasLimit = rocketpool.MaxGasLimit
+		}
+		gasInfo := rocketpool.GasInfo{
+			EstGasLimit:  gasLimit,
+			SafeGasLimit: safeGasLimit,
+		}
+
+		// Print the gas info
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+			return nil
+		}
+
+		// Set the gas settings
+		opts.GasFeeCap = maxFee
+		opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
+		opts.GasLimit = gasInfo.SafeGasLimit
+
+		t.log.Println("Submitting rate to zkSync Era...")
+
+		// Submit rates
+		tx, err := priceMessenger.Transact(opts, "submitRate", l2GasLimit, gasPerPubdataByte)
+		if err != nil {
+			return fmt.Errorf("Failed to submit zkSync Era rate: %q", err)
+		}
+
+		// Print TX info and wait for it to be included in a block
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		if err != nil {
+			return err
+		}
+
+		// Log
+		t.log.Printlnf("Successfully submitted zkSync Era price for block %d.", blockNumber)
 
 	}
 

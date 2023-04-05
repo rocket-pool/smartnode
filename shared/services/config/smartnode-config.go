@@ -163,11 +163,14 @@ type SmartnodeConfig struct {
 	// The RocketOvmPriceMessenger Optimism address for each network
 	optimismPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
-	// The RocketOvmPriceMessenger Polygon address for each network
+	// The RocketPolygonPriceMessenger Polygon address for each network
 	polygonPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
-	// The RocketOvmPriceMessenger Arbitrum address for each network
+	// The RocketArbitumPriceMessenger Arbitrum address for each network
 	arbitrumPriceMessengerAddress map[config.Network]string `yaml:"-"`
+
+	// The RocketZkSyncPriceMessenger zkSyncEra address for each network
+	zkSyncEraPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
 	// Rewards submission block maps
 	rewardsSubmissionBlockMaps map[config.Network][]uint64 `yaml:"-"`
@@ -540,6 +543,12 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Devnet:  "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
 		},
 
+		zkSyncEraPriceMessengerAddress: map[config.Network]string{
+			config.Network_Mainnet: "",
+			config.Network_Prater:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
+			config.Network_Devnet:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
+		},
+
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
 			config.Network_Prater:  "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
@@ -841,6 +850,10 @@ func (cfg *SmartnodeConfig) GetPolygonMessengerAddress() string {
 
 func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
 	return cfg.arbitrumPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetZkSyncEraMessengerAddress() string {
+	return cfg.zkSyncEraPriceMessengerAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetRplTwapPoolAddress() string {
