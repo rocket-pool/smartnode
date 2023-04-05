@@ -295,6 +295,13 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 		t.log.Printf("Error submitting Arbitrum price: %q\n", err)
 	}
 
+	// Check if zkSync rate is stale and submit
+	err = t.submitZkSyncEraPrice()
+	if err != nil {
+		// Error is not fatal for this task so print and continue
+		t.log.Printf("Error submitting zkSync Era price: %q\n", err)
+	}
+
 	// Log
 	t.log.Println("Checking for RPL price checkpoint...")
 
