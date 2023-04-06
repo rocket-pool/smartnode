@@ -16,6 +16,7 @@ import (
 
 	"io/ioutil"
 	"net/http"
+	"../../notifications/notifcations"
 )
 
 const (
@@ -59,36 +60,7 @@ func getStatus(c *cli.Context) error {
 		return fmt.Errorf("Error loading configuration: %w", err)
 	}
 
-  if !cfg.IsNativeMode  {
-
-    url := "http://localhost:8000/notify"
-
-    // Read the JSON data from file
-    data, err := ioutil.ReadFile("/home/eth/notifications/example.json")
-    if err != nil {
-       fmt.Println("Error reading file:", err)
-    }
-
-    // Create the HTTP POST request
-    req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
-    if err != nil {
-        fmt.Println("Error creating request:", err)
-    }
-
-    // Set headers if needed
-    req.Header.Set("Content-Type", "application/json")
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        fmt.Println("Error making request:", err)
-    }
-    defer resp.Body.Close()
-
-    // Handle the response
-    fmt.Println("Response Status:", resp.Status)
-    fmt.Println("Response Body:", resp.Body)
-  }
+	notifications.sendDiscord();
 
 	// Account address & balances
 	fmt.Printf("%s=== Account and Balances ===%s\n", colorGreen, colorReset)
@@ -188,6 +160,8 @@ func getStatus(c *cli.Context) error {
 			}
 			fmt.Println("")
 		}
+
+
 
 		// Withdrawal address & balances
 		fmt.Printf("%s=== Withdrawal Address ===%s\n", colorGreen, colorReset)
