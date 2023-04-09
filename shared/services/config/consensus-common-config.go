@@ -17,7 +17,7 @@ const defaultGraffiti string = ""
 const defaultCheckpointSyncProvider string = ""
 const defaultP2pPort uint16 = 9001
 const defaultBnApiPort uint16 = 5052
-const defaultOpenBnApiPort bool = false
+const defaultOpenBnApiPort string = "closed"
 const defaultDoppelgangerDetection bool = true
 
 // Env var names
@@ -48,6 +48,20 @@ type ConsensusCommonConfig struct {
 
 // Create a new ConsensusCommonParams struct
 func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
+	rpcPortModes := []config.ParameterOption{{
+		Name:        "Closed",
+		Description: "Do not allow connections to the RPC port",
+		Value:       config.RPC_Closed,
+	}, {
+		Name:        "Open to Localhost",
+		Description: "Allow connections from this host only",
+		Value:       config.RPC_OpenLocalhost,
+	}, {
+		Name:        "Open to External hosts",
+		Description: "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user this would expose your node to the internet and could make your it vulnerable to MEV/tips theft",
+		Value:       config.RPC_OpenExternal,
+	}}
+
 	return &ConsensusCommonConfig{
 		Title: "Common Consensus Client Settings",
 
@@ -105,13 +119,14 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 		OpenApiPort: config.Parameter{
 			ID:                   OpenApiPortID,
 			Name:                 "Expose API Port",
-			Description:          "Enable this to expose your Consensus client's API port to your local network, so other machines can access it too.",
-			Type:                 config.ParameterType_Bool,
+			Description:          "Enable this to expose your Consensus client's API port to your localhost or to your local network, so other machines can access it too.",
+			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultOpenBnApiPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_OPEN_API_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+			Options:              rpcPortModes,
 		},
 
 		DoppelgangerDetection: config.Parameter{

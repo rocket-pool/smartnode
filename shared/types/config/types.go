@@ -3,6 +3,7 @@ package config
 type ContainerID string
 type Network string
 type Mode string
+type RPCMode string
 type ParameterType string
 type ExecutionClient string
 type ConsensusClient string
@@ -41,6 +42,16 @@ const (
 	Mode_Unknown  Mode = ""
 	Mode_Local    Mode = "local"
 	Mode_External Mode = "external"
+)
+
+// Enum to describe the mode for the RPC port.
+// Closed will not allow any connections to the RPC port.
+// OpenLocalhost will allow connections from the same host.
+// OpenExternal will allow connections from external hosts.
+const (
+	RPC_Closed        RPCMode = "closed"
+	RPC_OpenLocalhost RPCMode = "localhost"
+	RPC_OpenExternal  RPCMode = "external"
 )
 
 // Enum to describe which data type a parameter's value will have, which

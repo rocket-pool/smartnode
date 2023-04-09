@@ -875,13 +875,17 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
 		// Handle open API ports
 		bnOpenPorts := ""
-		if cfg.ConsensusCommon.OpenApiPort.Value == true {
+		bnOpenPortLocalhostOnly := ""
+		if cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode) == config.RPC_OpenLocalhost {
+			bnOpenPortLocalhostOnly = "127.0.0.1:"
+		}
+		if cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode) != config.RPC_Closed {
 			ccApiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\"", ccApiPort, ccApiPort)
+			bnOpenPorts += fmt.Sprintf(", \"%s%d:%d/tcp\"", bnOpenPortLocalhostOnly, ccApiPort, ccApiPort)
 		}
 		if consensusClient == config.ConsensusClient_Prysm && cfg.Prysm.OpenRpcPort.Value == true {
 			prysmRpcPort := cfg.Prysm.RpcPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\"", prysmRpcPort, prysmRpcPort)
+			bnOpenPorts += fmt.Sprintf(", \"%s%d:%d/tcp\"", bnOpenPortLocalhostOnly, prysmRpcPort, prysmRpcPort)
 		}
 		envVars["BN_OPEN_PORTS"] = bnOpenPorts
 
