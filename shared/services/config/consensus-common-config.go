@@ -58,7 +58,7 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 		Value:       config.RPC_OpenLocalhost,
 	}, {
 		Name:        "Open to External hosts",
-		Description: "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user this would expose your node to the internet and could make your it vulnerable to MEV/tips theft",
+		Description: "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet and could make it vulnerable to MEV/tips theft",
 		Value:       config.RPC_OpenExternal,
 	}}
 
@@ -119,7 +119,7 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 		OpenApiPort: config.Parameter{
 			ID:                   OpenApiPortID,
 			Name:                 "Expose API Port",
-			Description:          "Enable this to expose your Consensus client's API port to your localhost or to your local network, so other machines can access it too.",
+			Description:          "Select an option to expose your Consensus client's API port to your localhost or to your local network, so other machines can access it too.",
 			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultOpenBnApiPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
