@@ -52,8 +52,8 @@ type treeGenerator struct {
 	ruleset     uint64
 }
 
+// Generates a new rewards tree based on the command line flags
 func GenerateTree(c *cli.Context) error {
-
 	// Configure
 	configureHTTP()
 
@@ -134,6 +134,7 @@ func GenerateTree(c *cli.Context) error {
 	return generator.generatePastTree(uint64(currentIndex))
 }
 
+// Generates the rewards file for the given generator
 func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator) (*rprewards.RewardsFile, error) {
 	if g.ruleset == 0 {
 		return treegen.GenerateTree()
@@ -142,6 +143,7 @@ func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator) (*
 	return treegen.GenerateTreeWithRuleset(g.ruleset)
 }
 
+// Serializes the minipool performance file into JSON
 func (g *treeGenerator) serializeMinipoolPerformance(rewardsFile *rprewards.RewardsFile) ([]byte, error) {
 	if g.prettyPrint {
 		return json.MarshalIndent(rewardsFile.MinipoolPerformanceFile, "", "\t")
@@ -150,6 +152,7 @@ func (g *treeGenerator) serializeMinipoolPerformance(rewardsFile *rprewards.Rewa
 	return json.Marshal(rewardsFile.MinipoolPerformanceFile)
 }
 
+// Serializes the rewards tree file in to JSON
 func (g *treeGenerator) serializeRewardsTree(rewardsFile *rprewards.RewardsFile) ([]byte, error) {
 	if g.prettyPrint {
 		return json.MarshalIndent(rewardsFile, "", "\t")
@@ -158,6 +161,7 @@ func (g *treeGenerator) serializeRewardsTree(rewardsFile *rprewards.RewardsFile)
 	return json.Marshal(rewardsFile)
 }
 
+// Gets the state for the slot corresponding to the given rewards event, or the latest finalized state if it's nil
 func (g *treeGenerator) getState(rewardsEvent *rewards.RewardsEvent) (*state.NetworkState, error) {
 	var slot uint64
 
@@ -187,12 +191,12 @@ func (g *treeGenerator) getState(rewardsEvent *rewards.RewardsEvent) (*state.Net
 }
 
 // Writes both the performance file and the rewards file to disk
-func (g *treeGenerator) writeFiles(rewardsFile *rprewards.RewardsFile, index uint64) error {
+func (g *treeGenerator) writeFiles(rewardsFile *rprewards.RewardsFile) error {
 	g.log.Printlnf("Saving JSON files...")
 
 	// Get the output paths
-	rewardsTreePath := filepath.Join(g.outputDir, fmt.Sprintf(config.RewardsTreeFilenameFormat, string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), index))
-	minipoolPerformancePath := filepath.Join(g.outputDir, fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), index))
+	rewardsTreePath := filepath.Join(g.outputDir, fmt.Sprintf(config.RewardsTreeFilenameFormat, string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsFile.Index))
+	minipoolPerformancePath := filepath.Join(g.outputDir, fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsFile.Index))
 
 	// Serialize the minipool performance file
 	minipoolPerformanceBytes, err := g.serializeMinipoolPerformance(rewardsFile)
@@ -223,7 +227,7 @@ func (g *treeGenerator) writeFiles(rewardsFile *rprewards.RewardsFile, index uin
 	}
 
 	g.log.Printlnf("Saved rewards snapshot file to %s", rewardsTreePath)
-	g.log.Printlnf("Successfully generated rewards snapshot for interval %d.\n", index)
+	g.log.Printlnf("Successfully generated rewards snapshot for interval %d", rewardsFile.Index)
 
 	return nil
 }
@@ -241,11 +245,9 @@ func (g *treeGenerator) generateCurrentTree() error {
 		return fmt.Errorf("error getting snapshot details: %w", err)
 	}
 
-	g.log.Printlnf("Generating a dry-run tree for the current interval (%d)", details.index)
-
-	elBlockIndex := details.snapshotElBlockHeader.Number.Uint64()
-
 	// Log
+	elBlockIndex := details.snapshotElBlockHeader.Number.Uint64()
+	g.log.Printlnf("Generating a dry-run tree for the current interval (%d)", details.index)
 	g.log.Printlnf("Snapshot Beacon block = %d, EL block = %d, running from %s to %s\n", details.snapshotBeaconBlock, elBlockIndex, details.startTime, details.endTime)
 
 	// Generate the rewards file
@@ -261,7 +263,7 @@ func (g *treeGenerator) generateCurrentTree() error {
 		g.log.Printlnf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.\n", address.Hex(), network)
 	}
 
-	err = g.writeFiles(rewardsFile, details.index)
+	err = g.writeFiles(rewardsFile)
 	if err != nil {
 		return err
 	}
@@ -282,9 +284,9 @@ func (g *treeGenerator) approximateCurrentRethSpRewards() error {
 		return fmt.Errorf("error getting snapshot details: %w", err)
 	}
 
-	elBlockIndex := details.snapshotElBlockHeader.Number.Uint64()
-
 	// Log
+	elBlockIndex := details.snapshotElBlockHeader.Number.Uint64()
+	g.log.Printlnf("Approximating rETH rewards for the current interval (%d)", details.index)
 	g.log.Printlnf("Snapshot Beacon block = %d, EL block = %d, running from %s to %s\n", details.snapshotBeaconBlock, elBlockIndex, details.startTime, details.endTime)
 
 	// Get the Smoothing Pool contract's balance
@@ -362,7 +364,7 @@ func (g *treeGenerator) generatePastTree(index uint64) error {
 		g.log.Printlnf("Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", rewardsFile.MerkleRoot)
 	}
 
-	err = g.writeFiles(rewardsFile, index)
+	err = g.writeFiles(rewardsFile)
 	if err != nil {
 		return err
 	}
