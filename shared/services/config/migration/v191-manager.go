@@ -8,39 +8,35 @@ import (
 
 func upgradeFromV191(serializedConfig map[string]map[string]string) error {
 	// v1.9.1 had the BN API port mode as a boolean
-	consensusCommon, exists := serializedConfig["consensusCommon"]
-	if !exists {
-		return fmt.Errorf("expected a section called `consensusCommon` but it didn't exist")
+	if err := updateRPCPortConfig(serializedConfig, "consensusCommon", "openApiPort"); err != nil {
+		return err
 	}
-	openApiPort, exists := consensusCommon["openApiPort"]
-	if !exists {
-		return fmt.Errorf("expected a consensusCommon setting named `openApiPort` but it didn't exist")
+	if err := updateRPCPortConfig(serializedConfig, "executionCommon", "openRpcPorts"); err != nil {
+		return err
 	}
+	if err := updateRPCPortConfig(serializedConfig, "mevBoost", "openRpcPort"); err != nil {
+		return err
+	}
+	return nil
+}
 
-	// Update the config
-	if openApiPort == "true" {
-		consensusCommon["openApiPort"] = string(config.RPC_OpenLocalhost)
-	} else {
-		consensusCommon["openApiPort"] = string(config.RPC_Closed)
-	}
-	serializedConfig["consensusCommon"] = consensusCommon
-
+func updateRPCPortConfig(serializedConfig map[string]map[string]string, configKeyString string, keyOpenPorts string) error {
 	// v1.9.1 had the EC API ports mode as a boolean
-	executionCommon, exists := serializedConfig["executionCommon"]
+	configSection, exists := serializedConfig[configKeyString]
 	if !exists {
-		return fmt.Errorf("expected a section called `executionCommon` but it didn't exist")
+		return fmt.Errorf("expected a section called `%s` but it didn't exist", configKeyString)
 	}
-	openRPCPorts, exists := executionCommon["openRpcPorts"]
+	openRPCPorts, exists := configSection[keyOpenPorts]
 	if !exists {
-		return fmt.Errorf("expected a executionCommon setting named `openRPCPorts` but it didn't exist")
+		return fmt.Errorf("expected a executionCommon setting named `%s` but it didn't exist", keyOpenPorts)
 	}
 
 	// Update the config
 	if openRPCPorts == "true" {
-		executionCommon["openRPCPorts"] = string(config.RPC_OpenLocalhost)
+		configSection[keyOpenPorts] = string(config.RPC_OpenLocalhost)
 	} else {
-		executionCommon["openRPCPorts"] = string(config.RPC_Closed)
+		configSection[keyOpenPorts] = string(config.RPC_Closed)
 	}
-	serializedConfig["executionCommon"] = executionCommon
+	serializedConfig[configKeyString] = configSection
 	return nil
 }

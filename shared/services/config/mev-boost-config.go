@@ -100,6 +100,20 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		relayMap[relay.ID] = relay
 	}
 
+	rpcPortModes := []config.ParameterOption{{
+		Name:        "Closed",
+		Description: "Do not allow connections to the RPC port",
+		Value:       config.RPC_Closed,
+	}, {
+		Name:        "Open to Localhost",
+		Description: "Allow connections from this host only",
+		Value:       config.RPC_OpenLocalhost,
+	}, {
+		Name:        "Open to External hosts",
+		Description: "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet",
+		Value:       config.RPC_OpenExternal,
+	}}
+
 	return &MevBoostConfig{
 		Title: "MEV-Boost Settings",
 
@@ -178,12 +192,13 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			ID:                   "openRpcPort",
 			Name:                 "Expose API Port",
 			Description:          "Expose the API port to your local network, so other local machines can access MEV-Boost's API.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: false},
+			Type:                 config.ParameterType_Choice,
+			Default:              map[config.Network]interface{}{config.Network_All: config.RPC_Closed},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+			Options:              rpcPortModes,
 		},
 
 		ContainerTag: config.Parameter{
