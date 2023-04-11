@@ -41,6 +41,6 @@ func upgradeFromV191(serializedConfig map[string]map[string]string) error {
 	} else {
 		executionCommon["openRPCPorts"] = string(config.RPC_Closed)
 	}
-	serializedConfig["consensusCommon"] = consensusCommon
+	serializedConfig["executionCommon"] = executionCommon
 	return nil
 }
