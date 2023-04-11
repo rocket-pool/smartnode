@@ -836,10 +836,14 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		envVars["EC_ENGINE_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.EnginePort.Value)
 
 		// Handle open API ports
-		if cfg.ExecutionCommon.OpenRpcPorts.Value == true {
+		if cfg.ExecutionCommon.OpenRpcPorts.Value.(config.RPCMode) != config.RPC_Closed {
+			ecLocalhostOnly := ""
+			if cfg.ExecutionCommon.OpenRpcPorts.Value.(config.RPCMode) == config.RPC_OpenLocalhost {
+				ecLocalhostOnly = "127.0.0.1:"
+			}
 			ecHttpPort := cfg.ExecutionCommon.HttpPort.Value.(uint16)
 			ecWsPort := cfg.ExecutionCommon.WsPort.Value.(uint16)
-			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%s%d:%d/tcp\", \"%s%d:%d/tcp\"", ecLocalhostOnly, ecHttpPort, ecHttpPort, ecLocalhostOnly, ecWsPort, ecWsPort)
 		}
 
 		// Common params

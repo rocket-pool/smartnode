@@ -16,7 +16,7 @@ const (
 	defaultEcHttpPort    uint16 = 8545
 	defaultEcWsPort      uint16 = 8546
 	defaultEcEnginePort  uint16 = 8551
-	defaultOpenEcApiPort bool   = false
+	defaultOpenEcApiPort string = "closed"
 )
 
 // Configuration for the Execution client
@@ -47,6 +47,19 @@ type ExecutionCommonConfig struct {
 
 // Create a new ExecutionCommonConfig struct
 func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
+	rpcPortModes := []config.ParameterOption{{
+		Name:        "Closed",
+		Description: "Do not allow connections to the RPC ports",
+		Value:       config.RPC_Closed,
+	}, {
+		Name:        "Open to Localhost",
+		Description: "Allow connections from this host only",
+		Value:       config.RPC_OpenLocalhost,
+	}, {
+		Name:        "Open to External hosts",
+		Description: "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet",
+		Value:       config.RPC_OpenExternal,
+	}}
 	return &ExecutionCommonConfig{
 		Title: "Common Execution Client Settings",
 
@@ -89,13 +102,14 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 		OpenRpcPorts: config.Parameter{
 			ID:                   ecOpenRpcPortsID,
 			Name:                 "Expose RPC Ports",
-			Description:          "Expose the HTTP and Websocket RPC ports to your local config.Network, so other local machines can access your Execution Client's RPC endpoint.",
-			Type:                 config.ParameterType_Bool,
+			Description:          "Expose the HTTP and Websocket RPC ports to your localhost or external hosts on the network, so other machines can access your Execution Client's RPC endpoint.",
+			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultOpenEcApiPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+			Options:              rpcPortModes,
 		},
 
 		P2pPort: config.Parameter{

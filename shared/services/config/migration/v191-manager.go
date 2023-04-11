@@ -25,5 +25,22 @@ func upgradeFromV191(serializedConfig map[string]map[string]string) error {
 	}
 	serializedConfig["consensusCommon"] = consensusCommon
 
+	// v1.9.1 had the EC API ports mode as a boolean
+	executionCommon, exists := serializedConfig["executionCommon"]
+	if !exists {
+		return fmt.Errorf("expected a section called `executionCommon` but it didn't exist")
+	}
+	openRPCPorts, exists := executionCommon["openRpcPorts"]
+	if !exists {
+		return fmt.Errorf("expected a executionCommon setting named `openRPCPorts` but it didn't exist")
+	}
+
+	// Update the config
+	if openRPCPorts == "true" {
+		executionCommon["openRPCPorts"] = string(config.RPC_OpenLocalhost)
+	} else {
+		executionCommon["openRPCPorts"] = string(config.RPC_Closed)
+	}
+	serializedConfig["consensusCommon"] = consensusCommon
 	return nil
 }
