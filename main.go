@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
+	"runtime/pprof"
 
 	"github.com/urfave/cli/v2"
 )
@@ -85,9 +87,50 @@ func main() {
 			Usage:   "Approximates the rETH stakers' share of the Smoothing Pool at the current block instead of generating the entire rewards tree. Ignores -i.",
 			Value:   false,
 		},
+		&cli.StringFlag{
+			Name:    "cpuprofile",
+			Aliases: []string{"c"},
+			Usage:   "Path to which to save a pprof cpu profile, e.g. ./treegen.pprof. If unset, profiling is disabled.",
+		},
+		&cli.StringFlag{
+			Name:    "memprofile",
+			Aliases: []string{"m"},
+			Usage:   "Path to which to save a pprof heap profile, e.g. ./treegen.pprof. If unset, profiling is disabled.",
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
+		cpuprofile := c.String("cpuprofile")
+		if cpuprofile != "" {
+			f, err := os.Create(cpuprofile)
+			if err != nil {
+				fmt.Printf("%sError generating tree: %s%s\n", colorRed, err.Error(), colorReset)
+				os.Exit(1)
+			}
+			defer f.Close()
+			if err := pprof.StartCPUProfile(f); err != nil {
+				fmt.Printf("%sError generating tree: %s%s\n", colorRed, err.Error(), colorReset)
+				os.Exit(1)
+			}
+			defer pprof.StopCPUProfile()
+		}
+
+		memprofile := c.String("memprofile")
+		if memprofile != "" {
+			defer func() {
+				f, err := os.Create(memprofile)
+				if err != nil {
+					fmt.Printf("%sError saving heap profile: %w%w\n", colorRed, err, colorReset)
+					os.Exit(1)
+				}
+				defer f.Close()
+				runtime.GC()
+				if err := pprof.WriteHeapProfile(f); err != nil {
+					fmt.Printf("%sError saving heap profile: %w%w\n", colorRed, err, colorReset)
+				}
+			}()
+		}
+
 		return GenerateTree(c)
 	}
 
