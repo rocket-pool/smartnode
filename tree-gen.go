@@ -80,9 +80,6 @@ func GenerateTree(c *cli.Context) error {
 	case 5:
 		network = cfgtypes.Network_Prater
 		log.Printlnf("Beacon node is configured for Prater.")
-	case 1337803:
-		network = cfgtypes.Network_Zhejiang
-		log.Printlnf("Beacon node is configured for Zhejiang.")
 	default:
 		return fmt.Errorf("your Beacon node is configured for an unknown network with Chain ID [%d]", depositContract.ChainID)
 	}
