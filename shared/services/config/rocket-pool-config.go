@@ -878,13 +878,13 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		bnOpenPorts := ""
 		rpcMode := cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode)
 		if rpcMode.Open() {
-			ccApiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%s\"", rpcMode.DockerPortMapping(ccApiPort))
-		}
-		if consensusClient == config.ConsensusClient_Prysm && cfg.Prysm.OpenRpcPort.Value == true {
-			prysmRpcPort := cfg.Prysm.RpcPort.Value.(uint16)
-			// XXX Fornax: cfg.Prysm.RpcPort should be type RPCMode
-			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\"", prysmRpcPort, prysmRpcPort)
+			var ccPort uint16
+			if consensusClient == config.ConsensusClient_Prysm {
+				ccPort = cfg.Prysm.RpcPort.Value.(uint16)
+			} else {
+				ccPort = cfg.ConsensusCommon.ApiPort.Value.(uint16)
+			}
+			bnOpenPorts += fmt.Sprintf(", \"%s\"", rpcMode.DockerPortMapping(ccPort))
 		}
 		envVars["BN_OPEN_PORTS"] = bnOpenPorts
 
