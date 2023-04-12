@@ -1,5 +1,7 @@
 package config
 
+import "fmt"
+
 type ContainerID string
 type Network string
 type Mode string
@@ -53,6 +55,28 @@ const (
 	RPC_OpenLocalhost RPCMode = "localhost"
 	RPC_OpenExternal  RPCMode = "external"
 )
+
+func (rpcMode RPCMode) String() string {
+	return string(rpcMode)
+}
+
+func (rpcMode RPCMode) Open() bool {
+	return rpcMode == RPC_OpenLocalhost || rpcMode == RPC_OpenExternal
+}
+
+func (rpcMode RPCMode) DockerPortMapping(port uint16) string {
+	ports := fmt.Sprintf("%d:%d/tcp", port, port)
+
+	if rpcMode == RPC_OpenExternal {
+		return ports
+	}
+
+	if rpcMode == RPC_OpenLocalhost {
+		return fmt.Sprintf("127.0.0.1:%s", ports)
+	}
+
+	return ""
+}
 
 // Enum to describe which data type a parameter's value will have, which
 // informs the corresponding UI element and value validation
