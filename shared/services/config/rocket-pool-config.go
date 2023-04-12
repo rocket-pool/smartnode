@@ -836,14 +836,11 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		envVars["EC_ENGINE_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.EnginePort.Value)
 
 		// Handle open API ports
-		if cfg.ExecutionCommon.OpenRpcPorts.Value.(config.RPCMode) != config.RPC_Closed {
-			ecLocalhostOnly := ""
-			if cfg.ExecutionCommon.OpenRpcPorts.Value.(config.RPCMode) == config.RPC_OpenLocalhost {
-				ecLocalhostOnly = "127.0.0.1:"
-			}
-			ecHttpPort := cfg.ExecutionCommon.HttpPort.Value.(uint16)
-			ecWsPort := cfg.ExecutionCommon.WsPort.Value.(uint16)
-			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%s%d:%d/tcp\", \"%s%d:%d/tcp\"", ecLocalhostOnly, ecHttpPort, ecHttpPort, ecLocalhostOnly, ecWsPort, ecWsPort)
+		rpcMode := cfg.ExecutionCommon.OpenRpcPorts.Value.(config.RPCMode)
+		if rpcMode.Open() {
+			httpMapping := rpcMode.DockerPortMapping(cfg.ExecutionCommon.HttpPort.Value.(uint16))
+			wsMapping := rpcMode.DockerPortMapping(cfg.ExecutionCommon.WsPort.Value.(uint16))
+			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%s\", \"%s\"", httpMapping, wsMapping)
 		}
 
 		// Common params
@@ -879,17 +876,15 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
 		// Handle open API ports
 		bnOpenPorts := ""
-		bnOpenPortLocalhostOnly := ""
-		if cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode) == config.RPC_OpenLocalhost {
-			bnOpenPortLocalhostOnly = "127.0.0.1:"
-		}
-		if cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode) != config.RPC_Closed {
+		rpcMode := cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode)
+		if rpcMode.Open() {
 			ccApiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%s%d:%d/tcp\"", bnOpenPortLocalhostOnly, ccApiPort, ccApiPort)
+			bnOpenPorts += fmt.Sprintf(", \"%s\"", rpcMode.DockerPortMapping(ccApiPort))
 		}
 		if consensusClient == config.ConsensusClient_Prysm && cfg.Prysm.OpenRpcPort.Value == true {
 			prysmRpcPort := cfg.Prysm.RpcPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%s%d:%d/tcp\"", bnOpenPortLocalhostOnly, prysmRpcPort, prysmRpcPort)
+			// XXX Fornax: cfg.Prysm.RpcPort should be type RPCMode
+			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\"", prysmRpcPort, prysmRpcPort)
 		}
 		envVars["BN_OPEN_PORTS"] = bnOpenPorts
 
