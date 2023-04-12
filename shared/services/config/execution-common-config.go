@@ -47,19 +47,8 @@ type ExecutionCommonConfig struct {
 
 // Create a new ExecutionCommonConfig struct
 func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
-	rpcPortModes := []config.ParameterOption{{
-		Name:        "Closed",
-		Description: "Do not allow connections to the RPC ports",
-		Value:       config.RPC_Closed,
-	}, {
-		Name:        "Open to Localhost",
-		Description: "Allow connections from this host only",
-		Value:       config.RPC_OpenLocalhost,
-	}, {
-		Name:        "Open to External hosts",
-		Description: "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet",
-		Value:       config.RPC_OpenExternal,
-	}}
+	rpcPortModes := config.PortModes("")
+	
 	return &ExecutionCommonConfig{
 		Title: "Common Execution Client Settings",
 

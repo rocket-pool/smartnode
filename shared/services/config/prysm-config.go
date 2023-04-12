@@ -51,19 +51,8 @@ type PrysmConfig struct {
 
 // Generates a new Prysm configuration
 func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
-	rpcPortModes := []config.ParameterOption{{
-		Name:        "Closed",
-		Description: "Do not allow connections to the RPC port",
-		Value:       config.RPC_Closed,
-	}, {
-		Name:        "Open to Localhost",
-		Description: "Allow connections from this host only",
-		Value:       config.RPC_OpenLocalhost,
-	}, {
-		Name:        "Open to External hosts",
-		Description: "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet and could make it vulnerable to MEV/tips theft",
-		Value:       config.RPC_OpenExternal,
-	}}
+	rpcPortModes := config.PortModes("Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet and could make it vulnerable to MEV/tips theft")
+
 	return &PrysmConfig{
 		Title: "Prysm Settings",
 

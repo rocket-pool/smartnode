@@ -43,6 +43,5 @@ func updateRPCPortConfig(serializedConfig map[string]map[string]string, configKe
 	} else {
 		configSection[keyOpenPorts] = config.RPC_Closed.String()
 	}
-	serializedConfig[configKeyString] = configSection
 	return nil
 }
