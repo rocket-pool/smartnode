@@ -16,7 +16,7 @@ const (
 	prysmVcTagAmd64Prod     string = "prysmaticlabs/prysm-validator:HEAD-191e60-debug"
 	prysmTagArm64Prod       string = "rocketpool/prysm:v4.0.0"
 	defaultPrysmRpcPort     uint16 = 5053
-	defaultPrysmOpenRpcPort bool   = false
+	defaultPrysmOpenRpcPort string = "closed"
 	defaultPrysmMaxPeers    uint16 = 45
 )
 
@@ -51,6 +51,19 @@ type PrysmConfig struct {
 
 // Generates a new Prysm configuration
 func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
+	rpcPortModes := []config.ParameterOption{{
+		Name:        "Closed",
+		Description: "Do not allow connections to the RPC port",
+		Value:       config.RPC_Closed,
+	}, {
+		Name:        "Open to Localhost",
+		Description: "Allow connections from this host only",
+		Value:       config.RPC_OpenLocalhost,
+	}, {
+		Name:        "Open to External hosts",
+		Description: "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet and could make it vulnerable to MEV/tips theft",
+		Value:       config.RPC_OpenExternal,
+	}}
 	return &PrysmConfig{
 		Title: "Prysm Settings",
 
@@ -83,13 +96,14 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 		OpenRpcPort: config.Parameter{
 			ID:                   "openRpcPort",
 			Name:                 "Expose RPC Port",
-			Description:          "Enable this to expose Prysm's JSON-RPC port to your local network, so other machines can access it too.",
-			Type:                 config.ParameterType_Bool,
+			Description:          "Expose Prysm's JSON-RPC port to your local network, so other machines can access it too.",
+			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultPrysmOpenRpcPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_OPEN_RPC_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+			Options:              rpcPortModes,
 		},
 
 		BnContainerTag: config.Parameter{

@@ -11,17 +11,23 @@ func upgradeFromV191(serializedConfig map[string]map[string]string) error {
 	if err := updateRPCPortConfig(serializedConfig, "consensusCommon", "openApiPort"); err != nil {
 		return err
 	}
+	if err := updateRPCPortConfig(serializedConfig, "prysm", "openRpcPort"); err != nil {
+		return err
+	}
 	if err := updateRPCPortConfig(serializedConfig, "executionCommon", "openRpcPorts"); err != nil {
 		return err
 	}
 	if err := updateRPCPortConfig(serializedConfig, "mevBoost", "openRpcPort"); err != nil {
 		return err
 	}
+	if err := updateRPCPortConfig(serializedConfig, "prometheus", "openPort"); err != nil {
+		return err
+	}
 	return nil
 }
 
 func updateRPCPortConfig(serializedConfig map[string]map[string]string, configKeyString string, keyOpenPorts string) error {
-	// v1.9.1 had the EC API ports mode as a boolean
+	// v1.9.1 had the API ports mode as a boolean
 	configSection, exists := serializedConfig[configKeyString]
 	if !exists {
 		return fmt.Errorf("expected a section called `%s` but it didn't exist", configKeyString)

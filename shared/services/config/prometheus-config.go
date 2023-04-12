@@ -9,7 +9,7 @@ const prometheusTag string = "prom/prometheus:v2.42.0"
 
 // Defaults
 const defaultPrometheusPort uint16 = 9091
-const defaultPrometheusOpenPort bool = false
+const defaultPrometheusOpenPort string = "closed"
 
 // Configuration for Prometheus
 type PrometheusConfig struct {
@@ -30,6 +30,19 @@ type PrometheusConfig struct {
 
 // Generates a new Prometheus config
 func NewPrometheusConfig(cfg *RocketPoolConfig) *PrometheusConfig {
+	rpcPortModes := []config.ParameterOption{{
+		Name:        "Closed",
+		Description: "Do not allow connections to the RPC port",
+		Value:       config.RPC_Closed,
+	}, {
+		Name:        "Open to Localhost",
+		Description: "Allow connections from this host only",
+		Value:       config.RPC_OpenLocalhost,
+	}, {
+		Name:        "Open to External hosts",
+		Description: "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet",
+		Value:       config.RPC_OpenExternal,
+	}}
 	return &PrometheusConfig{
 		Title: "Prometheus Settings",
 
@@ -48,13 +61,14 @@ func NewPrometheusConfig(cfg *RocketPoolConfig) *PrometheusConfig {
 		OpenPort: config.Parameter{
 			ID:                   "openPort",
 			Name:                 "Expose Prometheus Port",
-			Description:          "Enable this to expose Prometheus's port to your local network, so other machines can access it too.",
-			Type:                 config.ParameterType_Bool,
+			Description:          "Expose the Prometheus's port to your local network, so other machines can access it too.",
+			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultPrometheusOpenPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Prometheus},
 			EnvironmentVariables: []string{"PROMETHEUS_OPEN_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+			Options:              rpcPortModes,
 		},
 
 		ContainerTag: config.Parameter{

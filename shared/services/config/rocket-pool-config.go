@@ -876,16 +876,19 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
 		// Handle open API ports
 		bnOpenPorts := ""
-		rpcMode := cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode)
-		if rpcMode.Open() {
-			var ccPort uint16
-			if consensusClient == config.ConsensusClient_Prysm {
-				ccPort = cfg.Prysm.RpcPort.Value.(uint16)
-			} else {
-				ccPort = cfg.ConsensusCommon.ApiPort.Value.(uint16)
-			}
-			bnOpenPorts += fmt.Sprintf(", \"%s\"", rpcMode.DockerPortMapping(ccPort))
+		apiPortMode := cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode)
+		if apiPortMode.Open() {
+			apiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
+			bnOpenPorts += fmt.Sprintf(", \"%s\"", apiPortMode.DockerPortMapping(apiPort))
 		}
+		if consensusClient == config.ConsensusClient_Prysm {
+			prysmRpcPortMode := cfg.Prysm.OpenRpcPort.Value.(config.RPCMode)
+			if prysmRpcPortMode.Open() {
+				prysmRpcPort := cfg.Prysm.RpcPort.Value.(uint16)
+				bnOpenPorts += fmt.Sprintf(", \"%s\"", prysmRpcPortMode.DockerPortMapping(prysmRpcPort))
+			}
+		}
+
 		envVars["BN_OPEN_PORTS"] = bnOpenPorts
 
 		// Common params
@@ -977,8 +980,9 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 			envVars["EXPORTER_ROOTFS_VOLUME"] = ", \"/:/rootfs:ro\""
 		}
 
-		if cfg.Prometheus.OpenPort.Value == true {
-			envVars["PROMETHEUS_OPEN_PORTS"] = fmt.Sprintf("%d:%d/tcp", cfg.Prometheus.Port.Value, cfg.Prometheus.Port.Value)
+		portMode := cfg.Prometheus.OpenPort.Value.(config.RPCMode)
+		if portMode.Open() {
+			envVars["PROMETHEUS_OPEN_PORTS"] = fmt.Sprintf(", \"%s\"", portMode.DockerPortMapping(cfg.Prometheus.Port.Value.(uint16)))
 		}
 
 		// Additional metrics flags
@@ -1003,9 +1007,10 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 			envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
 
 			// Handle open API port
-			if cfg.MevBoost.OpenRpcPort.Value == true {
+			portMode := cfg.MevBoost.OpenRpcPort.Value.(config.RPCMode)
+			if portMode.Open() {
 				port := cfg.MevBoost.Port.Value.(uint16)
-				envVars["MEV_BOOST_OPEN_API_PORT"] = fmt.Sprintf("\"%d:%d/tcp\"", port, port)
+				envVars["MEV_BOOST_OPEN_API_PORT"] = fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
 			}
 		}
 	}
