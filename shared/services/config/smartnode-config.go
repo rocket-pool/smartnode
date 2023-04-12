@@ -23,6 +23,7 @@ const (
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
 	DaemonDataPath                     string = "/.rocketpool/data"
+	NodeStateFile                      string = "node-state.yml"
 	WatchtowerFolder                   string = "watchtower"
 	WatchtowerStateFile                string = "state.yml"
 	RegenerateRewardsTreeRequestSuffix string = ".request"
@@ -174,6 +175,9 @@ type SmartnodeConfig struct {
 
 	// Rewards submission block maps
 	rewardsSubmissionBlockMaps map[config.Network][]uint64 `yaml:"-"`
+
+	// Network upgrade block maps
+	networkUpgradeBlockMaps map[config.Network][]uint64 `yaml:"-"`
 
 	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
 	rplTwapPoolAddress map[config.Network]string `yaml:"-"`
@@ -518,8 +522,11 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				"v1.1.0-rc1": []common.Address{
 					common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				},
-				"v1.2.0-rc1": []common.Address{
+				"v1.1.0": []common.Address{
 					common.HexToAddress("0x6e91E3416acf3d015358eeAAF247a0674F6c306f"),
+				},
+				"v1.2.0": []common.Address{
+					common.HexToAddress("0x3d8acD619fF0Eb890FbA744B20288a99452dd4B8"),
 				},
 			},
 			config.Network_Devnet: {},
@@ -601,6 +608,18 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				8394338, 8412142,
 			},
 		},
+
+		networkUpgradeBlockMaps: map[config.Network][]uint64{
+			config.Network_Mainnet: {
+				15430835, // Redstone
+				// Atlas is TBD
+			},
+			config.Network_Prater: {
+				7256999, // Redstone
+				8690908, // Atlas
+			},
+			config.Network_Devnet: {},
+		},
 	}
 
 }
@@ -673,6 +692,14 @@ func (cfg *SmartnodeConfig) GetPasswordPathInCLI() string {
 
 func (cfg *SmartnodeConfig) GetValidatorKeychainPathInCLI() string {
 	return filepath.Join(cfg.DataPath.Value.(string), "validators")
+}
+
+func (config *SmartnodeConfig) GetNodeStatePath(nativePath bool) string {
+	if config.parent.IsNativeMode || nativePath {
+		return filepath.Join(config.DataPath.Value.(string), NodeStateFile)
+	}
+
+	return filepath.Join(DaemonDataPath, NodeStateFile)
 }
 
 func (config *SmartnodeConfig) GetWatchtowerStatePath() string {
@@ -874,6 +901,10 @@ func (cfg *SmartnodeConfig) GetFlashbotsProtectUrl() string {
 
 func (cfg *SmartnodeConfig) GetRewardsSubmissionBlockMaps() []uint64 {
 	return cfg.rewardsSubmissionBlockMaps[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetNetworkUpgradeBlockMaps() []uint64 {
+	return cfg.networkUpgradeBlockMaps[cfg.Network.Value.(config.Network)]
 }
 
 func getNetworkOptions() []config.ParameterOption {
