@@ -2,8 +2,10 @@ package watchtower
 
 import (
 	"fmt"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -32,13 +34,14 @@ type cancelBondReductions struct {
 	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
 	ec               rocketpool.ExecutionClient
+	coll             *collectors.BondReductionCollector
 	lock             *sync.Mutex
 	isRunning        bool
 	generationPrefix string
 }
 
 // Create cancel bond reductions task
-func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*cancelBondReductions, error) {
+func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.BondReductionCollector) (*cancelBondReductions, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -68,6 +71,7 @@ func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger
 		w:                w,
 		rp:               rp,
 		ec:               ec,
+		coll:             coll,
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Bond Reduction]",
@@ -146,6 +150,10 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 		return nil
 	}
 
+	// Metrics
+	balanceTooLowCount := float64(0)
+	invalidStateCount := float64(0)
+
 	// Check the status of each one
 	threshold := uint64(32000000000) - scrubBuffer
 	for _, mpd := range reductionMps {
@@ -162,6 +170,7 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 				if validator.Balance < threshold {
 					// Cancel because it's under-balance
 					t.cancelBondReduction(mpd.MinipoolAddress, fmt.Sprintf("minipool balance is %d (below the threshold)", validator.Balance))
+					balanceTooLowCount += 1
 				}
 
 			case beacon.ValidatorState_ActiveExiting,
@@ -171,11 +180,28 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 				beacon.ValidatorState_WithdrawalPossible,
 				beacon.ValidatorState_WithdrawalDone:
 				t.cancelBondReduction(mpd.MinipoolAddress, "minipool is already slashed, exiting, or exited")
+				invalidStateCount += 1
 
 			default:
 				return fmt.Errorf("unknown validator state: %v", validator.Status)
 			}
 		}
+	}
+
+	// Update the metrics collector
+	if t.coll != nil {
+		t.coll.UpdateLock.Lock()
+		defer t.coll.UpdateLock.Unlock()
+
+		// Get the time of the state's EL block
+		genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
+		secondsSinceGenesis := time.Duration(state.BeaconSlotNumber*state.BeaconConfig.SecondsPerSlot) * time.Second
+		stateBlockTime := genesisTime.Add(secondsSinceGenesis)
+
+		t.coll.LatestBlockTime = float64(stateBlockTime.Unix())
+		t.coll.TotalMinipools = float64(len(reductionMps))
+		t.coll.InvalidState = invalidStateCount
+		t.coll.BalanceTooLow = balanceTooLowCount
 	}
 
 	return nil
