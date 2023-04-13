@@ -254,6 +254,13 @@ func distribute(c *cli.Context) (*api.NodeDistributeResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	}
+
 	hash, err := distributor.Distribute(opts)
 	if err != nil {
 		return nil, err
