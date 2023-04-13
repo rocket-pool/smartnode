@@ -2,6 +2,8 @@ package config
 
 import "fmt"
 
+type RPCMode string
+
 // Enum to describe the mode for the RPC port.
 // Closed will not allow any connections to the RPC port.
 // OpenLocalhost will allow connections from the same host.

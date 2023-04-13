@@ -16,7 +16,7 @@ const (
 	prysmVcTagAmd64Prod     string = "prysmaticlabs/prysm-validator:HEAD-191e60-debug"
 	prysmTagArm64Prod       string = "rocketpool/prysm:v4.0.0"
 	defaultPrysmRpcPort     uint16 = 5053
-	defaultPrysmOpenRpcPort string = "closed"
+	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
 	defaultPrysmMaxPeers    uint16 = 45
 )
 

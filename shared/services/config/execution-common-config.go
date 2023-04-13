@@ -16,7 +16,7 @@ const (
 	defaultEcHttpPort    uint16 = 8545
 	defaultEcWsPort      uint16 = 8546
 	defaultEcEnginePort  uint16 = 8551
-	defaultOpenEcApiPort string = "closed"
+	defaultOpenEcApiPort string = string(config.RPC_Closed)
 )
 
 // Configuration for the Execution client
@@ -48,7 +48,7 @@ type ExecutionCommonConfig struct {
 // Create a new ExecutionCommonConfig struct
 func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 	rpcPortModes := config.PortModes("")
-	
+
 	return &ExecutionCommonConfig{
 		Title: "Common Execution Client Settings",
 

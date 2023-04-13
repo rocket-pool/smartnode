@@ -17,7 +17,7 @@ const defaultGraffiti string = ""
 const defaultCheckpointSyncProvider string = ""
 const defaultP2pPort uint16 = 9001
 const defaultBnApiPort uint16 = 5052
-const defaultOpenBnApiPort string = "closed"
+const defaultOpenBnApiPort string = string(config.RPC_Closed)
 const defaultDoppelgangerDetection bool = true
 
 // Env var names

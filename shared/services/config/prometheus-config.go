@@ -9,7 +9,7 @@ const prometheusTag string = "prom/prometheus:v2.42.0"
 
 // Defaults
 const defaultPrometheusPort uint16 = 9091
-const defaultPrometheusOpenPort string = "closed"
+const defaultPrometheusOpenPort string = string(config.RPC_Closed)
 
 // Configuration for Prometheus
 type PrometheusConfig struct {

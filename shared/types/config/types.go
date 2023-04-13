@@ -3,7 +3,6 @@ package config
 type ContainerID string
 type Network string
 type Mode string
-type RPCMode string
 type ParameterType string
 type ExecutionClient string
 type ConsensusClient string
