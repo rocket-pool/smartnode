@@ -296,7 +296,7 @@ func run(c *cli.Context) error {
 
 	// Run metrics loop
 	go func() {
-		err := runMetricsServer(c, log.NewColorLogger(MetricsColor), scrubCollector)
+		err := runMetricsServer(c, log.NewColorLogger(MetricsColor), scrubCollector, bondReductionCollector, soloMigrationCollector)
 		if err != nil {
 			errorLog.Println(err)
 		}
