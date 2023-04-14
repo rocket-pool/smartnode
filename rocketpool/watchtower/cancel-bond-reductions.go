@@ -2,10 +2,11 @@ package watchtower
 
 import (
 	"fmt"
-	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"math/big"
 	"sync"
 	"time"
+
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -183,12 +184,20 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 				invalidStateCount += 1
 
 			default:
+				t.updateMetricsCollector(state, float64(len(reductionMps)), invalidStateCount, balanceTooLowCount)
 				return fmt.Errorf("unknown validator state: %v", validator.Status)
 			}
 		}
 	}
 
-	// Update the metrics collector
+	t.updateMetricsCollector(state, float64(len(reductionMps)), invalidStateCount, balanceTooLowCount)
+
+	return nil
+
+}
+
+// Update the bond reduction metrics collector
+func (t *cancelBondReductions) updateMetricsCollector(state *state.NetworkState, minipoolCount float64, invalidStateCount float64, balanceTooLowCount float64) {
 	if t.coll != nil {
 		t.coll.UpdateLock.Lock()
 		defer t.coll.UpdateLock.Unlock()
@@ -199,17 +208,14 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 		stateBlockTime := genesisTime.Add(secondsSinceGenesis)
 
 		t.coll.LatestBlockTime = float64(stateBlockTime.Unix())
-		t.coll.TotalMinipools = float64(len(reductionMps))
+		t.coll.TotalMinipools = float64(minipoolCount)
 		t.coll.InvalidState = invalidStateCount
 		t.coll.BalanceTooLow = balanceTooLowCount
 	}
-
-	return nil
-
 }
 
 // Cancel a bond reduction
-func (t *cancelBondReductions) cancelBondReduction(address common.Address, reason string) error {
+func (t *cancelBondReductions) cancelBondReduction(address common.Address, reason string) {
 
 	// Log
 	t.printMessage("=== CANCELLING BOND REDUCTION ===")
@@ -220,19 +226,21 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
-		return err
+		t.printMessage(fmt.Sprintf("error getting node account transactor: %s", err.Error()))
+		return
 	}
 
 	// Get the gas limit
 	gasInfo, err := minipool.EstimateVoteCancelReductionGas(t.rp, address, opts)
 	if err != nil {
-		return fmt.Errorf("could not estimate the gas required to voteCancelReduction the minipool: %w", err)
+		t.printMessage(fmt.Sprintf("could not estimate the gas required to voteCancelReduction the minipool: %s", err.Error()))
+		return
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
-		return nil
+		return
 	}
 
 	// Set the gas settings
@@ -243,20 +251,19 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	// Cancel the reduction
 	hash, err := minipool.VoteCancelReduction(t.rp, address, opts)
 	if err != nil {
-		return err
+		t.printMessage(fmt.Sprintf("could not vote to cancel bond reduction: %s", err.Error()))
+		return
 	}
 
 	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
-		return err
+		t.printMessage(fmt.Sprintf("error waiting for cancel transaction: %s", err.Error()))
+		return
 	}
 
 	// Log
 	t.log.Printlnf("Successfully voted to cancel the bond reduction of minipool %s.", address.Hex())
-
-	// Return
-	return nil
 
 }
 

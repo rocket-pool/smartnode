@@ -40,7 +40,7 @@ type SoloMigrationCollector struct {
 	LatestBlockTime    float64
 
 	// Mutex
-	UpdateLock sync.Mutex
+	UpdateLock *sync.Mutex
 }
 
 // Create a new ScrubCollector instance
@@ -75,6 +75,7 @@ func NewSoloMigrationCollector() *SoloMigrationCollector {
 			"The time of the latest block that the check was run against",
 			nil, nil,
 		),
+		UpdateLock: &sync.Mutex{},
 	}
 }
 
