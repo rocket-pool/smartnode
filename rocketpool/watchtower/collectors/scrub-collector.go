@@ -124,6 +124,7 @@ func (collector *ScrubCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.poolsWithoutDepositsDesc
 	channel <- collector.uncoveredMinipoolsDesc
 	channel <- collector.safetyScrubsDesc
+	channel <- collector.latestBlockTimeDesc
 }
 
 // Collect the latest metric values and pass them to Prometheus

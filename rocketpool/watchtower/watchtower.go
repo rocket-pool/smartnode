@@ -87,8 +87,10 @@ func run(c *cli.Context) error {
 		return err
 	}
 
-	// Initialize the scrub metrics reporter
+	// Initialize the metrics reporters
 	scrubCollector := collectors.NewScrubCollector()
+	bondReductionCollector := collectors.NewBondReductionCollector()
+	soloMigrationCollector := collectors.NewSoloMigrationCollector()
 
 	// Initialize error logger
 	errorLog := log.NewColorLogger(ErrorColor)
@@ -139,11 +141,11 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during manual tree generation check: %w", err)
 	}
-	cancelBondReductions, err := newCancelBondReductions(c, log.NewColorLogger(CancelBondsColor), errorLog)
+	cancelBondReductions, err := newCancelBondReductions(c, log.NewColorLogger(CancelBondsColor), errorLog, bondReductionCollector)
 	if err != nil {
 		return fmt.Errorf("error during bond reduction cancel check: %w", err)
 	}
-	checkSoloMigrations, err := newCheckSoloMigrations(c, log.NewColorLogger(CheckSoloMigrationsColor), errorLog)
+	checkSoloMigrations, err := newCheckSoloMigrations(c, log.NewColorLogger(CheckSoloMigrationsColor), errorLog, soloMigrationCollector)
 	if err != nil {
 		return fmt.Errorf("error during solo migration check: %w", err)
 	}
