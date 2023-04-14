@@ -25,7 +25,7 @@ const (
 	soloMigrationCheckThreshold float64 = 0.85 // Fraction of PromotionStakePeriod that can go before a minipool gets scrubbed for not having changed to 0x01
 	blsPrefix                   byte    = 0x00
 	elPrefix                    byte    = 0x01
-	migrationBalanceBuffer      float64 = 0.001
+	migrationBalanceBuffer      float64 = 0.01
 )
 
 type checkSoloMigrations struct {
@@ -219,7 +219,7 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 }
 
 // Scrub a vacant minipool
-func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason string) error {
+func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason string) {
 
 	// Log
 	t.printMessage("=== SCRUBBING SOLO MIGRATION ===")
@@ -230,25 +230,28 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	// Make the binding
 	mp, err := minipool.NewMinipool(t.rp, address, nil)
 	if err != nil {
-		return fmt.Errorf("error scrubbing migration of minipool %s: %w", address.Hex(), err)
+		t.printMessage(fmt.Sprintf("error scrubbing migration of minipool %s: %s", address.Hex(), err.Error()))
+		return
 	}
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
-		return err
+		t.printMessage(fmt.Sprintf("error getting node account transactor: %s", err.Error()))
+		return
 	}
 
 	// Get the gas limit
 	gasInfo, err := mp.EstimateVoteScrubGas(opts)
 	if err != nil {
-		return fmt.Errorf("could not estimate the gas required to scrub the minipool: %w", err)
+		t.printMessage(fmt.Sprintf("could not estimate the gas required to scrub the minipool: %s", err.Error()))
+		return
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
-		return nil
+		return
 	}
 
 	// Set the gas settings
@@ -259,20 +262,19 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	// Cancel the reduction
 	hash, err := mp.VoteScrub(opts)
 	if err != nil {
-		return err
+		t.printMessage(fmt.Sprintf("could not vote to scrub the minipool: %s", err.Error()))
+		return
 	}
 
 	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
-		return err
+		t.printMessage(fmt.Sprintf("error waiting for scrub transaction: %s", err.Error()))
+		return
 	}
 
 	// Log
 	t.log.Printlnf("Successfully voted to scrub minipool %s.", mp.GetAddress().Hex())
-
-	// Return
-	return nil
 
 }
 
