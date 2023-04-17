@@ -44,7 +44,7 @@ type treeGeneratorImpl_v1 struct {
 	smoothingPoolAddress common.Address
 	intervalDutiesInfo   *IntervalDutiesInfo
 	slotsPerEpoch        uint64
-	validatorIndexMap    map[uint64]*MinipoolInfo
+	validatorIndexMap    map[string]*MinipoolInfo
 	elStartTime          time.Time
 	elEndTime            time.Time
 	validNetworkCache    map[uint64]bool
@@ -996,7 +996,7 @@ func (r *treeGeneratorImpl_v1) createMinipoolIndexMap() error {
 	}
 
 	// Get indices for all minipool validators
-	r.validatorIndexMap = map[uint64]*MinipoolInfo{}
+	r.validatorIndexMap = map[string]*MinipoolInfo{}
 	statusMap, err := r.bc.GetValidatorStatuses(minipoolPubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &r.rewardsFile.ConsensusEndBlock,
 	})

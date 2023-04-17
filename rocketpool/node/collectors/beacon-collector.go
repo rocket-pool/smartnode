@@ -86,7 +86,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 	upcomingSyncCommittee := float64(0)
 	upcomingProposals := float64(0)
 
-	var validatorIndices []uint64
+	var validatorIndices []string
 	var head beacon.BeaconHead
 
 	// Get sync committee duties

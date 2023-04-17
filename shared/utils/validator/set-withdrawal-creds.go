@@ -2,6 +2,7 @@ package validator
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -24,16 +25,22 @@ func GetWithdrawalKey(mnemonic string, index uint, validatorKeyPath string) (*et
 }
 
 // Get a voluntary exit message signature for a given validator key and index
-func GetSignedWithdrawalCredsChangeMessage(withdrawalKey *eth2types.BLSPrivateKey, validatorIndex uint64, newWithdrawalAddress common.Address, signatureDomain []byte) (types.ValidatorSignature, error) {
+func GetSignedWithdrawalCredsChangeMessage(withdrawalKey *eth2types.BLSPrivateKey, validatorIndex string, newWithdrawalAddress common.Address, signatureDomain []byte) (types.ValidatorSignature, error) {
 
 	// Get the withdrawal pubkey
 	withdrawalPubkey := withdrawalKey.PublicKey().Marshal()
 	withdrawalPubkeyBuffer := [48]byte{}
 	copy(withdrawalPubkeyBuffer[:], withdrawalPubkey)
 
+	// Convert the validator index to a uint
+	indexNum, err := strconv.ParseUint(validatorIndex, 10, 64)
+	if err != nil {
+		return types.ValidatorSignature{}, fmt.Errorf("error parsing validator index (%s): %w", validatorIndex, err)
+	}
+
 	// Build withdrawal creds change message
 	message := eth2.WithdrawalCredentialsChange{
-		ValidatorIndex:     validatorIndex,
+		ValidatorIndex:     indexNum,
 		FromBLSPubkey:      withdrawalPubkeyBuffer,
 		ToExecutionAddress: newWithdrawalAddress,
 	}

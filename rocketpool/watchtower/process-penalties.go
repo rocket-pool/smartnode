@@ -347,7 +347,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock, smoothingPool
 		return isIllegalFeeRecipient, nil
 	}
 
-	status, err := t.bc.GetValidatorStatusByIndex(strconv.FormatUint(block.ProposerIndex, 10), nil)
+	status, err := t.bc.GetValidatorStatusByIndex(block.ProposerIndex, nil)
 	if err != nil {
 		return isIllegalFeeRecipient, err
 	}

@@ -46,7 +46,7 @@ type treeGeneratorImpl_v4 struct {
 	smoothingPoolAddress   common.Address
 	intervalDutiesInfo     *IntervalDutiesInfo
 	slotsPerEpoch          uint64
-	validatorIndexMap      map[uint64]*MinipoolInfo
+	validatorIndexMap      map[string]*MinipoolInfo
 	elStartTime            time.Time
 	elEndTime              time.Time
 	validNetworkCache      map[uint64]bool
@@ -1071,7 +1071,7 @@ func (r *treeGeneratorImpl_v4) createMinipoolIndexMap() error {
 	}
 
 	// Get the status for all uncached minipool validators and add them to the cache
-	r.validatorIndexMap = map[uint64]*MinipoolInfo{}
+	r.validatorIndexMap = map[string]*MinipoolInfo{}
 	statusMap, err := r.bc.GetValidatorStatuses(uncachedMinipoolPubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &r.rewardsFile.ConsensusEndBlock,
 	})
@@ -1097,7 +1097,7 @@ func (r *treeGeneratorImpl_v4) createMinipoolIndexMap() error {
 					switch status.Status {
 					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
 						// Remove minipools that don't have indices yet since they're not actually viable
-						r.log.Printlnf("NOTE: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
+						r.log.Printlnf("NOTE: minipool %s (index %s, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
 						minipoolInfo.StartSlot = 0
 						minipoolInfo.EndSlot = 0
 						minipoolInfo.WasActive = false
@@ -1468,7 +1468,7 @@ func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 
 	// Get the status for all staking minipool validators
 	r.log.Printlnf("%s Getting validator statuses for all eligible minipools", r.logPrefix)
-	r.validatorIndexMap = map[uint64]*MinipoolInfo{}
+	r.validatorIndexMap = map[string]*MinipoolInfo{}
 	statusMap, err := r.bc.GetValidatorStatuses(r.stakingMinipoolPubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &r.rewardsFile.ConsensusEndBlock,
 	})

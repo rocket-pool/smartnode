@@ -17,7 +17,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, nodeAddress common.Address) ([]uint64, error) {
+func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, nodeAddress common.Address) ([]string, error) {
 	// Get current block number so all subsequent queries are done at same point in time
 	blockNumber, err := ec.BlockNumber(context.Background())
 	if err != nil {
@@ -51,7 +51,7 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionC
 	}
 
 	// Enumerate validators statuses and fill indices array
-	validatorIndices := make([]uint64, len(statuses)+1)
+	validatorIndices := make([]string, len(statuses)+1)
 
 	i := 0
 	for _, status := range statuses {

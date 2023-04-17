@@ -39,7 +39,7 @@ type BeaconHead struct {
 }
 type ValidatorStatus struct {
 	Pubkey                     types.ValidatorPubkey
-	Index                      uint64
+	Index                      string
 	WithdrawalCredentials      common.Hash
 	Balance                    uint64
 	Status                     ValidatorState
@@ -58,7 +58,7 @@ type Eth1Data struct {
 }
 type BeaconBlock struct {
 	Slot                 uint64
-	ProposerIndex        uint64
+	ProposerIndex        string
 	HasExecutionPayload  bool
 	Attestations         []AttestationInfo
 	FeeRecipient         common.Address
@@ -68,7 +68,7 @@ type BeaconBlock struct {
 type Committee struct {
 	Index      uint64
 	Slot       uint64
-	Validators []uint64
+	Validators []string
 }
 
 type AttestationInfo struct {
@@ -121,13 +121,13 @@ type Client interface {
 	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
-	GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error)
-	GetValidatorSyncDuties(indices []uint64, epoch uint64) (map[uint64]bool, error)
-	GetValidatorProposerDuties(indices []uint64, epoch uint64) (map[uint64]uint64, error)
+	GetValidatorIndex(pubkey types.ValidatorPubkey) (string, error)
+	GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error)
+	GetValidatorProposerDuties(indices []string, epoch uint64) (map[string]uint64, error)
 	GetDomainData(domainType []byte, epoch uint64, useGenesisFork bool) ([]byte, error)
-	ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error
+	ExitValidator(validatorIndex string, epoch uint64, signature types.ValidatorSignature) error
 	Close() error
 	GetEth1DataForEth2Block(blockId string) (Eth1Data, bool, error)
 	GetCommitteesForEpoch(epoch *uint64) ([]Committee, error)
-	ChangeWithdrawalCredentials(validatorIndex uint64, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error
+	ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error
 }

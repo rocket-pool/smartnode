@@ -204,36 +204,36 @@ func (m *BeaconClientManager) GetValidatorStatuses(pubkeys []types.ValidatorPubk
 }
 
 // Get a validator's index
-func (m *BeaconClientManager) GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error) {
+func (m *BeaconClientManager) GetValidatorIndex(pubkey types.ValidatorPubkey) (string, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
 		return client.GetValidatorIndex(pubkey)
 	})
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	return result.(uint64), nil
+	return result.(string), nil
 }
 
 // Get a validator's sync duties
-func (m *BeaconClientManager) GetValidatorSyncDuties(indices []uint64, epoch uint64) (map[uint64]bool, error) {
+func (m *BeaconClientManager) GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
 		return client.GetValidatorSyncDuties(indices, epoch)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.(map[uint64]bool), nil
+	return result.(map[string]bool), nil
 }
 
 // Get a validator's proposer duties
-func (m *BeaconClientManager) GetValidatorProposerDuties(indices []uint64, epoch uint64) (map[uint64]uint64, error) {
+func (m *BeaconClientManager) GetValidatorProposerDuties(indices []string, epoch uint64) (map[string]uint64, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
 		return client.GetValidatorProposerDuties(indices, epoch)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.(map[uint64]uint64), nil
+	return result.(map[string]uint64), nil
 }
 
 // Get the Beacon chain's domain data
@@ -248,7 +248,7 @@ func (m *BeaconClientManager) GetDomainData(domainType []byte, epoch uint64, use
 }
 
 // Voluntarily exit a validator
-func (m *BeaconClientManager) ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error {
+func (m *BeaconClientManager) ExitValidator(validatorIndex string, epoch uint64, signature types.ValidatorSignature) error {
 	err := m.runFunction0(func(client beacon.Client) error {
 		return client.ExitValidator(validatorIndex, epoch, signature)
 	})
@@ -286,7 +286,7 @@ func (m *BeaconClientManager) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Com
 }
 
 // Change the withdrawal credentials for a validator
-func (m *BeaconClientManager) ChangeWithdrawalCredentials(validatorIndex uint64, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
+func (m *BeaconClientManager) ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
 	err := m.runFunction0(func(client beacon.Client) error {
 		return client.ChangeWithdrawalCredentials(validatorIndex, fromBlsPubkey, toExecutionAddress, signature)
 	})
