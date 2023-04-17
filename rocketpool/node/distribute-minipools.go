@@ -191,11 +191,11 @@ func (t *distributeMinipools) getDistributableMinipools(nodeAddress common.Addre
 			// Ignore minipools with legacy delegates
 			continue
 		}
-		if mpd.Balance.Cmp(t.eight) >= 0 {
-			// Ignore minipools with balances >= 8 ETH
+		if mpd.DistributableBalance.Cmp(t.eight) >= 0 {
+			// Ignore minipools with distributable balances >= 8 ETH
 			continue
 		}
-		if mpd.Balance.Cmp(t.distributeThreshold) >= 0 {
+		if mpd.DistributableBalance.Cmp(t.distributeThreshold) >= 0 {
 			distributableMinipools = append(distributableMinipools, mpd)
 		}
 	}
