@@ -31,6 +31,7 @@ require (
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/tyler-smith/go-bip39 v1.1.0
+	github.com/umbracle/go-eth-consensus v0.1.2
 	github.com/urfave/cli v1.22.12
 	github.com/wealdtech/go-ens/v3 v3.5.5
 	github.com/wealdtech/go-eth2-types/v2 v2.8.1-0.20230131115251-b93cf60cee26
@@ -149,7 +150,7 @@ require (
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/supranational/blst v0.3.8-0.20220526154634-513d2456b344 // indirect
+	github.com/supranational/blst v0.3.10 // indirect
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect

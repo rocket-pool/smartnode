@@ -14,6 +14,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/prysmaticlabs/prysm/v3/crypto/bls"
 	"github.com/rocket-pool/rocketpool-go/types"
+	gec "github.com/umbracle/go-eth-consensus"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
 
@@ -461,28 +462,111 @@ func (c *StandardHttpClient) GetEth1DataForEth2Block(blockId string) (beacon.Eth
 
 }
 
-func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.AttestationInfo, bool, error) {
-	attestations, exists, err := c.getAttestations(blockId)
+type attestationsResponseRaw struct {
+	body    []byte
+	version string
+}
+
+func (c *StandardHttpClient) GetAttestationsRaw(blockId string) (*attestationsResponseRaw, bool, error) {
+
+	// Build the request
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/eth/v2/beacon/blocks/%s", c.providerAddress, blockId), nil)
 	if err != nil {
 		return nil, false, err
 	}
-	if !exists {
+
+	req.Header.Set("accept", "application/octet-stream")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, false, err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, false, fmt.Errorf("Could not get attestations data for slot %s: HTTP status %d", blockId, resp.StatusCode)
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
 		return nil, false, nil
 	}
 
-	// Add attestation info
-	attestationInfo := make([]beacon.AttestationInfo, len(attestations.Data))
-	for i, attestation := range attestations.Data {
-		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
-		attestationInfo[i].SlotIndex = uint64(attestation.Data.Slot)
-		attestationInfo[i].CommitteeIndex = uint64(attestation.Data.Index)
-		attestationInfo[i].AggregationBits, err = hex.DecodeString(bitString)
-		if err != nil {
-			return nil, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
-		}
+	if resp.StatusCode != http.StatusOK {
+		return nil, false, fmt.Errorf("Could not get attestations data for slot %s: HTTP status %d; reponse body: '%s'", blockId, resp.StatusCode, string(body))
 	}
 
-	return attestationInfo, true, nil
+	return &attestationsResponseRaw{
+		body:    body,
+		version: resp.Header.Get("Eth-Consensus-Version"),
+	}, true, nil
+}
+
+func (c *StandardHttpClient) ParseAttestationsResponseRaw(resp *attestationsResponseRaw) ([]beacon.AttestationInfo, error) {
+	var attestations []*gec.Attestation
+
+	// Unmarshal block SSZ
+	if strings.EqualFold(resp.version, "phase0") {
+		block := new(gec.SignedBeaconBlockPhase0)
+		if err := block.UnmarshalSSZ(resp.body); err != nil {
+			return nil, err
+		}
+
+		attestations = block.Block.Body.Attestations
+	} else if strings.EqualFold(resp.version, "altair") {
+		block := new(gec.SignedBeaconBlockAltair)
+		if err := block.UnmarshalSSZ(resp.body); err != nil {
+			return nil, err
+		}
+
+		attestations = block.Block.Body.Attestations
+	} else if strings.EqualFold(resp.version, "bellatrix") {
+		block := new(gec.SignedBeaconBlockBellatrix)
+		if err := block.UnmarshalSSZ(resp.body); err != nil {
+			return nil, err
+		}
+
+		attestations = block.Block.Body.Attestations
+	} else if strings.EqualFold(resp.version, "capella") {
+		block := new(gec.SignedBeaconBlockCapella)
+		if err := block.UnmarshalSSZ(resp.body); err != nil {
+			return nil, err
+		}
+
+		attestations = block.Block.Body.Attestations
+	} else {
+		return nil, fmt.Errorf("unknown consensus version header: %s", resp.version)
+	}
+
+	out := make([]beacon.AttestationInfo, len(attestations))
+	for i := range attestations {
+		out[i].AggregationBits = attestations[i].AggregationBits
+		out[i].SlotIndex = attestations[i].Data.Slot
+		out[i].CommitteeIndex = attestations[i].Data.Index
+	}
+
+	return out, nil
+
+}
+
+func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.AttestationInfo, bool, error) {
+	resp, found, err := c.GetAttestationsRaw(blockId)
+	if err != nil {
+		return nil, found, err
+	}
+
+	if found == false {
+		return nil, found, err
+	}
+
+	out, err := c.ParseAttestationsResponseRaw(resp)
+	if err != nil {
+		return nil, found, err
+	}
+
+	return out, true, nil
 }
 
 func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error) {
