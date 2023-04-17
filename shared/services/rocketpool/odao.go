@@ -1,11 +1,11 @@
 package rocketpool
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )

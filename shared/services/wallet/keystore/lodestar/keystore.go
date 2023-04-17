@@ -1,15 +1,14 @@
 package lodestar
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/rocket-pool/rocketpool-go/types"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
@@ -37,11 +36,11 @@ type Keystore struct {
 
 // Encrypted validator key store
 type validatorKey struct {
-	Crypto  map[string]interface{}  `json:"crypto"`
-	Version uint                    `json:"version"`
-	UUID    uuid.UUID               `json:"uuid"`
-	Path    string                  `json:"path"`
-	Pubkey  rptypes.ValidatorPubkey `json:"pubkey"`
+	Crypto  map[string]interface{} `json:"crypto"`
+	Version uint                   `json:"version"`
+	UUID    uuid.UUID              `json:"uuid"`
+	Path    string                 `json:"path"`
+	Pubkey  types.ValidatorPubkey  `json:"pubkey"`
 }
 
 // Create new lodestar keystore
@@ -62,7 +61,7 @@ func (ks *Keystore) GetKeystoreDir() string {
 func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPath string) error {
 
 	// Get validator pubkey
-	pubkey := rptypes.BytesToValidatorPubkey(key.PublicKey().Marshal())
+	pubkey := types.BytesToValidatorPubkey(key.PublicKey().Marshal())
 
 	// Create a new password
 	password, err := keystore.GenerateRandomPassword()

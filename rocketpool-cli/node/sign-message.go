@@ -3,9 +3,8 @@ package node
 import (
 	"fmt"
 
-	"encoding/json"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"

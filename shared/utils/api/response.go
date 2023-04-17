@@ -1,10 +1,11 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
+
+	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )

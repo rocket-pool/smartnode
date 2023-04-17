@@ -15,6 +15,7 @@ require (
 	github.com/ferranbt/fastssz v0.1.3
 	github.com/gdamore/tcell/v2 v2.6.0
 	github.com/glendc/go-external-ip v0.1.0
+	github.com/goccy/go-json v0.10.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/imdario/mergo v0.3.13

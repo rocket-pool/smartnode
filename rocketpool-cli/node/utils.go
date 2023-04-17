@@ -1,7 +1,6 @@
 package node
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,14 +12,16 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/goccy/go-json"
 	"github.com/mitchellh/go-homedir"
+	"gopkg.in/yaml.v2"
+
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
-	"gopkg.in/yaml.v2"
 )
 
 // IPInfo API

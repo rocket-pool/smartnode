@@ -1,11 +1,12 @@
 package etherchain
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
 	"net/http"
+
+	"github.com/goccy/go-json"
 )
 
 const gasNowUrl string = "https://beaconcha.in/api/v1/execution/gasnow"

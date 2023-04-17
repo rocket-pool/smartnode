@@ -3,7 +3,6 @@ package watchtower
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -14,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/goccy/go-json"
 	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"

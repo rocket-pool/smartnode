@@ -2,10 +2,11 @@ package client
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
+
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 

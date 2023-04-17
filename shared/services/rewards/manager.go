@@ -3,7 +3,6 @@ package rewards
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -17,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/goccy/go-json"
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/rewards"

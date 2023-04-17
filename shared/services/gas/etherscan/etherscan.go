@@ -1,11 +1,12 @@
 package etherscan
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/goccy/go-json"
 )
 
 const gasOracleUrl string = "https://api.etherscan.io/api?module=gastracker&action=gasoracle"
