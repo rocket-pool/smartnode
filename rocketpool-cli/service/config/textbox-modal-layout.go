@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -173,7 +174,7 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, maxLengths 
 		if layout.done != nil {
 			text := map[string]string{}
 			for label, textbox := range layout.textboxes {
-				text[label] = textbox.GetText()
+				text[label] = strings.TrimSpace(textbox.GetText())
 			}
 			layout.done(text)
 		}
