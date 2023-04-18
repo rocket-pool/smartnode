@@ -56,6 +56,7 @@ type submitScrubMinipools struct {
 type iterationData struct {
 	// Counters
 	totalMinipools        int
+	vacantMinipools       int
 	goodOnBeaconCount     int
 	badOnBeaconCount      int
 	goodPrestakeCount     int
@@ -261,6 +262,7 @@ func (t *submitScrubMinipools) initializeMinipoolDetails(minipools []rpstate.Nat
 	for _, mpd := range minipools {
 		// Ignore vacant minipools - they have the wrong withdrawal creds (temporarily) by design
 		if mpd.IsVacant {
+			t.it.vacantMinipools++
 			continue
 		}
 
@@ -609,6 +611,7 @@ func (t *submitScrubMinipools) printFinalTally(prefix string) {
 
 	t.log.Printlnf("%s Scrub check complete.", prefix)
 	t.log.Printlnf("\tTotal prelaunch minipools: %d", t.it.totalMinipools)
+	t.log.Printlnf("\tVacant minipools: %d", t.it.vacantMinipools)
 	t.log.Printlnf("\tBeacon Chain scrubs: %d/%d", t.it.badOnBeaconCount, (t.it.badOnBeaconCount + t.it.goodOnBeaconCount))
 	t.log.Printlnf("\tPrestake scrubs: %d/%d", t.it.badPrestakeCount, (t.it.badPrestakeCount + t.it.goodPrestakeCount))
 	t.log.Printlnf("\tDeposit Contract scrubs: %d/%d", t.it.badOnDepositContract, (t.it.badOnDepositContract + t.it.goodOnDepositContract))
