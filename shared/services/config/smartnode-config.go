@@ -895,7 +895,7 @@ func getNetworkOptions() []config.ParameterOption {
 	if strings.HasSuffix(shared.RocketPoolVersion, "-dev") {
 		options = append(options, config.ParameterOption{
 			Name:        "Devnet",
-			Description: "This is a development network used by Rocket PI have beool engineers to test new features and contract upgrades before they are promoted to Prater for staging. You should not use this network unless invited to do so by the developers.",
+			Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to Prater for staging. You should not use this network unless invited to do so by the developers.",
 			Value:       config.Network_Devnet,
 		})
 	}
