@@ -76,7 +76,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CACHE_SIZE"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			OverwriteOnUpgrade:   true,
 		},
 
 		MaxPeers: config.Parameter{
@@ -100,7 +100,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"NETHERMIND_PRUNE_MEM_SIZE"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			OverwriteOnUpgrade:   true,
 		},
 
 		AdditionalModules: config.Parameter{
@@ -170,11 +170,11 @@ func calculateNethermindCache() uint64 {
 	} else if totalMemoryGB < 17 {
 		return 1024
 	} else if totalMemoryGB < 25 {
-		return 2048
+		return 1024
 	} else if totalMemoryGB < 33 {
-		return 4096
+		return 1024
 	} else {
-		return 8192
+		return 2048
 	}
 }
 
@@ -191,11 +191,11 @@ func calculateNethermindPruneMemSize() uint64 {
 	} else if totalMemoryGB < 17 {
 		return 1024
 	} else if totalMemoryGB < 25 {
-		return 2048
+		return 1024
 	} else if totalMemoryGB < 33 {
-		return 4096
+		return 1024
 	} else {
-		return 8192
+		return 1024
 	}
 }
 
