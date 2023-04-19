@@ -60,7 +60,6 @@ func newPromoteMinipools(c *cli.Context, logger log.ColorLogger) (*promoteMinipo
 		return nil, err
 	}
 
-	// Check if auto-staking is disabled
 	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
 
 	// Get the user-requested max fee
