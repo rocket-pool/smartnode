@@ -259,7 +259,7 @@ func nodeDeposit(c *cli.Context) error {
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
 		"You are about to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%.\n"+
-			"%sARE YOU SURE YOU WANT TO DO THIS? Exiting this minipool and retrieving your capital cannot be done until your minipool has been *active* on the Beacon Chain for 256 epochs (approx. 27 hours)%s\n",
+			"%sARE YOU SURE YOU WANT TO DO THIS? Exiting this minipool and retrieving your capital cannot be done until your minipool has been *active* on the Beacon Chain for 256 epochs (approx. 27 hours).%s\n",
 		math.RoundDown(eth.WeiToEth(amountWei), 6),
 		minNodeFee*100,
 		colorYellow,

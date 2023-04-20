@@ -74,11 +74,9 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 
 	// Check if auto-bond-reduction is disabled
 	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
-
-	// Safety clamp
 	disabled := false
 	if gasThreshold == 0 {
-		logger.Println("Auto-distribute threshold is 0, disabling auto-distribute.")
+		logger.Println("Automatic tx gas threshold is 0, disabling auto-reduce.")
 		disabled = true
 	}
 
@@ -169,9 +167,12 @@ func (t *reduceBonds) run(state *state.NetworkState) error {
 	t.log.Printlnf("%d minipool(s) are ready for bond reduction...", len(minipools))
 
 	// Workaround for the fee distribution issue
-	err = t.forceFeeDistribution()
+	success, err := t.forceFeeDistribution()
 	if err != nil {
 		return err
+	}
+	if !success {
+		return nil
 	}
 
 	// Reduce bonds
@@ -193,18 +194,18 @@ func (t *reduceBonds) run(state *state.NetworkState) error {
 }
 
 // Temp mitigation for the
-func (t *reduceBonds) forceFeeDistribution() error {
+func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Get fee distributor address
 	distributorAddress, err := node.GetDistributorAddress(t.rp, nodeAccount.Address, nil)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Sync
@@ -228,37 +229,37 @@ func (t *reduceBonds) forceFeeDistribution() error {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return err
+		return false, err
 	}
 
 	balance := eth.WeiToEth(balanceRaw)
 	if balance == 0 {
 		t.log.Println("Your fee distributor does not have any ETH and does not need to be distributed.")
-		return nil
+		return true, nil
 	}
 	t.log.Println("NOTE: prior to bond reduction, you must distribute the funds in your fee distributor.")
 
 	// Print info
 	nodeShare := (1 + avgNodeFee) * balance / 2
 	rEthShare := balance - nodeShare
-	t.log.Println("Your node's average commission is %.2f%%.", avgNodeFee*100.0)
-	t.log.Println("Your fee distributor's balance of %.6f ETH will be distributed as follows:", balance)
-	t.log.Println("\tYour withdrawal address will receive %.6f ETH.", nodeShare)
-	t.log.Println("\trETH pool stakers will receive %.6f ETH.\n", rEthShare)
+	t.log.Printlnf("Your node's average commission is %.2f%%.", avgNodeFee*100.0)
+	t.log.Printlnf("Your fee distributor's balance of %.6f ETH will be distributed as follows:", balance)
+	t.log.Printlnf("\tYour withdrawal address will receive %.6f ETH.", nodeShare)
+	t.log.Printlnf("\trETH pool stakers will receive %.6f ETH.\n", rEthShare)
 
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Get the gas limit
 	distributor, err := node.NewDistributor(t.rp, distributorAddress, nil)
 	if err != nil {
-		return err
+		return false, err
 	}
 	gasInfo, err := distributor.EstimateDistributeGas(opts)
 	if err != nil {
-		return fmt.Errorf("could not estimate the gas required to distribute node fees: %w", err)
+		return false, fmt.Errorf("could not estimate the gas required to distribute node fees: %w", err)
 	}
 	var gas *big.Int
 	if t.gasLimit != 0 {
@@ -272,13 +273,13 @@ func (t *reduceBonds) forceFeeDistribution() error {
 	if maxFee == nil || maxFee.Uint64() == 0 {
 		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
 
 	// Print the gas info
 	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
-		return nil
+		return false, nil
 	}
 
 	opts.GasFeeCap = maxFee
@@ -289,18 +290,18 @@ func (t *reduceBonds) forceFeeDistribution() error {
 	fmt.Printf("Distributing rewards...\n")
 	hash, err := distributor.Distribute(opts)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Log & return
 	fmt.Println("Successfully distributed your fee distributor's balance. Your rewards should arrive in your withdrawal address shortly.")
-	return nil
+	return true, nil
 }
 
 // Get reduceable minipools

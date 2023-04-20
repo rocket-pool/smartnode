@@ -387,7 +387,7 @@ func forceFeeDistribution(c *cli.Context, rp *rocketpool.Client) error {
 
 	balance := eth.WeiToEth(canDistributeResponse.Balance)
 	if balance == 0 {
-		fmt.Printf("Your fee distributor does not have any ETH and does not need to be distributed.")
+		fmt.Println("Your fee distributor does not have any ETH and does not need to be distributed.\n")
 		return nil
 	}
 	fmt.Println("NOTE: prior to bond reduction, you must distribute the funds in your fee distributor.\n")
