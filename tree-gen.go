@@ -49,9 +49,6 @@ type targets struct {
 	// For preview related functions, we use snapshotDetails
 	snapshotDetails *snapshotDetails
 
-	// cached NetworkState at the end time
-	state *state.NetworkState
-
 	// cached beacon block - not necessarily the last block in the last epoch,
 	// as it may not have been proposed
 	block *beacon.BeaconBlock
@@ -79,6 +76,7 @@ type treeGenerator struct {
 	log          *log.ColorLogger
 	rp           *rocketpool.RocketPool
 	cfg          *config.RocketPoolConfig
+	mgr          *state.NetworkStateManager
 	bn           beacon.Client
 	beaconConfig beacon.Eth2Config
 	targets      targets
@@ -146,12 +144,19 @@ func GenerateTree(c *cli.Context) error {
 		return fmt.Errorf("error creating Rocket Pool wrapper: %w", err)
 	}
 
+	// Create the NetworkStateManager
+	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bn, &log)
+	if err != nil {
+		return err
+	}
+
 	// Create the generator
 	generator := treeGenerator{
 		log:          &log,
 		rp:           rp,
 		cfg:          cfg,
 		bn:           bn,
+		mgr:          mgr,
 		beaconConfig: beaconConfig,
 		outputDir:    c.String("output-dir"),
 		prettyPrint:  c.Bool("pretty-print"),
@@ -178,11 +183,17 @@ func GenerateTree(c *cli.Context) error {
 
 func (g *treeGenerator) getTreegenArgs() (*treegenArguments, error) {
 
+	// Cache the network state at the time of the targeted epoch for later use
+	state, err := g.mgr.GetStateForSlot(g.targets.block.Slot)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get state at slot %d: %w", g.targets.block.Slot, err)
+	}
+
 	// If we have a rewardsEvent, we're generating a full interval
 	if g.targets.rewardsEvent != nil {
 		elBlockHeader, err := g.rp.Client.HeaderByNumber(context.Background(), g.targets.rewardsEvent.ExecutionBlock)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error getting el block header %d: %w", g.targets.rewardsEvent.ExecutionBlock.Uint64(), err)
 		}
 		return &treegenArguments{
 			startTime:       g.targets.rewardsEvent.IntervalStartTime,
@@ -191,7 +202,7 @@ func (g *treeGenerator) getTreegenArgs() (*treegenArguments, error) {
 			intervalsPassed: g.targets.rewardsEvent.IntervalsPassed.Uint64(),
 			block:           g.targets.block,
 			elBlockHeader:   elBlockHeader,
-			state:           g.targets.state,
+			state:           state,
 		}, nil
 	}
 
@@ -203,7 +214,7 @@ func (g *treeGenerator) getTreegenArgs() (*treegenArguments, error) {
 		intervalsPassed: g.targets.snapshotDetails.intervalsPassed,
 		block:           g.targets.block,
 		elBlockHeader:   g.targets.snapshotDetails.snapshotElBlockHeader,
-		state:           g.targets.state,
+		state:           state,
 	}, nil
 }
 
@@ -239,11 +250,6 @@ func (g *treeGenerator) lastBlockInEpoch(epoch uint64) (*beacon.BeaconBlock, err
 func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 	var err error
 
-	mgr, err := state.NewNetworkStateManager(g.rp, g.cfg, g.rp.Client, g.bn, g.log)
-	if err != nil {
-		return err
-	}
-
 	if targetEpoch > 0 {
 		// Validate that the targeted epoch is finalized
 		beaconHead, err := g.bn.GetBeaconHead()
@@ -261,7 +267,7 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 		var block *beacon.BeaconBlock
 		if targetEpoch == 0 {
 			// No targetEpoch was passed, so set it to the latest finalized epoch
-			b, err := mgr.GetLatestFinalizedBeaconBlock()
+			b, err := g.mgr.GetLatestFinalizedBeaconBlock()
 			if err != nil {
 				return err
 			}
@@ -294,12 +300,6 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 		g.log.Printlnf("Targeting a portion of the current interval (%d)", g.targets.snapshotDetails.index)
 		g.targets.snapshotDetails.log(g.log)
 
-		// Cache the network state at the time of the block for later use
-		g.targets.state, err = mgr.GetStateForSlot(g.targets.block.Slot)
-		if err != nil {
-			return err
-		}
-
 		return nil
 	}
 
@@ -323,12 +323,6 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 		}
 		if g.targets.block == nil {
 			return fmt.Errorf("unable to find any valid blocks in epoch %d. Was your BN synced after this epoch?", targetEpoch)
-		}
-
-		// Cache the network state at the time of the interval end for later use
-		g.targets.state, err = mgr.GetStateForSlot(g.targets.block.Slot)
-		if err != nil {
-			return err
 		}
 
 		return nil
@@ -374,12 +368,6 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 	// inform the user of the range they're querying
 	g.log.Printlnf("Targeting a portion of a previous interval (%d)", g.targets.snapshotDetails.index)
 	g.targets.snapshotDetails.log(g.log)
-
-	// Cache the network state at the time of the targeted epoch for later use
-	g.targets.state, err = mgr.GetStateForSlot(g.targets.block.Slot)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
