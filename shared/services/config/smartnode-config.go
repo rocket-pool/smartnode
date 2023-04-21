@@ -545,7 +545,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		zkSyncEraPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "",
+			config.Network_Mainnet: "0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8",
 			config.Network_Prater:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
 			config.Network_Devnet:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
 		},
