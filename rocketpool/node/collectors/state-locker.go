@@ -25,7 +25,9 @@ func (l *StateLocker) UpdateState(state *state.NetworkState, totalEffectiveStake
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	l.state = state
-	l.totalEffectiveStake = totalEffectiveStake
+	if totalEffectiveStake != nil {
+		l.totalEffectiveStake = totalEffectiveStake
+	}
 }
 
 func (l *StateLocker) GetState() *state.NetworkState {
