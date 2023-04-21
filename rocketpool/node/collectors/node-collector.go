@@ -222,6 +222,9 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	var beaconHead beacon.BeaconHead
 	unclaimedEthRewards := float64(0)
 	unclaimedRplRewards := float64(0)
+	if totalEffectiveStake == nil {
+		return
+	}
 
 	// Get the cumulative claimed and unclaimed RPL rewards
 	wg.Go(func() error {

@@ -183,7 +183,12 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 
 // Creates a snapshot of the Rocket Pool network, but only for a single node
 // Also gets the total effective RPL stake of the network for convenience since this is required by several node routines
-func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address) (*NetworkState, *big.Int, error) {
+func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
+	steps := 5
+	if calculateTotalEffectiveStake {
+		steps++
+	}
+
 	// Get the relevant network contracts
 	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
 	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
@@ -238,7 +243,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 			return nil, fmt.Errorf("error getting network details: %w", err)
 		}
 	*/
-	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
+	state.logLine("1/%d - Retrieved network details (%s so far)", steps, time.Since(start))
 
 	// Node details
 	nodeDetails, err := rpstate.GetNativeNodeDetails(rp, contracts, nodeAddress, isAtlasDeployed)
@@ -246,14 +251,14 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		return nil, nil, fmt.Errorf("error getting node details: %w", err)
 	}
 	state.NodeDetails = []rpstate.NativeNodeDetails{nodeDetails}
-	state.logLine("2/5 - Retrieved node details (%s so far)", time.Since(start))
+	state.logLine("2/%d - Retrieved node details (%s so far)", steps, time.Since(start))
 
 	// Minipool details
 	state.MinipoolDetails, err = rpstate.GetNodeNativeMinipoolDetails(rp, contracts, nodeAddress)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
-	state.logLine("3/5 - Retrieved minipool details (%s so far)", time.Since(start))
+	state.logLine("3/%d - Retrieved minipool details (%s so far)", steps, time.Since(start))
 
 	// Create the node lookup
 	for i, details := range state.NodeDetails {
@@ -284,9 +289,15 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	}
 
 	// Get the total network effective RPL stake
-	totalEffectiveStake, err := rpstate.GetTotalEffectiveRplStake(rp, contracts)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error calculating total effective RPL stake for the network: %w", err)
+	currentStep := 4
+	var totalEffectiveStake *big.Int
+	if calculateTotalEffectiveStake {
+		totalEffectiveStake, err = rpstate.GetTotalEffectiveRplStake(rp, contracts)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error calculating total effective RPL stake for the network: %w", err)
+		}
+		state.logLine("%d/%d - Calculated total effective stake (total time: %s)", currentStep, steps, time.Since(start))
+		currentStep++
 	}
 
 	// Get the validator stats from Beacon
@@ -297,7 +308,8 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		return nil, nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("4/5 - Retrieved validator details (total time: %s)", time.Since(start))
+	state.logLine("%d/%d - Retrieved validator details (total time: %s)", currentStep, steps, time.Since(start))
+	currentStep++
 
 	// Get the complete node and user shares
 	mpds := make([]*rpstate.NativeMinipoolDetails, len(state.MinipoolDetails))
@@ -316,7 +328,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		return nil, nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("5/5 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
+	state.logLine("%d/%d - Calculated complete node and user balance shares (total time: %s)", currentStep, steps, time.Since(start))
 
 	return state, totalEffectiveStake, nil
 }
