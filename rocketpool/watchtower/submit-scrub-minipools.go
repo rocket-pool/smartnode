@@ -156,6 +156,11 @@ func (t *submitScrubMinipools) run(state *state.NetworkState, isAtlasDeployed bo
 
 		t.it = new(iterationData)
 
+		// Get the time of the state's EL block
+		genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
+		secondsSinceGenesis := time.Duration(state.BeaconSlotNumber*state.BeaconConfig.SecondsPerSlot) * time.Second
+		t.it.stateBlockTime = genesisTime.Add(secondsSinceGenesis)
+
 		// Get minipools in prelaunch status
 		prelaunchMinipools := []rpstate.NativeMinipoolDetails{}
 		for _, mpd := range state.MinipoolDetails {
@@ -324,11 +329,6 @@ func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(state *state.Ne
 
 // Get various elements needed to do eth1 prestake and deposit contract searches
 func (t *submitScrubMinipools) getEth1SearchArtifacts(state *state.NetworkState) error {
-
-	// Get the time of the state's EL block
-	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
-	secondsSinceGenesis := time.Duration(state.BeaconSlotNumber*state.BeaconConfig.SecondsPerSlot) * time.Second
-	t.it.stateBlockTime = genesisTime.Add(secondsSinceGenesis)
 
 	// Get the block to start searching the deposit contract from
 	stateBlockNumber := big.NewInt(0).SetUint64(state.ElBlockNumber)
