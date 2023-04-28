@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -47,6 +48,7 @@ type NativeNodeDetails struct {
 	SmoothingPoolRegistrationChanged *big.Int
 	NodeAddress                      common.Address
 	AverageNodeFee                   *big.Int // Must call CalculateAverageFeeAndDistributorShares to get this
+	CollateralisationRatio           *big.Int
 	DistributorBalance               *big.Int
 }
 
@@ -58,6 +60,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 	details := NativeNodeDetails{
 		NodeAddress:               nodeAddress,
 		AverageNodeFee:            big.NewInt(0),
+		CollateralisationRatio:    big.NewInt(0),
 		DistributorBalanceUserETH: big.NewInt(0),
 		DistributorBalanceNodeETH: big.NewInt(0),
 	}
@@ -132,6 +135,13 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 				details.DistributorBalanceUserETH = big.NewInt(0)
 				details.DistributorBalanceNodeETH = big.NewInt(0)
 
+				if !isAtlasDeployed {
+					// Before Atlas, all node's had a 1:1 collateralisation ratio
+					details.CollateralisationRatio = eth.EthToWei(2)
+				} else {
+					details.CollateralisationRatio = big.NewInt(0)
+				}
+
 				addNodeDetailsCalls(contracts, mc, details, address, isAtlasDeployed)
 			}
 			_, err = mc.FlexibleCall(true, opts)
@@ -198,20 +208,24 @@ func CalculateAverageFeeAndDistributorShares(rp *rocketpool.RocketPool, contract
 	// Get the user and node portions of the distributor balance
 	distributorBalance := big.NewInt(0).Set(node.DistributorBalance)
 	if distributorBalance.Cmp(big.NewInt(0)) > 0 {
-		halfBalance := big.NewInt(0)
-		halfBalance.Div(distributorBalance, two)
+		nodeBalance := big.NewInt(0)
+		nodeBalance.Mul(distributorBalance, big.NewInt(1e18))
+		nodeBalance.Div(nodeBalance, node.CollateralisationRatio)
+
+		userBalance := big.NewInt(0)
+		userBalance.Sub(distributorBalance, nodeBalance)
 
 		if eligibleMinipools == 0 {
-			// Split it 50/50 if there are no minipools
-			node.DistributorBalanceNodeETH = big.NewInt(0).Set(halfBalance)
-			node.DistributorBalanceUserETH = big.NewInt(0).Sub(distributorBalance, halfBalance)
+			// Split it based solely on the collateralisation ratio if there are no minipools (and hence no average fee)
+			node.DistributorBalanceNodeETH = big.NewInt(0).Set(nodeBalance)
+			node.DistributorBalanceUserETH = big.NewInt(0).Sub(distributorBalance, nodeBalance)
 		} else {
 			// Amount of ETH given to the NO as a commission
 			commissionEth := big.NewInt(0)
-			commissionEth.Mul(halfBalance, node.AverageNodeFee)
+			commissionEth.Mul(userBalance, node.AverageNodeFee)
 			commissionEth.Div(commissionEth, big.NewInt(1e18))
 
-			node.DistributorBalanceNodeETH.Add(halfBalance, commissionEth)                         // Node gets half + commission
+			node.DistributorBalanceNodeETH.Add(nodeBalance, commissionEth)                         // Node gets their portion + commission on user portion
 			node.DistributorBalanceUserETH.Sub(distributorBalance, node.DistributorBalanceNodeETH) // User gets balance - node share
 		}
 
@@ -293,5 +307,6 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 
 	if isAtlasDeployed {
 		mc.AddCall(contracts.RocketNodeDeposit, &details.DepositCreditBalance, "getNodeDepositCredit", address)
+		mc.AddCall(contracts.RocketNodeStaking, &details.CollateralisationRatio, "getNodeETHCollateralisationRatio", address)
 	}
 }
