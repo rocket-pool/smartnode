@@ -63,6 +63,15 @@ type NodeCollector struct {
 	// The unclaimed ETH rewards from the smoothing pool
 	unclaimedEthRewards *prometheus.Desc
 
+	// The total ETH rewards skimmed balance
+	totalEthRewardsSkimmed *prometheus.Desc
+
+	// The total ETH rewards share of the skimmed balance
+	totalEthRewardsShareSkimmed *prometheus.Desc
+
+	// The total refund ETH skimmed balance
+	totalRefundEthSkimmed *prometheus.Desc
+
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
@@ -165,6 +174,18 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			"The unclaimed ETH rewards from the smoothing pool",
 			nil, nil,
 		),
+		totalEthRewardsSkimmed: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_eth_rewards_skimmed"),
+			"The total ETH rewards skimmed balance",
+			nil, nil,
+		),
+		totalEthRewardsShareSkimmed: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_eth_rewards_share_skimmed"),
+			"The total ETH rewards share of the skimmed balance",
+			nil, nil,
+		),
+		totalRefundEthSkimmed: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_refund_eth_skimmed"),
+			"The total refund ETH skimmed balance",
+			nil, nil,
+		),
 		rp:               rp,
 		bc:               bc,
 		nodeAddress:      nodeAddress,
@@ -190,6 +211,9 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.unclaimedRewards
 	channel <- collector.claimedEthRewards
 	channel <- collector.unclaimedEthRewards
+	channel <- collector.totalEthRewardsShareSkimmed
+	channel <- collector.totalEthRewardsSkimmed
+	channel <- collector.totalRefundEthSkimmed
 }
 
 // Collect the latest metric values and pass them to Prometheus
@@ -348,6 +372,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
 	}
+
+	totalDistributableBalance := float64(0)
+	totalNodeShareOfEthBalance := float64(0)
+	totalRefundBalance := float64(0)
+	for _, mpd := range minipools {
+		totalNodeShareOfEthBalance += eth.WeiToEth(mpd.NodeShareOfBalance)
+		totalRefundBalance += eth.WeiToEth(mpd.NodeRefundBalance)
+		totalDistributableBalance += eth.WeiToEth(mpd.DistributableBalance)
+	}
+
 	minipoolDetails, err := eth2.GetBeaconBalancesFromState(collector.rp, minipools, state, beaconHead, opts)
 	if err != nil {
 		collector.logError(err)
@@ -397,6 +431,12 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.unclaimedEthRewards, prometheus.GaugeValue, unclaimedEthRewards)
 	channel <- prometheus.MustNewConstMetric(
 		collector.claimedEthRewards, prometheus.GaugeValue, collector.cumulativeClaimedEthRewards)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalEthRewardsShareSkimmed, prometheus.GaugeValue, totalNodeShareOfEthBalance)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalEthRewardsSkimmed, prometheus.GaugeValue, totalDistributableBalance)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalRefundEthSkimmed, prometheus.GaugeValue, totalRefundBalance)
 }
 
 // Log error messages
