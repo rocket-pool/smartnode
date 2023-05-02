@@ -26,6 +26,8 @@ type MinipoolV2 interface {
 	Minipool
 	EstimateDistributeBalanceAndFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	DistributeBalanceAndFinalise(opts *bind.TransactOpts) (common.Hash, error)
+	EstimateDistributeBalanceGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	DistributeBalance(opts *bind.TransactOpts) (common.Hash, error)
 }
 
 // Minipool contract

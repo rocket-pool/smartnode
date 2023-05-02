@@ -26,6 +26,8 @@ type MinipoolV3 interface {
 	Promote(opts *bind.TransactOpts) (common.Hash, error)
 	GetPreMigrationBalance(opts *bind.CallOpts) (*big.Int, error)
 	GetUserDistributed(opts *bind.CallOpts) (bool, error)
+	EstimateDistributeBalanceGas(rewardsOnly bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	DistributeBalance(rewardsOnly bool, opts *bind.TransactOpts) (common.Hash, error)
 }
 
 // Minipool contract
@@ -357,13 +359,13 @@ func (mp *minipool_v3) GetUserDistributed(opts *bind.CallOpts) (bool, error) {
 }
 
 // Estimate the gas of DistributeBalance
-func (mp *minipool_v3) EstimateDistributeBalanceGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "distributeBalance")
+func (mp *minipool_v3) EstimateDistributeBalanceGas(rewardsOnly bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "distributeBalance", rewardsOnly)
 }
 
 // Distribute the minipool's ETH balance to the node operator and rETH staking pool.
-func (mp *minipool_v3) DistributeBalance(opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "distributeBalance")
+func (mp *minipool_v3) DistributeBalance(rewardsOnly bool, opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "distributeBalance", rewardsOnly)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not process withdrawal for minipool %s: %w", mp.Address.Hex(), err)
 	}

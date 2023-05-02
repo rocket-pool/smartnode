@@ -309,6 +309,19 @@ func GetMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
 	return (*minipoolCount).Uint64(), nil
 }
 
+// Get the number of staking minipools in the network
+func GetStakingMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	minipoolCount := new(*big.Int)
+	if err := rocketMinipoolManager.Call(opts, minipoolCount, "getStakingMinipoolCount"); err != nil {
+		return 0, fmt.Errorf("Could not get staking minipool count: %w", err)
+	}
+	return (*minipoolCount).Uint64(), nil
+}
+
 // Get the number of finalised minipools in the network
 func GetFinalisedMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)

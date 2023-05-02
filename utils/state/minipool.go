@@ -47,6 +47,7 @@ type NativeMinipoolDetails struct {
 	NodeAddress                       common.Address
 	Version                           uint8
 	Balance                           *big.Int // Contract balance
+	DistributableBalance              *big.Int // Contract balance minus node op refund
 	NodeShareOfBalance                *big.Int // Result of calculateNodeShare(contract balance)
 	UserShareOfBalance                *big.Int // Result of calculateUserShare(contract balance)
 	NodeRefundBalance                 *big.Int
@@ -520,10 +521,10 @@ func addMinipoolShareCalls(rp *rocketpool.RocketPool, contracts *NetworkContract
 	}
 	mpContract := mp.GetContract()
 
-	properBalance := big.NewInt(0).Sub(details.Balance, details.NodeRefundBalance)
-	if properBalance.Cmp(zero) >= 0 {
-		mc.AddCall(mpContract, &details.NodeShareOfBalance, "calculateNodeShare", properBalance)
-		mc.AddCall(mpContract, &details.UserShareOfBalance, "calculateUserShare", properBalance)
+	details.DistributableBalance = big.NewInt(0).Sub(details.Balance, details.NodeRefundBalance)
+	if details.DistributableBalance.Cmp(zero) >= 0 {
+		mc.AddCall(mpContract, &details.NodeShareOfBalance, "calculateNodeShare", details.DistributableBalance)
+		mc.AddCall(mpContract, &details.UserShareOfBalance, "calculateUserShare", details.DistributableBalance)
 	} else {
 		details.NodeShareOfBalance = big.NewInt(0)
 		details.UserShareOfBalance = big.NewInt(0)
@@ -532,7 +533,7 @@ func addMinipoolShareCalls(rp *rocketpool.RocketPool, contracts *NetworkContract
 	return nil
 }
 
-// Fixes a legacy minipool details struct with supplemental logic
+// Fixes a minipool details struct with supplemental logic
 func fixupMinipoolDetails(rp *rocketpool.RocketPool, details *NativeMinipoolDetails, opts *bind.CallOpts) error {
 
 	details.Status = types.MinipoolStatus(details.StatusRaw)
