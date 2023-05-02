@@ -145,8 +145,14 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	}
 
 	// Calculate avg node fees and distributor shares
+	switchoverEpoch := cfg.Smartnode.NewFeeDistributorCalcEpoch.Value.(uint64)
+	currentEpoch := slotNumber / beaconConfig.SlotsPerEpoch
 	for _, details := range state.NodeDetails {
-		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		if currentEpoch < switchoverEpoch {
+			rpstate.CalculateAverageFeeAndDistributorShares_Legacy(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		} else {
+			rpstate.CalculateAverageFeeAndDistributorShares_New(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		}
 	}
 
 	// Get the validator stats from Beacon
@@ -284,8 +290,14 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	}
 
 	// Calculate avg node fees and distributor shares
+	switchoverEpoch := cfg.Smartnode.NewFeeDistributorCalcEpoch.Value.(uint64)
+	currentEpoch := slotNumber / beaconConfig.SlotsPerEpoch
 	for _, details := range state.NodeDetails {
-		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		if currentEpoch < switchoverEpoch {
+			rpstate.CalculateAverageFeeAndDistributorShares_Legacy(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		} else {
+			rpstate.CalculateAverageFeeAndDistributorShares_New(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		}
 	}
 
 	// Get the total network effective RPL stake

@@ -96,6 +96,9 @@ type SmartnodeConfig struct {
 	// The epoch to start using the new network balance calculation implementation
 	BalancesModernizationEpoch config.Parameter `yaml:"balancesModernizationEpoch,omitempty"`
 
+	// The epoch to start using the new fee distributor share calculation
+	NewFeeDistributorCalcEpoch config.Parameter `yaml:"newFeeDistributorCalcEpoch,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -388,6 +391,22 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				config.Network_Mainnet: uint64(194089),
 				config.Network_Prater:  uint64(162094),
 				config.Network_Devnet:  uint64(162094),
+			},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		NewFeeDistributorCalcEpoch: config.Parameter{
+			ID:          "newFeeDistributorCalcEpoch",
+			Name:        "New Fee Distributor Calculation Epoch",
+			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from the old fee distributor share calculation method to the new one.",
+			Type:        config.ParameterType_Uint,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: uint64(999999),
+				config.Network_Prater:  uint64(999999),
+				config.Network_Devnet:  uint64(999999),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
