@@ -503,3 +503,35 @@ func (c *Client) ChangeWithdrawalCredentials(address common.Address, mnemonic st
 	}
 	return response, nil
 }
+
+// Check all of the node's minipools for rescue eligibility, and return the details of the rescuable ones
+func (c *Client) GetMinipoolRescueDissolvedDetailsForNode() (api.GetMinipoolRescueDissolvedDetailsForNodeResponse, error) {
+	responseBytes, err := c.callAPI("minipool get-minipool-rescue-dissolved-details-for-node")
+	if err != nil {
+		return api.GetMinipoolRescueDissolvedDetailsForNodeResponse{}, fmt.Errorf("Could not get get-minipool-rescue-dissolved-details-for-node status: %w", err)
+	}
+	var response api.GetMinipoolRescueDissolvedDetailsForNodeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetMinipoolRescueDissolvedDetailsForNodeResponse{}, fmt.Errorf("Could not decode get-minipool-rescue-dissolved-details-for-node response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetMinipoolRescueDissolvedDetailsForNodeResponse{}, fmt.Errorf("Could not get get-minipool-rescue-dissolved-details-for-node status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Rescue a dissolved minipool by depositing ETH for it to the Beacon deposit contract
+func (c *Client) RescueDissolvedMinipool(address common.Address) (api.RescueDissolvedMinipoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool rescue-dissolved %s", address.Hex()))
+	if err != nil {
+		return api.RescueDissolvedMinipoolResponse{}, fmt.Errorf("Could not rescue dissolved minipool: %w", err)
+	}
+	var response api.RescueDissolvedMinipoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.RescueDissolvedMinipoolResponse{}, fmt.Errorf("Could not decode rescue dissolved minipool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.RescueDissolvedMinipoolResponse{}, fmt.Errorf("Could not rescue dissolved minipool: %s", response.Error)
+	}
+	return response, nil
+}
