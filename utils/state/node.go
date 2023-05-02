@@ -3,8 +3,9 @@ package state
 import (
 	"context"
 	"fmt"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"math/big"
+
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -188,7 +189,54 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 }
 
 // Calculate the average node fee and user/node shares of the distributor's balance
-func CalculateAverageFeeAndDistributorShares(rp *rocketpool.RocketPool, contracts *NetworkContracts, node NativeNodeDetails, minipoolDetails []*NativeMinipoolDetails) error {
+func CalculateAverageFeeAndDistributorShares_Legacy(rp *rocketpool.RocketPool, contracts *NetworkContracts, node NativeNodeDetails, minipoolDetails []*NativeMinipoolDetails) error {
+
+	// Calculate the total of all fees for staking minipools that aren't finalized
+	totalFee := big.NewInt(0)
+	eligibleMinipools := int64(0)
+	for _, mpd := range minipoolDetails {
+		if mpd.Status == types.Staking && !mpd.Finalised {
+			totalFee.Add(totalFee, mpd.NodeFee)
+			eligibleMinipools++
+		}
+	}
+
+	// Get the average fee (0 if there aren't any minipools)
+	if eligibleMinipools > 0 {
+		node.AverageNodeFee.Div(totalFee, big.NewInt(eligibleMinipools))
+	}
+
+	// Get the user and node portions of the distributor balance
+	distributorBalance := big.NewInt(0).Set(node.DistributorBalance)
+	if distributorBalance.Cmp(big.NewInt(0)) > 0 {
+		halfBalance := big.NewInt(0)
+		halfBalance.Div(distributorBalance, two)
+
+		if eligibleMinipools == 0 {
+			// Split it 50/50 if there are no minipools
+			node.DistributorBalanceNodeETH = big.NewInt(0).Set(halfBalance)
+			node.DistributorBalanceUserETH = big.NewInt(0).Sub(distributorBalance, halfBalance)
+		} else {
+			// Amount of ETH given to the NO as a commission
+			commissionEth := big.NewInt(0)
+			commissionEth.Mul(halfBalance, node.AverageNodeFee)
+			commissionEth.Div(commissionEth, big.NewInt(1e18))
+
+			node.DistributorBalanceNodeETH.Add(halfBalance, commissionEth)                         // Node gets half + commission
+			node.DistributorBalanceUserETH.Sub(distributorBalance, node.DistributorBalanceNodeETH) // User gets balance - node share
+		}
+
+	} else {
+		// No distributor balance
+		node.DistributorBalanceNodeETH = big.NewInt(0)
+		node.DistributorBalanceUserETH = big.NewInt(0)
+	}
+
+	return nil
+}
+
+// Calculate the average node fee and user/node shares of the distributor's balance
+func CalculateAverageFeeAndDistributorShares_New(rp *rocketpool.RocketPool, contracts *NetworkContracts, node NativeNodeDetails, minipoolDetails []*NativeMinipoolDetails) error {
 
 	// Calculate the total of all fees for staking minipools that aren't finalized
 	totalFee := big.NewInt(0)
