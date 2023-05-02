@@ -521,8 +521,8 @@ func (c *Client) GetMinipoolRescueDissolvedDetailsForNode() (api.GetMinipoolResc
 }
 
 // Rescue a dissolved minipool by depositing ETH for it to the Beacon deposit contract
-func (c *Client) RescueDissolvedMinipool(address common.Address) (api.RescueDissolvedMinipoolResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool rescue-dissolved %s", address.Hex()))
+func (c *Client) RescueDissolvedMinipool(address common.Address, amount *big.Int) (api.RescueDissolvedMinipoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool rescue-dissolved %s %s", address.Hex(), amount.String()))
 	if err != nil {
 		return api.RescueDissolvedMinipoolResponse{}, fmt.Errorf("Could not rescue dissolved minipool: %w", err)
 	}
