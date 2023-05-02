@@ -334,6 +334,7 @@ type ReduceBondAmountResponse struct {
 
 type MinipoolRescueDissolvedDetails struct {
 	Address         common.Address        `json:"address"`
+	CanRescue       bool                  `json:"canRescue"`
 	IsFinalized     bool                  `json:"isFinalized"`
 	MinipoolStatus  types.MinipoolStatus  `json:"minipoolStatus"`
 	MinipoolVersion uint8                 `json:"minipoolVersion"`
