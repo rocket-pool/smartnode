@@ -20,7 +20,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -311,7 +310,7 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	}
 
 	// Get validator details if staking
-	if details.Status.Status == types.Staking {
+	if details.Status.Status == types.Staking || (details.Status.Status == types.Dissolved && !details.Finalised) {
 		validatorDetails, err := getMinipoolValidatorDetails(rp, details, validator, eth2Config, currentEpoch)
 		if err != nil {
 			return api.MinipoolDetails{}, err
@@ -361,14 +360,6 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.
 
 	// Set validator balance
 	details.Balance = eth.GweiToWei(float64(validator.Balance))
-
-	// Get start epoch for expected node balance calculation
-	startEpoch := eth2.EpochAt(eth2Config, uint64(minipoolDetails.User.DepositAssignedTime.Unix()))
-	if startEpoch < validator.ActivationEpoch {
-		startEpoch = validator.ActivationEpoch
-	} else if startEpoch > currentEpoch {
-		startEpoch = currentEpoch
-	}
 
 	// Get expected node balance
 	blockBalance := eth.GweiToWei(float64(validator.Balance))
