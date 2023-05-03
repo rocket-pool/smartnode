@@ -85,7 +85,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 		OpenRpcPort: config.Parameter{
 			ID:                   "openRpcPort",
 			Name:                 "Expose RPC Port",
-			Description:          "Expose Prysm's JSON-RPC port to your local network, so other machines can access it too.",
+			Description:          "Expose Prysm's JSON-RPC port to other processes on your machine, or to your local network so other machines can access it too.",
 			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultPrysmOpenRpcPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},

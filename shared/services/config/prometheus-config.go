@@ -49,7 +49,7 @@ func NewPrometheusConfig(cfg *RocketPoolConfig) *PrometheusConfig {
 		OpenPort: config.Parameter{
 			ID:                   "openPort",
 			Name:                 "Expose Prometheus Port",
-			Description:          "Expose the Prometheus's port to your local network, so other machines can access it too.",
+			Description:          "Expose the Prometheus's port to other processes on your machine, or to your local network so other machines can access it too.",
 			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultPrometheusOpenPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Prometheus},

@@ -37,10 +37,10 @@ func (rpcMode RPCMode) DockerPortMapping(port uint16) string {
 }
 
 func PortModes(warningOverride string) []ParameterOption {
-	warning := "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet"
-	if warningOverride != "" {
-		warning = warningOverride
+	if warningOverride == "" {
+		warningOverride = "Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet"
 	}
+
 	return []ParameterOption{{
 		Name:        "Closed",
 		Description: "Do not allow connections to the port",
@@ -51,7 +51,7 @@ func PortModes(warningOverride string) []ParameterOption {
 		Value:       RPC_OpenLocalhost,
 	}, {
 		Name:        "Open to External hosts",
-		Description: warning,
+		Description: warningOverride,
 		Value:       RPC_OpenExternal,
 	}}
 }

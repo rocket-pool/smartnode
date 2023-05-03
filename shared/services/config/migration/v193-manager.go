@@ -6,8 +6,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-func upgradeFromV191(serializedConfig map[string]map[string]string) error {
-	// v1.9.1 had the BN API port mode as a boolean
+func upgradeFromV193(serializedConfig map[string]map[string]string) error {
+	// v1.9.3 had the BN API port mode as a boolean
 	if err := updateRPCPortConfig(serializedConfig, "consensusCommon", "openApiPort"); err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func upgradeFromV191(serializedConfig map[string]map[string]string) error {
 }
 
 func updateRPCPortConfig(serializedConfig map[string]map[string]string, configKeyString string, keyOpenPorts string) error {
-	// v1.9.1 had the API ports mode as a boolean
+	// v1.9.3 had the API ports mode as a boolean
 	configSection, exists := serializedConfig[configKeyString]
 	if !exists {
 		return fmt.Errorf("expected a section called `%s` but it didn't exist", configKeyString)
@@ -39,7 +39,7 @@ func updateRPCPortConfig(serializedConfig map[string]map[string]string, configKe
 
 	// Update the config
 	if openRPCPorts == "true" {
-		configSection[keyOpenPorts] = config.RPC_OpenLocalhost.String()
+		configSection[keyOpenPorts] = config.RPC_OpenExternal.String()
 	} else {
 		configSection[keyOpenPorts] = config.RPC_Closed.String()
 	}
