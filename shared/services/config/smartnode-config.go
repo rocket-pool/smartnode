@@ -96,6 +96,9 @@ type SmartnodeConfig struct {
 	// The epoch to start using the new network balance calculation implementation
 	BalancesModernizationEpoch config.Parameter `yaml:"balancesModernizationEpoch,omitempty"`
 
+	// The epoch to start using the new fee distributor share calculation
+	NewFeeDistributorCalcEpoch config.Parameter `yaml:"newFeeDistributorCalcEpoch,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -272,6 +275,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			ID:   "minipoolStakeGasThreshold",
 			Name: "Automatic TX Gas Threshold",
 			Description: "Occasionally, the Smartnode will attempt to perform some automatic transactions (such as the second `stake` transaction to finish launching a minipool or the `reduce bond` transaction to convert a 16-ETH minipool to an 8-ETH one). During these, your node will use the `Rapid` suggestion from the gas estimator as its max fee.\n\nThis threshold is a limit (in gwei) you can put on that suggestion; your node will not `stake` the new minipool until the suggestion is below this limit.\n\n" +
+				"A value of 0 will disable non-essential automatic transactions (such as minipool balance distribution and bond reduction), but essential transactions (such as minipool staking and solo migration promotion) will not be disabled.\n\n" +
 				"NOTE: the node will ignore this limit and automatically execute transactions at whatever the suggested fee happens to be once too much time has passed since those transactions were first eligible. You may end up paying more than you wanted to if you set this too low!",
 			Type:                 config.ParameterType_Float,
 			Default:              map[config.Network]interface{}{config.Network_All: float64(150)},
@@ -387,6 +391,22 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				config.Network_Mainnet: uint64(194089),
 				config.Network_Prater:  uint64(162094),
 				config.Network_Devnet:  uint64(162094),
+			},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		NewFeeDistributorCalcEpoch: config.Parameter{
+			ID:          "newFeeDistributorCalcEpoch",
+			Name:        "New Fee Distributor Calculation Epoch",
+			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from the old fee distributor share calculation method to the new one.",
+			Type:        config.ParameterType_Uint,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: uint64(999999),
+				config.Network_Prater:  uint64(999999),
+				config.Network_Devnet:  uint64(999999),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
@@ -544,7 +564,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		zkSyncEraPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "",
+			config.Network_Mainnet: "0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8",
 			config.Network_Prater:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
 			config.Network_Devnet:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
 		},
@@ -576,7 +596,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
 			config.Network_Mainnet: {
 				15451165, 15637542, 15839520, 16038366, 16238906, 16439406, // 5
-				16639856, 16841781,
+				16639856, 16841781, 17037278,
 			},
 			config.Network_Prater: {
 				7287326, 7297026, 7314231, 7331462, 7387271, 7412366, // 5
@@ -592,6 +612,8 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				8377175, 8394786, 8412599, 8430221, 8447800, 8465317, // 65
 				8482337, 8499227, 8516593, 8533890, 8551379, 8569494, // 71
 				8587146, 8604666, 8621961, 8639563, 8656830, 8673617, // 77
+				8690655, 8707453, 8724467, 8742735, 8758413, 8775532, // 83
+				8792725, 8809501,
 			},
 			config.Network_Devnet: {
 				7955303, 7972424, 8009064, 8026821, 8045113, 8063501, // 5
@@ -622,6 +644,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.WatchtowerPrioFeeOverride,
 		&cfg.RplTwapEpoch,
 		&cfg.BalancesModernizationEpoch,
+		&cfg.NewFeeDistributorCalcEpoch,
 	}
 }
 

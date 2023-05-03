@@ -3,6 +3,8 @@ package watchtower
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -12,7 +14,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func runMetricsServer(c *cli.Context, logger log.ColorLogger, scrubCollector *collectors.ScrubCollector) error {
+func runMetricsServer(c *cli.Context, logger log.ColorLogger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector) error {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -22,12 +24,18 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, scrubCollector *co
 
 	// Return if metrics are disabled
 	if cfg.EnableMetrics.Value == false {
-		return nil
+		if strings.ToLower(os.Getenv("ENABLE_METRICS")) == "true" {
+			logger.Printlnf("ENABLE_METRICS override set to true, will start Metrics exporter anyway!")
+		} else {
+			return nil
+		}
 	}
 
 	// Set up Prometheus
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(scrubCollector)
+	registry.MustRegister(bondReductionCollector)
+	registry.MustRegister(soloMigrationCollector)
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 
 	// Start the HTTP server

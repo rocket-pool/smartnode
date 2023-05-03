@@ -751,6 +751,50 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "get-rescue-dissolved-details-for-node",
+				Usage:     "Check all of the node's minipools for rescue eligibility, and return the details of the rescuable ones",
+				UsageText: "rocketpool api minipool get-rescue-dissolved-details-for-node",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getMinipoolRescueDissolvedDetailsForNode(c))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "rescue-dissolved",
+				Usage:     "Rescue a dissolved minipool by depositing ETH for it to the Beacon deposit contract",
+				UsageText: "rocketpool api minipool rescue-dissolved minipool-address deposit-amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					depositAmount, err := cliutils.ValidateBigInt("deposit amount", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(rescueDissolvedMinipool(c, minipoolAddress, depositAmount))
+					return nil
+
+				},
+			},
 		},
 	})
 }

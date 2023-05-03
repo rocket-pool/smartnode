@@ -278,6 +278,12 @@ func reduceBondAmount(c *cli.Context) error {
 		return nil
 	}
 
+	// Workaround for the fee distribution issue
+	err = forceFeeDistribution(c, rp)
+	if err != nil {
+		return err
+	}
+
 	// Get selected minipools
 	var selectedMinipools []api.MinipoolDetails
 	if c.String("minipool") == "" {
@@ -370,4 +376,55 @@ func reduceBondAmount(c *cli.Context) error {
 	// Return
 	return nil
 
+}
+
+func forceFeeDistribution(c *cli.Context, rp *rocketpool.Client) error {
+	// Get the gas estimate
+	canDistributeResponse, err := rp.CanDistribute()
+	if err != nil {
+		return err
+	}
+
+	balance := eth.WeiToEth(canDistributeResponse.Balance)
+	if balance == 0 {
+		fmt.Println("Your fee distributor does not have any ETH and does not need to be distributed.\n")
+		return nil
+	}
+	fmt.Println("NOTE: prior to bond reduction, you must distribute the funds in your fee distributor.\n")
+
+	// Print info
+	nodeShare := (1 + canDistributeResponse.AverageNodeFee) * balance / 2
+	rEthShare := balance - nodeShare
+	fmt.Printf("Your node's average commission is %.2f%%.\n", canDistributeResponse.AverageNodeFee*100.0)
+	fmt.Printf("Your fee distributor's balance of %.6f ETH will be distributed as follows:\n", balance)
+	fmt.Printf("\tYour withdrawal address will receive %.6f ETH.\n", nodeShare)
+	fmt.Printf("\trETH pool stakers will receive %.6f ETH.\n\n", rEthShare)
+
+	// Assign max fees
+	err = gas.AssignMaxFeeAndLimit(canDistributeResponse.GasInfo, rp, c.Bool("yes"))
+	if err != nil {
+		return err
+	}
+
+	// Prompt for confirmation
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to distribute the ETH from your node's fee distributor?")) {
+		fmt.Println("Cancelled.")
+		return nil
+	}
+
+	// Distribute
+	response, err := rp.Distribute()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Distributing rewards...\n")
+	cliutils.PrintTransactionHash(rp, response.TxHash)
+	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+		return err
+	}
+
+	// Log & return
+	fmt.Println("Successfully distributed your fee distributor's balance. Your rewards should arrive in your withdrawal address shortly.")
+	return nil
 }

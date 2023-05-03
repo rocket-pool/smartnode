@@ -58,7 +58,7 @@ type ScrubCollector struct {
 	LatestBlockTime       float64
 
 	// Mutex
-	UpdateLock sync.Mutex
+	UpdateLock *sync.Mutex
 }
 
 // Create a new ScrubCollector instance
@@ -109,6 +109,7 @@ func NewScrubCollector() *ScrubCollector {
 			"The time of the latest block that the check was run against",
 			nil, nil,
 		),
+		UpdateLock: &sync.Mutex{},
 	}
 }
 
@@ -124,6 +125,7 @@ func (collector *ScrubCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.poolsWithoutDepositsDesc
 	channel <- collector.uncoveredMinipoolsDesc
 	channel <- collector.safetyScrubsDesc
+	channel <- collector.latestBlockTimeDesc
 }
 
 // Collect the latest metric values and pass them to Prometheus

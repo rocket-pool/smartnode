@@ -10,10 +10,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -25,9 +27,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
-// The fraction of the timeout period to trigger overdue transactions
-const reduceBondTimeoutSafetyFactor int = 2
-
 // Reduce bonds task
 type reduceBonds struct {
 	c              *cli.Context
@@ -37,6 +36,7 @@ type reduceBonds struct {
 	rp             *rocketpool.RocketPool
 	d              *client.Client
 	gasThreshold   float64
+	disabled       bool
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
 	gasLimit       uint64
@@ -72,8 +72,13 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 		return nil, err
 	}
 
-	// Check if auto-staking is disabled
+	// Check if auto-bond-reduction is disabled
 	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
+	disabled := false
+	if gasThreshold == 0 {
+		logger.Println("Automatic tx gas threshold is 0, disabling auto-reduce.")
+		disabled = true
+	}
 
 	// Get the user-requested max fee
 	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
@@ -103,6 +108,7 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 		rp:             rp,
 		d:              d,
 		gasThreshold:   gasThreshold,
+		disabled:       disabled,
 		maxFee:         maxFee,
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
@@ -112,6 +118,11 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 
 // Reduce bonds
 func (t *reduceBonds) run(state *state.NetworkState) error {
+
+	// Check if auto-reduce is disabled
+	if t.disabled {
+		return nil
+	}
 
 	// Check if Atlas has been deployed yet
 	if !state.IsAtlasDeployed {
@@ -155,6 +166,15 @@ func (t *reduceBonds) run(state *state.NetworkState) error {
 	// Log
 	t.log.Printlnf("%d minipool(s) are ready for bond reduction...", len(minipools))
 
+	// Workaround for the fee distribution issue
+	success, err := t.forceFeeDistribution()
+	if err != nil {
+		return err
+	}
+	if !success {
+		return nil
+	}
+
 	// Reduce bonds
 	successCount := 0
 	for _, mp := range minipools {
@@ -171,6 +191,117 @@ func (t *reduceBonds) run(state *state.NetworkState) error {
 	// Return
 	return nil
 
+}
+
+// Temp mitigation for the
+func (t *reduceBonds) forceFeeDistribution() (bool, error) {
+
+	// Get node account
+	nodeAccount, err := t.w.GetNodeAccount()
+	if err != nil {
+		return false, err
+	}
+
+	// Get fee distributor address
+	distributorAddress, err := node.GetDistributorAddress(t.rp, nodeAccount.Address, nil)
+	if err != nil {
+		return false, err
+	}
+
+	// Sync
+	var wg errgroup.Group
+	var balanceRaw *big.Int
+	var avgNodeFee float64
+
+	// Get the contract's balance
+	wg.Go(func() error {
+		var err error
+		balanceRaw, err = t.rp.Client.BalanceAt(context.Background(), distributorAddress, nil)
+		return err
+	})
+
+	// Get the node's average fee
+	wg.Go(func() error {
+		var err error
+		avgNodeFee, err = node.GetNodeAverageFee(t.rp, nodeAccount.Address, nil)
+		return err
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return false, err
+	}
+
+	balance := eth.WeiToEth(balanceRaw)
+	if balance == 0 {
+		t.log.Println("Your fee distributor does not have any ETH and does not need to be distributed.")
+		return true, nil
+	}
+	t.log.Println("NOTE: prior to bond reduction, you must distribute the funds in your fee distributor.")
+
+	// Print info
+	nodeShare := (1 + avgNodeFee) * balance / 2
+	rEthShare := balance - nodeShare
+	t.log.Printlnf("Your node's average commission is %.2f%%.", avgNodeFee*100.0)
+	t.log.Printlnf("Your fee distributor's balance of %.6f ETH will be distributed as follows:", balance)
+	t.log.Printlnf("\tYour withdrawal address will receive %.6f ETH.", nodeShare)
+	t.log.Printlnf("\trETH pool stakers will receive %.6f ETH.\n", rEthShare)
+
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return false, err
+	}
+
+	// Get the gas limit
+	distributor, err := node.NewDistributor(t.rp, distributorAddress, nil)
+	if err != nil {
+		return false, err
+	}
+	gasInfo, err := distributor.EstimateDistributeGas(opts)
+	if err != nil {
+		return false, fmt.Errorf("could not estimate the gas required to distribute node fees: %w", err)
+	}
+	var gas *big.Int
+	if t.gasLimit != 0 {
+		gas = new(big.Int).SetUint64(t.gasLimit)
+	} else {
+		gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+	}
+
+	// Get the max fee
+	maxFee := t.maxFee
+	if maxFee == nil || maxFee.Uint64() == 0 {
+		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
+		if err != nil {
+			return false, err
+		}
+	}
+
+	// Print the gas info
+	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+		return false, nil
+	}
+
+	opts.GasFeeCap = maxFee
+	opts.GasTipCap = t.maxPriorityFee
+	opts.GasLimit = gas.Uint64()
+
+	// Distribute
+	fmt.Printf("Distributing rewards...\n")
+	hash, err := distributor.Distribute(opts)
+	if err != nil {
+		return false, err
+	}
+
+	// Print TX info and wait for it to be included in a block
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	if err != nil {
+		return false, err
+	}
+
+	// Log & return
+	fmt.Println("Successfully distributed your fee distributor's balance. Your rewards should arrive in your withdrawal address shortly.")
+	return true, nil
 }
 
 // Get reduceable minipools
@@ -264,17 +395,10 @@ func (t *reduceBonds) reduceBond(mpd *rpstate.NativeMinipoolDetails, windowStart
 
 	// Print the gas info
 	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
-		// Check for the timeout buffer
 		timeSinceReductionStart := latestBlockTime.Sub(reduceBondTime)
 		remainingTime := (windowStart + windowLength) - timeSinceReductionStart
-		isDue := remainingTime < (windowLength / time.Duration(reduceBondTimeoutSafetyFactor))
-		if !isDue {
-			timeUntilDue := remainingTime - (windowLength / time.Duration(reduceBondTimeoutSafetyFactor))
-			t.log.Printlnf("Time until bond reduction will be forced: %s", timeUntilDue)
-			return false, nil
-		}
-
-		t.log.Println("NOTICE: The minipool has exceeded half of the timeout period, so its bond reduction will be forced at the current gas price.")
+		t.log.Printlnf("Time until bond reduction times out: %s", remainingTime)
+		return false, nil
 	}
 
 	opts.GasFeeCap = maxFee

@@ -331,3 +331,26 @@ type ReduceBondAmountResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+
+type MinipoolRescueDissolvedDetails struct {
+	Address         common.Address        `json:"address"`
+	CanRescue       bool                  `json:"canRescue"`
+	IsFinalized     bool                  `json:"isFinalized"`
+	MinipoolStatus  types.MinipoolStatus  `json:"minipoolStatus"`
+	MinipoolVersion uint8                 `json:"minipoolVersion"`
+	Balance         *big.Int              `json:"balance"`
+	BeaconState     beacon.ValidatorState `json:"beaconState"`
+	GasInfo         rocketpool.GasInfo    `json:"gasInfo"`
+}
+
+type GetMinipoolRescueDissolvedDetailsForNodeResponse struct {
+	Status          string                           `json:"status"`
+	Error           string                           `json:"error"`
+	IsAtlasDeployed bool                             `json:"isAtlasDeployed"`
+	Details         []MinipoolRescueDissolvedDetails `json:"details"`
+}
+type RescueDissolvedMinipoolResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}

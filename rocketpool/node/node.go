@@ -27,6 +27,7 @@ import (
 // Config
 var tasksInterval, _ = time.ParseDuration("5m")
 var taskCooldown, _ = time.ParseDuration("10s")
+var totalEffectiveStakeCooldown, _ = time.ParseDuration("1h")
 
 const (
 	MaxConcurrentEth1Requests = 200
@@ -142,6 +143,9 @@ func run(c *cli.Context) error {
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
 
+	// Timestamp for caching total effective RPL stake
+	lastTotalEffectiveStakeTime := time.Unix(0, 0)
+
 	// Run task loop
 	isAtlasDeployedMasterFlag := false
 	go func() {
@@ -163,7 +167,12 @@ func run(c *cli.Context) error {
 			}
 
 			// Update the network state
-			state, totalEffectiveStake, err := updateNetworkState(m, &updateLog, nodeAccount.Address)
+			updateTotalEffectiveStake := false
+			if time.Since(lastTotalEffectiveStakeTime) > totalEffectiveStakeCooldown {
+				updateTotalEffectiveStake = true
+				lastTotalEffectiveStakeTime = time.Now() // Even if the call below errors out, this will prevent contant errors related to this flag
+			}
+			state, totalEffectiveStake, err := updateNetworkState(m, &updateLog, nodeAccount.Address, updateTotalEffectiveStake)
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
@@ -334,9 +343,9 @@ func printAtlasMessage(log *log.ColorLogger) {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, nodeAddress common.Address) (*state.NetworkState, *big.Int, error) {
+func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*state.NetworkState, *big.Int, error) {
 	// Get the state of the network
-	state, totalEffectiveStake, err := m.GetHeadStateForNode(nodeAddress)
+	state, totalEffectiveStake, err := m.GetHeadStateForNode(nodeAddress, calculateTotalEffectiveStake)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error updating network state: %w", err)
 	}
