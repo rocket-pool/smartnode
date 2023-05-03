@@ -382,6 +382,38 @@ func (c *Client) GetNodeStakeRplAllowance() (api.NodeStakeRplAllowanceResponse, 
 	return response, nil
 }
 
+// Checks if the node operate can set RPL stake for allowed
+func (c *Client) CanSetStakeRPLForAllowed(caller common.Address, allowed bool) (api.CanSetStakeRplForAllowedResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-stake-rpl-for-allowed %s %t", caller.Hex(), allowed))
+	if err != nil {
+		return api.CanSetStakeRplForAllowedResponse{}, fmt.Errorf("Could not get can set stake RPL for allowed: %w", err)
+	}
+	var response api.CanSetStakeRplForAllowedResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanSetStakeRplForAllowedResponse{}, fmt.Errorf("Could not decode can set stake RPL for allowed: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanSetStakeRplForAllowedResponse{}, fmt.Errorf("Could not set stake RPL for allowed: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Sets the allow state of another address staking on behalf of the node
+func (c *Client) SetStakeRPLForAllowed(caller common.Address, allowed bool) (api.SetStakeRplForAllowedResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node set-stake-rpl-for-allowed %s %t", caller.Hex(), allowed))
+	if err != nil {
+		return api.SetStakeRplForAllowedResponse{}, fmt.Errorf("Could not set stake RPL for allowed: %w", err)
+	}
+	var response api.SetStakeRplForAllowedResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SetStakeRplForAllowedResponse{}, fmt.Errorf("Could not decode set stake RPL for allowed response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SetStakeRplForAllowedResponse{}, fmt.Errorf("Could not set stake RPL for allowed: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can withdraw RPL
 func (c *Client) CanNodeWithdrawRpl(amountWei *big.Int) (api.CanNodeWithdrawRplResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-rpl %s", amountWei.String()))
