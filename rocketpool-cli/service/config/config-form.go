@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -197,7 +198,7 @@ func createParameterizedStringField(param *cfgtypes.Parameter) *parameterizedFor
 		if key == tcell.KeyEscape {
 			item.SetText("")
 		} else {
-			param.Value = item.GetText()
+			param.Value = strings.TrimSpace(item.GetText())
 		}
 	})
 	item.SetAcceptanceFunc(func(textToCheck string, lastChar rune) bool {
