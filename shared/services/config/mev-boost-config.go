@@ -179,7 +179,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		OpenRpcPort: config.Parameter{
 			ID:                   "openRpcPort",
 			Name:                 "Expose API Port",
-			Description:          "Expose the API port to your local network, so other local machines can access MEV-Boost's API.",
+			Description:          "Expose the API port to other processes on your machine, or to your local network so other local machines can access MEV-Boost's API.",
 			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: config.RPC_Closed},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},

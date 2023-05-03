@@ -107,7 +107,7 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 		OpenApiPort: config.Parameter{
 			ID:                   OpenApiPortID,
 			Name:                 "Expose API Port",
-			Description:          "Select an option to expose your Consensus client's API port to your localhost or to your local network, so other machines can access it too.",
+			Description:          "Select an option to expose your Consensus client's API port to your localhost or external hosts on the network, so other machines can access it too.",
 			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultOpenBnApiPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},

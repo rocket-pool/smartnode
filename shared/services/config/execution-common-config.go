@@ -91,7 +91,7 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 		OpenRpcPorts: config.Parameter{
 			ID:                   ecOpenRpcPortsID,
 			Name:                 "Expose RPC Ports",
-			Description:          "Expose the HTTP and Websocket RPC ports to your localhost or external hosts on the network, so other machines can access your Execution Client's RPC endpoint.",
+			Description:          "Expose the HTTP and Websocket RPC ports to other processes on your machine, or to your local network so other machines can access your Execution Client's RPC endpoint.",
 			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultOpenEcApiPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
