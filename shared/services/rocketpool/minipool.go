@@ -506,7 +506,7 @@ func (c *Client) ChangeWithdrawalCredentials(address common.Address, mnemonic st
 
 // Check all of the node's minipools for rescue eligibility, and return the details of the rescuable ones
 func (c *Client) GetMinipoolRescueDissolvedDetailsForNode() (api.GetMinipoolRescueDissolvedDetailsForNodeResponse, error) {
-	responseBytes, err := c.callAPI("minipool get-minipool-rescue-dissolved-details-for-node")
+	responseBytes, err := c.callAPI("minipool get-rescue-dissolved-details-for-node")
 	if err != nil {
 		return api.GetMinipoolRescueDissolvedDetailsForNodeResponse{}, fmt.Errorf("Could not get get-minipool-rescue-dissolved-details-for-node status: %w", err)
 	}

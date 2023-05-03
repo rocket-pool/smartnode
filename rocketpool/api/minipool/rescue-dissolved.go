@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
@@ -127,7 +128,7 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 	}
 
 	// Get the balance / share info and status details
-	var pubkey types.ValidatorPubkey
+	var pubkey rptypes.ValidatorPubkey
 	var wg1 errgroup.Group
 	wg1.Go(func() error {
 		var err error
@@ -173,7 +174,7 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 	}
 
 	// Make sure it's dissolved
-	if details.MinipoolStatus != types.Dissolved {
+	if details.MinipoolStatus != rptypes.Dissolved {
 		details.CanRescue = false
 		return details, nil
 	}
@@ -199,60 +200,82 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 	// Passed the checks!
 	details.CanRescue = true
 
-	// Get the gas info for depositing
+	// Get the simulated deposit TX
 	remainingAmount := big.NewInt(0).Sub(requiredBalance, details.Balance)
-	details.GasInfo, err = getDepositGasInfo(rp, w, bc, minipoolAddress, remainingAmount)
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return api.MinipoolRescueDissolvedDetails{}, err
+	}
+	opts.Value = remainingAmount
+	opts.NoSend = true
+	opts.GasLimit = 0
+
+	// Get the gas info for depositing
+	tx, err := getDepositTx(rp, w, bc, minipoolAddress, remainingAmount, opts)
 	if err != nil {
 		return api.MinipoolRescueDissolvedDetails{}, fmt.Errorf("error estimating gas for rescue deposit on minipool %s: %w", minipoolAddress.Hex(), err)
+	}
+	gasLimit := tx.Gas()
+	safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
+	if gasLimit > rocketpool.MaxGasLimit {
+		return api.MinipoolRescueDissolvedDetails{}, fmt.Errorf("estimated gas of %d is greater than the max gas limit of %d", gasLimit, rocketpool.MaxGasLimit)
+	}
+	if safeGasLimit > rocketpool.MaxGasLimit {
+		safeGasLimit = rocketpool.MaxGasLimit
+	}
+
+	details.GasInfo = rocketpool.GasInfo{
+		EstGasLimit:  gasLimit,
+		SafeGasLimit: safeGasLimit,
 	}
 
 	return details, nil
 
 }
 
-// Estimate the gas required to do a rescue deposit
-func getDepositGasInfo(rp *rocketpool.RocketPool, w *wallet.Wallet, bc beacon.Client, minipoolAddress common.Address, amount *big.Int) (rocketpool.GasInfo, error) {
+// Create a transaction for submitting a rescue deposit, optionally simulating it only for gas estimation
+func getDepositTx(rp *rocketpool.RocketPool, w *wallet.Wallet, bc beacon.Client, minipoolAddress common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
 
 	blankAddress := common.Address{}
 	casperAddress, err := rp.GetAddress("casperDeposit", nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error getting Beacon deposit contract address: %w", err)
+		return nil, fmt.Errorf("error getting Beacon deposit contract address: %w", err)
 	}
 	if casperAddress == nil || *casperAddress == blankAddress {
-		return rocketpool.GasInfo{}, fmt.Errorf("Beacon deposit contract address was empty (0x0).")
+		return nil, fmt.Errorf("Beacon deposit contract address was empty (0x0).")
 	}
 
 	depositContract, err := contracts.NewBeaconDeposit(*casperAddress, rp.Client)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error creating Beacon deposit contract binding: %w", err)
+		return nil, fmt.Errorf("error creating Beacon deposit contract binding: %w", err)
 	}
 
 	// Create minipool
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return nil, err
 	}
 
 	// Get eth2 config
 	eth2Config, err := bc.GetEth2Config()
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return nil, err
 	}
 
 	// Get minipool withdrawal credentials
 	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.GetAddress(), nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return nil, err
 	}
 
 	// Get the validator key for the minipool
 	validatorPubkey, err := minipool.GetMinipoolPubkey(rp, mp.GetAddress(), nil)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return nil, err
 	}
 	validatorKey, err := w.GetValidatorKeyByPubkey(validatorPubkey)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return nil, err
 	}
 
 	// Get the deposit amount in gwei
@@ -261,42 +284,22 @@ func getDepositGasInfo(rp *rocketpool.RocketPool, w *wallet.Wallet, bc beacon.Cl
 	// Get validator deposit data
 	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, amountGwei)
 	if err != nil {
-		return rocketpool.GasInfo{}, err
+		return nil, err
 	}
 	signature := rptypes.BytesToValidatorSignature(depositData.Signature)
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	opts.Value = amount
-	opts.NoSend = true // Simulation only
-	opts.GasLimit = 0  // Estimate gas limit
-
-	// Get the gas info
+	// Get the tx
 	tx, err := depositContract.Deposit(opts, validatorPubkey[:], withdrawalCredentials[:], signature[:], depositDataRoot)
-	gasLimit := tx.Gas()
-	safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
-	if gasLimit > rocketpool.MaxGasLimit {
-		return rocketpool.GasInfo{}, fmt.Errorf("estimated gas of %d is greater than the max gas limit of %d", gasLimit, rocketpool.MaxGasLimit)
-	}
-	if safeGasLimit > rocketpool.MaxGasLimit {
-		safeGasLimit = rocketpool.MaxGasLimit
+	if err != nil {
+		return nil, fmt.Errorf("error simulating rescue deposit: %w", err)
 	}
 
-	gasInfo := rocketpool.GasInfo{
-		EstGasLimit:  gasLimit,
-		SafeGasLimit: safeGasLimit,
-	}
-
-	return gasInfo, nil
+	// Return
+	return tx, nil
 
 }
 
-func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address) (*api.RescueDissolvedMinipoolResponse, error) {
-
-	// TODO!
+func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address, amount *big.Int) (*api.RescueDissolvedMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -307,6 +310,10 @@ func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address) (*a
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -323,18 +330,6 @@ func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address) (*a
 		return nil, fmt.Errorf("Atlas has not been deployed yet.")
 	}
 
-	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if it's an upgraded Atlas-era minipool
-	mpv3, success := minipool.GetMinipoolAsV3(mp)
-	if !success {
-		return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mp.GetVersion())
-	}
-
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
@@ -347,53 +342,12 @@ func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address) (*a
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Get some details
-	var status types.MinipoolStatus
-	var distributed bool
-	var wg errgroup.Group
-	wg.Go(func() error {
-		var err error
-		status, err = mp.GetStatus(nil)
-		if err != nil {
-			return fmt.Errorf("error getting status of minipool %s: %w", minipoolAddress.Hex(), err)
-		}
-		return nil
-	})
-	wg.Go(func() error {
-		var err error
-		distributed, err = mpv3.GetUserDistributed(nil)
-		if err != nil {
-			return fmt.Errorf("error checking distributed flag of minipool %s: %w", minipoolAddress.Hex(), err)
-		}
-		return nil
-	})
-
-	if err := wg.Wait(); err != nil {
-		return nil, err
+	// Submit the rescue deposit
+	tx, err := getDepositTx(rp, w, bc, minipoolAddress, amount, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error submitting rescue deposit: %w", err)
 	}
-
-	if status == types.Dissolved {
-		// If it's dissolved, just close it
-		hash, err := mp.Close(opts)
-		if err != nil {
-			return nil, err
-		}
-		response.TxHash = hash
-	} else if distributed {
-		// It's already been distributed so just finalize it
-		hash, err := mpv3.Finalise(opts)
-		if err != nil {
-			return nil, err
-		}
-		response.TxHash = hash
-	} else {
-		// Do a distribution, which will finalize it
-		hash, err := mpv3.DistributeBalance(false, opts)
-		if err != nil {
-			return nil, err
-		}
-		response.TxHash = hash
-	}
+	response.TxHash = tx.Hash()
 
 	// Return response
 	return &response, nil
