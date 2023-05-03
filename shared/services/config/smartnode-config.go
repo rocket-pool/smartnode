@@ -644,6 +644,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.WatchtowerPrioFeeOverride,
 		&cfg.RplTwapEpoch,
 		&cfg.BalancesModernizationEpoch,
+		&cfg.NewFeeDistributorCalcEpoch,
 	}
 }
 

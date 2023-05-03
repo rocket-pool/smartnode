@@ -54,6 +54,15 @@ type NodeCollector struct {
 	// The total balances of all this node's validators on the beacon chain
 	beaconBalance *prometheus.Desc
 
+	// The total EL balance of all minipools belonging to this node
+	minipoolBalance *prometheus.Desc
+
+	// The node's share of the total minipool EL balance
+	minipoolShare *prometheus.Desc
+
+	// The amount of ETH waiting to be refunded for all minipools
+	refundBalance *prometheus.Desc
+
 	// The RPL rewards from the last period that have not been claimed yet
 	unclaimedRewards *prometheus.Desc
 
@@ -153,6 +162,18 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			"The total balances of all this node's validators on the beacon chain",
 			nil, nil,
 		),
+		minipoolBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "minipool_balance"),
+			"The total EL balance of all minipools belonging to this node",
+			nil, nil,
+		),
+		minipoolShare: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "minipool_share"),
+			"The node's share of the total minipool EL balance",
+			nil, nil,
+		),
+		refundBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "refund_balance"),
+			"The amount of ETH waiting to be refunded for all minipools",
+			nil, nil,
+		),
 		unclaimedRewards: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "unclaimed_rewards"),
 			"The RPL rewards from the last period that have not been claimed yet",
 			nil, nil,
@@ -186,7 +207,11 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.balances
 	channel <- collector.activeMinipoolCount
 	channel <- collector.depositedEth
+	channel <- collector.beaconBalance
 	channel <- collector.beaconShare
+	channel <- collector.minipoolBalance
+	channel <- collector.minipoolShare
+	channel <- collector.refundBalance
 	channel <- collector.unclaimedRewards
 	channel <- collector.claimedEthRewards
 	channel <- collector.unclaimedEthRewards
@@ -362,6 +387,15 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		totalBeaconBalance += eth.WeiToEth(minipool.TotalBalance)
 	}
 
+	totalMinipoolBalance := float64(0)
+	totalMinipoolShare := float64(0)
+	totalRefundBalance := float64(0)
+	for _, minipool := range minipools {
+		totalMinipoolBalance += eth.WeiToEth(minipool.DistributableBalance)
+		totalMinipoolShare += eth.WeiToEth(minipool.NodeShareOfBalance)
+		totalRefundBalance += eth.WeiToEth(minipool.NodeRefundBalance)
+	}
+
 	// Update all the metrics
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalStakedRpl, prometheus.GaugeValue, stakedRpl)
@@ -391,6 +425,12 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.beaconShare, prometheus.GaugeValue, totalNodeShare)
 	channel <- prometheus.MustNewConstMetric(
 		collector.beaconBalance, prometheus.GaugeValue, totalBeaconBalance)
+	channel <- prometheus.MustNewConstMetric(
+		collector.minipoolBalance, prometheus.GaugeValue, totalMinipoolBalance)
+	channel <- prometheus.MustNewConstMetric(
+		collector.minipoolShare, prometheus.GaugeValue, totalMinipoolShare)
+	channel <- prometheus.MustNewConstMetric(
+		collector.refundBalance, prometheus.GaugeValue, totalRefundBalance)
 	channel <- prometheus.MustNewConstMetric(
 		collector.unclaimedRewards, prometheus.GaugeValue, unclaimedRplRewards)
 	channel <- prometheus.MustNewConstMetric(
