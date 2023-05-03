@@ -551,8 +551,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Validate flags
-					if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-						return err
+					if c.String("minipool") != "" {
+						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
+							return err
+						}
 					}
 
 					// Run
