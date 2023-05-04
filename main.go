@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	version    string = "1.2.0"
+	version    string = "1.3.0"
 	colorReset string = "\033[0m"
 	colorRed   string = "\033[31m"
 )
@@ -28,6 +28,10 @@ func main() {
 		{
 			Name:  "Joe Clapis",
 			Email: "joe@rocketpool.net",
+		},
+		{
+			Name: "Jacob Shufro",
+			Email: "jacob@shuf.ro",
 		},
 	}
 	app.Copyright = "(c) 2023 Rocket Pool Pty Ltd"
