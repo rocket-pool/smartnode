@@ -184,6 +184,18 @@ type NodeStakeRplAllowanceResponse struct {
 	Allowance *big.Int `json:"allowance"`
 }
 
+type CanSetStakeRplForAllowedResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	CanSet  bool               `json:"canSet"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type SetStakeRplForAllowedResponse struct {
+	Status    string      `json:"status"`
+	Error     string      `json:"error"`
+	SetTxHash common.Hash `json:"setTxHash"`
+}
+
 type CanNodeWithdrawRplResponse struct {
 	Status                       string             `json:"status"`
 	Error                        string             `json:"error"`

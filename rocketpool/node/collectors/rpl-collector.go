@@ -85,6 +85,9 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 	lastCheckpoint := state.NetworkDetails.IntervalStart
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	nextRewardsTime := float64(lastCheckpoint.Add(rewardsInterval).Unix()) * 1000
+	if totalEffectiveStake == nil {
+		return
+	}
 
 	channel <- prometheus.MustNewConstMetric(
 		collector.rplPrice, prometheus.GaugeValue, rplPriceFloat)

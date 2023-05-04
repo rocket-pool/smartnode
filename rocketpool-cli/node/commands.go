@@ -259,6 +259,32 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "set-stake-rpl-for-allowed",
+				Aliases:   []string{"kf"},
+				Usage:     "Sets the allowed status for an address to stake RPL on behalf of your node",
+				UsageText: "rocketpool node set-stake-rpl-for-allowed [options] caller allowed",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+
+					callerAddressOrENS := c.Args().Get(0)
+
+					allowedString := c.Args().Get(1)
+					allowed, err := cliutils.ValidateBool("allowed", allowedString)
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return setStakeRPLForAllowed(c, callerAddressOrENS, allowed)
+
+				},
+			},
+
+			{
 				Name:      "claim-rewards",
 				Aliases:   []string{"c"},
 				Usage:     "Claim available RPL and ETH rewards for any checkpoint you haven't claimed yet",

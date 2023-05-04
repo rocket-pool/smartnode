@@ -491,6 +491,67 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "can-set-stake-rpl-for-allowed",
+				Usage:     "Check whether the node can set allowed status for an address to stake RPL on behalf of themself",
+				UsageText: "rocketpool api node can-set-stake-rpl-for-allowed caller allowed",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+
+					callerAddressString := c.Args().Get(0)
+					callerAddress, err := cliutils.ValidateAddress("caller", callerAddressString)
+					if err != nil {
+						return err
+					}
+
+					allowedString := c.Args().Get(1)
+					allowed, err := cliutils.ValidateBool("allowed", allowedString)
+					if err != nil {
+						return err
+					}
+
+
+					// Run
+					api.PrintResponse(canSetStakeRplForAllowed(c, callerAddress, allowed))
+					return nil
+
+				},
+			},
+			{
+				Name:      "set-stake-rpl-for-allowed",
+				Aliases:   []string{"kf"},
+				Usage:     "Sets the allowed status for an address to stake RPL on behalf of your node",
+				UsageText: "rocketpool api node set-stake-rpl-for-allowed caller allowed",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+
+					callerAddressString := c.Args().Get(0)
+					callerAddress, err := cliutils.ValidateAddress("caller", callerAddressString)
+					if err != nil {
+						return err
+					}
+
+					allowedString := c.Args().Get(1)
+					allowed, err := cliutils.ValidateBool("allowed", allowedString)
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setStakeRplForAllowed(c, callerAddress, allowed))
+
+					return nil
+				},
+			},
+
+			{
 				Name:      "can-withdraw-rpl",
 				Usage:     "Check whether the node can withdraw staked RPL",
 				UsageText: "rocketpool api node can-withdraw-rpl amount",

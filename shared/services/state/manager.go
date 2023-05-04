@@ -62,12 +62,12 @@ func (m *NetworkStateManager) GetHeadState() (*NetworkState, error) {
 }
 
 // Get the state of the network for a single node using the latest Execution layer block, along with the total effective RPL stake for the network
-func (m *NetworkStateManager) GetHeadStateForNode(nodeAddress common.Address) (*NetworkState, *big.Int, error) {
+func (m *NetworkStateManager) GetHeadStateForNode(nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
 	targetSlot, err := m.GetHeadSlot()
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting latest Beacon slot: %w", err)
 	}
-	return m.getStateForNode(nodeAddress, targetSlot)
+	return m.getStateForNode(nodeAddress, targetSlot, calculateTotalEffectiveStake)
 }
 
 // Get the state of the network at the provided Beacon slot
@@ -139,8 +139,8 @@ func (m *NetworkStateManager) getState(slotNumber uint64) (*NetworkState, error)
 }
 
 // Get the state of the network for a specific node only at the provided Beacon slot
-func (m *NetworkStateManager) getStateForNode(nodeAddress common.Address, slotNumber uint64) (*NetworkState, *big.Int, error) {
-	state, totalEffectiveStake, err := CreateNetworkStateForNode(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig, nodeAddress)
+func (m *NetworkStateManager) getStateForNode(nodeAddress common.Address, slotNumber uint64, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
+	state, totalEffectiveStake, err := CreateNetworkStateForNode(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig, nodeAddress, calculateTotalEffectiveStake)
 	if err != nil {
 		return nil, nil, err
 	}

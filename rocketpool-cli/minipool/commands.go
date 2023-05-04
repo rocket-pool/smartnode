@@ -527,6 +527,41 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "rescue-dissolved",
+				Aliases:   []string{"rd"},
+				Usage:     "Manually deposit ETH into the Beacon deposit contract for a dissolved minipool, activating it on the Beacon Chain so it can be exited.",
+				UsageText: "rocketpool minipool rescue-dissolved [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "minipool, m",
+						Usage: "The minipool/s to rescue (address, starting with 0x)",
+					},
+					cli.StringFlag{
+						Name:  "amount, a",
+						Usage: "The amount of ETH to deposit into the minipool",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Validate flags
+					if c.String("minipool") != "" {
+						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
+							return err
+						}
+					}
+
+					// Run
+					return rescueDissolved(c)
+
+				},
+			},
 		},
 	})
 }

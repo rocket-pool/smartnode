@@ -37,7 +37,7 @@ func exitMinipools(c *cli.Context) error {
 	// Get active minipools
 	activeMinipools := []api.MinipoolDetails{}
 	for _, minipool := range status.Minipools {
-		if minipool.Status.Status == types.Staking && minipool.Validator.Active {
+		if (minipool.Status.Status == types.Staking || (minipool.Status.Status == types.Dissolved && !minipool.Finalised)) && minipool.Validator.Active {
 			activeMinipools = append(activeMinipools, minipool)
 		}
 	}
@@ -56,7 +56,11 @@ func exitMinipools(c *cli.Context) error {
 		options := make([]string, len(activeMinipools)+1)
 		options[0] = "All available minipools"
 		for mi, minipool := range activeMinipools {
-			options[mi+1] = fmt.Sprintf("%s (staking since %s)", minipool.Address.Hex(), minipool.Status.StatusTime.Format(TimeFormat))
+			if minipool.Status.Status == types.Staking {
+				options[mi+1] = fmt.Sprintf("%s (staking since %s)", minipool.Address.Hex(), minipool.Status.StatusTime.Format(TimeFormat))
+			} else {
+				options[mi+1] = fmt.Sprintf("%s (dissolved since %s)", minipool.Address.Hex(), minipool.Status.StatusTime.Format(TimeFormat))
+			}
 		}
 		selected, _ := cliutils.Select("Please select a minipool to exit:", options)
 

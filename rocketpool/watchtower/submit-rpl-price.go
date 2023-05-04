@@ -278,28 +278,28 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 	err = t.submitOptimismPrice()
 	if err != nil {
 		// Error is not fatal for this task so print and continue
-		t.log.Printf("Error submitting Optimism price: %q\n", err)
+		t.log.Printlnf("Error submitting Optimism price: %s", err.Error())
 	}
 
 	// Check if Polygon rate is stale and submit
 	err = t.submitPolygonPrice()
 	if err != nil {
 		// Error is not fatal for this task so print and continue
-		t.log.Printf("Error submitting Polygon price: %q\n", err)
+		t.log.Printlnf("Error submitting Polygon price: %s", err.Error())
 	}
 
 	// Check if Arbitrum rate is stale and submit
 	err = t.submitArbitrumPrice()
 	if err != nil {
 		// Error is not fatal for this task so print and continue
-		t.log.Printf("Error submitting Arbitrum price: %q\n", err)
+		t.log.Printlnf("Error submitting Arbitrum price: %s", err.Error())
 	}
 
 	// Check if zkSync rate is stale and submit
 	err = t.submitZkSyncEraPrice()
 	if err != nil {
 		// Error is not fatal for this task so print and continue
-		t.log.Printf("Error submitting zkSync Era price: %q\n", err)
+		t.log.Printlnf("Error submitting zkSync Era price: %s", err.Error())
 	}
 
 	// Log

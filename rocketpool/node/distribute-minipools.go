@@ -69,16 +69,20 @@ func newDistributeMinipools(c *cli.Context, logger log.ColorLogger) (*distribute
 
 	// Check if auto-distributing is disabled
 	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
-
-	// Safety clamp
-	disabled := false
 	distributeThreshold := cfg.Smartnode.DistributeThreshold.Value.(float64)
-	if distributeThreshold >= 8 {
-		logger.Printlnf("WARNING: Auto-distribute threshold is more than 8 ETH (%.6f ETH), reducing to 7.5 ETH for safety", distributeThreshold)
-		distributeThreshold = 7.5
-	} else if distributeThreshold == 0 {
-		logger.Println("Auto-distribute threshold is 0, disabling auto-distribute.")
+	disabled := false
+	if gasThreshold == 0 {
+		logger.Println("Automatic tx gas threshold is 0, disabling auto-distribute.")
 		disabled = true
+	} else {
+		// Safety clamp
+		if distributeThreshold >= 8 {
+			logger.Printlnf("WARNING: Auto-distribute threshold is more than 8 ETH (%.6f ETH), reducing to 7.5 ETH for safety", distributeThreshold)
+			distributeThreshold = 7.5
+		} else if distributeThreshold == 0 {
+			logger.Println("Auto-distribute threshold is 0, disabling auto-distribute.")
+			disabled = true
+		}
 	}
 
 	// Get the user-requested max fee
