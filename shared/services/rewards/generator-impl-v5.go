@@ -891,6 +891,8 @@ func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.Attestat
 // Maps out the attestaion duties for the given epoch
 func (r *treeGeneratorImpl_v5) getDutiesForEpoch(committees beacon.Committees) error {
 
+	defer committees.Release()
+
 	// Crawl the committees
 	for idx := 0; idx < committees.Count(); idx++ {
 		slotIndex := committees.Slot(idx)

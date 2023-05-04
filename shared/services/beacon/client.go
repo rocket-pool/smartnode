@@ -82,6 +82,10 @@ type Committees interface {
 	Validators(int) []string
 	// Count returns the number of committees in the response
 	Count() int
+	// Release returns the reused validators slice buffer to the pool for
+	// further reuse, and must be called when the user is done with this
+	// committees instance
+	Release()
 }
 
 type AttestationInfo struct {
