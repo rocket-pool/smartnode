@@ -284,7 +284,7 @@ func getDepositTx(rp *rocketpool.RocketPool, w *wallet.Wallet, bc beacon.Client,
 	// Get the tx
 	tx, err := depositContract.Deposit(opts, validatorPubkey[:], withdrawalCredentials[:], signature[:], depositDataRoot)
 	if err != nil {
-		return nil, fmt.Errorf("error simulating rescue deposit: %w", err)
+		return nil, fmt.Errorf("error performing rescue deposit: %s", err.Error())
 	}
 
 	// Return
@@ -328,6 +328,7 @@ func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address, amo
 	if err != nil {
 		return nil, err
 	}
+	opts.Value = amount
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
