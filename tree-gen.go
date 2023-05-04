@@ -32,6 +32,7 @@ const (
 	MaxConcurrentEth1Requests = 200
 )
 
+// Details about the snapshot block / timestamp for a treegen target
 type snapshotDetails struct {
 	index                 uint64
 	startTime             time.Time
@@ -46,32 +47,40 @@ type snapshotDetails struct {
 type targets struct {
 	// If generating a whole interval, we use the rewardsEvent
 	rewardsEvent *rewards.RewardsEvent
+
 	// For preview related functions, we use snapshotDetails
 	snapshotDetails *snapshotDetails
 
-	// cached beacon block - not necessarily the last block in the last epoch,
+	// Cached beacon block - not necessarily the last block in the last epoch,
 	// as it may not have been proposed
 	block *beacon.BeaconBlock
 }
 
+// Arguments that will be passed down to the actual treegen routine
 type treegenArguments struct {
 	// Header of the starting EL block
 	elBlockHeader *types.Header
+
 	// Number of intervals elapsed
 	intervalsPassed uint64
-	// End time for the rewards tree
-	// (may not align on a full interval)
+
+	// End time for the rewards tree (may not align on a full interval)
 	endTime time.Time
+
 	// Start time for the rewards tree
 	startTime time.Time
+
 	// Index of the rewards period
 	index uint64
+
 	// Consensus end block
 	block *beacon.BeaconBlock
+
 	// Network State at end EL block
 	state *state.NetworkState
 }
 
+// Treegen holder for the requested execution metadata and necessary artifacts
 type treeGenerator struct {
 	log          *log.ColorLogger
 	rp           *rocketpool.RocketPool
@@ -113,7 +122,7 @@ func GenerateTree(c *cli.Context) error {
 	bn := client.NewStandardHttpClient(bnUrl)
 	beaconConfig, err := bn.GetEth2Config()
 	if err != nil {
-		return fmt.Errorf("error getting beacon config from the bn at %s - %w", bnUrl, err)
+		return fmt.Errorf("error getting beacon config from the BN at %s - %w", bnUrl, err)
 	}
 
 	// Check which network we're on via the BN
@@ -170,7 +179,7 @@ func GenerateTree(c *cli.Context) error {
 
 	// Run the tree generation or the rETH SP approximation
 	if c.Bool("approximate-only") {
-		return generator.approximateCurrentRethSpRewards()
+		return generator.approximateRethSpRewards()
 	}
 
 	// Print the network info and exit if requested
@@ -250,8 +259,8 @@ func (g *treeGenerator) lastBlockInEpoch(epoch uint64) (*beacon.BeaconBlock, err
 func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 	var err error
 
+	// Validate that the target epoch is finalized
 	if targetEpoch > 0 {
-		// Validate that the targeted epoch is finalized
 		beaconHead, err := g.bn.GetBeaconHead()
 		if err != nil {
 			return fmt.Errorf("unable to query beacon head: %w", err)
@@ -262,8 +271,8 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 		}
 	}
 
+	// If interval isn't set, we're generating a preview of the current interval
 	if interval < 0 {
-		// We're generating a preview of the current interval
 		var block *beacon.BeaconBlock
 		if targetEpoch == 0 {
 			// No targetEpoch was passed, so set it to the latest finalized epoch
@@ -272,7 +281,6 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 				return err
 			}
 
-			targetEpoch = b.Slot / g.beaconConfig.SlotsPerEpoch
 			block = &b
 		} else {
 			// A target epoch was passed, so find its last block
@@ -281,7 +289,7 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 				return err
 			}
 			if block == nil {
-				return fmt.Errorf("Unable to find any valid blocks in epoch %d. Was your BN synced after this epoch?", targetEpoch)
+				return fmt.Errorf("Unable to find any valid blocks in epoch %d. Was your BN checkpoint synced against a slot that occurred after this epoch?", targetEpoch)
 			}
 		}
 
@@ -291,29 +299,28 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 			return err
 		}
 
-		// ensure the targeted block is in the current interval
+		// Ensure the target block is in the current interval
 		if g.slotToTime(block.Slot).Before(g.targets.snapshotDetails.startTime) {
-			return fmt.Errorf("selected epoch precedes current interval. use -i to generate previous intervals.")
+			return fmt.Errorf("selected epoch precedes current interval. use -i to generate previous intervals")
 		}
 
-		// inform the user of the range they're querying
+		// Inform the user of the range they're querying
 		g.log.Printlnf("Targeting a portion of the current interval (%d)", g.targets.snapshotDetails.index)
 		g.targets.snapshotDetails.log(g.log)
 
 		return nil
 	}
 
-	// Interval is set- we are either generating a full previous interval, or a partial one
+	// We're generating a previous interval (full or partial)
+	// Get the corresponding rewards event for that interval
+	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, uint64(interval))
+	if err != nil {
+		return err
+	}
 
+	// If targetEpoch isn't set, we're generating a full interval
 	if targetEpoch == 0 {
-		// We're generating a past interval (in full)
 		g.log.Printlnf("Targeting full interval %d", interval)
-
-		// Get the corresponding rewards event
-		rewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, uint64(interval))
-		if err != nil {
-			return err
-		}
 		g.targets.rewardsEvent = &rewardsEvent
 
 		// Cache the last block of the rewards period
@@ -322,30 +329,23 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 			return err
 		}
 		if g.targets.block == nil {
-			return fmt.Errorf("unable to find any valid blocks in epoch %d. Was your BN synced after this epoch?", targetEpoch)
+			return fmt.Errorf("unable to find any valid blocks in epoch %d. Was your BN checkpoint synced against a slot that occurred after this epoch?", targetEpoch)
 		}
 
 		return nil
 	}
 
-	// Target epoch is set, we are generating a preview of a prior interval
-
-	// Get the past tree rewards event
-	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, uint64(interval))
-	if err != nil {
-		return err
-	}
-
-	// Validate that targetEpoch falls within the interval
+	// We're generating a partial interval
+	// Ensure the target slot happens *before* the end of the interval
 	eventBlock := rewardsEvent.ConsensusBlock.Uint64()
 	if targetEpoch == eventBlock/g.beaconConfig.SlotsPerEpoch {
 		return fmt.Errorf("target epoch %d was the end of the targeted interval %d.\nRerun without -t", targetEpoch, interval)
 	}
-
 	if targetEpoch > eventBlock/g.beaconConfig.SlotsPerEpoch {
 		return fmt.Errorf("target epoch %d was after targeted interval %d", targetEpoch, interval)
 	}
 
+	// Ensure the target epoch started *after* the start of the interval, which should land on the start of an epoch boundary
 	epochStartTime := g.slotToTime(targetEpoch * g.beaconConfig.SlotsPerEpoch)
 	if epochStartTime.Before(rewardsEvent.IntervalStartTime) {
 		return fmt.Errorf("target epoch %d was before targeted interval %d", targetEpoch, interval)
@@ -357,7 +357,7 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 		return err
 	}
 	if g.targets.block == nil {
-		return fmt.Errorf("Unable to find any valid blocks in epoch %d. Was your BN synced after this epoch?", targetEpoch)
+		return fmt.Errorf("Unable to find any valid blocks in epoch %d. Was your BN checkpoint synced against a slot that occurred after this epoch?", targetEpoch)
 	}
 
 	g.targets.snapshotDetails, err = g.getSnapshotDetails()
@@ -365,15 +365,18 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 		return err
 	}
 
-	// inform the user of the range they're querying
+	// Inform the user of the range they're querying
 	g.log.Printlnf("Targeting a portion of a previous interval (%d)", g.targets.snapshotDetails.index)
 	g.targets.snapshotDetails.log(g.log)
 
 	return nil
 }
 
+// Gets the timestamp for a Beacon slot
 func (g *treeGenerator) slotToTime(slot uint64) time.Time {
-	return time.Unix(int64(g.beaconConfig.GenesisTime), 0).Add(time.Second * time.Duration(g.beaconConfig.SecondsPerSlot*slot))
+	genesisTime := time.Unix(int64(g.beaconConfig.GenesisTime), 0)
+	secondsForSlot := time.Duration(slot*g.beaconConfig.SecondsPerSlot) * time.Second
+	return genesisTime.Add(secondsForSlot)
 }
 
 // Generates the rewards file for the given generator
@@ -445,8 +448,8 @@ func (g *treeGenerator) writeFiles(rewardsFile *rprewards.RewardsFile) error {
 	return nil
 }
 
+// Creates a tree generator using the provided arguments
 func (g *treeGenerator) getGenerator(args *treegenArguments) (*rprewards.TreeGenerator, error) {
-
 	out, err := rprewards.NewTreeGenerator(
 		*g.log, "", g.rp, g.cfg, g.bn, args.index,
 		args.startTime, args.endTime, args.block.Slot, args.elBlockHeader,
@@ -454,11 +457,12 @@ func (g *treeGenerator) getGenerator(args *treegenArguments) (*rprewards.TreeGen
 	if err != nil {
 		return nil, fmt.Errorf("error creating tree generator: %w", err)
 	}
+
 	return out, nil
 }
 
 // Approximates the rETH stakers' share of the Smoothing Pool's current balance
-func (g *treeGenerator) approximateCurrentRethSpRewards() error {
+func (g *treeGenerator) approximateRethSpRewards() error {
 	args, err := g.getTreegenArgs()
 	if err != nil {
 		return fmt.Errorf("error compiling treegen arguments: %w", err)
@@ -483,12 +487,13 @@ func (g *treeGenerator) approximateCurrentRethSpRewards() error {
 		return fmt.Errorf("error getting smoothing pool balance: %w", err)
 	}
 
-	// Approximate the balance
+	// Create the tree generator
 	treegen, err := g.getGenerator(args)
 	if err != nil {
 		return err
 	}
 
+	// Approximate the balance
 	var rETHShare *big.Int
 	if g.ruleset == 0 {
 		rETHShare, err = treegen.ApproximateStakerShareOfSmoothingPool()
@@ -504,18 +509,21 @@ func (g *treeGenerator) approximateCurrentRethSpRewards() error {
 	return nil
 }
 
+// Generate a complete rewards tree
 func (g *treeGenerator) generateTree() error {
 	args, err := g.getTreegenArgs()
 	if err != nil {
 		return fmt.Errorf("error compiling treegen arguments: %w", err)
 	}
 
-	// Generate the rewards file
-	start := time.Now()
+	// Create the tree generator
 	treegen, err := g.getGenerator(args)
 	if err != nil {
 		return err
 	}
+
+	// Generate the rewards file
+	start := time.Now()
 	rewardsFile, err := g.generateRewardsFile(treegen)
 	if err != nil {
 		return fmt.Errorf("error generating Merkle tree: %w", err)
@@ -544,7 +552,7 @@ func (g *treeGenerator) generateTree() error {
 
 }
 
-// Get the details of the rewards snapshot at the given block
+// Create a rewards snapshot at the target block
 func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 	var err error
 	var opts bind.CallOpts
@@ -600,6 +608,7 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 	}, nil
 }
 
+// Print information about the current network and interval info
 func (g *treeGenerator) printNetworkInfo() error {
 	args, err := g.getTreegenArgs()
 	if err != nil {
