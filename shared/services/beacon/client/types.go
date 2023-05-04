@@ -143,6 +143,22 @@ type Committee struct {
 	Validators []string `json:"validators"`
 }
 
+func (c *CommitteesResponse) Count() int {
+	return len(c.Data)
+}
+
+func (c *CommitteesResponse) Index(idx int) uint64 {
+	return uint64(c.Data[idx].Index)
+}
+
+func (c *CommitteesResponse) Slot(idx int) uint64 {
+	return uint64(c.Data[idx].Slot)
+}
+
+func (c *CommitteesResponse) Validators(idx int) []string {
+	return c.Data[idx].Validators
+}
+
 type Attestation struct {
 	AggregationBits string `json:"aggregation_bits"`
 	Data            struct {

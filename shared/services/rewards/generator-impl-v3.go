@@ -865,7 +865,7 @@ func (r *treeGeneratorImpl_v3) processAttestationsForInterval() error {
 func (r *treeGeneratorImpl_v3) processEpoch(getDuties bool, epoch uint64) error {
 
 	// Get the committee info and attestation records for this epoch
-	var committeeData []beacon.Committee
+	var committeeData beacon.Committees
 	attestationsPerSlot := make([][]beacon.AttestationInfo, r.slotsPerEpoch)
 	var wg errgroup.Group
 
@@ -954,20 +954,20 @@ func (r *treeGeneratorImpl_v3) checkDutiesForSlot(attestations []beacon.Attestat
 }
 
 // Maps out the attestaion duties for the given epoch
-func (r *treeGeneratorImpl_v3) getDutiesForEpoch(committees []beacon.Committee) error {
+func (r *treeGeneratorImpl_v3) getDutiesForEpoch(committees beacon.Committees) error {
 
 	// Crawl the committees
-	for _, committee := range committees {
-		slotIndex := committee.Slot
+	for idx := 0; idx < committees.Count(); idx++ {
+		slotIndex := committees.Slot(idx)
 		if slotIndex < r.rewardsFile.ConsensusStartBlock || slotIndex > r.rewardsFile.ConsensusEndBlock {
 			// Ignore slots that are out of bounds
 			continue
 		}
-		committeeIndex := committee.Index
+		committeeIndex := committees.Index(idx)
 
 		// Check if there are any RP validators in this committee
 		rpValidators := map[int]*MinipoolInfo{}
-		for position, validator := range committee.Validators {
+		for position, validator := range committees.Validators(idx) {
 			minipoolInfo, exists := r.validatorIndexMap[validator]
 			if exists {
 				rpValidators[position] = minipoolInfo

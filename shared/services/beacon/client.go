@@ -65,10 +65,23 @@ type BeaconBlock struct {
 	ExecutionBlockNumber uint64
 }
 
-type Committee struct {
-	Index      uint64
-	Slot       uint64
-	Validators []string
+// Committees is an interface as an optimization- since committees responses
+// are quite large, there's a decent cpu/memory improvement to removing the
+// translation to an intermediate storage class.
+//
+// Instead, the interface provides the access pattern that smartnode (or more
+// specifically, tree-gen) wants, and the underlying format is just the format
+// of the Beacon Node response.
+type Committees interface {
+	// Index returns the index of the committee at the provided offset
+	Index(int) uint64
+	// Slot returns the slot of the committee at the provided offset
+	Slot(int) uint64
+	// Validators returns the list of validators of the committee at
+	// the provided offset
+	Validators(int) []string
+	// Count returns the number of committees in the response
+	Count() int
 }
 
 type AttestationInfo struct {
@@ -128,6 +141,6 @@ type Client interface {
 	ExitValidator(validatorIndex string, epoch uint64, signature types.ValidatorSignature) error
 	Close() error
 	GetEth1DataForEth2Block(blockId string) (Eth1Data, bool, error)
-	GetCommitteesForEpoch(epoch *uint64) ([]Committee, error)
+	GetCommitteesForEpoch(epoch *uint64) (Committees, error)
 	ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error
 }
