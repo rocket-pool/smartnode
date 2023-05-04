@@ -271,7 +271,7 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 		}
 	}
 
-	// We're generating a preview of the current interval
+	// If interval isn't set, we're generating a preview of the current interval
 	if interval < 0 {
 		var block *beacon.BeaconBlock
 		if targetEpoch == 0 {
@@ -318,7 +318,7 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 		return err
 	}
 
-	// We're generating a full interval
+	// If targetEpoch isn't set, we're generating a full interval
 	if targetEpoch == 0 {
 		g.log.Printlnf("Targeting full interval %d", interval)
 		g.targets.rewardsEvent = &rewardsEvent
