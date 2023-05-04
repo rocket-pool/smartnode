@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 
@@ -119,7 +118,7 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 	var details api.MinipoolRescueDissolvedDetails
 	details.Address = mp.GetAddress()
 	details.MinipoolVersion = mp.GetVersion()
-	details.Balance = big.NewInt(0)
+	details.BeaconBalance = big.NewInt(0)
 
 	// Ignore minipools that are too old
 	if details.MinipoolVersion < 3 {
@@ -130,14 +129,6 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 	// Get the balance / share info and status details
 	var pubkey rptypes.ValidatorPubkey
 	var wg1 errgroup.Group
-	wg1.Go(func() error {
-		var err error
-		details.Balance, err = rp.Client.BalanceAt(context.Background(), minipoolAddress, nil)
-		if err != nil {
-			return fmt.Errorf("error getting balance of minipool %s: %w", minipoolAddress.Hex(), err)
-		}
-		return nil
-	})
 	wg1.Go(func() error {
 		var err error
 		details.IsFinalized, err = mp.GetFinalised(nil)
@@ -179,13 +170,6 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 		return details, nil
 	}
 
-	// Make sure it doesn't already have 32 ETH in it
-	requiredBalance := eth.EthToWei(32)
-	if details.Balance.Cmp(requiredBalance) >= 0 {
-		details.CanRescue = false
-		return details, nil
-	}
-
 	// Check the Beacon status
 	beaconStatus, err := bc.GetValidatorStatus(pubkey, nil)
 	if err != nil {
@@ -196,12 +180,21 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 		details.CanRescue = false
 		return details, nil
 	}
+	beaconBalanceGwei := big.NewInt(0).SetUint64(beaconStatus.Balance)
+	details.BeaconBalance = big.NewInt(0).Mul(beaconBalanceGwei, big.NewInt(1e9))
+
+	// Make sure it doesn't already have 32 ETH in it
+	requiredBalance := eth.EthToWei(32)
+	if details.BeaconBalance.Cmp(requiredBalance) >= 0 {
+		details.CanRescue = false
+		return details, nil
+	}
 
 	// Passed the checks!
 	details.CanRescue = true
 
 	// Get the simulated deposit TX
-	remainingAmount := big.NewInt(0).Sub(requiredBalance, details.Balance)
+	remainingAmount := big.NewInt(0).Sub(requiredBalance, details.BeaconBalance)
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return api.MinipoolRescueDissolvedDetails{}, err

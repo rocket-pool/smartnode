@@ -338,7 +338,7 @@ type MinipoolRescueDissolvedDetails struct {
 	IsFinalized     bool                  `json:"isFinalized"`
 	MinipoolStatus  types.MinipoolStatus  `json:"minipoolStatus"`
 	MinipoolVersion uint8                 `json:"minipoolVersion"`
-	Balance         *big.Int              `json:"balance"`
+	BeaconBalance   *big.Int              `json:"beaconBalance"`
 	BeaconState     beacon.ValidatorState `json:"beaconState"`
 	GasInfo         rocketpool.GasInfo    `json:"gasInfo"`
 }

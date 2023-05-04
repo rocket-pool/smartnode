@@ -80,7 +80,7 @@ func rescueDissolved(c *cli.Context) error {
 			versionTooLowMinipools = append(versionTooLowMinipools, mp)
 			continue
 		}
-		if mp.Balance.Cmp(fullDepositAmount) >= 0 {
+		if mp.BeaconBalance.Cmp(fullDepositAmount) >= 0 {
 			balanceCompletedMinipools = append(balanceCompletedMinipools, mp)
 			continue
 		}
@@ -122,6 +122,8 @@ func rescueDissolved(c *cli.Context) error {
 		return nil
 	}
 
+	fmt.Printf("%sNOTE: the amounts required for completion below use the validator balances according to the Beacon Chain.\nIf you have recently sent a rescue deposit to this minipool, please wait until it has been registered with the Beacon Chain for these remaining amounts to be accurate.%s\n\n", colorYellow, colorReset)
+
 	// Get selected minipools
 	var selectedMinipool *api.MinipoolRescueDissolvedDetails
 	var rescueAmount *big.Int
@@ -135,7 +137,7 @@ func rescueDissolved(c *cli.Context) error {
 
 		for mi, minipool := range rescuableMinipools {
 			localRescueAmount := big.NewInt(0)
-			localRescueAmount.Sub(fullDepositAmount, minipool.Balance)
+			localRescueAmount.Sub(fullDepositAmount, minipool.BeaconBalance)
 			rescueAmounts[mi] = localRescueAmount
 			rescueAmountFloats[mi] = math.RoundDown(eth.WeiToEth(localRescueAmount), 6)
 			options[mi] = fmt.Sprintf("%s (requires %.6f more ETH)", minipool.Address.Hex(), rescueAmountFloats[mi])
@@ -155,7 +157,7 @@ func rescueDissolved(c *cli.Context) error {
 			if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
 				selectedMinipool = &rescuableMinipools[i]
 				rescueAmount = big.NewInt(0)
-				rescueAmount.Sub(fullDepositAmount, selectedMinipool.Balance)
+				rescueAmount.Sub(fullDepositAmount, selectedMinipool.BeaconBalance)
 				rescueAmountFloat = math.RoundDown(eth.WeiToEth(rescueAmount), 6)
 				break
 			}
