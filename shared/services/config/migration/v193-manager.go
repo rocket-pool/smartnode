@@ -39,7 +39,7 @@ func updateRPCPortConfig(serializedConfig map[string]map[string]string, configKe
 
 	// Update the config
 	if openRPCPorts == "true" {
-		configSection[keyOpenPorts] = config.RPC_OpenExternal.String()
+		configSection[keyOpenPorts] = config.RPC_OpenLocalhost.String()
 	} else {
 		configSection[keyOpenPorts] = config.RPC_Closed.String()
 	}
