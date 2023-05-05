@@ -27,9 +27,6 @@ type NodeCollector struct {
 	// The effective amount of RPL staked on the node (honoring the 150% collateral cap)
 	effectiveStakedRpl *prometheus.Desc
 
-	// The RPL collateral level for the node
-	rplCollateral *prometheus.Desc
-
 	// The cumulative RPL rewards earned by the node
 	cumulativeRplRewards *prometheus.Desc
 
@@ -71,6 +68,12 @@ type NodeCollector struct {
 
 	// The unclaimed ETH rewards from the smoothing pool
 	unclaimedEthRewards *prometheus.Desc
+
+	// The collateral ratio with respect to the amount of borrowed ETH
+	borrowedCollateralRatio *prometheus.Desc
+
+	// The collateral ratio with respect to the amount of bonded ETH
+	bondedCollateralRatio *prometheus.Desc
 
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
@@ -124,10 +127,6 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 		),
 		effectiveStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "effective_staked_rpl"),
 			"The effective amount of RPL staked on the node (honoring the 150% collateral cap)",
-			nil, nil,
-		),
-		rplCollateral: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rpl_collateral"),
-			"The RPL collateral level for the node",
 			nil, nil,
 		),
 		cumulativeRplRewards: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "cumulative_rpl_rewards"),
@@ -186,6 +185,14 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			"The unclaimed ETH rewards from the smoothing pool",
 			nil, nil,
 		),
+		borrowedCollateralRatio: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "borrowed_collateral_ratio"),
+			"The collateral ratio with respect to the amount of borrowed ETH",
+			nil, nil,
+		),
+		bondedCollateralRatio: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "bonded_collateral_ratio"),
+			"The collateral ratio with respect to the amount of bonded ETH",
+			nil, nil,
+		),
 		rp:               rp,
 		bc:               bc,
 		nodeAddress:      nodeAddress,
@@ -215,6 +222,8 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.unclaimedRewards
 	channel <- collector.claimedEthRewards
 	channel <- collector.unclaimedEthRewards
+	channel <- collector.borrowedCollateralRatio
+	channel <- collector.bondedCollateralRatio
 }
 
 // Collect the latest metric values and pass them to Prometheus
@@ -243,7 +252,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	rethBalance := eth.WeiToEth(nd.BalanceRETH)
 	var activeMinipoolCount float64
 	rplPrice := eth.WeiToEth(state.NetworkDetails.RplPrice)
-	collateralRatio := float64(0)
 	var beaconHead beacon.BeaconHead
 	unclaimedEthRewards := float64(0)
 	unclaimedRplRewards := float64(0)
@@ -364,11 +372,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// Calculate the RPL APR
 	rplApr := estimatedRewards / stakedRpl / rewardsInterval.Hours() * (24 * 365) * 100
 
-	// Calculate the collateral ratio
-	if activeMinipoolCount > 0 {
-		collateralRatio = rplPrice * stakedRpl / (activeMinipoolCount * 16.0)
-	}
-
 	// Calculate the total deposits and corresponding beacon chain balance share
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
@@ -396,13 +399,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		totalRefundBalance += eth.WeiToEth(minipool.NodeRefundBalance)
 	}
 
+	// RPL collateral
+	ethMatched := eth.WeiToEth(nd.EthMatched)
+	bondedCollateralRatio := rplPrice * stakedRpl / (activeMinipoolCount*32.0 - ethMatched)
+	borrowedCollateralRatio := rplPrice * stakedRpl / ethMatched
+
 	// Update all the metrics
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalStakedRpl, prometheus.GaugeValue, stakedRpl)
 	channel <- prometheus.MustNewConstMetric(
 		collector.effectiveStakedRpl, prometheus.GaugeValue, effectiveStakedRpl)
-	channel <- prometheus.MustNewConstMetric(
-		collector.rplCollateral, prometheus.GaugeValue, collateralRatio)
 	channel <- prometheus.MustNewConstMetric(
 		collector.cumulativeRplRewards, prometheus.GaugeValue, collector.cumulativeRewards)
 	channel <- prometheus.MustNewConstMetric(
@@ -437,6 +443,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.unclaimedEthRewards, prometheus.GaugeValue, unclaimedEthRewards)
 	channel <- prometheus.MustNewConstMetric(
 		collector.claimedEthRewards, prometheus.GaugeValue, collector.cumulativeClaimedEthRewards)
+	channel <- prometheus.MustNewConstMetric(
+		collector.borrowedCollateralRatio, prometheus.GaugeValue, borrowedCollateralRatio)
+	channel <- prometheus.MustNewConstMetric(
+		collector.bondedCollateralRatio, prometheus.GaugeValue, bondedCollateralRatio)
 }
 
 // Log error messages
