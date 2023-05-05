@@ -9,7 +9,7 @@ const prometheusTag string = "prom/prometheus:v2.43.0"
 
 // Defaults
 const defaultPrometheusPort uint16 = 9091
-const defaultPrometheusOpenPort bool = false
+const defaultPrometheusOpenPort string = string(config.RPC_Closed)
 
 // Configuration for Prometheus
 type PrometheusConfig struct {
@@ -30,6 +30,7 @@ type PrometheusConfig struct {
 
 // Generates a new Prometheus config
 func NewPrometheusConfig(cfg *RocketPoolConfig) *PrometheusConfig {
+	rpcPortModes := config.PortModes("")
 	return &PrometheusConfig{
 		Title: "Prometheus Settings",
 
@@ -48,13 +49,14 @@ func NewPrometheusConfig(cfg *RocketPoolConfig) *PrometheusConfig {
 		OpenPort: config.Parameter{
 			ID:                   "openPort",
 			Name:                 "Expose Prometheus Port",
-			Description:          "Enable this to expose Prometheus's port to your local network, so other machines can access it too.",
-			Type:                 config.ParameterType_Bool,
+			Description:          "Expose the Prometheus's port to other processes on your machine, or to your local network so other machines can access it too.",
+			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultPrometheusOpenPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Prometheus},
 			EnvironmentVariables: []string{"PROMETHEUS_OPEN_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+			Options:              rpcPortModes,
 		},
 
 		ContainerTag: config.Parameter{

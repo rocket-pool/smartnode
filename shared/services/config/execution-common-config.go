@@ -16,7 +16,7 @@ const (
 	defaultEcHttpPort    uint16 = 8545
 	defaultEcWsPort      uint16 = 8546
 	defaultEcEnginePort  uint16 = 8551
-	defaultOpenEcApiPort bool   = false
+	defaultOpenEcApiPort string = string(config.RPC_Closed)
 )
 
 // Configuration for the Execution client
@@ -47,6 +47,8 @@ type ExecutionCommonConfig struct {
 
 // Create a new ExecutionCommonConfig struct
 func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
+	rpcPortModes := config.PortModes("")
+
 	return &ExecutionCommonConfig{
 		Title: "Common Execution Client Settings",
 
@@ -89,13 +91,14 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 		OpenRpcPorts: config.Parameter{
 			ID:                   ecOpenRpcPortsID,
 			Name:                 "Expose RPC Ports",
-			Description:          "Expose the HTTP and Websocket RPC ports to your local config.Network, so other local machines can access your Execution Client's RPC endpoint.",
-			Type:                 config.ParameterType_Bool,
+			Description:          "Expose the HTTP and Websocket RPC ports to other processes on your machine, or to your local network so other machines can access your Execution Client's RPC endpoint.",
+			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultOpenEcApiPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+			Options:              rpcPortModes,
 		},
 
 		P2pPort: config.Parameter{

@@ -29,6 +29,10 @@ func UpdateConfig(serializedConfig map[string]map[string]string) error {
 	if err != nil {
 		return err
 	}
+	v193, err := parseVersion("1.9.3")
+	if err != nil {
+		return err
+	}
 
 	// Create the collection of upgraders
 	upgraders := []ConfigUpgrader{
@@ -38,6 +42,9 @@ func UpdateConfig(serializedConfig map[string]map[string]string) error {
 		}, {
 			Version:     v151,
 			UpgradeFunc: upgradeFromV151,
+		}, {
+			Version:     v193,
+			UpgradeFunc: upgradeFromV193,
 		},
 	}
 
