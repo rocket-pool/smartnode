@@ -259,27 +259,41 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "set-stake-rpl-for-allowed",
-				Aliases:   []string{"kf"},
-				Usage:     "Sets the allowed status for an address to stake RPL on behalf of your node",
-				UsageText: "rocketpool node set-stake-rpl-for-allowed [options] caller allowed",
+				Name:      "add-address-to-stake-rpl-whitelist",
+				Aliases:   []string{"asw"},
+				Usage:     "Adds an address to your node's RPL staking whitelist, so it can stake RPL on behalf of your node.",
+				UsageText: "rocketpool node add-address-to-stake-rpl-whitelist address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 
-					callerAddressOrENS := c.Args().Get(0)
-
-					allowedString := c.Args().Get(1)
-					allowed, err := cliutils.ValidateBool("allowed", allowedString)
-					if err != nil {
-						return err
-					}
+					addressOrENS := c.Args().Get(0)
 
 					// Run
-					return setStakeRPLForAllowed(c, callerAddressOrENS, allowed)
+					return addAddressToStakeRplWhitelist(c, addressOrENS)
+
+				},
+			},
+
+			{
+				Name:      "remove-address-from-stake-rpl-whitelist",
+				Aliases:   []string{"rsw"},
+				Usage:     "Removes an address from your node's RPL staking whitelist, so it can no longer stake RPL on behalf of your node.",
+				UsageText: "rocketpool node remove-address-from-stake-rpl-whitelist address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					addressOrENS := c.Args().Get(0)
+
+					// Run
+					return removeAddressFromStakeRplWhitelist(c, addressOrENS)
 
 				},
 			},
