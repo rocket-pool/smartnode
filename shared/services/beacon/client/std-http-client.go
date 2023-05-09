@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -780,6 +781,37 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 	return beaconBlock, true, nil
 }
 
+type committeesDecoder struct {
+	decoder       *json.Decoder
+	currentReader *io.ReadCloser
+}
+
+// Read will be called by the json decoder to request more bytes of data from
+// the beacon node's committees response. Since the decoder is reused, we
+// need to avoid sending it io.EOF, or it will enter an unusable state and can
+// not be reused later.
+//
+// On subsequent calls to Decode, the decoder resets its internal buffer, which
+// means any data it reads between the last json token and EOF is correctly
+// discarded.
+func (c *committeesDecoder) Read(p []byte) (int, error) {
+	n, err := (*c.currentReader).Read(p)
+	if err == io.EOF {
+		return n, nil
+	}
+
+	return n, err
+}
+
+var committeesDecoderPool sync.Pool = sync.Pool{
+	New: func() any {
+		var out committeesDecoder
+
+		out.decoder = json.NewDecoder(&out)
+		return &out
+	},
+}
+
 // Get the committees for the epoch
 func (c *StandardHttpClient) getCommittees(stateId string, epoch *uint64) (CommitteesResponse, error) {
 	var committees CommitteesResponse
@@ -803,11 +835,16 @@ func (c *StandardHttpClient) getCommittees(stateId string, epoch *uint64) (Commi
 		return CommitteesResponse{}, fmt.Errorf("Could not get committees: HTTP status %d; response body: '%s'", status, string(body))
 	}
 
-	// Pass the reader off to the decoder
-	decoder := json.NewDecoder(reader)
+	d := committeesDecoderPool.Get().(*committeesDecoder)
+	defer func() {
+		d.currentReader = nil
+		committeesDecoderPool.Put(d)
+	}()
+
+	d.currentReader = &reader
 
 	// Begin decoding
-	if err := decoder.Decode(&committees); err != nil {
+	if err := d.decoder.Decode(&committees); err != nil {
 		return CommitteesResponse{}, fmt.Errorf("Could not decode committees: %w", err)
 	}
 
