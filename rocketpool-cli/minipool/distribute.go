@@ -105,9 +105,24 @@ func distributeBalance(c *cli.Context) error {
 	var selectedMinipools []api.MinipoolBalanceDistributionDetails
 	if c.String("minipool") == "" {
 
+		// Get total rewards
+		totalEthAvailable := big.NewInt(0)
+		totalEthShare := big.NewInt(0)
+		totalRefund := big.NewInt(0)
+		for _, minipool := range eligibleMinipools {
+			if minipool.Status == types.Dissolved {
+				// Dissolved minipools are a special case
+				totalEthShare.Add(totalEthShare, minipool.Balance)
+			} else {
+				totalEthAvailable.Add(totalEthAvailable, minipool.Balance)
+				totalEthShare.Add(totalEthShare, minipool.NodeShareOfBalance)
+				totalRefund.Add(totalRefund, minipool.Refund)
+			}
+		}
+
 		// Prompt for minipool selection
 		options := make([]string, len(eligibleMinipools)+1)
-		options[0] = "All available minipools"
+		options[0] = fmt.Sprintf("All available minipools (%.6f ETH available, %.6f ETH goes to you plus a refund of %.6f ETH)", math.RoundDown(eth.WeiToEth(totalEthAvailable), 6), math.RoundDown(eth.WeiToEth(totalEthShare), 6), math.RoundDown(eth.WeiToEth(totalRefund), 6))
 		for mi, minipool := range eligibleMinipools {
 			if minipool.Status == types.Dissolved {
 				// Dissolved minipools are a special case
