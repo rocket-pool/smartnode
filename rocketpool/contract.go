@@ -3,10 +3,12 @@ package rocketpool
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
 	"reflect"
+	"regexp"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -17,8 +19,9 @@ import (
 
 // Transaction settings
 const (
-	GasLimitMultiplier float64 = 1.5
-	MaxGasLimit        uint64  = 30000000
+	GasLimitMultiplier    float64 = 1.5
+	MaxGasLimit           uint64  = 30000000
+	NethermindRevertRegex string  = "Reverted 0x(?P<message>[0-9a-fA-F]+).*"
 )
 
 // Contract type wraps go-ethereum bound contract
@@ -84,7 +87,7 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
 	// Send transaction
 	tx, err := c.Contract.Transact(opts, method, params...)
 	if err != nil {
-		return nil, err
+		return nil, c.normalizeErrorMessage(err)
 	}
 
 	return tx, nil
@@ -122,7 +125,7 @@ func (c *Contract) Transfer(opts *bind.TransactOpts) (common.Hash, error) {
 	// Send transaction
 	tx, err := c.Contract.Transfer(opts)
 	if err != nil {
-		return common.Hash{}, err
+		return common.Hash{}, c.normalizeErrorMessage(err)
 	}
 
 	return tx.Hash(), nil
@@ -142,7 +145,7 @@ func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint
 	})
 
 	if err != nil {
-		return 0, 0, fmt.Errorf("Could not estimate gas needed: %w", err)
+		return 0, 0, fmt.Errorf("Could not estimate gas needed: %w", c.normalizeErrorMessage(err))
 	}
 
 	// Pad and return gas limit
@@ -219,4 +222,31 @@ func (c *Contract) GetTransactionEvents(txReceipt *types.Receipt, eventName stri
 	// Return events
 	return events, nil
 
+}
+
+// Normalize error messages so they're all in ASCII format
+func (c *Contract) normalizeErrorMessage(err error) error {
+	if err == nil {
+		return err
+	}
+
+	// Get the message in hex format, if it exists
+	reg := regexp.MustCompile(NethermindRevertRegex)
+	matches := reg.FindStringSubmatch(err.Error())
+	if matches == nil {
+		return err
+	}
+	messageIndex := reg.SubexpIndex("message")
+	if messageIndex == -1 {
+		return err
+	}
+	message := matches[messageIndex]
+
+	// Convert the hex message to ASCII
+	bytes, err2 := hex.DecodeString(message)
+	if err2 != nil {
+		return err // Return the original error if decoding failed somehow
+	}
+
+	return errors.New(string(bytes))
 }
