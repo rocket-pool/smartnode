@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,6 +29,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+)
+
+const (
+	enableSubmissionAfterConsensus_Balances bool = true
 )
 
 // Submit network balances task
@@ -530,7 +535,15 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	// Get the gas limit
 	gasInfo, err := network.EstimateSubmitBalancesGas(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to submit network balances: %w", err)
+		if enableSubmissionAfterConsensus_Balances && strings.Contains(err.Error(), "Network balances for an equal or higher block are set") {
+			// Set a 21k gas limit which will intentionally be too low and revert
+			gasInfo = rocketpool.GasInfo{
+				EstGasLimit:  21000,
+				SafeGasLimit: 21000,
+			}
+		} else {
+			return fmt.Errorf("Could not estimate the gas required to submit network balances: %w", err)
+		}
 	}
 
 	// Print the gas info
