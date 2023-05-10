@@ -74,7 +74,14 @@ func (b *BalanceBatcher) GetEthBalances(addresses []common.Address, opts *bind.C
 			if err != nil {
 				return fmt.Errorf("error unpacking balances response: %w", err)
 			}
+
+			if len(subBalances) != len(subAddresses) {
+				return fmt.Errorf("received %d balances which mismatches query batch size %d", len(subBalances), len(subAddresses))
+			}
 			for j, balance := range subBalances {
+				if balance == nil {
+					return fmt.Errorf("received nil balance for address %s", subAddresses[j].String())
+				}
 				balances[i+j] = balance
 			}
 
