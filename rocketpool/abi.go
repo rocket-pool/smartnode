@@ -5,11 +5,19 @@ import (
 	"compress/zlib"
 	"encoding/base64"
 	"fmt"
+	"sync"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
+var decoderCache sync.Map
+
 // Decode, decompress and parse a zlib-compressed, base64-encoded ABI
 func DecodeAbi(abiEncoded string) (*abi.ABI, error) {
+
+	if cached, ok := decoderCache.Load(abiEncoded); ok {
+		return cached.(*abi.ABI), nil
+	}
 
 	// base64 decode
 	abiCompressed, err := base64.StdEncoding.DecodeString(abiEncoded)
@@ -32,6 +40,8 @@ func DecodeAbi(abiEncoded string) (*abi.ABI, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Could not parse JSON: %w", err)
 	}
+
+	decoderCache.Store(abiEncoded, &abiParsed)
 
 	// Return
 	return &abiParsed, nil
