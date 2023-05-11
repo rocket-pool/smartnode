@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	balanceBatchSize int = 2000
+	balanceBatchSize int = 1000
 	threadLimit      int = 6
 )
 
