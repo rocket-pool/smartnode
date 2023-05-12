@@ -201,7 +201,7 @@ func (c *CommitteesResponse) Release() {
 	for _, committee := range c.Data {
 		// Reset the slice length to 0 (capacity stays the same)
 		committee.Validators = committee.Validators[:0]
-		// Return the slcie for reuse
+		// Return the slice for reuse
 		validatorSlicePool.Put(committee.Validators)
 	}
 }
