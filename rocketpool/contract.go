@@ -248,5 +248,5 @@ func (c *Contract) normalizeErrorMessage(err error) error {
 		return err // Return the original error if decoding failed somehow
 	}
 
-	return errors.New(string(bytes))
+	return fmt.Errorf("Reverted: %s", string(bytes))
 }
