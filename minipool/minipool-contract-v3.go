@@ -51,15 +51,16 @@ func newMinipool_v3(rp *rocketpool.RocketPool, address common.Address, opts *bin
 
 	var contract *rocketpool.Contract
 	var err error
-	if minipoolV2Abi == nil {
+	if minipoolV3Abi == nil {
 		// Get contract
 		contract, err = createMinipoolContractFromEncodedAbi(rp, address, minipoolV3EncodedAbi)
-		minipoolV3Abi = contract.ABI
 	} else {
 		contract, err = createMinipoolContractFromAbi(rp, address, minipoolV3Abi)
 	}
 	if err != nil {
 		return nil, err
+	} else if minipoolV3Abi == nil {
+		minipoolV3Abi = contract.ABI
 	}
 
 	// Create and return
