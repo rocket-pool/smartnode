@@ -16,7 +16,7 @@ import (
 
 const (
 	minipoolBatchSize              int = 100
-	minipoolCompleteShareBatchSize int = 1000
+	minipoolCompleteShareBatchSize int = 500
 	minipoolAddressBatchSize       int = 1000
 	minipoolVersionBatchSize       int = 500
 )
@@ -56,6 +56,8 @@ type NativeMinipoolDetails struct {
 	DepositType                       types.MinipoolDeposit
 	NodeShareOfBalanceIncludingBeacon *big.Int // Must call CalculateCompleteMinipoolShares to get this
 	UserShareOfBalanceIncludingBeacon *big.Int // Must call CalculateCompleteMinipoolShares to get this
+	NodeShareOfBeaconBalance          *big.Int // Must call CalculateCompleteMinipoolShares to get this
+	UserShareOfBeaconBalance          *big.Int // Must call CalculateCompleteMinipoolShares to get this
 
 	// Atlas
 	UserDistributed              bool
@@ -172,13 +174,23 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 				}
 				mpContract := mp.GetContract()
 
+				// Calculate the Beacon shares
+				beaconBalance := big.NewInt(0).Set(beaconBalances[j])
+				if beaconBalance.Cmp(zero) > 0 {
+					mc.AddCall(mpContract, &details.NodeShareOfBeaconBalance, "calculateNodeShare", beaconBalance)
+					mc.AddCall(mpContract, &details.UserShareOfBeaconBalance, "calculateUserShare", beaconBalance)
+				} else {
+					details.NodeShareOfBeaconBalance = big.NewInt(0)
+					details.UserShareOfBeaconBalance = big.NewInt(0)
+				}
+
 				// Calculate the total balance
 				totalBalance := big.NewInt(0).Set(beaconBalances[j])      // Total balance = beacon balance
 				totalBalance.Add(totalBalance, details.Balance)           // Add contract balance
 				totalBalance.Sub(totalBalance, details.NodeRefundBalance) // Remove node refund
 
 				// Calculate the node and user shares
-				if totalBalance.Cmp(zero) >= 0 {
+				if totalBalance.Cmp(zero) > 0 {
 					mc.AddCall(mpContract, &details.NodeShareOfBalanceIncludingBeacon, "calculateNodeShare", totalBalance)
 					mc.AddCall(mpContract, &details.UserShareOfBalanceIncludingBeacon, "calculateUserShare", totalBalance)
 				} else {
