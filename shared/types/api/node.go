@@ -33,6 +33,11 @@ type NodeStatusResponse struct {
 	MaximumRplStake                   *big.Int        `json:"maximumRplStake"`
 	BorrowedCollateralRatio           float64         `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio             float64         `json:"bondedCollateralRatio"`
+	PendingEffectiveRplStake          *big.Int        `json:"pendingEffectiveRplStake"`
+	PendingMinimumRplStake            *big.Int        `json:"pendingMinimumRplStake"`
+	PendingMaximumRplStake            *big.Int        `json:"pendingMaximumRplStake"`
+	PendingBorrowedCollateralRatio    float64         `json:"pendingBorrowedCollateralRatio"`
+	PendingBondedCollateralRatio      float64         `json:"pendingBondedCollateralRatio"`
 	VotingDelegate                    common.Address  `json:"votingDelegate"`
 	VotingDelegateFormatted           string          `json:"votingDelegateFormatted"`
 	IsAtlasDeployed                   bool            `json:"isAtlasDeployed"`

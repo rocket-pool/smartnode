@@ -256,6 +256,12 @@ func getStatus(c *cli.Context) error {
 			}
 			fmt.Println()
 
+			if status.PendingEffectiveRplStake.Cmp(status.EffectiveRplStake) != 0 {
+				fmt.Printf("Of this stake, %.6f RPL is eligible for RPL staking rewards.\n", math.RoundDown(eth.WeiToEth(status.PendingEffectiveRplStake), 6))
+				fmt.Println("Eligibility is determined by the number of minipools you have in the *active* state on the Beacon Chain:\n- Validators in the Beacon Chain queue that have not been activated yet are not eligible.\n- Validators that have been exited are not eligible.")
+				fmt.Println()
+			}
+
 			remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
 			remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)
 			remainingAmountEth := int(eth.WeiToEth(remainingAmount))
