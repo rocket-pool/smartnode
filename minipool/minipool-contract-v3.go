@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/sync/errgroup"
@@ -16,6 +17,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+)
+
+const (
+	minipoolV3EncodedAbi string = "eJztWltv2koQ/isVz3lq1SrqW3Jon5qeCJKch6pCY+8Aqyy71l7MQdH57x0bY2Mw2MAau0d9SsDjmW8uO7flx9sApJKrhXJm8HkKwuDNgMvIWfr4443+Zfgvsq1HFrUE8bSKcPB54Ojz+4+fBjcDCYvki0hjzInXvZLsjphKS89smfi/m9P5Slz6Zmk5/dnn9DMnSASOkLmQmOZ0GCMBSOQ1s5vVbh8LMKbRmALLVKtFIWPz+Byt4JoW+mLnqIcYKcNt+0Yi2tCV5FxiKKkY+gwnZ1B7DU9lQdyDABlWOaE1d/7D7ZxpWIJ41Cok67bvWKt+19jfGEueb6JqPMHK4paFYhCcgVX60QWvuCqkrekaKHiI4ZjPJFin8VyeH94XXNk6FQzBwkgpu8OSKK/s1R2ll3lo/6WRkZs4vXWG3qcHywOXPFKKjhQaC6+XHCn/kNRCXZS9fSMah9oFwRUQBZ47itBpTUCvm7Q3VnuBkKSuKMIi0O3n7AUuAtR+8natjmlEvFwWpZVqJbJuCyB0Nq0zZSi3LamUinqOKAlXa5XrULwT4IzLZ+ozhtxYzQNqhuhN5WxBmWiAD85CwAW3q7TPkRGsIBBbeKZOhpYrWRb0VqvVJDgY2gXKEEToBMH4Th3WeA66DLJeSjX3fc1ijstr65RYv2udtmHJLH0fhxNQfqjCkn7vCcg4qWtdwxDKeD0SP3dbm3rmp3PmxigRt3uUy6afaFyCZuZvKVYVbiiAZVmmqGgtWHbKCSZvy28ztNmAmlriaHyidIt3m3o6zB1eeYRvvQQsofuaqc86PjsEJUnYd3mhPwJmrxuo6AP8Qco8cWcMzSp9sVMGqupkdFUNMmRfsVdwRkiErId2elLRc/QCwvUGFfXu34DI5n1D9cBnGhKy7t1Yn4smB0eTklqlmaLjhDLezB1Ni1P+Qru1aS3mXqjwtS/RuIb0tB6veoHoKVnU5tFU48XrwUrnxL5VzgpQfXLlFrzuM90+srwf74En03WT7QRHgxIgS53s4TpA6TRZAnuePposHZRkmypfuSU8tseeNLoOaMahZv9/fN8/qV/4F7aONA49D9ENDX18x1vDoHapW9Iw2b1mm9h25tmoYt/jjblOb7tLF+2tSEkmgnZ4GwFm3u4mpfuTZPZWbd7s54oK2MKqy5Wq2J0Qatl5LYtRm+RxbaG/rYLhr92O6VSnXaRnxzZ7PVSS3OJCiuOL79n2yrESbIgCZ2C3JJ5wYbTHUOLyIoanX9dsxI2UEMjuIR2IMnI/t5P/Z6s9RzMN7M/PqA6YKf0pyQhD5HHju0C2FZAB7MznHm89Sg5sR0i6os/jshdr5y/TKRJNjH0D9pj9vrJvuGg+/UZMTENPdjcZahW+JlskpWF2MA3+XtPlzt2eQWu5nFUYddM+1rnrPIBN+kPIklVDer3OiQT+F40AQik="
 )
 
 type MinipoolV3 interface {
@@ -38,11 +43,21 @@ type minipool_v3 struct {
 	RocketPool *rocketpool.RocketPool
 }
 
+// The decoded ABI for v2 minipools
+var minipoolV3Abi *abi.ABI
+
 // Create new minipool contract
 func newMinipool_v3(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (Minipool, error) {
 
-	// Get contract
-	contract, err := getMinipoolContract(rp, address, opts)
+	var contract *rocketpool.Contract
+	var err error
+	if minipoolV2Abi == nil {
+		// Get contract
+		contract, err = createMinipoolContractFromEncodedAbi(rp, address, minipoolV3EncodedAbi)
+		minipoolV3Abi = contract.ABI
+	} else {
+		contract, err = createMinipoolContractFromAbi(rp, address, minipoolV3Abi)
+	}
 	if err != nil {
 		return nil, err
 	}

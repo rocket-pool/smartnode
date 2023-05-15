@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -49,14 +50,25 @@ func NewMinipoolFromVersion(rp *rocketpool.RocketPool, address common.Address, v
 	}
 }
 
-// Create a minipool contract directly from its ABI - used for legacy minipools
-func createMinipoolContractFromAbi(rp *rocketpool.RocketPool, address common.Address, encodedAbi string) (*rocketpool.Contract, error) {
+// Create a minipool contract directly from its ABI, encoded in string form
+func createMinipoolContractFromEncodedAbi(rp *rocketpool.RocketPool, address common.Address, encodedAbi string) (*rocketpool.Contract, error) {
 	// Decode ABI
 	abi, err := rocketpool.DecodeAbi(encodedAbi)
 	if err != nil {
 		return nil, fmt.Errorf("Could not decode minipool %s ABI: %w", address, err)
 	}
 
+	// Create and return
+	return &rocketpool.Contract{
+		Contract: bind.NewBoundContract(address, *abi, rp.Client, rp.Client, rp.Client),
+		Address:  &address,
+		ABI:      abi,
+		Client:   rp.Client,
+	}, nil
+}
+
+// Create a minipool contract directly from its ABI
+func createMinipoolContractFromAbi(rp *rocketpool.RocketPool, address common.Address, abi *abi.ABI) (*rocketpool.Contract, error) {
 	// Create and return
 	return &rocketpool.Contract{
 		Contract: bind.NewBoundContract(address, *abi, rp.Client, rp.Client, rp.Client),
