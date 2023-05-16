@@ -43,7 +43,7 @@ const (
 	RequestWithdrawalCredentialsChangePath = "/eth/v1/beacon/pool/bls_to_execution_changes"
 
 	MaxRequestValidatorsCount     = 600
-	threadLimit               int = 6
+	threadLimit               int = 12
 )
 
 // Beacon client using the standard Beacon HTTP REST API (https://ethereum.github.io/beacon-APIs/)
