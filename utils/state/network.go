@@ -35,6 +35,7 @@ type NetworkDetails struct {
 	DepositPoolBalance                *big.Int
 	DepositPoolExcess                 *big.Int
 	QueueCapacity                     minipool.QueueCapacity
+	QueueLength                       *big.Int
 	RPLInflationIntervalRate          *big.Int
 	RPLTotalSupply                    *big.Int
 	PricesBlock                       uint64
@@ -76,6 +77,7 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	var scrubPeriodSeconds *big.Int
 	var totalQueueCapacity *big.Int
 	var effectiveQueueCapacity *big.Int
+	var totalQueueLength *big.Int
 	var pricesBlock *big.Int
 	var latestReportablePricesBlock *big.Int
 	var ethUtilizationRate *big.Int
@@ -104,6 +106,7 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	contracts.Multicaller.AddCall(contracts.RocketDepositPool, &details.DepositPoolExcess, "getExcessBalance")
 	contracts.Multicaller.AddCall(contracts.RocketMinipoolQueue, &totalQueueCapacity, "getTotalCapacity")
 	contracts.Multicaller.AddCall(contracts.RocketMinipoolQueue, &effectiveQueueCapacity, "getEffectiveCapacity")
+	contracts.Multicaller.AddCall(contracts.RocketMinipoolQueue, &totalQueueLength, "getTotalLength")
 	contracts.Multicaller.AddCall(contracts.RocketTokenRPL, &details.RPLInflationIntervalRate, "getInflationIntervalRate")
 	contracts.Multicaller.AddCall(contracts.RocketTokenRPL, &details.RPLTotalSupply, "totalSupply")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkPrices, &pricesBlock, "getPricesBlock")
@@ -148,6 +151,7 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 		Total:     totalQueueCapacity,
 		Effective: effectiveQueueCapacity,
 	}
+	details.QueueLength = totalQueueLength
 	details.PricesBlock = pricesBlock.Uint64()
 	details.LatestReportablePricesBlock = latestReportablePricesBlock.Uint64()
 	details.ETHUtilizationRate = eth.WeiToEth(ethUtilizationRate)
