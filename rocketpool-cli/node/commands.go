@@ -259,6 +259,46 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "add-address-to-stake-rpl-whitelist",
+				Aliases:   []string{"asw"},
+				Usage:     "Adds an address to your node's RPL staking whitelist, so it can stake RPL on behalf of your node.",
+				UsageText: "rocketpool node add-address-to-stake-rpl-whitelist address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					addressOrENS := c.Args().Get(0)
+
+					// Run
+					return addAddressToStakeRplWhitelist(c, addressOrENS)
+
+				},
+			},
+
+			{
+				Name:      "remove-address-from-stake-rpl-whitelist",
+				Aliases:   []string{"rsw"},
+				Usage:     "Removes an address from your node's RPL staking whitelist, so it can no longer stake RPL on behalf of your node.",
+				UsageText: "rocketpool node remove-address-from-stake-rpl-whitelist address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					addressOrENS := c.Args().Get(0)
+
+					// Run
+					return removeAddressFromStakeRplWhitelist(c, addressOrENS)
+
+				},
+			},
+
+			{
 				Name:      "claim-rewards",
 				Aliases:   []string{"c"},
 				Usage:     "Claim available RPL and ETH rewards for any checkpoint you haven't claimed yet",

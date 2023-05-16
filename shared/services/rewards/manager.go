@@ -22,6 +22,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const (
@@ -346,6 +347,7 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 	urls := []string{
 		fmt.Sprintf(config.PrimaryRewardsFileUrl, cid, ipfsFilename),
 		fmt.Sprintf(config.SecondaryRewardsFileUrl, cid, ipfsFilename),
+		fmt.Sprintf(config.GithubRewardsFileUrl, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsTreeFilename),
 	}
 
 	// Attempt downloads
@@ -369,15 +371,18 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 				continue
 			}
 
-			// Decompress it
-			decompressedBytes, err := decompressFile(bytes)
-			if err != nil {
-				errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
-				continue
+			writeBytes := bytes
+			if strings.HasSuffix(url, config.RewardsTreeIpfsExtension) {
+				// Decompress it
+				writeBytes, err = decompressFile(bytes)
+				if err != nil {
+					errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
+					continue
+				}
 			}
 
 			// Write the file
-			err = os.WriteFile(rewardsTreePath, decompressedBytes, 0644)
+			err = os.WriteFile(rewardsTreePath, writeBytes, 0644)
 			if err != nil {
 				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 			}

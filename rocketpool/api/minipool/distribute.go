@@ -131,42 +131,46 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 					return err
 				}
 
-				// Ignore minipools with 0 balance
-				if minipoolDetails.Balance.Cmp(zero) == 0 {
-					minipoolDetails.CanDistribute = false
-					return nil
-				}
-
-				// Ignore minipools with a balance lower than the refund
-				if minipoolDetails.Balance.Cmp(minipoolDetails.Refund) == -1 {
-					minipoolDetails.CanDistribute = false
-					return nil
-				}
-
-				// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
-				distributableBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
-				eight := eth.EthToWei(8)
-				if distributableBalance.Cmp(eight) >= 0 {
-					minipoolDetails.CanDistribute = false
-					return nil
-				}
-
 				// Can't distribute a minipool that's already finalized
 				if minipoolDetails.IsFinalized {
 					minipoolDetails.CanDistribute = false
 					return nil
 				}
 
-				// Can't distribute minipools that aren't staking
-				if minipoolDetails.Status != types.Staking {
+				// Ignore minipools with 0 balance
+				if minipoolDetails.Balance.Cmp(zero) == 0 {
 					minipoolDetails.CanDistribute = false
 					return nil
 				}
 
-				// Get the node share of the balance
-				minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(distributableBalance, nil)
-				if err != nil {
-					return fmt.Errorf("error calculating node share for minipool %s: %w", address.Hex(), err)
+				// Handle staking minipools
+				if minipoolDetails.Status == types.Staking {
+					// Ignore minipools with a balance lower than the refund
+					if minipoolDetails.Balance.Cmp(minipoolDetails.Refund) == -1 {
+						minipoolDetails.CanDistribute = false
+						return nil
+					}
+
+					// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
+					distributableBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
+					eight := eth.EthToWei(8)
+					if distributableBalance.Cmp(eight) >= 0 {
+						minipoolDetails.CanDistribute = false
+						return nil
+					}
+
+					// Get the node share of the balance
+					minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(distributableBalance, nil)
+					if err != nil {
+						return fmt.Errorf("error calculating node share for minipool %s: %w", address.Hex(), err)
+					}
+				} else if minipoolDetails.Status == types.Dissolved {
+					// Dissolved but non-finalized / non-closed minipools can just have the whole balance sent back to the NO
+					minipoolDetails.NodeShareOfBalance = minipoolDetails.Balance
+				} else {
+					// Can't distribute in any other state
+					minipoolDetails.CanDistribute = false
+					return nil
 				}
 
 				// Get gas estimate

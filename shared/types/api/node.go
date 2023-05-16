@@ -33,6 +33,11 @@ type NodeStatusResponse struct {
 	MaximumRplStake                   *big.Int        `json:"maximumRplStake"`
 	BorrowedCollateralRatio           float64         `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio             float64         `json:"bondedCollateralRatio"`
+	PendingEffectiveRplStake          *big.Int        `json:"pendingEffectiveRplStake"`
+	PendingMinimumRplStake            *big.Int        `json:"pendingMinimumRplStake"`
+	PendingMaximumRplStake            *big.Int        `json:"pendingMaximumRplStake"`
+	PendingBorrowedCollateralRatio    float64         `json:"pendingBorrowedCollateralRatio"`
+	PendingBondedCollateralRatio      float64         `json:"pendingBondedCollateralRatio"`
 	VotingDelegate                    common.Address  `json:"votingDelegate"`
 	VotingDelegateFormatted           string          `json:"votingDelegateFormatted"`
 	IsAtlasDeployed                   bool            `json:"isAtlasDeployed"`
@@ -182,6 +187,18 @@ type NodeStakeRplAllowanceResponse struct {
 	Status    string   `json:"status"`
 	Error     string   `json:"error"`
 	Allowance *big.Int `json:"allowance"`
+}
+
+type CanSetStakeRplForAllowedResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	CanSet  bool               `json:"canSet"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type SetStakeRplForAllowedResponse struct {
+	Status    string      `json:"status"`
+	Error     string      `json:"error"`
+	SetTxHash common.Hash `json:"setTxHash"`
 }
 
 type CanNodeWithdrawRplResponse struct {

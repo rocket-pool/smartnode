@@ -1369,7 +1369,9 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 	// Set up environment variables and deploy the template config files
 	settings := cfg.GenerateEnvironmentVariables()
-	settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
+	if externalIP != "" {
+		settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
+	}
 
 	// Deploy the templates and run environment variable substitution on them
 	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath, settings)
