@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	rocketVersionInterfaceABI string = `[
+	rocketVersionInterfaceAbiString string = `[
 		{
 		  "inputs": [],
 		  "name": "version",
@@ -27,28 +27,24 @@ const (
 	]`
 )
 
+var versionAbi *abi.ABI
+
 // Get the version of the given contract
 func GetContractVersion(rp *RocketPool, contractAddress common.Address, opts *bind.CallOpts) (uint8, error) {
-
-	// Get the version interface ABI
-	/*
-		abi, err := rp.GetABI("rocketVersionInterface", opts)
+	if versionAbi == nil {
+		// Parse ABI using the hardcoded string until the contract is deployed
+		abiParsed, err := abi.JSON(strings.NewReader(rocketVersionInterfaceAbiString))
 		if err != nil {
-			return 0, fmt.Errorf("error loading version interface ABI: %w", err)
+			return 0, fmt.Errorf("Could not parse version interface JSON: %w", err)
 		}
-	*/
-
-	// Parse ABI using the hardcoded string until the contract is deployed
-	abiParsed, err := abi.JSON(strings.NewReader(rocketVersionInterfaceABI))
-	if err != nil {
-		return 0, fmt.Errorf("Could not parse version interface JSON: %w", err)
+		versionAbi = &abiParsed
 	}
 
 	// Create contract
 	contract := &Contract{
-		Contract: bind.NewBoundContract(contractAddress, abiParsed, rp.Client, rp.Client, rp.Client),
+		Contract: bind.NewBoundContract(contractAddress, *versionAbi, rp.Client, rp.Client, rp.Client),
 		Address:  &contractAddress,
-		ABI:      &abiParsed,
+		ABI:      versionAbi,
 		Client:   rp.Client,
 	}
 
@@ -61,17 +57,21 @@ func GetContractVersion(rp *RocketPool, contractAddress common.Address, opts *bi
 	return *version, nil
 }
 
+// Get the rocketVersion contract binding at the given address
 func GetRocketVersionContractForAddress(rp *RocketPool, address common.Address) (*Contract, error) {
-	// Parse ABI using the hardcoded string until the contract is deployed
-	abiParsed, err := abi.JSON(strings.NewReader(rocketVersionInterfaceABI))
-	if err != nil {
-		return nil, fmt.Errorf("Could not parse version interface JSON: %w", err)
+	if versionAbi == nil {
+		// Parse ABI using the hardcoded string until the contract is deployed
+		abiParsed, err := abi.JSON(strings.NewReader(rocketVersionInterfaceAbiString))
+		if err != nil {
+			return nil, fmt.Errorf("Could not parse version interface JSON: %w", err)
+		}
+		versionAbi = &abiParsed
 	}
 
 	return &Contract{
-		Contract: bind.NewBoundContract(address, abiParsed, rp.Client, rp.Client, rp.Client),
+		Contract: bind.NewBoundContract(address, *versionAbi, rp.Client, rp.Client, rp.Client),
 		Address:  &address,
-		ABI:      &abiParsed,
+		ABI:      versionAbi,
 		Client:   rp.Client,
 	}, nil
 }
