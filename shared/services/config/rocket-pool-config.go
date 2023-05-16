@@ -57,6 +57,9 @@ type RocketPoolConfig struct {
 
 	IsNativeMode bool `yaml:"-"`
 
+	Offline     config.Parameter `yaml:"offline"`
+	NodeAddress config.Parameter `yaml:"nodeAddress"`
+
 	// Execution client settings
 	ExecutionClientMode config.Parameter `yaml:"executionClientMode,omitempty"`
 	ExecutionClient     config.Parameter `yaml:"executionClient,omitempty"`
@@ -211,6 +214,30 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Description: getAugmentedEcDescription(config.ExecutionClient_Besu, "Hyperledger Besu is a robust full Ethereum protocol client. It uses a novel system called \"Bonsai Trees\" to store its chain data efficiently, which allows it to access block states from the past and does not require pruning. Besu is fully open source and written in Java."),
 				Value:       config.ExecutionClient_Besu,
 			}},
+		},
+
+		Offline: config.Parameter{
+			ID:                   "offline",
+			Name:                 "Offline Mode",
+			Description:          "Enable this if you would like to keep your node operator key offline.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		NodeAddress: config.Parameter{
+			ID:                   "nodeAddress",
+			Name:                 "Node Operator Address",
+			Description:          "The address of the node operator key. Only used in conjunction with offline mode.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
 		},
 
 		UseFallbackClients: config.Parameter{
@@ -527,6 +554,8 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 		&cfg.ReconnectDelay,
 		&cfg.ConsensusClientMode,
 		&cfg.ConsensusClient,
+		&cfg.Offline,
+		&cfg.NodeAddress,
 		&cfg.ExternalConsensusClient,
 		&cfg.EnableMetrics,
 		&cfg.EnableODaoMetrics,
