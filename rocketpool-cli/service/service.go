@@ -106,25 +106,12 @@ func installService(c *cli.Context) error {
 		return fmt.Errorf("error loading new configuration: %w", err)
 	}
 
-	// Check if this is a migration
-	isMigration := false
-	if isNew {
-		// Look for a legacy config to migrate
-		migratedConfig, err := rp.LoadLegacyConfigFromBackup()
-		if err != nil {
-			return err
-		}
-		if migratedConfig != nil {
-			isMigration = true
-		}
-	}
-
 	// Report next steps
 	fmt.Printf("%s\n=== Next Steps ===\n", colorLightBlue)
 	fmt.Printf("Run 'rocketpool service config' to review the settings changes for this update, or to continue setting up your node.%s\n", colorReset)
 
 	// Print the docker permissions notice
-	if isNew && !isMigration {
+	if isNew {
 		fmt.Printf("\n%sNOTE:\nSince this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
 		fmt.Printf("This is necessary for your user account to have permissions to use Docker.%s", colorReset)
 	}
@@ -248,28 +235,14 @@ func configureService(c *cli.Context) error {
 		return fmt.Errorf("error loading user settings: %w", err)
 	}
 
-	// Check to see if this is a migration from a legacy config
-	isMigration := false
-	if isNew {
-		// Look for a legacy config to migrate
-		migratedConfig, err := rp.LoadLegacyConfigFromBackup()
-		if err != nil {
-			return err
-		}
-		if migratedConfig != nil {
-			cfg = migratedConfig
-			isMigration = true
-		}
-	}
-
 	// Check if this is a new install
 	isUpdate, err := rp.IsFirstRun()
 	if err != nil {
 		return fmt.Errorf("error checking for first-run status: %w", err)
 	}
 
-	// For migrations and upgrades, move the config to the old one and create a new upgraded copy
-	if isMigration || isUpdate {
+	// For upgrades, move the config to the old one and create a new upgraded copy
+	if isUpdate {
 		oldCfg = cfg
 		cfg = cfg.CreateCopy()
 		err = cfg.UpdateDefaults()
@@ -291,7 +264,7 @@ func configureService(c *cli.Context) error {
 	isNative := c.GlobalIsSet("daemon-path")
 
 	app := tview.NewApplication()
-	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isMigration, isUpdate, isNative)
+	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isUpdate, isNative)
 	err = app.Run()
 	if err != nil {
 		return err
@@ -550,22 +523,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		fmt.Printf("%sYou are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.%s\n", colorRed, colorReset)
 	}
 
-	isMigration := false
 	if isNew {
-		// Look for a legacy config to migrate
-		migratedConfig, err := rp.LoadLegacyConfigFromBackup()
-		if err != nil {
-			return err
-		}
-		if migratedConfig != nil {
-			cfg = migratedConfig
-			isMigration = true
-		}
-	}
-
-	if isMigration {
-		return fmt.Errorf("You must upgrade your configuration before starting the Smartnode.\nPlease run `rocketpool service config` to confirm your settings were migrated correctly, and enjoy the new configuration UI!")
-	} else if isNew {
 		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smartnode before running it.")
 	}
 

@@ -21,7 +21,6 @@ type mainDisplay struct {
 	settingsHome        *settingsHome
 	settingsNativeHome  *settingsNativeHome
 	isNew               bool
-	isMigration         bool
 	isUpdate            bool
 	isNative            bool
 	previousWidth       int
@@ -34,7 +33,7 @@ type mainDisplay struct {
 }
 
 // Creates a new MainDisplay instance.
-func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isMigration bool, isUpdate bool, isNative bool) *mainDisplay {
+func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isUpdate bool, isNative bool) *mainDisplay {
 
 	// Create a copy of the original config for comparison purposes
 	if previousConfig == nil {
@@ -80,7 +79,6 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 		content:        grid.Box,
 		mainGrid:       grid,
 		isNew:          isNew,
-		isMigration:    isMigration,
 		isUpdate:       isUpdate,
 		isNative:       isNative,
 		PreviousConfig: previousConfig,
@@ -111,7 +109,7 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 		return false
 	})
 
-	if isNew || isMigration {
+	if isNew {
 		if isNative {
 			md.dockerWizard.nativeWelcomeModal.show()
 		} else {
