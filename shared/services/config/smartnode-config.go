@@ -405,9 +405,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Description: "[orange]**For Oracle DAO members only.**\n\n[white]The epoch to switch from the old fee distributor share calculation method to the new one.",
 			Type:        config.ParameterType_Uint,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: uint64(999999),
-				config.Network_Prater:  uint64(999999),
-				config.Network_Devnet:  uint64(999999),
+				config.Network_Mainnet: uint64(204900),
+				config.Network_Prater:  uint64(177900),
+				config.Network_Devnet:  uint64(177900),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
@@ -597,7 +597,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
 			config.Network_Mainnet: {
 				15451165, 15637542, 15839520, 16038366, 16238906, 16439406, // 5
-				16639856, 16841781, 17037278,
+				16639856, 16841781, 17037278, 17235705,
 			},
 			config.Network_Prater: {
 				7287326, 7297026, 7314231, 7331462, 7387271, 7412366, // 5
@@ -614,7 +614,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				8482337, 8499227, 8516593, 8533890, 8551379, 8569494, // 71
 				8587146, 8604666, 8621961, 8639563, 8656830, 8673617, // 77
 				8690655, 8707453, 8724467, 8742735, 8758413, 8775532, // 83
-				8792725, 8809501,
+				8792725, 8809501, 8826322, 8842598, 8858627, 8875551, // 89
+				8892377, 8909356, 8926422, 8943768, 8971641, 8978844, // 95
+				8996000, 9013387,
 			},
 			config.Network_Devnet: {
 				7955303, 7972424, 8009064, 8026821, 8045113, 8063501, // 5
