@@ -275,14 +275,14 @@ func (m *BeaconClientManager) GetEth1DataForEth2Block(blockId string) (beacon.Et
 }
 
 // Get the attestation committees for an epoch
-func (m *BeaconClientManager) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Committee, error) {
+func (m *BeaconClientManager) GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
 		return client.GetCommitteesForEpoch(epoch)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.([]beacon.Committee), nil
+	return result.(beacon.Committees), nil
 }
 
 // Change the withdrawal credentials for a validator
