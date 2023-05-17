@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -54,7 +52,7 @@ type NativeNodeDetails struct {
 }
 
 // Gets the details for a node using the efficient multicall contract
-func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, nodeAddress common.Address, isAtlasDeployed bool) (NativeNodeDetails, error) {
+func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, nodeAddress common.Address) (NativeNodeDetails, error) {
 	opts := &bind.CallOpts{
 		BlockNumber: contracts.ElBlockNumber,
 	}
@@ -66,7 +64,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 		DistributorBalanceNodeETH: big.NewInt(0),
 	}
 
-	addNodeDetailsCalls(contracts, contracts.Multicaller, &details, nodeAddress, isAtlasDeployed)
+	addNodeDetailsCalls(contracts, contracts.Multicaller, &details, nodeAddress)
 
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
@@ -97,7 +95,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 }
 
 // Gets the details for all nodes using the efficient multicall contract
-func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, isAtlasDeployed bool) ([]NativeNodeDetails, error) {
+func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) ([]NativeNodeDetails, error) {
 	opts := &bind.CallOpts{
 		BlockNumber: contracts.ElBlockNumber,
 	}
@@ -135,15 +133,9 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 				details.AverageNodeFee = big.NewInt(0)
 				details.DistributorBalanceUserETH = big.NewInt(0)
 				details.DistributorBalanceNodeETH = big.NewInt(0)
+				details.CollateralisationRatio = big.NewInt(0)
 
-				if !isAtlasDeployed {
-					// Before Atlas, all node's had a 1:1 collateralisation ratio
-					details.CollateralisationRatio = eth.EthToWei(2)
-				} else {
-					details.CollateralisationRatio = big.NewInt(0)
-				}
-
-				addNodeDetailsCalls(contracts, mc, details, address, isAtlasDeployed)
+				addNodeDetailsCalls(contracts, mc, details, address)
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -333,7 +325,7 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 }
 
 // Add all of the calls for the node details to the multicaller
-func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeNodeDetails, address common.Address, isAtlasDeployed bool) {
+func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeNodeDetails, address common.Address) {
 	mc.AddCall(contracts.RocketNodeManager, &details.Exists, "getNodeExists", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.RegistrationTime, "getNodeRegistrationTime", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.TimezoneLocation, "getNodeTimezoneLocation", address)
@@ -355,8 +347,7 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 	mc.AddCall(contracts.RocketNodeManager, &details.SmoothingPoolRegistrationState, "getSmoothingPoolRegistrationState", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.SmoothingPoolRegistrationChanged, "getSmoothingPoolRegistrationChanged", address)
 
-	if isAtlasDeployed {
-		mc.AddCall(contracts.RocketNodeDeposit, &details.DepositCreditBalance, "getNodeDepositCredit", address)
-		mc.AddCall(contracts.RocketNodeStaking, &details.CollateralisationRatio, "getNodeETHCollateralisationRatio", address)
-	}
+	// Atlas
+	mc.AddCall(contracts.RocketNodeDeposit, &details.DepositCreditBalance, "getNodeDepositCredit", address)
+	mc.AddCall(contracts.RocketNodeStaking, &details.CollateralisationRatio, "getNodeETHCollateralisationRatio", address)
 }

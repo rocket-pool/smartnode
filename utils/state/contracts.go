@@ -57,7 +57,7 @@ type contractArtifacts struct {
 }
 
 // Get a new network contracts container
-func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, isAtlasDeployed bool, opts *bind.CallOpts) (*NetworkContracts, error) {
+func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) (*NetworkContracts, error) {
 	// Get the latest block number if it's not provided
 	if opts == nil {
 		latestElBlock, err := rp.Client.BlockNumber(context.Background())
@@ -151,12 +151,10 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 	}
 
 	// Atlas wrappers
-	if isAtlasDeployed {
-		wrappers = append(wrappers, contractArtifacts{
-			name:     "rocketMinipoolBondReducer",
-			contract: &contracts.RocketMinipoolBondReducer,
-		})
-	}
+	wrappers = append(wrappers, contractArtifacts{
+		name:     "rocketMinipoolBondReducer",
+		contract: &contracts.RocketMinipoolBondReducer,
+	})
 
 	// Add the address and ABI getters to multicall
 	for i, wrapper := range wrappers {
@@ -199,13 +197,6 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 	}
 
 	return contracts, nil
-}
-
-// Returns whether or not Atlas has been deployed
-// TODO: refactor this so it comes first and we don't need to pass this check around everywhere
-func (c *NetworkContracts) _isAtlasDeployed() bool {
-	constraint, _ := version.NewConstraint(">= 1.2.0")
-	return constraint.Check(c.Version)
 }
 
 // Get the current version of the network
