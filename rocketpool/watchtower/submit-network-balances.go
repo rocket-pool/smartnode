@@ -18,7 +18,6 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/rocketpool/watchtower/legacy"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -32,17 +31,16 @@ import (
 
 // Submit network balances task
 type submitNetworkBalances struct {
-	c          *cli.Context
-	log        log.ColorLogger
-	errLog     log.ColorLogger
-	cfg        *config.RocketPoolConfig
-	w          *wallet.Wallet
-	ec         rocketpool.ExecutionClient
-	rp         *rocketpool.RocketPool
-	bc         beacon.Client
-	lock       *sync.Mutex
-	isRunning  bool
-	legacyImpl *legacy.SubmitNetworkBalances
+	c         *cli.Context
+	log       log.ColorLogger
+	errLog    log.ColorLogger
+	cfg       *config.RocketPoolConfig
+	w         *wallet.Wallet
+	ec        rocketpool.ExecutionClient
+	rp        *rocketpool.RocketPool
+	bc        beacon.Client
+	lock      *sync.Mutex
+	isRunning bool
 }
 
 // Network balance info
@@ -87,26 +85,19 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogge
 		return nil, err
 	}
 
-	// Legacy implementation for prior to the changeover
-	legacyImpl, err := legacy.NewSubmitNetworkBalances(c, logger, getWatchtowerMaxFee(cfg), getWatchtowerPrioFee(cfg))
-	if err != nil {
-		return nil, fmt.Errorf("error creating legacy balance reporting implementation: %w", err)
-	}
-
 	// Return task
 	lock := &sync.Mutex{}
 	return &submitNetworkBalances{
-		c:          c,
-		log:        logger,
-		errLog:     errorLogger,
-		cfg:        cfg,
-		w:          w,
-		ec:         ec,
-		rp:         rp,
-		bc:         bc,
-		lock:       lock,
-		isRunning:  false,
-		legacyImpl: legacyImpl,
+		c:         c,
+		log:       logger,
+		errLog:    errorLogger,
+		cfg:       cfg,
+		w:         w,
+		ec:        ec,
+		rp:        rp,
+		bc:        bc,
+		lock:      lock,
+		isRunning: false,
 	}, nil
 
 }
@@ -168,15 +159,6 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 	if requiredEpoch > finalizedEpoch {
 		t.log.Printlnf("Balances must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, requiredEpoch, finalizedEpoch)
 		return nil
-	}
-
-	// If the state epoch is before the changeover, run the legacy implementation
-	transitionEpoch := t.cfg.Smartnode.BalancesModernizationEpoch.Value.(uint64)
-
-	// Run the old behavior until we've flipped over to the new one
-	if requiredEpoch < transitionEpoch {
-		t.log.Printlnf("Current target epoch is %d, using legacy balance reporting behavior until epoch %d", requiredEpoch, transitionEpoch)
-		return t.legacyImpl.Run()
 	}
 
 	// Check if the process is already running

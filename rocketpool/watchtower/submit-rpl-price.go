@@ -24,7 +24,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
@@ -201,7 +200,6 @@ type submitRplPrice struct {
 	ec        rocketpool.ExecutionClient
 	w         *wallet.Wallet
 	rp        *rocketpool.RocketPool
-	oio       *contracts.OneInchOracle
 	bc        beacon.Client
 	lock      *sync.Mutex
 	isRunning bool
@@ -227,10 +225,6 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.C
 	if err != nil {
 		return nil, err
 	}
-	oio, err := services.GetOneInchOracle(c)
-	if err != nil {
-		return nil, err
-	}
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
@@ -246,7 +240,6 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.C
 		ec:     ec,
 		w:      w,
 		rp:     rp,
-		oio:    oio,
 		bc:     bc,
 		lock:   lock,
 	}, nil
@@ -357,13 +350,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		t.log.Printlnf("Getting RPL price for block %d...", blockNumber)
 
 		// Get RPL price at block
-		var rplPrice *big.Int
-		twapEpoch := t.cfg.Smartnode.RplTwapEpoch.Value.(uint64)
-		if targetEpoch < twapEpoch {
-			rplPrice, err = t.getRplPrice(blockNumber)
-		} else {
-			rplPrice, err = t.getRplTwap(blockNumber)
-		}
+		rplPrice, err := t.getRplTwap(blockNumber)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -449,80 +436,6 @@ func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Addr
 	rplPrice.FillBytes(rplPriceBuf)
 
 	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf))
-}
-
-// Get RPL price at block
-func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
-
-	// Require 1inch oracle contract
-	if err := services.RequireOneInchOracle(t.c); err != nil {
-		return nil, err
-	}
-
-	// Get RPL token address
-	rplAddress := common.HexToAddress(t.cfg.Smartnode.GetRplTokenAddress())
-
-	// Initialize call options
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(int64(blockNumber)),
-	}
-
-	// Get a client with the block number available
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate an OIO wrapper using the client
-	oio, err := contracts.NewOneInchOracle(common.HexToAddress(t.cfg.Smartnode.GetOneInchOracleAddress()), client.Client)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get RPL price
-	rplPrice, err := oio.GetRateToEth(opts, rplAddress, true)
-	if err != nil {
-		return nil, fmt.Errorf("could not get RPL price at block %d: %w", blockNumber, err)
-	}
-
-	// Get the previously reported price
-	previousPrice, err := network.GetRPLPrice(t.rp, opts)
-	if err != nil {
-		return nil, fmt.Errorf("could not get previous RPL price at block %d: %w", blockNumber, err)
-	}
-
-	// See if the new price is lower than the decrease threshold
-	one := eth.EthToWei(1)
-	decreaseThresholdBig := eth.EthToWei(RplPriceDecreaseDeviationThreshold)
-	oldDecreaseThreshold := big.NewInt(0)
-	oldDecreaseThreshold.Mul(previousPrice, decreaseThresholdBig).Div(oldDecreaseThreshold, one)
-	if rplPrice.Cmp(oldDecreaseThreshold) == -1 {
-		t.log.Println("=== RPL PRICE ANOMALY DETECTED ===")
-		t.log.Printlnf("Previous RPL Price: %s", previousPrice.String())
-		t.log.Printlnf("Min Allowed Price:  %s", oldDecreaseThreshold.String())
-		t.log.Printlnf("CURRENT RPL PRICE:  %s", rplPrice.String())
-		t.log.Println("==================================")
-
-		return nil, fmt.Errorf("rpl price decreased beyond the allowed threshold")
-	}
-
-	// See if the new price is higher than the increase threshold
-	increaseThresholdBig := eth.EthToWei(RplPriceIncreaseDeviationThreshold)
-	oldIncreaseThreshold := big.NewInt(0)
-	oldIncreaseThreshold.Mul(previousPrice, increaseThresholdBig).Div(oldIncreaseThreshold, one)
-	if rplPrice.Cmp(oldIncreaseThreshold) == 1 {
-		t.log.Println("=== RPL PRICE ANOMALY DETECTED ===")
-		t.log.Printlnf("Previous RPL Price: %s", previousPrice.String())
-		t.log.Printlnf("Max Allowed Price:  %s", oldIncreaseThreshold.String())
-		t.log.Printlnf("CURRENT RPL PRICE:  %s", rplPrice.String())
-		t.log.Println("==================================")
-
-		return nil, fmt.Errorf("rpl price increased beyond the allowed threshold")
-	}
-
-	// Return
-	return rplPrice, nil
-
 }
 
 // Get RPL price via TWAP at block
