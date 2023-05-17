@@ -24,6 +24,9 @@ type DemandCollector struct {
 	// The effective ETH capacity of the Minipool queue
 	effectiveMinipoolCapacity *prometheus.Desc
 
+	// The number of minipools currently in the queue
+	queueLength *prometheus.Desc
+
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
@@ -54,6 +57,10 @@ func NewDemandCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *De
 			"The effective ETH capacity of the Minipool queue",
 			nil, nil,
 		),
+		queueLength: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "queue_length"),
+			"The number of minipools currently in the queue",
+			nil, nil,
+		),
 		rp:          rp,
 		stateLocker: stateLocker,
 		logPrefix:   "Demand Collector",
@@ -66,6 +73,7 @@ func (collector *DemandCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.depositPoolExcess
 	channel <- collector.totalMinipoolCapacity
 	channel <- collector.effectiveMinipoolCapacity
+	channel <- collector.queueLength
 }
 
 // Collect the latest metric values and pass them to Prometheus
@@ -80,6 +88,7 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 	excessFloat := eth.WeiToEth(state.NetworkDetails.DepositPoolExcess)
 	totalFloat := eth.WeiToEth(state.NetworkDetails.QueueCapacity.Total)
 	effectiveFloat := eth.WeiToEth(state.NetworkDetails.QueueCapacity.Effective)
+	queueLength := float64(state.NetworkDetails.QueueLength.Uint64())
 
 	channel <- prometheus.MustNewConstMetric(
 		collector.depositPoolBalance, prometheus.GaugeValue, balanceFloat)
@@ -89,6 +98,8 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.totalMinipoolCapacity, prometheus.GaugeValue, totalFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.effectiveMinipoolCapacity, prometheus.GaugeValue, effectiveFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.queueLength, prometheus.GaugeValue, queueLength)
 }
 
 // Log error messages

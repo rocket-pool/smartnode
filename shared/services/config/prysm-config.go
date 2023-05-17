@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	prysmBnTagAmd64Test string = "prysmaticlabs/prysm-beacon-chain:HEAD-f4681f-debug"
-	prysmVcTagAmd64Test string = "prysmaticlabs/prysm-validator:HEAD-f4681f-debug"
-	prysmTagArm64Test   string = "rocketpool/prysm:v4.0.3"
+	prysmBnTagAmd64Test string = "prysmaticlabs/prysm-beacon-chain:HEAD-ad749a-debug"
+	prysmVcTagAmd64Test string = "prysmaticlabs/prysm-validator:HEAD-ad749a-debug"
+	prysmTagArm64Test   string = "rocketpool/prysm:v4.0.4"
 
-	prysmBnTagAmd64Prod     string = "prysmaticlabs/prysm-beacon-chain:HEAD-f4681f-debug"
-	prysmVcTagAmd64Prod     string = "prysmaticlabs/prysm-validator:HEAD-f4681f-debug"
-	prysmTagArm64Prod       string = "rocketpool/prysm:v4.0.3"
+	prysmBnTagAmd64Prod     string = "prysmaticlabs/prysm-beacon-chain:HEAD-ad749a-debug"
+	prysmVcTagAmd64Prod     string = "prysmaticlabs/prysm-validator:HEAD-ad749a-debug"
+	prysmTagArm64Prod       string = "rocketpool/prysm:v4.0.4"
 	defaultPrysmRpcPort     uint16 = 5053
 	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
 	defaultPrysmMaxPeers    uint16 = 45

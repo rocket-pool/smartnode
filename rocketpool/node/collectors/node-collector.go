@@ -27,6 +27,9 @@ type NodeCollector struct {
 	// The effective amount of RPL staked on the node (honoring the 150% collateral cap)
 	effectiveStakedRpl *prometheus.Desc
 
+	// The amount of staked RPL that will be eligible for rewards (including Beacon Chain data and accounding for pending bond reductions)
+	rewardableStakedRpl *prometheus.Desc
+
 	// The cumulative RPL rewards earned by the node
 	cumulativeRplRewards *prometheus.Desc
 
@@ -129,6 +132,10 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			"The effective amount of RPL staked on the node (honoring the 150% collateral cap)",
 			nil, nil,
 		),
+		rewardableStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rewardable_staked_rpl"),
+			"The amount of staked RPL that will be eligible for rewards (including Beacon Chain data and accounding for pending bond reductions)",
+			nil, nil,
+		),
 		cumulativeRplRewards: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "cumulative_rpl_rewards"),
 			"The cumulative RPL rewards earned by the node",
 			nil, nil,
@@ -208,6 +215,7 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.totalStakedRpl
 	channel <- collector.effectiveStakedRpl
+	channel <- collector.rewardableStakedRpl
 	channel <- collector.cumulativeRplRewards
 	channel <- collector.expectedRplRewards
 	channel <- collector.rplApr
@@ -251,7 +259,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	newRplBalance := eth.WeiToEth(nd.BalanceRPL)
 	rethBalance := eth.WeiToEth(nd.BalanceRETH)
 	var activeMinipoolCount float64
-	rplPrice := eth.WeiToEth(state.NetworkDetails.RplPrice)
+	rplPriceRaw := state.NetworkDetails.RplPrice
+	rplPrice := eth.WeiToEth(rplPriceRaw)
 	var beaconHead beacon.BeaconHead
 	unclaimedEthRewards := float64(0)
 	unclaimedRplRewards := float64(0)
@@ -357,6 +366,67 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return
 	}
 
+	// Calculate the rewardable RPL
+	zero := big.NewInt(0)
+	pendingBorrowedEth := big.NewInt(0)
+	pendingBondedEth := big.NewInt(0)
+	rewardableBorrowedEth := big.NewInt(0)
+	rewardableBondedEth := big.NewInt(0)
+	for _, mpd := range minipools {
+		borrowed := big.NewInt(0)
+		bonded := big.NewInt(0)
+		delta := big.NewInt(0)
+
+		if mpd.ReduceBondTime.Cmp(zero) == 0 {
+			// No pending bond reduction
+			borrowed = mpd.UserDepositBalance
+			bonded = mpd.NodeDepositBalance
+		} else {
+			// Pending bond reducton
+			delta.Sub(mpd.NodeDepositBalance, mpd.ReduceBondValue)
+			borrowed.Set(mpd.UserDepositBalance)
+			borrowed.Add(borrowed, delta)
+			bonded.Set(mpd.NodeDepositBalance)
+			bonded.Sub(bonded, delta)
+		}
+		pendingBorrowedEth.Add(pendingBorrowedEth, borrowed)
+		pendingBondedEth.Add(pendingBondedEth, bonded)
+
+		validator, exists := state.ValidatorDetails[mpd.Pubkey]
+		if !exists {
+			// Validator doesn't exist on Beacon yet
+			continue
+		}
+		if validator.ActivationEpoch > beaconHead.Epoch {
+			// Validator hasn't activated yet
+			continue
+		}
+		if validator.ExitEpoch <= beaconHead.Epoch {
+			// Validator exited
+			continue
+		}
+
+		rewardableBorrowedEth.Add(rewardableBorrowedEth, borrowed)
+		rewardableBondedEth.Add(rewardableBondedEth, bonded)
+	}
+
+	// Calculate the "rewardable" minimum based on the Beacon Chain, including pending bond reductions
+	rewardableMinimumStake := big.NewInt(0).Mul(rewardableBorrowedEth, state.NetworkDetails.MinCollateralFraction)
+	rewardableMinimumStake.Div(rewardableMinimumStake, rplPriceRaw)
+
+	// Calculate the "rewardable" maximum based on the Beacon Chain, including the pending bond reductions
+	rewardableMaximumStake := big.NewInt(0).Mul(rewardableBondedEth, state.NetworkDetails.MaxCollateralFraction)
+	rewardableMaximumStake.Div(rewardableMaximumStake, rplPriceRaw)
+
+	// Calculate the actual "rewardable" amount
+	rewardableRplStake := big.NewInt(0).Set(nd.RplStake)
+	if rewardableRplStake.Cmp(rewardableMinimumStake) < 0 {
+		rewardableRplStake.SetUint64(0)
+	} else if rewardableRplStake.Cmp(rewardableMaximumStake) > 0 {
+		rewardableRplStake.Set(rewardableMaximumStake)
+	}
+	rewardableStakeFloat := eth.WeiToEth(rewardableRplStake)
+
 	// Calculate the estimated rewards
 	rewardsIntervalDays := rewardsInterval.Seconds() / (60 * 60 * 24)
 	inflationPerDay := eth.WeiToEth(inflationInterval)
@@ -366,7 +436,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 	estimatedRewards := float64(0)
 	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
-		estimatedRewards = effectiveStakedRpl / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
+		estimatedRewards = rewardableStakeFloat / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
 	}
 
 	// Calculate the RPL APR
@@ -400,15 +470,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// RPL collateral
-	ethMatched := eth.WeiToEth(nd.EthMatched)
-	bondedCollateralRatio := rplPrice * stakedRpl / (activeMinipoolCount*32.0 - ethMatched)
-	borrowedCollateralRatio := rplPrice * stakedRpl / ethMatched
+	bondedCollateralRatio := rplPrice * stakedRpl / eth.WeiToEth(pendingBondedEth)
+	borrowedCollateralRatio := rplPrice * stakedRpl / eth.WeiToEth(pendingBorrowedEth)
 
 	// Update all the metrics
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalStakedRpl, prometheus.GaugeValue, stakedRpl)
 	channel <- prometheus.MustNewConstMetric(
 		collector.effectiveStakedRpl, prometheus.GaugeValue, effectiveStakedRpl)
+	channel <- prometheus.MustNewConstMetric(
+		collector.rewardableStakedRpl, prometheus.GaugeValue, rewardableStakeFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.cumulativeRplRewards, prometheus.GaugeValue, collector.cumulativeRewards)
 	channel <- prometheus.MustNewConstMetric(
