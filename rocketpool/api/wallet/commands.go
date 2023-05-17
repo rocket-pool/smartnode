@@ -90,7 +90,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "recover",
 				Aliases:   []string{"r"},
 				Usage:     "Recover a node wallet from a mnemonic phrase",
-				UsageText: "rocketpool api wallet recover",
+				UsageText: "rocketpool api wallet recover [options] [mnemonic]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "skip-validator-key-recovery, k",
@@ -104,10 +104,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						Name:  "mnemonic-file, f",
 						Usage: "Specify the path to the mnemonic.\nOmit this flag to enter the mnemonic via plain text.",
 					},
-					cli.StringFlag{
-						Name:  "mnemonic, m",
-						Usage: "Specify the full mnemonic. Note - this is not secure and is recommend for testing purposes only.",
-					},
 					cli.UintFlag{
 						Name:  "wallet-index, i",
 						Usage: "Specify the index to use with the derivation path when recovering your wallet",
@@ -117,9 +113,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate input
-					// Must supply either --mnemonic-file or --mnemonic, but not both
-					if (c.String("mnemonic-file") == "") == (c.String("mnemonic") == "") {
-						return fmt.Errorf("Please specify a mnemonic file or mnemonic phrase, but not both")
+					// Must supply either --mnemonic-file or via stdin, but not both
+					if (c.String("mnemonic-file") == "") == (c.Args().Get(0) == "") {
+						return fmt.Errorf("Please specify a mnemonic file or mnemonic via stdin, but not both")
 					}
 
 					// Read mnemonic from file
@@ -133,8 +129,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Read mnemonic from stdin
-					if c.String("mnemonic") != "" {
-						providedMnemonic = c.String("mnemonic")
+					if c.Args().Get(0) != "" {
+						providedMnemonic = c.Args().Get(0)
 					}
 
 					// Validate mnemonic
