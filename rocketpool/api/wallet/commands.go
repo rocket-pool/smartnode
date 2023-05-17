@@ -117,8 +117,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate input
-					if c.String("mnemonic-file") == "" && c.String("mnemonic") == "" {
-						return fmt.Errorf("Please specify a mnemonic file or mnemonic phrase")
+					// Must supply either --mnemonic-file or --mnemonic, but not both
+					if (c.String("mnemonic-file") == "") == (c.String("mnemonic") == "") {
+						return fmt.Errorf("Please specify a mnemonic file or mnemonic phrase, but not both")
 					}
 
 					// Read mnemonic from file
