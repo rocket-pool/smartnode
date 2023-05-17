@@ -94,7 +94,7 @@ func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger lo
 }
 
 // Submit rewards Merkle Tree
-func (t *submitRewardsTree) run(nodeTrusted bool, state *state.NetworkState, beaconSlot uint64, isAtlasDeployed bool) error {
+func (t *submitRewardsTree) run(nodeTrusted bool, state *state.NetworkState, beaconSlot uint64) error {
 
 	// Wait for clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

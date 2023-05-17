@@ -158,7 +158,6 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
-	isAtlasDeployedMasterFlag := false
 	go func() {
 		for {
 			// Randomize the next interval
@@ -213,56 +212,50 @@ func run(c *cli.Context) error {
 					continue
 				}
 
-				// Check for Atlas
-				if !isAtlasDeployedMasterFlag && state.IsAtlasDeployed {
-					printAtlasMessage(&updateLog)
-					isAtlasDeployedMasterFlag = true
-				}
-
 				// Run the rewards tree submission check
-				if err := submitRewardsTree.run(isOnOdao, state, latestBlock.Slot, isAtlasDeployedMasterFlag); err != nil {
+				if err := submitRewardsTree.run(isOnOdao, state, latestBlock.Slot); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the challenge check
-				if err := respondChallenges.run(isAtlasDeployedMasterFlag); err != nil {
+				if err := respondChallenges.run(); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the price submission check
-				if err := submitRplPrice.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := submitRplPrice.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the network balance submission check
-				if err := submitNetworkBalances.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := submitNetworkBalances.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the minipool dissolve check
-				if err := dissolveTimedOutMinipools.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := dissolveTimedOutMinipools.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the minipool scrub check
-				if err := submitScrubMinipools.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := submitScrubMinipools.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the bond cancel check
-				if err := cancelBondReductions.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := cancelBondReductions.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the solo migration check
-				if err := checkSoloMigrations.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := checkSoloMigrations.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				/*time.Sleep(taskCooldown)
@@ -273,18 +266,8 @@ func run(c *cli.Context) error {
 				}*/
 				// DISABLED until MEV-Boost can support it
 			} else {
-				// Check for Atlas
-				isAtlasDeployed, err := state.IsAtlasDeployed(rp, &bind.CallOpts{
-					BlockNumber: big.NewInt(0).SetUint64(latestBlock.ExecutionBlockNumber),
-				})
-				if err != nil {
-					errorLog.Println(fmt.Errorf("error checking if Atlas is deployed: %w", err))
-					time.Sleep(taskCooldown)
-					continue
-				}
-
 				// Run the rewards tree submission check
-				if err := submitRewardsTree.run(isOnOdao, nil, latestBlock.Slot, isAtlasDeployed); err != nil {
+				if err := submitRewardsTree.run(isOnOdao, nil, latestBlock.Slot); err != nil {
 					errorLog.Println(err)
 				}
 			}
@@ -316,29 +299,6 @@ func configureHTTP() {
 	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
 
-}
-
-// Check if Atlas has been deployed yet
-func printAtlasMessage(log *log.ColorLogger) {
-	log.Println(`
-*       .
-*      / \
-*     |.'.|
-*     |'.'|
-*   ,'|   |'.
-*  |,-'-|-'-.|
-*   __|_| |         _        _      _____           _
-*  | ___ \|        | |      | |    | ___ \         | |
-*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
-*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
-*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
-*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
-* +---------------------------------------------------+
-* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
-* +---------------------------------------------------+
-*
-* ================ Atlas has launched! ================
-`)
 }
 
 // Update the latest network state at each cycle

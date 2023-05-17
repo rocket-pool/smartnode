@@ -132,11 +132,6 @@ func (t *distributeMinipools) run(state *state.NetworkState) error {
 		return nil
 	}
 
-	// Check if Atlas has been deployed yet
-	if !state.IsAtlasDeployed {
-		return nil
-	}
-
 	// Log
 	t.log.Println("Checking for minipools to distribute...")
 

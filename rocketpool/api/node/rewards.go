@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -21,7 +20,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 )
@@ -211,30 +209,17 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 	// Get the total network effective stake
 	wg.Go(func() error {
-		isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+		contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, nil)
 		if err != nil {
-			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
+			return fmt.Errorf("error creating network contract binding: %w", err)
 		}
-		if !isAtlasDeployed {
-			legacyNodeStakingAddress := cfg.Smartnode.GetV110NodeStakingAddress()
-			totalEffectiveStake, err = v110_node.GetTotalEffectiveRPLStake(rp, nil, &legacyNodeStakingAddress)
-			if err != nil {
-				return err
-			}
-			return nil
-		} else {
-			multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-			balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-			contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, nil)
-			if err != nil {
-				return fmt.Errorf("error creating network contract binding: %w", err)
-			}
-			totalEffectiveStake, err = rpstate.GetTotalEffectiveRplStake(rp, contracts)
-			if err != nil {
-				return fmt.Errorf("error getting total effective RPL stake: %w", err)
-			}
-			return nil
+		totalEffectiveStake, err = rpstate.GetTotalEffectiveRplStake(rp, contracts)
+		if err != nil {
+			return fmt.Errorf("error getting total effective RPL stake: %w", err)
 		}
+		return nil
 	})
 
 	// Get the total RPL supply

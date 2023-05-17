@@ -22,9 +22,6 @@ const (
 )
 
 type NetworkState struct {
-	// Network version
-	IsAtlasDeployed bool
-
 	// Block / slot for this state
 	ElBlockNumber    uint64
 	BeaconSlotNumber uint64
@@ -70,11 +67,6 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
-	isAtlasDeployed, err := IsAtlasDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-	}
-
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -84,31 +76,24 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
 		log:                      log,
-		IsAtlasDeployed:          isAtlasDeployed,
 	}
 
 	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, isAtlasDeployed)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	/*
-		err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
-		if err != nil {
-			return nil, fmt.Errorf("error getting network details: %w", err)
-		}
-	*/
 	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
 
 	// Node details
-	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, contracts, isAtlasDeployed)
+	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all node details: %w", err)
 	}
@@ -214,11 +199,6 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
-	isAtlasDeployed, err := IsAtlasDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
-	if err != nil {
-		return nil, nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-	}
-
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -228,31 +208,24 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
 		log:                      log,
-		IsAtlasDeployed:          isAtlasDeployed,
 	}
 
 	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, isAtlasDeployed)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	/*
-		err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
-		if err != nil {
-			return nil, fmt.Errorf("error getting network details: %w", err)
-		}
-	*/
 	state.logLine("1/%d - Retrieved network details (%s so far)", steps, time.Since(start))
 
 	// Node details
-	nodeDetails, err := rpstate.GetNativeNodeDetails(rp, contracts, nodeAddress, isAtlasDeployed)
+	nodeDetails, err := rpstate.GetNativeNodeDetails(rp, contracts, nodeAddress)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting node details: %w", err)
 	}

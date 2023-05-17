@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"math/big"
 
-	v110_network "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -35,10 +33,6 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
 
 	// Response
 	response := api.CanNodeWithdrawRplResponse{}
@@ -48,12 +42,6 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	if err != nil {
 		return nil, err
 	}
-
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-	response.IsAtlasDeployed = isAtlasDeployed
 
 	// Data
 	var wg errgroup.Group
@@ -100,17 +88,6 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 		return err
 	})
 
-	if !isAtlasDeployed {
-		wg.Go(func() error {
-			networkPricesAddress := cfg.Smartnode.GetV110NetworkPricesAddress()
-
-			// Check network consensus
-			var err error
-			response.InConsensus, err = v110_network.InConsensus(rp, nil, &networkPricesAddress)
-			return err
-		})
-	}
-
 	// Get gas estimate
 	wg.Go(func() error {
 		opts, err := w.GetNodeAccountTransactor()
@@ -137,11 +114,7 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	response.WithdrawalDelayActive = ((currentTime - rplStakedTime) < withdrawalDelay)
 
 	// Update & return response
-	if !isAtlasDeployed {
-		response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive || !response.InConsensus)
-	} else {
-		response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive)
-	}
+	response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive)
 	return &response, nil
 
 }

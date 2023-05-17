@@ -124,11 +124,6 @@ func (t *reduceBonds) run(state *state.NetworkState) error {
 		return nil
 	}
 
-	// Check if Atlas has been deployed yet
-	if !state.IsAtlasDeployed {
-		return nil
-	}
-
 	// Log
 	t.log.Println("Checking for minipool bonds to reduce...")
 

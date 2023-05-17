@@ -81,7 +81,7 @@ func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger
 }
 
 // Start the bond reduction cancellation thread
-func (t *cancelBondReductions) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (t *cancelBondReductions) run(state *state.NetworkState) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -89,11 +89,6 @@ func (t *cancelBondReductions) run(state *state.NetworkState, isAtlasDeployed bo
 	}
 	if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
 		return err
-	}
-
-	// Check if Atlas has been deployed yet
-	if !isAtlasDeployed {
-		return nil
 	}
 
 	// Log

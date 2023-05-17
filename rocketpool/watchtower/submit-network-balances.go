@@ -112,7 +112,7 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogge
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -199,7 +199,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState, isAtlasDeployed b
 		t.log.Printlnf("Calculating network balances for block %d...", blockNumber)
 
 		// Get network balances at block
-		balances, err := t.getNetworkBalances(header, blockNumberBig, slotNumber, blockTime, isAtlasDeployed)
+		balances, err := t.getNetworkBalances(header, blockNumberBig, slotNumber, blockTime)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -310,7 +310,7 @@ func (t *submitNetworkBalances) printMessage(message string) {
 }
 
 // Get the network balances at a specific block
-func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time, isAtlasDeployed bool) (networkBalances, error) {
+func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time) (networkBalances, error) {
 
 	// Get a client with the block number available
 	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, elBlock)
@@ -340,11 +340,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	rethTotalSupply := state.NetworkDetails.TotalRETHSupply
 
 	// Get deposit pool balance
-	if isAtlasDeployed {
-		depositPoolBalance = state.NetworkDetails.DepositPoolUserBalance
-	} else {
-		depositPoolBalance = state.NetworkDetails.DepositPoolBalance
-	}
+	depositPoolBalance = state.NetworkDetails.DepositPoolUserBalance
 
 	// Get minipool balance details
 	wg.Go(func() error {
@@ -420,10 +416,8 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	}
 
 	// Add node credits
-	if state.IsAtlasDeployed {
-		for _, node := range state.NodeDetails {
-			balances.NodeCreditBalance.Add(balances.NodeCreditBalance, node.DepositCreditBalance)
-		}
+	for _, node := range state.NodeDetails {
+		balances.NodeCreditBalance.Add(balances.NodeCreditBalance, node.DepositCreditBalance)
 	}
 
 	// Add distributor shares

@@ -14,11 +14,10 @@ import (
 )
 
 type MinipoolStatusResponse struct {
-	Status          string            `json:"status"`
-	Error           string            `json:"error"`
-	Minipools       []MinipoolDetails `json:"minipools"`
-	LatestDelegate  common.Address    `json:"latestDelegate"`
-	IsAtlasDeployed bool              `json:"isAtlasDeployed"`
+	Status         string            `json:"status"`
+	Error          string            `json:"error"`
+	Minipools      []MinipoolDetails `json:"minipools"`
+	LatestDelegate common.Address    `json:"latestDelegate"`
 }
 type MinipoolDetails struct {
 	Address               common.Address         `json:"address"`
@@ -161,7 +160,6 @@ type MinipoolCloseDetails struct {
 type GetMinipoolCloseDetailsForNodeResponse struct {
 	Status                      string                 `json:"status"`
 	Error                       string                 `json:"error"`
-	IsAtlasDeployed             bool                   `json:"isAtlasDeployed"`
 	IsFeeDistributorInitialized bool                   `json:"isFeeDistributorInitialized"`
 	Details                     []MinipoolCloseDetails `json:"details"`
 }
@@ -172,10 +170,9 @@ type CloseMinipoolResponse struct {
 }
 
 type GetDistributeBalanceDetailsResponse struct {
-	Status          string                               `json:"status"`
-	Error           string                               `json:"error"`
-	IsAtlasDeployed bool                                 `json:"isAtlasDeployed"`
-	Details         []MinipoolBalanceDistributionDetails `json:"details"`
+	Status  string                               `json:"status"`
+	Error   string                               `json:"error"`
+	Details []MinipoolBalanceDistributionDetails `json:"details"`
 }
 type CanDistributeBalanceResponse struct {
 	Status          string               `json:"status"`
@@ -183,7 +180,6 @@ type CanDistributeBalanceResponse struct {
 	MinipoolVersion uint8                `json:"minipoolVersion"`
 	MinipoolStatus  types.MinipoolStatus `json:"minipoolStatus"`
 	Balance         *big.Int             `json:"balance"`
-	IsAtlasDeployed bool                 `json:"isAtlasDeployed"`
 	CanDistribute   bool                 `json:"canDistribute"`
 	GasInfo         rocketpool.GasInfo   `json:"gasInfo"`
 }
@@ -344,10 +340,9 @@ type MinipoolRescueDissolvedDetails struct {
 }
 
 type GetMinipoolRescueDissolvedDetailsForNodeResponse struct {
-	Status          string                           `json:"status"`
-	Error           string                           `json:"error"`
-	IsAtlasDeployed bool                             `json:"isAtlasDeployed"`
-	Details         []MinipoolRescueDissolvedDetails `json:"details"`
+	Status  string                           `json:"status"`
+	Error   string                           `json:"error"`
+	Details []MinipoolRescueDissolvedDetails `json:"details"`
 }
 type RescueDissolvedMinipoolResponse struct {
 	Status string      `json:"status"`

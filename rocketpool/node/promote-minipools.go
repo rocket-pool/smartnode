@@ -100,11 +100,6 @@ func newPromoteMinipools(c *cli.Context, logger log.ColorLogger) (*promoteMinipo
 // Stake prelaunch minipools
 func (t *promoteMinipools) run(state *state.NetworkState) error {
 
-	// Check if Atlas has been deployed yet
-	if !state.IsAtlasDeployed {
-		return nil
-	}
-
 	// Log
 	t.log.Println("Checking for minipools to promote...")
 

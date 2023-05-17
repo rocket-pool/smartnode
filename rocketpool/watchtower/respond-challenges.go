@@ -56,7 +56,7 @@ func newRespondChallenges(c *cli.Context, logger log.ColorLogger, m *state.Netwo
 }
 
 // Respond to challenges
-func (t *respondChallenges) run(isAtlasDeployed bool) error {
+func (t *respondChallenges) run() error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

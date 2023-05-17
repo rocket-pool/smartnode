@@ -86,12 +86,7 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 	}
 
 	// Get the fee recipient info for the node
-	var feeRecipientInfo *rputils.FeeRecipientInfo
-	if !state.IsAtlasDeployed {
-		feeRecipientInfo, err = rputils.GetFeeRecipientInfo_Legacy(m.rp, m.bc, nodeAccount.Address, nil)
-	} else {
-		feeRecipientInfo, err = rputils.GetFeeRecipientInfo_Atlas(m.rp, m.bc, nodeAccount.Address, state)
-	}
+	feeRecipientInfo, err := rputils.GetFeeRecipientInfo(m.rp, m.bc, nodeAccount.Address, state)
 	if err != nil {
 		return fmt.Errorf("error getting fee recipient info: %w", err)
 	}

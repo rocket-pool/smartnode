@@ -26,16 +26,6 @@ func setWithdrawalCreds(c *cli.Context, minipoolAddress common.Address) error {
 		return err
 	}
 
-	// Check for Atlas
-	atlasResponse, err := rp.IsAtlasDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-	if !atlasResponse.IsAtlasDeployed {
-		fmt.Println("You cannot change a solo validator's withdrawal credentials to a minipool address until Atlas has been deployed.")
-		return nil
-	}
-
 	fmt.Printf("This will convert the withdrawal credentials for minipool %s's validator from the old 0x00 (BLS) value to the minipool address. This is meant for solo validator conversion **only**.\n\n", minipoolAddress.Hex())
 
 	// Get the mnemonic

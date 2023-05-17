@@ -13,7 +13,6 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -35,17 +34,6 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 
 	// Response
 	response := api.GetDistributeBalanceDetailsResponse{}
-
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-	response.IsAtlasDeployed = isAtlasDeployed
-
-	// Prevent distribution prior to Atlas
-	if !isAtlasDeployed {
-		return &response, nil
-	}
 
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {

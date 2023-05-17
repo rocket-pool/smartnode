@@ -177,7 +177,7 @@ func (s *penaltyState) saveState(path string) error {
 }
 
 // Process penalties
-func (t *processPenalties) run(isAtlasDeployed bool) error {
+func (t *processPenalties) run() error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

@@ -125,7 +125,7 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, errorLogger
 }
 
 // Submit scrub minipools
-func (t *submitScrubMinipools) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (t *submitScrubMinipools) run(state *state.NetworkState) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

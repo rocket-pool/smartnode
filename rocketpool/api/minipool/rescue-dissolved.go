@@ -17,7 +17,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -45,16 +44,6 @@ func getMinipoolRescueDissolvedDetailsForNode(c *cli.Context) (*api.GetMinipoolR
 
 	// Response
 	response := api.GetMinipoolRescueDissolvedDetailsForNodeResponse{}
-
-	// Check if Atlas has been deployed
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-	response.IsAtlasDeployed = isAtlasDeployed
-	if !isAtlasDeployed {
-		return &response, nil
-	}
 
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
@@ -313,15 +302,6 @@ func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address, amo
 
 	// Response
 	response := api.RescueDissolvedMinipoolResponse{}
-
-	// Check if Atlas has been deployed
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-	if !isAtlasDeployed {
-		return nil, fmt.Errorf("Atlas has not been deployed yet.")
-	}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()

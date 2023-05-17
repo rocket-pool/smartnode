@@ -67,7 +67,7 @@ func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*diss
 }
 
 // Dissolve timed out minipools
-func (t *dissolveTimedOutMinipools) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (t *dissolveTimedOutMinipools) run(state *state.NetworkState) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {

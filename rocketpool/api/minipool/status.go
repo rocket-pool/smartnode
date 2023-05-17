@@ -6,7 +6,6 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -39,12 +38,6 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 	// Response
 	response := api.MinipoolStatusResponse{}
 
-	// Check if Atlas is deployed
-	response.IsAtlasDeployed, err = state.IsAtlasDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-
 	// Get the legacy MinipoolQueue contract address
 	legacyMinipoolQueueAddress := cfg.Smartnode.GetV110MinipoolQueueAddress()
 
@@ -53,7 +46,7 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	details, err := getNodeMinipoolDetails(rp, bc, nodeAccount.Address, response.IsAtlasDeployed, &legacyMinipoolQueueAddress)
+	details, err := getNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress)
 	if err != nil {
 		return nil, err
 	}
