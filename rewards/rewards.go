@@ -244,64 +244,6 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 		TrustedNodeRPL:    submission.TrustedNodeRPL,
 		NodeRPL:           submission.NodeRPL,
 		NodeETH:           submission.NodeETH,
-		MerkleRoot:        common.BytesToHash(submission.MerkleRoot[:]),
-		MerkleTreeCID:     submission.MerkleTreeCID,
-		IntervalStartTime: time.Unix(eventIntervalStartTime.Int64(), 0),
-		IntervalEndTime:   time.Unix(eventIntervalEndTime.Int64(), 0),
-		SubmissionTime:    time.Unix(submissionTime.Int64(), 0),
-	}
-
-	return true, eventData, nil
-}
-
-// Get the event info for a rewards snapshot
-// NOTE: Deprecated, remove after Atlas
-func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) (RewardsEvent, error) {
-	// Get contracts
-	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
-	if err != nil {
-		return RewardsEvent{}, err
-	}
-
-	// Construct a filter query for relevant logs
-	indexBig := big.NewInt(0).SetUint64(index)
-	indexBytes := [32]byte{}
-	indexBig.FillBytes(indexBytes[:])
-	addressFilter := []common.Address{*rocketRewardsPool.Address}
-	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {indexBytes}}
-
-	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
-	if err != nil {
-		return RewardsEvent{}, err
-	}
-
-	// Get the log info
-	values := make(map[string]interface{})
-	if len(logs) == 0 {
-		return RewardsEvent{}, fmt.Errorf("reward snapshot for interval %d not found", index)
-	}
-	err = rocketRewardsPool.ABI.Events["RewardSnapshot"].Inputs.UnpackIntoMap(values, logs[0].Data)
-	if err != nil {
-		return RewardsEvent{}, err
-	}
-
-	// Get the decoded data
-	submissionPrototype := RewardSubmission{}
-	submissionType := reflect.TypeOf(submissionPrototype)
-	submission := reflect.ValueOf(values["submission"]).Convert(submissionType).Interface().(RewardSubmission)
-	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
-	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
-	submissionTime := values["time"].(*big.Int)
-	eventData := RewardsEvent{
-		Index:             indexBig,
-		ExecutionBlock:    submission.ExecutionBlock,
-		ConsensusBlock:    submission.ConsensusBlock,
-		IntervalsPassed:   submission.IntervalsPassed,
-		TreasuryRPL:       submission.TreasuryRPL,
-		TrustedNodeRPL:    submission.TrustedNodeRPL,
-		NodeRPL:           submission.NodeRPL,
-		NodeETH:           submission.NodeETH,
 		UserETH:           submission.UserETH,
 		MerkleRoot:        common.BytesToHash(submission.MerkleRoot[:]),
 		MerkleTreeCID:     submission.MerkleTreeCID,
@@ -310,76 +252,12 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 		SubmissionTime:    time.Unix(submissionTime.Int64(), 0),
 	}
 
-	return eventData, nil
-
-}
-
-// Get the event info for a rewards snapshot
-// NOTE: Deprecated, remove after Atlas
-func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, RewardsEvent, error) {
-	// Get contracts
-	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
-	if err != nil {
-		return false, RewardsEvent{}, err
-	}
-
-	latestAddress := *rocketRewardsPool.Address
-	cleanedAddresses := []common.Address{latestAddress}
-	for _, address := range rocketRewardsPoolAddresses {
-		if address != latestAddress {
-			// Remove duplicates of the latest address, necessary for pre-Atlas support
-			cleanedAddresses = append(cleanedAddresses, address)
-		}
-	}
-
-	// Construct a filter query for relevant logs
-	indexBig := big.NewInt(0).SetUint64(index)
-	indexBytes := [32]byte{}
-	indexBig.FillBytes(indexBytes[:])
-	addressFilter := cleanedAddresses
-	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {indexBytes}}
-
-	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
-	if err != nil {
-		return false, RewardsEvent{}, err
-	}
-
-	// Get the log info
-	values := make(map[string]interface{})
-	if len(logs) == 0 {
-		return false, RewardsEvent{}, nil
-	}
-	err = rocketRewardsPool.ABI.Events["RewardSnapshot"].Inputs.UnpackIntoMap(values, logs[0].Data)
-	if err != nil {
-		return false, RewardsEvent{}, err
-	}
-
-	// Get the decoded data
-	submissionPrototype := RewardSubmission{}
-	submissionType := reflect.TypeOf(submissionPrototype)
-	submission := reflect.ValueOf(values["submission"]).Convert(submissionType).Interface().(RewardSubmission)
-	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
-	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
-	submissionTime := values["time"].(*big.Int)
-	eventData := RewardsEvent{
-		Index:             indexBig,
-		ExecutionBlock:    submission.ExecutionBlock,
-		ConsensusBlock:    submission.ConsensusBlock,
-		IntervalsPassed:   submission.IntervalsPassed,
-		TreasuryRPL:       submission.TreasuryRPL,
-		TrustedNodeRPL:    submission.TrustedNodeRPL,
-		NodeRPL:           submission.NodeRPL,
-		NodeETH:           submission.NodeETH,
-		MerkleRoot:        common.BytesToHash(submission.MerkleRoot[:]),
-		MerkleTreeCID:     submission.MerkleTreeCID,
-		IntervalStartTime: time.Unix(eventIntervalStartTime.Int64(), 0),
-		IntervalEndTime:   time.Unix(eventIntervalEndTime.Int64(), 0),
-		SubmissionTime:    time.Unix(submissionTime.Int64(), 0),
+	// Convert v1.1.0-rc1 events to modern ones
+	if eventData.UserETH == nil {
+		eventData.UserETH = big.NewInt(0)
 	}
 
 	return true, eventData, nil
-
 }
 
 // Get contracts
