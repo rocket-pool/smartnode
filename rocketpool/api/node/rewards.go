@@ -136,7 +136,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 		// Get the info for each claimed interval
 		for _, claimedInterval := range claimed {
-			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval)
+			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval, nil)
 			if err != nil {
 				return err
 			}
@@ -149,7 +149,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 		// Get the unclaimed rewards
 		for _, unclaimedInterval := range unclaimed {
-			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval)
+			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval, nil)
 			if err != nil {
 				return err
 			}
@@ -320,7 +320,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 			// Get the info for each claimed interval
 			for _, claimedInterval := range claimed {
-				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval)
+				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval, nil)
 				if err != nil {
 					return err
 				}
@@ -332,7 +332,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 			// Get the unclaimed rewards
 			for _, unclaimedInterval := range unclaimed {
-				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval)
+				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval, nil)
 				if err != nil {
 					return err
 				}

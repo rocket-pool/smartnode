@@ -143,7 +143,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)
 
 	// Find the event for this interval
-	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, t.cfg, index)
+	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, t.cfg, index, nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
 		return

@@ -18,7 +18,6 @@ require (
 	github.com/goccy/go-json v0.10.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-version v1.6.0
-	github.com/imdario/mergo v0.3.13
 	github.com/klauspost/compress v1.15.15
 	github.com/klauspost/cpuid/v2 v2.2.4
 	github.com/mitchellh/go-homedir v1.1.0
@@ -27,7 +26,7 @@ require (
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v3 v3.2.0
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20230517074149-fb6011d25ff2
+	github.com/rocket-pool/rocketpool-go v1.10.1-0.20230518023541-21f22143f61d
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/tyler-smith/go-bip39 v1.1.0

@@ -113,7 +113,7 @@ func (d *downloadRewardsTrees) run(state *state.NetworkState) error {
 	// Download missing intervals
 	for _, missingInterval := range missingIntervals {
 		fmt.Printf("Downloading interval %d file... ", missingInterval)
-		intervalInfo, err := rprewards.GetIntervalInfo(d.rp, d.cfg, nodeAccount.Address, missingInterval)
+		intervalInfo, err := rprewards.GetIntervalInfo(d.rp, d.cfg, nodeAccount.Address, missingInterval, nil)
 		if err != nil {
 			return fmt.Errorf("error getting interval %d info: %w", missingInterval, err)
 		}

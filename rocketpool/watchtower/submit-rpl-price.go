@@ -178,10 +178,8 @@ const (
 
 // Settings
 const (
-	SubmissionKey                      string  = "network.prices.submitted.node.key"
-	BlocksPerTurn                      uint64  = 75  // Approx. 15 minutes
-	RplPriceDecreaseDeviationThreshold float64 = 0.5 // Error out if price drops >50%
-	RplPriceIncreaseDeviationThreshold float64 = 1.6 // Error out if price rises >60%
+	SubmissionKey string = "network.prices.submitted.node.key"
+	BlocksPerTurn uint64 = 75 // Approx. 15 minutes
 
 	twapNumberOfSeconds uint32 = 60 * 60 * 12 // 12 hours
 )

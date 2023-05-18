@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -82,12 +83,12 @@ func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (uncl
 }
 
 // Gets the information for an interval including the file status, the validity, and the node's rewards
-func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, interval uint64) (info IntervalInfo, err error) {
+func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, interval uint64, opts *bind.CallOpts) (info IntervalInfo, err error) {
 	info.Index = interval
 	var event rewards.RewardsEvent
 
 	// Get the event details for this interval
-	event, err = GetRewardSnapshotEvent(rp, cfg, interval)
+	event, err = GetRewardSnapshotEvent(rp, cfg, interval, opts)
 	if err != nil {
 		return
 	}
@@ -149,104 +150,15 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 }
 
 // Get the event for a rewards snapshot
-func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, interval uint64) (rewards.RewardsEvent, error) {
+func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {
 
-	var event rewards.RewardsEvent
-	var err error
-
-	// Get the event log interval
-	eventLogInterval, err := cfg.GetEventLogInterval()
+	addresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
+	found, event, err := rewards.GetRewardsEvent(rp, interval, addresses, opts)
 	if err != nil {
-		return rewards.RewardsEvent{}, err
+		return rewards.RewardsEvent{}, fmt.Errorf("error getting rewards event for interval %d: %w", interval, err)
 	}
-
-	// Check if the interval is already recorded
-	prerecordedIntervals := cfg.Smartnode.GetRewardsSubmissionBlockMaps()
-	if uint64(len(prerecordedIntervals)) > interval {
-		// This already recorded so just use that block number
-		blockNumber := big.NewInt(0).SetUint64(prerecordedIntervals[interval])
-
-		// Get the event details for this interval
-		return GetUpgradedRewardSnapshotEvent(cfg, rp, interval, big.NewInt(1), blockNumber, blockNumber)
-	} else {
-		var latestKnownBlock uint64
-		var numberOfIntervalsPassed uint64
-		if len(prerecordedIntervals) == 0 {
-			// If there aren't any prerecorded intervals, start from the deployment block
-			deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
-			latestKnownBlockBig, err := rp.RocketStorage.GetUint(nil, deployBlockHash)
-			if err != nil {
-				return rewards.RewardsEvent{}, fmt.Errorf("error getting Rocket Pool deployment block: %w", err)
-			}
-			latestKnownBlock = latestKnownBlockBig.Uint64()
-			numberOfIntervalsPassed = interval + 1
-		} else {
-			// Grab the latest known one - there will always be at least one of these
-			latestKnownInterval := len(prerecordedIntervals) - 1
-			latestKnownBlock = prerecordedIntervals[latestKnownInterval]
-			numberOfIntervalsPassed = interval - uint64(latestKnownInterval)
-		}
-
-		var currentBlock *types.Header
-		currentBlock, err = rp.Client.HeaderByNumber(context.Background(), nil)
-		if err != nil {
-			return event, err
-		}
-
-		// Get the current interval time
-		var intervalTime time.Duration
-		intervalTime, err = rewards.GetClaimIntervalTime(rp, nil)
-		if err != nil {
-			err = fmt.Errorf("error getting claim interval time: %w", err)
-			return event, err
-		}
-
-		// Get the time of the latest block
-		var latestKnownBlockHeader *types.Header
-		latestKnownBlockHeader, err = rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(latestKnownBlock)))
-		if err != nil {
-			return event, err
-		}
-
-		// Traverse multiples of the interval until we find it
-		headerToCheck := latestKnownBlockHeader
-		timeToCheck := time.Unix(int64(latestKnownBlockHeader.Time), 0).Add(intervalTime * time.Duration(numberOfIntervalsPassed))
-		scanningWindow := big.NewInt(0).SetUint64(scanningWindowSize)
-		found := false
-
-		for headerToCheck.Number.Uint64() < currentBlock.Number.Uint64() {
-			// Get the approximate next header to check
-			headerToCheck, err = GetELBlockHeaderForTime(timeToCheck, rp)
-			if err != nil {
-				return event, err
-			}
-			// Scan the window around that block
-			startBlock := big.NewInt(0).Sub(headerToCheck.Number, scanningWindow)
-			endBlock := big.NewInt(0).Add(headerToCheck.Number, scanningWindow)
-			if endBlock.Uint64() > currentBlock.Number.Uint64() {
-				endBlock = big.NewInt(0).Set(currentBlock.Number)
-			}
-			event, err = GetUpgradedRewardSnapshotEvent(cfg, rp, interval, big.NewInt(int64(eventLogInterval)), startBlock, endBlock)
-			if err != nil {
-				if err.Error() == fmt.Sprintf("reward snapshot for interval %d not found", interval) {
-					// This isn't a great way to check if an event wasn't found, but it'll do for now
-					err = nil
-					timeToCheck = timeToCheck.Add(intervalTime) // Try the next interval
-					continue
-				} else {
-					return event, err
-				}
-			} else {
-				found = true
-				break
-			}
-
-		}
-
-		if !found {
-			err = fmt.Errorf("rewards event for interval %d could not be found", interval)
-			return event, err
-		}
+	if !found {
+		return rewards.RewardsEvent{}, fmt.Errorf("interval %d event not found", interval)
 	}
 
 	return event, nil

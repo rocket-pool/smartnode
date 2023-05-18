@@ -72,7 +72,7 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 
 	// Get the info for each unclaimed interval
 	for _, unclaimedInterval := range unclaimed {
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval)
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -430,7 +430,7 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 	// Populate the interval info for each one
 	for _, index := range indices {
 
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, index.Uint64())
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, index.Uint64(), nil)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
