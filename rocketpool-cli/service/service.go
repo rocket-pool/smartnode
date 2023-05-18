@@ -149,17 +149,17 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== Atlas and Shapella ===%s\n", colorGreen, colorReset)
-	fmt.Println("This version has support for both the Atlas and Shapella network upgrades, bringing Beacon reward withdrawals, 8-ETH minipools, solo staker migration, and more! For more info, please read the Atlas guide:\nhttps://docs.rocketpool.net/guides/atlas/whats-new.html\n")
+	fmt.Printf("%s=== New Grafana Dashboard ===%s\n", colorGreen, colorReset)
+	fmt.Println("We have a new Grafana dashboard out that supports many of the Atlas and Shapella features, such as how much ETH is waiting in your minipools to be distributed. To grab it, follow the import instructions: https://docs.rocketpool.net/guides/node/grafana.html#importing-the-rocket-pool-dashboard\n")
 
-	fmt.Printf("%s=== Nimbus Changes ===%s\n", colorGreen, colorReset)
-	fmt.Println("Nimbus now supports running a separate Validator Client, which means it now supports fallback clients! If you're using Nimbus and would like to set up a fallback client pair for your node, simply go to the Consensus Client section of the `service config` TUI - you can now add one just like with the other clients!\nNote that if you want to check on your validator performance, you will need to look at the validator container instead of the eth2 container like you used to do.\n")
+	fmt.Printf("%s=== Rescuing Dissolved Minipools ===%s\n", colorGreen, colorReset)
+	fmt.Println("The new `rocketpool minipool rescue-dissolved` command can be used to \"rescue\" a dissolved minipool so you can retrieve the ETH it has locked on the Beacon Chain. You'll need enough ETH to complete its 32 ETH bond in order to do this. Please see the guide for more details: <placeholder> \n")
 
-	fmt.Printf("%s=== Lodestar ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now supports Lodestar - the Ethereum Consensus Client written in Typescript! If you'd like to switch to Lodestar, simply follow the instructions for changing consensus clients: https://docs.rocketpool.net/guides/node/change-clients.html#changing-consensus-clients\n")
+	fmt.Printf("%s=== RPL Stake-on-Behalf ===%s\n", colorGreen, colorReset)
+	fmt.Println("Stake-on-behalf has made a return, and now comes with a whitelist so only addresses you control can use it. Add or remove addresses to or from your whitelist with the new `rocketpool node add-address-to-stake-rpl-whitelist` and `rocketpool node remove-address-from-stake-rpl-whitelist` commands!\n")
 
-	fmt.Printf("%s=== Much, Much More ===%s\n", colorGreen, colorReset)
-	fmt.Println("There's just too much to fit into this little highlight section! Please see the official release on GitHub for the full rundown of changes.")
+	fmt.Printf("%s=== Rewardable RPL Display ===%s\n", colorGreen, colorReset)
+	fmt.Println("`rocketpool node status` and the Grafana dashboard now show how much of your RPL stake is eligible for RPL rewards. To contribute towards your node's eligible RPL stake, a minipool must be active on the Beacon Chain; it can't be pending in the queue or exited.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
