@@ -153,10 +153,10 @@ ______           _        _    ______           _
 	fmt.Println("We have a new Grafana dashboard out that supports many of the Atlas and Shapella features, such as how much ETH is waiting in your minipools to be distributed. To grab it, follow the import instructions: https://docs.rocketpool.net/guides/node/grafana.html#importing-the-rocket-pool-dashboard\n")
 
 	fmt.Printf("%s=== Rescuing Dissolved Minipools ===%s\n", colorGreen, colorReset)
-	fmt.Println("The new `rocketpool minipool rescue-dissolved` command can be used to \"rescue\" a dissolved minipool so you can retrieve the ETH it has locked on the Beacon Chain. You'll need enough ETH to complete its 32 ETH bond in order to do this. Please see the guide for more details: <placeholder> \n")
+	fmt.Println("The new `rocketpool minipool rescue-dissolved` command can be used to \"rescue\" a dissolved minipool so you can retrieve the ETH it has locked on the Beacon Chain. You'll need enough ETH to complete its 32 ETH bond in order to do this. Please see the guide for more details: https://docs.rocketpool.net/guides/node/rescue-dissolved.html\n")
 
 	fmt.Printf("%s=== RPL Stake-on-Behalf ===%s\n", colorGreen, colorReset)
-	fmt.Println("Stake-on-behalf has made a return, and now comes with a whitelist so only addresses you control can use it. Add or remove addresses to or from your whitelist with the new `rocketpool node add-address-to-stake-rpl-whitelist` and `rocketpool node remove-address-from-stake-rpl-whitelist` commands!\n")
+	fmt.Println("The Stake-on-Behalf feature of the Rocket Pool staking website has made a return, and now comes with a whitelist so only addresses you allow can use it. Add or remove addresses to or from your whitelist with the new `rocketpool node add-address-to-stake-rpl-whitelist` and `rocketpool node remove-address-from-stake-rpl-whitelist` commands!\n")
 
 	fmt.Printf("%s=== Rewardable RPL Display ===%s\n", colorGreen, colorReset)
 	fmt.Println("`rocketpool node status` and the Grafana dashboard now show how much of your RPL stake is eligible for RPL rewards. To contribute towards your node's eligible RPL stake, a minipool must be active on the Beacon Chain; it can't be pending in the queue or exited.")
