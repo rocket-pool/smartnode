@@ -11,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	utils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
 // Get node status
@@ -26,39 +27,26 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 	if response.Error != "" {
 		return api.NodeStatusResponse{}, fmt.Errorf("Could not get node status: %s", response.Error)
 	}
-	if response.RplStake == nil {
-		response.RplStake = big.NewInt(0)
-	}
-	if response.EffectiveRplStake == nil {
-		response.EffectiveRplStake = big.NewInt(0)
-	}
-	if response.MinimumRplStake == nil {
-		response.MinimumRplStake = big.NewInt(0)
-	}
-	if response.AccountBalances.ETH == nil {
-		response.AccountBalances.ETH = big.NewInt(0)
-	}
-	if response.AccountBalances.RPL == nil {
-		response.AccountBalances.RPL = big.NewInt(0)
-	}
-	if response.AccountBalances.RETH == nil {
-		response.AccountBalances.RETH = big.NewInt(0)
-	}
-	if response.AccountBalances.FixedSupplyRPL == nil {
-		response.AccountBalances.FixedSupplyRPL = big.NewInt(0)
-	}
-	if response.WithdrawalBalances.ETH == nil {
-		response.WithdrawalBalances.ETH = big.NewInt(0)
-	}
-	if response.WithdrawalBalances.RPL == nil {
-		response.WithdrawalBalances.RPL = big.NewInt(0)
-	}
-	if response.WithdrawalBalances.RETH == nil {
-		response.WithdrawalBalances.RETH = big.NewInt(0)
-	}
-	if response.WithdrawalBalances.FixedSupplyRPL == nil {
-		response.WithdrawalBalances.FixedSupplyRPL = big.NewInt(0)
-	}
+	utils.ZeroIfNil(&response.RplStake)
+	utils.ZeroIfNil(&response.EffectiveRplStake)
+	utils.ZeroIfNil(&response.MinimumRplStake)
+	utils.ZeroIfNil(&response.MaximumRplStake)
+	utils.ZeroIfNil(&response.AccountBalances.ETH)
+	utils.ZeroIfNil(&response.AccountBalances.RPL)
+	utils.ZeroIfNil(&response.AccountBalances.RETH)
+	utils.ZeroIfNil(&response.AccountBalances.FixedSupplyRPL)
+	utils.ZeroIfNil(&response.WithdrawalBalances.ETH)
+	utils.ZeroIfNil(&response.WithdrawalBalances.RPL)
+	utils.ZeroIfNil(&response.WithdrawalBalances.RETH)
+	utils.ZeroIfNil(&response.WithdrawalBalances.FixedSupplyRPL)
+	utils.ZeroIfNil(&response.PendingEffectiveRplStake)
+	utils.ZeroIfNil(&response.PendingMinimumRplStake)
+	utils.ZeroIfNil(&response.PendingMaximumRplStake)
+	utils.ZeroIfNil(&response.EthMatched)
+	utils.ZeroIfNil(&response.EthMatchedLimit)
+	utils.ZeroIfNil(&response.PendingMatchAmount)
+	utils.ZeroIfNil(&response.CreditBalance)
+	utils.ZeroIfNil(&response.FeeDistributorBalance)
 	return response, nil
 }
 
