@@ -170,7 +170,7 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 
 	// RP ETH deposit details - prelaunch & staking minipools
 	if minipool.Status.Status == types.Prelaunch || minipool.Status.Status == types.Staking {
-		totalRewards := big.NewInt(0).Add(minipool.NodeShareOfETHBalance, minipool.Node.RefundBalance)
+		totalRewards := big.NewInt(0).Add(&minipool.NodeShareOfETHBalance, minipool.Node.RefundBalance)
 		if minipool.User.DepositAssigned {
 			fmt.Printf("RP ETH assigned:       %s\n", minipool.User.DepositAssignedTime.Format(TimeFormat))
 			fmt.Printf("RP deposit:            %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.User.DepositBalance), 6))
@@ -178,7 +178,7 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 			fmt.Printf("RP ETH assigned:       no\n")
 		}
 		fmt.Printf("Minipool Balance (EL): %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Balances.ETH), 6))
-		fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.NodeShareOfETHBalance), 6))
+		fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(eth.WeiToEth(&minipool.NodeShareOfETHBalance), 6))
 		fmt.Printf("Available refund:      %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Node.RefundBalance), 6))
 		fmt.Printf("Total EL rewards:      %.6f ETH\n", math.RoundDown(eth.WeiToEth(totalRewards), 6))
 	}
@@ -194,8 +194,8 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 			} else {
 				fmt.Printf("Validator active:      no\n")
 			}
-			fmt.Printf("Beacon balance (CL):   %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Validator.Balance), 6))
-			fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Validator.NodeBalance), 6))
+			fmt.Printf("Beacon balance (CL):   %.6f ETH\n", math.RoundDown(eth.WeiToEth(&minipool.Validator.Balance), 6))
+			fmt.Printf("Your portion:          %.6f ETH\n", math.RoundDown(eth.WeiToEth(&minipool.Validator.NodeBalance), 6))
 		} else {
 			fmt.Printf("Validator seen:        no\n")
 		}

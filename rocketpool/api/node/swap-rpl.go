@@ -101,7 +101,7 @@ func allowanceFsRpl(c *cli.Context) (*api.NodeSwapRplAllowanceResponse, error) {
 		return nil, err
 	}
 
-	response.Allowance = allowance
+	response.Allowance.Set(allowance)
 
 	return &response, nil
 }

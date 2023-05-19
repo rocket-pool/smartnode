@@ -57,10 +57,10 @@ func distributeBalance(c *cli.Context) error {
 			if mp.MinipoolVersion < 3 {
 				versionTooLowMinipools = append(versionTooLowMinipools, mp)
 			}
-			if mp.Balance.Cmp(mp.Refund) == -1 {
+			if mp.Balance.Cmp(&mp.Refund) == -1 {
 				balanceLessThanRefundMinipools = append(balanceLessThanRefundMinipools, mp)
 			}
-			effectiveBalance := big.NewInt(0).Sub(mp.Balance, mp.Refund)
+			effectiveBalance := big.NewInt(0).Sub(&mp.Balance, &mp.Refund)
 			if effectiveBalance.Cmp(finalizationAmount) >= 0 {
 				balanceTooBigMinipools = append(balanceTooBigMinipools, mp)
 			}
@@ -106,11 +106,11 @@ func distributeBalance(c *cli.Context) error {
 		for _, minipool := range eligibleMinipools {
 			if minipool.Status == types.Dissolved {
 				// Dissolved minipools are a special case
-				totalEthShare.Add(totalEthShare, minipool.Balance)
+				totalEthShare.Add(totalEthShare, &minipool.Balance)
 			} else {
-				totalEthAvailable.Add(totalEthAvailable, minipool.Balance)
-				totalEthShare.Add(totalEthShare, minipool.NodeShareOfBalance)
-				totalRefund.Add(totalRefund, minipool.Refund)
+				totalEthAvailable.Add(totalEthAvailable, &minipool.Balance)
+				totalEthShare.Add(totalEthShare, &minipool.NodeShareOfBalance)
+				totalRefund.Add(totalRefund, &minipool.Refund)
 			}
 		}
 
@@ -120,9 +120,9 @@ func distributeBalance(c *cli.Context) error {
 		for mi, minipool := range eligibleMinipools {
 			if minipool.Status == types.Dissolved {
 				// Dissolved minipools are a special case
-				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, all of which goes to you)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6))
+				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, all of which goes to you)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(&minipool.Balance), 6))
 			} else {
-				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH goes to you plus a refund of %.6f ETH)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfBalance), 6), math.RoundDown(eth.WeiToEth(minipool.Refund), 6))
+				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH goes to you plus a refund of %.6f ETH)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(&minipool.Balance), 6), math.RoundDown(eth.WeiToEth(&minipool.NodeShareOfBalance), 6), math.RoundDown(eth.WeiToEth(&minipool.Refund), 6))
 			}
 		}
 		selected, _ := cliutils.Select("Please select a minipool to distribute the balance of:", options)

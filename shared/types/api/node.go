@@ -27,24 +27,24 @@ type NodeStatusResponse struct {
 	TimezoneLocation                  string          `json:"timezoneLocation"`
 	AccountBalances                   tokens.Balances `json:"accountBalances"`
 	WithdrawalBalances                tokens.Balances `json:"withdrawalBalances"`
-	RplStake                          *big.Int        `json:"rplStake"`
-	EffectiveRplStake                 *big.Int        `json:"effectiveRplStake"`
-	MinimumRplStake                   *big.Int        `json:"minimumRplStake"`
-	MaximumRplStake                   *big.Int        `json:"maximumRplStake"`
+	RplStake                          big.Int         `json:"rplStake"`
+	EffectiveRplStake                 big.Int         `json:"effectiveRplStake"`
+	MinimumRplStake                   big.Int         `json:"minimumRplStake"`
+	MaximumRplStake                   big.Int         `json:"maximumRplStake"`
 	BorrowedCollateralRatio           float64         `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio             float64         `json:"bondedCollateralRatio"`
-	PendingEffectiveRplStake          *big.Int        `json:"pendingEffectiveRplStake"`
-	PendingMinimumRplStake            *big.Int        `json:"pendingMinimumRplStake"`
-	PendingMaximumRplStake            *big.Int        `json:"pendingMaximumRplStake"`
+	PendingEffectiveRplStake          big.Int         `json:"pendingEffectiveRplStake"`
+	PendingMinimumRplStake            big.Int         `json:"pendingMinimumRplStake"`
+	PendingMaximumRplStake            big.Int         `json:"pendingMaximumRplStake"`
 	PendingBorrowedCollateralRatio    float64         `json:"pendingBorrowedCollateralRatio"`
 	PendingBondedCollateralRatio      float64         `json:"pendingBondedCollateralRatio"`
 	VotingDelegate                    common.Address  `json:"votingDelegate"`
 	VotingDelegateFormatted           string          `json:"votingDelegateFormatted"`
 	MinipoolLimit                     uint64          `json:"minipoolLimit"`
-	EthMatched                        *big.Int        `json:"ethMatched"`
-	EthMatchedLimit                   *big.Int        `json:"ethMatchedLimit"`
-	PendingMatchAmount                *big.Int        `json:"pendingMatchAmount"`
-	CreditBalance                     *big.Int        `json:"creditBalance"`
+	EthMatched                        big.Int         `json:"ethMatched"`
+	EthMatchedLimit                   big.Int         `json:"ethMatchedLimit"`
+	PendingMatchAmount                big.Int         `json:"pendingMatchAmount"`
+	CreditBalance                     big.Int         `json:"creditBalance"`
 	MinipoolCounts                    struct {
 		Total               int `json:"total"`
 		Initialized         int `json:"initialized"`
@@ -59,7 +59,7 @@ type NodeStatusResponse struct {
 	} `json:"minipoolCounts"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
 	FeeRecipientInfo            rp.FeeRecipientInfo       `json:"feeRecipientInfo"`
-	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
+	FeeDistributorBalance       big.Int                   `json:"feeDistributorBalance"`
 	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
 	SnapshotResponse            struct {
 		Error                   string                 `json:"error"`
@@ -153,9 +153,9 @@ type NodeSwapRplSwapResponse struct {
 	SwapTxHash common.Hash `json:"swapTxHash"`
 }
 type NodeSwapRplAllowanceResponse struct {
-	Status    string   `json:"status"`
-	Error     string   `json:"error"`
-	Allowance *big.Int `json:"allowance"`
+	Status    string  `json:"status"`
+	Error     string  `json:"error"`
+	Allowance big.Int `json:"allowance"`
 }
 
 type CanNodeStakeRplResponse struct {
@@ -182,9 +182,9 @@ type NodeStakeRplStakeResponse struct {
 	StakeTxHash common.Hash `json:"stakeTxHash"`
 }
 type NodeStakeRplAllowanceResponse struct {
-	Status    string   `json:"status"`
-	Error     string   `json:"error"`
-	Allowance *big.Int `json:"allowance"`
+	Status    string  `json:"status"`
+	Error     string  `json:"error"`
+	Allowance big.Int `json:"allowance"`
 }
 
 type CanSetStakeRplForAllowedResponse struct {
@@ -219,10 +219,10 @@ type CanNodeDepositResponse struct {
 	Status                           string             `json:"status"`
 	Error                            string             `json:"error"`
 	CanDeposit                       bool               `json:"canDeposit"`
-	CreditBalance                    *big.Int           `json:"creditBalance"`
-	DepositBalance                   *big.Int           `json:"depositBalance"`
+	CreditBalance                    big.Int            `json:"creditBalance"`
+	DepositBalance                   big.Int            `json:"depositBalance"`
 	CanUseCredit                     bool               `json:"canUseCredit"`
-	NodeBalance                      *big.Int           `json:"nodeBalance"`
+	NodeBalance                      big.Int            `json:"nodeBalance"`
 	InsufficientBalance              bool               `json:"insufficientBalance"`
 	InsufficientBalanceWithoutCredit bool               `json:"insufficientBalanceWithoutCredit"`
 	InsufficientRplStake             bool               `json:"insufficientRplStake"`
@@ -298,7 +298,7 @@ type NodeSyncProgressResponse struct {
 type CanNodeClaimRplResponse struct {
 	Status    string             `json:"status"`
 	Error     string             `json:"error"`
-	RplAmount *big.Int           `json:"rplAmount"`
+	RplAmount big.Int            `json:"rplAmount"`
 	GasInfo   rocketpool.GasInfo `json:"gasInfo"`
 }
 type NodeClaimRplResponse struct {
@@ -389,7 +389,7 @@ type NodeInitializeFeeDistributorResponse struct {
 type NodeCanDistributeResponse struct {
 	Status         string             `json:"status"`
 	Error          string             `json:"error"`
-	Balance        *big.Int           `json:"balance"`
+	Balance        big.Int            `json:"balance"`
 	AverageNodeFee float64            `json:"averageNodeFee"`
 	GasInfo        rocketpool.GasInfo `json:"gasInfo"`
 }
@@ -406,15 +406,15 @@ type NodeGetRewardsInfoResponse struct {
 	ClaimedIntervals        []uint64               `json:"claimedIntervals"`
 	UnclaimedIntervals      []rewards.IntervalInfo `json:"unclaimedIntervals"`
 	InvalidIntervals        []rewards.IntervalInfo `json:"invalidIntervals"`
-	RplStake                *big.Int               `json:"rplStake"`
-	RplPrice                *big.Int               `json:"rplPrice"`
+	RplStake                big.Int                `json:"rplStake"`
+	RplPrice                big.Int                `json:"rplPrice"`
 	ActiveMinipools         int                    `json:"activeMinipools"`
-	EffectiveRplStake       *big.Int               `json:"effectiveRplStake"`
-	MinimumRplStake         *big.Int               `json:"minimumRplStake"`
-	MaximumRplStake         *big.Int               `json:"maximumRplStake"`
-	EthMatched              *big.Int               `json:"ethMatched"`
-	EthMatchedLimit         *big.Int               `json:"ethMatchedLimit"`
-	PendingMatchAmount      *big.Int               `json:"pendingMatchAmount"`
+	EffectiveRplStake       big.Int                `json:"effectiveRplStake"`
+	MinimumRplStake         big.Int                `json:"minimumRplStake"`
+	MaximumRplStake         big.Int                `json:"maximumRplStake"`
+	EthMatched              big.Int                `json:"ethMatched"`
+	EthMatchedLimit         big.Int                `json:"ethMatchedLimit"`
+	PendingMatchAmount      big.Int                `json:"pendingMatchAmount"`
 	BorrowedCollateralRatio float64                `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio   float64                `json:"bondedCollateralRatio"`
 }
@@ -508,22 +508,22 @@ type SnapshotVotedProposals struct {
 	} `json:"data"`
 }
 type SmoothingRewardsResponse struct {
-	Status     string   `json:"status"`
-	Error      string   `json:"error"`
-	EthBalance *big.Int `json:"eth_balance"`
+	Status     string  `json:"status"`
+	Error      string  `json:"error"`
+	EthBalance big.Int `json:"eth_balance"`
 }
 
 type CheckCollateralResponse struct {
-	Status                 string   `json:"status"`
-	Error                  string   `json:"error"`
-	EthMatched             *big.Int `json:"ethMatched"`
-	EthMatchedLimit        *big.Int `json:"ethMatchedLimit"`
-	PendingMatchAmount     *big.Int `json:"pendingMatchAmount"`
-	InsufficientCollateral bool     `json:"insufficientCollateral"`
+	Status                 string  `json:"status"`
+	Error                  string  `json:"error"`
+	EthMatched             big.Int `json:"ethMatched"`
+	EthMatchedLimit        big.Int `json:"ethMatchedLimit"`
+	PendingMatchAmount     big.Int `json:"pendingMatchAmount"`
+	InsufficientCollateral bool    `json:"insufficientCollateral"`
 }
 
 type NodeEthBalanceResponse struct {
-	Status  string   `json:"status"`
-	Error   string   `json:"error"`
-	Balance *big.Int `json:"balance"`
+	Status  string  `json:"status"`
+	Error   string  `json:"error"`
+	Balance big.Int `json:"balance"`
 }

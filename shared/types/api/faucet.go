@@ -8,13 +8,13 @@ import (
 )
 
 type FaucetStatusResponse struct {
-	Status             string   `json:"status"`
-	Error              string   `json:"error"`
-	Balance            *big.Int `json:"balance"`
-	Allowance          *big.Int `json:"allowance"`
-	WithdrawableAmount *big.Int `json:"withdrawableAmount"`
-	WithdrawalFee      *big.Int `json:"withdrawalFee"`
-	ResetsInBlocks     uint64   `json:"resetsInBlocks"`
+	Status             string  `json:"status"`
+	Error              string  `json:"error"`
+	Balance            big.Int `json:"balance"`
+	Allowance          big.Int `json:"allowance"`
+	WithdrawableAmount big.Int `json:"withdrawableAmount"`
+	WithdrawalFee      big.Int `json:"withdrawalFee"`
+	ResetsInBlocks     uint64  `json:"resetsInBlocks"`
 }
 
 type CanFaucetWithdrawRplResponse struct {
@@ -29,6 +29,6 @@ type CanFaucetWithdrawRplResponse struct {
 type FaucetWithdrawRplResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
-	Amount *big.Int    `json:"amount"`
+	Amount big.Int     `json:"amount"`
 	TxHash common.Hash `json:"txHash"`
 }

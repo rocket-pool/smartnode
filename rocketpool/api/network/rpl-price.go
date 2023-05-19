@@ -72,31 +72,31 @@ func getRplPrice(c *cli.Context) (*api.RplPriceResponse, error) {
 	minPer8EthMinipoolRplStake.Mul(_24Eth, minPerMinipoolStake) // Min is 10% of borrowed (24 ETH)
 	minPer8EthMinipoolRplStake.Div(minPer8EthMinipoolRplStake, rplPrice)
 	minPer8EthMinipoolRplStake.Add(minPer8EthMinipoolRplStake, big.NewInt(1))
-	response.MinPer8EthMinipoolRplStake = minPer8EthMinipoolRplStake
+	response.MinPer8EthMinipoolRplStake.Set(minPer8EthMinipoolRplStake)
 
 	// Max for LEB8s
 	maxPer8EthMinipoolRplStake := big.NewInt(0)
 	maxPer8EthMinipoolRplStake.Mul(_8Eth, maxPerMinipoolStake) // Max is 150% of bonded (8 ETH)
 	maxPer8EthMinipoolRplStake.Div(maxPer8EthMinipoolRplStake, rplPrice)
 	maxPer8EthMinipoolRplStake.Add(maxPer8EthMinipoolRplStake, big.NewInt(1))
-	response.MaxPer8EthMinipoolRplStake = maxPer8EthMinipoolRplStake
+	response.MaxPer8EthMinipoolRplStake.Set(maxPer8EthMinipoolRplStake)
 
 	// Min for 16s
 	minPer16EthMinipoolRplStake := big.NewInt(0)
 	minPer16EthMinipoolRplStake.Mul(_16Eth, minPerMinipoolStake) // Min is 10% of borrowed (16 ETH)
 	minPer16EthMinipoolRplStake.Div(minPer16EthMinipoolRplStake, rplPrice)
 	minPer16EthMinipoolRplStake.Add(minPer16EthMinipoolRplStake, big.NewInt(1))
-	response.MinPer16EthMinipoolRplStake = minPer16EthMinipoolRplStake
+	response.MinPer16EthMinipoolRplStake.Set(minPer16EthMinipoolRplStake)
 
 	// Max for 16s
 	maxPer16EthMinipoolRplStake := big.NewInt(0)
 	maxPer16EthMinipoolRplStake.Mul(_16Eth, maxPerMinipoolStake) // Max is 150% of bonded (16 ETH)
 	maxPer16EthMinipoolRplStake.Div(maxPer16EthMinipoolRplStake, rplPrice)
 	maxPer16EthMinipoolRplStake.Add(maxPer16EthMinipoolRplStake, big.NewInt(1))
-	response.MaxPer16EthMinipoolRplStake = maxPer16EthMinipoolRplStake
+	response.MaxPer16EthMinipoolRplStake.Set(maxPer16EthMinipoolRplStake)
 
 	// Update & return response
-	response.RplPrice = rplPrice
+	response.RplPrice.Set(rplPrice)
 	return &response, nil
 
 }

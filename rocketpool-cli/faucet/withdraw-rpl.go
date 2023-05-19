@@ -71,7 +71,7 @@ func withdrawRpl(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully withdrew %.6f legacy RPL from the faucet.\n", math.RoundDown(eth.WeiToEth(response.Amount), 6))
+	fmt.Printf("Successfully withdrew %.6f legacy RPL from the faucet.\n", math.RoundDown(eth.WeiToEth(&response.Amount), 6))
 	return nil
 
 }

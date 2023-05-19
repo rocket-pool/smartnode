@@ -167,7 +167,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 			gasInfo = canResponse.GasInfo
 			totalGas += canResponse.GasInfo.EstGasLimit
 			totalSafeGas += canResponse.GasInfo.SafeGasLimit
-			totalMatchRequest.Add(totalMatchRequest, canResponse.MatchRequest)
+			totalMatchRequest.Add(totalMatchRequest, &canResponse.MatchRequest)
 		}
 	}
 	gasInfo.EstGasLimit = totalGas
@@ -178,8 +178,8 @@ func beginReduceBondAmount(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error checking the node's total collateral: %w", err)
 	}
-	totalMatchAvailable := big.NewInt(0).Sub(collateralResponse.EthMatchedLimit, collateralResponse.EthMatched)
-	totalMatchAvailable.Sub(totalMatchAvailable, collateralResponse.PendingMatchAmount)
+	totalMatchAvailable := big.NewInt(0).Sub(&collateralResponse.EthMatchedLimit, &collateralResponse.EthMatched)
+	totalMatchAvailable.Sub(totalMatchAvailable, &collateralResponse.PendingMatchAmount)
 	if totalMatchAvailable.Cmp(totalMatchRequest) < 0 {
 		fmt.Printf("You do not have enough RPL staked to support all of the selected bond reductions.\nYou can borrow %.6f more ETH, but are requesting %.6f ETH with these bond reductions.\nIn total, they would bring you below the minimum RPL staking requirement (including the RPL required for any pending bond reductions you've already started).\nYou will have to stake more RPL first.\n", eth.WeiToEth(totalMatchAvailable), eth.WeiToEth(totalMatchRequest))
 		return nil
@@ -370,7 +370,7 @@ func forceFeeDistribution(c *cli.Context, rp *rocketpool.Client) error {
 		return err
 	}
 
-	balance := eth.WeiToEth(canDistributeResponse.Balance)
+	balance := eth.WeiToEth(&canDistributeResponse.Balance)
 	if balance == 0 {
 		fmt.Println("Your fee distributor does not have any ETH and does not need to be distributed.\n")
 		return nil

@@ -8,11 +8,11 @@ import (
 )
 
 type QueueStatusResponse struct {
-	Status                string   `json:"status"`
-	Error                 string   `json:"error"`
-	DepositPoolBalance    *big.Int `json:"depositPoolBalance"`
-	MinipoolQueueLength   uint64   `json:"minipoolQueueLength"`
-	MinipoolQueueCapacity *big.Int `json:"minipoolQueueCapacity"`
+	Status                string  `json:"status"`
+	Error                 string  `json:"error"`
+	DepositPoolBalance    big.Int `json:"depositPoolBalance"`
+	MinipoolQueueLength   uint64  `json:"minipoolQueueLength"`
+	MinipoolQueueCapacity big.Int `json:"minipoolQueueCapacity"`
 }
 
 type CanProcessQueueResponse struct {

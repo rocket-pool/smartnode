@@ -35,9 +35,9 @@ func getStatus(c *cli.Context) error {
 	// Print & return
 	fmt.Printf(
 		"A total of %.6f RPL is up for auction, with %.6f RPL currently allotted and %.6f RPL remaining.\n",
-		math.RoundDown(eth.WeiToEth(status.TotalRPLBalance), 6),
-		math.RoundDown(eth.WeiToEth(status.AllottedRPLBalance), 6),
-		math.RoundDown(eth.WeiToEth(status.RemainingRPLBalance), 6))
+		math.RoundDown(eth.WeiToEth(&status.TotalRPLBalance), 6),
+		math.RoundDown(eth.WeiToEth(&status.AllottedRPLBalance), 6),
+		math.RoundDown(eth.WeiToEth(&status.RemainingRPLBalance), 6))
 	if status.LotCounts.ClaimAvailable > 0 {
 		fmt.Printf("%d lot(s) you have bid on have RPL available to claim!\n", status.LotCounts.ClaimAvailable)
 	}

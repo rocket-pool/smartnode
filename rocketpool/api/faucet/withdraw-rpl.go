@@ -193,7 +193,7 @@ func withdrawRpl(c *cli.Context) (*api.FaucetWithdrawRplResponse, error) {
 	} else {
 		amount = balance
 	}
-	response.Amount = amount
+	response.Amount.Set(amount)
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()

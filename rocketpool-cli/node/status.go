@@ -70,7 +70,7 @@ func getStatus(c *cli.Context) error {
 	}
 	fmt.Printf(
 		"The node has %.6f ETH in its credit balance, which can be used to make new minipools.\n",
-		math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
+		math.RoundDown(eth.WeiToEth(&status.CreditBalance), 6),
 	)
 
 	// Registered node details
@@ -199,7 +199,7 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("The node is not opted into the Smoothing Pool.\nTo learn more about the Smoothing Pool, please visit %s.\n", smoothingPoolLink)
 		}
 
-		fmt.Printf("The node's fee distributor %s%s%s has a balance of %.6f ETH.\n", colorBlue, status.FeeRecipientInfo.FeeDistributorAddress.Hex(), colorReset, math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
+		fmt.Printf("The node's fee distributor %s%s%s has a balance of %.6f ETH.\n", colorBlue, status.FeeRecipientInfo.FeeDistributorAddress.Hex(), colorReset, math.RoundDown(eth.WeiToEth(&status.FeeDistributorBalance), 6))
 		if cfg.IsNativeMode && !status.FeeRecipientInfo.IsInSmoothingPool && !status.FeeRecipientInfo.IsInOptOutCooldown {
 			fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", colorYellow, colorReset)
 		}
@@ -214,10 +214,10 @@ func getStatus(c *cli.Context) error {
 		fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.\n")
 		fmt.Printf(
 			"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL.\n",
-			math.RoundDown(eth.WeiToEth(status.RplStake), 6),
-			math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6))
+			math.RoundDown(eth.WeiToEth(&status.RplStake), 6),
+			math.RoundDown(eth.WeiToEth(&status.EffectiveRplStake), 6))
 		if status.BorrowedCollateralRatio > 0 {
-			rplTooLow := (status.RplStake.Cmp(status.MinimumRplStake) < 0)
+			rplTooLow := (status.RplStake.Cmp(&status.MinimumRplStake) < 0)
 			if rplTooLow {
 				fmt.Printf(
 					"This is currently %s%.2f%% of its borrowed ETH%s and %.2f%% of its bonded ETH.\n",
@@ -228,23 +228,23 @@ func getStatus(c *cli.Context) error {
 					status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
 			}
 			fmt.Printf(
-				"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
+				"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(&status.MinimumRplStake), 6))
 			fmt.Printf(
-				"It can earn rewards on up to %.6f RPL (150%% of bonded ETH).\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
+				"It can earn rewards on up to %.6f RPL (150%% of bonded ETH).\n", math.RoundDown(eth.WeiToEth(&status.MaximumRplStake), 6))
 			if rplTooLow {
-				fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.MinimumRplStake, status.RplStake)), 6), colorReset)
+				fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(&status.MinimumRplStake, &status.RplStake)), 6), colorReset)
 			}
 		}
 		fmt.Println()
 
-		if status.PendingEffectiveRplStake.Cmp(status.EffectiveRplStake) != 0 {
-			fmt.Printf("Of this stake, %.6f RPL is eligible for RPL staking rewards.\n", math.RoundDown(eth.WeiToEth(status.PendingEffectiveRplStake), 6))
+		if status.PendingEffectiveRplStake.Cmp(&status.EffectiveRplStake) != 0 {
+			fmt.Printf("Of this stake, %.6f RPL is eligible for RPL staking rewards.\n", math.RoundDown(eth.WeiToEth(&status.PendingEffectiveRplStake), 6))
 			fmt.Println("Eligibility is determined by the number of minipools you have in the *active* state on the Beacon Chain:\n- Validators in the Beacon Chain queue that have not been activated yet are not eligible.\n- Validators that have been exited are not eligible.")
 			fmt.Println()
 		}
 
-		remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
-		remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)
+		remainingAmount := big.NewInt(0).Sub(&status.EthMatchedLimit, &status.EthMatched)
+		remainingAmount.Sub(remainingAmount, &status.PendingMatchAmount)
 		remainingAmountEth := int(eth.WeiToEth(remainingAmount))
 		remainingFor8EB := remainingAmountEth / 24
 		if remainingFor8EB < 0 {

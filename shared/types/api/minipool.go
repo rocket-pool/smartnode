@@ -27,7 +27,7 @@ type MinipoolDetails struct {
 	Node                  minipool.NodeDetails   `json:"node"`
 	User                  minipool.UserDetails   `json:"user"`
 	Balances              tokens.Balances        `json:"balances"`
-	NodeShareOfETHBalance *big.Int               `json:"nodeShareOfETHBalance"`
+	NodeShareOfETHBalance big.Int                `json:"nodeShareOfETHBalance"`
 	Validator             ValidatorDetails       `json:"validator"`
 	CanStake              bool                   `json:"canStake"`
 	CanPromote            bool                   `json:"canPromote"`
@@ -46,17 +46,17 @@ type MinipoolDetails struct {
 	ReduceBondCancelled   bool                   `json:"reduceBondCancelled"`
 }
 type ValidatorDetails struct {
-	Exists      bool     `json:"exists"`
-	Active      bool     `json:"active"`
-	Index       string   `json:"index"`
-	Balance     *big.Int `json:"balance"`
-	NodeBalance *big.Int `json:"nodeBalance"`
+	Exists      bool    `json:"exists"`
+	Active      bool    `json:"active"`
+	Index       string  `json:"index"`
+	Balance     big.Int `json:"balance"`
+	NodeBalance big.Int `json:"nodeBalance"`
 }
 type MinipoolBalanceDistributionDetails struct {
 	Address            common.Address       `json:"address"`
-	Balance            *big.Int             `json:"balance"`
-	Refund             *big.Int             `json:"refund"`
-	NodeShareOfBalance *big.Int             `json:"nodeShareOfBalance"`
+	Balance            big.Int              `json:"balance"`
+	Refund             big.Int              `json:"refund"`
+	NodeShareOfBalance big.Int              `json:"nodeShareOfBalance"`
 	MinipoolVersion    uint8                `json:"minipoolVersion"`
 	Status             types.MinipoolStatus `json:"status"`
 	IsFinalized        bool                 `json:"isFinalized"`
@@ -149,11 +149,11 @@ type MinipoolCloseDetails struct {
 	MinipoolVersion    uint8                 `json:"minipoolVersion"`
 	Distributed        bool                  `json:"distributed"`
 	CanClose           bool                  `json:"canClose"`
-	Balance            *big.Int              `json:"balance"`
-	Refund             *big.Int              `json:"refund"`
-	UserDepositBalance *big.Int              `json:"userDepositBalance"`
+	Balance            big.Int               `json:"balance"`
+	Refund             big.Int               `json:"refund"`
+	UserDepositBalance big.Int               `json:"userDepositBalance"`
 	BeaconState        beacon.ValidatorState `json:"beaconState"`
-	NodeShare          *big.Int              `json:"nodeShare"`
+	NodeShare          big.Int               `json:"nodeShare"`
 	GasInfo            rocketpool.GasInfo    `json:"gasInfo"`
 }
 
@@ -179,7 +179,7 @@ type CanDistributeBalanceResponse struct {
 	Error           string               `json:"error"`
 	MinipoolVersion uint8                `json:"minipoolVersion"`
 	MinipoolStatus  types.MinipoolStatus `json:"minipoolStatus"`
-	Balance         *big.Int             `json:"balance"`
+	Balance         big.Int              `json:"balance"`
 	CanDistribute   bool                 `json:"canDistribute"`
 	GasInfo         rocketpool.GasInfo   `json:"gasInfo"`
 }
@@ -303,7 +303,7 @@ type CanBeginReduceBondAmountResponse struct {
 	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
 	Balance               uint64                `json:"balance"`
 	BalanceTooLow         bool                  `json:"balanceTooLow"`
-	MatchRequest          *big.Int              `json:"matchRequest"`
+	MatchRequest          big.Int               `json:"matchRequest"`
 	BeaconState           beacon.ValidatorState `json:"beaconState"`
 	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
 	CanReduce             bool                  `json:"canReduce"`
@@ -334,7 +334,7 @@ type MinipoolRescueDissolvedDetails struct {
 	IsFinalized     bool                  `json:"isFinalized"`
 	MinipoolStatus  types.MinipoolStatus  `json:"minipoolStatus"`
 	MinipoolVersion uint8                 `json:"minipoolVersion"`
-	BeaconBalance   *big.Int              `json:"beaconBalance"`
+	BeaconBalance   big.Int               `json:"beaconBalance"`
 	BeaconState     beacon.ValidatorState `json:"beaconState"`
 	GasInfo         rocketpool.GasInfo    `json:"gasInfo"`
 }

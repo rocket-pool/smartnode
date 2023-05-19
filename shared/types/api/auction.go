@@ -10,12 +10,12 @@ import (
 )
 
 type AuctionStatusResponse struct {
-	Status              string   `json:"status"`
-	Error               string   `json:"error"`
-	TotalRPLBalance     *big.Int `json:"totalRPLBalance"`
-	AllottedRPLBalance  *big.Int `json:"allottedRPLBalance"`
-	RemainingRPLBalance *big.Int `json:"remainingRPLBalance"`
-	CanCreateLot        bool     `json:"canCreateLot"`
+	Status              string  `json:"status"`
+	Error               string  `json:"error"`
+	TotalRPLBalance     big.Int `json:"totalRPLBalance"`
+	AllottedRPLBalance  big.Int `json:"allottedRPLBalance"`
+	RemainingRPLBalance big.Int `json:"remainingRPLBalance"`
+	CanCreateLot        bool    `json:"canCreateLot"`
 	LotCounts           struct {
 		ClaimAvailable       int `json:"claimAvailable"`
 		BiddingAvailable     int `json:"biddingAvailable"`

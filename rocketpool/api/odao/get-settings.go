@@ -52,11 +52,11 @@ func getMemberSettings(c *cli.Context) (*api.GetTNDAOMemberSettingsResponse, err
 	}
 
 	response.Quorum = quorum
-	response.RPLBond = rplBond
+	response.RPLBond.Set(rplBond)
 	response.MinipoolUnbondedMax = minipoolUnbondedMax
 	response.ChallengeCooldown = challengeCooldown
 	response.ChallengeWindow = challengeWindow
-	response.ChallengeCost = challengeCost
+	response.ChallengeCost.Set(challengeCost)
 
 	// Return response
 	return &response, nil

@@ -37,21 +37,21 @@ func getStatus(c *cli.Context) (*api.AuctionStatusResponse, error) {
 	wg.Go(func() error {
 		totalRplBalance, err := auction.GetTotalRPLBalance(rp, nil)
 		if err == nil {
-			response.TotalRPLBalance = totalRplBalance
+			response.TotalRPLBalance.Set(totalRplBalance)
 		}
 		return err
 	})
 	wg.Go(func() error {
 		allottedRplBalance, err := auction.GetAllottedRPLBalance(rp, nil)
 		if err == nil {
-			response.AllottedRPLBalance = allottedRplBalance
+			response.AllottedRPLBalance.Set(allottedRplBalance)
 		}
 		return err
 	})
 	wg.Go(func() error {
 		remainingRplBalance, err := auction.GetRemainingRPLBalance(rp, nil)
 		if err == nil {
-			response.RemainingRPLBalance = remainingRplBalance
+			response.RemainingRPLBalance.Set(remainingRplBalance)
 		}
 		return err
 	})

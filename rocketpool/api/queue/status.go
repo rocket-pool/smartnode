@@ -29,9 +29,12 @@ func getStatus(c *cli.Context) (*api.QueueStatusResponse, error) {
 
 	// Get deposit pool balance
 	wg.Go(func() error {
-		var err error
-		response.DepositPoolBalance, err = deposit.GetBalance(rp, nil)
-		return err
+		depositPoolBalance, err := deposit.GetBalance(rp, nil)
+		if err != nil {
+			return err
+		}
+		response.DepositPoolBalance.Set(depositPoolBalance)
+		return nil
 	})
 
 	// Get minipool queue length
@@ -43,9 +46,12 @@ func getStatus(c *cli.Context) (*api.QueueStatusResponse, error) {
 
 	// Get minipool queue capacity
 	wg.Go(func() error {
-		var err error
-		response.MinipoolQueueCapacity, err = minipool.GetQueueTotalCapacity(rp, nil)
-		return err
+		minipoolQueueCapacity, err := minipool.GetQueueTotalCapacity(rp, nil)
+		if err != nil {
+			return err
+		}
+		response.MinipoolQueueCapacity.Set(minipoolQueueCapacity)
+		return nil
 	})
 
 	// Wait for data
