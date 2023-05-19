@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -367,6 +368,14 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// Calculate the rewardable RPL
+	reductionWindowStart := state.NetworkDetails.BondReductionWindowStart
+	reductionWindowLength := state.NetworkDetails.BondReductionWindowLength
+	reductionWindowEnd := reductionWindowStart + reductionWindowLength
+
+	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := time.Duration(state.BeaconSlotNumber*state.BeaconConfig.SecondsPerSlot) * time.Second
+	blockTime := genesisTime.Add(secondsSinceGenesis)
+
 	zero := big.NewInt(0)
 	pendingBorrowedEth := big.NewInt(0)
 	pendingBondedEth := big.NewInt(0)
@@ -377,7 +386,11 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		bonded := big.NewInt(0)
 		delta := big.NewInt(0)
 
-		if mpd.ReduceBondTime.Cmp(zero) == 0 {
+		reduceBondTime := time.Unix(mpd.ReduceBondTime.Int64(), 0)
+		timeSinceReductionStart := blockTime.Sub(reduceBondTime)
+		if mpd.ReduceBondTime.Cmp(zero) == 0 ||
+			mpd.ReduceBondCancelled ||
+			timeSinceReductionStart > reductionWindowEnd {
 			// No pending bond reduction
 			borrowed = mpd.UserDepositBalance
 			bonded = mpd.NodeDepositBalance
