@@ -330,8 +330,19 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 				response.PendingEffectiveRplStake.Set(pendingTrueMaximumStake)
 			}
 
-			response.PendingBondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / eth.WeiToEth(pendingEligibleBondedEth)
-			response.PendingBorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / eth.WeiToEth(pendingEligibleBorrowedEth)
+			pendingEligibleBondedEthFloat := eth.WeiToEth(pendingEligibleBondedEth)
+			if pendingEligibleBondedEthFloat == 0 {
+				response.PendingBondedCollateralRatio = 0
+			} else {
+				response.PendingBondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / pendingEligibleBondedEthFloat
+			}
+
+			pendingEligibleBorrowedEthFloat := eth.WeiToEth(pendingEligibleBorrowedEth)
+			if pendingEligibleBorrowedEthFloat == 0 {
+				response.PendingBorrowedCollateralRatio = 0
+			} else {
+				response.PendingBorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / pendingEligibleBorrowedEthFloat
+			}
 		} else {
 			// Legacy behavior
 			response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools) * 16.0)
