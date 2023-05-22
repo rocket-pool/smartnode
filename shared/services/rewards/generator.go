@@ -24,12 +24,14 @@ const (
 	MainnetV3Interval uint64 = 5
 	MainnetV4Interval uint64 = 6
 	MainnetV5Interval uint64 = 8
+	MainnetV6Interval uint64 = TestingInterval
 
 	// Prater intervals
 	PraterV2Interval uint64 = 37
 	PraterV3Interval uint64 = 49
 	PraterV4Interval uint64 = 60
 	PraterV5Interval uint64 = 76
+	PraterV6Interval uint64 = TestingInterval
 )
 
 type TreeGenerator struct {
@@ -55,7 +57,7 @@ type treeGeneratorImpl interface {
 	getRulesetVersion() uint64
 }
 
-func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) (*TreeGenerator, error) {
+func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
 	t := &TreeGenerator{
 		logger:           logger,
 		logPrefix:        logPrefix,
@@ -73,6 +75,11 @@ func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.R
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
+			rewardsRulesetVersion: 6,
+			mainnetStartInterval:  MainnetV6Interval,
+			praterStartInterval:   PraterV6Interval,
+			generator:             newTreeGeneratorImpl_v6(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord),
+		}, {
 			rewardsRulesetVersion: 5,
 			mainnetStartInterval:  MainnetV5Interval,
 			praterStartInterval:   PraterV5Interval,
