@@ -36,7 +36,6 @@ type treeGeneratorImpl_v6 struct {
 	cfg                    *config.RocketPoolConfig
 	bc                     beacon.Client
 	opts                   *bind.CallOpts
-	nodeDetails            []*NodeSmoothingDetails
 	smoothingPoolBalance   *big.Int
 	smoothingPoolAddress   common.Address
 	intervalDutiesInfo     *IntervalDutiesInfo
@@ -562,7 +561,7 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 
 					// Make up an attestation
 					details := r.networkState.MinipoolDetailsByAddress[minipool.Address]
-					bond, fee := r.getMinipoolBondAndNodeFee(details, r.elEndTime)
+					bond, fee := getMinipoolBondAndNodeFee(details, r.elEndTime)
 					minipoolScore := big.NewInt(0).Sub(one, fee)   // 1 - fee
 					minipoolScore.Mul(minipoolScore, bond)         // Multiply by bond
 					minipoolScore.Div(minipoolScore, validatorReq) // Divide by 32 to get the bond as a fraction of a total validator

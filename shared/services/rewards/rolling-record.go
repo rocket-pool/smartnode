@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -40,7 +39,6 @@ type RollingRecord struct {
 	cheatingNodes      map[common.Address]bool
 
 	// Constants for convenience
-	zero         *big.Int
 	one          *big.Int
 	validatorReq *big.Int
 }
@@ -66,7 +64,6 @@ func NewRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, s
 		},
 		cheatingNodes: map[common.Address]bool{},
 
-		zero:         big.NewInt(0),
 		one:          eth.EthToWei(1),
 		validatorReq: eth.EthToWei(32),
 	}
@@ -373,7 +370,7 @@ func (r *RollingRecord) processAttestationsInSlot(attestations []beacon.Attestat
 
 						// Get the pseudoscore for this attestation
 						details := state.MinipoolDetailsByAddress[validator.Address]
-						bond, fee := r.getMinipoolBondAndNodeFee(details, blockTime)
+						bond, fee := getMinipoolBondAndNodeFee(details, blockTime)
 						minipoolScore := big.NewInt(0).Sub(r.one, fee)   // 1 - fee
 						minipoolScore.Mul(minipoolScore, bond)           // Multiply by bond
 						minipoolScore.Div(minipoolScore, r.validatorReq) // Divide by 32 to get the bond as a fraction of a total validator
@@ -388,30 +385,4 @@ func (r *RollingRecord) processAttestationsInSlot(attestations []beacon.Attestat
 		}
 	}
 
-}
-
-// Get the bond and node fee of a minipool for the specified time
-func (r *RollingRecord) getMinipoolBondAndNodeFee(details *rpstate.NativeMinipoolDetails, blockTime time.Time) (*big.Int, *big.Int) {
-	currentBond := details.NodeDepositBalance
-	currentFee := details.NodeFee
-	previousBond := details.LastBondReductionPrevValue
-	previousFee := details.LastBondReductionPrevNodeFee
-
-	var reductionTimeBig *big.Int = details.LastBondReductionTime
-	if reductionTimeBig.Cmp(r.zero) == 0 {
-		// Never reduced
-		return currentBond, currentFee
-	} else {
-		reductionTime := time.Unix(reductionTimeBig.Int64(), 0)
-		if reductionTime.Sub(blockTime) > 0 {
-			// This block occurred before the reduction
-			if previousFee.Cmp(r.zero) == 0 {
-				// Catch for minipools that were created before this call existed
-				return previousBond, currentFee
-			}
-			return previousBond, previousFee
-		}
-	}
-
-	return currentBond, currentFee
 }
