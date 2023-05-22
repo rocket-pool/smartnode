@@ -382,9 +382,11 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	rewardableBorrowedEth := big.NewInt(0)
 	rewardableBondedEth := big.NewInt(0)
 	for _, mpd := range minipools {
-		borrowed := big.NewInt(0)
+		if mpd.Finalised {
+			// Ignore finalized minipools in the ratio math
+			continue
+		}
 		bonded := big.NewInt(0)
-		delta := big.NewInt(0)
 
 		reduceBondTime := time.Unix(mpd.ReduceBondTime.Int64(), 0)
 		timeSinceReductionStart := blockTime.Sub(reduceBondTime)
@@ -392,16 +394,12 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			mpd.ReduceBondCancelled ||
 			timeSinceReductionStart > reductionWindowEnd {
 			// No pending bond reduction
-			borrowed = mpd.UserDepositBalance
 			bonded = mpd.NodeDepositBalance
 		} else {
 			// Pending bond reducton
-			delta.Sub(mpd.NodeDepositBalance, mpd.ReduceBondValue)
-			borrowed.Set(mpd.UserDepositBalance)
-			borrowed.Add(borrowed, delta)
-			bonded.Set(mpd.NodeDepositBalance)
-			bonded.Sub(bonded, delta)
+			bonded.Set(mpd.ReduceBondValue)
 		}
+		borrowed := big.NewInt(0).Sub(eth.EthToWei(32), bonded)
 		pendingBorrowedEth.Add(pendingBorrowedEth, borrowed)
 		pendingBondedEth.Add(pendingBondedEth, bonded)
 

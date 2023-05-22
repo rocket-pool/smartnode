@@ -350,6 +350,14 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		}
 	} else {
 		response.BorrowedCollateralRatio = -1
+		response.BondedCollateralRatio = -1
+		response.PendingEffectiveRplStake = big.NewInt(0)
+		response.PendingMinimumRplStake = big.NewInt(0)
+		response.PendingMaximumRplStake = big.NewInt(0)
+		response.MinimumRplStake = big.NewInt(0)
+		response.MaximumRplStake = big.NewInt(0)
+		response.PendingBondedCollateralRatio = -1
+		response.PendingBorrowedCollateralRatio = -1
 	}
 
 	// Return response
