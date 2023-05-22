@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -26,6 +27,7 @@ type RollingRecord struct {
 	// Private fields
 	bc                 beacon.Client
 	beaconConfig       *beacon.Eth2Config
+	genesisTime        time.Time
 	updateLock         *sync.Mutex
 	isRunning          bool
 	wg                 *sync.WaitGroup
@@ -48,6 +50,7 @@ func NewRollingRecord(bc beacon.Client, startSlot uint64, beaconConfig *beacon.E
 
 		bc:                bc,
 		beaconConfig:      beaconConfig,
+		genesisTime:       time.Unix(int64(beaconConfig.GenesisTime), 0),
 		updateLock:        &sync.Mutex{},
 		isRunning:         false,
 		wg:                nil,
@@ -113,7 +116,7 @@ func (r *RollingRecord) UpdateToState(state *state.NetworkState, processAttestat
 
 			// Ignore duties from the final epoch if requested
 			if epoch == stateEpoch && processAttestationsOnly {
-				err := r.getDutiesForEpoch(epoch)
+				err := r.getDutiesForEpoch(epoch, state)
 				if err != nil {
 					r.UpdateError = fmt.Errorf("error getting duties for epoch %d: %w", epoch, err)
 					return
@@ -209,7 +212,7 @@ func (r *RollingRecord) flagCheaters(state *state.NetworkState) {
 }
 
 // Get the attestation duties for the given epoch
-func (r *RollingRecord) getDutiesForEpoch(epoch uint64) error {
+func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkState) error {
 
 	// Get the attestation committees for the epoch
 	committees, err := r.bc.GetCommitteesForEpoch(&epoch)
@@ -226,17 +229,37 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64) error {
 			// Ignore slots that are out of bounds
 			continue
 		}
+		blockTime := r.genesisTime.Add(time.Second * time.Duration(r.beaconConfig.SecondsPerSlot*slotIndex))
 		committeeIndex := committees.Index(idx)
 
 		// Check if there are any RP validators in this committee
 		rpValidators := map[int]*MinipoolInfo{}
 		for position, validator := range committees.Validators(idx) {
 			mpInfo, exists := r.validatorIndexMap[validator]
-			if exists && !r.cheatingNodes[mpInfo.NodeAddress] {
-				// If it's an RP validator and the node isn't a cheater, this can be counted
-				rpValidators[position] = mpInfo
-				mpInfo.MissingAttestationSlots[slotIndex] = true
+			if !exists || r.cheatingNodes[mpInfo.NodeAddress] {
+				// This isn't an RP validator or the node is a cheater, so ignore it
+				continue
 			}
+
+			// Check if this minipool was opted into the SP for this block
+			nodeDetails := state.NodeDetailsByAddress[mpInfo.NodeAddress]
+			isOptedIn := nodeDetails.SmoothingPoolRegistrationState
+			spRegistrationTime := time.Unix(nodeDetails.SmoothingPoolRegistrationChanged.Int64(), 0)
+			if (isOptedIn && blockTime.Sub(spRegistrationTime) < 0) || // If this block occurred before the node opted in, ignore it
+				(!isOptedIn && spRegistrationTime.Sub(blockTime) < 0) { // If this block occurred after the node opted out, ignore it
+				continue
+			}
+
+			// Check if this minipool was in the `staking` state during this time
+			mpd := state.MinipoolDetailsByAddress[mpInfo.Address]
+			statusChangeTime := time.Unix(mpd.StatusTime.Int64(), 0)
+			if mpd.Status != types.Staking || blockTime.Sub(statusChangeTime) < 0 {
+				continue
+			}
+
+			// This was a legal RP validator opted into the SP during this slot so add it
+			rpValidators[position] = mpInfo
+			mpInfo.MissingAttestationSlots[slotIndex] = true
 		}
 
 		// If there are some RP validators, add this committee to the map
@@ -303,12 +326,12 @@ func (r *RollingRecord) processAttestationsInSlot(attestations []beacon.Attestat
 		if exists {
 			rpCommittee, exists := slotInfo.Committees[attestation.CommitteeIndex]
 			if exists {
-				blockTime := time.Unix(int64(r.beaconConfig.GenesisTime), 0).Add(time.Second * time.Duration(r.beaconConfig.SecondsPerSlot*attestation.SlotIndex))
+				blockTime := r.genesisTime.Add(time.Second * time.Duration(r.beaconConfig.SecondsPerSlot*attestation.SlotIndex))
 
 				// Check if each RP validator attested successfully
 				for position, validator := range rpCommittee.Positions {
 					if attestation.AggregationBits.BitAt(uint64(position)) {
-						// This was seen, so remove it from the missing attestations and add it to the completed ones
+						// This was seen, so remove it from the missing attestations
 						delete(rpCommittee.Positions, position)
 						if len(rpCommittee.Positions) == 0 {
 							delete(slotInfo.Committees, attestation.CommitteeIndex)
@@ -316,18 +339,7 @@ func (r *RollingRecord) processAttestationsInSlot(attestations []beacon.Attestat
 						if len(slotInfo.Committees) == 0 {
 							delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
 						}
-						validator.CompletedAttestations[attestation.SlotIndex] = true
 						delete(validator.MissingAttestationSlots, attestation.SlotIndex)
-
-						// Check if this minipool was opted into the SP for this block
-						nodeDetails := state.NodeDetailsByAddress[validator.NodeAddress]
-						isOptedIn := nodeDetails.SmoothingPoolRegistrationState
-						statusChangeTime := time.Unix(nodeDetails.SmoothingPoolRegistrationChanged.Int64(), 0)
-						if (isOptedIn && blockTime.Sub(statusChangeTime) < 0) || // If this block occurred before the node opted in, ignore it
-							(!isOptedIn && statusChangeTime.Sub(blockTime) < 0) { // If this block occurred after the node opted out, ignore it
-							// Not opted in
-							continue
-						}
 
 						// Get the pseudoscore for this attestation
 						details := state.MinipoolDetailsByAddress[validator.Address]
