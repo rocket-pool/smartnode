@@ -49,23 +49,32 @@ func getStatus(c *cli.Context) (*api.FaucetStatusResponse, error) {
 
 	// Get faucet balance
 	wg.Go(func() error {
-		var err error
-		response.Balance, err = f.GetBalance(nil)
-		return err
+		balance, err := f.GetBalance(nil)
+		if err != nil {
+			return err
+		}
+		response.Balance.Set(balance)
+		return nil
 	})
 
 	// Get allowance
 	wg.Go(func() error {
-		var err error
-		response.Allowance, err = f.GetAllowanceFor(nil, nodeAccount.Address)
-		return err
+		allowance, err := f.GetAllowanceFor(nil, nodeAccount.Address)
+		if err != nil {
+			return err
+		}
+		response.Allowance.Set(allowance)
+		return nil
 	})
 
 	// Get withdrawal fee
 	wg.Go(func() error {
-		var err error
-		response.WithdrawalFee, err = f.WithdrawalFee(nil)
-		return err
+		withdrawalFee, err := f.WithdrawalFee(nil)
+		if err != nil {
+			return err
+		}
+		response.WithdrawalFee.Set(withdrawalFee)
+		return nil
 	})
 
 	// Get current withdrawal period start block
@@ -101,10 +110,10 @@ func getStatus(c *cli.Context) (*api.FaucetStatusResponse, error) {
 	}
 
 	// Get withdrawable amount
-	if response.Balance.Cmp(response.Allowance) > 0 {
-		response.WithdrawableAmount = response.Allowance
+	if response.Balance.Cmp(&response.Allowance) > 0 {
+		response.WithdrawableAmount.Set(&response.Allowance)
 	} else {
-		response.WithdrawableAmount = response.Balance
+		response.WithdrawableAmount.Set(&response.Balance)
 	}
 
 	// Get reset block

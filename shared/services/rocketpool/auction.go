@@ -21,15 +21,6 @@ func (c *Client) AuctionStatus() (api.AuctionStatusResponse, error) {
 	if response.Error != "" {
 		return api.AuctionStatusResponse{}, fmt.Errorf("Could not get auction status: %s", response.Error)
 	}
-	if response.TotalRPLBalance == nil {
-		response.TotalRPLBalance = big.NewInt(0)
-	}
-	if response.AllottedRPLBalance == nil {
-		response.AllottedRPLBalance = big.NewInt(0)
-	}
-	if response.RemainingRPLBalance == nil {
-		response.RemainingRPLBalance = big.NewInt(0)
-	}
 	return response, nil
 }
 

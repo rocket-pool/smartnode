@@ -95,7 +95,7 @@ func distribute(c *cli.Context) error {
 		return err
 	}
 
-	balance := eth.WeiToEth(canDistributeResponse.Balance)
+	balance := eth.WeiToEth(&canDistributeResponse.Balance)
 	if balance == 0 {
 		fmt.Printf("Your fee distributor does not have any ETH.")
 		return nil

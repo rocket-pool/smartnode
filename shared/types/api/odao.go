@@ -287,14 +287,14 @@ type ProposeTNDAOSettingBondReductionWindowLengthResponse struct {
 }
 
 type GetTNDAOMemberSettingsResponse struct {
-	Status              string   `json:"status"`
-	Error               string   `json:"error"`
-	Quorum              float64  `json:"quorum"`
-	RPLBond             *big.Int `json:"rplBond"`
-	MinipoolUnbondedMax uint64   `json:"minipoolUnbondedMax"`
-	ChallengeCooldown   uint64   `json:"challengeCooldown"`
-	ChallengeWindow     uint64   `json:"challengeWindow"`
-	ChallengeCost       *big.Int `json:"challengeCost"`
+	Status              string  `json:"status"`
+	Error               string  `json:"error"`
+	Quorum              float64 `json:"quorum"`
+	RPLBond             big.Int `json:"rplBond"`
+	MinipoolUnbondedMax uint64  `json:"minipoolUnbondedMax"`
+	ChallengeCooldown   uint64  `json:"challengeCooldown"`
+	ChallengeWindow     uint64  `json:"challengeWindow"`
+	ChallengeCost       big.Int `json:"challengeCost"`
 }
 type GetTNDAOProposalSettingsResponse struct {
 	Status        string `json:"status"`

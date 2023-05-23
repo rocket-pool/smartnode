@@ -46,12 +46,6 @@ func (c *Client) MinipoolStatus() (api.MinipoolStatusResponse, error) {
 		if mp.Balances.FixedSupplyRPL == nil {
 			mp.Balances.FixedSupplyRPL = big.NewInt(0)
 		}
-		if mp.Validator.Balance == nil {
-			mp.Validator.Balance = big.NewInt(0)
-		}
-		if mp.Validator.NodeBalance == nil {
-			mp.Validator.NodeBalance = big.NewInt(0)
-		}
 	}
 	return response, nil
 }

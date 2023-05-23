@@ -2,7 +2,6 @@ package rocketpool
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/goccy/go-json"
 
@@ -21,12 +20,6 @@ func (c *Client) QueueStatus() (api.QueueStatusResponse, error) {
 	}
 	if response.Error != "" {
 		return api.QueueStatusResponse{}, fmt.Errorf("Could not get queue status: %s", response.Error)
-	}
-	if response.DepositPoolBalance == nil {
-		response.DepositPoolBalance = big.NewInt(0)
-	}
-	if response.MinipoolQueueCapacity == nil {
-		response.MinipoolQueueCapacity = big.NewInt(0)
 	}
 	return response, nil
 }

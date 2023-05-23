@@ -152,9 +152,6 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	var details api.MinipoolCloseDetails
 	details.Address = mp.GetAddress()
 	details.MinipoolVersion = mp.GetVersion()
-	details.Balance = big.NewInt(0)
-	details.Refund = big.NewInt(0)
-	details.NodeShare = big.NewInt(0)
 
 	// Ignore minipools that are too old
 	if details.MinipoolVersion < 3 {
@@ -165,19 +162,19 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	// Get the balance / share info and status details
 	var wg1 errgroup.Group
 	wg1.Go(func() error {
-		var err error
-		details.Balance, err = rp.Client.BalanceAt(context.Background(), minipoolAddress, nil)
+		balance, err := rp.Client.BalanceAt(context.Background(), minipoolAddress, nil)
 		if err != nil {
 			return fmt.Errorf("error getting finalized status of minipool %s: %w", minipoolAddress.Hex(), err)
 		}
+		details.Balance.Set(balance)
 		return nil
 	})
 	wg1.Go(func() error {
-		var err error
-		details.Refund, err = mp.GetNodeRefundBalance(nil)
+		refund, err := mp.GetNodeRefundBalance(nil)
 		if err != nil {
 			return fmt.Errorf("error getting refund balance of minipool %s: %w", mp.GetAddress().Hex(), err)
 		}
+		details.Refund.Set(refund)
 		return nil
 	})
 	wg1.Go(func() error {
@@ -197,11 +194,11 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		return nil
 	})
 	wg1.Go(func() error {
-		var err error
-		details.UserDepositBalance, err = mp.GetUserDepositBalance(nil)
+		userDepositBalance, err := mp.GetUserDepositBalance(nil)
 		if err != nil {
 			return fmt.Errorf("error getting user deposit balance of minipool %s: %w", minipoolAddress.Hex(), err)
 		}
+		details.UserDepositBalance.Set(userDepositBalance)
 		return nil
 	})
 
@@ -216,14 +213,14 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	}
 
 	// Make sure it's in a closeable state
-	effectiveBalance := big.NewInt(0).Sub(details.Balance, details.Refund)
+	effectiveBalance := big.NewInt(0).Sub(&details.Balance, &details.Refund)
 	switch details.MinipoolStatus {
 	case types.Dissolved:
 		details.CanClose = true
 
 	case types.Staking, types.Withdrawable:
 		// Ignore minipools with a balance lower than the refund
-		if details.Balance.Cmp(details.Refund) == -1 {
+		if details.Balance.Cmp(&details.Refund) == -1 {
 			details.CanClose = false
 			return details, nil
 		}
@@ -257,11 +254,11 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 			// Create another wait group
 			var wg2 errgroup.Group
 			wg2.Go(func() error {
-				var err error
-				details.NodeShare, err = mp.CalculateNodeShare(effectiveBalance, nil)
+				nodeShare, err := mp.CalculateNodeShare(effectiveBalance, nil)
 				if err != nil {
 					return fmt.Errorf("error getting node share of minipool %s: %w", mp.GetAddress().Hex(), err)
 				}
+				details.NodeShare.Set(nodeShare)
 				return nil
 			})
 			wg2.Go(func() error {

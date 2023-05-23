@@ -41,8 +41,8 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 		// Set amount to maximum withdrawable amount
 		var maxAmount big.Int
-		if status.RplStake.Cmp(status.MinimumRplStake) > 0 {
-			maxAmount.Sub(status.RplStake, status.MinimumRplStake)
+		if status.RplStake.Cmp(&status.MinimumRplStake) > 0 {
+			maxAmount.Sub(&status.RplStake, &status.MinimumRplStake)
 		}
 		amountWei = &maxAmount
 
@@ -65,7 +65,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 		// Get maximum withdrawable amount
 		var maxAmount big.Int
-		maxAmount.Sub(status.RplStake, status.MaximumRplStake)
+		maxAmount.Sub(&status.RplStake, &status.MaximumRplStake)
 		if maxAmount.Sign() == 1 {
 			// Prompt for maximum amount
 			if cliutils.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {
@@ -83,8 +83,8 @@ func nodeWithdrawRpl(c *cli.Context) error {
 			}
 		} else {
 			fmt.Printf("Cannot withdraw staked RPL - you have %.6f RPL staked, but are not allowed to withdraw below %.6f RPL (150%% collateral).\n",
-				math.RoundDown(eth.WeiToEth(status.RplStake), 6),
-				math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
+				math.RoundDown(eth.WeiToEth(&status.RplStake), 6),
+				math.RoundDown(eth.WeiToEth(&status.MaximumRplStake), 6))
 			return nil
 		}
 

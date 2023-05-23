@@ -131,7 +131,7 @@ func rescueDissolved(c *cli.Context) error {
 
 		for mi, minipool := range rescuableMinipools {
 			localRescueAmount := big.NewInt(0)
-			localRescueAmount.Sub(fullDepositAmount, minipool.BeaconBalance)
+			localRescueAmount.Sub(fullDepositAmount, &minipool.BeaconBalance)
 			rescueAmounts[mi] = localRescueAmount
 			rescueAmountFloats[mi] = math.RoundDown(eth.WeiToEth(localRescueAmount), 6)
 			options[mi] = fmt.Sprintf("%s (requires %.6f more ETH)", minipool.Address.Hex(), rescueAmountFloats[mi])
@@ -151,7 +151,7 @@ func rescueDissolved(c *cli.Context) error {
 			if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
 				selectedMinipool = &rescuableMinipools[i]
 				rescueAmount = big.NewInt(0)
-				rescueAmount.Sub(fullDepositAmount, selectedMinipool.BeaconBalance)
+				rescueAmount.Sub(fullDepositAmount, &selectedMinipool.BeaconBalance)
 				rescueAmountFloat = math.RoundDown(eth.WeiToEth(rescueAmount), 6)
 				break
 			}

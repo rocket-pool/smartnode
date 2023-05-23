@@ -138,7 +138,7 @@ func allowanceRpl(c *cli.Context) (*api.NodeStakeRplAllowanceResponse, error) {
 		return nil, err
 	}
 
-	response.Allowance = allowance
+	response.Allowance.Set(allowance)
 
 	return &response, nil
 }

@@ -273,14 +273,13 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	}
 
 	// Get node share of balance
-	if details.Balances.ETH.Cmp(details.Node.RefundBalance) == -1 {
-		details.NodeShareOfETHBalance = big.NewInt(0)
-	} else {
+	if details.Balances.ETH.Cmp(details.Node.RefundBalance) != -1 {
 		effectiveBalance := big.NewInt(0).Sub(details.Balances.ETH, details.Node.RefundBalance)
-		details.NodeShareOfETHBalance, err = mp.CalculateNodeShare(effectiveBalance, nil)
+		nodeShareOfETHBalance, err := mp.CalculateNodeShare(effectiveBalance, nil)
 		if err != nil {
 			return api.MinipoolDetails{}, fmt.Errorf("error calculating node share: %w", err)
 		}
+		details.NodeShareOfETHBalance.Set(nodeShareOfETHBalance)
 	}
 
 	// Get validator details if staking
@@ -325,15 +324,13 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.
 
 	// use deposit balances if validator not activated
 	if !validatorActivated {
-		details.Balance = new(big.Int)
 		details.Balance.Add(minipoolDetails.Node.DepositBalance, minipoolDetails.User.DepositBalance)
-		details.NodeBalance = new(big.Int)
 		details.NodeBalance.Set(minipoolDetails.Node.DepositBalance)
 		return details, nil
 	}
 
 	// Set validator balance
-	details.Balance = eth.GweiToWei(float64(validator.Balance))
+	details.Balance.Set(eth.GweiToWei(float64(validator.Balance)))
 
 	// Get expected node balance
 	blockBalance := eth.GweiToWei(float64(validator.Balance))
@@ -341,7 +338,7 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.
 	if err != nil {
 		return api.ValidatorDetails{}, err
 	}
-	details.NodeBalance = nodeBalance
+	details.NodeBalance.Set(nodeBalance)
 
 	// Return
 	return details, nil

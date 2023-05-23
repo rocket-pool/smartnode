@@ -32,10 +32,11 @@ func getNodeEthBalance(c *cli.Context) (*api.NodeEthBalanceResponse, error) {
 		return nil, err
 	}
 
-	response.Balance, err = ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
+	balance, err := ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting ETH balance of node %s: %w", nodeAccount.Address.Hex(), err)
 	}
+	response.Balance.Set(balance)
 
 	return &response, nil
 }

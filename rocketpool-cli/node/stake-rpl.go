@@ -41,7 +41,7 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 
 	// Check for fixed-supply RPL balance
-	rplBalance := *(status.AccountBalances.RPL)
+	rplBalance := big.NewInt(0).Set(status.AccountBalances.RPL)
 	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 
 		// Confirm swapping RPL
@@ -165,7 +165,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		amountWei = rplPrice.MinPer8EthMinipoolRplStake
+		amountWei = big.NewInt(0).Set((&rplPrice.MinPer8EthMinipoolRplStake))
 
 	} else if c.String("amount") == "max8" {
 
@@ -174,7 +174,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		amountWei = rplPrice.MaxPer8EthMinipoolRplStake
+		amountWei = big.NewInt(0).Set(&rplPrice.MaxPer8EthMinipoolRplStake)
 
 	} else if c.String("amount") == "min16" {
 
@@ -183,7 +183,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		amountWei = rplPrice.MinPer16EthMinipoolRplStake
+		amountWei = big.NewInt(0).Set(&rplPrice.MinPer16EthMinipoolRplStake)
 
 	} else if c.String("amount") == "max16" {
 
@@ -192,12 +192,12 @@ func nodeStakeRpl(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		amountWei = rplPrice.MaxPer16EthMinipoolRplStake
+		amountWei = big.NewInt(0).Set(&rplPrice.MaxPer16EthMinipoolRplStake)
 
 	} else if c.String("amount") == "all" {
 
 		// Set amount to node's entire RPL balance
-		amountWei = &rplBalance
+		amountWei = rplBalance
 
 	} else if c.String("amount") != "" {
 
@@ -215,10 +215,10 @@ func nodeStakeRpl(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		minAmount8 := rplPrice.MinPer8EthMinipoolRplStake
-		maxAmount8 := rplPrice.MaxPer8EthMinipoolRplStake
-		minAmount16 := rplPrice.MinPer16EthMinipoolRplStake
-		maxAmount16 := rplPrice.MaxPer16EthMinipoolRplStake
+		minAmount8 := &rplPrice.MinPer8EthMinipoolRplStake
+		maxAmount8 := &rplPrice.MaxPer8EthMinipoolRplStake
+		minAmount16 := &rplPrice.MinPer16EthMinipoolRplStake
+		maxAmount16 := &rplPrice.MaxPer16EthMinipoolRplStake
 
 		// Prompt for amount option
 		amountOptions := []string{
@@ -226,7 +226,7 @@ func nodeStakeRpl(c *cli.Context) error {
 			fmt.Sprintf("The maximum minipool stake amount for an 8-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(maxAmount8), 6)),
 			fmt.Sprintf("The minimum minipool stake amount for a 16-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount16), 6)),
 			fmt.Sprintf("The maximum minipool stake amount for a 16-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(maxAmount16), 6)),
-			fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&rplBalance), 6)),
+			fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(rplBalance), 6)),
 			"A custom amount",
 		}
 		selected, _ := cliutils.Select("Please choose an amount of RPL to stake:", amountOptions)
@@ -240,7 +240,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		case 3:
 			amountWei = maxAmount16
 		case 4:
-			amountWei = &rplBalance
+			amountWei = rplBalance
 		}
 
 		// Prompt for custom amount

@@ -104,29 +104,44 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 	var wg errgroup.Group
 
 	wg.Go(func() error {
-		var err error
-		response.RplStake, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
-		return err
+		rplStake, err := node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return err
+		}
+		response.RplStake.Set(rplStake)
+		return nil
 	})
 	wg.Go(func() error {
-		var err error
-		response.RplPrice, err = network.GetRPLPrice(rp, nil)
-		return err
+		rplPrice, err := network.GetRPLPrice(rp, nil)
+		if err != nil {
+			return err
+		}
+		response.RplPrice.Set(rplPrice)
+		return nil
 	})
 	wg.Go(func() error {
-		var err error
-		response.MinimumRplStake, err = node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
-		return err
+		minimumRplStake, err := node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return err
+		}
+		response.MinimumRplStake.Set(minimumRplStake)
+		return nil
 	})
 	wg.Go(func() error {
-		var err error
-		response.MaximumRplStake, err = node.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
-		return err
+		maximumRplStake, err := node.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return err
+		}
+		response.MaximumRplStake.Set(maximumRplStake)
+		return nil
 	})
 	wg.Go(func() error {
-		var err error
-		response.EffectiveRplStake, err = node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
-		return err
+		effectiveRplStake, err := node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return err
+		}
+		response.EffectiveRplStake.Set(effectiveRplStake)
+		return nil
 	})
 
 	// Wait for data
@@ -149,9 +164,14 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 			return err
 		})
 		wg2.Go(func() error {
-			var err error
-			response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
-			return err
+			ethMatched, ethMatchedLimit, pendingMatchAmount, err := rputils.CheckCollateral(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return err
+			}
+			response.EthMatched.Set(ethMatched)
+			response.EthMatchedLimit.Set(ethMatchedLimit)
+			response.PendingMatchAmount.Set(pendingMatchAmount)
+			return nil
 		})
 
 		// Wait for data
@@ -160,20 +180,20 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		}
 
 		// Calculate the *real* minimum, including the pending bond reductions
-		trueMinimumStake := big.NewInt(0).Add(response.EthMatched, response.PendingMatchAmount)
+		trueMinimumStake := big.NewInt(0).Add(&response.EthMatched, &response.PendingMatchAmount)
 		trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
-		trueMinimumStake.Div(trueMinimumStake, response.RplPrice)
+		trueMinimumStake.Div(trueMinimumStake, &response.RplPrice)
 
 		// Calculate the *real* maximum, including the pending bond reductions
 		trueMaximumStake := eth.EthToWei(32)
 		trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(activeMinipools)))
-		trueMaximumStake.Sub(trueMaximumStake, response.EthMatched)
-		trueMaximumStake.Sub(trueMaximumStake, response.PendingMatchAmount) // (32 * activeMinipools - ethMatched - pendingMatch)
+		trueMaximumStake.Sub(trueMaximumStake, &response.EthMatched)
+		trueMaximumStake.Sub(trueMaximumStake, &response.PendingMatchAmount) // (32 * activeMinipools - ethMatched - pendingMatch)
 		trueMaximumStake.Mul(trueMaximumStake, maxStakeFraction)
-		trueMaximumStake.Div(trueMaximumStake, response.RplPrice)
+		trueMaximumStake.Div(trueMaximumStake, &response.RplPrice)
 
-		response.MinimumRplStake = trueMinimumStake
-		response.MaximumRplStake = trueMaximumStake
+		response.MinimumRplStake.Set(trueMinimumStake)
+		response.MaximumRplStake.Set(trueMaximumStake)
 
 		if response.EffectiveRplStake.Cmp(trueMinimumStake) < 0 {
 			response.EffectiveRplStake.SetUint64(0)
@@ -181,8 +201,8 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 			response.EffectiveRplStake.Set(trueMaximumStake)
 		}
 
-		response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthMatched) - eth.WeiToEth(response.PendingMatchAmount))
-		response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthMatched) + eth.WeiToEth(response.PendingMatchAmount))
+		response.BondedCollateralRatio = eth.WeiToEth(&response.RplPrice) * eth.WeiToEth(&response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(&response.EthMatched) - eth.WeiToEth(&response.PendingMatchAmount))
+		response.BorrowedCollateralRatio = eth.WeiToEth(&response.RplPrice) * eth.WeiToEth(&response.RplStake) / (eth.WeiToEth(&response.EthMatched) + eth.WeiToEth(&response.PendingMatchAmount))
 	} else {
 		response.BorrowedCollateralRatio = -1
 	}

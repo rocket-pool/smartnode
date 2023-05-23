@@ -107,7 +107,6 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 	var details api.MinipoolRescueDissolvedDetails
 	details.Address = mp.GetAddress()
 	details.MinipoolVersion = mp.GetVersion()
-	details.BeaconBalance = big.NewInt(0)
 
 	// Ignore minipools that are too old
 	if details.MinipoolVersion < 3 {
@@ -170,7 +169,7 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 		return details, nil
 	}
 	beaconBalanceGwei := big.NewInt(0).SetUint64(beaconStatus.Balance)
-	details.BeaconBalance = big.NewInt(0).Mul(beaconBalanceGwei, big.NewInt(1e9))
+	details.BeaconBalance.Set(big.NewInt(0).Mul(beaconBalanceGwei, big.NewInt(1e9)))
 
 	// Make sure it doesn't already have 32 ETH in it
 	requiredBalance := eth.EthToWei(32)
@@ -183,7 +182,7 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 	details.CanRescue = true
 
 	// Get the simulated deposit TX
-	remainingAmount := big.NewInt(0).Sub(requiredBalance, details.BeaconBalance)
+	remainingAmount := big.NewInt(0).Sub(requiredBalance, &details.BeaconBalance)
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return api.MinipoolRescueDissolvedDetails{}, err

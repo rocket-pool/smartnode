@@ -811,12 +811,6 @@ func (c *Client) GetTNDAOMemberSettings() (api.GetTNDAOMemberSettingsResponse, e
 	if response.Error != "" {
 		return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %s", response.Error)
 	}
-	if response.RPLBond == nil {
-		response.RPLBond = big.NewInt(0)
-	}
-	if response.ChallengeCost == nil {
-		response.ChallengeCost = big.NewInt(0)
-	}
 	return response, nil
 }
 

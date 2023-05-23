@@ -65,9 +65,6 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 				address := addresses[mi]
 				minipoolDetails := &details[mi]
 				minipoolDetails.Address = address
-				minipoolDetails.Balance = big.NewInt(0)
-				minipoolDetails.Refund = big.NewInt(0)
-				minipoolDetails.NodeShareOfBalance = big.NewInt(0)
 				mp, err := minipool.NewMinipool(rp, address, nil)
 				if err != nil {
 					return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
@@ -82,19 +79,19 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 
 				var wg2 errgroup.Group
 				wg2.Go(func() error {
-					var err error
-					minipoolDetails.Balance, err = rp.Client.BalanceAt(context.Background(), address, nil)
+					balance, err := rp.Client.BalanceAt(context.Background(), address, nil)
 					if err != nil {
 						return fmt.Errorf("error getting balance of minipool %s: %w", address.Hex(), err)
 					}
+					minipoolDetails.Balance.Set(balance)
 					return nil
 				})
 				wg2.Go(func() error {
-					var err error
-					minipoolDetails.Refund, err = mp.GetNodeRefundBalance(nil)
+					refund, err := mp.GetNodeRefundBalance(nil)
 					if err != nil {
 						return fmt.Errorf("error getting refund balance of minipool %s: %w", address.Hex(), err)
 					}
+					minipoolDetails.Refund.Set(refund)
 					return nil
 				})
 				wg2.Go(func() error {
@@ -134,13 +131,13 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 				// Handle staking minipools
 				if minipoolDetails.Status == types.Staking {
 					// Ignore minipools with a balance lower than the refund
-					if minipoolDetails.Balance.Cmp(minipoolDetails.Refund) == -1 {
+					if minipoolDetails.Balance.Cmp(&minipoolDetails.Refund) == -1 {
 						minipoolDetails.CanDistribute = false
 						return nil
 					}
 
 					// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
-					distributableBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
+					distributableBalance := big.NewInt(0).Sub(&minipoolDetails.Balance, &minipoolDetails.Refund)
 					eight := eth.EthToWei(8)
 					if distributableBalance.Cmp(eight) >= 0 {
 						minipoolDetails.CanDistribute = false
@@ -148,10 +145,11 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 					}
 
 					// Get the node share of the balance
-					minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(distributableBalance, nil)
+					nodeShareOfBalance, err := mp.CalculateNodeShare(distributableBalance, nil)
 					if err != nil {
 						return fmt.Errorf("error calculating node share for minipool %s: %w", address.Hex(), err)
 					}
+					minipoolDetails.NodeShareOfBalance.Set(nodeShareOfBalance)
 				} else if minipoolDetails.Status == types.Dissolved {
 					// Dissolved but non-finalized / non-closed minipools can just have the whole balance sent back to the NO
 					minipoolDetails.NodeShareOfBalance = minipoolDetails.Balance

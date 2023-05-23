@@ -222,7 +222,7 @@ func GetSmoothingPoolBalance(rp *rocketpoolapi.RocketPool, ec *services.Executio
 	if err != nil {
 		return nil, err
 	}
-	response.EthBalance = balanceWei
+	response.EthBalance.Set(balanceWei)
 
 	return &response, nil
 }

@@ -95,7 +95,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	wg1.Go(func() error {
 		ethBalanceWei, err := node.GetNodeDepositCredit(rp, nodeAccount.Address, nil)
 		if err == nil {
-			response.CreditBalance = ethBalanceWei
+			response.CreditBalance.Set(ethBalanceWei)
 		}
 		return err
 	})
@@ -104,7 +104,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	wg1.Go(func() error {
 		ethBalanceWei, err := ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
 		if err == nil {
-			response.NodeBalance = ethBalanceWei
+			response.NodeBalance.Set(ethBalanceWei)
 		}
 		return err
 	})
@@ -140,11 +140,11 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	}
 
 	// Check for insufficient balance
-	totalBalance := big.NewInt(0).Add(response.NodeBalance, response.CreditBalance)
+	totalBalance := big.NewInt(0).Add(&response.NodeBalance, &response.CreditBalance)
 	response.InsufficientBalance = (amountWei.Cmp(totalBalance) > 0)
 
 	// Check if the credit balance can be used
-	response.DepositBalance = depositPoolBalance
+	response.DepositBalance.Set(depositPoolBalance)
 	response.CanUseCredit = (depositPoolBalance.Cmp(eth.EthToWei(1)) >= 0)
 
 	// Check data
@@ -179,7 +179,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 	// Get how much credit to use
 	if response.CanUseCredit {
-		remainingAmount := big.NewInt(0).Sub(amountWei, response.CreditBalance)
+		remainingAmount := big.NewInt(0).Sub(amountWei, &response.CreditBalance)
 		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
 			// Send the remaining amount if the credit isn't enough to cover the whole deposit
 			opts.Value = remainingAmount

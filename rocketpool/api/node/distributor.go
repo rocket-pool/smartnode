@@ -173,9 +173,12 @@ func canDistribute(c *cli.Context) (*api.NodeCanDistributeResponse, error) {
 
 	// Get the contract's balance
 	wg.Go(func() error {
-		var err error
-		response.Balance, err = rp.Client.BalanceAt(context.Background(), distributorAddress, nil)
-		return err
+		balance, err := rp.Client.BalanceAt(context.Background(), distributorAddress, nil)
+		if err != nil {
+			return err
+		}
+		response.Balance.Set(balance)
+		return nil
 	})
 
 	// Get the node's average fee
