@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -367,28 +368,38 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// Calculate the rewardable RPL
+	reductionWindowStart := state.NetworkDetails.BondReductionWindowStart
+	reductionWindowLength := state.NetworkDetails.BondReductionWindowLength
+	reductionWindowEnd := reductionWindowStart + reductionWindowLength
+
+	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := time.Duration(state.BeaconSlotNumber*state.BeaconConfig.SecondsPerSlot) * time.Second
+	blockTime := genesisTime.Add(secondsSinceGenesis)
+
 	zero := big.NewInt(0)
 	pendingBorrowedEth := big.NewInt(0)
 	pendingBondedEth := big.NewInt(0)
 	rewardableBorrowedEth := big.NewInt(0)
 	rewardableBondedEth := big.NewInt(0)
 	for _, mpd := range minipools {
-		borrowed := big.NewInt(0)
+		if mpd.Finalised {
+			// Ignore finalized minipools in the ratio math
+			continue
+		}
 		bonded := big.NewInt(0)
-		delta := big.NewInt(0)
 
-		if mpd.ReduceBondTime.Cmp(zero) == 0 {
+		reduceBondTime := time.Unix(mpd.ReduceBondTime.Int64(), 0)
+		timeSinceReductionStart := blockTime.Sub(reduceBondTime)
+		if mpd.ReduceBondTime.Cmp(zero) == 0 ||
+			mpd.ReduceBondCancelled ||
+			timeSinceReductionStart > reductionWindowEnd {
 			// No pending bond reduction
-			borrowed = mpd.UserDepositBalance
 			bonded = mpd.NodeDepositBalance
 		} else {
 			// Pending bond reducton
-			delta.Sub(mpd.NodeDepositBalance, mpd.ReduceBondValue)
-			borrowed.Set(mpd.UserDepositBalance)
-			borrowed.Add(borrowed, delta)
-			bonded.Set(mpd.NodeDepositBalance)
-			bonded.Sub(bonded, delta)
+			bonded.Set(mpd.ReduceBondValue)
 		}
+		borrowed := big.NewInt(0).Sub(eth.EthToWei(32), bonded)
 		pendingBorrowedEth.Add(pendingBorrowedEth, borrowed)
 		pendingBondedEth.Add(pendingBondedEth, bonded)
 
@@ -440,7 +451,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// Calculate the RPL APR
-	rplApr := estimatedRewards / stakedRpl / rewardsInterval.Hours() * (24 * 365) * 100
+	rplApr := float64(0)
+	if stakedRpl > 0 {
+		rplApr = estimatedRewards / stakedRpl / rewardsInterval.Hours() * (24 * 365) * 100
+	}
 
 	// Calculate the total deposits and corresponding beacon chain balance share
 	opts := &bind.CallOpts{
@@ -470,8 +484,21 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// RPL collateral
-	bondedCollateralRatio := rplPrice * stakedRpl / eth.WeiToEth(pendingBondedEth)
-	borrowedCollateralRatio := rplPrice * stakedRpl / eth.WeiToEth(pendingBorrowedEth)
+	pendingBondedEthFloat := eth.WeiToEth(pendingBondedEth)
+	var bondedCollateralRatio float64
+	if pendingBondedEthFloat == 0 {
+		bondedCollateralRatio = 0
+	} else {
+		bondedCollateralRatio = rplPrice * stakedRpl / pendingBondedEthFloat
+	}
+
+	pendingBorrowedEthFloat := eth.WeiToEth(pendingBorrowedEth)
+	var borrowedCollateralRatio float64
+	if pendingBorrowedEthFloat == 0 {
+		borrowedCollateralRatio = 0
+	} else {
+		borrowedCollateralRatio = rplPrice * stakedRpl / pendingBorrowedEthFloat
+	}
 
 	// Update all the metrics
 	channel <- prometheus.MustNewConstMetric(

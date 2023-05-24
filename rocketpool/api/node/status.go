@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -312,10 +313,27 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.PendingEffectiveRplStake.Set(pendingTrueMaximumStake)
 		}
 
-		response.PendingBondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / eth.WeiToEth(pendingEligibleBondedEth)
-		response.PendingBorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / eth.WeiToEth(pendingEligibleBorrowedEth)
+		pendingEligibleBondedEthFloat := eth.WeiToEth(pendingEligibleBondedEth)
+		if pendingEligibleBondedEthFloat == 0 {
+			response.PendingBondedCollateralRatio = 0
+		} else {
+			response.PendingBondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / pendingEligibleBondedEthFloat
+		}
+
+		pendingEligibleBorrowedEthFloat := eth.WeiToEth(pendingEligibleBorrowedEth)
+		if pendingEligibleBorrowedEthFloat == 0 {
+			response.PendingBorrowedCollateralRatio = 0
+		} else {
+			response.PendingBorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / pendingEligibleBorrowedEthFloat
+		}
 	} else {
 		response.BorrowedCollateralRatio = -1
+		response.BondedCollateralRatio = -1
+		response.PendingEffectiveRplStake = big.NewInt(0)
+		response.PendingMinimumRplStake = big.NewInt(0)
+		response.PendingMaximumRplStake = big.NewInt(0)
+		response.PendingBondedCollateralRatio = -1
+		response.PendingBorrowedCollateralRatio = -1
 	}
 
 	// Return response
@@ -342,8 +360,38 @@ func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, no
 	pendingNodeDeposits := make([]*big.Int, len(mpDetails))
 	pendingUserDeposits := make([]*big.Int, len(mpDetails))
 
+	latestBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("error getting latest block header: %w", err)
+	}
+	blockTime := time.Unix(int64(latestBlockHeader.Time), 0)
+	var reductionWindowStart uint64
+	var reductionWindowLength uint64
+
+	// Data
+	var wg1 errgroup.Group
+
+	wg1.Go(func() error {
+		var err error
+		reductionWindowStart, err = tnsettings.GetBondReductionWindowStart(rp, nil)
+		return err
+	})
+	wg1.Go(func() error {
+		var err error
+		reductionWindowLength, err = tnsettings.GetBondReductionWindowLength(rp, nil)
+		return err
+	})
+
+	// Wait for data
+	if err = wg1.Wait(); err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	reductionWindowEnd := time.Duration(reductionWindowStart+reductionWindowLength) * time.Second
+
 	// Data
 	var wg errgroup.Group
+	zeroTime := time.Unix(0, 0)
 
 	for i, mpd := range mpDetails {
 		if !mpd.Exists {
@@ -381,8 +429,16 @@ func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, no
 				return fmt.Errorf("error getting bond reduction time for minipool %s: %w", address.Hex(), err)
 			}
 
+			reduceBondCancelled, err := minipool.GetReduceBondCancelled(rp, address, nil)
+			if err != nil {
+				return fmt.Errorf("error getting bond reduction cancel status for minipool %s: %w", address.Hex(), err)
+			}
+
 			// Ignore minipools that don't have a bond reduction pending
-			if reduceBondTime == time.Unix(0, 0) {
+			timeSinceReductionStart := blockTime.Sub(reduceBondTime)
+			if reduceBondTime == zeroTime ||
+				reduceBondCancelled ||
+				timeSinceReductionStart > reductionWindowEnd {
 				pendingNodeDeposits[i] = nodeDeposit
 				pendingUserDeposits[i] = userDeposit
 				return nil

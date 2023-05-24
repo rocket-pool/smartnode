@@ -3,12 +3,19 @@ package api
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"reflect"
 
 	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+func ZeroIfNil(in **big.Int) {
+	if *in == nil {
+		*in = big.NewInt(0)
+	}
+}
 
 // Print an API response
 // response must be a pointer to a struct type with Error and Status string fields

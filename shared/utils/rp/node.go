@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"golang.org/x/sync/errgroup"
@@ -71,9 +72,39 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 		return
 	}
 
+	latestBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("error getting latest block header: %w", err)
+	}
+	blockTime := time.Unix(int64(latestBlockHeader.Time), 0)
+	var reductionWindowStart uint64
+	var reductionWindowLength uint64
+
+	// Data
+	var wg1 errgroup.Group
+
+	wg1.Go(func() error {
+		var err error
+		reductionWindowStart, err = tnsettings.GetBondReductionWindowStart(rp, nil)
+		return err
+	})
+	wg1.Go(func() error {
+		var err error
+		reductionWindowLength, err = tnsettings.GetBondReductionWindowLength(rp, nil)
+		return err
+	})
+
+	// Wait for data
+	if err = wg1.Wait(); err != nil {
+		return nil, nil, nil, err
+	}
+
+	reductionWindowEnd := time.Duration(reductionWindowStart+reductionWindowLength) * time.Second
+
 	// Data
 	var wg errgroup.Group
 	deltas := make([]*big.Int, len(addresses))
+	zeroTime := time.Unix(0, 0)
 
 	wg.Go(func() error {
 		var err error
@@ -100,8 +131,16 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 				return fmt.Errorf("error getting bond reduction time for minipool %s: %w", address.Hex(), err)
 			}
 
+			reduceBondCancelled, err := minipool.GetReduceBondCancelled(rp, address, nil)
+			if err != nil {
+				return fmt.Errorf("error getting bond reduction cancel status for minipool %s: %w", address.Hex(), err)
+			}
+
 			// Ignore minipools that don't have a bond reduction pending
-			if reduceBondTime == time.Unix(0, 0) {
+			timeSinceReductionStart := blockTime.Sub(reduceBondTime)
+			if reduceBondTime == zeroTime ||
+				reduceBondCancelled ||
+				timeSinceReductionStart > reductionWindowEnd {
 				deltas[i] = big.NewInt(0)
 				return nil
 			}
