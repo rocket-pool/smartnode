@@ -451,7 +451,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// Calculate the RPL APR
-	rplApr := estimatedRewards / stakedRpl / rewardsInterval.Hours() * (24 * 365) * 100
+	rplApr := float64(0)
+	if stakedRpl > 0 {
+		rplApr = estimatedRewards / stakedRpl / rewardsInterval.Hours() * (24 * 365) * 100
+	}
 
 	// Calculate the total deposits and corresponding beacon chain balance share
 	opts := &bind.CallOpts{
