@@ -167,8 +167,9 @@ func (r *RollingRecord) WaitForUpdate() {
 }
 
 // Get the minipool scores, along with the cumulative total score and count
-func (r *RollingRecord) GetScores(state *state.NetworkState) (map[string]*MinipoolInfo, *big.Int, uint64) {
+func (r *RollingRecord) GetScores() (map[string]*MinipoolInfo, *big.Int, uint64) {
 
+	// TODO: return a new slice of minipool infos that ignores all cheaters
 	totalScore := big.NewInt(0)
 	totalCount := uint64(0)
 	for _, mpInfo := range r.validatorIndexMap {
@@ -178,7 +179,7 @@ func (r *RollingRecord) GetScores(state *state.NetworkState) (map[string]*Minipo
 		}
 
 		totalScore.Add(totalScore, mpInfo.AttestationScore)
-		totalCount += mpInfo.AttestationCount
+		totalCount += uint64(mpInfo.AttestationCount)
 	}
 
 	return r.validatorIndexMap, totalScore, totalCount

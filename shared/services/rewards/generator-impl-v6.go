@@ -15,7 +15,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -27,31 +26,28 @@ import (
 
 // Implementation for tree generator ruleset v6
 type treeGeneratorImpl_v6 struct {
-	networkState           *state.NetworkState
-	rewardsFile            *RewardsFile
-	elSnapshotHeader       *types.Header
-	log                    log.ColorLogger
-	logPrefix              string
-	rp                     *rocketpool.RocketPool
-	cfg                    *config.RocketPoolConfig
-	bc                     beacon.Client
-	opts                   *bind.CallOpts
-	smoothingPoolBalance   *big.Int
-	smoothingPoolAddress   common.Address
-	intervalDutiesInfo     *IntervalDutiesInfo
-	slotsPerEpoch          uint64
-	validatorIndexMap      map[string]*MinipoolInfo
-	elStartTime            time.Time
-	elEndTime              time.Time
-	validNetworkCache      map[uint64]bool
-	epsilon                *big.Int
-	intervalSeconds        *big.Int
-	beaconConfig           beacon.Eth2Config
-	validatorStatusMap     map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
-	totalAttestationScore  *big.Int
-	successfulAttestations uint64
-	zero                   *big.Int
-	rollingRecord          *RollingRecord
+	networkState         *state.NetworkState
+	rewardsFile          *RewardsFile
+	elSnapshotHeader     *types.Header
+	log                  log.ColorLogger
+	logPrefix            string
+	rp                   *rocketpool.RocketPool
+	cfg                  *config.RocketPoolConfig
+	bc                   beacon.Client
+	opts                 *bind.CallOpts
+	smoothingPoolBalance *big.Int
+	smoothingPoolAddress common.Address
+	intervalDutiesInfo   *IntervalDutiesInfo
+	slotsPerEpoch        uint64
+	validatorIndexMap    map[string]*MinipoolInfo
+	elStartTime          time.Time
+	elEndTime            time.Time
+	validNetworkCache    map[uint64]bool
+	epsilon              *big.Int
+	intervalSeconds      *big.Int
+	beaconConfig         beacon.Eth2Config
+	zero                 *big.Int
+	rollingRecord        *RollingRecord
 }
 
 // Create a new tree generator
@@ -87,14 +83,12 @@ func newTreeGeneratorImpl_v6(log log.ColorLogger, logPrefix string, index uint64
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance{},
 			},
 		},
-		validatorStatusMap:    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
-		validatorIndexMap:     map[string]*MinipoolInfo{},
-		elSnapshotHeader:      elSnapshotHeader,
-		log:                   log,
-		logPrefix:             logPrefix,
-		totalAttestationScore: big.NewInt(0),
-		networkState:          state,
-		rollingRecord:         rollingRecord,
+		validatorIndexMap: map[string]*MinipoolInfo{},
+		elSnapshotHeader:  elSnapshotHeader,
+		log:               log,
+		logPrefix:         logPrefix,
+		networkState:      state,
+		rollingRecord:     rollingRecord,
 	}
 }
 
@@ -543,39 +537,6 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 		Index: r.rewardsFile.Index,
 		Slots: map[uint64]*SlotInfo{},
 	}
-	if checkBeaconPerformance {
-		err = r.processAttestationsForInterval()
-		if err != nil {
-			return err
-		}
-	} else {
-		// Attestation processing is disabled, just give each minipool 1 good attestation and complete slot activity so they're all scored the same
-		// Used for approximating rETH's share during balances calculation
-		one := eth.EthToWei(1)
-		validatorReq := eth.EthToWei(32)
-		for _, nodeInfo := range r.nodeDetails {
-			// Check if the node is currently opted in for simplicity
-			if nodeInfo.IsEligible && nodeInfo.IsOptedIn && r.elEndTime.Sub(nodeInfo.OptInTime) > 0 {
-				for _, minipool := range nodeInfo.Minipools {
-					minipool.CompletedAttestations = map[uint64]bool{0: true}
-
-					// Make up an attestation
-					details := r.networkState.MinipoolDetailsByAddress[minipool.Address]
-					bond, fee := getMinipoolBondAndNodeFee(details, r.elEndTime)
-					minipoolScore := big.NewInt(0).Sub(one, fee)   // 1 - fee
-					minipoolScore.Mul(minipoolScore, bond)         // Multiply by bond
-					minipoolScore.Div(minipoolScore, validatorReq) // Divide by 32 to get the bond as a fraction of a total validator
-					minipoolScore.Add(minipoolScore, fee)          // Total = fee + (bond/32)(1 - fee)
-
-					// Add it to the minipool's score and the total score
-					minipool.AttestationScore.Add(minipool.AttestationScore, minipoolScore)
-					r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
-
-					r.successfulAttestations++
-				}
-			}
-		}
-	}
 
 	// Determine how much ETH each node gets and how much the pool stakers get
 	poolStakerETH, nodeOpEth, err := r.calculateNodeRewards()
@@ -656,37 +617,48 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 // Calculate the distribution of Smoothing Pool ETH to each node
 func (r *treeGeneratorImpl_v6) calculateNodeRewards() (*big.Int, *big.Int, error) {
 
+	// Get the latest scores from the rolling record
+	minipools, totalScore, attestationCount := r.rollingRecord.GetScores()
+
 	// If there weren't any successful attestations, everything goes to the pool stakers
-	if r.totalAttestationScore.Cmp(r.zero) == 0 || r.successfulAttestations == 0 {
-		r.log.Printlnf("WARNING: Total attestation score = %s, successful attestations = %d... sending the whole smoothing pool balance to the pool stakers.", r.totalAttestationScore.String(), r.successfulAttestations)
+	if totalScore.Cmp(r.zero) == 0 || attestationCount == 0 {
+		r.log.Printlnf("WARNING: Total attestation score = %s, successful attestations = %d... sending the whole smoothing pool balance to the pool stakers.", totalScore.String(), attestationCount)
 		return r.smoothingPoolBalance, big.NewInt(0), nil
 	}
 
 	totalEthForMinipools := big.NewInt(0)
 	totalNodeOpShare := big.NewInt(0)
-	totalNodeOpShare.Mul(r.smoothingPoolBalance, r.totalAttestationScore)
-	totalNodeOpShare.Div(totalNodeOpShare, big.NewInt(int64(r.successfulAttestations)))
+	totalNodeOpShare.Mul(r.smoothingPoolBalance, totalScore)
+	totalNodeOpShare.Div(totalNodeOpShare, big.NewInt(int64(attestationCount)))
 	totalNodeOpShare.Div(totalNodeOpShare, eth.EthToWei(1))
 
-	for _, nodeInfo := range r.nodeDetails {
-		nodeInfo.SmoothingPoolEth = big.NewInt(0)
-		if nodeInfo.IsEligible {
-			for _, minipool := range nodeInfo.Minipools {
-				if len(minipool.CompletedAttestations)+len(minipool.MissingAttestationSlots) == 0 || !minipool.WasActive {
-					// Ignore minipools that weren't active for the interval
-					minipool.WasActive = false
-					minipool.MinipoolShare = big.NewInt(0)
-					continue
-				}
-
-				minipoolEth := big.NewInt(0).Set(totalNodeOpShare)
-				minipoolEth.Mul(minipoolEth, minipool.AttestationScore)
-				minipoolEth.Div(minipoolEth, r.totalAttestationScore)
-				minipool.MinipoolShare = minipoolEth
-				nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, minipoolEth)
-			}
+	nodeAmounts := map[common.Address]*big.Int{}
+	for _, minipool := range minipools {
+		// Get the node amount
+		nodeAmount, exists := nodeAmounts[minipool.NodeAddress]
+		if !exists {
+			nodeAmount = big.NewInt(0)
+			nodeAmounts[minipool.Address] = nodeAmount
 		}
-		totalEthForMinipools.Add(totalEthForMinipools, nodeInfo.SmoothingPoolEth)
+
+		if minipool.AttestationCount+len(minipool.MissingAttestationSlots) == 0 || !minipool.WasActive {
+			// Ignore minipools that weren't active for the interval
+			minipool.WasActive = false
+			minipool.MinipoolShare = big.NewInt(0)
+			continue
+		}
+
+		// Add the minipool's score to the total node score
+		minipoolEth := big.NewInt(0).Set(totalNodeOpShare)
+		minipoolEth.Mul(minipoolEth, minipool.AttestationScore)
+		minipoolEth.Div(minipoolEth, totalScore)
+		minipool.MinipoolShare = minipoolEth
+		nodeAmount.Add(nodeAmount, minipoolEth)
+	}
+
+	// Add the node amounts to the total
+	for _, nodeAmount := range nodeAmounts {
+		totalEthForMinipools.Add(totalEthForMinipools, nodeAmount)
 	}
 
 	// This is how much actually goes to the pool stakers - it should ideally be equal to poolStakerShare but this accounts for any cumulative floating point errors
