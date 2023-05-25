@@ -167,7 +167,9 @@ func (r *RollingRecord) WaitForUpdate() {
 }
 
 // Get the minipool scores, along with the cumulative total score and count
-func (r *RollingRecord) GetScores() (map[string]*MinipoolInfo, *big.Int, uint64) {
+func (r *RollingRecord) GetScores() ([]*MinipoolInfo, *big.Int, uint64) {
+	// Create a slice of minipools with legal (non-cheater) scores
+	minipoolInfos := make([]*MinipoolInfo, 0, len(r.validatorIndexMap))
 
 	// TODO: return a new slice of minipool infos that ignores all cheaters
 	totalScore := big.NewInt(0)
@@ -180,9 +182,10 @@ func (r *RollingRecord) GetScores() (map[string]*MinipoolInfo, *big.Int, uint64)
 
 		totalScore.Add(totalScore, mpInfo.AttestationScore)
 		totalCount += uint64(mpInfo.AttestationCount)
+		minipoolInfos = append(minipoolInfos, mpInfo)
 	}
 
-	return r.validatorIndexMap, totalScore, totalCount
+	return minipoolInfos, totalScore, totalCount
 }
 
 // Update the validator index map with any new validators on Beacon

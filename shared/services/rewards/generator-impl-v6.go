@@ -48,6 +48,7 @@ type treeGeneratorImpl_v6 struct {
 	beaconConfig         beacon.Eth2Config
 	zero                 *big.Int
 	rollingRecord        *RollingRecord
+	nodeDetails          map[common.Address]*NodeSmoothingDetails
 }
 
 // Create a new tree generator
@@ -545,9 +546,9 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 	}
 
 	// Update the rewards maps
-	for _, nodeInfo := range r.nodeDetails {
-		if nodeInfo.IsEligible && nodeInfo.SmoothingPoolEth.Cmp(r.zero) > 0 {
-			rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeInfo.Address]
+	for nodeAddress, nodeInfo := range r.nodeDetails {
+		if nodeInfo.SmoothingPoolEth.Cmp(r.zero) > 0 {
+			rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeAddress]
 			if !exists {
 				network := nodeInfo.RewardsNetwork
 				validNetwork, err := r.validateNetwork(network)
@@ -555,7 +556,7 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[nodeInfo.Address] = network
+					r.rewardsFile.InvalidNetworkNodes[nodeAddress] = network
 					network = 0
 				}
 
@@ -565,10 +566,9 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 					OracleDaoRpl:     NewQuotedBigInt(0),
 					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
-				r.rewardsFile.NodeRewards[nodeInfo.Address] = rewardsForNode
+				r.rewardsFile.NodeRewards[nodeAddress] = rewardsForNode
 			}
 			rewardsForNode.SmoothingPoolEth.Add(&rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
-			rewardsForNode.SmoothingPoolEligibilityRate = float64(nodeInfo.EndSlot-nodeInfo.StartSlot) / float64(r.rewardsFile.ConsensusEndBlock-r.rewardsFile.ConsensusStartBlock)
 
 			// Add minipool rewards to the JSON
 			for _, minipoolInfo := range nodeInfo.Minipools {
@@ -632,13 +632,17 @@ func (r *treeGeneratorImpl_v6) calculateNodeRewards() (*big.Int, *big.Int, error
 	totalNodeOpShare.Div(totalNodeOpShare, big.NewInt(int64(attestationCount)))
 	totalNodeOpShare.Div(totalNodeOpShare, eth.EthToWei(1))
 
-	nodeAmounts := map[common.Address]*big.Int{}
+	r.nodeDetails = map[common.Address]*NodeSmoothingDetails{}
 	for _, minipool := range minipools {
 		// Get the node amount
-		nodeAmount, exists := nodeAmounts[minipool.NodeAddress]
+		nodeInfo, exists := r.nodeDetails[minipool.NodeAddress]
 		if !exists {
-			nodeAmount = big.NewInt(0)
-			nodeAmounts[minipool.Address] = nodeAmount
+			nodeInfo = &NodeSmoothingDetails{
+				Minipools:        []*MinipoolInfo{},
+				SmoothingPoolEth: big.NewInt(0),
+				RewardsNetwork:   r.networkState.NodeDetailsByAddress[minipool.NodeAddress].RewardNetwork.Uint64(),
+			}
+			r.nodeDetails[minipool.Address] = nodeInfo
 		}
 
 		if minipool.AttestationCount+len(minipool.MissingAttestationSlots) == 0 || !minipool.WasActive {
@@ -653,12 +657,12 @@ func (r *treeGeneratorImpl_v6) calculateNodeRewards() (*big.Int, *big.Int, error
 		minipoolEth.Mul(minipoolEth, minipool.AttestationScore)
 		minipoolEth.Div(minipoolEth, totalScore)
 		minipool.MinipoolShare = minipoolEth
-		nodeAmount.Add(nodeAmount, minipoolEth)
+		nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, minipoolEth)
 	}
 
 	// Add the node amounts to the total
-	for _, nodeAmount := range nodeAmounts {
-		totalEthForMinipools.Add(totalEthForMinipools, nodeAmount)
+	for _, nodeInfo := range r.nodeDetails {
+		totalEthForMinipools.Add(totalEthForMinipools, nodeInfo.SmoothingPoolEth)
 	}
 
 	// This is how much actually goes to the pool stakers - it should ideally be equal to poolStakerShare but this accounts for any cumulative floating point errors
@@ -680,20 +684,6 @@ func (r *treeGeneratorImpl_v6) calculateNodeRewards() (*big.Int, *big.Int, error
 	r.log.Printlnf("%s Adjusting pool staker ETH to %s to account for truncation", r.logPrefix, truePoolStakerAmount.String())
 
 	return truePoolStakerAmount, totalEthForMinipools, nil
-
-}
-
-// Process all of the duties for the interval, using the rolling record for the backing data
-func (r *treeGeneratorImpl_v6) processAttestationsForInterval() error {
-
-	// TODO
-	/*
-		startEpoch := r.rewardsFile.ConsensusStartBlock / r.beaconConfig.SlotsPerEpoch
-		endEpoch := r.rewardsFile.ConsensusEndBlock / r.beaconConfig.SlotsPerEpoch
-
-		r.log.Printlnf("%s Finished participation check (total time = %s)", r.logPrefix, time.Since(reportStartTime))
-	*/
-	return nil
 
 }
 
