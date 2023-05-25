@@ -1,8 +1,10 @@
 package rewards
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
+	"os"
 	"sync"
 	"time"
 
@@ -20,28 +22,29 @@ const (
 )
 
 type RollingRecord struct {
-	StartSlot         uint64
-	LastProcessedSlot uint64
-	LastDutiesEpoch   uint64
-	UpdateError       error
+	StartSlot          uint64                   `json:"startSlot"`
+	LastProcessedSlot  uint64                   `json:"lastProcessedSlot"`
+	LastDutiesEpoch    uint64                   `json:"lastDutiesEpoch"`
+	PendingSlot        uint64                   `json:"pendingSlot"`
+	ValidatorIndexMap  map[string]*MinipoolInfo `json:"validatorIndexMap"`
+	LatestMappedIndex  int                      `json:"latestMappedIndex"`
+	IntervalDutiesInfo *IntervalDutiesInfo      `json:"intervalDutiesInfo"`
+	CheatingNodes      map[common.Address]bool  `json:"cheatingNodes"`
+	UpdateError        error                    `json:"-"`
 
 	// Private fields
-	bc                 beacon.Client
-	beaconConfig       *beacon.Eth2Config
-	genesisTime        time.Time
-	log                log.ColorLogger
-	logPrefix          string
-	updateLock         *sync.Mutex
-	isRunning          bool
-	wg                 *sync.WaitGroup
-	validatorIndexMap  map[string]*MinipoolInfo
-	latestMappedIndex  int
-	intervalDutiesInfo *IntervalDutiesInfo
-	cheatingNodes      map[common.Address]bool
+	bc           beacon.Client      `json:"-"`
+	beaconConfig *beacon.Eth2Config `json:"-"`
+	genesisTime  time.Time          `json:"-"`
+	log          log.ColorLogger    `json:"-"`
+	logPrefix    string             `json:"-"`
+	updateLock   *sync.Mutex        `json:"-"`
+	isRunning    bool               `json:"-"`
+	wg           *sync.WaitGroup    `json:"-"`
 
 	// Constants for convenience
-	one          *big.Int
-	validatorReq *big.Int
+	one          *big.Int `json:"-"`
+	validatorReq *big.Int `json:"-"`
 }
 
 // Create a new rolling record wrapper
@@ -49,6 +52,8 @@ func NewRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, s
 	return &RollingRecord{
 		StartSlot:         startSlot,
 		LastProcessedSlot: 0,
+		LastDutiesEpoch:   0,
+		PendingSlot:       0,
 
 		bc:                bc,
 		beaconConfig:      beaconConfig,
@@ -58,16 +63,51 @@ func NewRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, s
 		updateLock:        &sync.Mutex{},
 		isRunning:         false,
 		wg:                nil,
-		validatorIndexMap: map[string]*MinipoolInfo{},
-		latestMappedIndex: -1,
-		intervalDutiesInfo: &IntervalDutiesInfo{
+		ValidatorIndexMap: map[string]*MinipoolInfo{},
+		LatestMappedIndex: -1,
+		IntervalDutiesInfo: &IntervalDutiesInfo{
 			Slots: map[uint64]*SlotInfo{},
 		},
-		cheatingNodes: map[common.Address]bool{},
+		CheatingNodes: map[common.Address]bool{},
 
 		one:          eth.EthToWei(1),
 		validatorReq: eth.EthToWei(32),
 	}
+}
+
+func LoadRollingRecordFromFile(log log.ColorLogger, logPrefix string, bc beacon.Client, beaconConfig *beacon.Eth2Config, file string) (*RollingRecord, error) {
+	_, err := os.Stat(file)
+	if os.IsNotExist(err) {
+		return nil, fmt.Errorf("file [%s] doesn't exist", file)
+	} else if err != nil {
+		return nil, fmt.Errorf("error checking file [%s]: %w", file, err)
+	}
+
+	record := &RollingRecord{
+		bc:           bc,
+		beaconConfig: beaconConfig,
+		genesisTime:  time.Unix(int64(beaconConfig.GenesisTime), 0),
+		log:          log,
+		logPrefix:    logPrefix,
+		updateLock:   &sync.Mutex{},
+		isRunning:    false,
+		wg:           nil,
+
+		one:          eth.EthToWei(1),
+		validatorReq: eth.EthToWei(32),
+	}
+
+	bytes, err := os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file [%s]: %w", file, err)
+	}
+
+	err = json.Unmarshal(bytes, &record)
+	if err != nil {
+		return nil, fmt.Errorf("error deserializing file [%s]: %w", file, err)
+	}
+
+	return record, nil
 }
 
 // Update the record to the provided state. If skipDutiesForLastEpoch is true, it won't collect attestation duties for the
@@ -92,6 +132,7 @@ func (r *RollingRecord) UpdateToState(state *state.NetworkState, skipDutiesForLa
 
 	// Set up a new goroutine
 	r.isRunning = true
+	r.PendingSlot = state.BeaconSlotNumber
 	r.wg = &sync.WaitGroup{}
 	r.wg.Add(1)
 	r.updateLock.Unlock()
@@ -140,6 +181,14 @@ func (r *RollingRecord) UpdateToState(state *state.NetworkState, skipDutiesForLa
 				return
 			}
 
+			// Save it
+			err = r.saveToFile()
+			if err != nil {
+				r.UpdateError = fmt.Errorf("error saving file for epoch %d: %w", epoch, err)
+				r.log.Printlnf("%s ***ERROR*** %s", r.logPrefix, r.UpdateError.Error())
+				return
+			}
+
 			// Log
 			if epoch%100 == 0 {
 				fmt.Printf("\tProcessed up to epoch %d (%s so far)\n", epoch, time.Since(processTimer))
@@ -169,14 +218,14 @@ func (r *RollingRecord) WaitForUpdate() {
 // Get the minipool scores, along with the cumulative total score and count
 func (r *RollingRecord) GetScores() ([]*MinipoolInfo, *big.Int, uint64) {
 	// Create a slice of minipools with legal (non-cheater) scores
-	minipoolInfos := make([]*MinipoolInfo, 0, len(r.validatorIndexMap))
+	minipoolInfos := make([]*MinipoolInfo, 0, len(r.ValidatorIndexMap))
 
 	// TODO: return a new slice of minipool infos that ignores all cheaters
 	totalScore := big.NewInt(0)
 	totalCount := uint64(0)
-	for _, mpInfo := range r.validatorIndexMap {
+	for _, mpInfo := range r.ValidatorIndexMap {
 		// Ignore nodes that cheated
-		if r.cheatingNodes[mpInfo.NodeAddress] {
+		if r.CheatingNodes[mpInfo.NodeAddress] {
 			continue
 		}
 
@@ -190,7 +239,7 @@ func (r *RollingRecord) GetScores() ([]*MinipoolInfo, *big.Int, uint64) {
 
 // Update the validator index map with any new validators on Beacon
 func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
-	for i := r.latestMappedIndex + 1; i < len(state.MinipoolDetails); i++ {
+	for i := r.LatestMappedIndex + 1; i < len(state.MinipoolDetails); i++ {
 		mpd := state.MinipoolDetails[i]
 		pubkey := mpd.Pubkey
 
@@ -209,8 +258,8 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 			MissingAttestationSlots: map[uint64]bool{},
 			AttestationScore:        big.NewInt(0),
 		}
-		r.validatorIndexMap[validator.Index] = minipoolInfo
-		r.latestMappedIndex = i
+		r.ValidatorIndexMap[validator.Index] = minipoolInfo
+		r.LatestMappedIndex = i
 	}
 }
 
@@ -221,12 +270,9 @@ func (r *RollingRecord) flagCheaters(state *state.NetworkState) {
 		for _, mpd := range state.MinipoolDetailsByNode[nd.NodeAddress] {
 			if mpd.PenaltyCount.Cmp(three) >= 0 {
 				// If any minipool has 3+ penalties, ban the entire node
-				r.cheatingNodes[nd.NodeAddress] = true
+				r.CheatingNodes[nd.NodeAddress] = true
 				break
 			}
-		}
-		if r.cheatingNodes[nd.NodeAddress] {
-			continue
 		}
 	}
 }
@@ -261,8 +307,8 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkStat
 		// Check if there are any RP validators in this committee
 		rpValidators := map[int]*MinipoolInfo{}
 		for position, validator := range committees.Validators(idx) {
-			mpInfo, exists := r.validatorIndexMap[validator]
-			if !exists || r.cheatingNodes[mpInfo.NodeAddress] {
+			mpInfo, exists := r.ValidatorIndexMap[validator]
+			if !exists || r.CheatingNodes[mpInfo.NodeAddress] {
 				// This isn't an RP validator or the node is a cheater, so ignore it
 				continue
 			}
@@ -290,13 +336,13 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkStat
 
 		// If there are some RP validators, add this committee to the map
 		if len(rpValidators) > 0 {
-			slotInfo, exists := r.intervalDutiesInfo.Slots[slotIndex]
+			slotInfo, exists := r.IntervalDutiesInfo.Slots[slotIndex]
 			if !exists {
 				slotInfo = &SlotInfo{
 					Index:      slotIndex,
 					Committees: map[uint64]*CommitteeInfo{},
 				}
-				r.intervalDutiesInfo.Slots[slotIndex] = slotInfo
+				r.IntervalDutiesInfo.Slots[slotIndex] = slotInfo
 			}
 			slotInfo.Committees[committeeIndex] = &CommitteeInfo{
 				Index:     committeeIndex,
@@ -352,14 +398,16 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 	}
 
 	// Process all of the slots in the epoch
-	for _, attestations := range attestationsPerSlot {
+	for i, attestations := range attestationsPerSlot {
 		if len(attestations) > 0 {
+			// Process these attestations
 			r.processAttestationsInSlot(attestations, state)
+
+			// Set the last processed slot for future runs to check
+			slot := epoch*slotsPerEpoch + uint64(i)
+			r.LastProcessedSlot = slot
 		}
 	}
-
-	// Set the last processed slot for future runs to check
-	r.LastProcessedSlot = state.BeaconSlotNumber
 
 	return nil
 
@@ -372,7 +420,7 @@ func (r *RollingRecord) processAttestationsInSlot(attestations []beacon.Attestat
 	for _, attestation := range attestations {
 
 		// Get the RP committees for this attestation's slot and index
-		slotInfo, exists := r.intervalDutiesInfo.Slots[attestation.SlotIndex]
+		slotInfo, exists := r.IntervalDutiesInfo.Slots[attestation.SlotIndex]
 		if exists {
 			rpCommittee, exists := slotInfo.Committees[attestation.CommitteeIndex]
 			if exists {
@@ -387,7 +435,7 @@ func (r *RollingRecord) processAttestationsInSlot(attestations []beacon.Attestat
 							delete(slotInfo.Committees, attestation.CommitteeIndex)
 						}
 						if len(slotInfo.Committees) == 0 {
-							delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
+							delete(r.IntervalDutiesInfo.Slots, attestation.SlotIndex)
 						}
 						delete(validator.MissingAttestationSlots, attestation.SlotIndex)
 
@@ -408,4 +456,19 @@ func (r *RollingRecord) processAttestationsInSlot(attestations []beacon.Attestat
 		}
 	}
 
+}
+
+// Save the current record to a file
+func (r *RollingRecord) saveToFile() error {
+	bytes, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error serializing rolling record: %w", err)
+	}
+	filename := fmt.Sprintf("record-slot-%d.json", r.LastProcessedSlot)
+	err = os.WriteFile(filename, bytes, 0664)
+	if err != nil {
+		return fmt.Errorf("error writing file [%s]: %w", filename, err)
+	}
+
+	return nil
 }

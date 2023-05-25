@@ -29,6 +29,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
+const (
+	networkBalanceSubmissionKey string = "network.balances.submitted.node"
+)
+
 // Submit network balances task
 type submitNetworkBalances struct {
 	c         *cli.Context
@@ -254,7 +258,7 @@ func (t *submitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Add
 
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), blockNumberBuf))
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf))
 
 }
 
@@ -282,7 +286,7 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 	rethSupplyBuf := make([]byte, 32)
 	balances.RETHSupply.FillBytes(rethSupplyBuf)
 
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), blockNumberBuf, totalEthBuf, stakingBuf, rethSupplyBuf))
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf, totalEthBuf, stakingBuf, rethSupplyBuf))
 
 }
 
