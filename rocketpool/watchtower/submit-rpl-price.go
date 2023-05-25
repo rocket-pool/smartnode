@@ -354,18 +354,11 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			return
 		}
 
-		// Calculate the total effective RPL stake on the network
-		_, effectiveRplStake, err := state.CalculateTrueEffectiveStakes(false)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s error getting total effective RPL stake: %w", logPrefix, err))
-			return
-		}
-
 		// Log
 		t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
 
 		// Check if we have reported these specific values before
-		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice, effectiveRplStake)
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -391,7 +384,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		t.log.Println("Submitting RPL price...")
 
 		// Submit RPL price
-		if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake); err != nil {
+		if err := t.submitRplPrice(blockNumber, rplPrice); err != nil {
 			t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
 			return
 		}
@@ -426,7 +419,7 @@ func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blo
 }
 
 // Check whether specific prices for a block has already been submitted by the node
-func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice, effectiveRplStake *big.Int) (bool, error) {
+func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice *big.Int) (bool, error) {
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
 
@@ -504,7 +497,7 @@ func (t *submitRplPrice) printMessage(message string) {
 }
 
 // Submit RPL price and total effective RPL stake
-func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveRplStake *big.Int) error {
+func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) error {
 
 	// Log
 	t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
