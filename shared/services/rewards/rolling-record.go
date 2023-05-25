@@ -22,6 +22,7 @@ const (
 type RollingRecord struct {
 	StartSlot         uint64
 	LastProcessedSlot uint64
+	LastDutiesEpoch   uint64
 	UpdateError       error
 
 	// Private fields
@@ -146,7 +147,6 @@ func (r *RollingRecord) UpdateToState(state *state.NetworkState, skipDutiesForLa
 
 		}
 
-		r.LastProcessedSlot = state.BeaconSlotNumber
 		r.isRunning = false
 		fmt.Printf("\tFinished update in %s.\n", time.Since(start))
 		r.wg.Done()
@@ -234,6 +234,12 @@ func (r *RollingRecord) flagCheaters(state *state.NetworkState) {
 // Get the attestation duties for the given epoch
 func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkState) error {
 
+	if r.LastDutiesEpoch >= epoch {
+		// Already collected the duties for this epoch
+		r.log.Printlnf("%s Duties were already collected for epoch %d, skipping...", r.logPrefix, epoch)
+		return nil
+	}
+
 	// Get the attestation committees for the epoch
 	committees, err := r.bc.GetCommitteesForEpoch(&epoch)
 	if err != nil {
@@ -299,11 +305,13 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkStat
 		}
 	}
 
+	// Set the last epoch duties were collected for
+	r.LastDutiesEpoch = epoch
 	return nil
 
 }
 
-// Process the attestations proposed within the given epoch
+// Process the attestations proposed within the given epoch, stopping at the state's slot if it's not at the end of the epoch
 func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.NetworkState) error {
 
 	slotsPerEpoch := r.beaconConfig.SlotsPerEpoch
@@ -315,6 +323,14 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 	for i := uint64(0); i < slotsPerEpoch; i++ {
 		i := i
 		slot := epoch*slotsPerEpoch + i
+		if slot <= r.LastProcessedSlot {
+			// Ignore this slot if it's already been processed
+			continue
+		}
+		if slot > state.BeaconSlotNumber {
+			// Ignore this slot if it's beyond the requested slot
+			continue
+		}
 		wg.Go(func() error {
 			attestations, found, err := r.bc.GetAttestations(fmt.Sprint(slot))
 			if err != nil {
@@ -341,6 +357,9 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 			r.processAttestationsInSlot(attestations, state)
 		}
 	}
+
+	// Set the last processed slot for future runs to check
+	r.LastProcessedSlot = state.BeaconSlotNumber
 
 	return nil
 
