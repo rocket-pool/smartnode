@@ -44,10 +44,11 @@ type RollingRecordManager struct {
 	cfg                  *config.RocketPoolConfig
 	rp                   *rocketpool.RocketPool
 	bc                   beacon.Client
+	mgr                  *state.NetworkStateManager
+	nodeAddress          common.Address
+	startSlot            uint64
 	beaconCfg            beacon.Eth2Config
 	genesisTime          time.Time
-	nodeAddress          common.Address
-	mgr                  *state.NetworkStateManager
 	compressor           *zstd.Encoder
 	decompressor         *zstd.Decoder
 	recordsFilenameRegex *regexp.Regexp
@@ -96,10 +97,11 @@ func NewRollingRecordManager(log log.ColorLogger, logPrefix string, cfg *config.
 		cfg:                  cfg,
 		rp:                   rp,
 		bc:                   bc,
+		mgr:                  mgr,
+		nodeAddress:          nodeAddress,
+		startSlot:            startSlot,
 		beaconCfg:            beaconCfg,
 		genesisTime:          genesisTime,
-		nodeAddress:          nodeAddress,
-		mgr:                  mgr,
 		compressor:           encoder,
 		decompressor:         decoder,
 		recordsFilenameRegex: recordsFilenameRegex,
@@ -252,23 +254,32 @@ func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.
 	targetSlotEpoch := targetSlot / eth2Config.SlotsPerEpoch
 	targetSlot = targetSlotEpoch*eth2Config.SlotsPerEpoch + (eth2Config.SlotsPerEpoch - 1) // The target slot becomes the last one in the Epoch
 
-	// Get the first successful block
-	for {
-		// Try to get the current block
-		_, exists, err := r.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
-		if err != nil {
-			return false, 0, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
-		}
+	return true, targetSlot, nil
+}
 
-		// If the block was missing, try the previous one
-		if !exists {
-			r.log.Printlnf("Slot %d was missing, trying the previous one...", targetSlot)
-			targetSlot--
-		} else {
-			// Ok, we have the first proposed block - this is the one to use for the snapshot!
-			return true, targetSlot, nil
-		}
+// Generate a new record for the provided slot using the latest viable saved record
+func (r *RollingRecordManager) generateRecordForSlot(slot uint64) (*rewards.RollingRecord, error) {
+
+	// Create a state for the target slot
+	state, err := r.mgr.GetStateForSlot(slot)
+	if err != nil {
+		return nil, fmt.Errorf("error generating state for slot %d: %w", slot, err)
 	}
+
+	// Load the latest viable record
+	record, err := r.loadRecordFromDisk(r.startSlot, slot)
+	if err != nil {
+		return nil, fmt.Errorf("error loading best record for slot %d: %w", slot, err)
+	}
+
+	// Update the record to the target state
+	err = record.UpdateToState(state)
+	if err != nil {
+		return nil, fmt.Errorf("error updating record to slot %d: %w", slot, err)
+	}
+
+	return record, nil
+
 }
 
 // Save the rolling record to a file and update the record info catalog
