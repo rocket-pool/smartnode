@@ -1,19 +1,35 @@
 package watchtower
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"math/big"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+)
+
+const (
+	recordsFilenameFormat  string = "%d-%d.json.zst"
+	recordsFilenamePattern string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
+	checksumTableFilename  string = "checksums.sha384"
 )
 
 // Manager for RollingRecords
@@ -23,33 +39,70 @@ type RollingRecordManager struct {
 	ExpectedBalancesBlock        uint64
 	ExpectedRewardsIntervalBlock uint64
 
-	log         log.ColorLogger
-	logPrefix   string
-	rp          *rocketpool.RocketPool
-	bc          beacon.Client
-	genesisTime time.Time
-	nodeAddress common.Address
-	mgr         *state.NetworkStateManager
+	log                  log.ColorLogger
+	logPrefix            string
+	cfg                  *config.RocketPoolConfig
+	rp                   *rocketpool.RocketPool
+	bc                   beacon.Client
+	beaconCfg            beacon.Eth2Config
+	genesisTime          time.Time
+	nodeAddress          common.Address
+	mgr                  *state.NetworkStateManager
+	compressor           *zstd.Encoder
+	decompressor         *zstd.Decoder
+	recordsFilenameRegex *regexp.Regexp
 }
 
-// Creates a new manager for RollingRecords.
-func NewRollingRecordManager(log log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, nodeAddress common.Address, startSlot uint64, beaconConfig *beacon.Eth2Config) (*RollingRecordManager, error) {
-	cfg, err := bc.GetEth2Config()
+// Creates a new manager for rolling records.
+func NewRollingRecordManager(log log.ColorLogger, logPrefix string, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, nodeAddress common.Address, startSlot uint64, beaconConfig *beacon.Eth2Config) (*RollingRecordManager, error) {
+	// Get the beacon config and the genesis time
+	beaconCfg, err := bc.GetEth2Config()
 	if err != nil {
 		return nil, fmt.Errorf("error getting beacon config: %w", err)
 	}
-	genesisTime := time.Unix(int64(cfg.GenesisTime), 0)
+	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
+
+	// Create the zstd compressor and decompressor
+	encoder, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	if err != nil {
+		return nil, fmt.Errorf("error creating zstd compressor for rolling record manager: %w", err)
+	}
+	decoder, err := zstd.NewReader(nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating zstd decompressor for rolling record manager: %w", err)
+	}
+
+	// Create the records filename regex
+	recordsFilenameRegex := regexp.MustCompile(recordsFilenamePattern)
+
+	// Make the records folder if it doesn't exist
+	recordsPath := cfg.Smartnode.GetRecordsPath()
+	fileInfo, err := os.Stat(recordsPath)
+	if os.IsNotExist(err) {
+		err = os.Mkdir(recordsPath, 0644)
+		if err != nil {
+			return nil, fmt.Errorf("error creating rolling records folder: %w", err)
+		}
+	}
+	if !fileInfo.IsDir() {
+		return nil, fmt.Errorf("rolling records folder location exists (%s), but is not a folder", recordsPath)
+	}
 
 	return &RollingRecordManager{
 		Record: rewards.NewRollingRecord(log, logPrefix, bc, startSlot, beaconConfig),
 
-		log:         log,
-		logPrefix:   logPrefix,
-		rp:          rp,
-		bc:          bc,
-		genesisTime: genesisTime,
-		nodeAddress: nodeAddress,
-		mgr:         mgr,
+		log:                  log,
+		logPrefix:            logPrefix,
+		cfg:                  cfg,
+		rp:                   rp,
+		bc:                   bc,
+		beaconCfg:            beaconCfg,
+		genesisTime:          genesisTime,
+		nodeAddress:          nodeAddress,
+		mgr:                  mgr,
+		compressor:           encoder,
+		decompressor:         decoder,
+		recordsFilenameRegex: recordsFilenameRegex,
 	}, nil
 }
 
@@ -61,6 +114,9 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 	if err != nil {
 		return fmt.Errorf("error getting latest finalized block: %w", err)
 	}
+
+	// Get the epoch that slot is for
+	finalizedEpoch := latestFinalizedBlock.Slot / state.BeaconConfig.SlotsPerEpoch
 
 	// Check if a network balance update is due
 	isNetworkBalanceUpdateDue, networkBalanceSlot, err := r.isNetworkBalanceUpdateRequired(state)
@@ -213,4 +269,154 @@ func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.
 			return true, targetSlot, nil
 		}
 	}
+}
+
+// Save the rolling record to a file and update the record info catalog
+func (r *RollingRecordManager) saveRecordToFile() error {
+
+	// Serialize the record
+	bytes, err := r.Record.Serialize()
+	if err != nil {
+		return fmt.Errorf("error saving rolling record: %w", err)
+	}
+
+	// Compress the record
+	compressedBytes := r.compressor.EncodeAll(bytes, make([]byte, 0, len(bytes)))
+
+	// Get the record filename
+	slot := r.Record.LastProcessedSlot
+	epoch := r.Record.LastProcessedSlot / r.beaconCfg.SlotsPerEpoch
+	recordsPath := r.cfg.Smartnode.GetRecordsPath()
+	filename := filepath.Join(recordsPath, fmt.Sprintf(recordsFilenameFormat, slot, epoch))
+
+	// Write it to a file
+	err = os.WriteFile(filename, compressedBytes, 0664)
+	if err != nil {
+		return fmt.Errorf("error writing file [%s]: %w", filename, err)
+	}
+
+	// Compute the SHA384 hash to act as a checksum
+	checksum := sha512.Sum384(compressedBytes)
+
+	// Load the existing checksum table
+	checksumFilename := filepath.Join(recordsPath, checksumTableFilename)
+	checksumFile, err := os.OpenFile(checksumFilename, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		return fmt.Errorf("error opening checksum file: %w", err)
+	}
+	defer checksumFile.Close()
+
+	// Append and write the new checksum out to file
+	checksumLine := fmt.Sprintf("%s  %s\n", hex.EncodeToString(checksum[:]), filename)
+	checksumFile.WriteString(checksumLine)
+
+	return nil
+}
+
+// Load the most recent appropriate rolling record from disk, using the checksum table as an index
+func (r *RollingRecordManager) loadRecordFromDisk(startSlot uint64, targetSlot uint64) (*rewards.RollingRecord, error) {
+
+	// Open the checksum file
+	recordsPath := r.cfg.Smartnode.GetRecordsPath()
+	checksumFilename := filepath.Join(recordsPath, checksumTableFilename)
+	checksumTable, err := os.ReadFile(checksumFilename)
+	if err != nil {
+		return nil, fmt.Errorf("error loading checksum table (%s): %w", checksumFilename, err)
+	}
+
+	// Parse out each line
+	lines := strings.Split(string(checksumTable), "\n")
+
+	// Iterate over each file, counting backwards from the bottom
+	for i := len(lines) - 1; i >= 0; i++ {
+		line := lines[i]
+		if line == "" {
+			// Ignore blank lines
+			continue
+		}
+
+		// Extract the checksum and filename
+		elems := strings.Split(line, "  ")
+		if len(elems) != 2 {
+			return nil, fmt.Errorf("error parsing checkpoint line (%s): expected 2 elements, but got %d", line, len(elems))
+		}
+		checksumString := elems[0]
+		filename := elems[1]
+
+		// Extract the slot number for this file
+		slot, err := r.getSlotFromFilename(filename)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning checkpoint line (%s): %w", line, err)
+		}
+
+		// Check if the slot was too far into the future
+		if slot > targetSlot || slot > startSlot {
+			continue
+		}
+
+		// Make sure the checksum parses properly
+		checksum, err := hex.DecodeString(checksumString)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning checkpoint line (%s): checksum (%s) could not be parsed", line, checksumString)
+		}
+
+		// Try to load it
+		record, err := r.loadRecordFromFile(filename, checksum)
+		if err != nil {
+			return nil, fmt.Errorf("error loading record from file (%s): %w", filename, err)
+		}
+		return record, nil
+
+	}
+
+	// If we got here then none of the saved files worked so we have to make a new record
+	return rewards.NewRollingRecord(r.log, r.logPrefix, r.bc, startSlot, &r.beaconCfg), nil
+
+	// NOTE: should we clear the checksum file here and delete the old records?
+
+}
+
+// Get the slot number from a record filename
+func (r *RollingRecordManager) getSlotFromFilename(filename string) (uint64, error) {
+	matches := r.recordsFilenameRegex.FindStringSubmatch(filename)
+	if matches == nil {
+		return 0, fmt.Errorf("filename (%s) did not match the expected format", filename)
+	}
+	slotIndex := r.recordsFilenameRegex.SubexpIndex("slot")
+	if slotIndex == -1 {
+		return 0, fmt.Errorf("slot number not found in filename (%s)", filename)
+	}
+	slotString := matches[slotIndex]
+	slot, err := strconv.ParseUint(slotString, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("slot (%s) could not be parsed to a number")
+	}
+
+	return slot, nil
+}
+
+// Load a record from a file, making sure its contents match the provided checksum
+func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedChecksum []byte) (*rewards.RollingRecord, error) {
+	// Read the file
+	compressedBytes, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file: %w", filename, err)
+	}
+
+	// Calculate the hash and validate it
+	checksum := sha512.Sum384(compressedBytes)
+	if !bytes.Equal(expectedChecksum, checksum[:]) {
+		expectedString := hex.EncodeToString(expectedChecksum)
+		actualString := hex.EncodeToString(checksum[:])
+		return nil, fmt.Errorf("checksum mismatch (expected %s, but it was %s)", filename, expectedString, actualString)
+	}
+
+	// Decompress it
+	bytes, err := r.decompressor.DecodeAll(compressedBytes, []byte{})
+	if err != nil {
+		return nil, fmt.Errorf("error decompressing data: %w", err)
+	}
+
+	// Create a new record from the data
+	return rewards.DeserializeRollingRecord(r.log, r.logPrefix, r.bc, &r.beaconCfg, bytes)
 }

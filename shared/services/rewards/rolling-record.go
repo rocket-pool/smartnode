@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"os"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -24,13 +22,12 @@ const (
 type RollingRecord struct {
 	StartSlot          uint64                   `json:"startSlot"`
 	LastProcessedSlot  uint64                   `json:"lastProcessedSlot"`
-	LastDutiesEpoch    uint64                   `json:"lastDutiesEpoch"`
+	LastDutiesSlot     uint64                   `json:"lastDutiesSlot"`
 	PendingSlot        uint64                   `json:"pendingSlot"`
 	ValidatorIndexMap  map[string]*MinipoolInfo `json:"validatorIndexMap"`
 	LatestMappedIndex  int                      `json:"latestMappedIndex"`
 	IntervalDutiesInfo *IntervalDutiesInfo      `json:"intervalDutiesInfo"`
 	CheatingNodes      map[common.Address]bool  `json:"cheatingNodes"`
-	UpdateError        error                    `json:"-"`
 
 	// Private fields
 	bc           beacon.Client      `json:"-"`
@@ -38,9 +35,6 @@ type RollingRecord struct {
 	genesisTime  time.Time          `json:"-"`
 	log          log.ColorLogger    `json:"-"`
 	logPrefix    string             `json:"-"`
-	updateLock   *sync.Mutex        `json:"-"`
-	isRunning    bool               `json:"-"`
-	wg           *sync.WaitGroup    `json:"-"`
 
 	// Constants for convenience
 	one          *big.Int `json:"-"`
@@ -52,7 +46,7 @@ func NewRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, s
 	return &RollingRecord{
 		StartSlot:         startSlot,
 		LastProcessedSlot: 0,
-		LastDutiesEpoch:   0,
+		LastDutiesSlot:    0,
 		PendingSlot:       0,
 
 		bc:                bc,
@@ -60,9 +54,6 @@ func NewRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, s
 		genesisTime:       time.Unix(int64(beaconConfig.GenesisTime), 0),
 		log:               log,
 		logPrefix:         logPrefix,
-		updateLock:        &sync.Mutex{},
-		isRunning:         false,
-		wg:                nil,
 		ValidatorIndexMap: map[string]*MinipoolInfo{},
 		LatestMappedIndex: -1,
 		IntervalDutiesInfo: &IntervalDutiesInfo{
@@ -75,144 +66,73 @@ func NewRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, s
 	}
 }
 
-func LoadRollingRecordFromFile(log log.ColorLogger, logPrefix string, bc beacon.Client, beaconConfig *beacon.Eth2Config, file string) (*RollingRecord, error) {
-	_, err := os.Stat(file)
-	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("file [%s] doesn't exist", file)
-	} else if err != nil {
-		return nil, fmt.Errorf("error checking file [%s]: %w", file, err)
-	}
-
+// Load an existing record from serialized JSON data
+func DeserializeRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, beaconConfig *beacon.Eth2Config, bytes []byte) (*RollingRecord, error) {
 	record := &RollingRecord{
 		bc:           bc,
 		beaconConfig: beaconConfig,
 		genesisTime:  time.Unix(int64(beaconConfig.GenesisTime), 0),
 		log:          log,
 		logPrefix:    logPrefix,
-		updateLock:   &sync.Mutex{},
-		isRunning:    false,
-		wg:           nil,
 
 		one:          eth.EthToWei(1),
 		validatorReq: eth.EthToWei(32),
 	}
 
-	bytes, err := os.ReadFile(file)
+	err := json.Unmarshal(bytes, &record)
 	if err != nil {
-		return nil, fmt.Errorf("error reading file [%s]: %w", file, err)
-	}
-
-	err = json.Unmarshal(bytes, &record)
-	if err != nil {
-		return nil, fmt.Errorf("error deserializing file [%s]: %w", file, err)
+		return nil, fmt.Errorf("error deserializing record: %w", err)
 	}
 
 	return record, nil
 }
 
-// Update the record to the provided state. If skipDutiesForLastEpoch is true, it won't collect attestation duties for the
-// epoch represented by the provided state (but will for all prior epochs); it will just process its attestation submissions.
-// NOTE: assumes the state is the last slot of its epoch, and that it has been finalized!
-// Returns true if the update has been queued, or false if there is already an update in progress so this was ignored.
-// Use RollingRecord.UpdateError to check if something went wrong with the previous update prior to running this again;
-// otherwise calling this after an error from a previous iteration will just return that error.
-func (r *RollingRecord) UpdateToState(state *state.NetworkState, skipDutiesForLastEpoch bool) (bool, error) {
+// Update the record to the provided state. Requires the epoch for the slot represented by the state is finalized,
+// *and* the epoch *after* it is also finalized so it can accurately count attestations.
+func (r *RollingRecord) UpdateToState(state *state.NetworkState) error {
 
-	// Return if there's an update in progress
-	r.updateLock.Lock()
-	if r.isRunning {
-		r.updateLock.Unlock()
-		return false, nil
+	// Get the slot to start processing from
+	startSlot := r.LastProcessedSlot + 1
+	if r.LastProcessedSlot == 0 {
+		startSlot = r.StartSlot
 	}
+	startEpoch := startSlot / r.beaconConfig.SlotsPerEpoch
 
-	// Check the last error
-	if r.UpdateError != nil {
-		return false, r.UpdateError
-	}
+	// Get the epoch for the state
+	stateEpoch := state.BeaconSlotNumber / r.beaconConfig.SlotsPerEpoch
 
-	// Set up a new goroutine
-	r.isRunning = true
-	r.PendingSlot = state.BeaconSlotNumber
-	r.wg = &sync.WaitGroup{}
-	r.wg.Add(1)
-	r.updateLock.Unlock()
+	r.log.Printlnf("%s Updating rolling record from slot %d (epoch %d) to %d (epoch %d).", r.logPrefix, startSlot, startEpoch, state.BeaconSlotNumber, stateEpoch)
+	start := time.Now()
 
-	// Run the update logic
-	go func() {
-		// Get the epoch to start processing from
-		startEpoch := uint64(0)
-		if r.LastProcessedSlot == 0 {
-			// First starting up, so get the epoch from the start slot
-			startEpoch = r.StartSlot / r.beaconConfig.SlotsPerEpoch
-		} else {
-			startEpoch = r.LastProcessedSlot / r.beaconConfig.SlotsPerEpoch
+	// Update the validator indices and flag any cheating nodes
+	r.updateValidatorIndices(state)
+	r.flagCheaters(state)
+	r.log.Printlnf("%s Updated validator indices and cheater status in %s.", r.logPrefix, time.Since(start))
+
+	// Process every epoch from the start to the current one
+	for epoch := startEpoch; epoch <= stateEpoch; epoch++ {
+
+		// Retrieve the duties for the epoch - this won't get duties higher than the given state
+		err := r.getDutiesForEpoch(epoch, state)
+		if err != nil {
+			return fmt.Errorf("error getting duties for epoch %d: %w", epoch, err)
 		}
 
-		// Get the epoch for the state
-		stateEpoch := state.BeaconSlotNumber / r.beaconConfig.SlotsPerEpoch
-
-		r.log.Printlnf("%s Updating rolling record from epoch %d to %d.", r.logPrefix, startEpoch, stateEpoch)
-		start := time.Now()
-
-		// Update the validator indices and flag any cheating nodes
-		r.updateValidatorIndices(state)
-		r.flagCheaters(state)
-		r.log.Printlnf("%s Updated validator indices and cheater status in %s.", r.logPrefix, time.Since(start))
-
-		// Process every epoch from the start to the current one
-		processTimer := time.Now()
-		for epoch := startEpoch; epoch <= stateEpoch; epoch++ {
-
-			// Ignore duties from the final epoch if requested
-			if epoch < stateEpoch || !skipDutiesForLastEpoch {
-				err := r.getDutiesForEpoch(epoch, state)
-				if err != nil {
-					r.UpdateError = fmt.Errorf("error getting duties for epoch %d: %w", epoch, err)
-					r.log.Printlnf("%s ***ERROR*** %s", r.logPrefix, r.UpdateError.Error())
-					return
-				}
-			}
-
-			// Process the epoch's attestation submissions
-			err := r.processAttestationsInEpoch(epoch, state)
-			if err != nil {
-				r.UpdateError = fmt.Errorf("error processing attestations in epoch %d: %w", epoch, err)
-				r.log.Printlnf("%s ***ERROR*** %s", r.logPrefix, r.UpdateError.Error())
-				return
-			}
-
-			// Save it
-			err = r.saveToFile()
-			if err != nil {
-				r.UpdateError = fmt.Errorf("error saving file for epoch %d: %w", epoch, err)
-				r.log.Printlnf("%s ***ERROR*** %s", r.logPrefix, r.UpdateError.Error())
-				return
-			}
-
-			// Log
-			if epoch%100 == 0 {
-				fmt.Printf("\tProcessed up to epoch %d (%s so far)\n", epoch, time.Since(processTimer))
-			}
-
+		// Process the epoch's attestation submissions
+		err = r.processAttestationsInEpoch(epoch, state)
+		if err != nil {
+			return fmt.Errorf("error processing attestations in epoch %d: %w", epoch, err)
 		}
 
-		r.isRunning = false
-		fmt.Printf("\tFinished update in %s.\n", time.Since(start))
-		r.wg.Done()
-	}()
-
-	return true, nil
-}
-
-// Waits for the active update routine if it's running
-func (r *RollingRecord) WaitForUpdate() {
-	r.updateLock.Lock()
-	isNil := (r.wg == nil)
-	r.updateLock.Unlock()
-
-	if !isNil {
-		r.wg.Wait()
 	}
+
+	// Process the epoch after the last one to check for late attestations / attestations of the last slot
+	err := r.processAttestationsInEpoch(stateEpoch+1, state)
+	if err != nil {
+		return fmt.Errorf("error processing attestations in epoch %d: %w", stateEpoch+1, err)
+	}
+
+	return nil
 }
 
 // Get the minipool scores, along with the cumulative total score and count
@@ -235,6 +155,17 @@ func (r *RollingRecord) GetScores() ([]*MinipoolInfo, *big.Int, uint64) {
 	}
 
 	return minipoolInfos, totalScore, totalCount
+}
+
+// Serialize the current record into a byte array
+func (r *RollingRecord) Serialize() ([]byte, error) {
+	// Serialize as JSON
+	bytes, err := json.Marshal(r)
+	if err != nil {
+		return nil, fmt.Errorf("error serializing rolling record: %w", err)
+	}
+
+	return bytes, nil
 }
 
 // Update the validator index map with any new validators on Beacon
@@ -277,12 +208,14 @@ func (r *RollingRecord) flagCheaters(state *state.NetworkState) {
 	}
 }
 
-// Get the attestation duties for the given epoch
+// Get the attestation duties for the given epoch, up to (and including) the slot of the provided state
 func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkState) error {
 
-	if r.LastDutiesEpoch >= epoch {
+	lastSlotInEpoch := (epoch+1)*r.beaconConfig.SlotsPerEpoch - 1
+
+	if r.LastDutiesSlot >= lastSlotInEpoch {
 		// Already collected the duties for this epoch
-		r.log.Printlnf("%s Duties were already collected for epoch %d, skipping...", r.logPrefix, epoch)
+		r.log.Printlnf("%s All duties were already collected for epoch %d, skipping...", r.logPrefix, epoch)
 		return nil
 	}
 
@@ -294,11 +227,14 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkStat
 	defer committees.Release()
 
 	// Crawl the committees
-	lastSlot := epoch*r.beaconConfig.SlotsPerEpoch + (r.beaconConfig.SlotsPerEpoch - 1)
 	for idx := 0; idx < committees.Count(); idx++ {
 		slotIndex := committees.Slot(idx)
-		if slotIndex < r.StartSlot || slotIndex > lastSlot {
+		if slotIndex < r.StartSlot || slotIndex > state.BeaconSlotNumber {
 			// Ignore slots that are out of bounds
+			continue
+		}
+		if slotIndex <= r.LastDutiesSlot {
+			// Ignore slots that have already been processed
 			continue
 		}
 		blockTime := r.genesisTime.Add(time.Second * time.Duration(r.beaconConfig.SecondsPerSlot*slotIndex))
@@ -351,13 +287,17 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkStat
 		}
 	}
 
-	// Set the last epoch duties were collected for
-	r.LastDutiesEpoch = epoch
+	// Set the last slot duties were collected for - the minimum of the last slot in the epoch and the target state slot
+	r.LastDutiesSlot = lastSlotInEpoch
+	if state.BeaconSlotNumber < lastSlotInEpoch {
+		r.LastDutiesSlot = state.BeaconSlotNumber
+	}
 	return nil
 
 }
 
-// Process the attestations proposed within the given epoch, stopping at the state's slot if it's not at the end of the epoch
+// Process the attestations proposed within the given epoch against the existing record, using
+// the provided state for EL <-> CL mapping
 func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.NetworkState) error {
 
 	slotsPerEpoch := r.beaconConfig.SlotsPerEpoch
@@ -371,10 +311,6 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 		slot := epoch*slotsPerEpoch + i
 		if slot <= r.LastProcessedSlot {
 			// Ignore this slot if it's already been processed
-			continue
-		}
-		if slot > state.BeaconSlotNumber {
-			// Ignore this slot if it's beyond the requested slot
 			continue
 		}
 		wg.Go(func() error {
@@ -456,19 +392,4 @@ func (r *RollingRecord) processAttestationsInSlot(attestations []beacon.Attestat
 		}
 	}
 
-}
-
-// Save the current record to a file
-func (r *RollingRecord) saveToFile() error {
-	bytes, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		return fmt.Errorf("error serializing rolling record: %w", err)
-	}
-	filename := fmt.Sprintf("record-slot-%d.json", r.LastProcessedSlot)
-	err = os.WriteFile(filename, bytes, 0664)
-	if err != nil {
-		return fmt.Errorf("error writing file [%s]: %w", filename, err)
-	}
-
-	return nil
 }
