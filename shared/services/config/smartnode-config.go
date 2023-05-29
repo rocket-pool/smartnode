@@ -94,6 +94,9 @@ type SmartnodeConfig struct {
 	// The epoch to start using the new fee distributor share calculation
 	NewFeeDistributorCalcEpoch config.Parameter `yaml:"newFeeDistributorCalcEpoch,omitempty"`
 
+	// The path of the records folder where snapshots of rolling record info is stored during a rewards interval
+	RecordsPath config.Parameter `yaml:"recordsPath,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -374,6 +377,18 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade:   true,
 		},
 
+		RecordsPath: config.Parameter{
+			ID:                   "recordsPath",
+			Name:                 "Records Path",
+			Description:          "[orange]**For Oracle DAO members only.**\n\n[white]The path of the folder to store rolling record checkpoints in during a rewards interval.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: getDefaultRecordsDir(cfg)},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
 			config.Network_Prater:  "https://goerli.etherscan.io/tx",
@@ -566,6 +581,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPrioFeeOverride,
 		&cfg.NewFeeDistributorCalcEpoch,
+		&cfg.RecordsPath,
 	}
 }
 
@@ -605,6 +621,14 @@ func (cfg *SmartnodeConfig) GetValidatorKeychainPath() string {
 	}
 
 	return filepath.Join(DaemonDataPath, "validators")
+}
+
+func (cfg *SmartnodeConfig) GetRecordsPath() string {
+	if cfg.parent.IsNativeMode {
+		return filepath.Join(cfg.DataPath.Value.(string), "records")
+	}
+
+	return filepath.Join(DaemonDataPath, "records")
 }
 
 func (cfg *SmartnodeConfig) GetWalletPathInCLI() string {
@@ -702,6 +726,10 @@ func (cfg *SmartnodeConfig) GetRethAddress() common.Address {
 
 func getDefaultDataDir(config *RocketPoolConfig) string {
 	return filepath.Join(config.RocketPoolDirectory, "data")
+}
+
+func getDefaultRecordsDir(config *RocketPoolConfig) string {
+	return filepath.Join(getDefaultDataDir(config), "records")
 }
 
 func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) string {
