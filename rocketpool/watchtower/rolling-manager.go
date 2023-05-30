@@ -27,9 +27,10 @@ import (
 )
 
 const (
-	recordsFilenameFormat  string = "%d-%d.json.zst"
-	recordsFilenamePattern string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
-	checksumTableFilename  string = "checksums.sha384"
+	recordsFilenameFormat    string = "%d-%d.json.zst"
+	recordsFilenamePattern   string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
+	checksumTableFilename    string = "checksums.sha384"
+	recordCheckpointInterval uint64 = 45
 )
 
 // Manager for RollingRecords
@@ -80,12 +81,13 @@ func NewRollingRecordManager(log log.ColorLogger, logPrefix string, cfg *config.
 	recordsPath := cfg.Smartnode.GetRecordsPath()
 	fileInfo, err := os.Stat(recordsPath)
 	if os.IsNotExist(err) {
-		err = os.Mkdir(recordsPath, 0644)
-		if err != nil {
+		err2 := os.MkdirAll(recordsPath, 0755)
+		if err2 != nil {
 			return nil, fmt.Errorf("error creating rolling records folder: %w", err)
 		}
-	}
-	if !fileInfo.IsDir() {
+	} else if err != nil {
+		return nil, fmt.Errorf("error checking rolling records folder: %w", err)
+	} else if !fileInfo.IsDir() {
 		return nil, fmt.Errorf("rolling records folder location exists (%s), but is not a folder", recordsPath)
 	}
 
@@ -108,6 +110,7 @@ func NewRollingRecordManager(log log.ColorLogger, logPrefix string, cfg *config.
 	}, nil
 }
 
+/*
 // Process the details of the latest head state
 func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) error {
 
@@ -181,6 +184,7 @@ func (r *RollingRecordManager) updateToSlot(slot uint64) (bool, error) {
 
 	return updateStarted, nil
 }
+*/
 
 // Check if a network balance submission is required and if so, the slot number for the update
 func (r *RollingRecordManager) isNetworkBalanceUpdateRequired(state *state.NetworkState) (bool, uint64, error) {
@@ -252,13 +256,13 @@ func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.
 	totalTimespan := endTime.Sub(r.genesisTime)
 	targetSlot := uint64(math.Ceil(totalTimespan.Seconds() / float64(eth2Config.SecondsPerSlot)))
 	targetSlotEpoch := targetSlot / eth2Config.SlotsPerEpoch
-	targetSlot = targetSlotEpoch*eth2Config.SlotsPerEpoch + (eth2Config.SlotsPerEpoch - 1) // The target slot becomes the last one in the Epoch
+	targetSlot = (targetSlotEpoch+1)*eth2Config.SlotsPerEpoch - 1 // The target slot becomes the last one in the Epoch
 
 	return true, targetSlot, nil
 }
 
 // Generate a new record for the provided slot using the latest viable saved record
-func (r *RollingRecordManager) generateRecordForSlot(slot uint64) (*rewards.RollingRecord, error) {
+func (r *RollingRecordManager) GenerateRecordForSlot(slot uint64) (*rewards.RollingRecord, error) {
 
 	// Create a state for the target slot
 	state, err := r.mgr.GetStateForSlot(slot)
@@ -267,26 +271,67 @@ func (r *RollingRecordManager) generateRecordForSlot(slot uint64) (*rewards.Roll
 	}
 
 	// Load the latest viable record
-	record, err := r.loadRecordFromDisk(r.startSlot, slot)
+	record, err := r.LoadRecordFromDisk(r.startSlot, slot)
 	if err != nil {
 		return nil, fmt.Errorf("error loading best record for slot %d: %w", slot, err)
 	}
 
-	// Update the record to the target state
-	err = record.UpdateToState(state)
-	if err != nil {
-		return nil, fmt.Errorf("error updating record to slot %d: %w", slot, err)
+	// Get the slot to start processing from and the target for the first round
+	nextStartSlot := record.LastDutiesSlot + 1
+	if record.LastDutiesSlot == 0 {
+		nextStartSlot = r.startSlot
 	}
+
+	nextStartEpoch := nextStartSlot / r.beaconCfg.SlotsPerEpoch
+	nextTargetEpoch := nextStartEpoch + recordCheckpointInterval - 1
+	nextTargetSlot := (nextTargetEpoch+1)*r.beaconCfg.SlotsPerEpoch - 1 // Target is the last slot of the epoch
+	if nextTargetSlot > slot {
+		nextTargetSlot = slot
+		nextTargetEpoch = nextTargetSlot / r.beaconCfg.SlotsPerEpoch
+	}
+
+	startTime := time.Now()
+	for {
+		if nextStartSlot > slot {
+			break
+		}
+
+		r.log.Printf("%s Updating from slot %d (epoch %d) to slot %d (epoch %d)... ", r.logPrefix, nextStartSlot, nextStartEpoch, nextTargetSlot, nextTargetEpoch)
+
+		// Update the record to the target state
+		err = record.UpdateToSlot(nextTargetSlot, state)
+		if err != nil {
+			return nil, fmt.Errorf("error updating record to slot %d: %w", slot, err)
+		}
+		r.log.Printlnf("done! (%s so far)", time.Since(startTime))
+
+		err = r.SaveRecordToFile(record)
+		if err != nil {
+			return nil, fmt.Errorf("error saving record: %w", err)
+		}
+		r.log.Printlnf("%s Saved record (%s so far)", r.logPrefix, time.Since(startTime))
+
+		nextStartSlot = nextTargetSlot + 1
+		nextStartEpoch = nextStartSlot / r.beaconCfg.SlotsPerEpoch
+		nextTargetEpoch = nextStartEpoch + recordCheckpointInterval - 1
+		nextTargetSlot = (nextTargetEpoch+1)*r.beaconCfg.SlotsPerEpoch - 1 // Target is the last slot of the epoch
+		if nextTargetSlot > slot {
+			nextTargetSlot = slot
+			nextTargetEpoch = nextTargetSlot / r.beaconCfg.SlotsPerEpoch
+		}
+	}
+
+	r.log.Printlnf("%s Finished in %s.", r.logPrefix, time.Since(startTime))
 
 	return record, nil
 
 }
 
 // Save the rolling record to a file and update the record info catalog
-func (r *RollingRecordManager) saveRecordToFile() error {
+func (r *RollingRecordManager) SaveRecordToFile(record *rewards.RollingRecord) error {
 
 	// Serialize the record
-	bytes, err := r.Record.Serialize()
+	bytes, err := record.Serialize()
 	if err != nil {
 		return fmt.Errorf("error saving rolling record: %w", err)
 	}
@@ -295,8 +340,8 @@ func (r *RollingRecordManager) saveRecordToFile() error {
 	compressedBytes := r.compressor.EncodeAll(bytes, make([]byte, 0, len(bytes)))
 
 	// Get the record filename
-	slot := r.Record.LastProcessedSlot
-	epoch := r.Record.LastProcessedSlot / r.beaconCfg.SlotsPerEpoch
+	slot := record.LastDutiesSlot
+	epoch := record.LastDutiesSlot / r.beaconCfg.SlotsPerEpoch
 	recordsPath := r.cfg.Smartnode.GetRecordsPath()
 	filename := filepath.Join(recordsPath, fmt.Sprintf(recordsFilenameFormat, slot, epoch))
 
@@ -318,33 +363,48 @@ func (r *RollingRecordManager) saveRecordToFile() error {
 	defer checksumFile.Close()
 
 	// Append and write the new checksum out to file
-	checksumLine := fmt.Sprintf("%s  %s\n", hex.EncodeToString(checksum[:]), filename)
+	checksumLine := fmt.Sprintf("%s  %s\n", hex.EncodeToString(checksum[:]), filepath.Base(filename))
 	checksumFile.WriteString(checksumLine)
 
 	return nil
 }
 
 // Load the most recent appropriate rolling record from disk, using the checksum table as an index
-func (r *RollingRecordManager) loadRecordFromDisk(startSlot uint64, targetSlot uint64) (*rewards.RollingRecord, error) {
+func (r *RollingRecordManager) LoadRecordFromDisk(startSlot uint64, targetSlot uint64) (*rewards.RollingRecord, error) {
 
-	// Open the checksum file
+	// Get the checksum filename
 	recordsPath := r.cfg.Smartnode.GetRecordsPath()
 	checksumFilename := filepath.Join(recordsPath, checksumTableFilename)
+
+	// Check if the file exists
+	_, err := os.Stat(checksumFilename)
+	if os.IsNotExist(err) {
+		// There isn't a checksum file so start over
+		r.log.Printlnf("%s Checksum file not found, creating a new record from the start.", r.logPrefix)
+		return rewards.NewRollingRecord(r.log, r.logPrefix, r.bc, startSlot, &r.beaconCfg), nil
+	}
+
+	// Open the checksum file
 	checksumTable, err := os.ReadFile(checksumFilename)
 	if err != nil {
 		return nil, fmt.Errorf("error loading checksum table (%s): %w", checksumFilename, err)
 	}
 
 	// Parse out each line
-	lines := strings.Split(string(checksumTable), "\n")
+	originalLines := strings.Split(string(checksumTable), "\n")
+
+	// Remove empty lines
+	lines := make([]string, 0, len(originalLines))
+	for _, line := range originalLines {
+		trimmedLine := strings.TrimSpace(line)
+		if trimmedLine != "" {
+			lines = append(lines, line)
+		}
+	}
 
 	// Iterate over each file, counting backwards from the bottom
-	for i := len(lines) - 1; i >= 0; i++ {
+	for i := len(lines) - 1; i >= 0; i-- {
 		line := lines[i]
-		if line == "" {
-			// Ignore blank lines
-			continue
-		}
 
 		// Extract the checksum and filename
 		elems := strings.Split(line, "  ")
@@ -361,7 +421,8 @@ func (r *RollingRecordManager) loadRecordFromDisk(startSlot uint64, targetSlot u
 		}
 
 		// Check if the slot was too far into the future
-		if slot > targetSlot || slot > startSlot {
+		if slot > targetSlot {
+			r.log.Printlnf("%s File [%s] was too far into the future, trying an older one...", r.logPrefix, filename)
 			continue
 		}
 
@@ -372,10 +433,13 @@ func (r *RollingRecordManager) loadRecordFromDisk(startSlot uint64, targetSlot u
 		}
 
 		// Try to load it
-		record, err := r.loadRecordFromFile(filename, checksum)
+		fullFilename := filepath.Join(recordsPath, filename)
+		record, err := r.loadRecordFromFile(fullFilename, checksum)
 		if err != nil {
-			return nil, fmt.Errorf("error loading record from file (%s): %w", filename, err)
+			return nil, fmt.Errorf("error loading record from file (%s): %w", fullFilename, err)
 		}
+		epoch := slot / r.beaconCfg.SlotsPerEpoch
+		r.log.Printlnf("%s Loaded file [%s] which ended on slot %d (epoch %d).", r.logPrefix, filename, slot, epoch)
 		return record, nil
 
 	}
@@ -411,7 +475,7 @@ func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedCheck
 	// Read the file
 	compressedBytes, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("error reading file: %w", filename, err)
+		return nil, fmt.Errorf("error reading file: %w", err)
 	}
 
 	// Calculate the hash and validate it
@@ -419,7 +483,7 @@ func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedCheck
 	if !bytes.Equal(expectedChecksum, checksum[:]) {
 		expectedString := hex.EncodeToString(expectedChecksum)
 		actualString := hex.EncodeToString(checksum[:])
-		return nil, fmt.Errorf("checksum mismatch (expected %s, but it was %s)", filename, expectedString, actualString)
+		return nil, fmt.Errorf("checksum mismatch (expected %s, but it was %s)", expectedString, actualString)
 	}
 
 	// Decompress it

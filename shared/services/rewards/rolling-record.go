@@ -20,21 +20,20 @@ const (
 )
 
 type RollingRecord struct {
-	StartSlot          uint64                   `json:"startSlot"`
-	LastProcessedSlot  uint64                   `json:"lastProcessedSlot"`
-	LastDutiesSlot     uint64                   `json:"lastDutiesSlot"`
-	PendingSlot        uint64                   `json:"pendingSlot"`
-	ValidatorIndexMap  map[string]*MinipoolInfo `json:"validatorIndexMap"`
-	LatestMappedIndex  int                      `json:"latestMappedIndex"`
-	IntervalDutiesInfo *IntervalDutiesInfo      `json:"intervalDutiesInfo"`
-	CheatingNodes      map[common.Address]bool  `json:"cheatingNodes"`
+	StartSlot         uint64                   `json:"startSlot"`
+	LastDutiesSlot    uint64                   `json:"lastDutiesSlot"`
+	PendingSlot       uint64                   `json:"pendingSlot"`
+	ValidatorIndexMap map[string]*MinipoolInfo `json:"validatorIndexMap"`
+	LatestMappedIndex int                      `json:"latestMappedIndex"`
+	CheatingNodes     map[common.Address]bool  `json:"cheatingNodes"`
 
 	// Private fields
-	bc           beacon.Client      `json:"-"`
-	beaconConfig *beacon.Eth2Config `json:"-"`
-	genesisTime  time.Time          `json:"-"`
-	log          log.ColorLogger    `json:"-"`
-	logPrefix    string             `json:"-"`
+	bc                 beacon.Client       `json:"-"`
+	beaconConfig       *beacon.Eth2Config  `json:"-"`
+	genesisTime        time.Time           `json:"-"`
+	log                log.ColorLogger     `json:"-"`
+	logPrefix          string              `json:"-"`
+	intervalDutiesInfo *IntervalDutiesInfo `json:"-"`
 
 	// Constants for convenience
 	one          *big.Int `json:"-"`
@@ -45,21 +44,20 @@ type RollingRecord struct {
 func NewRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, startSlot uint64, beaconConfig *beacon.Eth2Config) *RollingRecord {
 	return &RollingRecord{
 		StartSlot:         startSlot,
-		LastProcessedSlot: 0,
 		LastDutiesSlot:    0,
 		PendingSlot:       0,
-
-		bc:                bc,
-		beaconConfig:      beaconConfig,
-		genesisTime:       time.Unix(int64(beaconConfig.GenesisTime), 0),
-		log:               log,
-		logPrefix:         logPrefix,
-		ValidatorIndexMap: map[string]*MinipoolInfo{},
 		LatestMappedIndex: -1,
-		IntervalDutiesInfo: &IntervalDutiesInfo{
+		ValidatorIndexMap: map[string]*MinipoolInfo{},
+		CheatingNodes:     map[common.Address]bool{},
+
+		bc:           bc,
+		beaconConfig: beaconConfig,
+		genesisTime:  time.Unix(int64(beaconConfig.GenesisTime), 0),
+		log:          log,
+		logPrefix:    logPrefix,
+		intervalDutiesInfo: &IntervalDutiesInfo{
 			Slots: map[uint64]*SlotInfo{},
 		},
-		CheatingNodes: map[common.Address]bool{},
 
 		one:          eth.EthToWei(1),
 		validatorReq: eth.EthToWei(32),
@@ -74,6 +72,9 @@ func DeserializeRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.C
 		genesisTime:  time.Unix(int64(beaconConfig.GenesisTime), 0),
 		log:          log,
 		logPrefix:    logPrefix,
+		intervalDutiesInfo: &IntervalDutiesInfo{
+			Slots: map[uint64]*SlotInfo{},
+		},
 
 		one:          eth.EthToWei(1),
 		validatorReq: eth.EthToWei(32),
@@ -87,33 +88,33 @@ func DeserializeRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.C
 	return record, nil
 }
 
-// Update the record to the provided state. Requires the epoch for the slot represented by the state is finalized,
-// *and* the epoch *after* it is also finalized so it can accurately count attestations.
-func (r *RollingRecord) UpdateToState(state *state.NetworkState) error {
+// Update the record to the requested slot, using the provided state as a reference.
+// Requires the epoch *after* the requested slot to be finalized so it can accurately count attestations.
+func (r *RollingRecord) UpdateToSlot(slot uint64, state *state.NetworkState) error {
 
 	// Get the slot to start processing from
-	startSlot := r.LastProcessedSlot + 1
-	if r.LastProcessedSlot == 0 {
+	startSlot := r.LastDutiesSlot + 1
+	if r.LastDutiesSlot == 0 {
 		startSlot = r.StartSlot
 	}
 	startEpoch := startSlot / r.beaconConfig.SlotsPerEpoch
 
 	// Get the epoch for the state
-	stateEpoch := state.BeaconSlotNumber / r.beaconConfig.SlotsPerEpoch
+	stateEpoch := slot / r.beaconConfig.SlotsPerEpoch
 
-	r.log.Printlnf("%s Updating rolling record from slot %d (epoch %d) to %d (epoch %d).", r.logPrefix, startSlot, startEpoch, state.BeaconSlotNumber, stateEpoch)
-	start := time.Now()
+	//r.log.Printlnf("%s Updating rolling record from slot %d (epoch %d) to %d (epoch %d).", r.logPrefix, startSlot, startEpoch, slot, stateEpoch)
+	//start := time.Now()
 
 	// Update the validator indices and flag any cheating nodes
 	r.updateValidatorIndices(state)
 	r.flagCheaters(state)
-	r.log.Printlnf("%s Updated validator indices and cheater status in %s.", r.logPrefix, time.Since(start))
+	//r.log.Printlnf("%s Updated validator indices and cheater status in %s.", r.logPrefix, time.Since(start))
 
 	// Process every epoch from the start to the current one
 	for epoch := startEpoch; epoch <= stateEpoch; epoch++ {
 
 		// Retrieve the duties for the epoch - this won't get duties higher than the given state
-		err := r.getDutiesForEpoch(epoch, state)
+		err := r.getDutiesForEpoch(epoch, slot, state)
 		if err != nil {
 			return fmt.Errorf("error getting duties for epoch %d: %w", epoch, err)
 		}
@@ -130,6 +131,11 @@ func (r *RollingRecord) UpdateToState(state *state.NetworkState) error {
 	err := r.processAttestationsInEpoch(stateEpoch+1, state)
 	if err != nil {
 		return fmt.Errorf("error processing attestations in epoch %d: %w", stateEpoch+1, err)
+	}
+
+	// Clear the duties cache since it's not required anymore
+	r.intervalDutiesInfo = &IntervalDutiesInfo{
+		Slots: map[uint64]*SlotInfo{},
 	}
 
 	return nil
@@ -208,8 +214,8 @@ func (r *RollingRecord) flagCheaters(state *state.NetworkState) {
 	}
 }
 
-// Get the attestation duties for the given epoch, up to (and including) the slot of the provided state
-func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkState) error {
+// Get the attestation duties for the given epoch, up to (and including) the provided end slot
+func (r *RollingRecord) getDutiesForEpoch(epoch uint64, endSlot uint64, state *state.NetworkState) error {
 
 	lastSlotInEpoch := (epoch+1)*r.beaconConfig.SlotsPerEpoch - 1
 
@@ -229,7 +235,7 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkStat
 	// Crawl the committees
 	for idx := 0; idx < committees.Count(); idx++ {
 		slotIndex := committees.Slot(idx)
-		if slotIndex < r.StartSlot || slotIndex > state.BeaconSlotNumber {
+		if slotIndex < r.StartSlot || slotIndex > endSlot {
 			// Ignore slots that are out of bounds
 			continue
 		}
@@ -272,13 +278,13 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkStat
 
 		// If there are some RP validators, add this committee to the map
 		if len(rpValidators) > 0 {
-			slotInfo, exists := r.IntervalDutiesInfo.Slots[slotIndex]
+			slotInfo, exists := r.intervalDutiesInfo.Slots[slotIndex]
 			if !exists {
 				slotInfo = &SlotInfo{
 					Index:      slotIndex,
 					Committees: map[uint64]*CommitteeInfo{},
 				}
-				r.IntervalDutiesInfo.Slots[slotIndex] = slotInfo
+				r.intervalDutiesInfo.Slots[slotIndex] = slotInfo
 			}
 			slotInfo.Committees[committeeIndex] = &CommitteeInfo{
 				Index:     committeeIndex,
@@ -289,8 +295,8 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, state *state.NetworkStat
 
 	// Set the last slot duties were collected for - the minimum of the last slot in the epoch and the target state slot
 	r.LastDutiesSlot = lastSlotInEpoch
-	if state.BeaconSlotNumber < lastSlotInEpoch {
-		r.LastDutiesSlot = state.BeaconSlotNumber
+	if endSlot < lastSlotInEpoch {
+		r.LastDutiesSlot = endSlot
 	}
 	return nil
 
@@ -309,10 +315,6 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 	for i := uint64(0); i < slotsPerEpoch; i++ {
 		i := i
 		slot := epoch*slotsPerEpoch + i
-		if slot <= r.LastProcessedSlot {
-			// Ignore this slot if it's already been processed
-			continue
-		}
 		wg.Go(func() error {
 			attestations, found, err := r.bc.GetAttestations(fmt.Sprint(slot))
 			if err != nil {
@@ -337,11 +339,8 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 	for i, attestations := range attestationsPerSlot {
 		if len(attestations) > 0 {
 			// Process these attestations
-			r.processAttestationsInSlot(attestations, state)
-
-			// Set the last processed slot for future runs to check
 			slot := epoch*slotsPerEpoch + uint64(i)
-			r.LastProcessedSlot = slot
+			r.processAttestationsInSlot(slot, attestations, state)
 		}
 	}
 
@@ -350,13 +349,13 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 }
 
 // Process all of the attestations for a given slot
-func (r *RollingRecord) processAttestationsInSlot(attestations []beacon.AttestationInfo, state *state.NetworkState) {
+func (r *RollingRecord) processAttestationsInSlot(inclusionSlot uint64, attestations []beacon.AttestationInfo, state *state.NetworkState) {
 
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
 
 		// Get the RP committees for this attestation's slot and index
-		slotInfo, exists := r.IntervalDutiesInfo.Slots[attestation.SlotIndex]
+		slotInfo, exists := r.intervalDutiesInfo.Slots[attestation.SlotIndex]
 		if exists {
 			rpCommittee, exists := slotInfo.Committees[attestation.CommitteeIndex]
 			if exists {
@@ -371,7 +370,7 @@ func (r *RollingRecord) processAttestationsInSlot(attestations []beacon.Attestat
 							delete(slotInfo.Committees, attestation.CommitteeIndex)
 						}
 						if len(slotInfo.Committees) == 0 {
-							delete(r.IntervalDutiesInfo.Slots, attestation.SlotIndex)
+							delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
 						}
 						delete(validator.MissingAttestationSlots, attestation.SlotIndex)
 
