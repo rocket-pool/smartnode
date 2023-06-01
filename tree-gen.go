@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -90,6 +91,7 @@ type treeGenerator struct {
 	rp           *rocketpool.RocketPool
 	cfg          *config.RocketPoolConfig
 	mgr          *state.NetworkStateManager
+	recordMgr    *watchtower.RollingRecordManager
 	bn           beacon.Client
 	beaconConfig beacon.Eth2Config
 	targets      targets
@@ -458,12 +460,82 @@ func (g *treeGenerator) writeFiles(rewardsFile *rprewards.RewardsFile) error {
 	return nil
 }
 
+// Create the manager for rolling records to use (if applicable) and update the record to the target slot
+func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
+	// Ignore this on old rulesets without rolling records
+	if g.ruleset < 6 {
+		g.log.Printlnf("Ruleset %d does not use rolling records, ignoring them.", g.ruleset)
+		return nil
+	}
+
+	// Get the target index
+	ignoreRollingRecords := false
+	var index uint64
+	if g.targets.rewardsEvent != nil {
+		index = g.targets.rewardsEvent.Index.Uint64()
+	} else {
+		index = g.targets.snapshotDetails.index
+	}
+
+	// If a ruleset isn't specified, check if the interval is before v6
+	if g.ruleset == 0 {
+		network := g.cfg.Smartnode.Network.Value.(cfgtypes.Network)
+		switch network {
+		case cfgtypes.Network_Prater:
+			ignoreRollingRecords = (index < rprewards.PraterV6Interval)
+		case cfgtypes.Network_Mainnet:
+			ignoreRollingRecords = (index < rprewards.MainnetV6Interval)
+		default:
+			return fmt.Errorf("unknown network [%v]", network)
+		}
+	}
+
+	// Ignore this on old intervals without rolling records
+	if ignoreRollingRecords {
+		g.log.Printlnf("Rewards interval %d will not use rolling records, ignoring them.", index)
+		return nil
+	}
+
+	// Rolling records are supported, build up the manager
+	var err error
+	g.recordMgr, err = watchtower.NewRollingRecordManager(g.log, "[Rolling Record]", g.cfg, g.rp, g.bn, g.mgr, nil, args.startSlot)
+	if err != nil {
+		return fmt.Errorf("error creating rolling record manager: %w", err)
+	}
+
+	// Determine the target slot for tree generation
+	var targetSlot uint64
+	if g.targets.rewardsEvent != nil {
+		targetSlot = g.targets.rewardsEvent.ConsensusBlock.Uint64()
+	} else {
+		targetSlot = g.targets.snapshotDetails.snapshotBeaconBlock
+	}
+
+	// Create and update the record to that slot
+	g.log.Printlnf("Generation supports rolling records - creating a new record manager.")
+	record, err := g.recordMgr.GenerateRecordForState(args.state)
+	if err != nil {
+		return fmt.Errorf("error creating record for slot %d: %w", targetSlot, err)
+	}
+	g.recordMgr.Record = record
+
+	return nil
+}
+
 // Creates a tree generator using the provided arguments
 func (g *treeGenerator) getGenerator(args *treegenArguments) (*rprewards.TreeGenerator, error) {
+	// Prepare the rolling record manager and record if applicable
+	g.prepareRecordManager(args)
+	var record *rprewards.RollingRecord = nil
+	if g.recordMgr != nil {
+		record = g.recordMgr.Record
+	}
+
+	// Create the tree generator
 	out, err := rprewards.NewTreeGenerator(
 		*g.log, "", g.rp, g.cfg, g.bn, args.index,
 		args.startTime, args.endTime, args.block.Slot, args.elBlockHeader,
-		args.intervalsPassed, args.state)
+		args.intervalsPassed, args.state, record)
 	if err != nil {
 		return nil, fmt.Errorf("error creating tree generator: %w", err)
 	}
