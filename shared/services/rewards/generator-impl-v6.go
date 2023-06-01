@@ -57,7 +57,7 @@ func newTreeGeneratorImpl_v6(log log.ColorLogger, logPrefix string, index uint64
 		zero: big.NewInt(0),
 		rewardsFile: &RewardsFile{
 			RewardsFileVersion: 1,
-			RulesetVersion:     5,
+			RulesetVersion:     6,
 			Index:              index,
 			StartTime:          startTime.UTC(),
 			EndTime:            endTime.UTC(),
@@ -315,17 +315,7 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 		return fmt.Errorf("error calculating effective RPL stakes: %w", err)
 	}
 
-	r.log.Printlnf("%s Calculating individual collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
-	nodesDone := 0
-	startTime := time.Now()
-	nodeCount := len(r.networkState.NodeDetails)
 	for i, nodeDetails := range r.networkState.NodeDetails {
-		if nodesDone == 100 {
-			timeTaken := time.Since(startTime)
-			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
-			nodesDone = 0
-		}
-
 		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
 		nodeRplRewards := big.NewInt(0)
 		nodeRplRewards.Mul(trueNodeEffectiveStakes[nodeDetails.NodeAddress], totalNodeRewards)
@@ -368,8 +358,6 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 			}
 			rewardsForNetwork.CollateralRpl.Add(&rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 		}
-
-		nodesDone++
 	}
 
 	// Sanity check to make sure we arrived at the correct total
@@ -645,15 +633,9 @@ func (r *treeGeneratorImpl_v6) calculateNodeRewards() (*big.Int, *big.Int, error
 				SmoothingPoolEth: big.NewInt(0),
 				RewardsNetwork:   r.networkState.NodeDetailsByAddress[minipool.NodeAddress].RewardNetwork.Uint64(),
 			}
-			r.nodeDetails[minipool.Address] = nodeInfo
+			r.nodeDetails[minipool.NodeAddress] = nodeInfo
 		}
-
-		if minipool.AttestationCount+len(minipool.MissingAttestationSlots) == 0 || !minipool.WasActive {
-			// Ignore minipools that weren't active for the interval
-			minipool.WasActive = false
-			minipool.MinipoolShare = big.NewInt(0)
-			continue
-		}
+		nodeInfo.Minipools = append(nodeInfo.Minipools, minipool)
 
 		// Add the minipool's score to the total node score
 		minipoolEth := big.NewInt(0).Set(totalNodeOpShare)

@@ -346,20 +346,20 @@ func (s *NetworkState) CalculateTrueEffectiveStakes(scaleByParticipation bool) (
 					// Doesn't exist on Beacon yet
 					validatorStatus, exists := s.ValidatorDetails[mpd.Pubkey]
 					if !exists {
-						s.logLine("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
+						//s.logLine("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
 						continue
 					}
 
 					// Starts too late
 					intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
 					if validatorStatus.ActivationEpoch > intervalEndEpoch {
-						s.logLine("NOTE: Minipool %s starts on epoch %d which is after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ActivationEpoch, intervalEndEpoch)
+						//s.logLine("NOTE: Minipool %s starts on epoch %d which is after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ActivationEpoch, intervalEndEpoch)
 						continue
 					}
 
 					// Already exited
 					if validatorStatus.ExitEpoch <= intervalEndEpoch {
-						s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
+						//s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
 						continue
 					}
 					// It's eligible, so add up the borrowed and bonded amounts
