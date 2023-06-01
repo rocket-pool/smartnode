@@ -617,8 +617,11 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 // Calculate the distribution of Smoothing Pool ETH to each node
 func (r *treeGeneratorImpl_v6) calculateNodeRewards() (*big.Int, *big.Int, error) {
 
+	// Get the list of cheaters
+	cheaters := r.getCheaters()
+
 	// Get the latest scores from the rolling record
-	minipools, totalScore, attestationCount := r.rollingRecord.GetScores()
+	minipools, totalScore, attestationCount := r.rollingRecord.GetScores(cheaters)
 
 	// If there weren't any successful attestations, everything goes to the pool stakers
 	if totalScore.Cmp(r.zero) == 0 || attestationCount == 0 {
@@ -754,4 +757,22 @@ func (r *treeGeneratorImpl_v6) getStartBlocksForInterval(previousIntervalEvent r
 	}
 
 	return startElHeader, nil
+}
+
+// Detect and flag any cheaters
+func (r *treeGeneratorImpl_v6) getCheaters() map[common.Address]bool {
+	cheatingNodes := map[common.Address]bool{}
+	three := big.NewInt(3)
+
+	for _, nd := range r.networkState.NodeDetails {
+		for _, mpd := range r.networkState.MinipoolDetailsByNode[nd.NodeAddress] {
+			if mpd.PenaltyCount.Cmp(three) >= 0 {
+				// If any minipool has 3+ penalties, ban the entire node
+				cheatingNodes[nd.NodeAddress] = true
+				break
+			}
+		}
+	}
+
+	return cheatingNodes
 }

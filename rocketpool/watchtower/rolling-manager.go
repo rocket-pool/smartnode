@@ -40,13 +40,13 @@ type RollingRecordManager struct {
 	ExpectedBalancesBlock        uint64
 	ExpectedRewardsIntervalBlock uint64
 
-	log                  log.ColorLogger
+	log                  *log.ColorLogger
 	logPrefix            string
 	cfg                  *config.RocketPoolConfig
 	rp                   *rocketpool.RocketPool
 	bc                   beacon.Client
 	mgr                  *state.NetworkStateManager
-	nodeAddress          common.Address
+	nodeAddress          *common.Address
 	startSlot            uint64
 	beaconCfg            beacon.Eth2Config
 	genesisTime          time.Time
@@ -56,7 +56,7 @@ type RollingRecordManager struct {
 }
 
 // Creates a new manager for rolling records.
-func NewRollingRecordManager(log log.ColorLogger, logPrefix string, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, nodeAddress common.Address, startSlot uint64, beaconConfig *beacon.Eth2Config) (*RollingRecordManager, error) {
+func NewRollingRecordManager(log *log.ColorLogger, logPrefix string, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, nodeAddress *common.Address, startSlot uint64) (*RollingRecordManager, error) {
 	// Get the beacon config and the genesis time
 	beaconCfg, err := bc.GetEth2Config()
 	if err != nil {
@@ -92,7 +92,7 @@ func NewRollingRecordManager(log log.ColorLogger, logPrefix string, cfg *config.
 	}
 
 	return &RollingRecordManager{
-		Record: rewards.NewRollingRecord(log, logPrefix, bc, startSlot, beaconConfig),
+		Record: rewards.NewRollingRecord(log, logPrefix, bc, startSlot, &beaconCfg),
 
 		log:                  log,
 		logPrefix:            logPrefix,
@@ -198,14 +198,16 @@ func (r *RollingRecordManager) isNetworkBalanceUpdateRequired(state *state.Netwo
 	}
 
 	// Check if this node has already submitted a balance
-	blockNumberBuf := make([]byte, 32)
-	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-	hasSubmitted, err := r.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), r.nodeAddress.Bytes(), blockNumberBuf))
-	if err != nil {
-		return false, 0, fmt.Errorf("error checking if node has already submitted network balance for block %d: %w", blockNumber, err)
-	}
-	if hasSubmitted {
-		return false, 0, nil
+	if r.nodeAddress != nil {
+		blockNumberBuf := make([]byte, 32)
+		big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+		hasSubmitted, err := r.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), r.nodeAddress.Bytes(), blockNumberBuf))
+		if err != nil {
+			return false, 0, fmt.Errorf("error checking if node has already submitted network balance for block %d: %w", blockNumber, err)
+		}
+		if hasSubmitted {
+			return false, 0, nil
+		}
 	}
 
 	// Get the time of the block
@@ -239,16 +241,18 @@ func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.
 	}
 
 	// Check if this node already submitted a tree
-	currentIndex := state.NetworkDetails.RewardIndex
-	currentIndexBig := big.NewInt(0).SetUint64(currentIndex)
-	indexBuffer := make([]byte, 32)
-	currentIndexBig.FillBytes(indexBuffer)
-	hasSubmitted, err := r.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("rewards.snapshot.submitted.node"), r.nodeAddress.Bytes(), indexBuffer))
-	if err != nil {
-		return false, 0, fmt.Errorf("error checking if node has already submitted for rewards interval %d: %w", currentIndex, err)
-	}
-	if hasSubmitted {
-		return false, 0, nil
+	if r.nodeAddress != nil {
+		currentIndex := state.NetworkDetails.RewardIndex
+		currentIndexBig := big.NewInt(0).SetUint64(currentIndex)
+		indexBuffer := make([]byte, 32)
+		currentIndexBig.FillBytes(indexBuffer)
+		hasSubmitted, err := r.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("rewards.snapshot.submitted.node"), r.nodeAddress.Bytes(), indexBuffer))
+		if err != nil {
+			return false, 0, fmt.Errorf("error checking if node has already submitted for rewards interval %d: %w", currentIndex, err)
+		}
+		if hasSubmitted {
+			return false, 0, nil
+		}
 	}
 
 	// Get the target slot number
@@ -262,18 +266,22 @@ func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.
 }
 
 // Generate a new record for the provided slot using the latest viable saved record
-func (r *RollingRecordManager) GenerateRecordForSlot(slot uint64) (*rewards.RollingRecord, error) {
-
-	// Create a state for the target slot
-	state, err := r.mgr.GetStateForSlot(slot)
-	if err != nil {
-		return nil, fmt.Errorf("error generating state for slot %d: %w", slot, err)
-	}
+func (r *RollingRecordManager) GenerateRecordForState(state *state.NetworkState) (*rewards.RollingRecord, error) {
 
 	// Load the latest viable record
+	slot := state.BeaconSlotNumber
 	record, err := r.LoadRecordFromDisk(r.startSlot, slot)
 	if err != nil {
 		return nil, fmt.Errorf("error loading best record for slot %d: %w", slot, err)
+	}
+
+	if record.LastDutiesSlot == slot {
+		// Already have a full snapshot so we don't have to do anything
+		r.log.Printf("%s Loaded record was already up-to-date for slot %d.", r.logPrefix, slot)
+		return record, nil
+	} else if record.LastDutiesSlot > slot {
+		// This should never happen but sanity check it anyway
+		return nil, fmt.Errorf("loaded record has duties completed for slot %d, which is too far forward (targeting slot %d)", record.LastDutiesSlot, slot)
 	}
 
 	// Get the slot to start processing from and the target for the first round
@@ -289,27 +297,31 @@ func (r *RollingRecordManager) GenerateRecordForSlot(slot uint64) (*rewards.Roll
 		nextTargetSlot = slot
 		nextTargetEpoch = nextTargetSlot / r.beaconCfg.SlotsPerEpoch
 	}
+	finalEpoch := slot / r.beaconCfg.SlotsPerEpoch
+	totalSlots := float64(slot - nextStartSlot + 1)
+	initialSlot := nextStartSlot
 
+	r.log.Printlnf("%s Collecting records from slot %d (epoch %d) to slot %d (epoch %d).", r.logPrefix, nextStartSlot, nextStartEpoch, slot, finalEpoch)
+	r.log.Printlnf("%s Progress will be reported at each saved checkpoint (%d epochs).", r.logPrefix, recordCheckpointInterval)
 	startTime := time.Now()
 	for {
 		if nextStartSlot > slot {
 			break
 		}
 
-		r.log.Printf("%s Updating from slot %d (epoch %d) to slot %d (epoch %d)... ", r.logPrefix, nextStartSlot, nextStartEpoch, nextTargetSlot, nextTargetEpoch)
-
 		// Update the record to the target state
 		err = record.UpdateToSlot(nextTargetSlot, state)
 		if err != nil {
 			return nil, fmt.Errorf("error updating record to slot %d: %w", slot, err)
 		}
-		r.log.Printlnf("done! (%s so far)", time.Since(startTime))
 
 		err = r.SaveRecordToFile(record)
 		if err != nil {
 			return nil, fmt.Errorf("error saving record: %w", err)
 		}
-		r.log.Printlnf("%s Saved record (%s so far)", r.logPrefix, time.Since(startTime))
+
+		slotsProcessed := nextTargetSlot - initialSlot + 1
+		r.log.Printf("%s (%.2f%%) Updated from slot %d (epoch %d) to slot %d (epoch %d)... (%s so far) ", r.logPrefix, float64(slotsProcessed)/totalSlots*100.0, nextStartSlot, nextStartEpoch, nextTargetSlot, nextTargetEpoch, time.Since(startTime))
 
 		nextStartSlot = nextTargetSlot + 1
 		nextStartEpoch = nextStartSlot / r.beaconCfg.SlotsPerEpoch
@@ -445,6 +457,7 @@ func (r *RollingRecordManager) LoadRecordFromDisk(startSlot uint64, targetSlot u
 	}
 
 	// If we got here then none of the saved files worked so we have to make a new record
+	r.log.Printlnf("%s None of the saved record checkpoint files were eligible for use, creating a new record from the start.", r.logPrefix)
 	return rewards.NewRollingRecord(r.log, r.logPrefix, r.bc, startSlot, &r.beaconCfg), nil
 
 	// NOTE: should we clear the checksum file here and delete the old records?

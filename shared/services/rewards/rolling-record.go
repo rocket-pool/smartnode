@@ -25,13 +25,12 @@ type RollingRecord struct {
 	PendingSlot       uint64                   `json:"pendingSlot"`
 	ValidatorIndexMap map[string]*MinipoolInfo `json:"validatorIndexMap"`
 	LatestMappedIndex int                      `json:"latestMappedIndex"`
-	CheatingNodes     map[common.Address]bool  `json:"cheatingNodes"`
 
 	// Private fields
 	bc                 beacon.Client       `json:"-"`
 	beaconConfig       *beacon.Eth2Config  `json:"-"`
 	genesisTime        time.Time           `json:"-"`
-	log                log.ColorLogger     `json:"-"`
+	log                *log.ColorLogger    `json:"-"`
 	logPrefix          string              `json:"-"`
 	intervalDutiesInfo *IntervalDutiesInfo `json:"-"`
 
@@ -41,14 +40,13 @@ type RollingRecord struct {
 }
 
 // Create a new rolling record wrapper
-func NewRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, startSlot uint64, beaconConfig *beacon.Eth2Config) *RollingRecord {
+func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, startSlot uint64, beaconConfig *beacon.Eth2Config) *RollingRecord {
 	return &RollingRecord{
 		StartSlot:         startSlot,
 		LastDutiesSlot:    0,
 		PendingSlot:       0,
 		LatestMappedIndex: -1,
 		ValidatorIndexMap: map[string]*MinipoolInfo{},
-		CheatingNodes:     map[common.Address]bool{},
 
 		bc:           bc,
 		beaconConfig: beaconConfig,
@@ -65,7 +63,7 @@ func NewRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, s
 }
 
 // Load an existing record from serialized JSON data
-func DeserializeRollingRecord(log log.ColorLogger, logPrefix string, bc beacon.Client, beaconConfig *beacon.Eth2Config, bytes []byte) (*RollingRecord, error) {
+func DeserializeRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, beaconConfig *beacon.Eth2Config, bytes []byte) (*RollingRecord, error) {
 	record := &RollingRecord{
 		bc:           bc,
 		beaconConfig: beaconConfig,
@@ -107,8 +105,6 @@ func (r *RollingRecord) UpdateToSlot(slot uint64, state *state.NetworkState) err
 
 	// Update the validator indices and flag any cheating nodes
 	r.updateValidatorIndices(state)
-	r.flagCheaters(state)
-	//r.log.Printlnf("%s Updated validator indices and cheater status in %s.", r.logPrefix, time.Since(start))
 
 	// Process every epoch from the start to the current one
 	for epoch := startEpoch; epoch <= stateEpoch; epoch++ {
@@ -141,8 +137,8 @@ func (r *RollingRecord) UpdateToSlot(slot uint64, state *state.NetworkState) err
 	return nil
 }
 
-// Get the minipool scores, along with the cumulative total score and count
-func (r *RollingRecord) GetScores() ([]*MinipoolInfo, *big.Int, uint64) {
+// Get the minipool scores, along with the cumulative total score and count - ignores minipools that belonged to cheaters
+func (r *RollingRecord) GetScores(cheatingNodes map[common.Address]bool) ([]*MinipoolInfo, *big.Int, uint64) {
 	// Create a slice of minipools with legal (non-cheater) scores
 	minipoolInfos := make([]*MinipoolInfo, 0, len(r.ValidatorIndexMap))
 
@@ -150,8 +146,9 @@ func (r *RollingRecord) GetScores() ([]*MinipoolInfo, *big.Int, uint64) {
 	totalScore := big.NewInt(0)
 	totalCount := uint64(0)
 	for _, mpInfo := range r.ValidatorIndexMap {
+
 		// Ignore nodes that cheated
-		if r.CheatingNodes[mpInfo.NodeAddress] {
+		if cheatingNodes[mpInfo.NodeAddress] {
 			continue
 		}
 
@@ -200,20 +197,6 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 	}
 }
 
-// Detect and flag any cheaters
-func (r *RollingRecord) flagCheaters(state *state.NetworkState) {
-	three := big.NewInt(3)
-	for _, nd := range state.NodeDetails {
-		for _, mpd := range state.MinipoolDetailsByNode[nd.NodeAddress] {
-			if mpd.PenaltyCount.Cmp(three) >= 0 {
-				// If any minipool has 3+ penalties, ban the entire node
-				r.CheatingNodes[nd.NodeAddress] = true
-				break
-			}
-		}
-	}
-}
-
 // Get the attestation duties for the given epoch, up to (and including) the provided end slot
 func (r *RollingRecord) getDutiesForEpoch(epoch uint64, endSlot uint64, state *state.NetworkState) error {
 
@@ -250,8 +233,8 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, endSlot uint64, state *s
 		rpValidators := map[int]*MinipoolInfo{}
 		for position, validator := range committees.Validators(idx) {
 			mpInfo, exists := r.ValidatorIndexMap[validator]
-			if !exists || r.CheatingNodes[mpInfo.NodeAddress] {
-				// This isn't an RP validator or the node is a cheater, so ignore it
+			if !exists {
+				// This isn't an RP validator, so ignore it
 				continue
 			}
 
