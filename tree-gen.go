@@ -37,6 +37,7 @@ type snapshotDetails struct {
 	index                 uint64
 	startTime             time.Time
 	endTime               time.Time
+	startSlot             uint64
 	snapshotBeaconBlock   uint64
 	snapshotElBlockHeader *types.Header
 	intervalsPassed       uint64
@@ -72,6 +73,9 @@ type treegenArguments struct {
 
 	// Index of the rewards period
 	index uint64
+
+	// The first slot in the period
+	startSlot uint64
 
 	// Consensus end block
 	block *beacon.BeaconBlock
@@ -204,11 +208,14 @@ func (g *treeGenerator) getTreegenArgs() (*treegenArguments, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error getting el block header %d: %w", g.targets.rewardsEvent.ExecutionBlock.Uint64(), err)
 		}
+		lastRewardEpoch := g.targets.rewardsEvent.ConsensusBlock.Uint64() / g.beaconConfig.SlotsPerEpoch
+		startSlot := (lastRewardEpoch + 1) * g.beaconConfig.SlotsPerEpoch // First slot of the new epoch
 		return &treegenArguments{
 			startTime:       g.targets.rewardsEvent.IntervalStartTime,
 			endTime:         g.targets.rewardsEvent.IntervalEndTime,
 			index:           g.targets.rewardsEvent.Index.Uint64(),
 			intervalsPassed: g.targets.rewardsEvent.IntervalsPassed.Uint64(),
+			startSlot:       startSlot,
 			block:           g.targets.block,
 			elBlockHeader:   elBlockHeader,
 			state:           state,
@@ -221,6 +228,7 @@ func (g *treeGenerator) getTreegenArgs() (*treegenArguments, error) {
 		endTime:         g.targets.snapshotDetails.endTime,
 		index:           g.targets.snapshotDetails.index,
 		intervalsPassed: g.targets.snapshotDetails.intervalsPassed,
+		startSlot:       g.targets.snapshotDetails.startSlot,
 		block:           g.targets.block,
 		elBlockHeader:   g.targets.snapshotDetails.snapshotElBlockHeader,
 		state:           state,
@@ -313,7 +321,7 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 
 	// We're generating a previous interval (full or partial)
 	// Get the corresponding rewards event for that interval
-	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, uint64(interval))
+	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, uint64(interval), nil)
 	if err != nil {
 		return err
 	}
@@ -338,10 +346,11 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 	// We're generating a partial interval
 	// Ensure the target slot happens *before* the end of the interval
 	eventBlock := rewardsEvent.ConsensusBlock.Uint64()
-	if targetEpoch == eventBlock/g.beaconConfig.SlotsPerEpoch {
+	finalEpochOfInterval := eventBlock / g.beaconConfig.SlotsPerEpoch
+	if targetEpoch == finalEpochOfInterval {
 		return fmt.Errorf("target epoch %d was the end of the targeted interval %d.\nRerun without -t", targetEpoch, interval)
 	}
-	if targetEpoch > eventBlock/g.beaconConfig.SlotsPerEpoch {
+	if targetEpoch > finalEpochOfInterval {
 		return fmt.Errorf("target epoch %d was after targeted interval %d", targetEpoch, interval)
 	}
 
@@ -351,14 +360,15 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 		return fmt.Errorf("target epoch %d was before targeted interval %d", targetEpoch, interval)
 	}
 
-	// Cache the last block in the target epoch for later use
-	g.targets.block, err = g.lastBlockInEpoch(targetEpoch)
+	// Cache the target block for later use
+	block, found, err := g.bn.GetBeaconBlock(fmt.Sprint(eventBlock))
 	if err != nil {
 		return err
 	}
-	if g.targets.block == nil {
-		return fmt.Errorf("Unable to find any valid blocks in epoch %d. Was your BN checkpoint synced against a slot that occurred after this epoch?", targetEpoch)
+	if !found {
+		return fmt.Errorf("Unable to find the ending block for interval %d (slot %d). Was your BN checkpoint synced against a slot that occurred after this epoch?", interval, eventBlock)
 	}
+	g.targets.block = &block
 
 	g.targets.snapshotDetails, err = g.getSnapshotDetails()
 	if err != nil {
@@ -583,6 +593,14 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 	}
 	index := indexBig.Uint64()
 
+	// Get the start slot for this interval
+	previousRewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, index-1, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting event for interval %d: %w", index-1, err)
+	}
+	lastRewardEpoch := previousRewardsEvent.ConsensusBlock.Uint64() / g.beaconConfig.SlotsPerEpoch
+	startSlot := (lastRewardEpoch + 1) * g.beaconConfig.SlotsPerEpoch // First slot of the new epoch
+
 	// Get the start time for the interval, and how long an interval is supposed to take
 	startTime, err := rewards.GetClaimIntervalTimeStart(g.rp, &opts)
 	if err != nil {
@@ -602,6 +620,7 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 		index:                 index,
 		startTime:             startTime,
 		endTime:               endTime,
+		startSlot:             startSlot,
 		snapshotBeaconBlock:   g.targets.block.Slot,
 		snapshotElBlockHeader: snapshotElBlockHeader,
 		intervalsPassed:       intervalsPassed,
@@ -628,7 +647,7 @@ func (g *treeGenerator) printNetworkInfo() error {
 
 	// Find the event for the previous interval
 	if args.index > 0 {
-		rewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, args.index-1)
+		rewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, args.index-1, nil)
 		if err != nil {
 			return fmt.Errorf("error getting rewards submission event for previous interval (%d): %w", args.index-1, err)
 		}
