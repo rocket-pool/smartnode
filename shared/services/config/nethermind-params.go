@@ -109,7 +109,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 		DownloadCompleteHistory: config.Parameter{
 			ID:                   "downloadCompleteHistory",
 			Name:                 "Download Complete History",
-			Description:          "By default, Nethermind will only download chain information (blocks, receipts, and headers) from the deployment of the Beacon Chain on this network. This will reduce the amount of disk space it uses, but other Ethereum nodes won't be able to connect to your node and fully sync the complete chain history from scratch.\n\nIf you prefer to use the old behavior and have Nethermind download the complete chain history, enable this setting.",
+			Description:          "***For Mainnet Only - No Effect on Prater***\n\nBy default, Nethermind will only download chain information from the block that the Beacon Chain was deployed on. This will use less disk space, but other Ethereum nodes won't be able to connect to your node and fully sync from scratch.\n\nIf you prefer to use the old behavior and have Nethermind download the complete chain history, enable this setting.\n\n[orange]NOTE: You may need to resync Nethermind for this change to take effect with `rocketpool service resync-eth1`.",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
