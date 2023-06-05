@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	nethermindTagProd          string = "nethermind/nethermind:1.18.1"
-	nethermindTagTest          string = "nethermind/nethermind:1.18.1"
+	nethermindTagProd          string = "nethermind/nethermind:1.19.0"
+	nethermindTagTest          string = "nethermind/nethermind:1.19.0"
 	nethermindEventLogInterval int    = 1000
 	nethermindStopSignal       string = "SIGTERM"
 )
@@ -36,6 +36,9 @@ type NethermindConfig struct {
 
 	// Nethermind's memory for pruning
 	PruneMemSize config.Parameter `yaml:"pruneMemSize,omitempty"`
+
+	// Flag for downloading complete chain history instead of starting from Beacon deployment
+	DownloadCompleteHistory config.Parameter `yaml:"downloadCompleteHistory,omitempty"`
 
 	// Additional modules to enable on the primary JSON RPC endpoint
 	AdditionalModules config.Parameter `yaml:"additionalModules,omitempty"`
@@ -76,7 +79,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CACHE_SIZE"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			OverwriteOnUpgrade:   false,
 		},
 
 		MaxPeers: config.Parameter{
@@ -100,7 +103,19 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"NETHERMIND_PRUNE_MEM_SIZE"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		DownloadCompleteHistory: config.Parameter{
+			ID:                   "downloadCompleteHistory",
+			Name:                 "Download Complete History",
+			Description:          "By default, Nethermind will only download chain information (blocks, receipts, and headers) from the deployment of the Beacon Chain on this network. This will reduce the amount of disk space it uses, but other Ethereum nodes won't be able to connect to your node and fully sync the complete chain history from scratch.\n\nIf you prefer to use the old behavior and have Nethermind download the complete chain history, enable this setting.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
+			EnvironmentVariables: []string{"NETHERMIND_COMPLETE_HISTORY"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
 		},
 
 		AdditionalModules: config.Parameter{
@@ -213,6 +228,7 @@ func (cfg *NethermindConfig) GetParameters() []*config.Parameter {
 		&cfg.CacheSize,
 		&cfg.MaxPeers,
 		&cfg.PruneMemSize,
+		&cfg.DownloadCompleteHistory,
 		&cfg.AdditionalModules,
 		&cfg.AdditionalUrls,
 		&cfg.ContainerTag,
