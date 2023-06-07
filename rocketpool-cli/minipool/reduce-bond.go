@@ -393,11 +393,9 @@ func forceFeeDistribution(c *cli.Context, rp *rocketpool.Client) error {
 	fmt.Println("NOTE: prior to bond reduction, you must distribute the funds in your fee distributor.\n")
 
 	// Print info
-	nodeShare := (1 + canDistributeResponse.AverageNodeFee) * balance / 2
-	rEthShare := balance - nodeShare
-	fmt.Printf("Your node's average commission is %.2f%%.\n", canDistributeResponse.AverageNodeFee*100.0)
+	rEthShare := balance - canDistributeResponse.NodeShare
 	fmt.Printf("Your fee distributor's balance of %.6f ETH will be distributed as follows:\n", balance)
-	fmt.Printf("\tYour withdrawal address will receive %.6f ETH.\n", nodeShare)
+	fmt.Printf("\tYour withdrawal address will receive %.6f ETH.\n", canDistributeResponse.NodeShare)
 	fmt.Printf("\trETH pool stakers will receive %.6f ETH.\n\n", rEthShare)
 
 	// Assign max fees

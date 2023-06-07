@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -162,8 +163,12 @@ func canDistribute(c *cli.Context) (*api.NodeCanDistributeResponse, error) {
 		return nil, err
 	}
 
-	// Get fee distributor address
+	// Get the fee distributor
 	distributorAddress, err := node.GetDistributorAddress(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+	distributor, err := node.NewDistributor(rp, distributorAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -178,20 +183,19 @@ func canDistribute(c *cli.Context) (*api.NodeCanDistributeResponse, error) {
 		return err
 	})
 
-	// Get the node's average fee
+	// Get the node share of the balance
 	wg.Go(func() error {
-		var err error
-		response.AverageNodeFee, err = node.GetNodeAverageFee(rp, nodeAccount.Address, nil)
-		return err
+		nodeShareRaw, err := distributor.GetNodeShare(nil)
+		if err != nil {
+			return fmt.Errorf("error getting node share for distributor %s: %w", distributorAddress.Hex(), err)
+		}
+		response.NodeShare = eth.WeiToEth(nodeShareRaw)
+		return nil
 	})
 
 	// Get gas estimates
 	wg.Go(func() error {
 		var err error
-		distributor, err := node.NewDistributor(rp, distributorAddress, nil)
-		if err != nil {
-			return err
-		}
 		opts, err := w.GetNodeAccountTransactor()
 		if err != nil {
 			return err
