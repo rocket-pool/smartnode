@@ -123,6 +123,7 @@ type RocketPoolConfig struct {
 
 	// Addons
 	GraffitiWallWriter addontypes.SmartnodeAddon `yaml:"addon-gww,omitempty"`
+	Apcupsd            addontypes.SmartnodeAddon `yaml:"addon-apcupsd,omitempty"`
 }
 
 // Load configuration settings from a file
