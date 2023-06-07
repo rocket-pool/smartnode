@@ -560,7 +560,7 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 
 			// Add minipool rewards to the JSON
 			for _, minipoolInfo := range nodeInfo.Minipools {
-				successfulAttestations := uint64(len(minipoolInfo.CompletedAttestations))
+				successfulAttestations := uint64(minipoolInfo.AttestationCount)
 				missingAttestations := uint64(len(minipoolInfo.MissingAttestationSlots))
 				performance := &SmoothingPoolMinipoolPerformance{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
