@@ -155,11 +155,11 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Rescuing Dissolved Minipools ===%s\n", colorGreen, colorReset)
 	fmt.Println("The new `rocketpool minipool rescue-dissolved` command can be used to \"rescue\" a dissolved minipool so you can retrieve the ETH it has locked on the Beacon Chain. You'll need enough ETH to complete its 32 ETH bond in order to do this. Please see the guide for more details: https://docs.rocketpool.net/guides/node/rescue-dissolved.html\n")
 
-	fmt.Printf("%s=== RPL Stake-on-Behalf ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Stake-on-Behalf feature of the Rocket Pool staking website has made a return, and now comes with a whitelist so only addresses you allow can use it. Add or remove addresses to or from your whitelist with the new `rocketpool node add-address-to-stake-rpl-whitelist` and `rocketpool node remove-address-from-stake-rpl-whitelist` commands!\n")
+	fmt.Printf("%s=== Geth Changes ===%s\n", colorGreen, colorReset)
+	fmt.Println("Geth now uses the modern Pebble database for all new syncs which is faster and more reliable than the old LevelDB database, so the checkbox for \"Use Pebble\" has been removed from its settings in the config TUI.\nIf you previously synced Geth using the old LevelDB format, it will still work but if you want to upgrade to the new database, you'll need to resync it with `rocketpool service resync-eth1`.\n")
 
-	fmt.Printf("%s=== Rewardable RPL Display ===%s\n", colorGreen, colorReset)
-	fmt.Println("`rocketpool node status` and the Grafana dashboard now show how much of your RPL stake is eligible for RPL rewards. To contribute towards your node's eligible RPL stake, a minipool must be active on the Beacon Chain; it can't be pending in the queue or exited.")
+	fmt.Printf("%s=== Nethermind Changes ===%s\n", colorGreen, colorReset)
+	fmt.Println("Nethermind has undergone a significant update and now uses *dramatically* less disk space and RAM. To take advantage of the new disk space savings, you'll need to resync it with `rocketpool service resync-eth1`.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
