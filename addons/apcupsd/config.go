@@ -6,18 +6,20 @@ import (
 
 // Constants
 const (
-	containerTag string = "rocketpool/graffiti-wall-addon:v1.0.1"
+	containerTag string = "threevl/apcupsd-prometheus:0.1.0"
 )
 
 // Configuration for the Graffiti Wall Writer
 type ApcupsdConfig struct {
 	Title string `yaml:"-"`
 
-	Enabled    config.Parameter `yaml:"enabled,omitempty"`
-	MountPoint config.Parameter `yaml:"mountPoint,omitempty"`
-	Debug      config.Parameter `yaml:"debug,omitempty"`
-	PollCron   config.Parameter `yaml:"pollCron,omitempty"`
-	Timeout    config.Parameter `yaml:"timeout,omitempty"`
+	Enabled        config.Parameter `yaml:"enabled,omitempty"`
+	ContainerTag   config.Parameter `yaml:"containerTag,omitempty"`
+	MountPoint     config.Parameter `yaml:"mountPoint,omitempty"`
+	Debug          config.Parameter `yaml:"debug,omitempty"`
+	PollCron       config.Parameter `yaml:"pollCron,omitempty"`
+	Timeout        config.Parameter `yaml:"timeout,omitempty"`
+	OutputFilepath config.Parameter `yaml:"outputFilepath,omitempty"`
 }
 
 // Creates a new configuration instance
@@ -35,6 +37,17 @@ func NewConfig() *ApcupsdConfig {
 			EnvironmentVariables: []string{"ADDON_APCUPSD_ENABLED"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+		},
+		ContainerTag: config.Parameter{
+			ID:                   "containerTag",
+			Name:                 "APCUPSD Container Tag",
+			Description:          "The tag name of the APCUPSD container you want to use on Docker Hub.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: containerTag},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Exporter},
+			EnvironmentVariables: []string{"ADDON_APCUPSD_CONTAINER_TAG"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
 		},
 		MountPoint: config.Parameter{
 			ID:                   "mountPoint",
@@ -63,8 +76,8 @@ func NewConfig() *ApcupsdConfig {
 			ID:                   "timeout",
 			Name:                 "Timeout",
 			Description:          "How long to wait for a connection to the UPS (ms) before timing out. Defaults to \"30000ms\".",
-			Type:                 config.ParameterType_Int,
-			Default:              map[config.Network]interface{}{config.Network_All: 0},
+			Type:                 config.ParameterType_Uint,
+			Default:              map[config.Network]interface{}{config.Network_All: uint64(30000)},
 			AffectsContainers:    []config.ContainerID{ContainerID_Apcupsd},
 			EnvironmentVariables: []string{"ADDON_APCUPSD_TIMEOUT"},
 			CanBeBlank:           true,
@@ -73,13 +86,24 @@ func NewConfig() *ApcupsdConfig {
 		PollCron: config.Parameter{
 			ID:                   "pollCron",
 			Name:                 "Update Interval",
-			Description:          "CRON interval to poll stats from the UPC. Uses node-cron format, see https://www.npmjs.com/package/node-cron for details. Defaults to \"* * * * *\"",
+			Description:          "Cron interval to poll stats from the UPC. Uses node-cron format, see https://www.npmjs.com/package/node-cron for details. Defaults to \"* * * * *\"",
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: ""},
 			Regex:                "^?:\\d+|\\*|\\*\\/\\d+$",
 			AffectsContainers:    []config.ContainerID{ContainerID_Apcupsd},
-			EnvironmentVariables: []string{"ADDON_APCUPSD_POLL_INTERVAL"},
+			EnvironmentVariables: []string{"ADDON_APCUPSD_POLL_CRON"},
 			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+		OutputFilepath: config.Parameter{
+			ID:                   "outputFilepath",
+			Name:                 "Prometheus file name",
+			Description:          "The filename to write ups data to within the node exporter textcollector directory",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: "apcupsd.prom"},
+			AffectsContainers:    []config.ContainerID{ContainerID_Apcupsd},
+			EnvironmentVariables: []string{"ADDON_APCUPSD_OUTPUT_FILEPATH"},
+			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 	}
@@ -89,10 +113,12 @@ func NewConfig() *ApcupsdConfig {
 func (cfg *ApcupsdConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.Enabled,
+		&cfg.ContainerTag,
 		&cfg.MountPoint,
 		&cfg.PollCron,
+		&cfg.Timeout,
+		&cfg.OutputFilepath,
 		&cfg.Debug,
-		// &cfg.Timeout,
 	}
 }
 

@@ -1,6 +1,6 @@
 package shared
 
-const RocketPoolVersion string = "1.9.6-apcupsd-dev.1"
+const RocketPoolVersion string = "1.9.5"
 
 const Logo string = `______           _        _    ______           _
 | ___ \         | |      | |   | ___ \         | |
