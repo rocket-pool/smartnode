@@ -10,7 +10,7 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-// The page wrapper for the Graffiti Wall Writer addon config
+// The page wrapper for the APCUPSD addon config
 type AddonApcupsdPage struct {
 	addonsPage   *AddonsPage
 	page         *page
@@ -21,7 +21,7 @@ type AddonApcupsdPage struct {
 	otherParams  []*parameterizedFormItem
 }
 
-// Creates a new page for the Graffiti Wall Writer addon settings
+// Creates a new page for the APCUPSD addon settings
 func NewAddonApcupsdPage(addonsPage *AddonsPage, addon addons.SmartnodeAddon) *AddonApcupsdPage {
 
 	configPage := &AddonApcupsdPage{
@@ -48,7 +48,7 @@ func (configPage *AddonApcupsdPage) getPage() *page {
 	return configPage.page
 }
 
-// Creates the content for the GWW settings page
+// Creates the content for the APCUPSD settings page
 func (configPage *AddonApcupsdPage) createContent() {
 
 	// Create the layout
