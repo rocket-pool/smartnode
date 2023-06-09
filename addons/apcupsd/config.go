@@ -6,20 +6,22 @@ import (
 
 // Constants
 const (
-	containerTag string = "threevl/apcupsd-prometheus:0.1.0"
+	containerTag         string = "gersilex/apcupsd:v1.0.0"
+	exporterContainerTag string = "threevl/apcupsd-prometheus:0.2.0"
 )
 
 // Configuration for the Graffiti Wall Writer
 type ApcupsdConfig struct {
 	Title string `yaml:"-"`
 
-	Enabled        config.Parameter `yaml:"enabled,omitempty"`
-	ContainerTag   config.Parameter `yaml:"containerTag,omitempty"`
-	MountPoint     config.Parameter `yaml:"mountPoint,omitempty"`
-	Debug          config.Parameter `yaml:"debug,omitempty"`
-	PollCron       config.Parameter `yaml:"pollCron,omitempty"`
-	Timeout        config.Parameter `yaml:"timeout,omitempty"`
-	OutputFilepath config.Parameter `yaml:"outputFilepath,omitempty"`
+	Enabled                     config.Parameter `yaml:"enabled,omitempty"`
+	ApcupsdContainerTag         config.Parameter `yaml:"apcupsdContainerTag,omitempty"`
+	ApcupsdExporterContainerTag config.Parameter `yaml:"apcupsdExporterContainerTag,omitempty"`
+	MountPoint                  config.Parameter `yaml:"mountPoint,omitempty"`
+	Debug                       config.Parameter `yaml:"debug,omitempty"`
+	PollCron                    config.Parameter `yaml:"pollCron,omitempty"`
+	Timeout                     config.Parameter `yaml:"timeout,omitempty"`
+	OutputFilepath              config.Parameter `yaml:"outputFilepath,omitempty"`
 }
 
 // Creates a new configuration instance
@@ -38,14 +40,25 @@ func NewConfig() *ApcupsdConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
-		ContainerTag: config.Parameter{
+		ApcupsdContainerTag: config.Parameter{
 			ID:                   "containerTag",
 			Name:                 "APCUPSD Container Tag",
-			Description:          "The tag name of the APCUPSD container you want to use on Docker Hub.",
+			Description:          "The container tag name of the APCUPSD container.",
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: containerTag},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Exporter},
 			EnvironmentVariables: []string{"ADDON_APCUPSD_CONTAINER_TAG"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+		ApcupsdExporterContainerTag: config.Parameter{
+			ID:                   "exporterContainerTag",
+			Name:                 "APCUPSD Exporter Container Tag",
+			Description:          "The container tag name of the APCUPSD Prometheus Exporter.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: exporterContainerTag},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Exporter},
+			EnvironmentVariables: []string{"ADDON_APCUPSD_EXPORTER_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
@@ -113,7 +126,8 @@ func NewConfig() *ApcupsdConfig {
 func (cfg *ApcupsdConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.Enabled,
-		&cfg.ContainerTag,
+		&cfg.ApcupsdContainerTag,
+		&cfg.ApcupsdExporterContainerTag,
 		&cfg.MountPoint,
 		&cfg.PollCron,
 		&cfg.Timeout,

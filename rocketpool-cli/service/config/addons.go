@@ -40,6 +40,7 @@ func NewAddonsPage(home *settingsHome) *AddonsPage {
 
 	// Create the addon subpages
 	addonsPage.gwwPage = NewAddonGwwPage(addonsPage, home.md.Config.GraffitiWallWriter)
+	// TODO: Conditionally add the subpage only if metrics are enabled
 	addonsPage.apcupsdPage = NewAddonApcupsdPage(addonsPage, home.md.Config.Apcupsd)
 	addonSubpages := []settingsPage{
 		addonsPage.gwwPage,
