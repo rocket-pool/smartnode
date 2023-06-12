@@ -197,8 +197,12 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 		return false, err
 	}
 
-	// Get fee distributor address
+	// Get fee distributor
 	distributorAddress, err := node.GetDistributorAddress(t.rp, nodeAccount.Address, nil)
+	if err != nil {
+		return false, err
+	}
+	distributor, err := node.NewDistributor(t.rp, distributorAddress, nil)
 	if err != nil {
 		return false, err
 	}
@@ -206,7 +210,7 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	// Sync
 	var wg errgroup.Group
 	var balanceRaw *big.Int
-	var avgNodeFee float64
+	var nodeShare float64
 
 	// Get the contract's balance
 	wg.Go(func() error {
@@ -215,11 +219,14 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 		return err
 	})
 
-	// Get the node's average fee
+	// Get the node share of the balance
 	wg.Go(func() error {
-		var err error
-		avgNodeFee, err = node.GetNodeAverageFee(t.rp, nodeAccount.Address, nil)
-		return err
+		nodeShareRaw, err := distributor.GetNodeShare(nil)
+		if err != nil {
+			return fmt.Errorf("error getting node share for distributor %s: %w", distributorAddress.Hex(), err)
+		}
+		nodeShare = eth.WeiToEth(nodeShareRaw)
+		return nil
 	})
 
 	// Wait for data
@@ -235,10 +242,8 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	t.log.Println("NOTE: prior to bond reduction, you must distribute the funds in your fee distributor.")
 
 	// Print info
-	nodeShare := (1 + avgNodeFee) * balance / 2
 	rEthShare := balance - nodeShare
-	t.log.Printlnf("Your node's average commission is %.2f%%.", avgNodeFee*100.0)
-	t.log.Printlnf("Your fee distributor's balance of %.6f ETH will be distributed as follows:", balance)
+	t.log.Printlnf("Your fee distributor's balance of %.6f ETH will be distributed as follows:\n", balance)
 	t.log.Printlnf("\tYour withdrawal address will receive %.6f ETH.", nodeShare)
 	t.log.Printlnf("\trETH pool stakers will receive %.6f ETH.\n", rEthShare)
 
@@ -248,10 +253,6 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	}
 
 	// Get the gas limit
-	distributor, err := node.NewDistributor(t.rp, distributorAddress, nil)
-	if err != nil {
-		return false, err
-	}
 	gasInfo, err := distributor.EstimateDistributeGas(opts)
 	if err != nil {
 		return false, fmt.Errorf("could not estimate the gas required to distribute node fees: %w", err)
