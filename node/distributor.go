@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -59,6 +60,24 @@ func (d *Distributor) Distribute(opts *bind.TransactOpts) (common.Hash, error) {
 		return common.Hash{}, fmt.Errorf("Could not distribute fee distributor balance: %w", err)
 	}
 	return tx.Hash(), nil
+}
+
+// Gets the node share of the distributor's current balance
+func (d *Distributor) GetNodeShare(opts *bind.CallOpts) (*big.Int, error) {
+	nodeShare := new(*big.Int)
+	if err := d.Contract.Call(opts, nodeShare, "getNodeShare"); err != nil {
+		return nil, fmt.Errorf("Could not get distributor %s node share: %w", d.Address.Hex(), err)
+	}
+	return *nodeShare, nil
+}
+
+// Gets the user share of the distributor's current balance
+func (d *Distributor) GetUserShare(opts *bind.CallOpts) (*big.Int, error) {
+	userShare := new(*big.Int)
+	if err := d.Contract.Call(opts, userShare, "getUserShare"); err != nil {
+		return nil, fmt.Errorf("Could not get distributor %s user share: %w", d.Address.Hex(), err)
+	}
+	return *userShare, nil
 }
 
 // Get contracts
