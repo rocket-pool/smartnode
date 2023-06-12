@@ -110,7 +110,6 @@ func NewRollingRecordManager(log *log.ColorLogger, logPrefix string, cfg *config
 	}, nil
 }
 
-/*
 // Process the details of the latest head state
 func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) error {
 
@@ -121,7 +120,7 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 	}
 
 	// Get the epoch that slot is for
-	finalizedEpoch := latestFinalizedBlock.Slot / state.BeaconConfig.SlotsPerEpoch
+	latestFinalizedEpoch := latestFinalizedBlock.Slot / state.BeaconConfig.SlotsPerEpoch
 
 	// Check if a network balance update is due
 	isNetworkBalanceUpdateDue, networkBalanceSlot, err := r.isNetworkBalanceUpdateRequired(state)
@@ -129,62 +128,111 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 		return fmt.Errorf("error checking if network balance update is required: %w", err)
 	}
 
+	// Check if the required network balance epoch is finalized yet
+	networkBalanceEpoch := networkBalanceSlot / r.beaconCfg.SlotsPerEpoch
+	requiredNetworkBalanceEpoch := networkBalanceEpoch + 1
+	isNetworkBalanceReadyForReport := latestFinalizedEpoch >= requiredNetworkBalanceEpoch
+
 	// Check if a rewards interval is due
 	isRewardsSubmissionDue, rewardsSlot, err := r.isRewardsIntervalSubmissionRequired(state)
 	if err != nil {
 		return fmt.Errorf("error checking if rewards submission is required: %w", err)
 	}
 
+	// Check if the required reward submission epoch is finalized yet
+	var rewardsElBlock uint64
+	rewardsEpoch := rewardsSlot / r.beaconCfg.SlotsPerEpoch
+	requiredRewardsEpoch := rewardsEpoch + 1
+	isRewardsReadyForReport := latestFinalizedEpoch >= requiredRewardsEpoch
+	if isRewardsReadyForReport {
+		// Get the actual slot to report on
+		rewardsSlot, rewardsElBlock, err = r.getTrueRewardsIntervalSubmissionSlot(rewardsSlot)
+		if err != nil {
+			return fmt.Errorf("error getting the true rewards interval slot: %w", err)
+		}
+	}
+
+	// If no special upcoming state is required, update normally
 	if !isNetworkBalanceUpdateDue && !isRewardsSubmissionDue {
-		// No special upcoming state required, so update normally
-		_, err = r.updateToSlot(latestFinalizedBlock.Slot)
+		err = r.updateToSlot(latestFinalizedBlock.Slot)
 		if err != nil {
 			return fmt.Errorf("error during previous rolling record update: %w", err)
 		}
 		return nil
 	}
 
-	var earliestRequiredSlot uint64
-	if isNetworkBalanceUpdateDue && isRewardsSubmissionDue {
+	// Process each of the required updates
+	if isNetworkBalanceReadyForReport && isRewardsReadyForReport {
 		if networkBalanceSlot < rewardsSlot {
-			earliestRequiredSlot = networkBalanceSlot
+			// Process network balances first, then do the rewards interval
+			err = r.runNetworkBalancesReport(networkBalanceSlot)
+			if err != nil {
+				return fmt.Errorf("error running network balances report: %w", err)
+			}
+			err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
+			if err != nil {
+				return fmt.Errorf("error running rewards interval report: %w", err)
+			}
 		} else {
-			earliestRequiredSlot = rewardsSlot
+			// Process the rewards interval first, then do network balances
+			err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
+			if err != nil {
+				return fmt.Errorf("error running rewards interval report: %w", err)
+			}
+			err = r.runNetworkBalancesReport(networkBalanceSlot)
+			if err != nil {
+				return fmt.Errorf("error running network balances report: %w", err)
+			}
 		}
 	} else if isNetworkBalanceUpdateDue {
-		earliestRequiredSlot = networkBalanceSlot
+		// Process network balances
+		err = r.runNetworkBalancesReport(networkBalanceSlot)
+		if err != nil {
+			return fmt.Errorf("error running network balances report: %w", err)
+		}
 	} else if isRewardsSubmissionDue {
-		earliestRequiredSlot = rewardsSlot
+		// Process a rewards interval
+		err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
+		if err != nil {
+			return fmt.Errorf("error running rewards interval report: %w", err)
+		}
 	}
 
-	// Do NOT do an update until the required slot has been finalized
-	if latestFinalizedBlock.Slot < earliestRequiredSlot {
-		r.log.Printlnf("%s TODO: Message goes here")
-	}
+	return nil
+
+}
+
+// TODO
+func (r *RollingRecordManager) runNetworkBalancesReport(networkBalanceSlot uint64) error {
+	return nil
+}
+
+// TODO
+func (r *RollingRecordManager) runRewardsIntervalReport(rewardsSlot uint64, elBlock uint64) error {
+	return nil
 }
 
 // Start an update to a given slot
-func (r *RollingRecordManager) updateToSlot(slot uint64) (bool, error) {
+func (r *RollingRecordManager) updateToSlot(slot uint64) error {
 	// Skip it if the latest record is already up to date or is in the process
 	if r.Record.PendingSlot >= slot {
-		return false, nil
+		return nil
 	}
 
 	// Get the latest finalized state
 	state, err := r.mgr.GetStateForSlot(slot)
 	if err != nil {
-		return false, fmt.Errorf("error getting state at slot %d: %w", slot, err)
+		return fmt.Errorf("error getting state at slot %d: %w", slot, err)
 	}
 
 	// Run an update on it
-	updateStarted, err := r.Record.UpdateToState(state, false)
+	err = r.Record.UpdateToSlot(slot, state)
 	if err != nil {
-		return false, fmt.Errorf("error updating rolling record to slot %d, block %d: %w", state.BeaconSlotNumber, state.ElBlockNumber, err)
+		return fmt.Errorf("error updating rolling record to slot %d, block %d: %w", state.BeaconSlotNumber, state.ElBlockNumber, err)
 	}
 
-	return updateStarted, nil
+	return nil
 }
-*/
 
 // Check if a network balance submission is required and if so, the slot number for the update
 func (r *RollingRecordManager) isNetworkBalanceUpdateRequired(state *state.NetworkState) (bool, uint64, error) {
@@ -265,12 +313,34 @@ func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.
 	return true, targetSlot, nil
 }
 
+// Get the actual slot to be used for a rewards interval submission instead of the naively-determined one
+// NOTE: only call this once the required epoch (targetSlotEpoch + 1) has been finalized
+func (r *RollingRecordManager) getTrueRewardsIntervalSubmissionSlot(targetSlot uint64) (uint64, uint64, error) {
+	// Get the first successful block
+	for {
+		// Try to get the current block
+		block, exists, err := r.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
+		if err != nil {
+			return 0, 0, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
+		}
+
+		// If the block was missing, try the previous one
+		if !exists {
+			r.log.Printlnf("Slot %d was missing, trying the previous one...", targetSlot)
+			targetSlot--
+		} else {
+			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
+			return targetSlot, block.ExecutionBlockNumber, nil
+		}
+	}
+}
+
 // Generate a new record for the provided slot using the latest viable saved record
 func (r *RollingRecordManager) GenerateRecordForState(state *state.NetworkState) (*rewards.RollingRecord, error) {
 
 	// Load the latest viable record
 	slot := state.BeaconSlotNumber
-	record, err := r.LoadRecordFromDisk(r.startSlot, slot)
+	record, err := r.LoadBestRecordFromDisk(r.startSlot, slot)
 	if err != nil {
 		return nil, fmt.Errorf("error loading best record for slot %d: %w", slot, err)
 	}
@@ -382,7 +452,7 @@ func (r *RollingRecordManager) SaveRecordToFile(record *rewards.RollingRecord) e
 }
 
 // Load the most recent appropriate rolling record from disk, using the checksum table as an index
-func (r *RollingRecordManager) LoadRecordFromDisk(startSlot uint64, targetSlot uint64) (*rewards.RollingRecord, error) {
+func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSlot uint64) (*rewards.RollingRecord, error) {
 
 	// Get the checksum filename
 	recordsPath := r.cfg.Smartnode.GetRecordsPath()
