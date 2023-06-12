@@ -340,7 +340,7 @@ func (r *RollingRecord) processAttestationsInSlot(inclusionSlot uint64, attestat
 
 		// Get the RP committees for this attestation's slot and index
 		slotInfo, exists := r.intervalDutiesInfo.Slots[attestation.SlotIndex]
-		if exists {
+		if exists && inclusionSlot-attestation.SlotIndex <= r.beaconConfig.SlotsPerEpoch { // Ignore attestations delayed by more than 32 slots
 			rpCommittee, exists := slotInfo.Committees[attestation.CommitteeIndex]
 			if exists {
 				blockTime := r.genesisTime.Add(time.Second * time.Duration(r.beaconConfig.SecondsPerSlot*attestation.SlotIndex))
