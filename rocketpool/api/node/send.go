@@ -59,7 +59,7 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 			return nil, err
 		}
 		response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
-		gasInfo, err := eth.EstimateSendTransactionGas(ec, nodeAccount.Address, opts)
+		gasInfo, err := eth.EstimateSendTransactionGas(ec, nodeAccount.Address, nil, false, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -167,7 +167,7 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 
 		// Transfer ETH
 		opts.Value = amountWei
-		hash, err := eth.SendTransaction(ec, to, w.GetChainID(), opts)
+		hash, err := eth.SendTransaction(ec, to, w.GetChainID(), nil, false, opts)
 		if err != nil {
 			return nil, err
 		}

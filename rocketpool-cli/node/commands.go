@@ -671,6 +671,33 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					return signMessage(c)
 				},
 			},
+
+			{
+				Name:      "send-message",
+				Usage:     "Send a zero-ETH transaction to the target address (or ENS) with the provided hex-encoded message as the data payload",
+				UsageText: "rocketpool node send-message [-y] to-address hex-message",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm message send",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					message, err := cliutils.ValidateByteArray("message", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return sendMessage(c, c.Args().Get(0), message)
+
+				},
+			},
 		},
 	})
 }

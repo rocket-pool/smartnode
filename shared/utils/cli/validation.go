@@ -252,3 +252,19 @@ func ValidatePubkey(name, value string) (types.ValidatorPubkey, error) {
 	}
 	return pubkey, nil
 }
+
+// Validate a hex-encoded byte array
+func ValidateByteArray(name, value string) ([]byte, error) {
+	// Remove a 0x prefix if present
+	if strings.HasPrefix(value, "0x") {
+		value = value[2:]
+	}
+
+	// Try to parse the string (removing the prefix)
+	bytes, err := hex.DecodeString(value)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
+	}
+
+	return bytes, nil
+}
