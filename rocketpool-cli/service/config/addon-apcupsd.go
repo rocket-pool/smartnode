@@ -7,18 +7,22 @@ import (
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/addons"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // The page wrapper for the APCUPSD addon config
 type AddonApcupsdPage struct {
-	addonsPage   *AddonsPage
-	page         *page
-	layout       *standardLayout
-	masterConfig *config.RocketPoolConfig
-	addon        addons.SmartnodeAddon
-	enabledBox   *parameterizedFormItem
-	otherParams  []*parameterizedFormItem
+	addonsPage     *AddonsPage
+	page           *page
+	layout         *standardLayout
+	masterConfig   *config.RocketPoolConfig
+	addon          addons.SmartnodeAddon
+	enabledBox     *parameterizedFormItem
+	modeBox        *parameterizedFormItem
+	exporterImage  *parameterizedFormItem
+	apcupsdImage   *parameterizedFormItem
+	mountPoint     *parameterizedFormItem
+	metricsPort    *parameterizedFormItem
+	apcupsdAddress *parameterizedFormItem
 }
 
 // Creates a new page for the APCUPSD addon settings
@@ -76,21 +80,31 @@ func (configPage *AddonApcupsdPage) createContent() {
 
 	// Get the parameters
 	enabledParam := configPage.addon.GetEnabledParameter()
-	otherParams := []*cfgtypes.Parameter{}
-
-	for _, param := range configPage.addon.GetConfig().GetParameters() {
-		if param.ID != enabledParam.ID {
-			otherParams = append(otherParams, param)
-		}
-	}
+	// TODO: Don't like how I reference these by index here. Is there a better way?
+	modeParam := configPage.addon.GetConfig().GetParameters()[1]
+	exporterImageParam := configPage.addon.GetConfig().GetParameters()[2]
+	apcupsdImageParam := configPage.addon.GetConfig().GetParameters()[3]
+	metricsPortParam := configPage.addon.GetConfig().GetParameters()[4]
+	mountPointParam := configPage.addon.GetConfig().GetParameters()[5]
+	networkAddress := configPage.addon.GetConfig().GetParameters()[6]
 
 	// Set up the form items
 	configPage.enabledBox = createParameterizedCheckbox(enabledParam)
-	configPage.otherParams = createParameterizedFormItems(otherParams, configPage.layout.descriptionBox)
+	configPage.modeBox = createParameterizedDropDown(modeParam, configPage.layout.descriptionBox)
+	configPage.exporterImage = createParameterizedStringField(exporterImageParam)
+	configPage.apcupsdImage = createParameterizedStringField(apcupsdImageParam)
+	configPage.metricsPort = createParameterizedStringField(metricsPortParam)
+	configPage.mountPoint = createParameterizedStringField(mountPointParam)
+	configPage.apcupsdAddress = createParameterizedStringField(networkAddress)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enabledBox)
-	configPage.layout.mapParameterizedFormItems(configPage.otherParams...)
+	configPage.layout.mapParameterizedFormItems(configPage.modeBox)
+	configPage.layout.mapParameterizedFormItems(configPage.exporterImage)
+	configPage.layout.mapParameterizedFormItems(configPage.apcupsdImage)
+	configPage.layout.mapParameterizedFormItems(configPage.metricsPort)
+	configPage.layout.mapParameterizedFormItems(configPage.mountPoint)
+	configPage.layout.mapParameterizedFormItems(configPage.apcupsdAddress)
 
 	// Set up the setting callbacks
 	configPage.enabledBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
@@ -100,23 +114,58 @@ func (configPage *AddonApcupsdPage) createContent() {
 		enabledParam.Value = checked
 		configPage.handleEnableChanged()
 	})
+	configPage.modeBox.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
+		if configPage.modeBox.parameter.Value == configPage.modeBox.parameter.Options[index].Value {
+			return
+		}
+		configPage.modeBox.parameter.Value = configPage.modeBox.parameter.Options[index].Value
+		configPage.handleModeChanged()
+	})
 
 	// Do the initial draw
-	configPage.handleEnableChanged()
+	configPage.handleDraw()
 
 }
 
-// Handle all of the form changes when the Use Fallback EC box has changed
+// Handle all of the form changes when the Enabled box has changed
 func (configPage *AddonApcupsdPage) handleEnableChanged() {
+	configPage.handleDraw()
+}
+
+// Handle all of the form changes when the Mode box has changed
+func (configPage *AddonApcupsdPage) handleModeChanged() {
+	configPage.handleDraw()
+}
+
+func (configPage *AddonApcupsdPage) handleDraw() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enabledBox.item)
 
-	// Only add the supporting stuff if external clients are enabled
+	// Only add the supporting stuff if addon is enabled
 	if configPage.addon.GetEnabledParameter().Value == false {
 		return
 	}
-	configPage.layout.addFormItems(configPage.otherParams)
+	configPage.addCommonFields()
+	if configPage.modeBox.parameter.Value == configPage.modeBox.parameter.Options[0].Value {
+		configPage.addContainerFields()
+	} else {
+		configPage.addNetworkFields()
+	}
 	configPage.layout.refresh()
+}
+
+func (configPage *AddonApcupsdPage) addCommonFields() {
+	configPage.layout.form.AddFormItem(configPage.modeBox.item)
+	configPage.layout.form.AddFormItem(configPage.exporterImage.item)
+	configPage.layout.form.AddFormItem(configPage.metricsPort.item)
+}
+func (configPage *AddonApcupsdPage) addContainerFields() {
+	configPage.layout.form.AddFormItem(configPage.apcupsdImage.item)
+	configPage.layout.form.AddFormItem(configPage.mountPoint.item)
+}
+
+func (configPage *AddonApcupsdPage) addNetworkFields() {
+	configPage.layout.form.AddFormItem(configPage.apcupsdAddress.item)
 }
 
 // Handle a bulk redraw request

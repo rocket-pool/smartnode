@@ -1649,10 +1649,26 @@ func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir strin
 		}
 
 		// Write container file
-		containerContents, err := envsubst.ReadFile(filepath.Join(templatesFolder, apcupsd.ApcupsdContainerName+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting APCUPSD addon container template: %w", err)
+		apcupsdMode := cfg.Apcupsd.GetConfig().GetParameters()[1]
+
+		var containerContents []byte
+
+		if apcupsdMode.Value == apcupsd.Mode_Network {
+
+			containerContents, err = envsubst.ReadFile(filepath.Join(templatesFolder, apcupsd.ApcupsdNetworkComposeTemplateName+templateSuffix))
+			if err != nil {
+				return []string{}, fmt.Errorf("error reading and substituting APCUPSD addon container template: %w", err)
+			}
+
+		} else if apcupsdMode.Value == apcupsd.Mode_Container {
+
+			containerContents, err = envsubst.ReadFile(filepath.Join(templatesFolder, apcupsd.ApcupsdContainerComposeTemplateName+templateSuffix))
+			if err != nil {
+				return []string{}, fmt.Errorf("error reading and substituting APCUPSD addon container template: %w", err)
+			}
+
 		}
+
 		containerPath := filepath.Join(runtimeFolder, apcupsd.ApcupsdContainerName+composeFileSuffix)
 		err = os.WriteFile(containerPath, containerContents, 0664)
 		if err != nil {
@@ -1662,19 +1678,19 @@ func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir strin
 		deployedContainers = append(deployedContainers, containerPath)
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, apcupsd.ApcupsdContainerName+composeFileSuffix))
 
-		// TODO: Confirm this is a good location for a generic config file (i.e. not a container file)
 		// Write config file
-
-		configContents, err := envsubst.ReadFile(filepath.Join(templatesFolder, apcupsd.ApcupsdConfigTemplateName+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting APCUPSD addon config template: %w", err)
+		if apcupsdMode.Value == apcupsd.Mode_Container {
+			// TODO: Confirm this is a good location for a generic config file (i.e. not a container file)
+			configContents, err := envsubst.ReadFile(filepath.Join(templatesFolder, apcupsd.ApcupsdConfigTemplateName+templateSuffix))
+			if err != nil {
+				return []string{}, fmt.Errorf("error reading and substituting APCUPSD addon config template: %w", err)
+			}
+			configPath := filepath.Join(rocketpoolDir, apcupsd.ApcupsdConfigName)
+			err = os.WriteFile(configPath, configContents, 0664)
+			if err != nil {
+				return []string{}, fmt.Errorf("could not write APCUPSD addon config file to %s: %w", configPath, err)
+			}
 		}
-		configPath := filepath.Join(rocketpoolDir, apcupsd.ApcupsdConfigName)
-		err = os.WriteFile(configPath, configContents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write APCUPSD addon config file to %s: %w", configPath, err)
-		}
-
 	}
 
 	return deployedContainers, nil

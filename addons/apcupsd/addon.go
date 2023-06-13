@@ -8,10 +8,13 @@ import (
 )
 
 const (
-	ContainerID_Apcupsd       cfgtypes.ContainerID = "apcupsd"
-	ApcupsdContainerName      string               = "addon_apcupsd"
-	ApcupsdConfigTemplateName string               = "addon_apcupsd_config"
-	ApcupsdConfigName         string               = "addon_apcupsd.conf"
+	ContainerID_Apcupsd                 cfgtypes.ContainerID = "apcupsd"
+	ContainerID_ApcupsdExporter         cfgtypes.ContainerID = "apcupsd_exporter"
+	ApcupsdContainerName                string               = "addon_apcupsd"
+	ApcupsdNetworkComposeTemplateName   string               = "addon_apcupsd.network"
+	ApcupsdContainerComposeTemplateName string               = "addon_apcupsd.container"
+	ApcupsdConfigTemplateName           string               = "addon_apcupsd_config"
+	ApcupsdConfigName                   string               = "addon_apcupsd.conf"
 )
 
 type Apcupsd struct {
