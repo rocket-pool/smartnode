@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -41,6 +42,7 @@ type RollingRecordManager struct {
 	ExpectedRewardsIntervalBlock uint64
 
 	log                  *log.ColorLogger
+	errLog               *log.ColorLogger
 	logPrefix            string
 	cfg                  *config.RocketPoolConfig
 	rp                   *rocketpool.RocketPool
@@ -53,10 +55,13 @@ type RollingRecordManager struct {
 	compressor           *zstd.Encoder
 	decompressor         *zstd.Decoder
 	recordsFilenameRegex *regexp.Regexp
+
+	lock      *sync.Mutex
+	isRunning bool
 }
 
 // Creates a new manager for rolling records.
-func NewRollingRecordManager(log *log.ColorLogger, logPrefix string, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, nodeAddress *common.Address, startSlot uint64) (*RollingRecordManager, error) {
+func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, nodeAddress *common.Address, startSlot uint64) (*RollingRecordManager, error) {
 	// Get the beacon config and the genesis time
 	beaconCfg, err := bc.GetEth2Config()
 	if err != nil {
@@ -91,10 +96,13 @@ func NewRollingRecordManager(log *log.ColorLogger, logPrefix string, cfg *config
 		return nil, fmt.Errorf("rolling records folder location exists (%s), but is not a folder", recordsPath)
 	}
 
+	lock := &sync.Mutex{}
+	logPrefix := "[Rolling Record]"
 	return &RollingRecordManager{
 		Record: rewards.NewRollingRecord(log, logPrefix, bc, startSlot, &beaconCfg),
 
 		log:                  log,
+		errLog:               errLog,
 		logPrefix:            logPrefix,
 		cfg:                  cfg,
 		rp:                   rp,
@@ -107,11 +115,23 @@ func NewRollingRecordManager(log *log.ColorLogger, logPrefix string, cfg *config
 		compressor:           encoder,
 		decompressor:         decoder,
 		recordsFilenameRegex: recordsFilenameRegex,
+		lock:                 lock,
+		isRunning:            false,
 	}, nil
 }
 
 // Process the details of the latest head state
 func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) error {
+
+	r.log.Printlnf("Updating record to head state (slot %d)...", state.BeaconSlotNumber)
+
+	r.lock.Lock()
+	if r.isRunning {
+		r.log.Println("Record update is already running in the background.")
+		r.lock.Unlock()
+		return nil
+	}
+	r.lock.Unlock()
 
 	// Get the latest finalized slot
 	latestFinalizedBlock, err := r.mgr.GetLatestFinalizedBeaconBlock()
@@ -154,61 +174,191 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 
 	// If no special upcoming state is required, update normally
 	if !isNetworkBalanceUpdateDue && !isRewardsSubmissionDue {
-		err = r.updateToSlot(latestFinalizedBlock.Slot)
-		if err != nil {
-			return fmt.Errorf("error during previous rolling record update: %w", err)
-		}
+		go func() {
+			r.lock.Lock()
+			r.isRunning = true
+			r.lock.Unlock()
+
+			// Update the record
+			r.log.Printlnf("%s Starting record update in a separate thread.", r.logPrefix)
+			err = r.updateToSlot(latestFinalizedBlock.Slot)
+			if err != nil {
+				r.handleError(fmt.Errorf("%s error during rolling record update: %w", r.logPrefix, err))
+				return
+			}
+
+			// Log and return
+			r.log.Printlnf("%s Record update complete.", r.logPrefix)
+			r.lock.Lock()
+			r.isRunning = false
+			r.lock.Unlock()
+		}()
 		return nil
 	}
 
 	// Process each of the required updates
 	if isNetworkBalanceReadyForReport && isRewardsReadyForReport {
-		if networkBalanceSlot < rewardsSlot {
-			// Process network balances first, then do the rewards interval
-			err = r.runNetworkBalancesReport(networkBalanceSlot)
-			if err != nil {
-				return fmt.Errorf("error running network balances report: %w", err)
+		go func() {
+			r.lock.Lock()
+			r.isRunning = true
+			r.lock.Unlock()
+			if networkBalanceSlot < rewardsSlot {
+				// Process network balances
+				r.log.Printlnf("%s Running network balance report in a separate thread.", r.logPrefix)
+				err = r.runNetworkBalancesReport(networkBalanceSlot)
+				if err != nil {
+					r.handleError(fmt.Errorf("error running network balances report: %w", err))
+					return
+				}
+				r.log.Printlnf("%s Network Balance report complete.", r.logPrefix)
+
+				// Process the rewards interval
+				r.log.Printlnf("%s Running rewards interval submission in a separate thread.", r.logPrefix)
+				err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
+				if err != nil {
+					r.handleError(fmt.Errorf("error running rewards interval report: %w", err))
+					return
+				}
+				r.log.Printlnf("%s Rewards Interval submission complete.", r.logPrefix)
+			} else {
+				// Process the rewards interval
+				r.log.Printlnf("%s Running rewards interval submission in a separate thread.", r.logPrefix)
+				err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
+				if err != nil {
+					r.handleError(fmt.Errorf("error running rewards interval report: %w", err))
+					return
+				}
+				r.log.Printlnf("%s Rewards Interval submission complete.", r.logPrefix)
+
+				// Process network balances
+				r.log.Printlnf("%s Running network balance report in a separate thread.", r.logPrefix)
+				err = r.runNetworkBalancesReport(networkBalanceSlot)
+				if err != nil {
+					r.handleError(fmt.Errorf("error running network balances report: %w", err))
+					return
+				}
+				r.log.Printlnf("%s Network Balance report complete.", r.logPrefix)
 			}
-			err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
-			if err != nil {
-				return fmt.Errorf("error running rewards interval report: %w", err)
-			}
-		} else {
-			// Process the rewards interval first, then do network balances
-			err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
-			if err != nil {
-				return fmt.Errorf("error running rewards interval report: %w", err)
-			}
-			err = r.runNetworkBalancesReport(networkBalanceSlot)
-			if err != nil {
-				return fmt.Errorf("error running network balances report: %w", err)
-			}
-		}
+			r.lock.Lock()
+			r.isRunning = false
+			r.lock.Unlock()
+		}()
 	} else if isNetworkBalanceUpdateDue {
-		// Process network balances
-		err = r.runNetworkBalancesReport(networkBalanceSlot)
-		if err != nil {
-			return fmt.Errorf("error running network balances report: %w", err)
-		}
+		go func() {
+			r.lock.Lock()
+			r.isRunning = true
+			r.lock.Unlock()
+
+			// Process network balances
+			r.log.Printlnf("%s Running network balance report in a separate thread.", r.logPrefix)
+			err = r.runNetworkBalancesReport(networkBalanceSlot)
+			if err != nil {
+				r.handleError(fmt.Errorf("error running network balances report: %w", err))
+				return
+			}
+
+			// Log and return
+			r.log.Printlnf("%s Network Balance report complete.", r.logPrefix)
+			r.lock.Lock()
+			r.isRunning = false
+			r.lock.Unlock()
+		}()
 	} else if isRewardsSubmissionDue {
-		// Process a rewards interval
-		err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
-		if err != nil {
-			return fmt.Errorf("error running rewards interval report: %w", err)
-		}
+		go func() {
+			r.lock.Lock()
+			r.isRunning = true
+			r.lock.Unlock()
+
+			// Process the rewards interval
+			r.log.Printlnf("%s Running rewards interval submission in a separate thread.", r.logPrefix)
+			err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
+			if err != nil {
+				r.handleError(fmt.Errorf("error running rewards interval report: %w", err))
+				return
+			}
+
+			// Log and return
+			r.log.Printlnf("%s Rewards Interval submission complete.", r.logPrefix)
+			r.lock.Lock()
+			r.isRunning = false
+			r.lock.Unlock()
+		}()
 	}
 
 	return nil
 
 }
 
-// TODO
+// Print an error and unlock the mutex
+func (r *RollingRecordManager) handleError(err error) {
+	r.errLog.Printlnf("%s %s", r.logPrefix, err.Error())
+	r.errLog.Println("*** Rolling Record processing failed. ***")
+	r.lock.Lock()
+	r.isRunning = false
+	r.lock.Unlock()
+}
+
+// Run a network balances submission
 func (r *RollingRecordManager) runNetworkBalancesReport(networkBalanceSlot uint64) error {
+	state, err := r.mgr.GetStateForSlot(networkBalanceSlot)
+	if err != nil {
+		return fmt.Errorf("error getting state for network balance slot: %w", err)
+	}
+
+	// Check if the current record has gone past the requested slot or if it can be updated / used
+	if networkBalanceSlot < r.Record.LastDutiesSlot {
+		r.log.Printlnf("%s Current record has extended too far (need slot %d, but record has processed slot %d)... reverting to a previous checkpoint.", r.logPrefix, networkBalanceSlot, r.Record.LastDutiesSlot)
+
+		newRecord, err := r.GenerateRecordForState(state)
+		if err != nil {
+			return fmt.Errorf("error creating record for network balance slot: %w", err)
+		}
+
+		r.Record = newRecord
+	} else {
+		r.log.Printlnf("%s Current record can be used (need slot %d, record has only processed slot %d).", r.logPrefix, networkBalanceSlot, r.Record.LastDutiesSlot)
+		err = r.Record.UpdateToSlot(networkBalanceSlot, state)
+		if err != nil {
+			return fmt.Errorf("error updating record to network balance slot: %w", err)
+		}
+	}
+
+	// Run the network balance submission with the given state and record
+
+	// TODO
+
 	return nil
 }
 
-// TODO
+// Run a rewards interval report submission
 func (r *RollingRecordManager) runRewardsIntervalReport(rewardsSlot uint64, elBlock uint64) error {
+	state, err := r.mgr.GetStateForSlot(rewardsSlot)
+	if err != nil {
+		return fmt.Errorf("error getting state for rewards slot: %w", err)
+	}
+
+	// Check if the current record has gone past the requested slot or if it can be updated / used
+	if rewardsSlot < r.Record.LastDutiesSlot {
+		r.log.Printlnf("%s Current record has extended too far (need slot %d, but record has processed slot %d)... reverting to a previous checkpoint.", r.logPrefix, rewardsSlot, r.Record.LastDutiesSlot)
+
+		newRecord, err := r.GenerateRecordForState(state)
+		if err != nil {
+			return fmt.Errorf("error creating record for rewards slot: %w", err)
+		}
+
+		r.Record = newRecord
+	} else {
+		r.log.Printlnf("%s Current record can be used (need slot %d, record has only processed slot %d).", r.logPrefix, rewardsSlot, r.Record.LastDutiesSlot)
+		err = r.Record.UpdateToSlot(rewardsSlot, state)
+		if err != nil {
+			return fmt.Errorf("error updating record to rewards slot: %w", err)
+		}
+	}
+
+	// Run the rewards interval submission with the given state and record
+
+	// TODO
+
 	return nil
 }
 
