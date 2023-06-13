@@ -1,6 +1,7 @@
 package rocketpool
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -1006,6 +1007,38 @@ func (c *Client) GetEthBalance() (api.NodeEthBalanceResponse, error) {
 	}
 	if response.Error != "" {
 		return api.NodeEthBalanceResponse{}, fmt.Errorf("Could not get get-eth-balance status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Estimates the gas for sending a zero-value message with a payload
+func (c *Client) CanSendMessage(address common.Address, message []byte) (api.CanNodeSendMessageResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-send-message %s %s", address.Hex(), hex.EncodeToString(message)))
+	if err != nil {
+		return api.CanNodeSendMessageResponse{}, fmt.Errorf("Could not get can-send-message response: %w", err)
+	}
+	var response api.CanNodeSendMessageResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNodeSendMessageResponse{}, fmt.Errorf("Could not decode can-send-message response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNodeSendMessageResponse{}, fmt.Errorf("Could not get can-send-message response: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Sends a zero-value message with a payload
+func (c *Client) SendMessage(address common.Address, message []byte) (api.NodeSendMessageResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node send-message %s %s", address.Hex(), hex.EncodeToString(message)))
+	if err != nil {
+		return api.NodeSendMessageResponse{}, fmt.Errorf("Could not get send-message response: %w", err)
+	}
+	var response api.NodeSendMessageResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeSendMessageResponse{}, fmt.Errorf("Could not decode send-message response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeSendMessageResponse{}, fmt.Errorf("Could not get send-message response: %s", response.Error)
 	}
 	return response, nil
 }

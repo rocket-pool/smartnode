@@ -513,7 +513,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-
 					// Run
 					api.PrintResponse(canSetStakeRplForAllowed(c, callerAddress, allowed))
 					return nil
@@ -1409,6 +1408,57 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(getNodeEthBalance(c))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-send-message",
+				Usage:     "Estimates the gas for sending a zero-value message with a payload",
+				UsageText: "rocketpool api node can-send-message address message",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					message, err := cliutils.ValidateByteArray("message", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canSendMessage(c, address, message))
+					return nil
+
+				},
+			},
+			{
+				Name:      "send-message",
+				Usage:     "Sends a zero-value message with a payload",
+				UsageText: "rocketpool api node send-message address message",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					message, err := cliutils.ValidateByteArray("message", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(sendMessage(c, address, message))
 					return nil
 
 				},

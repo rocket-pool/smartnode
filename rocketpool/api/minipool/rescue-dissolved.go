@@ -183,17 +183,17 @@ func getMinipoolRescueDissolvedDetails(rp *rocketpool.RocketPool, w *wallet.Wall
 	details.CanRescue = true
 
 	// Get the simulated deposit TX
-	remainingAmount := big.NewInt(0).Sub(requiredBalance, details.BeaconBalance)
+	one := eth.EthToWei(1)
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return api.MinipoolRescueDissolvedDetails{}, err
 	}
-	opts.Value = remainingAmount
+	opts.Value = one
 	opts.NoSend = true
 	opts.GasLimit = 0
 
 	// Get the gas info for depositing
-	tx, err := getDepositTx(rp, w, bc, minipoolAddress, remainingAmount, opts)
+	tx, err := getDepositTx(rp, w, bc, minipoolAddress, one, opts)
 	if err != nil {
 		return api.MinipoolRescueDissolvedDetails{}, fmt.Errorf("error estimating gas for rescue deposit on minipool %s: %w", minipoolAddress.Hex(), err)
 	}
