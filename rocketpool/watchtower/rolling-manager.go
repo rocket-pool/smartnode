@@ -24,6 +24,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -42,27 +43,30 @@ type RollingRecordManager struct {
 	ExpectedBalancesBlock        uint64
 	ExpectedRewardsIntervalBlock uint64
 
-	log                  *log.ColorLogger
-	errLog               *log.ColorLogger
-	logPrefix            string
-	cfg                  *config.RocketPoolConfig
-	rp                   *rocketpool.RocketPool
-	bc                   beacon.Client
-	mgr                  *state.NetworkStateManager
-	nodeAddress          *common.Address
-	startSlot            uint64
-	beaconCfg            beacon.Eth2Config
-	genesisTime          time.Time
-	compressor           *zstd.Encoder
-	decompressor         *zstd.Decoder
-	recordsFilenameRegex *regexp.Regexp
+	log         *log.ColorLogger
+	errLog      *log.ColorLogger
+	logPrefix   string
+	cfg         *config.RocketPoolConfig
+	w           *wallet.Wallet
+	nodeAddress *common.Address
+	rp          *rocketpool.RocketPool
+	bc          beacon.Client
+	mgr         *state.NetworkStateManager
+	startSlot   uint64
+
+	submitNetworkBalances *submitNetworkBalances
+	beaconCfg             beacon.Eth2Config
+	genesisTime           time.Time
+	compressor            *zstd.Encoder
+	decompressor          *zstd.Decoder
+	recordsFilenameRegex  *regexp.Regexp
 
 	lock      *sync.Mutex
 	isRunning bool
 }
 
 // Creates a new manager for rolling records.
-func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, nodeAddress *common.Address, startSlot uint64) (*RollingRecordManager, error) {
+func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, w *wallet.Wallet, startSlot uint64) (*RollingRecordManager, error) {
 	// Get the beacon config and the genesis time
 	beaconCfg, err := bc.GetEth2Config()
 	if err != nil {
@@ -97,27 +101,41 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 		return nil, fmt.Errorf("rolling records folder location exists (%s), but is not a folder", recordsPath)
 	}
 
+	var nodeAddress *common.Address
+	var submitNetworkBalances *submitNetworkBalances
+	if w != nil {
+		nodeAccount, err := w.GetNodeAccount()
+		if err != nil {
+			return nil, fmt.Errorf("error getting node account: %w", err)
+		}
+		nodeAddress = &nodeAccount.Address
+
+		submitNetworkBalances = newSubmitNetworkBalances(log, errLog, cfg, w, rp, bc)
+	}
+
 	lock := &sync.Mutex{}
 	logPrefix := "[Rolling Record]"
 	return &RollingRecordManager{
 		Record: rewards.NewRollingRecord(log, logPrefix, bc, startSlot, &beaconCfg),
 
-		log:                  log,
-		errLog:               errLog,
-		logPrefix:            logPrefix,
-		cfg:                  cfg,
-		rp:                   rp,
-		bc:                   bc,
-		mgr:                  mgr,
-		nodeAddress:          nodeAddress,
-		startSlot:            startSlot,
-		beaconCfg:            beaconCfg,
-		genesisTime:          genesisTime,
-		compressor:           encoder,
-		decompressor:         decoder,
-		recordsFilenameRegex: recordsFilenameRegex,
-		lock:                 lock,
-		isRunning:            false,
+		log:                   log,
+		errLog:                errLog,
+		logPrefix:             logPrefix,
+		cfg:                   cfg,
+		rp:                    rp,
+		bc:                    bc,
+		mgr:                   mgr,
+		w:                     w,
+		nodeAddress:           nodeAddress,
+		startSlot:             startSlot,
+		submitNetworkBalances: submitNetworkBalances,
+		beaconCfg:             beaconCfg,
+		genesisTime:           genesisTime,
+		compressor:            encoder,
+		decompressor:          decoder,
+		recordsFilenameRegex:  recordsFilenameRegex,
+		lock:                  lock,
+		isRunning:             false,
 	}, nil
 }
 

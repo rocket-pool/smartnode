@@ -274,7 +274,7 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		return false, nil
 	}
 
@@ -290,7 +290,7 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return false, err
 	}
@@ -390,7 +390,7 @@ func (t *reduceBonds) reduceBond(mpd *rpstate.NativeMinipoolDetails, windowStart
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		timeSinceReductionStart := latestBlockTime.Sub(reduceBondTime)
 		remainingTime := (windowStart + windowLength) - timeSinceReductionStart
 		t.log.Printlnf("Time until bond reduction times out: %s", remainingTime)
@@ -408,7 +408,7 @@ func (t *reduceBonds) reduceBond(mpd *rpstate.NativeMinipoolDetails, windowStart
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return false, err
 	}

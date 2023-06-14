@@ -1,4 +1,4 @@
-package watchtower
+package legacy
 
 import (
 	"context"
@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -36,8 +37,8 @@ import (
 // Submit rewards Merkle Tree task
 type submitRewardsTree struct {
 	c                *cli.Context
-	log              log.ColorLogger
-	errLog           log.ColorLogger
+	log              *log.ColorLogger
+	errLog           *log.ColorLogger
 	cfg              *config.RocketPoolConfig
 	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
@@ -50,7 +51,7 @@ type submitRewardsTree struct {
 }
 
 // Create submit rewards Merkle Tree task
-func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*submitRewardsTree, error) {
+func newSubmitRewardsTree(c *cli.Context, logger *log.ColorLogger, errorLogger *log.ColorLogger, m *state.NetworkStateManager) (*submitRewardsTree, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -312,7 +313,7 @@ func (t *submitRewardsTree) generateTreeImpl(rp *rocketpool.RocketPool, interval
 	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(rp, t.cfg, rp.Client, t.bc, &t.log)
+	mgr, err := state.NewNetworkStateManager(rp, t.cfg, rp.Client, t.bc, t.log)
 	if err != nil {
 		return fmt.Errorf("error creating network state manager for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
 	}
@@ -457,13 +458,13 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
+	maxFee := eth.GweiToWei(watchtower.GetWatchtowerMaxFee(t.cfg))
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
+	opts.GasTipCap = eth.GweiToWei(watchtower.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Submit RPL price

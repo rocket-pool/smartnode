@@ -117,10 +117,6 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during rpl price check: %w", err)
 	}
-	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
-	if err != nil {
-		return fmt.Errorf("error during network balances check: %w", err)
-	}
 	dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
 	if err != nil {
 		return fmt.Errorf("error during timed-out minipools check: %w", err)
@@ -129,9 +125,9 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during scrub check: %w", err)
 	}
-	submitRewardsTree, err := newSubmitRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+	processBalancesAndRewards, err := newProcessBalancesAndRewards(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	if err != nil {
-		return fmt.Errorf("error during rewards tree check: %w", err)
+		return fmt.Errorf("error during balance and rewards processing check: %w", err)
 	}
 	/*processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor), errorLog)
 	if err != nil {
@@ -213,7 +209,7 @@ func run(c *cli.Context) error {
 				}
 
 				// Run the rewards tree submission check
-				if err := submitRewardsTree.run(isOnOdao, state, latestBlock.Slot); err != nil {
+				if err := processBalancesAndRewards.run(isOnOdao, state, latestBlock.Slot); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
@@ -226,12 +222,6 @@ func run(c *cli.Context) error {
 
 				// Run the price submission check
 				if err := submitRplPrice.run(state); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
-
-				// Run the network balance submission check
-				if err := submitNetworkBalances.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
@@ -267,7 +257,7 @@ func run(c *cli.Context) error {
 				// DISABLED until MEV-Boost can support it
 			} else {
 				// Run the rewards tree submission check
-				if err := submitRewardsTree.run(isOnOdao, nil, latestBlock.Slot); err != nil {
+				if err := processBalancesAndRewards.run(isOnOdao, nil, latestBlock.Slot); err != nil {
 					errorLog.Println(err)
 				}
 			}

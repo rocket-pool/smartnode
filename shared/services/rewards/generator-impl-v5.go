@@ -32,7 +32,7 @@ type treeGeneratorImpl_v5 struct {
 	networkState           *state.NetworkState
 	rewardsFile            *RewardsFile
 	elSnapshotHeader       *types.Header
-	log                    log.ColorLogger
+	log                    *log.ColorLogger
 	logPrefix              string
 	rp                     *rocketpool.RocketPool
 	cfg                    *config.RocketPoolConfig
@@ -57,7 +57,7 @@ type treeGeneratorImpl_v5 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v5(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v5 {
+func newTreeGeneratorImpl_v5(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v5 {
 	return &treeGeneratorImpl_v5{
 		zero: big.NewInt(0),
 		rewardsFile: &RewardsFile{

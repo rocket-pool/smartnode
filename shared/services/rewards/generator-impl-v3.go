@@ -32,7 +32,7 @@ import (
 type treeGeneratorImpl_v3 struct {
 	rewardsFile          *RewardsFile
 	elSnapshotHeader     *types.Header
-	log                  log.ColorLogger
+	log                  *log.ColorLogger
 	logPrefix            string
 	rp                   *rocketpool.RocketPool
 	cfg                  *config.RocketPoolConfig
@@ -54,7 +54,7 @@ type treeGeneratorImpl_v3 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v3(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *treeGeneratorImpl_v3 {
+func newTreeGeneratorImpl_v3(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *treeGeneratorImpl_v3 {
 	return &treeGeneratorImpl_v3{
 		rewardsFile: &RewardsFile{
 			RewardsFileVersion: 1,

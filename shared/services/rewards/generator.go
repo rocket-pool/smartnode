@@ -36,7 +36,7 @@ const (
 
 type TreeGenerator struct {
 	rewardsIntervalInfos map[uint64]rewardsIntervalInfo
-	logger               log.ColorLogger
+	logger               *log.ColorLogger
 	logPrefix            string
 	rp                   *rocketpool.RocketPool
 	cfg                  *config.RocketPoolConfig
@@ -57,7 +57,7 @@ type treeGeneratorImpl interface {
 	getRulesetVersion() uint64
 }
 
-func NewTreeGenerator(logger log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
+func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
 	t := &TreeGenerator{
 		logger:           logger,
 		logPrefix:        logPrefix,

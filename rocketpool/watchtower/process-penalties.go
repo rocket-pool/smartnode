@@ -511,7 +511,7 @@ func (t *processPenalties) submitPenalty(minipoolAddress common.Address, block *
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, t.gasLimit) {
+	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, t.gasLimit) {
 		return nil
 	}
 
@@ -525,7 +525,7 @@ func (t *processPenalties) submitPenalty(minipoolAddress common.Address, block *
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}

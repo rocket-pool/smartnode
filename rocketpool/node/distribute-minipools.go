@@ -247,7 +247,7 @@ func (t *distributeMinipools) distributeMinipool(mpd *rpstate.NativeMinipoolDeta
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		return false, nil
 	}
 
@@ -262,7 +262,7 @@ func (t *distributeMinipools) distributeMinipool(mpd *rpstate.NativeMinipoolDeta
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return false, err
 	}
