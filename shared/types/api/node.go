@@ -278,6 +278,17 @@ type NodeSendResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+type CanNodeSendMessageResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type NodeSendMessageResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
 type CanNodeBurnResponse struct {
 	Status                 string             `json:"status"`
 	Error                  string             `json:"error"`
