@@ -133,13 +133,11 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 	}
 	r.lock.Unlock()
 
-	// Get the latest finalized slot
+	// Get the latest finalized slot and epoch
 	latestFinalizedBlock, err := r.mgr.GetLatestFinalizedBeaconBlock()
 	if err != nil {
 		return fmt.Errorf("error getting latest finalized block: %w", err)
 	}
-
-	// Get the epoch that slot is for
 	latestFinalizedEpoch := latestFinalizedBlock.Slot / state.BeaconConfig.SlotsPerEpoch
 
 	// Check if a network balance update is due
@@ -148,10 +146,11 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 		return fmt.Errorf("error checking if network balance update is required: %w", err)
 	}
 
-	// Check if the required network balance epoch is finalized yet
-	networkBalanceEpoch := networkBalanceSlot / r.beaconCfg.SlotsPerEpoch
-	requiredNetworkBalanceEpoch := networkBalanceEpoch + 1
-	isNetworkBalanceReadyForReport := latestFinalizedEpoch >= requiredNetworkBalanceEpoch
+	// Check if this node has already submitted network balances
+	hasSubmittedNetworkBalances, err := r.hasSubmittedNetworkBalances(state.NetworkDetails.LatestReportableBalancesBlock.Uint64())
+	if err != nil {
+		return fmt.Errorf("error checking if node has submitted network balances: %w", err)
+	}
 
 	// Check if a rewards interval is due
 	isRewardsSubmissionDue, rewardsSlot, err := r.isRewardsIntervalSubmissionRequired(state)
@@ -159,17 +158,10 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 		return fmt.Errorf("error checking if rewards submission is required: %w", err)
 	}
 
-	// Check if the required reward submission epoch is finalized yet
-	var rewardsElBlock uint64
-	rewardsEpoch := rewardsSlot / r.beaconCfg.SlotsPerEpoch
-	requiredRewardsEpoch := rewardsEpoch + 1
-	isRewardsReadyForReport := latestFinalizedEpoch >= requiredRewardsEpoch
-	if isRewardsReadyForReport {
-		// Get the actual slot to report on
-		rewardsSlot, rewardsElBlock, err = r.getTrueRewardsIntervalSubmissionSlot(rewardsSlot)
-		if err != nil {
-			return fmt.Errorf("error getting the true rewards interval slot: %w", err)
-		}
+	// Check if this node has already submitted rewards info
+	hasSubmittedRewards, err := r.hasSubmittedRewards(state.NetworkDetails.RewardIndex)
+	if err != nil {
+		return fmt.Errorf("error checking if node has submitted rewards: %w", err)
 	}
 
 	// If no special upcoming state is required, update normally
@@ -196,13 +188,52 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 		return nil
 	}
 
-	// Process each of the required updates
-	if isNetworkBalanceReadyForReport && isRewardsReadyForReport {
+	// Handle cases where at only one report is due but we've already submitted it, or when we've already submitted both
+	if hasSubmittedNetworkBalances && !isRewardsSubmissionDue {
+		r.log.Printlnf("%s Network balances have already been submitted for block %s but consensus hasn't been reached yet, skipping record update.", r.logPrefix, state.NetworkDetails.LatestReportableBalancesBlock.String())
+		return nil
+	}
+	if hasSubmittedRewards && !isNetworkBalanceUpdateDue {
+		r.log.Printlnf("%s Rewards tree has already been submitted for interval %d but consensus hasn't been reached yet, skipping record update.", r.logPrefix, state.NetworkDetails.RewardIndex)
+		return nil
+	}
+	if hasSubmittedNetworkBalances && hasSubmittedRewards {
+		r.log.Printlnf("%s Network balances have already been submitted for block %s and rewards tree has already been submitted for interval %d but consensus hasn't been reached yet for either one, skipping record update.", r.logPrefix, state.NetworkDetails.LatestReportableBalancesBlock.String(), state.NetworkDetails.RewardIndex)
+		return nil
+	}
+
+	// Check if network balance reporting is ready
+	networkBalanceEpoch := networkBalanceSlot / r.beaconCfg.SlotsPerEpoch
+	requiredNetworkBalanceEpoch := networkBalanceEpoch + 1
+	isNetworkBalanceReadyForReport := isNetworkBalanceUpdateDue && (latestFinalizedEpoch >= requiredNetworkBalanceEpoch) && !hasSubmittedNetworkBalances
+
+	// Check if rewards reporting is ready
+	var rewardsElBlock uint64
+	rewardsEpoch := rewardsSlot / r.beaconCfg.SlotsPerEpoch
+	requiredRewardsEpoch := rewardsEpoch + 1
+	isRewardsReadyForReport := isRewardsSubmissionDue && (latestFinalizedEpoch >= requiredRewardsEpoch) && !hasSubmittedRewards
+	if isRewardsReadyForReport {
+		// Get the actual slot to report on
+		rewardsSlot, rewardsElBlock, err = r.getTrueRewardsIntervalSubmissionSlot(rewardsSlot)
+		if err != nil {
+			return fmt.Errorf("error getting the true rewards interval slot: %w", err)
+		}
+	}
+
+	// Run updates and submissions as required
+	if isNetworkBalanceReadyForReport || isRewardsReadyForReport {
 		go func() {
 			r.lock.Lock()
 			r.isRunning = true
 			r.lock.Unlock()
-			if networkBalanceSlot < rewardsSlot {
+
+			if isNetworkBalanceReadyForReport && isRewardsReadyForReport { // Report network balance and rewards
+				// If balances are due after rewards (but before rewards have been submitted), report the balances according to the rewards slot
+				if rewardsSlot < networkBalanceSlot {
+					r.log.Printlnf("%s NOTE: network balance report is due for block %s (slot %d) but this is after the rewards interval due for block %d (slot %d); setting the network balance report to the rewards interval block.", r.logPrefix, state.NetworkDetails.LatestReportableBalancesBlock.String(), networkBalanceSlot, rewardsElBlock, rewardsSlot)
+					networkBalanceSlot = rewardsSlot
+				}
+
 				// Process network balances
 				r.log.Printlnf("%s Running network balance report in a separate thread.", r.logPrefix)
 				err = r.runNetworkBalancesReport(networkBalanceSlot)
@@ -220,15 +251,14 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 					return
 				}
 				r.log.Printlnf("%s Rewards Interval submission complete.", r.logPrefix)
-			} else {
-				// Process the rewards interval
-				r.log.Printlnf("%s Running rewards interval submission in a separate thread.", r.logPrefix)
-				err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
-				if err != nil {
-					r.handleError(fmt.Errorf("error running rewards interval report: %w", err))
-					return
+
+			} else if isNetworkBalanceReadyForReport { // Report network balance only
+				if hasSubmittedRewards {
+					// Special situation where network balances are required but consensus is still pending on the last rewards interval
+					// In this case, use the rewards slot instead
+					r.log.Printlnf("%s NOTE: network balance report is due for block %s (slot %d) but this is after the rewards interval due for block %d (slot %d) which hasn't reached consensus yet; setting the network balance report to the rewards interval block.", r.logPrefix, state.NetworkDetails.LatestReportableBalancesBlock.String(), networkBalanceSlot, rewardsElBlock, rewardsSlot)
+					networkBalanceSlot = rewardsSlot
 				}
-				r.log.Printlnf("%s Rewards Interval submission complete.", r.logPrefix)
 
 				// Process network balances
 				r.log.Printlnf("%s Running network balance report in a separate thread.", r.logPrefix)
@@ -237,48 +267,18 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 					r.handleError(fmt.Errorf("error running network balances report: %w", err))
 					return
 				}
-				r.log.Printlnf("%s Network Balance report complete.", r.logPrefix)
-			}
-			r.lock.Lock()
-			r.isRunning = false
-			r.lock.Unlock()
-		}()
-	} else if isNetworkBalanceUpdateDue {
-		go func() {
-			r.lock.Lock()
-			r.isRunning = true
-			r.lock.Unlock()
 
-			// Process network balances
-			r.log.Printlnf("%s Running network balance report in a separate thread.", r.logPrefix)
-			err = r.runNetworkBalancesReport(networkBalanceSlot)
-			if err != nil {
-				r.handleError(fmt.Errorf("error running network balances report: %w", err))
-				return
+			} else { // Report rewards only
+				// Process the rewards interval
+				r.log.Printlnf("%s Running rewards interval submission in a separate thread.", r.logPrefix)
+				err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
+				if err != nil {
+					r.handleError(fmt.Errorf("error running rewards interval report: %w", err))
+					return
+				}
+
 			}
 
-			// Log and return
-			r.log.Printlnf("%s Network Balance report complete.", r.logPrefix)
-			r.lock.Lock()
-			r.isRunning = false
-			r.lock.Unlock()
-		}()
-	} else if isRewardsSubmissionDue {
-		go func() {
-			r.lock.Lock()
-			r.isRunning = true
-			r.lock.Unlock()
-
-			// Process the rewards interval
-			r.log.Printlnf("%s Running rewards interval submission in a separate thread.", r.logPrefix)
-			err = r.runRewardsIntervalReport(rewardsSlot, rewardsElBlock)
-			if err != nil {
-				r.handleError(fmt.Errorf("error running rewards interval report: %w", err))
-				return
-			}
-
-			// Log and return
-			r.log.Printlnf("%s Rewards Interval submission complete.", r.logPrefix)
 			r.lock.Lock()
 			r.isRunning = false
 			r.lock.Unlock()
@@ -395,19 +395,6 @@ func (r *RollingRecordManager) isNetworkBalanceUpdateRequired(state *state.Netwo
 		return false, 0, nil
 	}
 
-	// Check if this node has already submitted a balance
-	if r.nodeAddress != nil {
-		blockNumberBuf := make([]byte, 32)
-		big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-		hasSubmitted, err := r.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), r.nodeAddress.Bytes(), blockNumberBuf))
-		if err != nil {
-			return false, 0, fmt.Errorf("error checking if node has already submitted network balance for block %d: %w", blockNumber, err)
-		}
-		if hasSubmitted {
-			return false, 0, nil
-		}
-	}
-
 	// Get the time of the block
 	header, err := r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(blockNumber))
 	if err != nil {
@@ -420,6 +407,24 @@ func (r *RollingRecordManager) isNetworkBalanceUpdateRequired(state *state.Netwo
 	timeSinceGenesis := blockTime.Sub(r.genesisTime)
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 	return true, slotNumber, nil
+}
+
+// Check if the node wallet has already submitted network balances for the given block number
+func (r *RollingRecordManager) hasSubmittedNetworkBalances(blockNumber uint64) (bool, error) {
+	// Ignore if there isn't a node address set
+	if r.nodeAddress == nil {
+		return false, nil
+	}
+
+	// Check if the address has submitted for the given block number
+	blockNumberBuf := make([]byte, 32)
+	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+	hasSubmitted, err := r.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), r.nodeAddress.Bytes(), blockNumberBuf))
+	if err != nil {
+		return false, fmt.Errorf("error checking if node has already submitted network balance for block %d: %w", blockNumber, err)
+	}
+
+	return hasSubmitted, nil
 }
 
 // Check if a rewards interval submission is required and if so, the slot number for the update
@@ -438,21 +443,6 @@ func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.
 		return false, 0, nil
 	}
 
-	// Check if this node already submitted a tree
-	if r.nodeAddress != nil {
-		currentIndex := state.NetworkDetails.RewardIndex
-		currentIndexBig := big.NewInt(0).SetUint64(currentIndex)
-		indexBuffer := make([]byte, 32)
-		currentIndexBig.FillBytes(indexBuffer)
-		hasSubmitted, err := r.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("rewards.snapshot.submitted.node"), r.nodeAddress.Bytes(), indexBuffer))
-		if err != nil {
-			return false, 0, fmt.Errorf("error checking if node has already submitted for rewards interval %d: %w", currentIndex, err)
-		}
-		if hasSubmitted {
-			return false, 0, nil
-		}
-	}
-
 	// Get the target slot number
 	eth2Config := state.BeaconConfig
 	totalTimespan := endTime.Sub(r.genesisTime)
@@ -461,6 +451,25 @@ func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.
 	targetSlot = (targetSlotEpoch+1)*eth2Config.SlotsPerEpoch - 1 // The target slot becomes the last one in the Epoch
 
 	return true, targetSlot, nil
+}
+
+// Check if the node wallet has already submitted rewards for the given interval
+func (r *RollingRecordManager) hasSubmittedRewards(index uint64) (bool, error) {
+	// Ignore if there isn't a node address set
+	if r.nodeAddress == nil {
+		return false, nil
+	}
+
+	// Check if the address has submitted for the given index
+	currentIndexBig := big.NewInt(0).SetUint64(index)
+	indexBuffer := make([]byte, 32)
+	currentIndexBig.FillBytes(indexBuffer)
+	hasSubmitted, err := r.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("rewards.snapshot.submitted.node"), r.nodeAddress.Bytes(), indexBuffer))
+	if err != nil {
+		return false, fmt.Errorf("error checking if node has already submitted for rewards interval %d: %w", index, err)
+	}
+
+	return hasSubmitted, nil
 }
 
 // Get the actual slot to be used for a rewards interval submission instead of the naively-determined one
