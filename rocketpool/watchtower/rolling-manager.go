@@ -32,6 +32,7 @@ const (
 	recordsFilenamePattern   string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
 	checksumTableFilename    string = "checksums.sha384"
 	recordCheckpointInterval uint64 = 45
+	checkpointRetentionLimit uint64 = 200
 )
 
 // Manager for RollingRecords
@@ -596,16 +597,63 @@ func (r *RollingRecordManager) SaveRecordToFile(record *rewards.RollingRecord) e
 	checksum := sha512.Sum384(compressedBytes)
 
 	// Load the existing checksum table
-	checksumFilename := filepath.Join(recordsPath, checksumTableFilename)
-	checksumFile, err := os.OpenFile(checksumFilename, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
+	_, lines, err := r.parseChecksumFile()
 	if err != nil {
-		return fmt.Errorf("error opening checksum file: %w", err)
+		return fmt.Errorf("error parsing checkpoint file: %w", err)
 	}
-	defer checksumFile.Close()
+	if lines == nil {
+		lines = []string{}
+	}
 
-	// Append and write the new checksum out to file
-	checksumLine := fmt.Sprintf("%s  %s\n", hex.EncodeToString(checksum[:]), filepath.Base(filename))
-	checksumFile.WriteString(checksumLine)
+	// Add the new record checksum
+	checksumLine := fmt.Sprintf("%s  %s", hex.EncodeToString(checksum[:]), filepath.Base(filename))
+	lines = append(lines, checksumLine)
+
+	// Get the number of lines to write
+	var newLines []string
+	if len(lines) > int(checkpointRetentionLimit) {
+		numberOfNewLines := int(checkpointRetentionLimit)
+		cullCount := len(lines) - numberOfNewLines
+
+		// Remove old lines and delete the corresponding files that shouldn't be retained
+		for i := 0; i < cullCount; i++ {
+			line := lines[i]
+
+			// Extract the filename
+			elems := strings.Split(line, "  ")
+			if len(elems) != 2 {
+				return fmt.Errorf("error parsing checkpoint line (%s): expected 2 elements, but got %d", line, len(elems))
+			}
+			filename := elems[1]
+			fullFilename := filepath.Join(recordsPath, filename)
+
+			// Delete the file
+			err = os.Remove(fullFilename)
+			if err != nil {
+				return fmt.Errorf("error deleting file [%s]: %w", fullFilename, err)
+			}
+
+			r.log.Printlnf("%s Removed checkpoint file [%s] based on the retention limit.", r.logPrefix, filename)
+		}
+
+		// Store the rest
+		newLines = make([]string, numberOfNewLines)
+		for i := cullCount; i <= numberOfNewLines; i++ {
+			newLines[i-cullCount] = lines[i]
+		}
+	} else {
+		newLines = lines
+	}
+
+	fileContents := strings.Join(newLines, "\n")
+	checksumBytes := []byte(fileContents)
+
+	// Save the new file
+	checksumFilename := filepath.Join(recordsPath, checksumTableFilename)
+	err = os.WriteFile(checksumFilename, checksumBytes, 0644)
+	if err != nil {
+		return fmt.Errorf("error writing checksum file after culling: %w", err)
+	}
 
 	return nil
 }
@@ -613,37 +661,19 @@ func (r *RollingRecordManager) SaveRecordToFile(record *rewards.RollingRecord) e
 // Load the most recent appropriate rolling record from disk, using the checksum table as an index
 func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSlot uint64) (*rewards.RollingRecord, error) {
 
-	// Get the checksum filename
-	recordsPath := r.cfg.Smartnode.GetRecordsPath()
-	checksumFilename := filepath.Join(recordsPath, checksumTableFilename)
-
-	// Check if the file exists
-	_, err := os.Stat(checksumFilename)
-	if os.IsNotExist(err) {
+	// Parse the checksum file
+	exists, lines, err := r.parseChecksumFile()
+	if err != nil {
+		return nil, fmt.Errorf("error parsing checkpoint file: %w", err)
+	}
+	if !exists {
 		// There isn't a checksum file so start over
 		r.log.Printlnf("%s Checksum file not found, creating a new record from the start.", r.logPrefix)
 		return rewards.NewRollingRecord(r.log, r.logPrefix, r.bc, startSlot, &r.beaconCfg), nil
 	}
 
-	// Open the checksum file
-	checksumTable, err := os.ReadFile(checksumFilename)
-	if err != nil {
-		return nil, fmt.Errorf("error loading checksum table (%s): %w", checksumFilename, err)
-	}
-
-	// Parse out each line
-	originalLines := strings.Split(string(checksumTable), "\n")
-
-	// Remove empty lines
-	lines := make([]string, 0, len(originalLines))
-	for _, line := range originalLines {
-		trimmedLine := strings.TrimSpace(line)
-		if trimmedLine != "" {
-			lines = append(lines, line)
-		}
-	}
-
 	// Iterate over each file, counting backwards from the bottom
+	recordsPath := r.cfg.Smartnode.GetRecordsPath()
 	for i := len(lines) - 1; i >= 0; i-- {
 		line := lines[i]
 
@@ -688,8 +718,6 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 	// If we got here then none of the saved files worked so we have to make a new record
 	r.log.Printlnf("%s None of the saved record checkpoint files were eligible for use, creating a new record from the start.", r.logPrefix)
 	return rewards.NewRollingRecord(r.log, r.logPrefix, r.bc, startSlot, &r.beaconCfg), nil
-
-	// NOTE: should we clear the checksum file here and delete the old records?
 
 }
 
@@ -736,4 +764,37 @@ func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedCheck
 
 	// Create a new record from the data
 	return rewards.DeserializeRollingRecord(r.log, r.logPrefix, r.bc, &r.beaconCfg, bytes)
+}
+
+// Get the lines from the checksum file
+func (r *RollingRecordManager) parseChecksumFile() (bool, []string, error) {
+	// Get the checksum filename
+	recordsPath := r.cfg.Smartnode.GetRecordsPath()
+	checksumFilename := filepath.Join(recordsPath, checksumTableFilename)
+
+	// Check if the file exists
+	_, err := os.Stat(checksumFilename)
+	if os.IsNotExist(err) {
+		return false, nil, nil
+	}
+
+	// Open the checksum file
+	checksumTable, err := os.ReadFile(checksumFilename)
+	if err != nil {
+		return false, nil, fmt.Errorf("error loading checksum table (%s): %w", checksumFilename, err)
+	}
+
+	// Parse out each line
+	originalLines := strings.Split(string(checksumTable), "\n")
+
+	// Remove empty lines
+	lines := make([]string, 0, len(originalLines))
+	for _, line := range originalLines {
+		trimmedLine := strings.TrimSpace(line)
+		if trimmedLine != "" {
+			lines = append(lines, line)
+		}
+	}
+
+	return true, lines, nil
 }
