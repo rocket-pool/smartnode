@@ -151,6 +151,21 @@ func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 	return *rewards, nil
 }
 
+// Check whether or not the given address has submitted for the given rewards interval
+func GetTrustedNodeSubmitted(rp *rocketpool.RocketPool, nodeAddress common.Address, rewardsIndex uint64, opts *bind.CallOpts) (bool, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
+	if err != nil {
+		return false, err
+	}
+
+	indexBig := big.NewInt(0).SetUint64(rewardsIndex)
+	hasSubmitted := new(bool)
+	if err := rocketRewardsPool.Call(opts, hasSubmitted, "getTrustedNodeSubmitted", nodeAddress, indexBig); err != nil {
+		return false, fmt.Errorf("Could not get trusted node submission status: %w", err)
+	}
+	return *hasSubmitted, nil
+}
+
 // Estimate the gas for submiting a Merkle Tree-based snapshot for a rewards interval
 func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp, nil)
