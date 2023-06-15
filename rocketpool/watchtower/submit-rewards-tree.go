@@ -4,14 +4,12 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"math"
 	"math/big"
 	"os"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
 	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -54,7 +52,10 @@ func newSubmitRewardsTree(logger *log.ColorLogger, errorLogger *log.ColorLogger,
 }
 
 // Submit rewards Merkle Tree
-func (t *submitRewardsTree) run(nodeTrusted bool, state *state.NetworkState, snapshotBeaconBlock uint64, elBlockNumber uint64) error {
+func (t *submitRewardsTree) run(nodeTrusted bool, state *state.NetworkState) error {
+
+	snapshotBeaconBlock := state.BeaconSlotNumber
+	elBlockNumber := state.ElBlockNumber
 
 	// Check if a rewards interval has passed and needs to be calculated
 	startTime := state.NetworkDetails.IntervalStart
@@ -62,7 +63,7 @@ func (t *submitRewardsTree) run(nodeTrusted bool, state *state.NetworkState, sna
 
 	// Calculate the end time, which is the number of intervals that have gone by since the current one's start
 	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
-	secondsSinceGenesis := time.Duration(state.BeaconConfig.SecondsPerSlot*state.BeaconSlotNumber) * time.Second
+	secondsSinceGenesis := time.Duration(state.BeaconConfig.SecondsPerSlot*snapshotBeaconBlock) * time.Second
 	stateTime := genesisTime.Add(secondsSinceGenesis)
 	timeSinceStart := stateTime.Sub(startTime)
 	intervalsPassed := timeSinceStart / intervalTime
@@ -92,15 +93,6 @@ func (t *submitRewardsTree) run(nodeTrusted bool, state *state.NetworkState, sna
 	if t.isExistingFileValid(rewardsTreePath, uint64(intervalsPassed)) {
 		if !nodeTrusted {
 			t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s.", currentIndex, rewardsTreePath)
-			return nil
-		}
-
-		// Return if this node has already submitted the tree for the current interval and there's a file present
-		hasSubmitted, err := t.hasSubmittedTree(nodeAccount.Address, currentIndexBig)
-		if err != nil {
-			return fmt.Errorf("error checking if Merkle tree submission has already been processed: %w", err)
-		}
-		if hasSubmitted {
 			return nil
 		}
 
@@ -421,54 +413,4 @@ func (t *submitRewardsTree) uploadFileToWeb3Storage(wrapperBytes []byte, compres
 
 	return cid.String(), nil
 
-}
-
-// Get the first finalized, successful consensus block that occurred after the given target time
-func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time, state *state.NetworkState) (uint64, uint64, error) {
-
-	// Get the beacon head
-	beaconHead, err := t.bc.GetBeaconHead()
-	if err != nil {
-		return 0, 0, fmt.Errorf("Error getting Beacon head: %w", err)
-	}
-
-	// Get the target block number
-	eth2Config := state.BeaconConfig
-	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
-	totalTimespan := endTime.Sub(genesisTime)
-	targetSlot := uint64(math.Ceil(totalTimespan.Seconds() / float64(eth2Config.SecondsPerSlot)))
-	targetSlotEpoch := targetSlot / eth2Config.SlotsPerEpoch
-	targetSlot = targetSlotEpoch*eth2Config.SlotsPerEpoch + (eth2Config.SlotsPerEpoch - 1) // The target slot becomes the last one in the Epoch
-	requiredEpoch := targetSlotEpoch + 1                                                   // The smoothing pool requires 1 epoch beyond the target to be finalized, to check for late attestations
-
-	// Check if the required epoch is finalized yet
-	if beaconHead.FinalizedEpoch < requiredEpoch {
-		return 0, 0, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
-	}
-
-	// Get the first successful block
-	for {
-		// Try to get the current block
-		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
-		if err != nil {
-			return 0, 0, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
-		}
-
-		// If the block was missing, try the previous one
-		if !exists {
-			t.log.Printlnf("Slot %d was missing, trying the previous one...", targetSlot)
-			targetSlot--
-		} else {
-			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
-			return targetSlot, block.ExecutionBlockNumber, nil
-		}
-	}
-
-}
-
-// Check whether the rewards tree for the current interval been submitted by the node
-func (t *submitRewardsTree) hasSubmittedTree(nodeAddress common.Address, index *big.Int) (bool, error) {
-	indexBuffer := make([]byte, 32)
-	index.FillBytes(indexBuffer)
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("rewards.snapshot.submitted.node"), nodeAddress.Bytes(), indexBuffer))
 }

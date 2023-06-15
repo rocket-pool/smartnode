@@ -62,6 +62,60 @@ func newSubmitNetworkBalances(logger *log.ColorLogger, errorLogger *log.ColorLog
 	}
 }
 
+// Submit network balances
+func (t *submitNetworkBalances) run(state *state.NetworkState) error {
+	balances, err := t.getNetworkBalances(state)
+	if err != nil {
+		return fmt.Errorf("%s %w", t.logPrefix, err)
+	}
+
+	// Log
+	t.log.Printlnf("Deposit pool balance: %s wei", balances.DepositPool.String())
+	t.log.Printlnf("Node credit balance: %s wei", balances.NodeCreditBalance.String())
+	t.log.Printlnf("Total minipool user balance: %s wei", balances.MinipoolsTotal.String())
+	t.log.Printlnf("Staking minipool user balance: %s wei", balances.MinipoolsStaking.String())
+	t.log.Printlnf("Fee distributor user balance: %s wei", balances.DistributorShareTotal.String())
+	t.log.Printlnf("Smoothing pool user balance: %s wei", balances.SmoothingPoolShare.String())
+	t.log.Printlnf("rETH contract balance: %s wei", balances.RETHContract.String())
+	t.log.Printlnf("rETH token supply: %s wei", balances.RETHSupply.String())
+
+	// Save this in case we end up needing specific balance submission info later
+	/*
+		// Check if we have reported these specific values before
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, balances)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			return
+		}
+		if hasSubmittedSpecific {
+			t.lock.Lock()
+			t.isRunning = false
+			t.lock.Unlock()
+			return
+		}
+
+		// We haven't submitted these values, check if we've submitted any for this block so we can log it
+		hasSubmitted, err := t.hasSubmittedBlockBalances(nodeAccount.Address, blockNumber)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			return
+		}
+		if hasSubmitted {
+			t.log.Printlnf("Have previously submitted out-of-date balances for block %d, trying again...", blockNumber)
+		}
+	*/
+
+	// Log
+	t.log.Println("Submitting balances...")
+
+	// Submit balances
+	if err := t.submitBalances(balances); err != nil {
+		return fmt.Errorf("%s could not submit network balances: %w", t.logPrefix, err)
+	}
+
+	return nil
+}
+
 // Prints a message to the log
 func (t *submitNetworkBalances) printMessage(message string) {
 	t.log.Println(message)

@@ -209,7 +209,7 @@ func run(c *cli.Context) error {
 				}
 
 				// Run the rewards tree submission check
-				if err := processBalancesAndRewards.run(isOnOdao, state, latestBlock.Slot); err != nil {
+				if err := processBalancesAndRewards.run(isOnOdao, state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
@@ -257,7 +257,7 @@ func run(c *cli.Context) error {
 				// DISABLED until MEV-Boost can support it
 			} else {
 				// Run the rewards tree submission check
-				if err := processBalancesAndRewards.run(isOnOdao, nil, latestBlock.Slot); err != nil {
+				if err := processBalancesAndRewards.run(isOnOdao, nil); err != nil {
 					errorLog.Println(err)
 				}
 			}
