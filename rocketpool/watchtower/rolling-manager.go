@@ -55,6 +55,7 @@ type RollingRecordManager struct {
 	startSlot   uint64
 
 	submitNetworkBalances *submitNetworkBalances
+	submitRewardsTree *submitRewardsTree
 	beaconCfg             beacon.Eth2Config
 	genesisTime           time.Time
 	compressor            *zstd.Encoder
@@ -103,6 +104,7 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 
 	var nodeAddress *common.Address
 	var submitNetworkBalances *submitNetworkBalances
+	var submitRewardsTree *submitRewardsTree
 	if w != nil {
 		nodeAccount, err := w.GetNodeAccount()
 		if err != nil {
@@ -111,6 +113,7 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 		nodeAddress = &nodeAccount.Address
 
 		submitNetworkBalances = newSubmitNetworkBalances(log, errLog, cfg, w, rp, bc)
+		submitRewardsTree = newSubmitRewardsTree(log, errLog, cfg, w, rp, bc)
 	}
 
 	lock := &sync.Mutex{}
@@ -129,6 +132,7 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 		nodeAddress:           nodeAddress,
 		startSlot:             startSlot,
 		submitNetworkBalances: submitNetworkBalances,
+		submitRewardsTree: submitRewardsTree,
 		beaconCfg:             beaconCfg,
 		genesisTime:           genesisTime,
 		compressor:            encoder,
@@ -422,6 +426,7 @@ func (r *RollingRecordManager) runRewardsIntervalReport(rewardsSlot uint64, elBl
 		}
 	}
 
+	if r.s
 	// Run the rewards interval submission with the given state and record
 
 	// TODO

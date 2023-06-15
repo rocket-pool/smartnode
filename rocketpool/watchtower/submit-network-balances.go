@@ -23,12 +23,13 @@ import (
 
 // Submit network balances task
 type submitNetworkBalances struct {
-	log    *log.ColorLogger
-	errLog *log.ColorLogger
-	cfg    *config.RocketPoolConfig
-	w      *wallet.Wallet
-	rp     *rocketpool.RocketPool
-	bc     beacon.Client
+	log       *log.ColorLogger
+	errLog    *log.ColorLogger
+	cfg       *config.RocketPoolConfig
+	w         *wallet.Wallet
+	rp        *rocketpool.RocketPool
+	bc        beacon.Client
+	logPrefix string
 }
 
 // Network balance info
@@ -51,12 +52,13 @@ type minipoolBalanceDetails struct {
 // Create submit network balances task
 func newSubmitNetworkBalances(logger *log.ColorLogger, errorLogger *log.ColorLogger, cfg *config.RocketPoolConfig, w *wallet.Wallet, rp *rocketpool.RocketPool, bc beacon.Client) *submitNetworkBalances {
 	return &submitNetworkBalances{
-		log:    logger,
-		errLog: errorLogger,
-		cfg:    cfg,
-		w:      w,
-		rp:     rp,
-		bc:     bc,
+		log:       logger,
+		errLog:    errorLogger,
+		cfg:       cfg,
+		w:         w,
+		rp:        rp,
+		bc:        bc,
+		logPrefix: "[Network Balances]",
 	}
 }
 
