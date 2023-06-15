@@ -1,11 +1,11 @@
 package watchtower
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
@@ -17,7 +17,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -67,25 +66,7 @@ func (t *submitNetworkBalances) printMessage(message string) {
 }
 
 // Get the network balances at a specific block
-func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time) (networkBalances, error) {
-
-	// Get a client with the block number available
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, elBlock)
-	if err != nil {
-		return networkBalances{}, err
-	}
-
-	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(client, t.cfg, client.Client, t.bc, t.log)
-	if err != nil {
-		return networkBalances{}, fmt.Errorf("error creating network state manager for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
-	}
-
-	// Create a new state for the target block
-	state, err := mgr.GetStateForSlot(beaconBlock)
-	if err != nil {
-		return networkBalances{}, fmt.Errorf("couldn't get network state for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
-	}
+func (t *submitNetworkBalances) getNetworkBalances(state *state.NetworkState) (networkBalances, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -121,6 +102,13 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	// Get the smoothing pool user share
 	wg.Go(func() error {
 
+		// Get the time of the block
+		elBlockHeader, err := t.rp.Client.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(state.ElBlockNumber))
+		if err != nil {
+			return err
+		}
+		slotTime := time.Unix(int64(elBlockHeader.Time), 0)
+
 		// Get the current interval
 		currentIndex := state.NetworkDetails.RewardIndex
 
@@ -133,7 +121,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		endTime := slotTime
 
 		// Approximate the staker's share of the smoothing pool balance
-		treegen, err := rprewards.NewTreeGenerator(t.log, "[Balances]", client, t.cfg, t.bc, currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed), state, nil)
+		treegen, err := rprewards.NewTreeGenerator(t.log, "[Balances]", t.rp, t.cfg, t.bc, currentIndex, startTime, endTime, state.BeaconSlotNumber, elBlockHeader, uint64(intervalsPassed), state, nil)
 		if err != nil {
 			return fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
 		}
@@ -153,7 +141,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 	// Balances
 	balances := networkBalances{
-		Block:                 elBlockHeader.Number.Uint64(),
+		Block:                 state.ElBlockNumber,
 		DepositPool:           depositPoolBalance,
 		MinipoolsTotal:        big.NewInt(0),
 		MinipoolsStaking:      big.NewInt(0),

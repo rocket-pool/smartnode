@@ -343,8 +343,56 @@ func (r *RollingRecordManager) runNetworkBalancesReport(networkBalanceSlot uint6
 	}
 
 	// Run the network balance submission with the given state and record
+	if r.submitNetworkBalances != nil {
+		balances, err := r.submitNetworkBalances.getNetworkBalances(state)
+		if err != nil {
+			return fmt.Errorf("%s %w", r.logPrefix, err)
+		}
 
-	// TODO
+		// Log
+		r.log.Printlnf("Deposit pool balance: %s wei", balances.DepositPool.String())
+		r.log.Printlnf("Node credit balance: %s wei", balances.NodeCreditBalance.String())
+		r.log.Printlnf("Total minipool user balance: %s wei", balances.MinipoolsTotal.String())
+		r.log.Printlnf("Staking minipool user balance: %s wei", balances.MinipoolsStaking.String())
+		r.log.Printlnf("Fee distributor user balance: %s wei", balances.DistributorShareTotal.String())
+		r.log.Printlnf("Smoothing pool user balance: %s wei", balances.SmoothingPoolShare.String())
+		r.log.Printlnf("rETH contract balance: %s wei", balances.RETHContract.String())
+		r.log.Printlnf("rETH token supply: %s wei", balances.RETHSupply.String())
+
+		// Save this in case we end up needing specific balance submission info later
+		/*
+			// Check if we have reported these specific values before
+			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, balances)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+				return
+			}
+			if hasSubmittedSpecific {
+				t.lock.Lock()
+				t.isRunning = false
+				t.lock.Unlock()
+				return
+			}
+
+			// We haven't submitted these values, check if we've submitted any for this block so we can log it
+			hasSubmitted, err := t.hasSubmittedBlockBalances(nodeAccount.Address, blockNumber)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+				return
+			}
+			if hasSubmitted {
+				t.log.Printlnf("Have previously submitted out-of-date balances for block %d, trying again...", blockNumber)
+			}
+		*/
+
+		// Log
+		r.log.Println("Submitting balances...")
+
+		// Submit balances
+		if err := r.submitNetworkBalances.submitBalances(balances); err != nil {
+			return fmt.Errorf("%s could not submit network balances: %w", r.logPrefix, err)
+		}
+	}
 
 	return nil
 }
