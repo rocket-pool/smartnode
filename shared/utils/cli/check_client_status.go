@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -51,11 +52,18 @@ func CheckClientStatus(rp *rocketpool.Client) error {
 
 }
 
+// When printing sync percents, we should avoid printing 100%.
+// This function is only called if we're still syncing,
+// and the `%0.2f` token will round up if we're above 99.99%.
+func SyncRatioToPercent(in float64) float64 {
+	return math.Min(99.99, in*100)
+}
+
 func getClientStatusString(clientStatus api.ClientStatus) string {
 	if clientStatus.IsSynced {
 		return "synced and ready"
 	} else if clientStatus.IsWorking {
-		return fmt.Sprintf("syncing (%.2f%%)", clientStatus.SyncProgress*100)
+		return fmt.Sprintf("syncing (%.2f%%)", SyncRatioToPercent(clientStatus.SyncProgress))
 	} else {
 		return fmt.Sprintf("unavailable (%s)", clientStatus.Error)
 	}
