@@ -78,7 +78,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 			rewardsRulesetVersion: 6,
 			mainnetStartInterval:  MainnetV6Interval,
 			praterStartInterval:   PraterV6Interval,
-			generator:             newTreeGeneratorImpl_v6(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord),
+			generator:             newTreeGeneratorImpl_v6_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord),
 		}, {
 			rewardsRulesetVersion: 5,
 			mainnetStartInterval:  MainnetV5Interval,
