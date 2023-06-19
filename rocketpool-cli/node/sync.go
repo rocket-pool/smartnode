@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -16,13 +15,6 @@ import (
 // Settings
 var ethClientRecentBlockThreshold, _ = time.ParseDuration("5m")
 
-// When printing sync percents, we should avoid printing 100%.
-// This function is only called if we're still syncing,
-// and the `%0.2f` token will round up if we're above 99.99%.
-func syncRatioToPercent(in float64) float64 {
-	return math.Min(99.99, in*100)
-}
-
 func printClientStatus(status *api.ClientStatus, name string) {
 
 	if status.Error != "" {
@@ -31,11 +23,11 @@ func printClientStatus(status *api.ClientStatus, name string) {
 	}
 
 	if status.IsSynced {
-		fmt.Printf("Your %s is fully synced.\n", name);
+		fmt.Printf("Your %s is fully synced.\n", name)
 		return
 	}
 
-	fmt.Printf("Your %s is still syncing (%0.2f%%).\n", name, syncRatioToPercent(status.SyncProgress))
+	fmt.Printf("Your %s is still syncing (%0.2f%%).\n", name, cliutils.SyncRatioToPercent(status.SyncProgress))
 	if strings.Contains(name, "execution") && status.SyncProgress == 0 {
 		fmt.Printf("\tNOTE: your %s may not report sync progress.\n\tYou should check its logs to review it.\n", name)
 	}
