@@ -170,15 +170,6 @@ func (t *submitNetworkBalances) run(state *state.NetworkState, isAtlasDeployed b
 		return nil
 	}
 
-	// If the state epoch is before the changeover, run the legacy implementation
-	transitionEpoch := t.cfg.Smartnode.BalancesModernizationEpoch.Value.(uint64)
-
-	// Run the old behavior until we've flipped over to the new one
-	if requiredEpoch < transitionEpoch {
-		t.log.Printlnf("Current target epoch is %d, using legacy balance reporting behavior until epoch %d", requiredEpoch, transitionEpoch)
-		return t.legacyImpl.Run()
-	}
-
 	// Check if the process is already running
 	t.lock.Lock()
 	if t.isRunning {

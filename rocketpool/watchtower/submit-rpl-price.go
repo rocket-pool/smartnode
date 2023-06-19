@@ -359,13 +359,7 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 		t.log.Printlnf("Getting RPL price for block %d...", blockNumber)
 
 		// Get RPL price at block
-		var rplPrice *big.Int
-		twapEpoch := t.cfg.Smartnode.RplTwapEpoch.Value.(uint64)
-		if targetEpoch < twapEpoch {
-			rplPrice, err = t.getRplPrice(blockNumber)
-		} else {
-			rplPrice, err = t.getRplTwap(blockNumber)
-		}
+		rplPrice, err := t.getRplTwap(blockNumber)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
