@@ -5,19 +5,26 @@ import (
 	"runtime"
 
 	"github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/utils/sys"
 )
 
 const (
-	prysmBnTagAmd64Test string = "prysmaticlabs/prysm-beacon-chain:HEAD-aa7d0df-debug"
-	prysmVcTagAmd64Test string = "prysmaticlabs/prysm-validator:HEAD-aa7d0df-debug"
-	prysmTagArm64Test   string = "rocketpool/prysm:v4.0.5"
+	prysmBnTagAmd64PortableTest string = "rocketpool/prysm:v4.0.6-portable"
+	prysmVcTagAmd64PortableTest string = "rocketpool/prysm:v4.0.6-portable"
+	prysmTagArm64PortableTest   string = "rocketpool/prysm:v4.0.6-portable"
+	prysmBnTagAmd64ModernTest   string = "prysmaticlabs/prysm-beacon-chain:HEAD-a75e78-debug"
+	prysmVcTagAmd64ModernTest   string = "prysmaticlabs/prysm-validator:HEAD-a75e78-debug"
+	prysmTagArm64ModernTest     string = "rocketpool/prysm:v4.0.6"
 
-	prysmBnTagAmd64Prod     string = "prysmaticlabs/prysm-beacon-chain:HEAD-aa7d0df-debug"
-	prysmVcTagAmd64Prod     string = "prysmaticlabs/prysm-validator:HEAD-aa7d0df-debug"
-	prysmTagArm64Prod       string = "rocketpool/prysm:v4.0.5"
-	defaultPrysmRpcPort     uint16 = 5053
-	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
-	defaultPrysmMaxPeers    uint16 = 45
+	prysmBnTagAmd64PortableProd string = "rocketpool/prysm:v4.0.6-portable"
+	prysmVcTagAmd64PortableProd string = "rocketpool/prysm:v4.0.6-portable"
+	prysmTagArm64PortableProd   string = "rocketpool/prysm:v4.0.6-portable"
+	prysmBnTagAmd64ModernProd   string = "prysmaticlabs/prysm-beacon-chain:HEAD-a75e78-debug"
+	prysmVcTagAmd64ModernProd   string = "prysmaticlabs/prysm-validator:HEAD-a75e78-debug"
+	prysmTagArm64ModernProd     string = "rocketpool/prysm:v4.0.6"
+	defaultPrysmRpcPort         uint16 = 5053
+	defaultPrysmOpenRpcPort     string = string(config.RPC_Closed)
+	defaultPrysmMaxPeers        uint16 = 45
 )
 
 // Configuration for Prysm
@@ -155,45 +162,89 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 
 // Get the container tag for the Prysm BN based on the current architecture
 func getPrysmBnProdTag() string {
-	if runtime.GOARCH == "arm64" {
-		return prysmTagArm64Prod
-	} else if runtime.GOARCH == "amd64" {
-		return prysmBnTagAmd64Prod
+	missingFeatures := sys.GetMissingModernCpuFeatures()
+	if len(missingFeatures) > 0 {
+		if runtime.GOARCH == "arm64" {
+			return prysmTagArm64PortableProd
+		} else if runtime.GOARCH == "amd64" {
+			return prysmBnTagAmd64PortableProd
+		} else {
+			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		}
 	} else {
-		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		if runtime.GOARCH == "arm64" {
+			return prysmTagArm64ModernProd
+		} else if runtime.GOARCH == "amd64" {
+			return prysmBnTagAmd64ModernProd
+		} else {
+			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		}
 	}
 }
 
 // Get the container tag for the Prysm BN based on the current architecture
 func getPrysmBnTestTag() string {
-	if runtime.GOARCH == "arm64" {
-		return prysmTagArm64Test
-	} else if runtime.GOARCH == "amd64" {
-		return prysmBnTagAmd64Test
+	missingFeatures := sys.GetMissingModernCpuFeatures()
+	if len(missingFeatures) > 0 {
+		if runtime.GOARCH == "arm64" {
+			return prysmTagArm64PortableTest
+		} else if runtime.GOARCH == "amd64" {
+			return prysmBnTagAmd64PortableTest
+		} else {
+			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		}
 	} else {
-		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		if runtime.GOARCH == "arm64" {
+			return prysmTagArm64ModernTest
+		} else if runtime.GOARCH == "amd64" {
+			return prysmBnTagAmd64ModernTest
+		} else {
+			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		}
 	}
 }
 
 // Get the container tag for the Prysm VC based on the current architecture
 func getPrysmVcProdTag() string {
-	if runtime.GOARCH == "arm64" {
-		return prysmTagArm64Prod
-	} else if runtime.GOARCH == "amd64" {
-		return prysmVcTagAmd64Prod
+	missingFeatures := sys.GetMissingModernCpuFeatures()
+	if len(missingFeatures) > 0 {
+		if runtime.GOARCH == "arm64" {
+			return prysmTagArm64PortableProd
+		} else if runtime.GOARCH == "amd64" {
+			return prysmVcTagAmd64PortableProd
+		} else {
+			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		}
 	} else {
-		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		if runtime.GOARCH == "arm64" {
+			return prysmTagArm64ModernProd
+		} else if runtime.GOARCH == "amd64" {
+			return prysmVcTagAmd64ModernProd
+		} else {
+			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		}
 	}
 }
 
 // Get the container tag for the Prysm VC based on the current architecture
 func getPrysmVcTestTag() string {
-	if runtime.GOARCH == "arm64" {
-		return prysmTagArm64Test
-	} else if runtime.GOARCH == "amd64" {
-		return prysmVcTagAmd64Test
+	missingFeatures := sys.GetMissingModernCpuFeatures()
+	if len(missingFeatures) > 0 {
+		if runtime.GOARCH == "arm64" {
+			return prysmTagArm64PortableTest
+		} else if runtime.GOARCH == "amd64" {
+			return prysmVcTagAmd64PortableTest
+		} else {
+			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		}
 	} else {
-		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		if runtime.GOARCH == "arm64" {
+			return prysmTagArm64ModernTest
+		} else if runtime.GOARCH == "amd64" {
+			return prysmVcTagAmd64ModernTest
+		} else {
+			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+		}
 	}
 }
 
