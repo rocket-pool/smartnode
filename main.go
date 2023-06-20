@@ -30,7 +30,7 @@ func main() {
 			Email: "joe@rocketpool.net",
 		},
 		{
-			Name: "Jacob Shufro",
+			Name:  "Jacob Shufro",
 			Email: "jacob@shuf.ro",
 		},
 	}
@@ -87,6 +87,12 @@ func main() {
 			Name:    "approximate-only",
 			Aliases: []string{"a"},
 			Usage:   "Approximates the rETH stakers' share of the Smoothing Pool at the current or target block instead of generating the entire rewards tree.",
+			Value:   false,
+		},
+		&cli.BoolFlag{
+			Name:    "use-rolling-records",
+			Aliases: []string{"rr"},
+			Usage:   "Enable the in-development rolling record capability of the Smartnode tree generator. Only use if you know what you're doing.",
 			Value:   false,
 		},
 		&cli.StringFlag{

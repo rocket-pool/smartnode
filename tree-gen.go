@@ -87,17 +87,19 @@ type treegenArguments struct {
 
 // Treegen holder for the requested execution metadata and necessary artifacts
 type treeGenerator struct {
-	log          *log.ColorLogger
-	rp           *rocketpool.RocketPool
-	cfg          *config.RocketPoolConfig
-	mgr          *state.NetworkStateManager
-	recordMgr    *watchtower.RollingRecordManager
-	bn           beacon.Client
-	beaconConfig beacon.Eth2Config
-	targets      targets
-	outputDir    string
-	prettyPrint  bool
-	ruleset      uint64
+	log               *log.ColorLogger
+	errLog            *log.ColorLogger
+	rp                *rocketpool.RocketPool
+	cfg               *config.RocketPoolConfig
+	mgr               *state.NetworkStateManager
+	recordMgr         *watchtower.RollingRecordManager
+	bn                beacon.Client
+	beaconConfig      beacon.Eth2Config
+	targets           targets
+	outputDir         string
+	prettyPrint       bool
+	ruleset           uint64
+	useRollingRecords bool
 }
 
 // Generates a new rewards tree based on the command line flags
@@ -108,7 +110,8 @@ func GenerateTree(c *cli.Context) error {
 	// Initialization
 	interval := c.Int64("interval")
 	targetEpoch := c.Uint64("target-epoch")
-	log := log.NewColorLogger(color.FgHiWhite)
+	logger := log.NewColorLogger(color.FgHiWhite)
+	errLogger := log.NewColorLogger(color.FgRed)
 
 	// URL acquisiton
 	ecUrl := c.String("ec-endpoint")
@@ -140,10 +143,10 @@ func GenerateTree(c *cli.Context) error {
 	switch depositContract.ChainID {
 	case 1:
 		network = cfgtypes.Network_Mainnet
-		log.Printlnf("Beacon node is configured for Mainnet.")
+		logger.Printlnf("Beacon node is configured for Mainnet.")
 	case 5:
 		network = cfgtypes.Network_Prater
-		log.Printlnf("Beacon node is configured for Prater.")
+		logger.Printlnf("Beacon node is configured for Prater.")
 	default:
 		return fmt.Errorf("your Beacon node is configured for an unknown network with Chain ID [%d]", depositContract.ChainID)
 	}
@@ -160,22 +163,24 @@ func GenerateTree(c *cli.Context) error {
 	}
 
 	// Create the NetworkStateManager
-	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bn, &log)
+	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bn, &logger)
 	if err != nil {
 		return err
 	}
 
 	// Create the generator
 	generator := treeGenerator{
-		log:          &log,
-		rp:           rp,
-		cfg:          cfg,
-		bn:           bn,
-		mgr:          mgr,
-		beaconConfig: beaconConfig,
-		outputDir:    c.String("output-dir"),
-		prettyPrint:  c.Bool("pretty-print"),
-		ruleset:      c.Uint64("ruleset"),
+		log:               &logger,
+		errLog:            &errLogger,
+		rp:                rp,
+		cfg:               cfg,
+		bn:                bn,
+		mgr:               mgr,
+		beaconConfig:      beaconConfig,
+		outputDir:         c.String("output-dir"),
+		prettyPrint:       c.Bool("pretty-print"),
+		ruleset:           c.Uint64("ruleset"),
+		useRollingRecords: c.Bool("use-rolling-records"),
 	}
 
 	// initialize the generator targets
@@ -464,7 +469,11 @@ func (g *treeGenerator) writeFiles(rewardsFile *rprewards.RewardsFile) error {
 func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
 	// Ignore this on old rulesets without rolling records
 	if g.ruleset < 6 {
-		g.log.Printlnf("Ruleset %d does not use rolling records, ignoring them.", g.ruleset)
+		if g.ruleset == 0 {
+			g.log.Println("The current interval cannot use rolling records because it uses an older ruleset, ignoring them.")
+		} else {
+			g.log.Printlnf("Ruleset %d does not use rolling records, ignoring them.", g.ruleset)
+		}
 		return nil
 	}
 
@@ -492,13 +501,17 @@ func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
 
 	// Ignore this on old intervals without rolling records
 	if ignoreRollingRecords {
-		g.log.Printlnf("Rewards interval %d will not use rolling records, ignoring them.", index)
+		if index == 0 {
+			g.log.Println("The current interval cannot use rolling records because it uses an older ruleset, ignoring them.")
+		} else {
+			g.log.Printlnf("Rewards interval %d cannot use rolling records because it used an older ruleset, ignoring them.", index)
+		}
 		return nil
 	}
 
 	// Rolling records are supported, build up the manager
 	var err error
-	g.recordMgr, err = watchtower.NewRollingRecordManager(g.log, "[Rolling Record]", g.cfg, g.rp, g.bn, g.mgr, nil, args.startSlot)
+	g.recordMgr, err = watchtower.NewRollingRecordManager(g.log, g.errLog, g.cfg, g.rp, g.bn, g.mgr, nil, args.startSlot, g.beaconConfig)
 	if err != nil {
 		return fmt.Errorf("error creating rolling record manager: %w", err)
 	}
@@ -525,7 +538,12 @@ func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
 // Creates a tree generator using the provided arguments
 func (g *treeGenerator) getGenerator(args *treegenArguments) (*rprewards.TreeGenerator, error) {
 	// Prepare the rolling record manager and record if applicable
-	g.prepareRecordManager(args)
+	if g.useRollingRecords {
+		g.log.Println("Rolling records are enabled, preparing rolling manager.")
+		g.prepareRecordManager(args)
+	} else {
+		g.log.Println("Rolling records are not enabled, ignoring them.")
+	}
 	var record *rprewards.RollingRecord = nil
 	if g.recordMgr != nil {
 		record = g.recordMgr.Record
@@ -533,7 +551,7 @@ func (g *treeGenerator) getGenerator(args *treegenArguments) (*rprewards.TreeGen
 
 	// Create the tree generator
 	out, err := rprewards.NewTreeGenerator(
-		*g.log, "", g.rp, g.cfg, g.bn, args.index,
+		g.log, "", g.rp, g.cfg, g.bn, args.index,
 		args.startTime, args.endTime, args.block.Slot, args.elBlockHeader,
 		args.intervalsPassed, args.state, record)
 	if err != nil {
