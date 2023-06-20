@@ -45,8 +45,6 @@ const (
 	CancelBondsColor               = color.FgGreen
 	CheckSoloMigrationsColor       = color.FgCyan
 	UpdateColor                    = color.FgHiWhite
-
-	useRollingRecords bool = false
 )
 
 // Register watchtower command
@@ -66,6 +64,12 @@ func run(c *cli.Context) error {
 
 	// Configure
 	configureHTTP()
+
+	// Check if rolling records are enabled
+	useRollingRecords := c.GlobalBool("use-rolling-records")
+	if useRollingRecords {
+		fmt.Println("***NOTE: EXPERIMENTAL ROLLING RECORDS ARE ENABLED, BE ADVISED!***")
+	}
 
 	// Wait until node is registered
 	if err := services.WaitNodeRegistered(c, true); err != nil {
