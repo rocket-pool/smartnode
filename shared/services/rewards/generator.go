@@ -72,14 +72,20 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 		intervalsPassed:  intervalsPassed,
 	}
 
+	var v6_generator treeGeneratorImpl
+	if rollingRecord == nil {
+		v6_generator = newTreeGeneratorImpl_v6(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
+	} else {
+		v6_generator = newTreeGeneratorImpl_v6_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+	}
+
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
 			rewardsRulesetVersion: 6,
 			mainnetStartInterval:  MainnetV6Interval,
 			praterStartInterval:   PraterV6Interval,
-			//generator:             newTreeGeneratorImpl_v6_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord),
-			generator: newTreeGeneratorImpl_v6(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state),
+			generator:             v6_generator,
 		}, {
 			rewardsRulesetVersion: 5,
 			mainnetStartInterval:  MainnetV5Interval,

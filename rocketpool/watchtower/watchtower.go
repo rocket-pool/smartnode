@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/legacy"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -44,6 +45,8 @@ const (
 	CancelBondsColor               = color.FgGreen
 	CheckSoloMigrationsColor       = color.FgCyan
 	UpdateColor                    = color.FgHiWhite
+
+	useRollingRecords bool = false
 )
 
 // Register watchtower command
@@ -117,6 +120,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during rpl price check: %w", err)
 	}
+	submitNetworkBalances, err := legacy.NewSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
+	if err != nil {
+		return fmt.Errorf("error during network balances check: %w", err)
+	}
 	dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
 	if err != nil {
 		return fmt.Errorf("error during timed-out minipools check: %w", err)
@@ -124,6 +131,10 @@ func run(c *cli.Context) error {
 	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
 	if err != nil {
 		return fmt.Errorf("error during scrub check: %w", err)
+	}
+	submitRewardsTree, err := legacy.NewSubmitRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+	if err != nil {
+		return fmt.Errorf("error during rewards tree check: %w", err)
 	}
 	processBalancesAndRewards, err := newProcessBalancesAndRewards(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	if err != nil {
@@ -208,11 +219,21 @@ func run(c *cli.Context) error {
 					continue
 				}
 
-				// Run the rewards tree submission check
-				if err := processBalancesAndRewards.run(isOnOdao, state); err != nil {
-					errorLog.Println(err)
+				if !useRollingRecords {
+					// Run the rewards tree submission check
+					if err := submitRewardsTree.Run(isOnOdao, state, latestBlock.Slot); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 				}
-				time.Sleep(taskCooldown)
+
+				if useRollingRecords {
+					// Run the rewards tree submission check
+					if err := processBalancesAndRewards.run(isOnOdao, state); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+				}
 
 				// Run the challenge check
 				if err := respondChallenges.run(); err != nil {
@@ -225,6 +246,14 @@ func run(c *cli.Context) error {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
+
+				if !useRollingRecords {
+					// Run the network balance submission check
+					if err := submitNetworkBalances.Run(state); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+				}
 
 				// Run the minipool dissolve check
 				if err := dissolveTimedOutMinipools.run(state); err != nil {
@@ -256,8 +285,13 @@ func run(c *cli.Context) error {
 				}*/
 				// DISABLED until MEV-Boost can support it
 			} else {
-				// Run the rewards tree submission check
-				if err := processBalancesAndRewards.run(isOnOdao, nil); err != nil {
+				/*
+					// Run the rewards tree submission check
+					if err := processBalancesAndRewards.run(isOnOdao, nil); err != nil {
+						errorLog.Println(err)
+					}
+				*/
+				if err := submitRewardsTree.Run(isOnOdao, nil, latestBlock.Slot); err != nil {
 					errorLog.Println(err)
 				}
 			}

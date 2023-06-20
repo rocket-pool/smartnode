@@ -18,7 +18,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/rocketpool/watchtower"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -35,7 +35,7 @@ const (
 )
 
 // Submit network balances task
-type submitNetworkBalances struct {
+type SubmitNetworkBalances struct {
 	c         *cli.Context
 	log       *log.ColorLogger
 	errLog    *log.ColorLogger
@@ -66,7 +66,7 @@ type minipoolBalanceDetails struct {
 }
 
 // Create submit network balances task
-func newSubmitNetworkBalances(c *cli.Context, logger *log.ColorLogger, errorLogger *log.ColorLogger) (*submitNetworkBalances, error) {
+func NewSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*SubmitNetworkBalances, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -92,10 +92,10 @@ func newSubmitNetworkBalances(c *cli.Context, logger *log.ColorLogger, errorLogg
 
 	// Return task
 	lock := &sync.Mutex{}
-	return &submitNetworkBalances{
+	return &SubmitNetworkBalances{
 		c:         c,
-		log:       logger,
-		errLog:    errorLogger,
+		log:       &logger,
+		errLog:    &errorLogger,
 		cfg:       cfg,
 		w:         w,
 		ec:        ec,
@@ -108,7 +108,7 @@ func newSubmitNetworkBalances(c *cli.Context, logger *log.ColorLogger, errorLogg
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) run(state *state.NetworkState) error {
+func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -246,7 +246,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 }
 
-func (t *submitNetworkBalances) handleError(err error) {
+func (t *SubmitNetworkBalances) handleError(err error) {
 	t.errLog.Println(err)
 	t.errLog.Println("*** Balance report failed. ***")
 	t.lock.Lock()
@@ -255,7 +255,7 @@ func (t *submitNetworkBalances) handleError(err error) {
 }
 
 // Check whether balances for a block has already been submitted by the node
-func (t *submitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Address, blockNumber uint64) (bool, error) {
+func (t *SubmitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Address, blockNumber uint64) (bool, error) {
 
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
@@ -264,7 +264,7 @@ func (t *submitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Add
 }
 
 // Check whether specific balances for a block has already been submitted by the node
-func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress common.Address, blockNumber uint64, balances networkBalances) (bool, error) {
+func (t *SubmitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress common.Address, blockNumber uint64, balances networkBalances) (bool, error) {
 
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
@@ -292,12 +292,12 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 }
 
 // Prints a message to the log
-func (t *submitNetworkBalances) printMessage(message string) {
+func (t *SubmitNetworkBalances) printMessage(message string) {
 	t.log.Println(message)
 }
 
 // Get the network balances at a specific block
-func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time) (networkBalances, error) {
+func (t *SubmitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time) (networkBalances, error) {
 
 	// Get a client with the block number available
 	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, elBlock)
@@ -418,7 +418,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 }
 
 // Get minipool balance details
-func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, cfg *config.RocketPoolConfig) minipoolBalanceDetails {
+func (t *SubmitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, cfg *config.RocketPoolConfig) minipoolBalanceDetails {
 
 	status := mpd.Status
 	userDepositBalance := mpd.UserDepositBalance
@@ -484,7 +484,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
+func (t *SubmitNetworkBalances) submitBalances(balances networkBalances) error {
 
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
@@ -515,14 +515,14 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(watchtower.GetWatchtowerMaxFee(t.cfg))
+	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(watchtower.GetWatchtowerPrioFee(t.cfg))
+	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Submit balances
