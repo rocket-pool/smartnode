@@ -194,7 +194,6 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 		}
 		r.ValidatorIndexMap[validator.Index] = minipoolInfo
 		r.LatestMappedIndex = i
-		fmt.Printf("Mapped validator %d\n", i)
 	}
 }
 
