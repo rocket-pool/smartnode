@@ -116,11 +116,6 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 	return nil
 }
 
-// Prints a message to the log
-func (t *submitNetworkBalances) printMessage(message string) {
-	t.log.Println(message)
-}
-
 // Get the network balances at a specific block
 func (t *submitNetworkBalances) getNetworkBalances(state *state.NetworkState) (networkBalances, error) {
 
