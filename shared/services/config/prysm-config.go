@@ -12,15 +12,15 @@ const (
 	prysmBnTagAmd64PortableTest string = "rocketpool/prysm:v4.0.6-portable"
 	prysmVcTagAmd64PortableTest string = "rocketpool/prysm:v4.0.6-portable"
 	prysmTagArm64PortableTest   string = "rocketpool/prysm:v4.0.6-portable"
-	prysmBnTagAmd64ModernTest   string = "prysmaticlabs/prysm-beacon-chain:HEAD-a75e78-debug"
-	prysmVcTagAmd64ModernTest   string = "prysmaticlabs/prysm-validator:HEAD-a75e78-debug"
+	prysmBnTagAmd64ModernTest   string = "rocketpool/prysm:v4.0.6"
+	prysmVcTagAmd64ModernTest   string = "rocketpool/prysm:v4.0.6"
 	prysmTagArm64ModernTest     string = "rocketpool/prysm:v4.0.6"
 
 	prysmBnTagAmd64PortableProd string = "rocketpool/prysm:v4.0.6-portable"
 	prysmVcTagAmd64PortableProd string = "rocketpool/prysm:v4.0.6-portable"
 	prysmTagArm64PortableProd   string = "rocketpool/prysm:v4.0.6-portable"
-	prysmBnTagAmd64ModernProd   string = "prysmaticlabs/prysm-beacon-chain:HEAD-a75e78-debug"
-	prysmVcTagAmd64ModernProd   string = "prysmaticlabs/prysm-validator:HEAD-a75e78-debug"
+	prysmBnTagAmd64ModernProd   string = "rocketpool/prysm:v4.0.6"
+	prysmVcTagAmd64ModernProd   string = "rocketpool/prysm:v4.0.6"
 	prysmTagArm64ModernProd     string = "rocketpool/prysm:v4.0.6"
 	defaultPrysmRpcPort         uint16 = 5053
 	defaultPrysmOpenRpcPort     string = string(config.RPC_Closed)
