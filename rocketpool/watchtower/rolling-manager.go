@@ -193,7 +193,7 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 
 			// Update the record
 			r.log.Printlnf("%s Starting record update in a separate thread.", r.logPrefix)
-			err = r.updateToSlot(latestFinalizedBlock.Slot)
+			err = r.updateToSlot(state, latestFinalizedBlock.Slot)
 			if err != nil {
 				r.handleError(fmt.Errorf("%s error during rolling record update: %w", r.logPrefix, err))
 				return
@@ -409,16 +409,19 @@ func (r *RollingRecordManager) runRewardsIntervalReport(state *state.NetworkStat
 }
 
 // Start an update to a given slot
-func (r *RollingRecordManager) updateToSlot(slot uint64) error {
+func (r *RollingRecordManager) updateToSlot(state *state.NetworkState, slot uint64) error {
 	// Skip it if the latest record is already up to date or is in the process
 	if r.Record.PendingSlot >= slot {
 		return nil
 	}
 
 	// Get the latest finalized state
-	state, err := r.mgr.GetStateForSlot(slot)
-	if err != nil {
-		return fmt.Errorf("error getting state at slot %d: %w", slot, err)
+	var err error
+	if state.BeaconSlotNumber != slot {
+		state, err = r.mgr.GetStateForSlot(slot)
+		if err != nil {
+			return fmt.Errorf("error getting state at slot %d: %w", slot, err)
+		}
 	}
 
 	// Run an update on it
