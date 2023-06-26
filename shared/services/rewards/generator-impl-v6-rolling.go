@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
@@ -380,35 +379,33 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 	totalODaoRewards.Div(totalODaoRewards, eth.EthToWei(1))
 	r.log.Printlnf("%s Total Oracle DAO RPL rewards: %s (%.3f)", r.logPrefix, totalODaoRewards.String(), eth.WeiToEth(totalODaoRewards))
 
-	oDaoAddresses, err := trustednode.GetMemberAddresses(r.rp, r.opts)
-	if err != nil {
-		return err
-	}
+	oDaoDetails := r.networkState.OracleDaoMemberDetails
 
 	// Calculate the true effective time of each oDAO node based on their participation in this interval
 	totalODaoNodeTime := big.NewInt(0)
 	trueODaoNodeTimes := map[common.Address]*big.Int{}
-	for _, address := range oDaoAddresses {
-		// Get the timestamp of the node's registration
-		regTimeBig := r.networkState.NodeDetailsByAddress[address].RegistrationTime
-		regTime := time.Unix(regTimeBig.Int64(), 0)
+	for _, details := range oDaoDetails {
+		// Get the timestamp of the node joining the oDAO
+		joinTime := details.JoinedTime
 
 		// Get the actual effective time, scaled based on participation
 		intervalDuration := r.networkState.NetworkDetails.IntervalDuration
 		intervalDurationBig := big.NewInt(int64(intervalDuration.Seconds()))
 		participationTime := big.NewInt(0).Set(intervalDurationBig)
 		snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
-		eligibleDuration := snapshotBlockTime.Sub(regTime)
+		eligibleDuration := snapshotBlockTime.Sub(joinTime)
 		if eligibleDuration < intervalDuration {
 			participationTime = big.NewInt(int64(eligibleDuration.Seconds()))
 		}
-		trueODaoNodeTimes[address] = participationTime
+		trueODaoNodeTimes[details.Address] = participationTime
 
 		// Add it to the total
 		totalODaoNodeTime.Add(totalODaoNodeTime, participationTime)
 	}
 
-	for _, address := range oDaoAddresses {
+	for _, details := range oDaoDetails {
+		address := details.Address
+
 		// Calculate the oDAO rewards for the node: (participation time) * (total oDAO rewards) / (total participation time)
 		individualOdaoRewards := big.NewInt(0)
 		individualOdaoRewards.Mul(trueODaoNodeTimes[address], totalODaoRewards)
@@ -485,16 +482,7 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 func (r *treeGeneratorImpl_v6_rolling) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
-	smoothingPoolContract, err := r.rp.GetContract("rocketSmoothingPool", r.opts)
-	if err != nil {
-		return fmt.Errorf("error getting smoothing pool contract: %w", err)
-	}
-	r.smoothingPoolAddress = *smoothingPoolContract.Address
-
-	r.smoothingPoolBalance, err = r.rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, r.elSnapshotHeader.Number)
-	if err != nil {
-		return fmt.Errorf("error getting smoothing pool balance: %w", err)
-	}
+	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
 	r.log.Printlnf("%s Smoothing Pool Balance: %s (%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
 
 	// Ignore the ETH calculation if there are no rewards
@@ -508,7 +496,8 @@ func (r *treeGeneratorImpl_v6_rolling) calculateEthRewards(checkBeaconPerformanc
 	}
 
 	// Get the start time of this interval based on the event from the previous one
-	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts)
+	//previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts) // This is immutable so querying at the head is fine and mitigates issues around calls for pruned EL state
+	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, nil)
 	if err != nil {
 		return err
 	}

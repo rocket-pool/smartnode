@@ -42,6 +42,9 @@ type NetworkState struct {
 	// Validator details
 	ValidatorDetails map[types.ValidatorPubkey]beacon.ValidatorStatus
 
+	// Oracle DAO details
+	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails
+
 	// Internal fields
 	log *log.ColorLogger
 }
@@ -90,21 +93,21 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
+	state.logLine("1/6 - Retrieved network details (%s so far)", time.Since(start))
 
 	// Node details
 	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all node details: %w", err)
 	}
-	state.logLine("2/5 - Retrieved node details (%s so far)", time.Since(start))
+	state.logLine("2/6 - Retrieved node details (%s so far)", time.Since(start))
 
 	// Minipool details
 	state.MinipoolDetails, err = rpstate.GetAllNativeMinipoolDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
-	state.logLine("3/5 - Retrieved minipool details (%s so far)", time.Since(start))
+	state.logLine("3/6 - Retrieved minipool details (%s so far)", time.Since(start))
 
 	// Create the node lookup
 	for i, details := range state.NodeDetails {
@@ -134,6 +137,13 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
 	}
 
+	// Oracle DAO member details
+	state.OracleDaoMemberDetails, err = rpstate.GetAllOracleDaoMemberDetails(rp, contracts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting Oracle DAO details: %w", err)
+	}
+	state.logLine("4/6 - Retrieved minipool details (%s so far)", time.Since(start))
+
 	// Get the validator stats from Beacon
 	statusMap, err := bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &slotNumber,
@@ -142,7 +152,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		return nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("4/5 - Retrieved validator details (total time: %s)", time.Since(start))
+	state.logLine("5/6 - Retrieved validator details (total time: %s)", time.Since(start))
 
 	// Get the complete node and user shares
 	mpds := make([]*rpstate.NativeMinipoolDetails, len(state.MinipoolDetails))
@@ -161,7 +171,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		return nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("5/5 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
+	state.logLine("6/6 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
 
 	return state, nil
 }
