@@ -24,6 +24,7 @@ type NetworkContracts struct {
 	Version *version.Version
 
 	// Redstone
+	RocketDAONodeTrusted                 *rocketpool.Contract
 	RocketDAONodeTrustedSettingsMinipool *rocketpool.Contract
 	RocketDAOProtocolSettingsMinipool    *rocketpool.Contract
 	RocketDAOProtocolSettingsNetwork     *rocketpool.Contract
@@ -91,6 +92,9 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 	// Create the contract wrappers for Redstone
 	wrappers := []contractArtifacts{
 		{
+			name:     "rocketDAONodeTrusted",
+			contract: &contracts.RocketDAONodeTrusted,
+		}, {
 			name:     "rocketDAONodeTrustedSettingsMinipool",
 			contract: &contracts.RocketDAONodeTrustedSettingsMinipool,
 		}, {
