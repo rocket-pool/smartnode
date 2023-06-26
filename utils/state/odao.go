@@ -54,7 +54,7 @@ func GetOracleDaoMemberDetails(rp *rocketpool.RocketPool, contracts *NetworkCont
 }
 
 // Gets all Oracle DAO member details using the efficient multicall contract
-func GetAllOracleDaoMemberDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, memberAddress common.Address) ([]OracleDaoMemberDetails, error) {
+func GetAllOracleDaoMemberDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) ([]OracleDaoMemberDetails, error) {
 	opts := &bind.CallOpts{
 		BlockNumber: contracts.ElBlockNumber,
 	}
