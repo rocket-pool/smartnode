@@ -5,13 +5,11 @@ import (
 	"strings"
 
 	"github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/sys"
 )
 
 // Constants
 const (
-	mevBoostPortableTag         string = "flashbots/mev-boost:1.5.0-portable"
-	mevBoostModernTag           string = "flashbots/mev-boost:1.5.0"
+	mevBoostTag                 string = "flashbots/mev-boost:1.6"
 	mevBoostUrlEnvVar           string = "MEV_BOOST_URL"
 	mevBoostRelaysEnvVar        string = "MEV_BOOST_RELAYS"
 	mevDocsUrl                  string = "https://docs.rocketpool.net/guides/node/mev.html"
@@ -194,7 +192,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			Name:                 "Container Tag",
 			Description:          "The tag name of the MEV-Boost container you want to use on Docker Hub.",
 			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: getMevBoostTag()},
+			Default:              map[config.Network]interface{}{config.Network_All: mevBoostTag},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
 			EnvironmentVariables: []string{"MEV_BOOST_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -608,13 +606,4 @@ func generateRelayParameter(id string, relay config.MevRelay) config.Parameter {
 		CanBeBlank:           false,
 		OverwriteOnUpgrade:   false,
 	}
-}
-
-// Get the appropriate MEV-Boost default tag
-func getMevBoostTag() string {
-	missingFeatures := sys.GetMissingModernCpuFeatures()
-	if len(missingFeatures) > 0 {
-		return mevBoostPortableTag
-	}
-	return mevBoostModernTag
 }
