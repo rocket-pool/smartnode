@@ -8,12 +8,12 @@ import (
 
 const (
 	// Prater
-	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.5.1"
-	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.5.1"
+	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.6.1"
+	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.6.1"
 
 	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.5.1"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.5.1"
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.6.1"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.6.1"
 
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
