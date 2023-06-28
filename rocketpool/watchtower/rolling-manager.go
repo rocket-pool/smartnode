@@ -737,6 +737,12 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 			continue
 		}
 
+		// Check if it was too far into the past
+		if slot < startSlot {
+			r.log.Printlnf("%s File [%s] was too old (generated before the target start slot), none of the remaining records can be used.", r.logPrefix, filename)
+			break
+		}
+
 		// Make sure the checksum parses properly
 		checksum, err := hex.DecodeString(checksumString)
 		if err != nil {
