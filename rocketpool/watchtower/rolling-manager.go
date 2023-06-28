@@ -747,7 +747,8 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 		fullFilename := filepath.Join(recordsPath, filename)
 		record, err := r.loadRecordFromFile(fullFilename, checksum)
 		if err != nil {
-			return nil, fmt.Errorf("error loading record from file (%s): %w", fullFilename, err)
+			r.log.Printlnf("%s WARNING: error loading record from file [%s]: %s... attempting previous file", r.logPrefix, fullFilename, err.Error())
+			continue
 		}
 		epoch := slot / r.beaconCfg.SlotsPerEpoch
 		r.log.Printlnf("%s Loaded file [%s] which ended on slot %d (epoch %d).", r.logPrefix, filename, slot, epoch)
