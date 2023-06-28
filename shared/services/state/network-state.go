@@ -142,7 +142,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	if err != nil {
 		return nil, fmt.Errorf("error getting Oracle DAO details: %w", err)
 	}
-	state.logLine("4/6 - Retrieved minipool details (%s so far)", time.Since(start))
+	state.logLine("4/6 - Retrieved Oracle DAO details (%s so far)", time.Since(start))
 
 	// Get the validator stats from Beacon
 	statusMap, err := bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
