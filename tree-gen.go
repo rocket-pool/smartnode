@@ -211,16 +211,26 @@ func (g *treeGenerator) getTreegenArgs() (*treegenArguments, error) {
 
 	// If we have a rewardsEvent, we're generating a full interval
 	if g.targets.rewardsEvent != nil {
+		index := g.targets.rewardsEvent.Index.Uint64()
+		startSlot := uint64(0)
+		if index > 0 {
+			// Get the start slot for this interval
+			previousRewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, uint64(index-1), nil)
+			if err != nil {
+				return nil, fmt.Errorf("error getting event for interval %d: %w", index-1, err)
+			}
+			lastRewardEpoch := previousRewardsEvent.ConsensusBlock.Uint64() / g.beaconConfig.SlotsPerEpoch
+			startSlot = (lastRewardEpoch + 1) * g.beaconConfig.SlotsPerEpoch // First slot of the new epoch
+		}
+
 		elBlockHeader, err := g.rp.Client.HeaderByNumber(context.Background(), g.targets.rewardsEvent.ExecutionBlock)
 		if err != nil {
 			return nil, fmt.Errorf("error getting el block header %d: %w", g.targets.rewardsEvent.ExecutionBlock.Uint64(), err)
 		}
-		lastRewardEpoch := g.targets.rewardsEvent.ConsensusBlock.Uint64() / g.beaconConfig.SlotsPerEpoch
-		startSlot := (lastRewardEpoch + 1) * g.beaconConfig.SlotsPerEpoch // First slot of the new epoch
 		return &treegenArguments{
 			startTime:       g.targets.rewardsEvent.IntervalStartTime,
 			endTime:         g.targets.rewardsEvent.IntervalEndTime,
-			index:           g.targets.rewardsEvent.Index.Uint64(),
+			index:           index,
 			intervalsPassed: g.targets.rewardsEvent.IntervalsPassed.Uint64(),
 			startSlot:       startSlot,
 			block:           g.targets.block,
@@ -486,6 +496,12 @@ func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
 		index = g.targets.snapshotDetails.index
 	}
 
+	// Ignore rolling records for the first interval
+	if index == 0 {
+		g.log.Println("Interval 0 cannot use rolling records because there was no previous event to indicate when to start collecting records, ignoring them.")
+		return nil
+	}
+
 	// If a ruleset isn't specified, check if the interval is before v6
 	if g.ruleset == 0 {
 		network := g.cfg.Smartnode.Network.Value.(cfgtypes.Network)
@@ -501,11 +517,7 @@ func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
 
 	// Ignore this on old intervals without rolling records
 	if ignoreRollingRecords {
-		if index == 0 {
-			g.log.Println("The current interval cannot use rolling records because it uses an older ruleset, ignoring them.")
-		} else {
-			g.log.Printlnf("Rewards interval %d cannot use rolling records because it used an older ruleset, ignoring them.", index)
-		}
+		g.log.Printlnf("Rewards interval %d cannot use rolling records because it used an older ruleset, ignoring them.", index)
 		return nil
 	}
 
@@ -683,13 +695,17 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 	}
 	index := indexBig.Uint64()
 
-	// Get the start slot for this interval
-	previousRewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, index-1, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting event for interval %d: %w", index-1, err)
+	// Get the start slot
+	startSlot := uint64(0)
+	if index > 0 {
+		// Get the start slot for this interval
+		previousRewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, uint64(index-1), nil)
+		if err != nil {
+			return nil, fmt.Errorf("error getting event for interval %d: %w", index-1, err)
+		}
+		lastRewardEpoch := previousRewardsEvent.ConsensusBlock.Uint64() / g.beaconConfig.SlotsPerEpoch
+		startSlot = (lastRewardEpoch + 1) * g.beaconConfig.SlotsPerEpoch // First slot of the new epoch
 	}
-	lastRewardEpoch := previousRewardsEvent.ConsensusBlock.Uint64() / g.beaconConfig.SlotsPerEpoch
-	startSlot := (lastRewardEpoch + 1) * g.beaconConfig.SlotsPerEpoch // First slot of the new epoch
 
 	// Get the start time for the interval, and how long an interval is supposed to take
 	startTime, err := rewards.GetClaimIntervalTimeStart(g.rp, &opts)
