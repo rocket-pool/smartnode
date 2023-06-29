@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -649,6 +650,12 @@ func (r *RollingRecordManager) SaveRecordToFile(record *rewards.RollingRecord) e
 	checksumLine := fmt.Sprintf("%s  %s", hex.EncodeToString(checksum[:]), filepath.Base(filename))
 	lines = append(lines, checksumLine)
 
+	// Sort the lines by their slot
+	err = r.sortChecksumEntries(lines)
+	if err != nil {
+		return fmt.Errorf("error sorting checkpoint file entries: %w", err)
+	}
+
 	// Get the number of lines to write
 	var newLines []string
 	if len(lines) > int(checkpointRetentionLimit) {
@@ -667,7 +674,12 @@ func (r *RollingRecordManager) SaveRecordToFile(record *rewards.RollingRecord) e
 			filename := elems[1]
 			fullFilename := filepath.Join(recordsPath, filename)
 
-			// Delete the file
+			// Delete the file if it exists
+			_, err := os.Stat(fullFilename)
+			if os.IsNotExist(err) {
+				r.log.Printlnf("%s NOTE: tried removing checkpoint file [%s] based on the retention limit, but it didn't exist.", r.logPrefix, filename)
+				continue
+			}
 			err = os.Remove(fullFilename)
 			if err != nil {
 				return fmt.Errorf("error deleting file [%s]: %w", fullFilename, err)
@@ -717,18 +729,10 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 	for i := len(lines) - 1; i >= 0; i-- {
 		line := lines[i]
 
-		// Extract the checksum and filename
-		elems := strings.Split(line, "  ")
-		if len(elems) != 2 {
-			return nil, fmt.Errorf("error parsing checkpoint line (%s): expected 2 elements, but got %d", line, len(elems))
-		}
-		checksumString := elems[0]
-		filename := elems[1]
-
-		// Extract the slot number for this file
-		slot, err := r.getSlotFromFilename(filename)
+		// Extract the checksum, filename, and slot number
+		checksumString, filename, slot, err := r.parseChecksumEntry(line)
 		if err != nil {
-			return nil, fmt.Errorf("error scanning checkpoint line (%s): %w", line, err)
+			return nil, err
 		}
 
 		// Check if the slot was too far into the future
@@ -844,4 +848,44 @@ func (r *RollingRecordManager) parseChecksumFile() (bool, []string, error) {
 	}
 
 	return true, lines, nil
+}
+
+// Sort the checksum file entries by their slot
+func (r *RollingRecordManager) sortChecksumEntries(lines []string) error {
+	var sortErr error
+	sort.Slice(lines, func(i int, j int) bool {
+		_, _, firstSlot, err := r.parseChecksumEntry(lines[i])
+		if err != nil && sortErr == nil {
+			sortErr = err
+			return false
+		}
+
+		_, _, secondSlot, err := r.parseChecksumEntry(lines[j])
+		if err != nil && sortErr == nil {
+			sortErr = err
+			return false
+		}
+
+		return firstSlot < secondSlot
+	})
+	return sortErr
+}
+
+// Get the checksum, the filename, and the slot number from a checksum entry.
+func (r *RollingRecordManager) parseChecksumEntry(line string) (string, string, uint64, error) {
+	// Extract the checksum and filename
+	elems := strings.Split(line, "  ")
+	if len(elems) != 2 {
+		return "", "", 0, fmt.Errorf("error parsing checkpoint line (%s): expected 2 elements, but got %d", line, len(elems))
+	}
+	checksumString := elems[0]
+	filename := elems[1]
+
+	// Extract the slot number for this file
+	slot, err := r.getSlotFromFilename(filename)
+	if err != nil {
+		return "", "", 0, fmt.Errorf("error scanning checkpoint line (%s): %w", line, err)
+	}
+
+	return checksumString, filename, slot, nil
 }
