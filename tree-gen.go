@@ -552,7 +552,10 @@ func (g *treeGenerator) getGenerator(args *treegenArguments) (*rprewards.TreeGen
 	// Prepare the rolling record manager and record if applicable
 	if g.useRollingRecords {
 		g.log.Println("Rolling records are enabled, preparing rolling manager.")
-		g.prepareRecordManager(args)
+		err := g.prepareRecordManager(args)
+		if err != nil {
+			return nil, fmt.Errorf("error preparing rolling record: %w", err)
+		}
 	} else {
 		g.log.Println("Rolling records are not enabled, ignoring them.")
 	}
