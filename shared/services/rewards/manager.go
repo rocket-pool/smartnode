@@ -148,8 +148,29 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	return
 }
 
-// Get the event for a rewards snapshot
+// Get the event for a rewards snapshot directly via the new Atlas system
 func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, interval uint64) (rewards.RewardsEvent, error) {
+
+	addressMap := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
+	addresses := []common.Address{}
+	for _, list := range addressMap {
+		addresses = append(addresses, list...)
+	}
+	found, event, err := rewards.GetRewardsEvent(rp, interval, addresses, nil)
+	if err != nil {
+		return rewards.RewardsEvent{}, fmt.Errorf("error getting rewards event for interval %d: %w", interval, err)
+	}
+	if !found {
+		// Fall back to the legacy behavior for missing events (most notably on Prater)
+		return GetRewardSnapshotEvent_Legacy(rp, cfg, interval)
+	}
+
+	return event, nil
+
+}
+
+// Get the event for a rewards snapshot using the old method
+func GetRewardSnapshotEvent_Legacy(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, interval uint64) (rewards.RewardsEvent, error) {
 
 	var event rewards.RewardsEvent
 	var err error
