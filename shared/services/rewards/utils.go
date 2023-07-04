@@ -86,10 +86,15 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.Index = interval
 	var event rewards.RewardsEvent
 
-	// Get the event details for this interval
-	event, err = GetRewardSnapshotEvent(rp, cfg, interval, opts)
-	if err != nil {
-		return
+	if cfg.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Prater && interval < 6 {
+		// Use the hardcoded prehistoric lookup for early Prater intervals
+		event = praterPrehistoryIntervalEvents[interval]
+	} else {
+		// Get the event details for this interval
+		event, err = GetRewardSnapshotEvent(rp, cfg, interval, opts)
+		if err != nil {
+			return
+		}
 	}
 
 	info.CID = event.MerkleTreeCID
