@@ -96,10 +96,23 @@ func newProcessBalancesAndRewards(c *cli.Context, logger log.ColorLogger, errorL
 	}
 
 	// Make a new rolling manager
-	mgr, err := NewRollingRecordManager(&task.log, &task.errLog, cfg, rp, bc, stateMgr, w, startSlot, beaconCfg)
+	mgr, err := NewRollingRecordManager(&task.log, &task.errLog, cfg, rp, bc, stateMgr, w, startSlot, beaconCfg, currentIndex)
 	if err != nil {
 		return nil, fmt.Errorf("error creating rolling record manager: %w", err)
 	}
+
+	// Load the latest checkpoint
+	beaconHead, err := bc.GetBeaconHead()
+	if err != nil {
+		return nil, fmt.Errorf("error getting beacon head: %w", err)
+	}
+	latestFinalizedSlot := (beaconHead.FinalizedEpoch+1)*beaconCfg.SlotsPerEpoch - 1
+	record, err := mgr.LoadBestRecordFromDisk(startSlot, latestFinalizedSlot, currentIndex)
+	if err != nil {
+		return nil, fmt.Errorf("error loading rolling record checkpoint from disk: %w", err)
+	}
+	mgr.Record = record
+	mgr.latestCheckpointEpoch = record.LastDutiesSlot / beaconCfg.SlotsPerEpoch
 
 	// Return
 	task.recordMgr = mgr
@@ -108,6 +121,6 @@ func newProcessBalancesAndRewards(c *cli.Context, logger log.ColorLogger, errorL
 }
 
 // Process balances and rewards submissions
-func (t *processBalancesAndRewards) run(isOnOdao bool, state *state.NetworkState) error {
+func (t *processBalancesAndRewards) run(state *state.NetworkState) error {
 	return t.recordMgr.ProcessNewHeadState(state)
 }

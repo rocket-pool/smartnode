@@ -22,9 +22,9 @@ const (
 type RollingRecord struct {
 	StartSlot         uint64                   `json:"startSlot"`
 	LastDutiesSlot    uint64                   `json:"lastDutiesSlot"`
-	PendingSlot       uint64                   `json:"pendingSlot"`
 	ValidatorIndexMap map[string]*MinipoolInfo `json:"validatorIndexMap"`
 	LatestMappedIndex int                      `json:"latestMappedIndex"`
+	RewardsInterval   uint64                   `json:"rewardsInterval"`
 
 	// Private fields
 	bc                 beacon.Client       `json:"-"`
@@ -40,13 +40,13 @@ type RollingRecord struct {
 }
 
 // Create a new rolling record wrapper
-func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, startSlot uint64, beaconConfig *beacon.Eth2Config) *RollingRecord {
+func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, startSlot uint64, beaconConfig *beacon.Eth2Config, rewardsInterval uint64) *RollingRecord {
 	return &RollingRecord{
 		StartSlot:         startSlot,
 		LastDutiesSlot:    0,
-		PendingSlot:       0,
 		LatestMappedIndex: -1,
 		ValidatorIndexMap: map[string]*MinipoolInfo{},
+		RewardsInterval:   rewardsInterval,
 
 		bc:           bc,
 		beaconConfig: beaconConfig,

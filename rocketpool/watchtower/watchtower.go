@@ -65,12 +65,6 @@ func run(c *cli.Context) error {
 	// Configure
 	configureHTTP()
 
-	// Check if rolling records are enabled
-	useRollingRecords := c.GlobalBool("use-rolling-records")
-	if useRollingRecords {
-		fmt.Println("***NOTE: EXPERIMENTAL ROLLING RECORDS ARE ENABLED, BE ADVISED!***")
-	}
-
 	// Wait until node is registered
 	if err := services.WaitNodeRegistered(c, true); err != nil {
 		return err
@@ -92,6 +86,12 @@ func run(c *cli.Context) error {
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return err
+	}
+
+	// Check if rolling records are enabled
+	useRollingRecords := cfg.Smartnode.UseRollingRecords.Value.(bool)
+	if useRollingRecords {
+		fmt.Println("***NOTE: EXPERIMENTAL ROLLING RECORDS ARE ENABLED, BE ADVISED!***")
 	}
 
 	// Initialize the metrics reporters
@@ -215,6 +215,12 @@ func run(c *cli.Context) error {
 			time.Sleep(taskCooldown)
 
 			if isOnOdao {
+				// Run the challenge check
+				if err := respondChallenges.run(); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
 				// Update the network state
 				state, err := updateNetworkState(m, &updateLog, latestBlock)
 				if err != nil {
@@ -229,35 +235,25 @@ func run(c *cli.Context) error {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
-				}
 
-				if useRollingRecords {
-					// Run the rewards tree submission check
-					if err := processBalancesAndRewards.run(isOnOdao, state); err != nil {
+					// Run the network balance submission check
+					if err := submitNetworkBalances.Run(state); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+				} else {
+					// Run the network balance and rewards tree submission check
+					if err := processBalancesAndRewards.run(state); err != nil {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
 				}
-
-				// Run the challenge check
-				if err := respondChallenges.run(); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
 
 				// Run the price submission check
 				if err := submitRplPrice.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
-
-				if !useRollingRecords {
-					// Run the network balance submission check
-					if err := submitNetworkBalances.Run(state); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-				}
 
 				// Run the minipool dissolve check
 				if err := dissolveTimedOutMinipools.run(state); err != nil {
@@ -290,13 +286,17 @@ func run(c *cli.Context) error {
 				// DISABLED until MEV-Boost can support it
 			} else {
 				/*
+				 */
+				if !useRollingRecords {
 					// Run the rewards tree submission check
-					if err := processBalancesAndRewards.run(isOnOdao, nil); err != nil {
+					if err := submitRewardsTree.Run(isOnOdao, nil, latestBlock.Slot); err != nil {
 						errorLog.Println(err)
 					}
-				*/
-				if err := submitRewardsTree.Run(isOnOdao, nil, latestBlock.Slot); err != nil {
-					errorLog.Println(err)
+				} else {
+					// Run the network balance and rewards tree submission check
+					if err := processBalancesAndRewards.run(nil); err != nil {
+						errorLog.Println(err)
+					}
 				}
 			}
 
