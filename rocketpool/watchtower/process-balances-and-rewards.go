@@ -87,13 +87,13 @@ func newProcessBalancesAndRewards(c *cli.Context, logger log.ColorLogger, errorL
 		return nil, fmt.Errorf("error getting event for rewards interval %d: %w", currentIndex-1, err)
 	}
 	if !found {
-		logger.Printlnf("NOTE: event for previous rewards interval %d not found. Starting from slot zero.", currentIndex-1)
-	} else {
-		// Get the start slot of the current interval
-		previousEpoch := event.ConsensusBlock.Uint64() / beaconCfg.SlotsPerEpoch
-		newEpoch := previousEpoch + 1
-		startSlot = newEpoch * beaconCfg.SlotsPerEpoch
+		return nil, fmt.Errorf("event for rewards interval %d not found!", currentIndex-1)
 	}
+
+	// Get the start slot of the current interval
+	previousEpoch := event.ConsensusBlock.Uint64() / beaconCfg.SlotsPerEpoch
+	newEpoch := previousEpoch + 1
+	startSlot = newEpoch * beaconCfg.SlotsPerEpoch
 
 	// Make a new rolling manager
 	mgr, err := NewRollingRecordManager(&task.log, &task.errLog, cfg, rp, bc, stateMgr, w, startSlot, beaconCfg, currentIndex)
@@ -112,7 +112,7 @@ func newProcessBalancesAndRewards(c *cli.Context, logger log.ColorLogger, errorL
 		return nil, fmt.Errorf("error loading rolling record checkpoint from disk: %w", err)
 	}
 	mgr.Record = record
-	mgr.latestCheckpointEpoch = record.LastDutiesSlot / beaconCfg.SlotsPerEpoch
+	mgr.lastSavedEpoch = record.LastDutiesSlot / beaconCfg.SlotsPerEpoch
 
 	// Return
 	task.recordMgr = mgr
