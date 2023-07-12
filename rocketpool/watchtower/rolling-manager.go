@@ -272,6 +272,10 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 
 			nextStartEpoch := nextStartSlot / r.beaconCfg.SlotsPerEpoch
 			nextTargetEpoch := nextStartEpoch + recordCheckpointInterval - 1
+			if (nextTargetEpoch - r.lastSavedEpoch) > recordCheckpointInterval {
+				// Make a stop at the next required checkpoint so it can be saved
+				nextTargetEpoch = r.lastSavedEpoch + recordCheckpointInterval
+			}
 			nextTargetSlot := (nextTargetEpoch+1)*r.beaconCfg.SlotsPerEpoch - 1 // Target is the last slot of the epoch
 			if nextTargetSlot > finalTarget {
 				nextTargetSlot = finalTarget
@@ -311,6 +315,10 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 				nextStartSlot = nextTargetSlot + 1
 				nextStartEpoch = nextStartSlot / r.beaconCfg.SlotsPerEpoch
 				nextTargetEpoch = nextStartEpoch + recordCheckpointInterval - 1
+				if (nextTargetEpoch - r.lastSavedEpoch) > recordCheckpointInterval {
+					// Make a stop at the next required checkpoint so it can be saved
+					nextTargetEpoch = r.lastSavedEpoch + recordCheckpointInterval
+				}
 				nextTargetSlot = (nextTargetEpoch+1)*r.beaconCfg.SlotsPerEpoch - 1 // Target is the last slot of the epoch
 				if nextTargetSlot > finalTarget {
 					nextTargetSlot = finalTarget

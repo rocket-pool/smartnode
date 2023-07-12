@@ -112,6 +112,10 @@ func newProcessBalancesAndRewards(c *cli.Context, logger log.ColorLogger, errorL
 		return nil, fmt.Errorf("error loading rolling record checkpoint from disk: %w", err)
 	}
 	mgr.Record = record
+	if record.LastDutiesSlot == 0 {
+		// New record created, so mark the last saved epoch as one below the start epoch
+		record.LastDutiesSlot = startSlot - 1
+	}
 	mgr.lastSavedEpoch = record.LastDutiesSlot / beaconCfg.SlotsPerEpoch
 
 	// Return
