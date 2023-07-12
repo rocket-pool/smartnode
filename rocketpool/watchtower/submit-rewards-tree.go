@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,6 +27,10 @@ import (
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/web3-storage/go-w3s-client"
+)
+
+const (
+	enableSubmissionAfterConsensus_RewardsTree bool = true
 )
 
 // Submit rewards Merkle Tree task
@@ -342,7 +347,16 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 	// Get the gas limit
 	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
 	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
+		if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
+			// Set a 21k gas limit which will intentionally be too low and revert
+			gasInfo = rocketpool.GasInfo{
+				EstGasLimit:  21000,
+				SafeGasLimit: 21000,
+			}
+			t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
+		} else {
+			return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
+		}
 	}
 
 	// Print the gas info
