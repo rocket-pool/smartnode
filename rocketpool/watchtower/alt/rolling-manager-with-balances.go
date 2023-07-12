@@ -1,41 +1,16 @@
-package watchtower
+package alt
 
-import (
-	"bytes"
-	"crypto/sha512"
-	"encoding/hex"
-	"fmt"
-	"math"
-	"os"
-	"path/filepath"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/klauspost/compress/zstd"
-	rprewards "github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/rewards"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
-)
-
+/*
 const (
-	recordsFilenameFormat     string = "%d-%d.json.zst"
-	recordsFilenamePattern    string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
-	checksumTableFilename     string = "checksums.sha384"
-	rewardsFlagFilenameFormat string = ".r-%d"
+	recordsFilenameFormat            string = "%d-%d.json.zst"
+	recordsFilenamePattern           string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
+	checksumTableFilename            string = "checksums.sha384"
+	networkBalanceFlagFilenameFormat string = ".nb-%d"
+	rewardsFlagFilenameFormat        string = ".r-%d"
 )
 
 // Manager for RollingRecords
-type RollingRecordManager struct {
+type RollingRecordManager_MergedDuties struct {
 	Record                       *rewards.RollingRecord
 	LatestFinalizedEpoch         uint64
 	ExpectedBalancesBlock        uint64
@@ -53,19 +28,20 @@ type RollingRecordManager struct {
 	startSlot      uint64
 	lastSavedEpoch uint64
 
-	submitRewardsTree    *submitRewardsTree
-	beaconCfg            beacon.Eth2Config
-	genesisTime          time.Time
-	compressor           *zstd.Encoder
-	decompressor         *zstd.Decoder
-	recordsFilenameRegex *regexp.Regexp
+	submitNetworkBalances *submitNetworkBalances
+	submitRewardsTree     *submitRewardsTree
+	beaconCfg             beacon.Eth2Config
+	genesisTime           time.Time
+	compressor            *zstd.Encoder
+	decompressor          *zstd.Decoder
+	recordsFilenameRegex  *regexp.Regexp
 
 	lock      *sync.Mutex
 	isRunning bool
 }
 
 // Creates a new manager for rolling records.
-func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, w *wallet.Wallet, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager, error) {
+func NewRollingRecordManager_MergedDuties(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, w *wallet.Wallet, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager_MergedDuties, error) {
 	// Get the Beacon genesis time
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 
@@ -97,6 +73,7 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 	}
 
 	var nodeAddress *common.Address
+	var submitNetworkBalances *submitNetworkBalances
 	var submitRewardsTree *submitRewardsTree
 	if w != nil {
 		nodeAccount, err := w.GetNodeAccount()
@@ -105,37 +82,39 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 		}
 		nodeAddress = &nodeAccount.Address
 
+		submitNetworkBalances, err = newSubmitNetworkBalances(log, errLog, cfg, w, rp, bc)
 		submitRewardsTree = newSubmitRewardsTree(log, errLog, cfg, w, rp, bc)
 	}
 
 	lock := &sync.Mutex{}
 	logPrefix := "[Rolling Record]"
-	return &RollingRecordManager{
+	return &RollingRecordManager_MergedDuties{
 		Record: rewards.NewRollingRecord(log, logPrefix, bc, startSlot, &beaconCfg, rewardsInterval),
 
-		log:                  log,
-		errLog:               errLog,
-		logPrefix:            logPrefix,
-		cfg:                  cfg,
-		rp:                   rp,
-		bc:                   bc,
-		mgr:                  mgr,
-		w:                    w,
-		nodeAddress:          nodeAddress,
-		startSlot:            startSlot,
-		submitRewardsTree:    submitRewardsTree,
-		beaconCfg:            beaconCfg,
-		genesisTime:          genesisTime,
-		compressor:           encoder,
-		decompressor:         decoder,
-		recordsFilenameRegex: recordsFilenameRegex,
-		lock:                 lock,
-		isRunning:            false,
+		log:                   log,
+		errLog:                errLog,
+		logPrefix:             logPrefix,
+		cfg:                   cfg,
+		rp:                    rp,
+		bc:                    bc,
+		mgr:                   mgr,
+		w:                     w,
+		nodeAddress:           nodeAddress,
+		startSlot:             startSlot,
+		submitNetworkBalances: submitNetworkBalances,
+		submitRewardsTree:     submitRewardsTree,
+		beaconCfg:             beaconCfg,
+		genesisTime:           genesisTime,
+		compressor:            encoder,
+		decompressor:          decoder,
+		recordsFilenameRegex:  recordsFilenameRegex,
+		lock:                  lock,
+		isRunning:             false,
 	}, nil
 }
 
 // Process the details of the latest head state
-func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) error {
+func (r *RollingRecordManager_MergedDuties) ProcessNewHeadState(state *state.NetworkState) error {
 
 	if state == nil {
 		// Get the latest Beacon block
@@ -212,6 +191,18 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 	}
 	latestFinalizedEpoch := latestFinalizedBlock.Slot / state.BeaconConfig.SlotsPerEpoch
 
+	// Check if a network balance update is due
+	isNetworkBalanceUpdateDue, networkBalanceSlot, err := r.isNetworkBalanceUpdateRequired(state)
+	if err != nil {
+		return fmt.Errorf("error checking if network balance update is required: %w", err)
+	}
+
+	// Check if this node has already submitted network balances
+	hasSubmittedNetworkBalances, err := r.hasSubmittedNetworkBalances(state.NetworkDetails.LatestReportableBalancesBlock.Uint64(), isInOdao)
+	if err != nil {
+		return fmt.Errorf("error checking if node has submitted network balances: %w", err)
+	}
+
 	// Check if a rewards interval is due
 	isRewardsSubmissionDue, rewardsSlot, err := r.isRewardsIntervalSubmissionRequired(state)
 	if err != nil {
@@ -225,7 +216,7 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 	}
 
 	// If no special upcoming state is required, update normally
-	if !isRewardsSubmissionDue {
+	if !isNetworkBalanceUpdateDue && !isRewardsSubmissionDue {
 		go func() {
 			r.lock.Lock()
 			r.isRunning = true
@@ -318,43 +309,125 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 		return nil
 	}
 
-	// Stop if we've already submitted but consensus isn't in yet
-	if hasSubmittedRewards {
+	// Handle cases where at only one report is due but we've already submitted it, or when we've already submitted both
+	if hasSubmittedNetworkBalances && !isRewardsSubmissionDue {
+		r.log.Printlnf("%s Network balances have already been submitted for block %s but consensus hasn't been reached yet, skipping record update.", r.logPrefix, state.NetworkDetails.LatestReportableBalancesBlock.String())
+		return nil
+	}
+	if hasSubmittedRewards && !isNetworkBalanceUpdateDue {
 		r.log.Printlnf("%s Rewards tree has already been submitted for interval %d but consensus hasn't been reached yet, skipping record update.", r.logPrefix, state.NetworkDetails.RewardIndex)
 		return nil
 	}
+	if hasSubmittedNetworkBalances && hasSubmittedRewards {
+		r.log.Printlnf("%s Network balances have already been submitted for block %s and rewards tree has already been submitted for interval %d but consensus hasn't been reached yet for either one, skipping record update.", r.logPrefix, state.NetworkDetails.LatestReportableBalancesBlock.String(), state.NetworkDetails.RewardIndex)
+		return nil
+	}
+
+	// Check if network balance reporting is ready
+	networkBalanceEpoch := networkBalanceSlot / r.beaconCfg.SlotsPerEpoch
+	requiredNetworkBalanceEpoch := networkBalanceEpoch + 1
+	isNetworkBalanceReadyForReport := isNetworkBalanceUpdateDue && (latestFinalizedEpoch >= requiredNetworkBalanceEpoch) && !hasSubmittedNetworkBalances
 
 	// Check if rewards reporting is ready
+	var rewardsElBlock uint64
 	rewardsEpoch := rewardsSlot / r.beaconCfg.SlotsPerEpoch
 	requiredRewardsEpoch := rewardsEpoch + 1
-	isRewardsReadyForReport := isRewardsSubmissionDue && (latestFinalizedEpoch >= requiredRewardsEpoch)
-
-	// Run updates and submissions as required
+	isRewardsReadyForReport := isRewardsSubmissionDue && (latestFinalizedEpoch >= requiredRewardsEpoch) && !hasSubmittedRewards
 	if isRewardsReadyForReport {
 		// Get the actual slot to report on
-		rewardsSlot, _, err = r.getTrueRewardsIntervalSubmissionSlot(rewardsSlot)
+		rewardsSlot, rewardsElBlock, err = r.getTrueRewardsIntervalSubmissionSlot(rewardsSlot)
 		if err != nil {
 			return fmt.Errorf("error getting the true rewards interval slot: %w", err)
 		}
+	}
 
+	// Run updates and submissions as required
+	if isNetworkBalanceReadyForReport || isRewardsReadyForReport {
 		go func() {
 			r.lock.Lock()
 			r.isRunning = true
 			r.lock.Unlock()
 
-			// Generate the rewards state
-			state, err := r.mgr.GetStateForSlot(rewardsSlot)
-			if err != nil {
-				r.handleError(fmt.Errorf("error getting state for network balances slot: %w", err))
-				return
-			}
+			if isNetworkBalanceReadyForReport && isRewardsReadyForReport { // Report network balance and rewards
+				// If balances are due after rewards (but before rewards have been submitted), report the balances according to the rewards slot
+				if rewardsSlot < networkBalanceSlot {
+					r.log.Printlnf("%s NOTE: network balance report is due for block %s (slot %d) but this is after the rewards interval due for block %d (slot %d); setting the network balance report to the rewards interval block.", r.logPrefix, state.NetworkDetails.LatestReportableBalancesBlock.String(), networkBalanceSlot, rewardsElBlock, rewardsSlot)
+					networkBalanceSlot = rewardsSlot
+				}
 
-			// Process the rewards interval
-			r.log.Printlnf("%s Running rewards interval submission in a separate thread.", r.logPrefix)
-			err = r.runRewardsIntervalReport(state, isInOdao)
-			if err != nil {
-				r.handleError(fmt.Errorf("error running rewards interval report: %w", err))
-				return
+				// Generate the network balances state
+				state, err := r.mgr.GetStateForSlot(networkBalanceSlot)
+				if err != nil {
+					r.handleError(fmt.Errorf("error getting state for network balances slot: %w", err))
+					return
+				}
+
+				// Process network balances
+				r.log.Printlnf("%s Running network balance report in a separate thread.", r.logPrefix)
+				err = r.runNetworkBalancesReport(state, isInOdao)
+				if err != nil {
+					r.handleError(fmt.Errorf("error running network balances report: %w", err))
+					return
+				}
+				r.log.Printlnf("%s Network Balance report complete.", r.logPrefix)
+
+				// Generate the rewards state
+				if networkBalanceSlot != rewardsSlot {
+					state, err = r.mgr.GetStateForSlot(networkBalanceSlot)
+					if err != nil {
+						r.handleError(fmt.Errorf("error getting state for network balances slot: %w", err))
+						return
+					}
+				}
+
+				// Process the rewards interval
+				r.log.Printlnf("%s Running rewards interval submission in a separate thread.", r.logPrefix)
+				err = r.runRewardsIntervalReport(state, isInOdao)
+				if err != nil {
+					r.handleError(fmt.Errorf("error running rewards interval report: %w", err))
+					return
+				}
+				r.log.Printlnf("%s Rewards Interval submission complete.", r.logPrefix)
+
+			} else if isNetworkBalanceReadyForReport { // Report network balance only
+				if hasSubmittedRewards {
+					// Special situation where network balances are required but consensus is still pending on the last rewards interval
+					// In this case, use the rewards slot instead
+					r.log.Printlnf("%s NOTE: network balance report is due for block %s (slot %d) but this is after the rewards interval due for block %d (slot %d) which hasn't reached consensus yet; setting the network balance report to the rewards interval block.", r.logPrefix, state.NetworkDetails.LatestReportableBalancesBlock.String(), networkBalanceSlot, rewardsElBlock, rewardsSlot)
+					networkBalanceSlot = rewardsSlot
+				}
+
+				// Generate the network balances state
+				state, err := r.mgr.GetStateForSlot(networkBalanceSlot)
+				if err != nil {
+					r.handleError(fmt.Errorf("error getting state for network balances slot: %w", err))
+					return
+				}
+
+				// Process network balances
+				r.log.Printlnf("%s Running network balance report in a separate thread.", r.logPrefix)
+				err = r.runNetworkBalancesReport(state, isInOdao)
+				if err != nil {
+					r.handleError(fmt.Errorf("error running network balances report: %w", err))
+					return
+				}
+
+			} else { // Report rewards only
+				// Generate the rewards state
+				state, err := r.mgr.GetStateForSlot(rewardsSlot)
+				if err != nil {
+					r.handleError(fmt.Errorf("error getting state for network balances slot: %w", err))
+					return
+				}
+
+				// Process the rewards interval
+				r.log.Printlnf("%s Running rewards interval submission in a separate thread.", r.logPrefix)
+				err = r.runRewardsIntervalReport(state, isInOdao)
+				if err != nil {
+					r.handleError(fmt.Errorf("error running rewards interval report: %w", err))
+					return
+				}
+
 			}
 
 			r.lock.Lock()
@@ -368,7 +441,7 @@ func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) er
 }
 
 // Print an error and unlock the mutex
-func (r *RollingRecordManager) handleError(err error) {
+func (r *RollingRecordManager_MergedDuties) handleError(err error) {
 	r.errLog.Printlnf("%s %s", r.logPrefix, err.Error())
 	r.errLog.Println("*** Rolling Record processing failed. ***")
 	r.lock.Lock()
@@ -376,8 +449,53 @@ func (r *RollingRecordManager) handleError(err error) {
 	r.lock.Unlock()
 }
 
+// Run a network balances submission
+func (r *RollingRecordManager_MergedDuties) runNetworkBalancesReport(state *state.NetworkState, isInOdao bool) error {
+	networkBalanceSlot := state.BeaconSlotNumber
+
+	// Check if the current record has gone past the requested slot or if it can be updated / used
+	if networkBalanceSlot < r.Record.LastDutiesSlot {
+		r.log.Printlnf("%s Current record has extended too far (need slot %d, but record has processed slot %d)... reverting to a previous checkpoint.", r.logPrefix, networkBalanceSlot, r.Record.LastDutiesSlot)
+
+		newRecord, err := r.GenerateRecordForState(state)
+		if err != nil {
+			return fmt.Errorf("error creating record for network balance slot: %w", err)
+		}
+
+		r.Record = newRecord
+	} else {
+		r.log.Printlnf("%s Current record can be used (need slot %d, record has only processed slot %d).", r.logPrefix, networkBalanceSlot, r.Record.LastDutiesSlot)
+		err := r.Record.UpdateToSlot(networkBalanceSlot, state)
+		if err != nil {
+			return fmt.Errorf("error updating record to network balance slot: %w", err)
+		}
+	}
+
+	// Run the network balance submission with the given state and record
+	if !isInOdao {
+		r.log.Printlnf("%s Node is not an Oracle DAO member, skipping network balance report.", r.logPrefix)
+
+		// Create the local flag file if the user isn't on the Oracle DAO, since they won't have on-chain submissions
+		filename := fmt.Sprintf(networkBalanceFlagFilenameFormat, networkBalanceSlot)
+		path := filepath.Join(r.cfg.Smartnode.GetRecordsPath(), filename)
+		file, err := os.Create(path)
+		if err != nil {
+			r.errLog.Printlnf("%s WARNING: couldn't create marker file indicating network balance update: %s", r.logPrefix, err.Error())
+		} else {
+			file.Close()
+		}
+
+		return nil
+	}
+	if r.submitNetworkBalances != nil {
+		return r.submitNetworkBalances.run(state)
+	}
+
+	return nil
+}
+
 // Run a rewards interval report submission
-func (r *RollingRecordManager) runRewardsIntervalReport(state *state.NetworkState, isInOdao bool) error {
+func (r *RollingRecordManager_MergedDuties) runRewardsIntervalReport(state *state.NetworkState, isInOdao bool) error {
 	rewardsSlot := state.BeaconSlotNumber
 
 	// Check if the current record has gone past the requested slot or if it can be updated / used
@@ -407,7 +525,7 @@ func (r *RollingRecordManager) runRewardsIntervalReport(state *state.NetworkStat
 
 		if !isInOdao {
 			// Create the local flag file if the user isn't on the Oracle DAO, since they won't have on-chain submissions
-			filename := fmt.Sprintf(rewardsFlagFilenameFormat, rewardsSlot)
+			filename := fmt.Sprintf(networkBalanceFlagFilenameFormat, rewardsSlot)
 			path := filepath.Join(r.cfg.Smartnode.GetRecordsPath(), filename)
 			file, err := os.Create(path)
 			if err != nil {
@@ -421,8 +539,66 @@ func (r *RollingRecordManager) runRewardsIntervalReport(state *state.NetworkStat
 	return nil
 }
 
+// Check if a network balance submission is required and if so, the slot number for the update
+func (r *RollingRecordManager_MergedDuties) isNetworkBalanceUpdateRequired(state *state.NetworkState) (bool, uint64, error) {
+	// Get block to submit balances for
+	blockNumberBig := state.NetworkDetails.LatestReportableBalancesBlock
+	blockNumber := blockNumberBig.Uint64()
+
+	// Check if a submission needs to be made
+	if blockNumber <= state.NetworkDetails.BalancesBlock.Uint64() {
+		return false, 0, nil
+	}
+
+	// Get the time of the block
+	header, err := r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(blockNumber))
+	if err != nil {
+		return false, 0, fmt.Errorf("error getting header for block %d: %w", blockNumber, err)
+	}
+	blockTime := time.Unix(int64(header.Time), 0)
+
+	// Get the Beacon block corresponding to this time
+	eth2Config := state.BeaconConfig
+	timeSinceGenesis := blockTime.Sub(r.genesisTime)
+	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
+	return true, slotNumber, nil
+}
+
+// Check if the node wallet has already submitted network balances for the given block number
+func (r *RollingRecordManager_MergedDuties) hasSubmittedNetworkBalances(blockNumber uint64, isInOdao bool) (bool, error) {
+	// Ignore if there isn't a node address set
+	if r.nodeAddress == nil {
+		return false, nil
+	}
+
+	// Use the local FS if the user isn't on the Oracle DAO, since they won't have on-chain submissions
+	if !isInOdao {
+		filename := fmt.Sprintf(networkBalanceFlagFilenameFormat, blockNumber)
+		path := filepath.Join(r.cfg.Smartnode.GetRecordsPath(), filename)
+		_, err := os.Stat(path)
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		if err != nil {
+			r.errLog.Printlnf("%s WARNING: couldn't check if network balances for block %d have already been processed: %s", r.logPrefix, blockNumber, err.Error())
+			return false, nil
+		}
+		return true, nil
+	}
+
+	// Check if the address has submitted for the given block number
+	blockNumberBuf := make([]byte, 32)
+	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+	hasSubmitted, err := r.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), r.nodeAddress.Bytes(), blockNumberBuf))
+	if err != nil {
+		return false, fmt.Errorf("error checking if node has already submitted network balance for block %d: %w", blockNumber, err)
+	}
+
+	return hasSubmitted, nil
+}
+
 // Check if a rewards interval submission is required and if so, the slot number for the update
-func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.NetworkState) (bool, uint64, error) {
+func (r *RollingRecordManager_MergedDuties) isRewardsIntervalSubmissionRequired(state *state.NetworkState) (bool, uint64, error) {
 	// Check if a rewards interval has passed and needs to be calculated
 	startTime := state.NetworkDetails.IntervalStart
 	intervalTime := state.NetworkDetails.IntervalDuration
@@ -448,7 +624,7 @@ func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.
 }
 
 // Check if the node wallet has already submitted rewards for the given interval
-func (r *RollingRecordManager) hasSubmittedRewards(index uint64, isInOdao bool) (bool, error) {
+func (r *RollingRecordManager_MergedDuties) hasSubmittedRewards(index uint64, isInOdao bool) (bool, error) {
 	// Ignore if there isn't a node address set
 	if r.nodeAddress == nil {
 		return false, nil
@@ -475,7 +651,7 @@ func (r *RollingRecordManager) hasSubmittedRewards(index uint64, isInOdao bool) 
 
 // Get the actual slot to be used for a rewards interval submission instead of the naively-determined one
 // NOTE: only call this once the required epoch (targetSlotEpoch + 1) has been finalized
-func (r *RollingRecordManager) getTrueRewardsIntervalSubmissionSlot(targetSlot uint64) (uint64, uint64, error) {
+func (r *RollingRecordManager_MergedDuties) getTrueRewardsIntervalSubmissionSlot(targetSlot uint64) (uint64, uint64, error) {
 	// Get the first successful block
 	for {
 		// Try to get the current block
@@ -496,7 +672,7 @@ func (r *RollingRecordManager) getTrueRewardsIntervalSubmissionSlot(targetSlot u
 }
 
 // Generate a new record for the provided slot using the latest viable saved record
-func (r *RollingRecordManager) GenerateRecordForState(state *state.NetworkState) (*rewards.RollingRecord, error) {
+func (r *RollingRecordManager_MergedDuties) GenerateRecordForState(state *state.NetworkState) (*rewards.RollingRecord, error) {
 
 	// Load the latest viable record
 	recordCheckpointInterval := r.cfg.Smartnode.RecordCheckpointInterval.Value.(uint64)
@@ -572,7 +748,7 @@ func (r *RollingRecordManager) GenerateRecordForState(state *state.NetworkState)
 }
 
 // Save the rolling record to a file and update the record info catalog
-func (r *RollingRecordManager) SaveRecordToFile(record *rewards.RollingRecord) error {
+func (r *RollingRecordManager_MergedDuties) SaveRecordToFile(record *rewards.RollingRecord) error {
 
 	// Serialize the record
 	bytes, err := record.Serialize()
@@ -673,7 +849,7 @@ func (r *RollingRecordManager) SaveRecordToFile(record *rewards.RollingRecord) e
 }
 
 // Load the most recent appropriate rolling record from disk, using the checksum table as an index
-func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSlot uint64, rewardsInterval uint64) (*rewards.RollingRecord, error) {
+func (r *RollingRecordManager_MergedDuties) LoadBestRecordFromDisk(startSlot uint64, targetSlot uint64, rewardsInterval uint64) (*rewards.RollingRecord, error) {
 
 	// Parse the checksum file
 	exists, lines, err := r.parseChecksumFile()
@@ -742,7 +918,7 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 }
 
 // Get the slot number from a record filename
-func (r *RollingRecordManager) getSlotFromFilename(filename string) (uint64, error) {
+func (r *RollingRecordManager_MergedDuties) getSlotFromFilename(filename string) (uint64, error) {
 	matches := r.recordsFilenameRegex.FindStringSubmatch(filename)
 	if matches == nil {
 		return 0, fmt.Errorf("filename (%s) did not match the expected format", filename)
@@ -761,7 +937,7 @@ func (r *RollingRecordManager) getSlotFromFilename(filename string) (uint64, err
 }
 
 // Load a record from a file, making sure its contents match the provided checksum
-func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedChecksum []byte) (*rewards.RollingRecord, error) {
+func (r *RollingRecordManager_MergedDuties) loadRecordFromFile(filename string, expectedChecksum []byte) (*rewards.RollingRecord, error) {
 	// Read the file
 	compressedBytes, err := os.ReadFile(filename)
 	if err != nil {
@@ -787,7 +963,7 @@ func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedCheck
 }
 
 // Get the lines from the checksum file
-func (r *RollingRecordManager) parseChecksumFile() (bool, []string, error) {
+func (r *RollingRecordManager_MergedDuties) parseChecksumFile() (bool, []string, error) {
 	// Get the checksum filename
 	recordsPath := r.cfg.Smartnode.GetRecordsPath()
 	checksumFilename := filepath.Join(recordsPath, checksumTableFilename)
@@ -820,7 +996,7 @@ func (r *RollingRecordManager) parseChecksumFile() (bool, []string, error) {
 }
 
 // Sort the checksum file entries by their slot
-func (r *RollingRecordManager) sortChecksumEntries(lines []string) error {
+func (r *RollingRecordManager_MergedDuties) sortChecksumEntries(lines []string) error {
 	var sortErr error
 	sort.Slice(lines, func(i int, j int) bool {
 		_, _, firstSlot, err := r.parseChecksumEntry(lines[i])
@@ -841,7 +1017,7 @@ func (r *RollingRecordManager) sortChecksumEntries(lines []string) error {
 }
 
 // Get the checksum, the filename, and the slot number from a checksum entry.
-func (r *RollingRecordManager) parseChecksumEntry(line string) (string, string, uint64, error) {
+func (r *RollingRecordManager_MergedDuties) parseChecksumEntry(line string) (string, string, uint64, error) {
 	// Extract the checksum and filename
 	elems := strings.Split(line, "  ")
 	if len(elems) != 2 {
@@ -858,3 +1034,4 @@ func (r *RollingRecordManager) parseChecksumEntry(line string) (string, string, 
 
 	return checksumString, filename, slot, nil
 }
+*/

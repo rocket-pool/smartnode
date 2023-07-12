@@ -124,7 +124,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during rpl price check: %w", err)
 	}
-	submitNetworkBalances, err := legacy.NewSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
+	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
 	if err != nil {
 		return fmt.Errorf("error during network balances check: %w", err)
 	}
@@ -140,7 +140,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during rewards tree check: %w", err)
 	}
-	processBalancesAndRewards, err := newProcessBalancesAndRewards(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+	submitRewardsTree_Rolling, err := newSubmitRewardsTree_Rolling(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	if err != nil {
 		return fmt.Errorf("error during balance and rewards processing check: %w", err)
 	}
@@ -229,21 +229,21 @@ func run(c *cli.Context) error {
 					continue
 				}
 
+				// Run the network balance submission check
+				if err := submitNetworkBalances.run(state); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
 				if !useRollingRecords {
 					// Run the rewards tree submission check
 					if err := submitRewardsTree.Run(isOnOdao, state, latestBlock.Slot); err != nil {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
-
-					// Run the network balance submission check
-					if err := submitNetworkBalances.Run(state); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
 				} else {
 					// Run the network balance and rewards tree submission check
-					if err := processBalancesAndRewards.run(state); err != nil {
+					if err := submitRewardsTree_Rolling.run(state); err != nil {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
@@ -294,7 +294,7 @@ func run(c *cli.Context) error {
 					}
 				} else {
 					// Run the network balance and rewards tree submission check
-					if err := processBalancesAndRewards.run(nil); err != nil {
+					if err := submitRewardsTree_Rolling.run(nil); err != nil {
 						errorLog.Println(err)
 					}
 				}

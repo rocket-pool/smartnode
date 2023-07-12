@@ -15,7 +15,7 @@ import (
 )
 
 // Process balances and rewards task
-type processBalancesAndRewards struct {
+type submitRewardsTree_Rolling struct {
 	c         *cli.Context
 	log       log.ColorLogger
 	errLog    log.ColorLogger
@@ -27,8 +27,8 @@ type processBalancesAndRewards struct {
 	recordMgr *RollingRecordManager
 }
 
-// Create process balances and rewards task
-func newProcessBalancesAndRewards(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, stateMgr *state.NetworkStateManager) (*processBalancesAndRewards, error) {
+// Create submit rewards tree with rolling record support
+func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, stateMgr *state.NetworkStateManager) (*submitRewardsTree_Rolling, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -53,7 +53,7 @@ func newProcessBalancesAndRewards(c *cli.Context, logger log.ColorLogger, errorL
 	}
 
 	// Return task
-	task := &processBalancesAndRewards{
+	task := &submitRewardsTree_Rolling{
 		c:      c,
 		log:    logger,
 		errLog: errorLogger,
@@ -124,7 +124,7 @@ func newProcessBalancesAndRewards(c *cli.Context, logger log.ColorLogger, errorL
 
 }
 
-// Process balances and rewards submissions
-func (t *processBalancesAndRewards) run(state *state.NetworkState) error {
+// Update the rolling record and run the submission process if applicable
+func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 	return t.recordMgr.ProcessNewHeadState(state)
 }
