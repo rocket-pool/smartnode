@@ -7,11 +7,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+)
+
+const (
+	rewardsSnapshotSubmittedNodeKey string = "rewards.snapshot.submitted.node.key"
 )
 
 // Info for a rewards snapshot event
@@ -164,6 +170,45 @@ func GetTrustedNodeSubmitted(rp *rocketpool.RocketPool, nodeAddress common.Addre
 		return false, fmt.Errorf("Could not get trusted node submission status: %w", err)
 	}
 	return *hasSubmitted, nil
+}
+
+// Check whether or not the given address has submitted specific rewards info
+func GetTrustedNodeSubmittedSpecificRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, submission RewardSubmission, opts *bind.CallOpts) (bool, error) {
+	// NOTE: this doesn't have a view yet so we have to construct it manually, and RLP
+	stringTy, _ := abi.NewType("string", "string", nil)
+	addressTy, _ := abi.NewType("address", "address", nil)
+
+	submissionTy, _ := abi.NewType("tuple", "struct RewardSubmission", []abi.ArgumentMarshaling{
+		{Name: "rewardIndex", Type: "uint256"},
+		{Name: "executionBlock", Type: "uint256"},
+		{Name: "consensusBlock", Type: "uint256"},
+		{Name: "merkleRoot", Type: "bytes32"},
+		{Name: "merkleTreeCID", Type: "string"},
+		{Name: "intervalsPassed", Type: "uint256"},
+		{Name: "treasuryRPL", Type: "uint256"},
+		{Name: "trustedNodeRPL", Type: "uint256[]"},
+		{Name: "nodeRPL", Type: "uint256[]"},
+		{Name: "nodeETH", Type: "uint256[]"},
+		{Name: "userETH", Type: "uint256"},
+	})
+
+	args := abi.Arguments{
+		{Type: stringTy, Name: "key"},
+		{Type: addressTy, Name: "trustedNodeAddress"},
+		{Type: submissionTy, Name: "submission"},
+	}
+
+	bytes, err := args.Pack(rewardsSnapshotSubmittedNodeKey, nodeAddress, &submission)
+	if err != nil {
+		return false, fmt.Errorf("error encoding submission data into ABI format: %w", err)
+	}
+
+	key := crypto.Keccak256Hash(bytes)
+	result, err := rp.RocketStorage.GetBool(opts, key)
+	if err != nil {
+		return false, fmt.Errorf("error checking if trusted node submitted specific rewards: %w", err)
+	}
+	return result, nil
 }
 
 // Estimate the gas for submiting a Merkle Tree-based snapshot for a rewards interval
