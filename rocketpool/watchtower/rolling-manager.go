@@ -5,14 +5,12 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -53,15 +51,11 @@ type RollingRecordManager struct {
 	startSlot      uint64
 	lastSavedEpoch uint64
 
-	submitRewardsTree    *submitRewardsTree
 	beaconCfg            beacon.Eth2Config
 	genesisTime          time.Time
 	compressor           *zstd.Encoder
 	decompressor         *zstd.Decoder
 	recordsFilenameRegex *regexp.Regexp
-
-	lock      *sync.Mutex
-	isRunning bool
 }
 
 // Creates a new manager for rolling records.
@@ -97,18 +91,14 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 	}
 
 	var nodeAddress *common.Address
-	var submitRewardsTree *submitRewardsTree
 	if w != nil {
 		nodeAccount, err := w.GetNodeAccount()
 		if err != nil {
 			return nil, fmt.Errorf("error getting node account: %w", err)
 		}
 		nodeAddress = &nodeAccount.Address
-
-		submitRewardsTree = newSubmitRewardsTree(log, errLog, cfg, w, rp, bc)
 	}
 
-	lock := &sync.Mutex{}
 	logPrefix := "[Rolling Record]"
 	return &RollingRecordManager{
 		Record: rewards.NewRollingRecord(log, logPrefix, bc, startSlot, &beaconCfg, rewardsInterval),
@@ -123,376 +113,12 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 		w:                    w,
 		nodeAddress:          nodeAddress,
 		startSlot:            startSlot,
-		submitRewardsTree:    submitRewardsTree,
 		beaconCfg:            beaconCfg,
 		genesisTime:          genesisTime,
 		compressor:           encoder,
 		decompressor:         decoder,
 		recordsFilenameRegex: recordsFilenameRegex,
-		lock:                 lock,
-		isRunning:            false,
 	}, nil
-}
-
-// Process the details of the latest head state
-func (r *RollingRecordManager) ProcessNewHeadState(state *state.NetworkState) error {
-
-	if state == nil {
-		// Get the latest Beacon block
-		latestBlock, err := r.mgr.GetLatestBeaconBlock()
-		if err != nil {
-			return fmt.Errorf("error getting latest Beacon block: %w", err)
-		}
-
-		// Get the state of the network
-		state, err = r.mgr.GetStateForSlot(latestBlock.Slot)
-		if err != nil {
-			return fmt.Errorf("error getting network state: %w", err)
-		}
-	}
-
-	r.log.Printlnf("Updating record to head state (slot %d)...", state.BeaconSlotNumber)
-
-	r.lock.Lock()
-	if r.isRunning {
-		r.log.Println("Record update is already running in the background.")
-		r.lock.Unlock()
-		return nil
-	}
-	r.lock.Unlock()
-
-	// Create a new record if the current one is for the previous rewards interval
-	if r.Record.RewardsInterval < state.NetworkDetails.RewardIndex {
-
-		// Get the current interval index
-		currentIndexBig, err := rprewards.GetRewardIndex(r.rp, nil)
-		if err != nil {
-			return fmt.Errorf("error getting rewards index: %w", err)
-		}
-		currentIndex := currentIndexBig.Uint64()
-
-		// Get the previous RocketRewardsPool addresses
-		prevAddresses := r.cfg.Smartnode.GetPreviousRewardsPoolAddresses()
-
-		// Get the last rewards event and starting epoch
-		startSlot := uint64(0)
-		found, event, err := rprewards.GetRewardsEvent(r.rp, currentIndex-1, prevAddresses, nil)
-		if err != nil {
-			return fmt.Errorf("error getting event for rewards interval %d: %w", currentIndex-1, err)
-		}
-		if !found {
-			return fmt.Errorf("event for rewards interval %d not found", currentIndex-1)
-		}
-
-		// Get the start slot of the current interval
-		previousEpoch := event.ConsensusBlock.Uint64() / r.beaconCfg.SlotsPerEpoch
-		newEpoch := previousEpoch + 1
-		startSlot = newEpoch * r.beaconCfg.SlotsPerEpoch
-
-		// Create a new record for the start slot
-		r.log.Printlnf("%s Current record is for interval %d which has passed, creating a new record for interval %d starting on slot %d (epoch %d).", r.logPrefix, r.Record.RewardsInterval, state.NetworkDetails.RewardIndex, startSlot, newEpoch)
-		r.Record = rewards.NewRollingRecord(r.log, r.logPrefix, r.bc, startSlot, &r.beaconCfg, state.NetworkDetails.RewardIndex)
-	}
-
-	// Check whether or not the node is in the Oracle DAO
-	isInOdao := false
-	if r.nodeAddress != nil {
-		for _, details := range state.OracleDaoMemberDetails {
-			if details.Address == *r.nodeAddress {
-				isInOdao = true
-				break
-			}
-		}
-	}
-
-	// Get the latest finalized slot and epoch
-	latestFinalizedBlock, err := r.mgr.GetLatestFinalizedBeaconBlock()
-	if err != nil {
-		return fmt.Errorf("error getting latest finalized block: %w", err)
-	}
-	latestFinalizedEpoch := latestFinalizedBlock.Slot / state.BeaconConfig.SlotsPerEpoch
-
-	// Check if a rewards interval is due
-	isRewardsSubmissionDue, rewardsSlot, err := r.isRewardsIntervalSubmissionRequired(state)
-	if err != nil {
-		return fmt.Errorf("error checking if rewards submission is required: %w", err)
-	}
-
-	// Check if this node has already submitted rewards info
-	hasSubmittedRewards, err := r.hasSubmittedRewards(state.NetworkDetails.RewardIndex, isInOdao)
-	if err != nil {
-		return fmt.Errorf("error checking if node has submitted rewards: %w", err)
-	}
-
-	// If no special upcoming state is required, update normally
-	if !isRewardsSubmissionDue {
-		go func() {
-			r.lock.Lock()
-			r.isRunning = true
-			r.lock.Unlock()
-			r.log.Printlnf("%s Starting record update in a separate thread.", r.logPrefix)
-
-			// Get the state for the target slot
-			recordCheckpointInterval := r.cfg.Smartnode.RecordCheckpointInterval.Value.(uint64)
-			finalTarget := latestFinalizedBlock.Slot
-			finalizedState := state
-			if finalTarget != state.BeaconSlotNumber {
-				finalizedState, err = r.mgr.GetStateForSlot(finalTarget)
-				if err != nil {
-					r.handleError(fmt.Errorf("error getting state for latest finalized slot (%d): %w", finalTarget, err))
-					return
-				}
-			}
-
-			// Break the routine into chunks so it can be saved if necessary
-			nextStartSlot := r.Record.LastDutiesSlot + 1
-			if r.Record.LastDutiesSlot == 0 {
-				nextStartSlot = r.startSlot
-			}
-
-			nextStartEpoch := nextStartSlot / r.beaconCfg.SlotsPerEpoch
-			nextTargetEpoch := nextStartEpoch + recordCheckpointInterval - 1
-			if (nextTargetEpoch - r.lastSavedEpoch) > recordCheckpointInterval {
-				// Make a stop at the next required checkpoint so it can be saved
-				nextTargetEpoch = r.lastSavedEpoch + recordCheckpointInterval
-			}
-			nextTargetSlot := (nextTargetEpoch+1)*r.beaconCfg.SlotsPerEpoch - 1 // Target is the last slot of the epoch
-			if nextTargetSlot > finalTarget {
-				nextTargetSlot = finalTarget
-				nextTargetEpoch = nextTargetSlot / r.beaconCfg.SlotsPerEpoch
-			}
-			finalEpoch := finalTarget / r.beaconCfg.SlotsPerEpoch
-			totalSlots := float64(finalTarget - nextStartSlot + 1)
-			initialSlot := nextStartSlot
-
-			r.log.Printlnf("%s Collecting records from slot %d (epoch %d) to slot %d (epoch %d).", r.logPrefix, nextStartSlot, nextStartEpoch, finalTarget, finalEpoch)
-			startTime := time.Now()
-			for {
-				if nextStartSlot > finalTarget {
-					break
-				}
-
-				// Update the record to the target state
-				err = r.Record.UpdateToSlot(nextTargetSlot, finalizedState)
-				if err != nil {
-					r.handleError(fmt.Errorf("error updating rolling record to slot %d, block %d: %w", state.BeaconSlotNumber, state.ElBlockNumber, err))
-					return
-				}
-				slotsProcessed := nextTargetSlot - initialSlot + 1
-				r.log.Printf("%s (%.2f%%) Updated from slot %d (epoch %d) to slot %d (epoch %d)... (%s so far) ", r.logPrefix, float64(slotsProcessed)/totalSlots*100.0, nextStartSlot, nextStartEpoch, nextTargetSlot, nextTargetEpoch, time.Since(startTime))
-
-				// Save if required
-				if (nextTargetEpoch - r.lastSavedEpoch) >= recordCheckpointInterval {
-					err = r.SaveRecordToFile(r.Record)
-					if err != nil {
-						r.handleError(fmt.Errorf("error saving record: %w", err))
-						return
-					}
-					r.log.Printlnf("%s Saved record checkpoint.", r.logPrefix)
-					r.lastSavedEpoch = nextTargetEpoch
-				}
-
-				nextStartSlot = nextTargetSlot + 1
-				nextStartEpoch = nextStartSlot / r.beaconCfg.SlotsPerEpoch
-				nextTargetEpoch = nextStartEpoch + recordCheckpointInterval - 1
-				if (nextTargetEpoch - r.lastSavedEpoch) > recordCheckpointInterval {
-					// Make a stop at the next required checkpoint so it can be saved
-					nextTargetEpoch = r.lastSavedEpoch + recordCheckpointInterval
-				}
-				nextTargetSlot = (nextTargetEpoch+1)*r.beaconCfg.SlotsPerEpoch - 1 // Target is the last slot of the epoch
-				if nextTargetSlot > finalTarget {
-					nextTargetSlot = finalTarget
-					nextTargetEpoch = nextTargetSlot / r.beaconCfg.SlotsPerEpoch
-				}
-			}
-
-			// Log the update
-			startEpoch := r.Record.StartSlot / r.beaconCfg.SlotsPerEpoch
-			currentEpoch := r.Record.LastDutiesSlot / r.beaconCfg.SlotsPerEpoch
-			r.log.Printlnf("%s Record update complete (slot %d-%d, epoch %d-%d).", r.logPrefix, r.Record.StartSlot, r.Record.LastDutiesSlot, startEpoch, currentEpoch)
-
-			r.lock.Lock()
-			r.isRunning = false
-			r.lock.Unlock()
-		}()
-		return nil
-	}
-
-	// Stop if we've already submitted but consensus isn't in yet
-	if hasSubmittedRewards {
-		r.log.Printlnf("%s Rewards tree has already been submitted for interval %d but consensus hasn't been reached yet, skipping record update.", r.logPrefix, state.NetworkDetails.RewardIndex)
-		return nil
-	}
-
-	// Check if rewards reporting is ready
-	rewardsEpoch := rewardsSlot / r.beaconCfg.SlotsPerEpoch
-	requiredRewardsEpoch := rewardsEpoch + 1
-	isRewardsReadyForReport := isRewardsSubmissionDue && (latestFinalizedEpoch >= requiredRewardsEpoch)
-
-	// Run updates and submissions as required
-	if isRewardsReadyForReport {
-		// Get the actual slot to report on
-		rewardsSlot, _, err = r.getTrueRewardsIntervalSubmissionSlot(rewardsSlot)
-		if err != nil {
-			return fmt.Errorf("error getting the true rewards interval slot: %w", err)
-		}
-
-		go func() {
-			r.lock.Lock()
-			r.isRunning = true
-			r.lock.Unlock()
-
-			// Generate the rewards state
-			state, err := r.mgr.GetStateForSlot(rewardsSlot)
-			if err != nil {
-				r.handleError(fmt.Errorf("error getting state for network balances slot: %w", err))
-				return
-			}
-
-			// Process the rewards interval
-			r.log.Printlnf("%s Running rewards interval submission in a separate thread.", r.logPrefix)
-			err = r.runRewardsIntervalReport(state, isInOdao)
-			if err != nil {
-				r.handleError(fmt.Errorf("error running rewards interval report: %w", err))
-				return
-			}
-
-			r.lock.Lock()
-			r.isRunning = false
-			r.lock.Unlock()
-		}()
-	}
-
-	return nil
-
-}
-
-// Print an error and unlock the mutex
-func (r *RollingRecordManager) handleError(err error) {
-	r.errLog.Printlnf("%s %s", r.logPrefix, err.Error())
-	r.errLog.Println("*** Rolling Record processing failed. ***")
-	r.lock.Lock()
-	r.isRunning = false
-	r.lock.Unlock()
-}
-
-// Run a rewards interval report submission
-func (r *RollingRecordManager) runRewardsIntervalReport(state *state.NetworkState, isInOdao bool) error {
-	rewardsSlot := state.BeaconSlotNumber
-
-	// Check if the current record has gone past the requested slot or if it can be updated / used
-	if rewardsSlot < r.Record.LastDutiesSlot {
-		r.log.Printlnf("%s Current record has extended too far (need slot %d, but record has processed slot %d)... reverting to a previous checkpoint.", r.logPrefix, rewardsSlot, r.Record.LastDutiesSlot)
-
-		newRecord, err := r.GenerateRecordForState(state)
-		if err != nil {
-			return fmt.Errorf("error creating record for rewards slot: %w", err)
-		}
-
-		r.Record = newRecord
-	} else {
-		r.log.Printlnf("%s Current record can be used (need slot %d, record has only processed slot %d).", r.logPrefix, rewardsSlot, r.Record.LastDutiesSlot)
-		err := r.Record.UpdateToSlot(rewardsSlot, state)
-		if err != nil {
-			return fmt.Errorf("error updating record to rewards slot: %w", err)
-		}
-	}
-
-	// Run the rewards interval submission with the given state and record
-	if r.submitRewardsTree != nil {
-		err := r.submitRewardsTree.run(isInOdao, state)
-		if err != nil {
-			return err
-		}
-
-		if !isInOdao {
-			// Create the local flag file if the user isn't on the Oracle DAO, since they won't have on-chain submissions
-			filename := fmt.Sprintf(rewardsFlagFilenameFormat, rewardsSlot)
-			path := filepath.Join(r.cfg.Smartnode.GetRecordsPath(), filename)
-			file, err := os.Create(path)
-			if err != nil {
-				r.errLog.Printlnf("%s WARNING: couldn't create marker file indicating rewards update: %s", r.logPrefix, err.Error())
-			} else {
-				file.Close()
-			}
-		}
-	}
-
-	return nil
-}
-
-// Check if a rewards interval submission is required and if so, the slot number for the update
-func (r *RollingRecordManager) isRewardsIntervalSubmissionRequired(state *state.NetworkState) (bool, uint64, error) {
-	// Check if a rewards interval has passed and needs to be calculated
-	startTime := state.NetworkDetails.IntervalStart
-	intervalTime := state.NetworkDetails.IntervalDuration
-
-	// Calculate the end time, which is the number of intervals that have gone by since the current one's start
-	secondsSinceGenesis := time.Duration(state.BeaconConfig.SecondsPerSlot*state.BeaconSlotNumber) * time.Second
-	stateTime := r.genesisTime.Add(secondsSinceGenesis)
-	timeSinceStart := stateTime.Sub(startTime)
-	intervalsPassed := timeSinceStart / intervalTime
-	endTime := startTime.Add(intervalTime * intervalsPassed)
-	if intervalsPassed == 0 {
-		return false, 0, nil
-	}
-
-	// Get the target slot number
-	eth2Config := state.BeaconConfig
-	totalTimespan := endTime.Sub(r.genesisTime)
-	targetSlot := uint64(math.Ceil(totalTimespan.Seconds() / float64(eth2Config.SecondsPerSlot)))
-	targetSlotEpoch := targetSlot / eth2Config.SlotsPerEpoch
-	targetSlot = (targetSlotEpoch+1)*eth2Config.SlotsPerEpoch - 1 // The target slot becomes the last one in the Epoch
-
-	return true, targetSlot, nil
-}
-
-// Check if the node wallet has already submitted rewards for the given interval
-func (r *RollingRecordManager) hasSubmittedRewards(index uint64, isInOdao bool) (bool, error) {
-	// Ignore if there isn't a node address set
-	if r.nodeAddress == nil {
-		return false, nil
-	}
-
-	// Use the local FS if the user isn't on the Oracle DAO, since they won't have on-chain submissions
-	if !isInOdao {
-		filename := fmt.Sprintf(rewardsFlagFilenameFormat, index)
-		path := filepath.Join(r.cfg.Smartnode.GetRecordsPath(), filename)
-		_, err := os.Stat(path)
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		if err != nil {
-			r.errLog.Printlnf("%s WARNING: couldn't check if rewards for interval %d have already been processed: %s", r.logPrefix, index, err.Error())
-			return false, nil
-		}
-		return true, nil
-	}
-
-	// Check if the address has submitted for the given index
-	return rprewards.GetTrustedNodeSubmitted(r.rp, *r.nodeAddress, index, nil)
-}
-
-// Get the actual slot to be used for a rewards interval submission instead of the naively-determined one
-// NOTE: only call this once the required epoch (targetSlotEpoch + 1) has been finalized
-func (r *RollingRecordManager) getTrueRewardsIntervalSubmissionSlot(targetSlot uint64) (uint64, uint64, error) {
-	// Get the first successful block
-	for {
-		// Try to get the current block
-		block, exists, err := r.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
-		if err != nil {
-			return 0, 0, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
-		}
-
-		// If the block was missing, try the previous one
-		if !exists {
-			r.log.Printlnf("Slot %d was missing, trying the previous one...", targetSlot)
-			targetSlot--
-		} else {
-			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
-			return targetSlot, block.ExecutionBlockNumber, nil
-		}
-	}
 }
 
 // Generate a new record for the provided slot using the latest viable saved record
@@ -857,4 +483,155 @@ func (r *RollingRecordManager) parseChecksumEntry(line string) (string, string, 
 	}
 
 	return checksumString, filename, slot, nil
+}
+
+// Creates a new record
+func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error {
+	// Get the current interval index
+	currentIndexBig, err := rprewards.GetRewardIndex(r.rp, nil)
+	if err != nil {
+		return fmt.Errorf("error getting rewards index: %w", err)
+	}
+	currentIndex := currentIndexBig.Uint64()
+
+	// Get the previous RocketRewardsPool addresses
+	prevAddresses := r.cfg.Smartnode.GetPreviousRewardsPoolAddresses()
+
+	// Get the last rewards event and starting epoch
+	startSlot := uint64(0)
+	found, event, err := rprewards.GetRewardsEvent(r.rp, currentIndex-1, prevAddresses, nil)
+	if err != nil {
+		return fmt.Errorf("error getting event for rewards interval %d: %w", currentIndex-1, err)
+	}
+	if !found {
+		return fmt.Errorf("event for rewards interval %d not found", currentIndex-1)
+	}
+
+	// Get the start slot of the current interval
+	previousEpoch := event.ConsensusBlock.Uint64() / r.beaconCfg.SlotsPerEpoch
+	newEpoch := previousEpoch + 1
+	startSlot = newEpoch * r.beaconCfg.SlotsPerEpoch
+
+	// Create a new record for the start slot
+	r.log.Printlnf("%s Current record is for interval %d which has passed, creating a new record for interval %d starting on slot %d (epoch %d).", r.logPrefix, r.Record.RewardsInterval, state.NetworkDetails.RewardIndex, startSlot, newEpoch)
+	r.Record = rewards.NewRollingRecord(r.log, r.logPrefix, r.bc, startSlot, &r.beaconCfg, state.NetworkDetails.RewardIndex)
+
+	return nil
+}
+
+// Updates the manager's record to the provided state
+func (r *RollingRecordManager) updateRecordToState(state *state.NetworkState, latestFinalizedBlock beacon.BeaconBlock) error {
+	var err error
+	r.log.Printlnf("Updating record to head state (slot %d)...", state.BeaconSlotNumber)
+
+	// Create a new record if the current one is for the previous rewards interval
+	if r.Record.RewardsInterval < state.NetworkDetails.RewardIndex {
+		err := r.createNewRecord(state)
+		if err != nil {
+			return fmt.Errorf("error creating new record: %w", err)
+		}
+	}
+
+	// Get the state for the target slot
+	recordCheckpointInterval := r.cfg.Smartnode.RecordCheckpointInterval.Value.(uint64)
+	finalTarget := latestFinalizedBlock.Slot
+	finalizedState := state
+	if finalTarget != state.BeaconSlotNumber {
+		finalizedState, err = r.mgr.GetStateForSlot(finalTarget)
+		if err != nil {
+			return fmt.Errorf("error getting state for latest finalized slot (%d): %w", finalTarget, err)
+		}
+	}
+
+	// Break the routine into chunks so it can be saved if necessary
+	nextStartSlot := r.Record.LastDutiesSlot + 1
+	if r.Record.LastDutiesSlot == 0 {
+		nextStartSlot = r.startSlot
+	}
+
+	nextStartEpoch := nextStartSlot / r.beaconCfg.SlotsPerEpoch
+	nextTargetEpoch := nextStartEpoch + recordCheckpointInterval - 1
+	if (nextTargetEpoch - r.lastSavedEpoch) > recordCheckpointInterval {
+		// Make a stop at the next required checkpoint so it can be saved
+		nextTargetEpoch = r.lastSavedEpoch + recordCheckpointInterval
+	}
+	nextTargetSlot := (nextTargetEpoch+1)*r.beaconCfg.SlotsPerEpoch - 1 // Target is the last slot of the epoch
+	if nextTargetSlot > finalTarget {
+		nextTargetSlot = finalTarget
+		nextTargetEpoch = nextTargetSlot / r.beaconCfg.SlotsPerEpoch
+	}
+	finalEpoch := finalTarget / r.beaconCfg.SlotsPerEpoch
+	totalSlots := float64(finalTarget - nextStartSlot + 1)
+	initialSlot := nextStartSlot
+
+	r.log.Printlnf("%s Collecting records from slot %d (epoch %d) to slot %d (epoch %d).", r.logPrefix, nextStartSlot, nextStartEpoch, finalTarget, finalEpoch)
+	startTime := time.Now()
+	for {
+		if nextStartSlot > finalTarget {
+			break
+		}
+
+		// Update the record to the target state
+		err = r.Record.UpdateToSlot(nextTargetSlot, finalizedState)
+		if err != nil {
+			return fmt.Errorf("error updating rolling record to slot %d, block %d: %w", state.BeaconSlotNumber, state.ElBlockNumber, err)
+		}
+		slotsProcessed := nextTargetSlot - initialSlot + 1
+		r.log.Printf("%s (%.2f%%) Updated from slot %d (epoch %d) to slot %d (epoch %d)... (%s so far) ", r.logPrefix, float64(slotsProcessed)/totalSlots*100.0, nextStartSlot, nextStartEpoch, nextTargetSlot, nextTargetEpoch, time.Since(startTime))
+
+		// Save if required
+		if (nextTargetEpoch - r.lastSavedEpoch) >= recordCheckpointInterval {
+			err = r.SaveRecordToFile(r.Record)
+			if err != nil {
+				return fmt.Errorf("error saving record: %w", err)
+			}
+			r.log.Printlnf("%s Saved record checkpoint.", r.logPrefix)
+			r.lastSavedEpoch = nextTargetEpoch
+		}
+
+		nextStartSlot = nextTargetSlot + 1
+		nextStartEpoch = nextStartSlot / r.beaconCfg.SlotsPerEpoch
+		nextTargetEpoch = nextStartEpoch + recordCheckpointInterval - 1
+		if (nextTargetEpoch - r.lastSavedEpoch) > recordCheckpointInterval {
+			// Make a stop at the next required checkpoint so it can be saved
+			nextTargetEpoch = r.lastSavedEpoch + recordCheckpointInterval
+		}
+		nextTargetSlot = (nextTargetEpoch+1)*r.beaconCfg.SlotsPerEpoch - 1 // Target is the last slot of the epoch
+		if nextTargetSlot > finalTarget {
+			nextTargetSlot = finalTarget
+			nextTargetEpoch = nextTargetSlot / r.beaconCfg.SlotsPerEpoch
+		}
+	}
+
+	// Log the update
+	startEpoch := r.Record.StartSlot / r.beaconCfg.SlotsPerEpoch
+	currentEpoch := r.Record.LastDutiesSlot / r.beaconCfg.SlotsPerEpoch
+	r.log.Printlnf("%s Record update complete (slot %d-%d, epoch %d-%d).", r.logPrefix, r.Record.StartSlot, r.Record.LastDutiesSlot, startEpoch, currentEpoch)
+
+	return nil
+}
+
+// Prepares the record for a rewards interval report
+func (r *RollingRecordManager) prepareRecordForReport(state *state.NetworkState) error {
+	rewardsSlot := state.BeaconSlotNumber
+
+	// Check if the current record has gone past the requested slot or if it can be updated / used
+	if rewardsSlot < r.Record.LastDutiesSlot {
+		r.log.Printlnf("%s Current record has extended too far (need slot %d, but record has processed slot %d)... reverting to a previous checkpoint.", r.logPrefix, rewardsSlot, r.Record.LastDutiesSlot)
+
+		newRecord, err := r.GenerateRecordForState(state)
+		if err != nil {
+			return fmt.Errorf("error creating record for rewards slot: %w", err)
+		}
+
+		r.Record = newRecord
+	} else {
+		r.log.Printlnf("%s Current record can be used (need slot %d, record has only processed slot %d).", r.logPrefix, rewardsSlot, r.Record.LastDutiesSlot)
+		err := r.Record.UpdateToSlot(rewardsSlot, state)
+		if err != nil {
+			return fmt.Errorf("error updating record to rewards slot: %w", err)
+		}
+	}
+
+	return nil
 }

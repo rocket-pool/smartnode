@@ -1,30 +1,55 @@
 package watchtower
 
 import (
+	"context"
+	"encoding/hex"
 	"fmt"
+	"math"
+	"math/big"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/goccy/go-json"
+	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli"
+	"github.com/web3-storage/go-w3s-client"
 )
 
 // Process balances and rewards task
 type submitRewardsTree_Rolling struct {
-	c         *cli.Context
-	log       log.ColorLogger
-	errLog    log.ColorLogger
-	cfg       *config.RocketPoolConfig
-	w         *wallet.Wallet
-	ec        rocketpool.ExecutionClient
-	rp        *rocketpool.RocketPool
-	bc        beacon.Client
-	recordMgr *RollingRecordManager
+	c           *cli.Context
+	log         log.ColorLogger
+	errLog      log.ColorLogger
+	cfg         *config.RocketPoolConfig
+	w           *wallet.Wallet
+	ec          rocketpool.ExecutionClient
+	rp          *rocketpool.RocketPool
+	bc          beacon.Client
+	genesisTime time.Time
+	recordMgr   *RollingRecordManager
+	logPrefix   string
+
+	lock      *sync.Mutex
+	isRunning bool
 }
 
 // Create submit rewards tree with rolling record support
@@ -52,23 +77,14 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 		return nil, err
 	}
 
-	// Return task
-	task := &submitRewardsTree_Rolling{
-		c:      c,
-		log:    logger,
-		errLog: errorLogger,
-		cfg:    cfg,
-		ec:     ec,
-		w:      w,
-		rp:     rp,
-		bc:     bc,
-	}
-
 	// Get the beacon config
 	beaconCfg, err := bc.GetEth2Config()
 	if err != nil {
 		return nil, fmt.Errorf("error getting beacon config: %w", err)
 	}
+
+	// Get the Beacon genesis time
+	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 
 	// Get the current interval index
 	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
@@ -94,6 +110,24 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	previousEpoch := event.ConsensusBlock.Uint64() / beaconCfg.SlotsPerEpoch
 	newEpoch := previousEpoch + 1
 	startSlot = newEpoch * beaconCfg.SlotsPerEpoch
+
+	// Create the task
+	lock := &sync.Mutex{}
+	logPrefix := "[Rolling Record]"
+	task := &submitRewardsTree_Rolling{
+		c:           c,
+		log:         logger,
+		errLog:      errorLogger,
+		cfg:         cfg,
+		ec:          ec,
+		w:           w,
+		rp:          rp,
+		bc:          bc,
+		genesisTime: genesisTime,
+		logPrefix:   logPrefix,
+		lock:        lock,
+		isRunning:   false,
+	}
 
 	// Make a new rolling manager
 	mgr, err := NewRollingRecordManager(&task.log, &task.errLog, cfg, rp, bc, stateMgr, w, startSlot, beaconCfg, currentIndex)
@@ -126,5 +160,594 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 
 // Update the rolling record and run the submission process if applicable
 func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
-	return t.recordMgr.ProcessNewHeadState(state)
+	t.lock.Lock()
+	if t.isRunning {
+		t.log.Println("Record update is already running in the background.")
+		t.lock.Unlock()
+		return nil
+	}
+	t.lock.Unlock()
+
+	nodeAccount, err := t.w.GetNodeAccount()
+	if err != nil {
+		return fmt.Errorf("error loading node account: %w", err)
+	}
+	nodeAddress := nodeAccount.Address
+
+	go func() {
+		t.lock.Lock()
+		t.isRunning = true
+		t.lock.Unlock()
+		t.log.Printlnf("%s Running record update in a separate thread.", t.logPrefix)
+
+		// Capture the latest head state if one isn't passed in
+		if state == nil {
+			// Get the latest Beacon block
+			latestBlock, err := t.recordMgr.mgr.GetLatestBeaconBlock()
+			if err != nil {
+				t.handleError(fmt.Errorf("error getting latest Beacon block: %w", err))
+				return
+			}
+
+			// Get the state of the network
+			state, err = t.recordMgr.mgr.GetStateForSlot(latestBlock.Slot)
+			if err != nil {
+				t.handleError(fmt.Errorf("error getting network state: %w", err))
+				return
+			}
+		}
+
+		// Check whether or not the node is in the Oracle DAO
+		isInOdao := false
+		for _, details := range state.OracleDaoMemberDetails {
+			if details.Address == nodeAddress {
+				isInOdao = true
+				break
+			}
+		}
+
+		// Get the latest finalized slot and epoch
+		latestFinalizedBlock, err := t.recordMgr.mgr.GetLatestFinalizedBeaconBlock()
+		if err != nil {
+			t.handleError(fmt.Errorf("error getting latest finalized block: %w", err))
+			return
+		}
+		latestFinalizedEpoch := latestFinalizedBlock.Slot / state.BeaconConfig.SlotsPerEpoch
+
+		// Check if a rewards interval is due
+		isRewardsSubmissionDue, rewardsSlot, err := t.isRewardsIntervalSubmissionRequired(state)
+		if err != nil {
+			t.handleError(fmt.Errorf("error checking if rewards submission is required: %w", err))
+			return
+		}
+
+		// If no special upcoming state is required, update normally
+		if !isRewardsSubmissionDue {
+			err = t.recordMgr.updateRecordToState(state, latestFinalizedBlock)
+			if err != nil {
+
+			}
+		}
+
+		// Check if this node has already submitted rewards info
+		hasSubmittedRewards, err := t.hasSubmittedRewards(state.NetworkDetails.RewardIndex, nodeAddress, isInOdao)
+		if err != nil {
+			t.handleError(fmt.Errorf("error checking if node has submitted rewards: %w", err))
+			return
+		}
+
+		// Stop if we've already submitted but consensus isn't in yet
+		if hasSubmittedRewards {
+			t.log.Printlnf("%s Rewards tree has already been submitted for interval %d but consensus hasn't been reached yet, skipping record update.", t.logPrefix, state.NetworkDetails.RewardIndex)
+			return
+		}
+
+		// Check if rewards reporting is ready
+		rewardsEpoch := rewardsSlot / state.BeaconConfig.SlotsPerEpoch
+		requiredRewardsEpoch := rewardsEpoch + 1
+		isRewardsReadyForReport := isRewardsSubmissionDue && (latestFinalizedEpoch >= requiredRewardsEpoch)
+
+		// Run updates and submissions as required
+		if isRewardsReadyForReport {
+			// Get the actual slot to report on
+			rewardsSlot, _, err = t.getTrueRewardsIntervalSubmissionSlot(rewardsSlot)
+			if err != nil {
+				t.handleError(fmt.Errorf("error getting the true rewards interval slot: %w", err))
+				return
+			}
+
+			// Generate the rewards state
+			state, err := t.recordMgr.mgr.GetStateForSlot(rewardsSlot)
+			if err != nil {
+				t.handleError(fmt.Errorf("error getting state for network balances slot: %w", err))
+				return
+			}
+
+			// Process the rewards interval
+			t.log.Printlnf("%s Running rewards interval submission.", t.logPrefix)
+			err = t.runRewardsIntervalReport(state, isInOdao)
+			if err != nil {
+				t.handleError(fmt.Errorf("error running rewards interval report: %w", err))
+				return
+			}
+		} else {
+			t.log.Printlnf("Rewards submission for interval %d is due... waiting for epoch %d to be finalized (currently on epoch %d)", state.NetworkDetails.RewardIndex, requiredRewardsEpoch, latestFinalizedEpoch)
+		}
+
+		t.lock.Lock()
+		t.isRunning = false
+		t.lock.Unlock()
+	}()
+
+	return nil
+}
+
+// Print a message from the tree generation goroutine
+func (t *submitRewardsTree_Rolling) printMessage(message string) {
+	t.log.Printlnf("%s %s", t.logPrefix, message)
+}
+
+// Print an error and unlock the mutex
+func (t *submitRewardsTree_Rolling) handleError(err error) {
+	t.errLog.Printlnf("%s %s", t.logPrefix, err.Error())
+	t.errLog.Println("*** Rolling Record processing failed. ***")
+	t.lock.Lock()
+	t.isRunning = false
+	t.lock.Unlock()
+}
+
+// Check if a rewards interval submission is required and if so, the slot number for the update
+func (t *submitRewardsTree_Rolling) isRewardsIntervalSubmissionRequired(state *state.NetworkState) (bool, uint64, error) {
+	// Check if a rewards interval has passed and needs to be calculated
+	startTime := state.NetworkDetails.IntervalStart
+	intervalTime := state.NetworkDetails.IntervalDuration
+
+	// Calculate the end time, which is the number of intervals that have gone by since the current one's start
+	secondsSinceGenesis := time.Duration(state.BeaconConfig.SecondsPerSlot*state.BeaconSlotNumber) * time.Second
+	stateTime := t.genesisTime.Add(secondsSinceGenesis)
+	timeSinceStart := stateTime.Sub(startTime)
+	intervalsPassed := timeSinceStart / intervalTime
+	endTime := startTime.Add(intervalTime * intervalsPassed)
+	if intervalsPassed == 0 {
+		return false, 0, nil
+	}
+
+	// Get the target slot number
+	eth2Config := state.BeaconConfig
+	totalTimespan := endTime.Sub(t.genesisTime)
+	targetSlot := uint64(math.Ceil(totalTimespan.Seconds() / float64(eth2Config.SecondsPerSlot)))
+	targetSlotEpoch := targetSlot / eth2Config.SlotsPerEpoch
+	targetSlot = (targetSlotEpoch+1)*eth2Config.SlotsPerEpoch - 1 // The target slot becomes the last one in the Epoch
+
+	return true, targetSlot, nil
+}
+
+// Check if the node wallet has already submitted rewards for the given interval
+func (t *submitRewardsTree_Rolling) hasSubmittedRewards(index uint64, nodeAddress common.Address, isInOdao bool) (bool, error) {
+	// Use the local FS if the user isn't on the Oracle DAO, since they won't have on-chain submissions
+	if !isInOdao {
+		filename := fmt.Sprintf(rewardsFlagFilenameFormat, index)
+		path := filepath.Join(t.cfg.Smartnode.GetRecordsPath(), filename)
+		_, err := os.Stat(path)
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		if err != nil {
+			t.errLog.Printlnf("%s WARNING: couldn't check if rewards for interval %d have already been processed: %s", t.logPrefix, index, err.Error())
+			return false, nil
+		}
+		return true, nil
+	}
+
+	// Check if the address has submitted for the given index
+	return rewards.GetTrustedNodeSubmitted(t.rp, nodeAddress, index, nil)
+}
+
+// Get the actual slot to be used for a rewards interval submission instead of the naively-determined one
+// NOTE: only call this once the required epoch (targetSlotEpoch + 1) has been finalized
+func (t *submitRewardsTree_Rolling) getTrueRewardsIntervalSubmissionSlot(targetSlot uint64) (uint64, uint64, error) {
+	// Get the first successful block
+	for {
+		// Try to get the current block
+		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
+		if err != nil {
+			return 0, 0, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
+		}
+
+		// If the block was missing, try the previous one
+		if !exists {
+			t.log.Printlnf("%s Slot %d was missing, trying the previous one...", t.logPrefix, targetSlot)
+			targetSlot--
+		} else {
+			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
+			return targetSlot, block.ExecutionBlockNumber, nil
+		}
+	}
+}
+
+// Checks to see if an existing rewards file is still valid
+func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardsTreePath string, intervalsPassed uint64) bool {
+
+	_, err := os.Stat(rewardsTreePath)
+	if !os.IsNotExist(err) {
+		// The file already exists, attempt to read it
+		var proofWrapper rprewards.RewardsFile
+		fileBytes, err := os.ReadFile(rewardsTreePath)
+		if err != nil {
+			t.log.Printlnf("WARNING: failed to read %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
+			return false
+		}
+
+		err = json.Unmarshal(fileBytes, &proofWrapper)
+		if err != nil {
+			t.log.Printlnf("WARNING: failed to deserialize %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
+			return false
+		}
+
+		// Compare the number of intervals in it with the current number of intervals
+		if proofWrapper.IntervalsPassed != intervalsPassed {
+			t.log.Printlnf("Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n", proofWrapper.Index, proofWrapper.IntervalsPassed, intervalsPassed)
+			return false
+		}
+
+		// File's good and it has the same number of intervals passed, so use it
+		return true
+	}
+
+	return false
+
+}
+
+// Run a rewards interval report submission
+func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(state *state.NetworkState, isInOdao bool) error {
+	// Prep the record for reporting
+	rewardsSlot := state.BeaconSlotNumber
+	err := t.recordMgr.prepareRecordForReport(state)
+	if err != nil {
+		return fmt.Errorf("error preparing record for report: %w", err)
+	}
+
+	// Initialize some variables
+	snapshotBeaconBlock := state.BeaconSlotNumber
+	elBlockNumber := state.ElBlockNumber
+	startTime := state.NetworkDetails.IntervalStart
+	intervalTime := state.NetworkDetails.IntervalDuration
+
+	// Calculate the end time, which is the number of intervals that have gone by since the current one's start
+	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
+	secondsSinceGenesis := time.Duration(state.BeaconConfig.SecondsPerSlot*snapshotBeaconBlock) * time.Second
+	stateTime := genesisTime.Add(secondsSinceGenesis)
+	timeSinceStart := stateTime.Sub(startTime)
+	intervalsPassed := timeSinceStart / intervalTime
+	endTime := startTime.Add(intervalTime * intervalsPassed)
+	if intervalsPassed == 0 {
+		return nil
+	}
+
+	// Get the number of the EL block matching the CL snapshot block
+	snapshotElBlockHeader, err := t.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
+	if err != nil {
+		return err
+	}
+	elBlockIndex := snapshotElBlockHeader.Number.Uint64()
+
+	// Get the current interval
+	currentIndex := state.NetworkDetails.RewardIndex
+	currentIndexBig := big.NewInt(0).SetUint64(currentIndex)
+
+	// Get the expected file paths
+	rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
+	compressedRewardsTreePath := rewardsTreePath + config.RewardsTreeIpfsExtension
+	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
+	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
+
+	// Check if we can reuse an existing file for this interval
+	if t.isExistingFileValid(rewardsTreePath, uint64(intervalsPassed)) {
+		if !isInOdao {
+			t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s.", currentIndex, rewardsTreePath)
+			return nil
+		}
+
+		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, rewardsTreePath)
+
+		// Deserialize the file
+		wrapperBytes, err := os.ReadFile(rewardsTreePath)
+		if err != nil {
+			return fmt.Errorf("Error reading rewards tree file: %w", err)
+		}
+
+		proofWrapper := new(rprewards.RewardsFile)
+		err = json.Unmarshal(wrapperBytes, proofWrapper)
+		if err != nil {
+			return fmt.Errorf("Error deserializing rewards tree file: %w", err)
+		}
+
+		// Upload the file
+		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
+		if err != nil {
+			return fmt.Errorf("Error uploading Merkle tree to Web3.Storage: %w", err)
+		}
+		t.log.Printlnf("Uploaded Merkle tree with CID %s", cid)
+
+		// Submit to the contracts
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper, cid, big.NewInt(int64(intervalsPassed)))
+		if err != nil {
+			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
+		}
+
+		t.log.Printlnf("Successfully submitted rewards snapshot for interval %d.", currentIndex)
+		return nil
+	}
+
+	// Generate the tree
+	err = t.generateTree(intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	if err != nil {
+		return fmt.Errorf("error generating rewards tree: %w", err)
+	}
+
+	// Save a local file indicating submission has completed if the user isn't in the Oracle DAO
+	if !isInOdao {
+		// Create the local flag file if the user isn't on the Oracle DAO, since they won't have on-chain submissions
+		filename := fmt.Sprintf(rewardsFlagFilenameFormat, rewardsSlot)
+		path := filepath.Join(t.cfg.Smartnode.GetRecordsPath(), filename)
+		file, err := os.Create(path)
+		if err != nil {
+			t.errLog.Printlnf("%s WARNING: couldn't create marker file indicating rewards update: %s", t.logPrefix, err.Error())
+		} else {
+			file.Close()
+		}
+	}
+
+	return nil
+}
+
+// Generate a new rewards tree
+func (t *submitRewardsTree_Rolling) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
+	// Get an appropriate client
+	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, snapshotElBlockHeader.Number)
+	if err != nil {
+		return fmt.Errorf("error getting best API client during rewards submission: %w", err)
+	}
+
+	// Generate the tree
+	err = t.generateTreeImpl(client, intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	if err != nil {
+		return fmt.Errorf("error generating rewards tree: %w", err)
+	}
+
+	return nil
+}
+
+// Implementation for rewards tree generation using a viable EC
+func (t *submitRewardsTree_Rolling) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
+
+	// Log
+	if uint64(intervalsPassed) > 1 {
+		t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", uint64(intervalsPassed))
+	}
+	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.logPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
+
+	// Create a new state gen manager
+	mgr, err := state.NewNetworkStateManager(rp, t.cfg, rp.Client, t.bc, &t.log)
+	if err != nil {
+		return fmt.Errorf("error creating network state manager for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
+	}
+
+	// Create a new state for the target block
+	state, err := mgr.GetStateForSlot(snapshotBeaconBlock)
+	if err != nil {
+		return fmt.Errorf("couldn't get network state for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
+	}
+
+	// Generate the rewards file
+	treegen, err := rprewards.NewTreeGenerator(&t.log, t.logPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, nil)
+	if err != nil {
+		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
+	}
+	rewardsFile, err := treegen.GenerateTree()
+	if err != nil {
+		return fmt.Errorf("Error generating Merkle tree: %w", err)
+	}
+	for address, network := range rewardsFile.InvalidNetworkNodes {
+		t.printMessage(fmt.Sprintf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network))
+	}
+
+	// Serialize the minipool performance file
+	minipoolPerformanceBytes, err := json.Marshal(rewardsFile.MinipoolPerformanceFile)
+	if err != nil {
+		return fmt.Errorf("Error serializing minipool performance file into JSON: %w", err)
+	}
+
+	// Write it to disk
+	err = os.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
+	if err != nil {
+		return fmt.Errorf("Error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
+	}
+
+	// Upload it if this is an Oracle DAO node
+	if nodeTrusted {
+		t.printMessage("Uploading minipool performance file to Web3.Storage...")
+		minipoolPerformanceCid, err := t.uploadFileToWeb3Storage(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
+		if err != nil {
+			return fmt.Errorf("Error uploading minipool performance file to Web3.Storage: %w", err)
+		}
+		t.printMessage(fmt.Sprintf("Uploaded minipool performance file with CID %s", minipoolPerformanceCid))
+		rewardsFile.MinipoolPerformanceFileCID = minipoolPerformanceCid
+	} else {
+		t.printMessage("Saved minipool performance file.")
+		rewardsFile.MinipoolPerformanceFileCID = "---"
+	}
+
+	// Serialize the rewards tree to JSON
+	wrapperBytes, err := json.Marshal(rewardsFile)
+	if err != nil {
+		return fmt.Errorf("Error serializing proof wrapper into JSON: %w", err)
+	}
+	t.printMessage("Generation complete! Saving tree...")
+
+	// Write the rewards tree to disk
+	err = os.WriteFile(rewardsTreePath, wrapperBytes, 0644)
+	if err != nil {
+		return fmt.Errorf("Error saving rewards tree file to %s: %w", rewardsTreePath, err)
+	}
+
+	// Only do the upload and submission process if this is an Oracle DAO node
+	if nodeTrusted {
+		// Upload the rewards tree file
+		t.printMessage("Uploading to Web3.Storage and submitting results to the contracts...")
+		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
+		if err != nil {
+			return fmt.Errorf("Error uploading Merkle tree to Web3.Storage: %w", err)
+		}
+		t.printMessage(fmt.Sprintf("Uploaded Merkle tree with CID %s", cid))
+
+		// Submit to the contracts
+		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile, cid, big.NewInt(int64(intervalsPassed)))
+		if err != nil {
+			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
+		}
+
+		t.printMessage(fmt.Sprintf("Successfully submitted rewards snapshot for interval %d.", currentIndex))
+	} else {
+		t.printMessage(fmt.Sprintf("Successfully generated rewards snapshot for interval %d.", currentIndex))
+	}
+
+	return nil
+
+}
+
+// Submit rewards info to the contracts
+func (t *submitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFile *rprewards.RewardsFile, cid string, intervalsPassed *big.Int) error {
+
+	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFile.MerkleRoot))
+	if err != nil {
+		return fmt.Errorf("Error decoding merkle root: %w", err)
+	}
+	treeRoot := common.BytesToHash(treeRootBytes)
+
+	// Create the arrays of rewards per network
+	collateralRplRewards := []*big.Int{}
+	oDaoRplRewards := []*big.Int{}
+	smoothingPoolEthRewards := []*big.Int{}
+
+	// Create the total rewards for each network
+	network := uint64(0)
+	for {
+		networkRewards, exists := rewardsFile.NetworkRewards[network]
+		if !exists {
+			break
+		}
+
+		collateralRplRewards = append(collateralRplRewards, &networkRewards.CollateralRpl.Int)
+		oDaoRplRewards = append(oDaoRplRewards, &networkRewards.OracleDaoRpl.Int)
+		smoothingPoolEthRewards = append(smoothingPoolEthRewards, &networkRewards.SmoothingPoolEth.Int)
+
+		network++
+	}
+
+	// Get transactor
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return err
+	}
+
+	// Create the submission
+	submission := rewards.RewardSubmission{
+		RewardIndex:     index,
+		ExecutionBlock:  big.NewInt(0).SetUint64(executionBlock),
+		ConsensusBlock:  big.NewInt(0).SetUint64(consensusBlock),
+		MerkleRoot:      treeRoot,
+		MerkleTreeCID:   cid,
+		IntervalsPassed: intervalsPassed,
+		TreasuryRPL:     &rewardsFile.TotalRewards.ProtocolDaoRpl.Int,
+		NodeRPL:         collateralRplRewards,
+		TrustedNodeRPL:  oDaoRplRewards,
+		NodeETH:         smoothingPoolEthRewards,
+		UserETH:         &rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Int,
+	}
+
+	// Get the gas limit
+	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
+	if err != nil {
+		if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
+			// Set a 21k gas limit which will intentionally be too low and revert
+			gasInfo = rocketpool.GasInfo{
+				EstGasLimit:  21000,
+				SafeGasLimit: 21000,
+			}
+			t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
+		} else {
+			return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
+		}
+	}
+
+	// Print the gas info
+	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+		return nil
+	}
+
+	opts.GasFeeCap = maxFee
+	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasLimit = gasInfo.SafeGasLimit
+
+	// Submit RPL price
+	hash, err := rewards.SubmitRewardSnapshot(t.rp, submission, opts)
+	if err != nil {
+		return err
+	}
+
+	// Print TX info and wait for it to be included in a block
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	if err != nil {
+		return err
+	}
+
+	// Return
+	return nil
+}
+
+// Compress and upload a file to Web3.Storage and get the CID for it
+func (t *submitRewardsTree_Rolling) uploadFileToWeb3Storage(wrapperBytes []byte, compressedPath string, description string) (string, error) {
+
+	// Get the API token
+	apiToken := t.cfg.Smartnode.Web3StorageApiToken.Value.(string)
+	if apiToken == "" {
+		return "", fmt.Errorf("***ERROR***\nYou have not configured your Web3.Storage API token yet, so you cannot submit Merkle rewards trees.\nPlease get an API token from https://web3.storage and enter it in the Smartnode section of the `service config` TUI (or use `--smartnode-web3StorageApiToken` if you configure your system headlessly).")
+	}
+
+	// Create the client
+	w3sClient, err := w3s.NewClient(w3s.WithToken(apiToken))
+	if err != nil {
+		return "", fmt.Errorf("Error creating new Web3.Storage client: %w", err)
+	}
+
+	// Compress the file
+	encoder, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	compressedBytes := encoder.EncodeAll(wrapperBytes, make([]byte, 0, len(wrapperBytes)))
+
+	// Create the compressed tree file
+	compressedFile, err := os.Create(compressedPath)
+	if err != nil {
+		return "", fmt.Errorf("Error creating %s file [%s]: %w", description, compressedPath, err)
+	}
+	defer compressedFile.Close()
+
+	// Write the compressed data to the file
+	_, err = compressedFile.Write(compressedBytes)
+	if err != nil {
+		return "", fmt.Errorf("Error writing %s to %s: %w", description, compressedPath, err)
+	}
+
+	// Rewind it to the start
+	compressedFile.Seek(0, 0)
+
+	// Upload it
+	cid, err := w3sClient.Put(context.Background(), compressedFile)
+	if err != nil {
+		return "", fmt.Errorf("Error uploading %s: %w", description, err)
+	}
+
+	return cid.String(), nil
+
 }

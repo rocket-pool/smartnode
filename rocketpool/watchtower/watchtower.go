@@ -16,7 +16,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
-	"github.com/rocket-pool/smartnode/rocketpool/watchtower/legacy"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -136,13 +135,13 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during scrub check: %w", err)
 	}
-	submitRewardsTree, err := legacy.NewSubmitRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+	submitRewardsTree_Stateless, err := newSubmitRewardsTree_Stateless(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	if err != nil {
-		return fmt.Errorf("error during rewards tree check: %w", err)
+		return fmt.Errorf("error during stateless rewards tree check: %w", err)
 	}
 	submitRewardsTree_Rolling, err := newSubmitRewardsTree_Rolling(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	if err != nil {
-		return fmt.Errorf("error during balance and rewards processing check: %w", err)
+		return fmt.Errorf("error during rolling rewards tree check: %w", err)
 	}
 	/*processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor), errorLog)
 	if err != nil {
@@ -237,7 +236,7 @@ func run(c *cli.Context) error {
 
 				if !useRollingRecords {
 					// Run the rewards tree submission check
-					if err := submitRewardsTree.Run(isOnOdao, state, latestBlock.Slot); err != nil {
+					if err := submitRewardsTree_Stateless.Run(isOnOdao, state, latestBlock.Slot); err != nil {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
@@ -289,7 +288,7 @@ func run(c *cli.Context) error {
 				 */
 				if !useRollingRecords {
 					// Run the rewards tree submission check
-					if err := submitRewardsTree.Run(isOnOdao, nil, latestBlock.Slot); err != nil {
+					if err := submitRewardsTree_Stateless.Run(isOnOdao, nil, latestBlock.Slot); err != nil {
 						errorLog.Println(err)
 					}
 				} else {
