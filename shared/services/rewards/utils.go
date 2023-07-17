@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"testing/fstest"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -17,6 +18,12 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
+	bserv "github.com/ipfs/go-blockservice"
+	"github.com/ipfs/go-cid"
+	"github.com/ipfs/go-datastore"
+	dssync "github.com/ipfs/go-datastore/sync"
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	"github.com/ipfs/go-merkledag"
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -24,6 +31,7 @@ import (
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/web3-storage/go-w3s-client/adder"
 )
 
 // Simple container for the zero value so it doesn't have to be recreated over and over
@@ -308,6 +316,46 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 
 	return fmt.Errorf(errBuilder.String())
 
+}
+
+// Get the IPFS CID for a blob of data
+func GetCidForRewardsFile(rewardsFile *RewardsFile, filename string) (cid.Cid, error) {
+	// Encode the rewards file in JSON
+	data, err := json.Marshal(rewardsFile)
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("error serializing rewards file: %w", err)
+	}
+
+	// Compress the data
+	encoder, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	compressedData := encoder.EncodeAll(data, make([]byte, 0, len(data)))
+
+	// Create an in-memory file and FS
+	mapFile := fstest.MapFile{
+		Data:    compressedData,
+		Mode:    0644,
+		ModTime: time.Now(),
+	}
+	fsMap := fstest.MapFS{filename: &mapFile}
+	file, err := fsMap.Open(filename)
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("error opening memory-mapped file: %w", err)
+	}
+
+	// Use the web3.storage libraries to chunk the data and get the root CID
+	ds := dssync.MutexWrap(datastore.NewMapDatastore())
+	bsvc := bserv.New(blockstore.NewBlockstore(ds), nil)
+	dag := merkledag.NewDAGService(bsvc)
+	dagFmtr, err := adder.NewAdder(context.Background(), dag)
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("error creating DAG adder: %w", err)
+	}
+	root, err := dagFmtr.Add(file, "", fsMap)
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("error adding rewards file to DAG: %w", err)
+	}
+
+	return root, err
 }
 
 // Decompresses a rewards file

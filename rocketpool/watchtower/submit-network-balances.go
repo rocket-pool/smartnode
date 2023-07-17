@@ -32,8 +32,7 @@ import (
 )
 
 const (
-	networkBalanceSubmissionKey             string = "network.balances.submitted.node"
-	enableSubmissionAfterConsensus_Balances bool   = true
+	networkBalanceSubmissionKey string = "network.balances.submitted.node"
 )
 
 // Submit network balances task
