@@ -31,7 +31,7 @@ const (
 	PraterV3Interval uint64 = 49
 	PraterV4Interval uint64 = 60
 	PraterV5Interval uint64 = 76
-	PraterV6Interval uint64 = TestingInterval
+	PraterV6Interval uint64 = 118
 )
 
 type TreeGenerator struct {
