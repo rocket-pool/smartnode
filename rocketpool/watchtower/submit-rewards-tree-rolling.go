@@ -228,6 +228,11 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 				t.handleError(fmt.Errorf("error updating record: %w", err))
 				return
 			}
+
+			t.lock.Lock()
+			t.isRunning = false
+			t.lock.Unlock()
+			return
 		}
 
 		// Check if rewards reporting is ready

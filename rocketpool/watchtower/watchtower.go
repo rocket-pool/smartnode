@@ -135,13 +135,18 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during scrub check: %w", err)
 	}
-	submitRewardsTree_Stateless, err := newSubmitRewardsTree_Stateless(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
-	if err != nil {
-		return fmt.Errorf("error during stateless rewards tree check: %w", err)
-	}
-	submitRewardsTree_Rolling, err := newSubmitRewardsTree_Rolling(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
-	if err != nil {
-		return fmt.Errorf("error during rolling rewards tree check: %w", err)
+	var submitRewardsTree_Stateless *submitRewardsTree_Stateless
+	var submitRewardsTree_Rolling *submitRewardsTree_Rolling
+	if !useRollingRecords {
+		submitRewardsTree_Stateless, err = newSubmitRewardsTree_Stateless(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+		if err != nil {
+			return fmt.Errorf("error during stateless rewards tree check: %w", err)
+		}
+	} else {
+		submitRewardsTree_Rolling, err = newSubmitRewardsTree_Rolling(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+		if err != nil {
+			return fmt.Errorf("error during rolling rewards tree check: %w", err)
+		}
 	}
 	/*processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor), errorLog)
 	if err != nil {
