@@ -360,7 +360,7 @@ func (p *ExecutionClientManager) CheckStatus(cfg *config.RocketPoolConfig) *api.
 		status.FallbackClientStatus = checkEcStatus(p.fallbackEc)
 		// Check if fallback is using the expected network
 		expectedChainID := cfg.Smartnode.GetChainID()
-		if status.FallbackClientStatus.NetworkId != expectedChainID {
+		if status.FallbackClientStatus.Error == "" && status.FallbackClientStatus.NetworkId != expectedChainID {
 			p.fallbackReady = false
 			colorReset := "\033[0m"
 			colorYellow := "\033[33m"
