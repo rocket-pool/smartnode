@@ -24,7 +24,7 @@ const (
 	MainnetV3Interval uint64 = 5
 	MainnetV4Interval uint64 = 6
 	MainnetV5Interval uint64 = 8
-	MainnetV6Interval uint64 = TestingInterval
+	MainnetV6Interval uint64 = 12
 
 	// Prater intervals
 	PraterV2Interval uint64 = 37

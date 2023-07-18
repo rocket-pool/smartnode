@@ -899,10 +899,11 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 			fmt.Println("The new client can be safely started.")
 		} else {
 			fmt.Printf("%s=== WARNING ===\n", colorRed)
-			fmt.Printf("You have changed your validator client from %s to %s.\n", currentValidatorName, pendingValidatorName)
-			fmt.Println("If you have active validators, starting the new client immediately will cause them to be slashed due to duplicate attestations!")
+			fmt.Printf("You have changed your validator client from %s to %s. Only %s has elapsed since you stopped %s.\n", currentValidatorName, pendingValidatorName, time.Since(validatorFinishTime), currentValidatorName)
+			fmt.Printf("If you were actively validating while using %s, starting %s without waiting will cause your validators to be slashed due to duplicate attestations!", currentValidatorName, pendingValidatorName)
 			fmt.Println("To prevent slashing, Rocket Pool will delay activating the new client for 15 minutes.")
-			fmt.Printf("If you want to bypass this cooldown and understand the risks, run `rocketpool service start --ignore-slash-timer`.%s\n\n", colorReset)
+			fmt.Println("See the documentation for a more detailed explanation: https://docs.rocketpool.net/guides/node/maintenance/node-migration.html#slashing-and-the-slashing-database")
+			fmt.Printf("If you have read the documentation, understand the risks, and want to bypass this cooldown, run `rocketpool service start --ignore-slash-timer`.%s\n\n", colorReset)
 
 			// Wait for 15 minutes
 			for remainingTime > 0 {
