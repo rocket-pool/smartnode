@@ -215,7 +215,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	})
 	wg.Go(func() error {
 		var err error
-		feeRecipientInfo, err := rputils.GetFeeRecipientInfo(rp, bc, nodeAccount.Address, nil)
+		feeRecipientInfo, err := rputils.GetFeeRecipientInfoWithoutState(rp, bc, nodeAccount.Address, nil)
 		if err == nil {
 			response.FeeRecipientInfo = *feeRecipientInfo
 			response.FeeDistributorBalance, err = rp.Client.BalanceAt(context.Background(), feeRecipientInfo.FeeDistributorAddress, nil)
