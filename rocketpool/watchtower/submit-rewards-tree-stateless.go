@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/big"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -454,7 +455,16 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	// Get the gas limit
 	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
 	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
+		if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
+			// Set a 21k gas limit which will intentionally be too low and revert
+			gasInfo = rocketpool.GasInfo{
+				EstGasLimit:  21000,
+				SafeGasLimit: 21000,
+			}
+			t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
+		} else {
+			return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
+		}
 	}
 
 	// Print the gas info

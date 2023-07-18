@@ -519,7 +519,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 				EstGasLimit:  21000,
 				SafeGasLimit: 21000,
 			}
-			t.log.Println("Network balance consensus has alrady been reached but submitting anyway for the health check.")
+			t.log.Println("Network balance consensus has already been reached but submitting anyway for the health check.")
 		} else {
 			return fmt.Errorf("Could not estimate the gas required to submit network balances: %w", err)
 		}
