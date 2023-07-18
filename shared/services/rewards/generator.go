@@ -24,14 +24,14 @@ const (
 	MainnetV3Interval uint64 = 5
 	MainnetV4Interval uint64 = 6
 	MainnetV5Interval uint64 = 8
-	MainnetV6Interval uint64 = TestingInterval
+	MainnetV6Interval uint64 = 12
 
 	// Prater intervals
 	PraterV2Interval uint64 = 37
 	PraterV3Interval uint64 = 49
 	PraterV4Interval uint64 = 60
 	PraterV5Interval uint64 = 76
-	PraterV6Interval uint64 = TestingInterval
+	PraterV6Interval uint64 = 118
 )
 
 type TreeGenerator struct {
