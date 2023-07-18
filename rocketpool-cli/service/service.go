@@ -69,7 +69,7 @@ func installService(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func installUpdateTracker(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func installUpdateTracker(c *cli.Context) error {
 func serviceStatus(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -235,7 +235,7 @@ func configureService(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -518,7 +518,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -1039,7 +1039,7 @@ func getContainerPrefix(rp *rocketpool.Client) (string, error) {
 func pruneExecutionClient(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -1178,7 +1178,7 @@ func pruneExecutionClient(c *cli.Context) error {
 func pauseService(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -1219,7 +1219,7 @@ func terminateService(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return fmt.Errorf("%w\n%sTHERE WAS AN ERROR TERMINATING THE SMARTNODE SERVICE. Your keys have most likely not been deleted. Proceed with caution.%s", err, colorRed, colorReset)
 	}
@@ -1234,7 +1234,7 @@ func terminateService(c *cli.Context) error {
 func serviceLogs(c *cli.Context, serviceNames ...string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -1249,7 +1249,7 @@ func serviceLogs(c *cli.Context, serviceNames ...string) error {
 func serviceStats(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -1264,7 +1264,7 @@ func serviceStats(c *cli.Context) error {
 func serviceCompose(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -1279,7 +1279,7 @@ func serviceCompose(c *cli.Context) error {
 func serviceVersion(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -1401,7 +1401,7 @@ func getComposeFiles(c *cli.Context) []string {
 func resyncEth1(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -1485,7 +1485,7 @@ func resyncEth1(c *cli.Context) error {
 func resyncEth2(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -1621,7 +1621,7 @@ func getConfigYaml(c *cli.Context) error {
 func exportEcData(c *cli.Context, targetDir string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -1744,7 +1744,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 func importEcData(c *cli.Context, sourceDir string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}

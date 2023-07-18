@@ -13,7 +13,7 @@ import (
 func exportWallet(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}

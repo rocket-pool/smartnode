@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"math/big"
 	"net"
 	"net/http"
@@ -27,6 +28,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
@@ -62,6 +64,13 @@ const (
 	DebugColor = color.FgYellow
 )
 
+// When printing sync percents, we should avoid printing 100%.
+// This function is only called if we're still syncing,
+// and the `%0.2f` token will round up if we're above 99.99%.
+func SyncRatioToPercent(in float64) float64 {
+	return math.Min(99.99, in*100)
+}
+
 // Get the external IP address. Try finding an IPv4 address first to:
 // * Improve peer discovery and node performance
 // * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
@@ -96,15 +105,98 @@ type Client struct {
 	forceFallbacks     bool
 }
 
+func getClientStatusString(clientStatus api.ClientStatus) string {
+	if clientStatus.IsSynced {
+		return "synced and ready"
+	}
+
+	if clientStatus.IsWorking {
+		return fmt.Sprintf("syncing (%.2f%%)", SyncRatioToPercent(clientStatus.SyncProgress))
+	}
+
+	return fmt.Sprintf("unavailable (%s)", clientStatus.Error)
+}
+
+// Check the status of the Execution and Consensus client(s) and provision the API with them
+func checkClientStatus(rp *Client) (bool, error) {
+
+	// Check if the primary clients are up, synced, and able to respond to requests - if not, forces the use of the fallbacks for this command
+	response, err := rp.GetClientStatus()
+	if err != nil {
+		return false, err
+	}
+
+	ecMgrStatus := response.EcManagerStatus
+	bcMgrStatus := response.BcManagerStatus
+
+	// Primary EC and CC are good
+	if ecMgrStatus.PrimaryClientStatus.IsSynced && bcMgrStatus.PrimaryClientStatus.IsSynced {
+		rp.SetClientStatusFlags(true, false)
+		return true, nil
+	}
+
+	// Get the status messages
+	primaryEcStatus := getClientStatusString(ecMgrStatus.PrimaryClientStatus)
+	primaryBcStatus := getClientStatusString(bcMgrStatus.PrimaryClientStatus)
+	fallbackEcStatus := getClientStatusString(ecMgrStatus.FallbackClientStatus)
+	fallbackBcStatus := getClientStatusString(bcMgrStatus.FallbackClientStatus)
+
+	// Check the fallbacks if enabled
+	if ecMgrStatus.FallbackEnabled && bcMgrStatus.FallbackEnabled {
+
+		// Fallback EC and CC are good
+		if ecMgrStatus.FallbackClientStatus.IsSynced && bcMgrStatus.FallbackClientStatus.IsSynced {
+			fmt.Printf("%sNOTE: primary clients are not ready, using fallback clients...\n\tPrimary EC status: %s\n\tPrimary CC status: %s%s\n\n", colorYellow, primaryEcStatus, primaryBcStatus, colorReset)
+			rp.SetClientStatusFlags(true, true)
+			return true, nil
+		}
+
+		// Both pairs aren't ready
+		fmt.Printf("Error: neither primary nor fallback client pairs are ready.\n\tPrimary EC status: %s\n\tFallback EC status: %s\n\tPrimary CC status: %s\n\tFallback CC status: %s", primaryEcStatus, fallbackEcStatus, primaryBcStatus, fallbackBcStatus)
+		return false, nil
+	}
+
+	// Primary isn't ready and fallback isn't enabled
+	fmt.Printf("Error: primary client pair isn't ready and fallback clients aren't enabled.\n\tPrimary EC status: %s\n\tPrimary CC status: %s", primaryEcStatus, primaryBcStatus)
+	return false, nil
+}
+
 // Create new Rocket Pool client from CLI context
-func NewClientFromCtx(c *cli.Context) (*Client, error) {
-	return NewClient(c.GlobalString("config-path"),
+// Only use this function from commands that may work without the clients being synced-
+// most users should use NewReadyClientFromCtx instead
+func NewClientFromCtx(c *cli.Context) (*Client, bool, error) {
+	out, err := NewClient(c.GlobalString("config-path"),
 		c.GlobalString("daemon-path"),
 		c.GlobalFloat64("maxFee"),
 		c.GlobalFloat64("maxPrioFee"),
 		c.GlobalUint64("gasLimit"),
 		c.GlobalString("nonce"),
 		c.GlobalBool("debug"))
+	if err != nil {
+		return nil, false, err
+	}
+
+	ready, err := checkClientStatus(out)
+	if err != nil {
+		out.Close()
+		return nil, false, err
+	}
+
+	return out, ready, nil
+}
+
+// Create new Rocket Pool client from CLI context and ensure the eth clients are synced and ready
+func NewReadyClientFromCtx(c *cli.Context) (*Client, error) {
+	out, ready, err := NewClientFromCtx(c)
+	if err != nil {
+		return nil, err
+	}
+
+	if !ready {
+		return nil, fmt.Errorf("clients not ready")
+	}
+
+	return out, nil
 }
 
 // Create new Rocket Pool client
@@ -144,9 +236,15 @@ func NewClient(configPath string, daemonPath string, maxFee float64, maxPrioFee 
 
 // Close client remote connection
 func (c *Client) Close() {
-	if c.client != nil {
-		_ = c.client.Close()
+	if c == nil {
+		return
 	}
+
+	if c.client == nil {
+		return
+	}
+
+	_ = c.client.Close()
 }
 
 // Load the config

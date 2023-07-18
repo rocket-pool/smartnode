@@ -17,17 +17,11 @@ import (
 func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
-	if err != nil {
-		return err
-	}
 
 	// Get amount in wei
 	amountWei := eth.EthToWei(amount)

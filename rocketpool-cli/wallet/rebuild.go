@@ -7,13 +7,12 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 func rebuildWallet(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -21,12 +20,6 @@ func rebuildWallet(c *cli.Context) error {
 
 	// Load the config
 	cfg, _, err := rp.LoadConfig()
-	if err != nil {
-		return err
-	}
-
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}

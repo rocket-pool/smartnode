@@ -13,17 +13,11 @@ import (
 func joinSmoothingPool(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
-	if err != nil {
-		return err
-	}
 
 	// Get the node's registration status
 	status, err := rp.NodeGetSmoothingPoolRegistrationStatus()
@@ -85,17 +79,11 @@ func joinSmoothingPool(c *cli.Context) error {
 func leaveSmoothingPool(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
-	if err != nil {
-		return err
-	}
 
 	// Get the node's registration status
 	status, err := rp.NodeGetSmoothingPoolRegistrationStatus()
