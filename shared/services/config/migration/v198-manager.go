@@ -1,13 +1,11 @@
 package migration
 
 import (
-	"fmt"
-
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-func upgradeFromV193(serializedConfig map[string]map[string]string) error {
-	// v1.9.3 had the BN API port mode as a boolean
+func upgradeFromV198(serializedConfig map[string]map[string]string) error {
+	// v1.9.8 had the BN API port mode as a boolean
 	if err := updateRPCPortConfig(serializedConfig, "consensusCommon", "openApiPort"); err != nil {
 		return err
 	}
@@ -27,14 +25,16 @@ func upgradeFromV193(serializedConfig map[string]map[string]string) error {
 }
 
 func updateRPCPortConfig(serializedConfig map[string]map[string]string, configKeyString string, keyOpenPorts string) error {
-	// v1.9.3 had the API ports mode as a boolean
+	// v1.9.8 had the API ports mode as a boolean
 	configSection, exists := serializedConfig[configKeyString]
 	if !exists {
-		return fmt.Errorf("expected a section called `%s` but it didn't exist", configKeyString)
+		return nil // Don't fail entirely if the section is missing, just leave the port change to off (default)
+		//return fmt.Errorf("expected a section called `%s` but it didn't exist", configKeyString)
 	}
 	openRPCPorts, exists := configSection[keyOpenPorts]
 	if !exists {
-		return fmt.Errorf("expected a executionCommon setting named `%s` but it didn't exist", keyOpenPorts)
+		return nil // Don't fail entirely if the parameter is missing, just leave the port change to off (default)
+		//return fmt.Errorf("expected a executionCommon setting named `%s` but it didn't exist", keyOpenPorts)
 	}
 
 	// Update the config

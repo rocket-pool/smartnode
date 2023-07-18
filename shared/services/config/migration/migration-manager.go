@@ -29,7 +29,7 @@ func UpdateConfig(serializedConfig map[string]map[string]string) error {
 	if err != nil {
 		return err
 	}
-	v193, err := parseVersion("1.9.3")
+	v198, err := parseVersion("1.9.8")
 	if err != nil {
 		return err
 	}
@@ -43,8 +43,8 @@ func UpdateConfig(serializedConfig map[string]map[string]string) error {
 			Version:     v151,
 			UpgradeFunc: upgradeFromV151,
 		}, {
-			Version:     v193,
-			UpgradeFunc: upgradeFromV193,
+			Version:     v198,
+			UpgradeFunc: upgradeFromV198,
 		},
 	}
 
