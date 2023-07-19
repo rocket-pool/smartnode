@@ -382,7 +382,6 @@ func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardsTreePath string, 
 		return nil, nil, false, true
 	}
 
-	isValid := true
 	if isInOdao {
 		// Get the CID for it
 		cid, err := rprewards.GetCidForRewardsFile(&proofWrapper, filename)
@@ -406,20 +405,20 @@ func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardsTreePath string, 
 			UserETH:         &proofWrapper.TotalRewards.PoolStakerSmoothingPoolEth.Int,
 		}
 
-		isValid, err = rewards.GetTrustedNodeSubmittedSpecificRewards(t.rp, nodeAddress, submission, nil)
+		hasSubmitted, err := rewards.GetTrustedNodeSubmittedSpecificRewards(t.rp, nodeAddress, submission, nil)
 		if err != nil {
 			t.log.Printlnf("%s WARNING: could not check if node has previously submitted file %s: %s; regenerating file...\n", t.logPrefix, rewardsTreePath, err.Error())
 			return nil, nil, false, true
 		}
-		if !isValid {
-			t.log.Printlnf("%s Existing file for interval %d has not been submitted yet.\n", t.logPrefix, proofWrapper.Index, proofWrapper.IntervalsPassed, intervalsPassed)
+		if !hasSubmitted {
+			t.log.Printlnf("%s Existing file for interval %d has not been submitted yet.", t.logPrefix, proofWrapper.Index)
 			return &proofWrapper, fileBytes, false, false
 		}
 	}
 
 	// Check if the file's valid (same number of intervals passed as the current time)
 	if proofWrapper.IntervalsPassed != intervalsPassed {
-		t.log.Printlnf("%s Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n", t.logPrefix, proofWrapper.Index, proofWrapper.IntervalsPassed, intervalsPassed)
+		t.log.Printlnf("%s Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...", t.logPrefix, proofWrapper.Index, proofWrapper.IntervalsPassed, intervalsPassed)
 		return &proofWrapper, fileBytes, false, true
 	}
 
@@ -544,7 +543,7 @@ func (t *submitRewardsTree_Rolling) generateTreeImpl(rp *rocketpool.RocketPool, 
 	}
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(&t.log, t.logPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, nil)
+	treegen, err := rprewards.NewTreeGenerator(&t.log, t.logPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, t.recordMgr.Record)
 	if err != nil {
 		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
 	}
