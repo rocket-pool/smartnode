@@ -478,7 +478,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(state *state.Networ
 	}
 
 	// Generate the tree
-	err = t.generateTree(intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	err = t.generateTree(state, intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
 	if err != nil {
 		return fmt.Errorf("error generating rewards tree: %w", err)
 	}
@@ -487,7 +487,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(state *state.Networ
 }
 
 // Generate a new rewards tree
-func (t *submitRewardsTree_Rolling) generateTree(intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
+func (t *submitRewardsTree_Rolling) generateTree(state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
 	// Get an appropriate client
 	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, snapshotElBlockHeader.Number)
 	if err != nil {
@@ -495,7 +495,7 @@ func (t *submitRewardsTree_Rolling) generateTree(intervalsPassed uint64, nodeTru
 	}
 
 	// Generate the tree
-	err = t.generateTreeImpl(client, intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	err = t.generateTreeImpl(client, state, intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
 	if err != nil {
 		return fmt.Errorf("error generating rewards tree: %w", err)
 	}
@@ -504,25 +504,13 @@ func (t *submitRewardsTree_Rolling) generateTree(intervalsPassed uint64, nodeTru
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *submitRewardsTree_Rolling) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
+func (t *submitRewardsTree_Rolling) generateTreeImpl(rp *rocketpool.RocketPool, state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
 
 	// Log
 	if intervalsPassed > 1 {
 		t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", intervalsPassed)
 	}
 	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.logPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
-
-	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(rp, t.cfg, rp.Client, t.bc, &t.log)
-	if err != nil {
-		return fmt.Errorf("error creating network state manager for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
-	}
-
-	// Create a new state for the target block
-	state, err := mgr.GetStateForSlot(snapshotBeaconBlock)
-	if err != nil {
-		return fmt.Errorf("couldn't get network state for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
-	}
 
 	// Generate the rewards file
 	treegen, err := rprewards.NewTreeGenerator(&t.log, t.logPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, t.recordMgr.Record)

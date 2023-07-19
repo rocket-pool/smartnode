@@ -375,8 +375,29 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 
 }
 
-// Updates the manager's record to the provided state
+// Updates the manager's record to the provided state, retrying upon errors until success
 func (r *RollingRecordManager) UpdateRecordToState(state *state.NetworkState, latestFinalizedSlot uint64) error {
+	err := r.updateImpl(state, latestFinalizedSlot)
+	for err != nil {
+		// Revert to the latest saved state
+		r.log.Printlnf("%s WARNING: failed to update rolling record to slot %d, block %d: %w", r.logPrefix, state.BeaconSlotNumber, state.ElBlockNumber, err)
+		r.log.Printlnf("%s Reverting to the last saved checkpoint to prevent corruption...", r.logPrefix)
+		_, err = r.LoadBestRecordFromDisk(r.startSlot, latestFinalizedSlot, r.Record.RewardsInterval)
+		if err != nil {
+			return fmt.Errorf("error loading last best checkpoint: %w", err)
+		}
+
+		// Try again
+		r.log.Printlnf("%s Successfully reverted to the last saved state. Waiting a few seconds before trying again...")
+		time.Sleep(5 * time.Second)
+		err = r.updateImpl(state, latestFinalizedSlot)
+	}
+
+	return nil
+}
+
+// Updates the manager's record to the provided state
+func (r *RollingRecordManager) updateImpl(state *state.NetworkState, latestFinalizedSlot uint64) error {
 	var err error
 	r.log.Printlnf("Updating record to target slot %d...", latestFinalizedSlot)
 
