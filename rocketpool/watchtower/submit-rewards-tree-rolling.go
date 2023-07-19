@@ -223,7 +223,7 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 
 		// If no special upcoming state is required, update normally
 		if !isRewardsSubmissionDue {
-			err = t.recordMgr.updateRecordToState(state, latestFinalizedBlock)
+			err = t.recordMgr.updateRecordToState(state, latestFinalizedBlock.Slot)
 			if err != nil {
 				t.handleError(fmt.Errorf("error updating record: %w", err))
 				return

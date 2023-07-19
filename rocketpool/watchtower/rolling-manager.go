@@ -520,9 +520,9 @@ func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error 
 }
 
 // Updates the manager's record to the provided state
-func (r *RollingRecordManager) updateRecordToState(state *state.NetworkState, latestFinalizedBlock beacon.BeaconBlock) error {
+func (r *RollingRecordManager) updateRecordToState(state *state.NetworkState, latestFinalizedSlot uint64) error {
 	var err error
-	r.log.Printlnf("Updating record to target slot %d...", latestFinalizedBlock.Slot)
+	r.log.Printlnf("Updating record to target slot %d...", latestFinalizedSlot)
 
 	// Create a new record if the current one is for the previous rewards interval
 	if r.Record.RewardsInterval < state.NetworkDetails.RewardIndex {
@@ -534,7 +534,7 @@ func (r *RollingRecordManager) updateRecordToState(state *state.NetworkState, la
 
 	// Get the state for the target slot
 	recordCheckpointInterval := r.cfg.Smartnode.RecordCheckpointInterval.Value.(uint64)
-	finalTarget := latestFinalizedBlock.Slot
+	finalTarget := latestFinalizedSlot
 	finalizedState := state
 	if finalTarget != state.BeaconSlotNumber {
 		finalizedState, err = r.mgr.GetStateForSlot(finalTarget)
@@ -626,8 +626,8 @@ func (r *RollingRecordManager) prepareRecordForReport(state *state.NetworkState)
 
 		r.Record = newRecord
 	} else {
-		r.log.Printlnf("%s Current record can be used (need slot %d, record has only processed slot %d).", r.logPrefix, rewardsSlot, r.Record.LastDutiesSlot)
-		err := r.Record.UpdateToSlot(rewardsSlot, state)
+		r.log.Printlnf("%s Current record can be used (need slot %d, record has only processed slot %d), updating to target slot.", r.logPrefix, rewardsSlot, r.Record.LastDutiesSlot)
+		err := r.updateRecordToState(state, rewardsSlot)
 		if err != nil {
 			return fmt.Errorf("error updating record to rewards slot: %w", err)
 		}
