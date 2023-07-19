@@ -2,6 +2,7 @@ package rocketpool
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -473,12 +474,6 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 // Install the Rocket Pool service
 func (c *Client) InstallService(verbose, noDeps bool, network, version, path string, dataPath string) error {
 
-	// Get installation script downloader type
-	downloader, err := c.getDownloader()
-	if err != nil {
-		return err
-	}
-
 	// Get installation script flags
 	flags := []string{
 		"-n", fmt.Sprintf("%s", shellescape.Quote(network)),
@@ -494,14 +489,37 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version, path str
 		flags = append(flags, fmt.Sprintf("-u %s", dataPath))
 	}
 
+	// Download the installation script
+	resp, err := http.Get(fmt.Sprintf(InstallerURL, version))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected http status downloading installation script: %d", resp.StatusCode)
+	}
+
+	// Sanity check that the script octet length matches content-length
+	script, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if fmt.Sprint(len(script)) != resp.Header.Get("content-length") {
+		return fmt.Errorf("downloaded script length %d did not match content-length header %s", len(script), resp.Header.Get("content-length"))
+	}
+
 	// Initialize installation command
-	cmd, err := c.newCommand(fmt.Sprintf("%s %s | sh -s -- %s", downloader, fmt.Sprintf(InstallerURL, version), strings.Join(flags, " ")))
+	cmd, err := c.newCommand(fmt.Sprintf("sh -s -- %s", strings.Join(flags, " ")))
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = cmd.Close()
 	}()
+
+	// Pass the script to sh via its stdin fd
+	cmd.SetStdin(bytes.NewReader(script))
 
 	// Get command output pipes
 	cmdOut, err := cmd.StdoutPipe()
@@ -1787,26 +1805,6 @@ func (c *Client) getCustomNonce() string {
 		nonce = fmt.Sprintf("--nonce %s", c.customNonce.String())
 	}
 	return nonce
-}
-
-// Get the first downloader available to the system
-func (c *Client) getDownloader() (string, error) {
-
-	// Check for cURL
-	hasCurl, err := c.readOutput("command -v curl")
-	if err == nil && len(hasCurl) > 0 {
-		return "curl -sL", nil
-	}
-
-	// Check for wget
-	hasWget, err := c.readOutput("command -v wget")
-	if err == nil && len(hasWget) > 0 {
-		return "wget -qO-", nil
-	}
-
-	// Return error
-	return "", errors.New("Either cURL or wget is required to begin installation.")
-
 }
 
 // Run a command and print its output

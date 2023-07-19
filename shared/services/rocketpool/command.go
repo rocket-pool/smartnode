@@ -68,6 +68,14 @@ func (c *command) Wait() error {
 	return c.session.Wait()
 }
 
+func (c *command) SetStdin(r io.Reader) {
+	if c.cmd != nil {
+		c.cmd.Stdin = r
+	} else {
+		c.session.Stdin = r
+	}
+}
+
 func (c *command) SetStdout(w io.Writer) {
 	if c.cmd != nil {
 		c.cmd.Stdout = w
