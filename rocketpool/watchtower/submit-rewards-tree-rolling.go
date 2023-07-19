@@ -45,7 +45,8 @@ type submitRewardsTree_Rolling struct {
 	rp          *rocketpool.RocketPool
 	bc          beacon.Client
 	genesisTime time.Time
-	recordMgr   *RollingRecordManager
+	recordMgr   *rprewards.RollingRecordManager
+	stateMgr    *state.NetworkStateManager
 	logPrefix   string
 
 	lock      *sync.Mutex
@@ -123,6 +124,7 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 		w:           w,
 		rp:          rp,
 		bc:          bc,
+		stateMgr:    stateMgr,
 		genesisTime: genesisTime,
 		logPrefix:   logPrefix,
 		lock:        lock,
@@ -130,7 +132,7 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	}
 
 	// Make a new rolling manager
-	mgr, err := NewRollingRecordManager(&task.log, &task.errLog, cfg, rp, bc, stateMgr, w, startSlot, beaconCfg, currentIndex)
+	recordMgr, err := rprewards.NewRollingRecordManager(&task.log, &task.errLog, cfg, rp, bc, stateMgr, w, startSlot, beaconCfg, currentIndex)
 	if err != nil {
 		return nil, fmt.Errorf("error creating rolling record manager: %w", err)
 	}
@@ -141,19 +143,13 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 		return nil, fmt.Errorf("error getting beacon head: %w", err)
 	}
 	latestFinalizedSlot := (beaconHead.FinalizedEpoch+1)*beaconCfg.SlotsPerEpoch - 1
-	record, err := mgr.LoadBestRecordFromDisk(startSlot, latestFinalizedSlot, currentIndex)
+	_, err = recordMgr.LoadBestRecordFromDisk(startSlot, latestFinalizedSlot, currentIndex)
 	if err != nil {
 		return nil, fmt.Errorf("error loading rolling record checkpoint from disk: %w", err)
 	}
-	mgr.Record = record
-	if record.LastDutiesSlot == 0 {
-		// New record created, so mark the last saved epoch as one below the start epoch
-		record.LastDutiesSlot = startSlot - 1
-	}
-	mgr.lastSavedEpoch = record.LastDutiesSlot / beaconCfg.SlotsPerEpoch
 
 	// Return
-	task.recordMgr = mgr
+	task.recordMgr = recordMgr
 	return task, nil
 
 }
@@ -183,14 +179,14 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 		// Capture the latest head state if one isn't passed in
 		if state == nil {
 			// Get the latest Beacon block
-			latestBlock, err := t.recordMgr.mgr.GetLatestBeaconBlock()
+			latestBlock, err := t.stateMgr.GetLatestBeaconBlock()
 			if err != nil {
 				t.handleError(fmt.Errorf("error getting latest Beacon block: %w", err))
 				return
 			}
 
 			// Get the state of the network
-			state, err = t.recordMgr.mgr.GetStateForSlot(latestBlock.Slot)
+			state, err = t.stateMgr.GetStateForSlot(latestBlock.Slot)
 			if err != nil {
 				t.handleError(fmt.Errorf("error getting network state: %w", err))
 				return
@@ -207,7 +203,7 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 		}
 
 		// Get the latest finalized slot and epoch
-		latestFinalizedBlock, err := t.recordMgr.mgr.GetLatestFinalizedBeaconBlock()
+		latestFinalizedBlock, err := t.stateMgr.GetLatestFinalizedBeaconBlock()
 		if err != nil {
 			t.handleError(fmt.Errorf("error getting latest finalized block: %w", err))
 			return
@@ -223,7 +219,7 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 
 		// If no special upcoming state is required, update normally
 		if !isRewardsSubmissionDue {
-			err = t.recordMgr.updateRecordToState(state, latestFinalizedBlock.Slot)
+			err = t.recordMgr.UpdateRecordToState(state, latestFinalizedBlock.Slot)
 			if err != nil {
 				t.handleError(fmt.Errorf("error updating record: %w", err))
 				return
@@ -267,7 +263,7 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 			}
 
 			// Generate the rewards state
-			state, err := t.recordMgr.mgr.GetStateForSlot(rewardsSlot)
+			state, err := t.stateMgr.GetStateForSlot(rewardsSlot)
 			if err != nil {
 				t.handleError(fmt.Errorf("error getting state for network balances slot: %w", err))
 				return
@@ -429,8 +425,7 @@ func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardsTreePath string, 
 // Run a rewards interval report submission
 func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(state *state.NetworkState, isInOdao bool, intervalsPassed uint64, startTime time.Time, endTime time.Time, mustRegenerate bool, existingRewardsFile *rprewards.RewardsFile, fileBytes []byte) error {
 	// Prep the record for reporting
-	rewardsSlot := state.BeaconSlotNumber
-	err := t.recordMgr.prepareRecordForReport(state)
+	err := t.recordMgr.PrepareRecordForReport(state)
 	if err != nil {
 		return fmt.Errorf("error preparing record for report: %w", err)
 	}
@@ -486,19 +481,6 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(state *state.Networ
 	err = t.generateTree(intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
 	if err != nil {
 		return fmt.Errorf("error generating rewards tree: %w", err)
-	}
-
-	// Save a local file indicating submission has completed if the user isn't in the Oracle DAO
-	if !isInOdao {
-		// Create the local flag file if the user isn't on the Oracle DAO, since they won't have on-chain submissions
-		filename := fmt.Sprintf(rewardsFlagFilenameFormat, rewardsSlot)
-		path := filepath.Join(t.cfg.Smartnode.GetRecordsPath(), filename)
-		file, err := os.Create(path)
-		if err != nil {
-			t.errLog.Printlnf("%s WARNING: couldn't create marker file indicating rewards update: %s", t.logPrefix, err.Error())
-		} else {
-			file.Close()
-		}
 	}
 
 	return nil
