@@ -23,7 +23,6 @@ type RollingRecord struct {
 	StartSlot         uint64                   `json:"startSlot"`
 	LastDutiesSlot    uint64                   `json:"lastDutiesSlot"`
 	ValidatorIndexMap map[string]*MinipoolInfo `json:"validatorIndexMap"`
-	LatestMappedIndex int                      `json:"latestMappedIndex"`
 	RewardsInterval   uint64                   `json:"rewardsInterval"`
 
 	// Private fields
@@ -44,7 +43,6 @@ func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, 
 	return &RollingRecord{
 		StartSlot:         startSlot,
 		LastDutiesSlot:    0,
-		LatestMappedIndex: -1,
 		ValidatorIndexMap: map[string]*MinipoolInfo{},
 		RewardsInterval:   rewardsInterval,
 
@@ -173,27 +171,31 @@ func (r *RollingRecord) Serialize() ([]byte, error) {
 
 // Update the validator index map with any new validators on Beacon
 func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
-	for i := r.LatestMappedIndex + 1; i < len(state.MinipoolDetails); i++ {
+	// NOTE: this has to go through every index each time in order to handle out-of-order validators
+	// or invalid validators that got created on the testnet with broken deposits
+	for i := 0; i < len(state.MinipoolDetails); i++ {
 		mpd := state.MinipoolDetails[i]
 		pubkey := mpd.Pubkey
 
 		validator, exists := state.ValidatorDetails[pubkey]
 		if !exists {
 			// Hit a validator that doesn't exist on Beacon yet
-			return
+			continue
 		}
 
-		// Validator exists, add it to the map and update the latest index so we don't remap stuff we've already seen
-		minipoolInfo := &MinipoolInfo{
-			Address:                 mpd.MinipoolAddress,
-			ValidatorPubkey:         mpd.Pubkey,
-			ValidatorIndex:          validator.Index,
-			NodeAddress:             mpd.NodeAddress,
-			MissingAttestationSlots: map[uint64]bool{},
-			AttestationScore:        big.NewInt(0),
+		_, exists = r.ValidatorIndexMap[validator.Index]
+		if !exists {
+			// Validator exists but it hasn't been recorded yet, add it to the map and update the latest index so we don't remap stuff we've already seen
+			minipoolInfo := &MinipoolInfo{
+				Address:                 mpd.MinipoolAddress,
+				ValidatorPubkey:         mpd.Pubkey,
+				ValidatorIndex:          validator.Index,
+				NodeAddress:             mpd.NodeAddress,
+				MissingAttestationSlots: map[uint64]bool{},
+				AttestationScore:        big.NewInt(0),
+			}
+			r.ValidatorIndexMap[validator.Index] = minipoolInfo
 		}
-		r.ValidatorIndexMap[validator.Index] = minipoolInfo
-		r.LatestMappedIndex = i
 	}
 }
 

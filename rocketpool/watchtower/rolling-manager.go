@@ -522,7 +522,7 @@ func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error 
 // Updates the manager's record to the provided state
 func (r *RollingRecordManager) updateRecordToState(state *state.NetworkState, latestFinalizedBlock beacon.BeaconBlock) error {
 	var err error
-	r.log.Printlnf("Updating record to head state (slot %d)...", state.BeaconSlotNumber)
+	r.log.Printlnf("Updating record to target slot %d...", latestFinalizedBlock.Slot)
 
 	// Create a new record if the current one is for the previous rewards interval
 	if r.Record.RewardsInterval < state.NetworkDetails.RewardIndex {
