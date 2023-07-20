@@ -14,7 +14,7 @@ import (
 func sendMessage(c *cli.Context, toAddressOrENS string, message []byte) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}

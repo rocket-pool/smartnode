@@ -14,17 +14,11 @@ import (
 func getMembers(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
-	if err != nil {
-		return err
-	}
 
 	// Get oracle DAO members
 	members, err := rp.TNDAOMembers()

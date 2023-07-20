@@ -27,7 +27,7 @@ func printClientStatus(status *api.ClientStatus, name string) {
 		return
 	}
 
-	fmt.Printf("Your %s is still syncing (%0.2f%%).\n", name, cliutils.SyncRatioToPercent(status.SyncProgress))
+	fmt.Printf("Your %s is still syncing (%0.2f%%).\n", name, rocketpool.SyncRatioToPercent(status.SyncProgress))
 	if strings.Contains(name, "execution") && status.SyncProgress == 0 {
 		fmt.Printf("\tNOTE: your %s may not report sync progress.\n\tYou should check its logs to review it.\n", name)
 	}
@@ -50,7 +50,7 @@ func printSyncProgress(status *api.ClientManagerStatus, name string) {
 func getSyncProgress(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, _, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}

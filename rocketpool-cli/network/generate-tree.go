@@ -18,7 +18,7 @@ const (
 func generateRewardsTree(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}

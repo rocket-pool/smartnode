@@ -35,17 +35,11 @@ func filterProposalState(state string, stateFilter string) bool {
 func getProposals(c *cli.Context, stateFilter string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
-	if err != nil {
-		return err
-	}
 
 	// Get oracle DAO proposals
 	allProposals, err := rp.TNDAOProposals()
@@ -112,17 +106,11 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 func getProposal(c *cli.Context, id uint64) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
-	if err != nil {
-		return err
-	}
 
 	// Get oracle DAO proposals
 	allProposals, err := rp.TNDAOProposals()

@@ -9,13 +9,12 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 func recoverWallet(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, ready, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
@@ -95,15 +94,13 @@ func recoverWallet(c *cli.Context) error {
 		address := common.HexToAddress(addressString)
 		fmt.Printf("Searching for the derivation path and index for wallet %s...\nNOTE: this may take several minutes depending on how large your wallet's index is.\n", address.Hex())
 
-		// Log
-		if skipValidatorKeyRecovery {
-			fmt.Println("Ignoring validator keys, searching for wallet only...")
-		} else {
-			// Check and assign the EC status
-			err = cliutils.CheckClientStatus(rp)
-			if err != nil {
-				return err
+		if !skipValidatorKeyRecovery {
+			if !ready {
+				return fmt.Errorf("unable to recover validator keys without synced and ready clients")
 			}
+			fmt.Println("Recovering node wallet and validator keys...")
+		} else {
+			fmt.Println("Ignoring validator keys, searching for wallet only...")
 		}
 
 		// Recover wallet
@@ -144,16 +141,13 @@ func recoverWallet(c *cli.Context) error {
 
 		fmt.Println()
 
-		// Log
-		if skipValidatorKeyRecovery {
-			fmt.Println("Recovering node wallet only (ignoring validator keys)...")
-		} else {
-			// Check and assign the EC status
-			err = cliutils.CheckClientStatus(rp)
-			if err != nil {
-				return err
+		if !skipValidatorKeyRecovery {
+			if !ready {
+				return fmt.Errorf("unable to recover validator keys without synced and ready clients")
 			}
 			fmt.Println("Recovering node wallet and validator keys...")
+		} else {
+			fmt.Println("Recovering node wallet only (ignoring validator keys)...")
 		}
 
 		// Recover wallet

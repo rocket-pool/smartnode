@@ -17,17 +17,11 @@ import (
 func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
-	if err != nil {
-		return err
-	}
 
 	var withdrawalAddress common.Address
 	var withdrawalAddressString string
@@ -158,7 +152,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 func confirmWithdrawalAddress(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}

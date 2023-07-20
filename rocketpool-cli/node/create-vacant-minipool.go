@@ -20,17 +20,11 @@ import (
 func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
-	if err != nil {
-		return err
-	}
 
 	// Make sure ETH2 is on the correct chain
 	depositContractInfo, err := rp.DepositContractInfo()

@@ -14,17 +14,12 @@ import (
 
 func nodeSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
 
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
-	if err != nil {
-		return err
-	}
 	var address common.Address
 	var addressString string
 	if strings.Contains(nameOrAddress, ".") {
@@ -81,17 +76,11 @@ func nodeSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 func nodeClearVotingDelegate(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewReadyClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	// Check and assign the EC status
-	err = cliutils.CheckClientStatus(rp)
-	if err != nil {
-		return err
-	}
 
 	// Get the gas estimation
 	gasEstimate, err := rp.EstimateClearSnapshotDelegateGas()
