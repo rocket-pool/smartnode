@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,7 +19,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/rocketpool/watchtower"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -92,7 +92,7 @@ type treeGenerator struct {
 	rp                *rocketpool.RocketPool
 	cfg               *config.RocketPoolConfig
 	mgr               *state.NetworkStateManager
-	recordMgr         *watchtower.RollingRecordManager
+	recordMgr         *rprewards.RollingRecordManager
 	bn                beacon.Client
 	beaconConfig      beacon.Eth2Config
 	targets           targets
@@ -219,8 +219,10 @@ func (g *treeGenerator) getTreegenArgs() (*treegenArguments, error) {
 			if err != nil {
 				return nil, fmt.Errorf("error getting event for interval %d: %w", index-1, err)
 			}
-			lastRewardEpoch := previousRewardsEvent.ConsensusBlock.Uint64() / g.beaconConfig.SlotsPerEpoch
-			startSlot = (lastRewardEpoch + 1) * g.beaconConfig.SlotsPerEpoch // First slot of the new epoch
+			startSlot, err = getStartSlotForInterval(previousRewardsEvent, g.bn, g.beaconConfig)
+			if err != nil {
+				return nil, fmt.Errorf("error getting start slot for interval %d: %w", index, err)
+			}
 		}
 
 		elBlockHeader, err := g.rp.Client.HeaderByNumber(context.Background(), g.targets.rewardsEvent.ExecutionBlock)
@@ -478,12 +480,8 @@ func (g *treeGenerator) writeFiles(rewardsFile *rprewards.RewardsFile) error {
 // Create the manager for rolling records to use (if applicable) and update the record to the target slot
 func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
 	// Ignore this on old rulesets without rolling records
-	if g.ruleset < 6 {
-		if g.ruleset == 0 {
-			g.log.Println("The current interval cannot use rolling records because it uses an older ruleset, ignoring them.")
-		} else {
-			g.log.Printlnf("Ruleset %d does not use rolling records, ignoring them.", g.ruleset)
-		}
+	if g.ruleset < 6 && g.ruleset > 0 {
+		g.log.Printlnf("Ruleset %d does not use rolling records, ignoring them.", g.ruleset)
 		return nil
 	}
 
@@ -523,7 +521,7 @@ func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
 
 	// Rolling records are supported, build up the manager
 	var err error
-	g.recordMgr, err = watchtower.NewRollingRecordManager(g.log, g.errLog, g.cfg, g.rp, g.bn, g.mgr, nil, args.startSlot, g.beaconConfig)
+	g.recordMgr, err = rprewards.NewRollingRecordManager(g.log, g.errLog, g.cfg, g.rp, g.bn, g.mgr, args.startSlot, g.beaconConfig, index)
 	if err != nil {
 		return fmt.Errorf("error creating rolling record manager: %w", err)
 	}
@@ -706,8 +704,10 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error getting event for interval %d: %w", index-1, err)
 		}
-		lastRewardEpoch := previousRewardsEvent.ConsensusBlock.Uint64() / g.beaconConfig.SlotsPerEpoch
-		startSlot = (lastRewardEpoch + 1) * g.beaconConfig.SlotsPerEpoch // First slot of the new epoch
+		startSlot, err = getStartSlotForInterval(previousRewardsEvent, g.bn, g.beaconConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error getting start slot for interval %d: %w", index, err)
+		}
 	}
 
 	// Get the start time for the interval, and how long an interval is supposed to take
@@ -734,6 +734,37 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 		snapshotElBlockHeader: snapshotElBlockHeader,
 		intervalsPassed:       intervalsPassed,
 	}, nil
+}
+
+// Gets the start slot for the given interval
+func getStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beacon.Client, beaconConfig beacon.Eth2Config) (uint64, error) {
+	// Sanity check to confirm the BN can access the block from the previous interval
+	_, exists, err := bc.GetBeaconBlock(previousIntervalEvent.ConsensusBlock.String())
+	if err != nil {
+		return 0, fmt.Errorf("error verifying block from previous interval: %w", err)
+	}
+	if !exists {
+		return 0, fmt.Errorf("couldn't retrieve CL block from previous interval (slot %d); this likely means you checkpoint sync'd your Beacon Node and it has not backfilled to the previous interval yet so it cannot be used for tree generation", previousIntervalEvent.ConsensusBlock.Uint64())
+	}
+
+	previousEpoch := previousIntervalEvent.ConsensusBlock.Uint64() / beaconConfig.SlotsPerEpoch
+	nextEpoch := previousEpoch + 1
+	consensusStartBlock := nextEpoch * beaconConfig.SlotsPerEpoch
+
+	// Get the first block that isn't missing
+	for {
+		_, exists, err := bc.GetBeaconBlock(fmt.Sprint(consensusStartBlock))
+		if err != nil {
+			return 0, fmt.Errorf("error getting EL data for BC slot %d: %w", consensusStartBlock, err)
+		}
+		if !exists {
+			consensusStartBlock++
+		} else {
+			break
+		}
+	}
+
+	return consensusStartBlock, nil
 }
 
 // Print information about the current network and interval info
