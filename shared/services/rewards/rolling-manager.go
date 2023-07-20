@@ -333,7 +333,7 @@ func (r *RollingRecordManager) UpdateRecordToState(state *state.NetworkState, la
 	err := r.updateImpl(state, latestFinalizedSlot)
 	for err != nil {
 		// Revert to the latest saved state
-		r.log.Printlnf("%s WARNING: failed to update rolling record to slot %d, block %d: %w", r.logPrefix, state.BeaconSlotNumber, state.ElBlockNumber, err)
+		r.log.Printlnf("%s WARNING: failed to update rolling record to slot %d, block %d: %s", r.logPrefix, state.BeaconSlotNumber, state.ElBlockNumber, err.Error())
 		r.log.Printlnf("%s Reverting to the last saved checkpoint to prevent corruption...", r.logPrefix)
 		_, err = r.LoadBestRecordFromDisk(r.startSlot, latestFinalizedSlot, r.Record.RewardsInterval)
 		if err != nil {
@@ -341,7 +341,7 @@ func (r *RollingRecordManager) UpdateRecordToState(state *state.NetworkState, la
 		}
 
 		// Try again
-		r.log.Printlnf("%s Successfully reverted to the last saved state. Waiting a few seconds before trying again...")
+		r.log.Printlnf("%s Successfully reverted to the last saved state. Waiting a few seconds before trying again...", r.logPrefix)
 		time.Sleep(5 * time.Second)
 		err = r.updateImpl(state, latestFinalizedSlot)
 	}

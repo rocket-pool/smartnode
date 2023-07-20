@@ -323,17 +323,8 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 		return fmt.Errorf("error calculating effective RPL stakes: %w", err)
 	}
 
-	r.log.Printlnf("%s Calculating individual collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
-	nodesDone := 0
-	startTime := time.Now()
-	nodeCount := len(r.networkState.NodeDetails)
+	r.log.Printlnf("%s Calculating individual collateral rewards...", r.logPrefix)
 	for i, nodeDetails := range r.networkState.NodeDetails {
-		if nodesDone == 100 {
-			timeTaken := time.Since(startTime)
-			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
-			nodesDone = 0
-		}
-
 		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
 		nodeRplRewards := big.NewInt(0)
 		nodeRplRewards.Mul(trueNodeEffectiveStakes[nodeDetails.NodeAddress], totalNodeRewards)
@@ -376,8 +367,6 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 			}
 			rewardsForNetwork.CollateralRpl.Add(&rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 		}
-
-		nodesDone++
 	}
 
 	// Sanity check to make sure we arrived at the correct total
@@ -628,7 +617,8 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 					MissingAttestationSlots: []uint64{},
 				}
 				if successfulAttestations+missingAttestations == 0 {
-					performance.ParticipationRate = 0
+					// Don't include minipools that have zero attestations
+					continue
 				} else {
 					performance.ParticipationRate = float64(successfulAttestations) / float64(successfulAttestations+missingAttestations)
 				}
@@ -1009,11 +999,8 @@ func (r *treeGeneratorImpl_v6) getSmoothingPoolNodeDetails() error {
 	farFutureTime := time.Unix(1000000000000000000, 0) // Far into the future
 	farPastTime := time.Unix(0, 0)
 
-	nodesDone := uint64(0)
-	startTime := time.Now()
-	r.log.Printlnf("%s Getting details of nodes for Smoothing Pool calculation (progress is reported every 100 nodes)", r.logPrefix)
-
 	// For each NO, get their opt-in status and time of last change in batches
+	r.log.Printlnf("%s Getting details of nodes for Smoothing Pool calculation...", r.logPrefix)
 	nodeCount := uint64(len(r.networkState.NodeDetails))
 	r.nodeDetails = make([]*NodeSmoothingDetails, nodeCount)
 	for batchStartIndex := uint64(0); batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
@@ -1023,12 +1010,6 @@ func (r *treeGeneratorImpl_v6) getSmoothingPoolNodeDetails() error {
 		iterationEndIndex := batchStartIndex + SmoothingPoolDetailsBatchSize
 		if iterationEndIndex > nodeCount {
 			iterationEndIndex = nodeCount
-		}
-
-		if nodesDone >= 100 {
-			timeTaken := time.Since(startTime)
-			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, iterationStartIndex, nodeCount, float64(iterationStartIndex)/float64(nodeCount)*100.0, timeTaken)
-			nodesDone = 0
 		}
 
 		// Load details
@@ -1094,8 +1075,6 @@ func (r *treeGeneratorImpl_v6) getSmoothingPoolNodeDetails() error {
 		if err := wg.Wait(); err != nil {
 			return err
 		}
-
-		nodesDone += SmoothingPoolDetailsBatchSize
 	}
 
 	return nil
