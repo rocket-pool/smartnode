@@ -158,6 +158,18 @@ func checkClientStatus(rp *Client) (bool, error) {
 	return false, nil
 }
 
+// Create new Rocket Pool client from CLI context without checking for sync status
+// Only use this function from commands that may work if the Daemon service doesn't exist
+func NewClientFromCtxWithoutStatus(c *cli.Context) (*Client, error) {
+	return NewClient(c.GlobalString("config-path"),
+		c.GlobalString("daemon-path"),
+		c.GlobalFloat64("maxFee"),
+		c.GlobalFloat64("maxPrioFee"),
+		c.GlobalUint64("gasLimit"),
+		c.GlobalString("nonce"),
+		c.GlobalBool("debug"))
+}
+
 // Create new Rocket Pool client from CLI context
 // Only use this function from commands that may work without the clients being synced-
 // most users should use NewReadyClientFromCtx instead
