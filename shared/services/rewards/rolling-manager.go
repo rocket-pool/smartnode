@@ -98,6 +98,7 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 	}
 
 	logPrefix := "[Rolling Record]"
+	log.Printlnf("%s Created Rolling Record manager for start slot %d.", logPrefix, startSlot)
 	return &RollingRecordManager{
 		Record: NewRollingRecord(log, logPrefix, bc, startSlot, &beaconCfg, rewardsInterval),
 
@@ -121,9 +122,7 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 
 // Generate a new record for the provided slot using the latest viable saved record
 func (r *RollingRecordManager) GenerateRecordForState(state *state.NetworkState) (*RollingRecord, error) {
-
 	// Load the latest viable record
-	recordCheckpointInterval := r.cfg.Smartnode.RecordCheckpointInterval.Value.(uint64)
 	slot := state.BeaconSlotNumber
 	rewardsInterval := state.NetworkDetails.RewardIndex
 	record, err := r.LoadBestRecordFromDisk(r.startSlot, slot, rewardsInterval)
@@ -140,59 +139,13 @@ func (r *RollingRecordManager) GenerateRecordForState(state *state.NetworkState)
 		return nil, fmt.Errorf("loaded record has duties completed for slot %d, which is too far forward (targeting slot %d)", record.LastDutiesSlot, slot)
 	}
 
-	// Get the slot to start processing from and the target for the first round
-	nextStartSlot := record.LastDutiesSlot + 1
-	if record.LastDutiesSlot == 0 {
-		nextStartSlot = r.startSlot
+	// Update to the target slot
+	err = r.UpdateRecordToState(state, slot)
+	if err != nil {
+		return nil, fmt.Errorf("error updating record to slot %d: %w", slot, err)
 	}
-
-	nextStartEpoch := nextStartSlot / r.beaconCfg.SlotsPerEpoch
-	nextTargetEpoch := nextStartEpoch + recordCheckpointInterval - 1
-	nextTargetSlot := (nextTargetEpoch+1)*r.beaconCfg.SlotsPerEpoch - 1 // Target is the last slot of the epoch
-	if nextTargetSlot > slot {
-		nextTargetSlot = slot
-		nextTargetEpoch = nextTargetSlot / r.beaconCfg.SlotsPerEpoch
-	}
-	finalEpoch := slot / r.beaconCfg.SlotsPerEpoch
-	totalSlots := float64(slot - nextStartSlot + 1)
-	initialSlot := nextStartSlot
-
-	r.log.Printlnf("%s Collecting records from slot %d (epoch %d) to slot %d (epoch %d).", r.logPrefix, nextStartSlot, nextStartEpoch, slot, finalEpoch)
-	r.log.Printlnf("%s Progress will be reported at each saved checkpoint (%d epochs).", r.logPrefix, recordCheckpointInterval)
-	startTime := time.Now()
-	for {
-		if nextStartSlot > slot {
-			break
-		}
-
-		// Update the record to the target state
-		err = record.UpdateToSlot(nextTargetSlot, state)
-		if err != nil {
-			return nil, fmt.Errorf("error updating record to slot %d: %w", slot, err)
-		}
-
-		err = r.SaveRecordToFile(record)
-		if err != nil {
-			return nil, fmt.Errorf("error saving record: %w", err)
-		}
-
-		slotsProcessed := nextTargetSlot - initialSlot + 1
-		r.log.Printf("%s (%.2f%%) Updated from slot %d (epoch %d) to slot %d (epoch %d)... (%s so far) ", r.logPrefix, float64(slotsProcessed)/totalSlots*100.0, nextStartSlot, nextStartEpoch, nextTargetSlot, nextTargetEpoch, time.Since(startTime))
-
-		nextStartSlot = nextTargetSlot + 1
-		nextStartEpoch = nextStartSlot / r.beaconCfg.SlotsPerEpoch
-		nextTargetEpoch = nextStartEpoch + recordCheckpointInterval - 1
-		nextTargetSlot = (nextTargetEpoch+1)*r.beaconCfg.SlotsPerEpoch - 1 // Target is the last slot of the epoch
-		if nextTargetSlot > slot {
-			nextTargetSlot = slot
-			nextTargetEpoch = nextTargetSlot / r.beaconCfg.SlotsPerEpoch
-		}
-	}
-
-	r.log.Printlnf("%s Finished in %s.", r.logPrefix, time.Since(startTime))
 
 	return record, nil
-
 }
 
 // Save the rolling record to a file and update the record info catalog

@@ -98,7 +98,6 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	prevAddresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
 
 	// Get the last rewards event and starting epoch
-	startSlot := uint64(0)
 	found, event, err := rewards.GetRewardsEvent(rp, currentIndex-1, prevAddresses, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting event for rewards interval %d: %w", currentIndex-1, err)
@@ -108,9 +107,10 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	}
 
 	// Get the start slot of the current interval
-	previousEpoch := event.ConsensusBlock.Uint64() / beaconCfg.SlotsPerEpoch
-	newEpoch := previousEpoch + 1
-	startSlot = newEpoch * beaconCfg.SlotsPerEpoch
+	startSlot, err := getStartSlotForInterval(event, bc, beaconCfg)
+	if err != nil {
+		return nil, fmt.Errorf("error getting start slot for interval %d: %w", currentIndex, err)
+	}
 
 	// Create the task
 	lock := &sync.Mutex{}
@@ -152,6 +152,37 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	task.recordMgr = recordMgr
 	return task, nil
 
+}
+
+// Gets the start slot for the given interval
+func getStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beacon.Client, beaconConfig beacon.Eth2Config) (uint64, error) {
+	// Sanity check to confirm the BN can access the block from the previous interval
+	_, exists, err := bc.GetBeaconBlock(previousIntervalEvent.ConsensusBlock.String())
+	if err != nil {
+		return 0, fmt.Errorf("error verifying block from previous interval: %w", err)
+	}
+	if !exists {
+		return 0, fmt.Errorf("couldn't retrieve CL block from previous interval (slot %d); this likely means you checkpoint sync'd your Beacon Node and it has not backfilled to the previous interval yet so it cannot be used for tree generation", previousIntervalEvent.ConsensusBlock.Uint64())
+	}
+
+	previousEpoch := previousIntervalEvent.ConsensusBlock.Uint64() / beaconConfig.SlotsPerEpoch
+	nextEpoch := previousEpoch + 1
+	consensusStartBlock := nextEpoch * beaconConfig.SlotsPerEpoch
+
+	// Get the first block that isn't missing
+	for {
+		_, exists, err := bc.GetBeaconBlock(fmt.Sprint(consensusStartBlock))
+		if err != nil {
+			return 0, fmt.Errorf("error getting EL data for BC slot %d: %w", consensusStartBlock, err)
+		}
+		if !exists {
+			consensusStartBlock++
+		} else {
+			break
+		}
+	}
+
+	return consensusStartBlock, nil
 }
 
 // Update the rolling record and run the submission process if applicable

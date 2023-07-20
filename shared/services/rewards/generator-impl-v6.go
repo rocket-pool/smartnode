@@ -829,7 +829,6 @@ func (r *treeGeneratorImpl_v6) checkDutiesForSlot(attestations []beacon.Attestat
 
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
-
 		// Get the RP committees for this attestation's slot and index
 		slotInfo, exists := r.intervalDutiesInfo.Slots[attestation.SlotIndex]
 		if !exists {
