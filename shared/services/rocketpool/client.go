@@ -174,13 +174,7 @@ func NewClientFromCtxWithoutStatus(c *cli.Context) (*Client, error) {
 // Only use this function from commands that may work without the clients being synced-
 // most users should use NewReadyClientFromCtx instead
 func NewClientFromCtx(c *cli.Context) (*Client, bool, error) {
-	out, err := NewClient(c.GlobalString("config-path"),
-		c.GlobalString("daemon-path"),
-		c.GlobalFloat64("maxFee"),
-		c.GlobalFloat64("maxPrioFee"),
-		c.GlobalUint64("gasLimit"),
-		c.GlobalString("nonce"),
-		c.GlobalBool("debug"))
+	out, err := NewClientFromCtxWithoutStatus(c)
 	if err != nil {
 		return nil, false, err
 	}
