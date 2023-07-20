@@ -95,7 +95,7 @@ func recoverWallet(c *cli.Context) error {
 		fmt.Printf("Searching for the derivation path and index for wallet %s...\nNOTE: this may take several minutes depending on how large your wallet's index is.\n", address.Hex())
 
 		if !skipValidatorKeyRecovery {
-			if ready == false {
+			if !ready {
 				return fmt.Errorf("unable to recover validator keys without synced and ready clients")
 			}
 			fmt.Println("Recovering node wallet and validator keys...")
@@ -142,7 +142,7 @@ func recoverWallet(c *cli.Context) error {
 		fmt.Println()
 
 		if !skipValidatorKeyRecovery {
-			if ready == false {
+			if !ready {
 				return fmt.Errorf("unable to recover validator keys without synced and ready clients")
 			}
 			fmt.Println("Recovering node wallet and validator keys...")
