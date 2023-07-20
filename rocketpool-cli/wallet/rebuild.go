@@ -12,7 +12,10 @@ import (
 func rebuildWallet(c *cli.Context) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	if err != nil {
+		return err
+	}
 	defer rp.Close()
 
 	// Load the config
