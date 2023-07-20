@@ -21,7 +21,7 @@ const DefaultMaxNodeFeeSlippage = 0.01 // 1% below current network fee
 func nodeDeposit(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}

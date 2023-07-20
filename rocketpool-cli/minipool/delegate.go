@@ -17,7 +17,7 @@ import (
 func delegateUpgradeMinipools(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 func delegateRollbackMinipools(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func delegateRollbackMinipools(c *cli.Context) error {
 func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}

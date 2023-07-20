@@ -14,7 +14,7 @@ import (
 
 func nodeSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func nodeSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 func nodeClearVotingDelegate(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}

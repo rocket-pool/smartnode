@@ -13,7 +13,7 @@ import (
 func getMemberSettings(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func getMemberSettings(c *cli.Context) error {
 func getProposalSettings(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func getProposalSettings(c *cli.Context) error {
 func getMinipoolSettings(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}

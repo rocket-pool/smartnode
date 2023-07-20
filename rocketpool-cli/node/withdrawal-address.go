@@ -17,7 +17,7 @@ import (
 func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 func confirmWithdrawalAddress(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}

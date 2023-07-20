@@ -69,10 +69,7 @@ func installService(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Attempt to load the config to see if any settings need to be passed along to the install script
@@ -161,14 +158,11 @@ func installUpdateTracker(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Install service
-	err = rp.InstallUpdateTracker(c.Bool("verbose"), c.String("version"))
+	err := rp.InstallUpdateTracker(c.Bool("verbose"), c.String("version"))
 	if err != nil {
 		return err
 	}
@@ -189,14 +183,11 @@ func installUpdateTracker(c *cli.Context) error {
 func serviceStatus(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Print what network we're on
-	err = cliutils.PrintNetwork(rp)
+	err := cliutils.PrintNetwork(rp)
 	if err != nil {
 		return err
 	}
@@ -222,10 +213,7 @@ func configureService(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Load the config, checking to see if it's new (hasn't been installed before)
@@ -491,10 +479,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Update the Prometheus template with the assigned ports
@@ -997,10 +982,7 @@ func getContainerPrefix(rp *rocketpool.Client) (string, error) {
 func pruneExecutionClient(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Get the config
@@ -1136,10 +1118,7 @@ func pruneExecutionClient(c *cli.Context) error {
 func pauseService(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Get the config
@@ -1177,10 +1156,7 @@ func terminateService(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return fmt.Errorf("%w\n%sTHERE WAS AN ERROR TERMINATING THE SMARTNODE SERVICE. Your keys have most likely not been deleted. Proceed with caution.%s", err, colorRed, colorReset)
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Stop service
@@ -1192,10 +1168,7 @@ func terminateService(c *cli.Context) error {
 func serviceLogs(c *cli.Context, serviceNames ...string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Print service logs
@@ -1207,10 +1180,7 @@ func serviceLogs(c *cli.Context, serviceNames ...string) error {
 func serviceStats(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Print service stats
@@ -1222,10 +1192,7 @@ func serviceStats(c *cli.Context) error {
 func serviceCompose(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Print service compose config
@@ -1237,14 +1204,11 @@ func serviceCompose(c *cli.Context) error {
 func serviceVersion(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Print what network we're on
-	err = cliutils.PrintNetwork(rp)
+	err := cliutils.PrintNetwork(rp)
 	if err != nil {
 		return err
 	}
@@ -1359,10 +1323,7 @@ func getComposeFiles(c *cli.Context) []string {
 func resyncEth1(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Get the config
@@ -1443,10 +1404,7 @@ func resyncEth1(c *cli.Context) error {
 func resyncEth2(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Get the merged config
@@ -1579,10 +1537,7 @@ func getConfigYaml(c *cli.Context) error {
 func exportEcData(c *cli.Context, targetDir string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Get the config
@@ -1702,10 +1657,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 func importEcData(c *cli.Context, sourceDir string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtxWithoutStatus(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Get the config

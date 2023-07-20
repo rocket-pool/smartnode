@@ -15,7 +15,7 @@ import (
 func addAddressToStakeRplWhitelist(c *cli.Context, addressOrENS string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func addAddressToStakeRplWhitelist(c *cli.Context, addressOrENS string) error {
 func removeAddressFromStakeRplWhitelist(c *cli.Context, addressOrENS string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}

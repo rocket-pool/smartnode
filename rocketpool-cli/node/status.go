@@ -26,14 +26,11 @@ const (
 func getStatus(c *cli.Context) error {
 
 	// Get RP client
-	rp, _, err := rocketpool.NewClientFromCtx(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Print what network we're on
-	err = cliutils.PrintNetwork(rp)
+	err := cliutils.PrintNetwork(rp)
 	if err != nil {
 		return err
 	}
