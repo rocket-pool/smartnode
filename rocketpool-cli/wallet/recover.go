@@ -147,7 +147,7 @@ func recoverWallet(c *cli.Context) error {
 			}
 			fmt.Println("Recovering node wallet and validator keys...")
 		} else {
-			fmt.Println("Ignoring validator keys, searching for wallet only...")
+			fmt.Println("Recovering node wallet only (ignoring validator keys)...")
 		}
 
 		// Recover wallet
