@@ -13,14 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/klauspost/compress/zstd"
 	rprewards "github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -41,8 +39,6 @@ type RollingRecordManager struct {
 	errLog         *log.ColorLogger
 	logPrefix      string
 	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
-	nodeAddress    *common.Address
 	rp             *rocketpool.RocketPool
 	bc             beacon.Client
 	mgr            *state.NetworkStateManager
@@ -57,7 +53,7 @@ type RollingRecordManager struct {
 }
 
 // Creates a new manager for rolling records.
-func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, w *wallet.Wallet, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager, error) {
+func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager, error) {
 	// Get the Beacon genesis time
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 
@@ -88,15 +84,6 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 		return nil, fmt.Errorf("rolling records folder location exists (%s), but is not a folder", recordsPath)
 	}
 
-	var nodeAddress *common.Address
-	if w != nil {
-		nodeAccount, err := w.GetNodeAccount()
-		if err != nil {
-			return nil, fmt.Errorf("error getting node account: %w", err)
-		}
-		nodeAddress = &nodeAccount.Address
-	}
-
 	logPrefix := "[Rolling Record]"
 	log.Printlnf("%s Created Rolling Record manager for start slot %d.", logPrefix, startSlot)
 	return &RollingRecordManager{
@@ -109,8 +96,6 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 		rp:                   rp,
 		bc:                   bc,
 		mgr:                  mgr,
-		w:                    w,
-		nodeAddress:          nodeAddress,
 		startSlot:            startSlot,
 		beaconCfg:            beaconCfg,
 		genesisTime:          genesisTime,
