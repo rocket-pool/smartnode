@@ -81,7 +81,7 @@ func (m *NetworkStateManager) GetLatestBeaconBlock() (beacon.BeaconBlock, error)
 	if err != nil {
 		return beacon.BeaconBlock{}, fmt.Errorf("error getting head slot: %w", err)
 	}
-	return m.getLatestProposedBeaconBlock(targetSlot)
+	return m.GetLatestProposedBeaconBlock(targetSlot)
 }
 
 // Gets the latest valid finalized block
@@ -91,7 +91,7 @@ func (m *NetworkStateManager) GetLatestFinalizedBeaconBlock() (beacon.BeaconBloc
 		return beacon.BeaconBlock{}, fmt.Errorf("error getting Beacon chain head: %w", err)
 	}
 	targetSlot := head.FinalizedEpoch*m.BeaconConfig.SlotsPerEpoch + (m.BeaconConfig.SlotsPerEpoch - 1)
-	return m.getLatestProposedBeaconBlock(targetSlot)
+	return m.GetLatestProposedBeaconBlock(targetSlot)
 }
 
 // Gets the Beacon slot for the latest execution layer block
@@ -111,7 +111,7 @@ func (m *NetworkStateManager) GetHeadSlot() (uint64, error) {
 }
 
 // Gets the target Beacon block, or if it was missing, the first one under it that wasn't missing
-func (m *NetworkStateManager) getLatestProposedBeaconBlock(targetSlot uint64) (beacon.BeaconBlock, error) {
+func (m *NetworkStateManager) GetLatestProposedBeaconBlock(targetSlot uint64) (beacon.BeaconBlock, error) {
 	for {
 		// Try to get the current block
 		block, exists, err := m.bc.GetBeaconBlock(fmt.Sprint(targetSlot))

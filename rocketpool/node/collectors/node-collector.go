@@ -296,7 +296,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		for _, claimedInterval := range claimed {
 			_, exists := collector.handledIntervals[claimedInterval]
 			if !exists {
-				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, claimedInterval)
+				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, claimedInterval, nil)
 				if err != nil {
 					return err
 				}
@@ -311,7 +311,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 		// Get the unclaimed rewards
 		for _, unclaimedInterval := range unclaimed {
-			intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval)
+			intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval, nil)
 			if err != nil {
 				return err
 			}

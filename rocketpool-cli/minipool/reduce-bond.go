@@ -27,16 +27,6 @@ func beginReduceBondAmount(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Check for Atlas
-	atlasResponse, err := rp.IsAtlasDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-	if !atlasResponse.IsAtlasDeployed {
-		fmt.Println("You cannot reduce a minipool's bond until Atlas has been deployed.")
-		return nil
-	}
-
 	// Check the fee distributor
 	distribResponse, err := rp.IsFeeDistributorInitialized()
 	if err != nil {
@@ -236,11 +226,6 @@ func reduceBondAmount(c *cli.Context) error {
 	status, err := rp.MinipoolStatus()
 	if err != nil {
 		return err
-	}
-
-	if !status.IsAtlasDeployed {
-		fmt.Println("You cannot reduce a minipool's bond until Atlas has been deployed.")
-		return nil
 	}
 
 	// Get the bond reduction variables

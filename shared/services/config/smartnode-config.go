@@ -91,6 +91,18 @@ type SmartnodeConfig struct {
 	// Manual override for the watchtower's priority fee
 	WatchtowerPrioFeeOverride config.Parameter `yaml:"watchtowerPrioFeeOverride,omitempty"`
 
+	// The toggle for rolling records
+	UseRollingRecords config.Parameter `yaml:"useRollingRecords,omitempty"`
+
+	// The rolling record checkpoint interval
+	RecordCheckpointInterval config.Parameter `yaml:"recordCheckpointInterval,omitempty"`
+
+	// The checkpoint retention limit
+	CheckpointRetentionLimit config.Parameter `yaml:"checkpointRetentionLimit,omitempty"`
+
+	// The path of the records folder where snapshots of rolling record info is stored during a rewards interval
+	RecordsPath config.Parameter `yaml:"recordsPath,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -153,7 +165,7 @@ type SmartnodeConfig struct {
 	v1_1_0_MinipoolFactoryAddress map[config.Network]string `yaml:"-"`
 
 	// Addresses for RocketRewardsPool that have been upgraded during development
-	previousRewardsPoolAddresses map[config.Network]map[string][]common.Address `yaml:"-"`
+	previousRewardsPoolAddresses map[config.Network][]common.Address `yaml:"-"`
 
 	// The RocketOvmPriceMessenger Optimism address for each network
 	optimismPriceMessengerAddress map[config.Network]string `yaml:"-"`
@@ -166,9 +178,6 @@ type SmartnodeConfig struct {
 
 	// The RocketZkSyncPriceMessenger zkSyncEra address for each network
 	zkSyncEraPriceMessengerAddress map[config.Network]string `yaml:"-"`
-
-	// Rewards submission block maps
-	rewardsSubmissionBlockMaps map[config.Network][]uint64 `yaml:"-"`
 
 	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
 	rplTwapPoolAddress map[config.Network]string `yaml:"-"`
@@ -358,6 +367,54 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade:   true,
 		},
 
+		UseRollingRecords: config.Parameter{
+			ID:                   "useRollingRecords",
+			Name:                 "Use Rolling Records",
+			Description:          "[orange]**WARNING: EXPERIMENTAL**\n\n[white]Enable this to use the new rolling records feature, which stores attestation records for the entire Rocket Pool network in real time instead of collecting them all after a rewards period during tree generation.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		RecordCheckpointInterval: config.Parameter{
+			ID:                   "recordCheckpointInterval",
+			Name:                 "Record Checkpoint Interval",
+			Description:          "The number of epochs that should pass before saving a new rolling record checkpoint. Used if Rolling Records is enabled.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
+			Type:                 config.ParameterType_Uint,
+			Default:              map[config.Network]interface{}{config.Network_All: uint64(45)},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		CheckpointRetentionLimit: config.Parameter{
+			ID:                   "checkpointRetentionLimit",
+			Name:                 "Checkpoint Retention Limit",
+			Description:          "The number of checkpoint files to save on-disk before pruning old ones. Used if Rolling Records is enabled.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
+			Type:                 config.ParameterType_Uint,
+			Default:              map[config.Network]interface{}{config.Network_All: uint64(200)},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		RecordsPath: config.Parameter{
+			ID:                   "recordsPath",
+			Name:                 "Records Path",
+			Description:          "The path of the folder to store rolling record checkpoints in during a rewards interval. Used if Rolling Records is enabled.\n\nOnly useful if you're an Oracle DAO member, or if you generate your own rewards trees.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: getDefaultRecordsDir(cfg)},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
 			config.Network_Prater:  "https://goerli.etherscan.io/tx",
@@ -472,19 +529,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Devnet:  "",
 		},
 
-		previousRewardsPoolAddresses: map[config.Network]map[string][]common.Address{
+		previousRewardsPoolAddresses: map[config.Network][]common.Address{
 			config.Network_Mainnet: {
-				"v1.1.0": []common.Address{
-					common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
-				},
+				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 			},
 			config.Network_Prater: {
-				"v1.1.0-rc1": []common.Address{
-					common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
-				},
-				"v1.2.0-rc1": []common.Address{
-					common.HexToAddress("0x6e91E3416acf3d015358eeAAF247a0674F6c306f"),
-				},
+				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
+				common.HexToAddress("0x6e91E3416acf3d015358eeAAF247a0674F6c306f"),
 			},
 			config.Network_Devnet: {},
 		},
@@ -536,39 +587,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Prater:  "https://rpc-goerli.flashbots.net/",
 			config.Network_Devnet:  "https://rpc-goerli.flashbots.net/",
 		},
-
-		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
-			config.Network_Mainnet: {
-				15451165, 15637542, 15839520, 16038366, 16238906, 16439406, // 5
-				16639856, 16841781, 17037278, 17235705,
-			},
-			config.Network_Prater: {
-				7287326, 7297026, 7314231, 7331462, 7387271, 7412366, // 5
-				7420574, 7436546, 7456423, 7473017, 7489726, 7506706, // 11
-				7525902, 7544630, 7562851, 7581623, 7600343, 7618815, // 17
-				7636720, 7654452, 7672147, 7689735, 7707617, 7725232, // 23
-				7742548, 7760702, 7777078, 7794263, 7811800, 7829115, // 29
-				7846870, 7863708, 7881537, 7900095, 7918951, 7937222, // 35
-				7955161, 7972837, 7990504, 8008474, 8027271, 8045546, // 41
-				8063957, 8082659, 8101400, 8119473, 8136892, 8154565, // 47
-				8172349, 8189717, 8207105, 8224279, 8241674, 8258210, // 53
-				8274526, 8290763, 8307407, 8324452, 8341708, 8359470, // 59
-				8377175, 8394786, 8412599, 8430221, 8447800, 8465317, // 65
-				8482337, 8499227, 8516593, 8533890, 8551379, 8569494, // 71
-				8587146, 8604666, 8621961, 8639563, 8656830, 8673617, // 77
-				8690655, 8707453, 8724467, 8742735, 8758413, 8775532, // 83
-				8792725, 8809501, 8826322, 8842598, 8858627, 8875551, // 89
-				8892377, 8909356, 8926422, 8943768, 8971641, 8978844, // 95
-				8996000, 9013387,
-			},
-			config.Network_Devnet: {
-				7955303, 7972424, 8009064, 8026821, 8045113, 8063501, // 5
-				8082186, 8100941, 8119074, 8136452, 8154152, 8171923, // 11
-				8189312, 8206689, 8223857, 8241269, 8257834, 8274178, // 17
-				8290333, 8307005, 8324055, 8341308, 8359051, 8376744, // 23
-				8394338, 8412142,
-			},
-		},
 	}
 
 }
@@ -588,6 +606,10 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.Web3StorageApiToken,
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPrioFeeOverride,
+		&cfg.UseRollingRecords,
+		&cfg.RecordCheckpointInterval,
+		&cfg.CheckpointRetentionLimit,
+		&cfg.RecordsPath,
 	}
 }
 
@@ -627,6 +649,14 @@ func (cfg *SmartnodeConfig) GetValidatorKeychainPath() string {
 	}
 
 	return filepath.Join(DaemonDataPath, "validators")
+}
+
+func (cfg *SmartnodeConfig) GetRecordsPath() string {
+	if cfg.parent.IsNativeMode {
+		return filepath.Join(cfg.DataPath.Value.(string), "records")
+	}
+
+	return filepath.Join(DaemonDataPath, "records")
 }
 
 func (cfg *SmartnodeConfig) GetWalletPathInCLI() string {
@@ -726,6 +756,10 @@ func getDefaultDataDir(config *RocketPoolConfig) string {
 	return filepath.Join(config.RocketPoolDirectory, "data")
 }
 
+func getDefaultRecordsDir(config *RocketPoolConfig) string {
+	return filepath.Join(getDefaultDataDir(config), "records")
+}
+
 func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) string {
 	if daemon && !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
@@ -802,7 +836,7 @@ func (cfg *SmartnodeConfig) GetV110MinipoolFactoryAddress() common.Address {
 	return common.HexToAddress(cfg.v1_1_0_MinipoolFactoryAddress[cfg.Network.Value.(config.Network)])
 }
 
-func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() map[string][]common.Address {
+func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() []common.Address {
 	return cfg.previousRewardsPoolAddresses[cfg.Network.Value.(config.Network)]
 }
 
@@ -836,10 +870,6 @@ func (cfg *SmartnodeConfig) GetBalanceBatcherAddress() string {
 
 func (cfg *SmartnodeConfig) GetFlashbotsProtectUrl() string {
 	return cfg.flashbotsProtectUrl[cfg.Network.Value.(config.Network)]
-}
-
-func (cfg *SmartnodeConfig) GetRewardsSubmissionBlockMaps() []uint64 {
-	return cfg.rewardsSubmissionBlockMaps[cfg.Network.Value.(config.Network)]
 }
 
 func getNetworkOptions() []config.ParameterOption {

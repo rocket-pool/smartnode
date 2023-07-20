@@ -37,12 +37,6 @@ func distributeBalance(c *cli.Context) error {
 		return err
 	}
 
-	// Exit if Atlas hasn't been deployed
-	if !details.IsAtlasDeployed {
-		fmt.Println("Minipool balances cannot be distributed until the Atlas upgrade has been activated.")
-		return nil
-	}
-
 	// Sort minipools by status
 	eligibleMinipools := []api.MinipoolBalanceDistributionDetails{}
 	versionTooLowMinipools := []api.MinipoolBalanceDistributionDetails{}

@@ -147,7 +147,6 @@ func run(c *cli.Context) error {
 	lastTotalEffectiveStakeTime := time.Unix(0, 0)
 
 	// Run task loop
-	isAtlasDeployedMasterFlag := false
 	go func() {
 		for {
 			// Check the EC status
@@ -179,12 +178,6 @@ func run(c *cli.Context) error {
 				continue
 			}
 			stateLocker.UpdateState(state, totalEffectiveStake)
-
-			// Check for Atlas
-			if !isAtlasDeployedMasterFlag && state.IsAtlasDeployed {
-				printAtlasMessage(&updateLog)
-				isAtlasDeployedMasterFlag = true
-			}
 
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.run(state); err != nil {
@@ -317,29 +310,6 @@ func removeLegacyFeeRecipientFiles(c *cli.Context) error {
 
 	return nil
 
-}
-
-// Check if Atlas has been deployed yet
-func printAtlasMessage(log *log.ColorLogger) {
-	log.Println(`
-*       .
-*      / \
-*     |.'.|
-*     |'.'|
-*   ,'|   |'.
-*  |,-'-|-'-.|
-*   __|_| |         _        _      _____           _
-*  | ___ \|        | |      | |    | ___ \         | |
-*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
-*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
-*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
-*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
-* +---------------------------------------------------+
-* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
-* +---------------------------------------------------+
-*
-* ================ Atlas has launched! ================
-`)
 }
 
 // Update the latest network state at each cycle

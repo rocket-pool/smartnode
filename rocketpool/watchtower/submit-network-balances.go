@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/rocketpool/watchtower/legacy"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -30,19 +31,22 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
+const (
+	networkBalanceSubmissionKey string = "network.balances.submitted.node"
+)
+
 // Submit network balances task
 type submitNetworkBalances struct {
-	c          *cli.Context
-	log        log.ColorLogger
-	errLog     log.ColorLogger
-	cfg        *config.RocketPoolConfig
-	w          *wallet.Wallet
-	ec         rocketpool.ExecutionClient
-	rp         *rocketpool.RocketPool
-	bc         beacon.Client
-	lock       *sync.Mutex
-	isRunning  bool
-	legacyImpl *legacy.SubmitNetworkBalances
+	c         *cli.Context
+	log       *log.ColorLogger
+	errLog    *log.ColorLogger
+	cfg       *config.RocketPoolConfig
+	w         *wallet.Wallet
+	ec        rocketpool.ExecutionClient
+	rp        *rocketpool.RocketPool
+	bc        beacon.Client
+	lock      *sync.Mutex
+	isRunning bool
 }
 
 // Network balance info
@@ -87,32 +91,25 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogge
 		return nil, err
 	}
 
-	// Legacy implementation for prior to the changeover
-	legacyImpl, err := legacy.NewSubmitNetworkBalances(c, logger, getWatchtowerMaxFee(cfg), getWatchtowerPrioFee(cfg))
-	if err != nil {
-		return nil, fmt.Errorf("error creating legacy balance reporting implementation: %w", err)
-	}
-
 	// Return task
 	lock := &sync.Mutex{}
 	return &submitNetworkBalances{
-		c:          c,
-		log:        logger,
-		errLog:     errorLogger,
-		cfg:        cfg,
-		w:          w,
-		ec:         ec,
-		rp:         rp,
-		bc:         bc,
-		lock:       lock,
-		isRunning:  false,
-		legacyImpl: legacyImpl,
+		c:         c,
+		log:       &logger,
+		errLog:    &errorLogger,
+		cfg:       cfg,
+		w:         w,
+		ec:        ec,
+		rp:        rp,
+		bc:        bc,
+		lock:      lock,
+		isRunning: false,
 	}, nil
 
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -190,7 +187,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState, isAtlasDeployed b
 		t.log.Printlnf("Calculating network balances for block %d...", blockNumber)
 
 		// Get network balances at block
-		balances, err := t.getNetworkBalances(header, blockNumberBig, slotNumber, blockTime, isAtlasDeployed)
+		balances, err := t.getNetworkBalances(header, blockNumberBig, slotNumber, blockTime)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -263,7 +260,7 @@ func (t *submitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Add
 
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), blockNumberBuf))
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf))
 
 }
 
@@ -291,7 +288,7 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 	rethSupplyBuf := make([]byte, 32)
 	balances.RETHSupply.FillBytes(rethSupplyBuf)
 
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), blockNumberBuf, totalEthBuf, stakingBuf, rethSupplyBuf))
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf, totalEthBuf, stakingBuf, rethSupplyBuf))
 
 }
 
@@ -301,7 +298,7 @@ func (t *submitNetworkBalances) printMessage(message string) {
 }
 
 // Get the network balances at a specific block
-func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time, isAtlasDeployed bool) (networkBalances, error) {
+func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time) (networkBalances, error) {
 
 	// Get a client with the block number available
 	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, elBlock)
@@ -310,7 +307,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	}
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(client, t.cfg, client.Client, t.bc, &t.log)
+	mgr, err := state.NewNetworkStateManager(client, t.cfg, client.Client, t.bc, t.log)
 	if err != nil {
 		return networkBalances{}, fmt.Errorf("error creating network state manager for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
 	}
@@ -331,11 +328,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	rethTotalSupply := state.NetworkDetails.TotalRETHSupply
 
 	// Get deposit pool balance
-	if isAtlasDeployed {
-		depositPoolBalance = state.NetworkDetails.DepositPoolUserBalance
-	} else {
-		depositPoolBalance = state.NetworkDetails.DepositPoolBalance
-	}
+	depositPoolBalance = state.NetworkDetails.DepositPoolUserBalance
 
 	// Get minipool balance details
 	wg.Go(func() error {
@@ -371,7 +364,8 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		endTime := slotTime
 
 		// Approximate the staker's share of the smoothing pool balance
-		treegen, err := rprewards.NewTreeGenerator(t.log, "[Balances]", client, t.cfg, t.bc, currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed), state)
+		// NOTE: this will use the "vanilla" variant of treegen, without rolling records, to retain parity with other Oracle DAO nodes that aren't using rolling records
+		treegen, err := rprewards.NewTreeGenerator(t.log, "[Balances]", client, t.cfg, t.bc, currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed), state, nil)
 		if err != nil {
 			return fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
 		}
@@ -411,10 +405,8 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	}
 
 	// Add node credits
-	if state.IsAtlasDeployed {
-		for _, node := range state.NodeDetails {
-			balances.NodeCreditBalance.Add(balances.NodeCreditBalance, node.DepositCreditBalance)
-		}
+	for _, node := range state.NodeDetails {
+		balances.NodeCreditBalance.Add(balances.NodeCreditBalance, node.DepositCreditBalance)
 	}
 
 	// Add distributor shares
@@ -521,18 +513,27 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	// Get the gas limit
 	gasInfo, err := network.EstimateSubmitBalancesGas(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to submit network balances: %w", err)
+		if enableSubmissionAfterConsensus_Balances && strings.Contains(err.Error(), "Network balances for an equal or higher block are set") {
+			// Set a 21k gas limit which will intentionally be too low and revert
+			gasInfo = rocketpool.GasInfo{
+				EstGasLimit:  21000,
+				SafeGasLimit: 21000,
+			}
+			t.log.Println("Network balance consensus has already been reached but submitting anyway for the health check.")
+		} else {
+			return fmt.Errorf("Could not estimate the gas required to submit network balances: %w", err)
+		}
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
+	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
+	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Submit balances

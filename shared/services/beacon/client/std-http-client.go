@@ -3,15 +3,16 @@ package client
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 	"github.com/prysmaticlabs/prysm/v3/crypto/bls"
 	"github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -214,7 +215,7 @@ func (c *StandardHttpClient) getValidatorStatus(pubkeyOrIndex string, opts *beac
 	// Return response
 	return beacon.ValidatorStatus{
 		Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
-		Index:                      uint64(validator.Index),
+		Index:                      validator.Index,
 		WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
 		Balance:                    uint64(validator.Balance),
 		EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
@@ -275,7 +276,7 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 		// Add status
 		statuses[pubkey] = beacon.ValidatorStatus{
 			Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
-			Index:                      uint64(validator.Index),
+			Index:                      validator.Index,
 			WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
 			Balance:                    uint64(validator.Balance),
 			EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
@@ -299,17 +300,10 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 }
 
 // Get whether validators have sync duties to perform at given epoch
-func (c *StandardHttpClient) GetValidatorSyncDuties(indices []uint64, epoch uint64) (map[uint64]bool, error) {
-
-	// Convert incoming uint64 validator indices into an array of string for the request
-	indicesStrings := make([]string, len(indices))
-
-	for i, index := range indices {
-		indicesStrings[i] = strconv.FormatUint(index, 10)
-	}
+func (c *StandardHttpClient) GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error) {
 
 	// Perform the post request
-	responseBody, status, err := c.postRequest(fmt.Sprintf(RequestValidatorSyncDuties, strconv.FormatUint(epoch, 10)), indicesStrings)
+	responseBody, status, err := c.postRequest(fmt.Sprintf(RequestValidatorSyncDuties, strconv.FormatUint(epoch, 10)), indices)
 
 	if err != nil {
 		return nil, fmt.Errorf("Could not get validator sync duties: %w", err)
@@ -324,12 +318,12 @@ func (c *StandardHttpClient) GetValidatorSyncDuties(indices []uint64, epoch uint
 	}
 
 	// Map the results
-	validatorMap := make(map[uint64]bool)
+	validatorMap := make(map[string]bool)
 
 	for _, index := range indices {
 		validatorMap[index] = false
 		for _, duty := range response.Data {
-			if uint64(duty.ValidatorIndex) == index {
+			if duty.ValidatorIndex == index {
 				validatorMap[index] = true
 				break
 			}
@@ -340,7 +334,7 @@ func (c *StandardHttpClient) GetValidatorSyncDuties(indices []uint64, epoch uint
 }
 
 // Sums proposer duties per validators for a given epoch
-func (c *StandardHttpClient) GetValidatorProposerDuties(indices []uint64, epoch uint64) (map[uint64]uint64, error) {
+func (c *StandardHttpClient) GetValidatorProposerDuties(indices []string, epoch uint64) (map[string]uint64, error) {
 
 	// Perform the post request
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorProposerDuties, strconv.FormatUint(epoch, 10)))
@@ -358,12 +352,12 @@ func (c *StandardHttpClient) GetValidatorProposerDuties(indices []uint64, epoch 
 	}
 
 	// Map the results
-	proposerMap := make(map[uint64]uint64)
+	proposerMap := make(map[string]uint64)
 
 	for _, index := range indices {
 		proposerMap[index] = 0
 		for _, duty := range response.Data {
-			if uint64(duty.ValidatorIndex) == index {
+			if duty.ValidatorIndex == index {
 				proposerMap[index]++
 				break
 			}
@@ -374,21 +368,21 @@ func (c *StandardHttpClient) GetValidatorProposerDuties(indices []uint64, epoch 
 }
 
 // Get a validator's index
-func (c *StandardHttpClient) GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error) {
+func (c *StandardHttpClient) GetValidatorIndex(pubkey types.ValidatorPubkey) (string, error) {
 
 	// Get validator
 	pubkeyString := hexutil.AddPrefix(pubkey.Hex())
 	validators, err := c.getValidatorsByOpts([]string{pubkeyString}, nil)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	if len(validators.Data) == 0 {
-		return 0, fmt.Errorf("Validator %s index not found.", pubkeyString)
+		return "", fmt.Errorf("Validator %s index not found.", pubkeyString)
 	}
 	validator := validators.Data[0]
 
 	// Return validator index
-	return uint64(validator.Index), nil
+	return validator.Index, nil
 
 }
 
@@ -437,11 +431,11 @@ func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64, useG
 }
 
 // Perform a voluntary exit on a validator
-func (c *StandardHttpClient) ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error {
+func (c *StandardHttpClient) ExitValidator(validatorIndex string, epoch uint64, signature types.ValidatorSignature) error {
 	return c.postVoluntaryExit(VoluntaryExitRequest{
 		Message: VoluntaryExitMessage{
 			Epoch:          uinteger(epoch),
-			ValidatorIndex: uinteger(validatorIndex),
+			ValidatorIndex: validatorIndex,
 		},
 		Signature: signature.Bytes(),
 	})
@@ -503,7 +497,7 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 
 	beaconBlock := beacon.BeaconBlock{
 		Slot:          uint64(block.Data.Message.Slot),
-		ProposerIndex: uint64(block.Data.Message.ProposerIndex),
+		ProposerIndex: block.Data.Message.ProposerIndex,
 	}
 
 	// Execution payload only exists after the merge, so check for its existence
@@ -533,33 +527,20 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 }
 
 // Get the attestation committees for the given epoch, or the current epoch if nil
-func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Committee, error) {
+func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error) {
 	response, err := c.getCommittees("head", epoch)
 	if err != nil {
 		return nil, err
 	}
 
-	committees := []beacon.Committee{}
-	for _, committee := range response.Data {
-		validators := []uint64{}
-		for _, validator := range committee.Validators {
-			validators = append(validators, uint64(validator))
-		}
-		committees = append(committees, beacon.Committee{
-			Index:      uint64(committee.Index),
-			Slot:       uint64(committee.Slot),
-			Validators: validators,
-		})
-	}
-
-	return committees, nil
+	return &response, nil
 }
 
 // Perform a withdrawal credentials change on a validator
-func (c *StandardHttpClient) ChangeWithdrawalCredentials(validatorIndex uint64, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
+func (c *StandardHttpClient) ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
 	return c.postWithdrawalCredentialsChange(BLSToExecutionChangeRequest{
 		Message: BLSToExecutionChangeMessage{
-			ValidatorIndex:     uinteger(validatorIndex),
+			ValidatorIndex:     validatorIndex,
 			FromBLSPubkey:      fromBlsPubkey[:],
 			ToExecutionAddress: toExecutionAddress[:],
 		},
@@ -800,23 +781,73 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 	return beaconBlock, true, nil
 }
 
+type committeesDecoder struct {
+	decoder       *json.Decoder
+	currentReader *io.ReadCloser
+}
+
+// Read will be called by the json decoder to request more bytes of data from
+// the beacon node's committees response. Since the decoder is reused, we
+// need to avoid sending it io.EOF, or it will enter an unusable state and can
+// not be reused later.
+//
+// On subsequent calls to Decode, the decoder resets its internal buffer, which
+// means any data it reads between the last json token and EOF is correctly
+// discarded.
+func (c *committeesDecoder) Read(p []byte) (int, error) {
+	n, err := (*c.currentReader).Read(p)
+	if err == io.EOF {
+		return n, nil
+	}
+
+	return n, err
+}
+
+var committeesDecoderPool sync.Pool = sync.Pool{
+	New: func() any {
+		var out committeesDecoder
+
+		out.decoder = json.NewDecoder(&out)
+		return &out
+	},
+}
+
 // Get the committees for the epoch
 func (c *StandardHttpClient) getCommittees(stateId string, epoch *uint64) (CommitteesResponse, error) {
+	var committees CommitteesResponse
+
 	query := ""
 	if epoch != nil {
 		query = fmt.Sprintf("?epoch=%d", *epoch)
 	}
-	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestCommitteePath, stateId) + query)
+
+	// Committees responses are large, so let the json decoder read it in a buffered fashion
+	reader, status, err := c.getRequestReader(fmt.Sprintf(RequestCommitteePath, stateId) + query)
 	if err != nil {
 		return CommitteesResponse{}, fmt.Errorf("Could not get committees: %w", err)
 	}
+	defer func() {
+		_ = reader.Close()
+	}()
+
 	if status != http.StatusOK {
-		return CommitteesResponse{}, fmt.Errorf("Could not get committees: HTTP status %d; response body: '%s'", status, string(responseBody))
+		body, _ := io.ReadAll(reader)
+		return CommitteesResponse{}, fmt.Errorf("Could not get committees: HTTP status %d; response body: '%s'", status, string(body))
 	}
-	var committees CommitteesResponse
-	if err := json.Unmarshal(responseBody, &committees); err != nil {
+
+	d := committeesDecoderPool.Get().(*committeesDecoder)
+	defer func() {
+		d.currentReader = nil
+		committeesDecoderPool.Put(d)
+	}()
+
+	d.currentReader = &reader
+
+	// Begin decoding
+	if err := d.decoder.Decode(&committees); err != nil {
 		return CommitteesResponse{}, fmt.Errorf("Could not decode committees: %w", err)
 	}
+
 	return committees, nil
 }
 
@@ -833,27 +864,38 @@ func (c *StandardHttpClient) postWithdrawalCredentialsChange(request BLSToExecut
 	return nil
 }
 
-// Make a GET request to the beacon node
-func (c *StandardHttpClient) getRequest(requestPath string) ([]byte, int, error) {
+// Make a GET request but do not read its body yet (allows buffered decoding)
+func (c *StandardHttpClient) getRequestReader(requestPath string) (io.ReadCloser, int, error) {
 
 	// Send request
 	response, err := http.Get(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath))
 	if err != nil {
+		return nil, 0, err
+	}
+
+	return response.Body, response.StatusCode, nil
+}
+
+// Make a GET request to the beacon node and read the body of the response
+func (c *StandardHttpClient) getRequest(requestPath string) ([]byte, int, error) {
+
+	// Send request
+	reader, status, err := c.getRequestReader(requestPath)
+	if err != nil {
 		return []byte{}, 0, err
 	}
 	defer func() {
-		_ = response.Body.Close()
+		_ = reader.Close()
 	}()
 
 	// Get response
-	body, err := io.ReadAll(response.Body)
+	body, err := io.ReadAll(reader)
 	if err != nil {
 		return []byte{}, 0, err
 	}
 
 	// Return
-	return body, response.StatusCode, nil
-
+	return body, status, nil
 }
 
 // Make a POST request to the beacon node

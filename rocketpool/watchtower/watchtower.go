@@ -87,6 +87,12 @@ func run(c *cli.Context) error {
 		return err
 	}
 
+	// Check if rolling records are enabled
+	useRollingRecords := cfg.Smartnode.UseRollingRecords.Value.(bool)
+	if useRollingRecords {
+		fmt.Println("***NOTE: EXPERIMENTAL ROLLING RECORDS ARE ENABLED, BE ADVISED!***")
+	}
+
 	// Initialize the metrics reporters
 	scrubCollector := collectors.NewScrubCollector()
 	bondReductionCollector := collectors.NewBondReductionCollector()
@@ -129,9 +135,18 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during scrub check: %w", err)
 	}
-	submitRewardsTree, err := newSubmitRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
-	if err != nil {
-		return fmt.Errorf("error during rewards tree check: %w", err)
+	var submitRewardsTree_Stateless *submitRewardsTree_Stateless
+	var submitRewardsTree_Rolling *submitRewardsTree_Rolling
+	if !useRollingRecords {
+		submitRewardsTree_Stateless, err = newSubmitRewardsTree_Stateless(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+		if err != nil {
+			return fmt.Errorf("error during stateless rewards tree check: %w", err)
+		}
+	} else {
+		submitRewardsTree_Rolling, err = newSubmitRewardsTree_Rolling(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+		if err != nil {
+			return fmt.Errorf("error during rolling rewards tree check: %w", err)
+		}
 	}
 	/*processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor), errorLog)
 	if err != nil {
@@ -158,7 +173,6 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
-	isAtlasDeployedMasterFlag := false
 	go func() {
 		for {
 			// Randomize the next interval
@@ -205,6 +219,12 @@ func run(c *cli.Context) error {
 			time.Sleep(taskCooldown)
 
 			if isOnOdao {
+				// Run the challenge check
+				if err := respondChallenges.run(); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
 				// Update the network state
 				state, err := updateNetworkState(m, &updateLog, latestBlock)
 				if err != nil {
@@ -213,56 +233,52 @@ func run(c *cli.Context) error {
 					continue
 				}
 
-				// Check for Atlas
-				if !isAtlasDeployedMasterFlag && state.IsAtlasDeployed {
-					printAtlasMessage(&updateLog)
-					isAtlasDeployedMasterFlag = true
-				}
-
-				// Run the rewards tree submission check
-				if err := submitRewardsTree.run(isOnOdao, state, latestBlock.Slot, isAtlasDeployedMasterFlag); err != nil {
+				// Run the network balance submission check
+				if err := submitNetworkBalances.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
-				// Run the challenge check
-				if err := respondChallenges.run(isAtlasDeployedMasterFlag); err != nil {
-					errorLog.Println(err)
+				if !useRollingRecords {
+					// Run the rewards tree submission check
+					if err := submitRewardsTree_Stateless.Run(isOnOdao, state, latestBlock.Slot); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+				} else {
+					// Run the network balance and rewards tree submission check
+					if err := submitRewardsTree_Rolling.run(state); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 				}
-				time.Sleep(taskCooldown)
 
 				// Run the price submission check
-				if err := submitRplPrice.run(state, isAtlasDeployedMasterFlag); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
-
-				// Run the network balance submission check
-				if err := submitNetworkBalances.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := submitRplPrice.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the minipool dissolve check
-				if err := dissolveTimedOutMinipools.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := dissolveTimedOutMinipools.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the minipool scrub check
-				if err := submitScrubMinipools.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := submitScrubMinipools.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the bond cancel check
-				if err := cancelBondReductions.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := cancelBondReductions.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the solo migration check
-				if err := checkSoloMigrations.run(state, isAtlasDeployedMasterFlag); err != nil {
+				if err := checkSoloMigrations.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				/*time.Sleep(taskCooldown)
@@ -273,19 +289,18 @@ func run(c *cli.Context) error {
 				}*/
 				// DISABLED until MEV-Boost can support it
 			} else {
-				// Check for Atlas
-				isAtlasDeployed, err := state.IsAtlasDeployed(rp, &bind.CallOpts{
-					BlockNumber: big.NewInt(0).SetUint64(latestBlock.ExecutionBlockNumber),
-				})
-				if err != nil {
-					errorLog.Println(fmt.Errorf("error checking if Atlas is deployed: %w", err))
-					time.Sleep(taskCooldown)
-					continue
-				}
-
-				// Run the rewards tree submission check
-				if err := submitRewardsTree.run(isOnOdao, nil, latestBlock.Slot, isAtlasDeployed); err != nil {
-					errorLog.Println(err)
+				/*
+				 */
+				if !useRollingRecords {
+					// Run the rewards tree submission check
+					if err := submitRewardsTree_Stateless.Run(isOnOdao, nil, latestBlock.Slot); err != nil {
+						errorLog.Println(err)
+					}
+				} else {
+					// Run the network balance and rewards tree submission check
+					if err := submitRewardsTree_Rolling.run(nil); err != nil {
+						errorLog.Println(err)
+					}
 				}
 			}
 
@@ -316,29 +331,6 @@ func configureHTTP() {
 	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
 
-}
-
-// Check if Atlas has been deployed yet
-func printAtlasMessage(log *log.ColorLogger) {
-	log.Println(`
-*       .
-*      / \
-*     |.'.|
-*     |'.'|
-*   ,'|   |'.
-*  |,-'-|-'-.|
-*   __|_| |         _        _      _____           _
-*  | ___ \|        | |      | |    | ___ \         | |
-*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
-*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
-*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
-*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
-* +---------------------------------------------------+
-* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
-* +---------------------------------------------------+
-*
-* ================ Atlas has launched! ================
-`)
 }
 
 // Update the latest network state at each cycle

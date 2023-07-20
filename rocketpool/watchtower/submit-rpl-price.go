@@ -16,17 +16,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
-	v110_network "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/network"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
@@ -181,10 +179,8 @@ const (
 
 // Settings
 const (
-	SubmissionKey                      string  = "network.prices.submitted.node.key"
-	BlocksPerTurn                      uint64  = 75  // Approx. 15 minutes
-	RplPriceDecreaseDeviationThreshold float64 = 0.5 // Error out if price drops >50%
-	RplPriceIncreaseDeviationThreshold float64 = 1.6 // Error out if price rises >60%
+	SubmissionKey string = "network.prices.submitted.node.key"
+	BlocksPerTurn uint64 = 75 // Approx. 15 minutes
 
 	twapNumberOfSeconds uint32 = 60 * 60 * 12 // 12 hours
 )
@@ -203,7 +199,6 @@ type submitRplPrice struct {
 	ec        rocketpool.ExecutionClient
 	w         *wallet.Wallet
 	rp        *rocketpool.RocketPool
-	oio       *contracts.OneInchOracle
 	bc        beacon.Client
 	lock      *sync.Mutex
 	isRunning bool
@@ -229,10 +224,6 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.C
 	if err != nil {
 		return nil, err
 	}
-	oio, err := services.GetOneInchOracle(c)
-	if err != nil {
-		return nil, err
-	}
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
@@ -248,7 +239,6 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.C
 		ec:     ec,
 		w:      w,
 		rp:     rp,
-		oio:    oio,
 		bc:     bc,
 		lock:   lock,
 	}, nil
@@ -256,7 +246,7 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.C
 }
 
 // Submit RPL price
-func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (t *submitRplPrice) run(state *state.NetworkState) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -365,29 +355,11 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 			return
 		}
 
-		// Calculate the total effective RPL stake on the network
-		zero := new(big.Int).SetUint64(0)
-		var effectiveRplStake *big.Int
-		if !isAtlasDeployed {
-			nodeStakingAddress := t.cfg.Smartnode.GetV110NodeStakingAddress()
-			effectiveRplStake, err = v110_node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil, &nodeStakingAddress)
-			if err != nil {
-				t.handleError(fmt.Errorf("%s error getting total effective RPL stake: %w", logPrefix, err))
-				return
-			}
-		} else {
-			_, effectiveRplStake, err = state.CalculateTrueEffectiveStakes(false)
-			if err != nil {
-				t.handleError(fmt.Errorf("%s error getting total effective RPL stake: %w", logPrefix, err))
-				return
-			}
-		}
-
 		// Log
 		t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
 
 		// Check if we have reported these specific values before
-		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice, effectiveRplStake, isAtlasDeployed)
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -413,7 +385,7 @@ func (t *submitRplPrice) run(state *state.NetworkState, isAtlasDeployed bool) er
 		t.log.Println("Submitting RPL price...")
 
 		// Submit RPL price
-		if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake, isAtlasDeployed); err != nil {
+		if err := t.submitRplPrice(blockNumber, rplPrice); err != nil {
 			t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
 			return
 		}
@@ -448,101 +420,14 @@ func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blo
 }
 
 // Check whether specific prices for a block has already been submitted by the node
-func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice, effectiveRplStake *big.Int, isAtlasDeployed bool) (bool, error) {
-	if isAtlasDeployed {
-		blockNumberBuf := make([]byte, 32)
-		big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice *big.Int) (bool, error) {
+	blockNumberBuf := make([]byte, 32)
+	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
 
-		rplPriceBuf := make([]byte, 32)
-		rplPrice.FillBytes(rplPriceBuf)
+	rplPriceBuf := make([]byte, 32)
+	rplPrice.FillBytes(rplPriceBuf)
 
-		return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf))
-	} else {
-		blockNumberBuf := make([]byte, 32)
-		big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-
-		rplPriceBuf := make([]byte, 32)
-		rplPrice.FillBytes(rplPriceBuf)
-
-		effectiveRplStakeBuf := make([]byte, 32)
-		effectiveRplStake.FillBytes(effectiveRplStakeBuf)
-
-		return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf, effectiveRplStakeBuf))
-	}
-}
-
-// Get RPL price at block
-func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
-
-	// Require 1inch oracle contract
-	if err := services.RequireOneInchOracle(t.c); err != nil {
-		return nil, err
-	}
-
-	// Get RPL token address
-	rplAddress := common.HexToAddress(t.cfg.Smartnode.GetRplTokenAddress())
-
-	// Initialize call options
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(int64(blockNumber)),
-	}
-
-	// Get a client with the block number available
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate an OIO wrapper using the client
-	oio, err := contracts.NewOneInchOracle(common.HexToAddress(t.cfg.Smartnode.GetOneInchOracleAddress()), client.Client)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get RPL price
-	rplPrice, err := oio.GetRateToEth(opts, rplAddress, true)
-	if err != nil {
-		return nil, fmt.Errorf("could not get RPL price at block %d: %w", blockNumber, err)
-	}
-
-	// Get the previously reported price
-	previousPrice, err := network.GetRPLPrice(t.rp, opts)
-	if err != nil {
-		return nil, fmt.Errorf("could not get previous RPL price at block %d: %w", blockNumber, err)
-	}
-
-	// See if the new price is lower than the decrease threshold
-	one := eth.EthToWei(1)
-	decreaseThresholdBig := eth.EthToWei(RplPriceDecreaseDeviationThreshold)
-	oldDecreaseThreshold := big.NewInt(0)
-	oldDecreaseThreshold.Mul(previousPrice, decreaseThresholdBig).Div(oldDecreaseThreshold, one)
-	if rplPrice.Cmp(oldDecreaseThreshold) == -1 {
-		t.log.Println("=== RPL PRICE ANOMALY DETECTED ===")
-		t.log.Printlnf("Previous RPL Price: %s", previousPrice.String())
-		t.log.Printlnf("Min Allowed Price:  %s", oldDecreaseThreshold.String())
-		t.log.Printlnf("CURRENT RPL PRICE:  %s", rplPrice.String())
-		t.log.Println("==================================")
-
-		return nil, fmt.Errorf("rpl price decreased beyond the allowed threshold")
-	}
-
-	// See if the new price is higher than the increase threshold
-	increaseThresholdBig := eth.EthToWei(RplPriceIncreaseDeviationThreshold)
-	oldIncreaseThreshold := big.NewInt(0)
-	oldIncreaseThreshold.Mul(previousPrice, increaseThresholdBig).Div(oldIncreaseThreshold, one)
-	if rplPrice.Cmp(oldIncreaseThreshold) == 1 {
-		t.log.Println("=== RPL PRICE ANOMALY DETECTED ===")
-		t.log.Printlnf("Previous RPL Price: %s", previousPrice.String())
-		t.log.Printlnf("Max Allowed Price:  %s", oldIncreaseThreshold.String())
-		t.log.Printlnf("CURRENT RPL PRICE:  %s", rplPrice.String())
-		t.log.Println("==================================")
-
-		return nil, fmt.Errorf("rpl price increased beyond the allowed threshold")
-	}
-
-	// Return
-	return rplPrice, nil
-
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf))
 }
 
 // Get RPL price via TWAP at block
@@ -613,7 +498,7 @@ func (t *submitRplPrice) printMessage(message string) {
 }
 
 // Submit RPL price and total effective RPL stake
-func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveRplStake *big.Int, isAtlasDeployed bool) error {
+func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) error {
 
 	// Log
 	t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
@@ -624,58 +509,31 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
 		return err
 	}
 
-	var hash common.Hash
-	if isAtlasDeployed {
-		// Get the gas limit
-		gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, opts)
-		if err != nil {
-			return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
-		}
+	// Get the gas limit
+	gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, opts)
+	if err != nil {
+		return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
+	}
 
-		// Print the gas info
-		maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
-			return nil
-		}
+	// Print the gas info
+	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+		return nil
+	}
 
-		// Set the gas settings
-		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
-		opts.GasLimit = gasInfo.SafeGasLimit
+	// Set the gas settings
+	opts.GasFeeCap = maxFee
+	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+	opts.GasLimit = gasInfo.SafeGasLimit
 
-		// Submit RPL price
-		hash, err = network.SubmitPrices(t.rp, blockNumber, rplPrice, opts)
-		if err != nil {
-			return err
-		}
-	} else {
-		legacyNetworkPricesAddress := t.cfg.Smartnode.GetV110NetworkPricesAddress()
-		// Get the gas limit
-		gasInfo, err := v110_network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, effectiveRplStake, opts, &legacyNetworkPricesAddress)
-		if err != nil {
-			return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
-		}
-
-		// Print the gas info
-		maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
-			return nil
-		}
-
-		// Set the gas settings
-		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
-		opts.GasLimit = gasInfo.SafeGasLimit
-
-		// Submit RPL price
-		hash, err = v110_network.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts, &legacyNetworkPricesAddress)
-		if err != nil {
-			return err
-		}
+	// Submit RPL price
+	hash, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, opts)
+	if err != nil {
+		return err
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}
@@ -796,14 +654,14 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
+		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasInfo.SafeGasLimit
 
 		t.log.Println("Submitting rate to Optimism...")
@@ -815,7 +673,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
 		if err != nil {
 			return err
 		}
@@ -936,14 +794,14 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
+		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasInfo.SafeGasLimit
 
 		t.log.Println("Submitting rate to Polygon...")
@@ -955,7 +813,7 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
 		if err != nil {
 			return err
 		}
@@ -1101,14 +959,14 @@ func (t *submitRplPrice) submitArbitrumPrice() error {
 		}
 
 		// Print the gas info
-		maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
+		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasInfo.SafeGasLimit
 
 		t.log.Println("Submitting rate to Arbitrum...")
@@ -1120,7 +978,7 @@ func (t *submitRplPrice) submitArbitrumPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
 		if err != nil {
 			return err
 		}
@@ -1214,7 +1072,7 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 		fairL2GasPrice := eth.GweiToWei(0.5)
 		l2GasLimit := big.NewInt(750000)
 		gasPerPubdataByte := big.NewInt(800)
-		maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
+		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 
 		// Value calculation on zkSync Era
 		pubdataPrice := big.NewInt(0).Mul(l1GasPerPubdataByte, maxFee)
@@ -1260,13 +1118,13 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 		}
 
 		// Print the gas info
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
 			return nil
 		}
 
 		// Set the gas settings
 		opts.GasFeeCap = maxFee
-		opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
+		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasInfo.SafeGasLimit
 
 		t.log.Println("Submitting rate to zkSync Era...")
@@ -1278,7 +1136,7 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
 		if err != nil {
 			return err
 		}

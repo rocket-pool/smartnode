@@ -17,7 +17,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -43,16 +42,6 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 
 	// Response
 	response := api.GetMinipoolCloseDetailsForNodeResponse{}
-
-	// Check if Atlas has been deployed
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-	response.IsAtlasDeployed = isAtlasDeployed
-	if !isAtlasDeployed {
-		return &response, nil
-	}
 
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
@@ -329,15 +318,6 @@ func closeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CloseMi
 
 	// Response
 	response := api.CloseMinipoolResponse{}
-
-	// Check if Atlas has been deployed
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-	if !isAtlasDeployed {
-		return nil, fmt.Errorf("Atlas has not been deployed yet.")
-	}
 
 	// Create minipool
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)

@@ -31,7 +31,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		wiz.md.setPage(modal.page)
 		modal.focus(0) // Catch-all for safety
 
-		if wiz.md.isMigration || !wiz.md.isNew {
+		if !wiz.md.isNew {
 			var ccName string
 			for _, option := range wiz.md.Config.ConsensusClient.Options {
 				if option.Value == wiz.md.Config.ConsensusClient.Value {

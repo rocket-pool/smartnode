@@ -10,7 +10,6 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -134,16 +133,7 @@ func canDelegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.C
 	}
 
 	// Check the version and deposit type
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-	}
-	var depositType rptypes.MinipoolDeposit
-	if !isAtlasDeployed {
-		depositType, err = mp.GetDepositType(nil)
-	} else {
-		depositType, err = minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
-	}
+	depositType, err := minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
 	}
@@ -199,16 +189,7 @@ func delegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.Dele
 	}
 
 	// Check the version and deposit type
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-	}
-	var depositType rptypes.MinipoolDeposit
-	if !isAtlasDeployed {
-		depositType, err = mp.GetDepositType(nil)
-	} else {
-		depositType, err = minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
-	}
+	depositType, err := minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
 	}
@@ -267,16 +248,7 @@ func canSetUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, set
 
 	if !setting {
 		// Get the version and deposit type
-		isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-		if err != nil {
-			return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-		}
-		var depositType rptypes.MinipoolDeposit
-		if !isAtlasDeployed {
-			depositType, err = mp.GetDepositType(nil)
-		} else {
-			depositType, err = minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
-		}
+		depositType, err := minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
 		if err != nil {
 			return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
 		}
@@ -341,16 +313,7 @@ func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, settin
 
 	if !setting {
 		// Get the version and deposit type
-		isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
-		if err != nil {
-			return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-		}
-		var depositType rptypes.MinipoolDeposit
-		if !isAtlasDeployed {
-			depositType, err = mp.GetDepositType(nil)
-		} else {
-			depositType, err = minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
-		}
+		depositType, err := minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
 		if err != nil {
 			return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
 		}

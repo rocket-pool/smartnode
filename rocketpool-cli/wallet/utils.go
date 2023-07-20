@@ -1,14 +1,16 @@
 package wallet
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/goccy/go-json"
 	"github.com/mitchellh/go-homedir"
+	"gopkg.in/yaml.v2"
+
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet/bip39"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -17,7 +19,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
-	"gopkg.in/yaml.v2"
 )
 
 const bold string = "\033[1m"

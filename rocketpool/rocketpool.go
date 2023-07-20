@@ -124,6 +124,10 @@ func main() {
 			Name:  "use-protected-api",
 			Usage: "Set this to true to use the Flashbots Protect RPC instead of your local Execution Client. Useful to ensure your transactions aren't front-run.",
 		},
+		cli.BoolFlag{
+			Name:  "use-rolling-records",
+			Usage: "**FOR DEVELOPMENT TESTING ONLY, DO NOT ENABLE THIS FLAG.**",
+		},
 	}
 
 	// Register commands

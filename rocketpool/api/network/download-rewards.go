@@ -35,7 +35,7 @@ func downloadRewardsFile(c *cli.Context, interval uint64) (*api.DownloadRewardsF
 	}
 
 	// Get the event info for the interval
-	intervalInfo, err := rewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, interval)
+	intervalInfo, err := rewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, interval, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting interval %d info: %w", interval, err)
 	}

@@ -1,8 +1,9 @@
 package rocketpool
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )

@@ -38,12 +38,6 @@ func closeMinipools(c *cli.Context) error {
 		return err
 	}
 
-	// Exit if Atlas hasn't been deployed
-	if !details.IsAtlasDeployed {
-		fmt.Println("Minipools cannot be closed until the Atlas upgrade has been activated.")
-		return nil
-	}
-
 	// Exit if the fee distributor hasn't been initialized yet
 	if !details.IsFeeDistributorInitialized {
 		fmt.Println("Minipools cannot be closed until your fee distributor has been initialized.\nPlease run `rocketpool node initialize-fee-distributor` first, then return here to close your minipools.")

@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -67,7 +68,7 @@ func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*diss
 }
 
 // Dissolve timed out minipools
-func (t *dissolveTimedOutMinipools) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (t *dissolveTimedOutMinipools) run(state *state.NetworkState) error {
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -150,14 +151,14 @@ func (t *dissolveTimedOutMinipools) dissolveMinipool(mp minipool.Minipool) error
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
+	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Dissolve
@@ -167,7 +168,7 @@ func (t *dissolveTimedOutMinipools) dissolveMinipool(mp minipool.Minipool) error
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}

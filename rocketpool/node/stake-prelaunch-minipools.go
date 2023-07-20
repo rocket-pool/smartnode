@@ -269,7 +269,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mpd *rpstate.NativeMinipoolDetai
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		// Check for the timeout buffer
 		prelaunchTime := time.Unix(mpd.StatusTime.Int64(), 0)
 		isDue, timeUntilDue, err := api.IsTransactionDue(t.rp, prelaunchTime)
@@ -299,7 +299,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mpd *rpstate.NativeMinipoolDetai
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		return false, err
 	}

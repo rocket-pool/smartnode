@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"crypto/ecdsa"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -13,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/tyler-smith/go-bip39"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"

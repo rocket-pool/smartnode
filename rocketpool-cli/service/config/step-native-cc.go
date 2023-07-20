@@ -21,7 +21,7 @@ func createNativeCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 		wiz.md.setPage(modal.page)
 		modal.focus(0) // Catch-all for safety
 
-		if wiz.md.isMigration || !wiz.md.isNew {
+		if !wiz.md.isNew {
 			for i, option := range wiz.md.Config.Native.ConsensusClient.Options {
 				if option.Value == wiz.md.Config.Native.ConsensusClient.Value {
 					modal.focus(i)

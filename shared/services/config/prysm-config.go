@@ -23,7 +23,7 @@ const (
 	prysmVcTagAmd64ModernProd   string = "prysmaticlabs/prysm-validator:HEAD-58df1f1-debug"
 	prysmTagArm64ModernProd     string = "rocketpool/prysm:v4.0.7"
 	defaultPrysmRpcPort         uint16 = 5053
-	defaultPrysmOpenRpcPort     bool   = false
+	defaultPrysmOpenRpcPort     string = string(config.RPC_Closed)
 	defaultPrysmMaxPeers        uint16 = 45
 )
 
@@ -58,6 +58,8 @@ type PrysmConfig struct {
 
 // Generates a new Prysm configuration
 func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
+	rpcPortModes := config.PortModes("Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet and could make it vulnerable to MEV/tips theft")
+
 	return &PrysmConfig{
 		Title: "Prysm Settings",
 
@@ -90,13 +92,14 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 		OpenRpcPort: config.Parameter{
 			ID:                   "openRpcPort",
 			Name:                 "Expose RPC Port",
-			Description:          "Enable this to expose Prysm's JSON-RPC port to your local network, so other machines can access it too.",
-			Type:                 config.ParameterType_Bool,
+			Description:          "Expose Prysm's JSON-RPC port to other processes on your machine, or to your local network so other machines can access it too.",
+			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultPrysmOpenRpcPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_OPEN_RPC_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+			Options:              rpcPortModes,
 		},
 
 		BnContainerTag: config.Parameter{

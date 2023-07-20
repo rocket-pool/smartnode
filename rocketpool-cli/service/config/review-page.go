@@ -48,7 +48,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 		// Get the map of changed settings by category
 		changedSettings, totalAffectedContainers, changeNetworks = newConfig.GetChanges(oldConfig)
 
-		if md.isUpdate || md.isMigration {
+		if md.isUpdate {
 			totalAffectedContainers[cfgtypes.ContainerID_Api] = true
 			totalAffectedContainers[cfgtypes.ContainerID_Node] = true
 			totalAffectedContainers[cfgtypes.ContainerID_Watchtower] = true

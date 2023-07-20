@@ -32,7 +32,7 @@ type treeGeneratorImpl_v5 struct {
 	networkState           *state.NetworkState
 	rewardsFile            *RewardsFile
 	elSnapshotHeader       *types.Header
-	log                    log.ColorLogger
+	log                    *log.ColorLogger
 	logPrefix              string
 	rp                     *rocketpool.RocketPool
 	cfg                    *config.RocketPoolConfig
@@ -43,7 +43,7 @@ type treeGeneratorImpl_v5 struct {
 	smoothingPoolAddress   common.Address
 	intervalDutiesInfo     *IntervalDutiesInfo
 	slotsPerEpoch          uint64
-	validatorIndexMap      map[uint64]*MinipoolInfo
+	validatorIndexMap      map[string]*MinipoolInfo
 	elStartTime            time.Time
 	elEndTime              time.Time
 	validNetworkCache      map[uint64]bool
@@ -57,7 +57,7 @@ type treeGeneratorImpl_v5 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v5(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v5 {
+func newTreeGeneratorImpl_v5(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v5 {
 	return &treeGeneratorImpl_v5{
 		zero: big.NewInt(0),
 		rewardsFile: &RewardsFile{
@@ -90,7 +90,7 @@ func newTreeGeneratorImpl_v5(log log.ColorLogger, logPrefix string, index uint64
 			},
 		},
 		validatorStatusMap:    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
-		validatorIndexMap:     map[uint64]*MinipoolInfo{},
+		validatorIndexMap:     map[string]*MinipoolInfo{},
 		elSnapshotHeader:      elSnapshotHeader,
 		log:                   log,
 		logPrefix:             logPrefix,
@@ -526,7 +526,7 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 	}
 
 	// Get the start time of this interval based on the event from the previous one
-	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1)
+	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts)
 	if err != nil {
 		return err
 	}
@@ -775,7 +775,7 @@ func (r *treeGeneratorImpl_v5) processAttestationsForInterval() error {
 func (r *treeGeneratorImpl_v5) processEpoch(getDuties bool, epoch uint64) error {
 
 	// Get the committee info and attestation records for this epoch
-	var committeeData []beacon.Committee
+	var committeeData beacon.Committees
 	attestationsPerSlot := make([][]beacon.AttestationInfo, r.slotsPerEpoch)
 	var wg errgroup.Group
 
@@ -889,20 +889,22 @@ func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.Attestat
 }
 
 // Maps out the attestaion duties for the given epoch
-func (r *treeGeneratorImpl_v5) getDutiesForEpoch(committees []beacon.Committee) error {
+func (r *treeGeneratorImpl_v5) getDutiesForEpoch(committees beacon.Committees) error {
+
+	defer committees.Release()
 
 	// Crawl the committees
-	for _, committee := range committees {
-		slotIndex := committee.Slot
+	for idx := 0; idx < committees.Count(); idx++ {
+		slotIndex := committees.Slot(idx)
 		if slotIndex < r.rewardsFile.ConsensusStartBlock || slotIndex > r.rewardsFile.ConsensusEndBlock {
 			// Ignore slots that are out of bounds
 			continue
 		}
-		committeeIndex := committee.Index
+		committeeIndex := committees.Index(idx)
 
 		// Check if there are any RP validators in this committee
 		rpValidators := map[int]*MinipoolInfo{}
-		for position, validator := range committee.Validators {
+		for position, validator := range committees.Validators(idx) {
 			minipoolInfo, exists := r.validatorIndexMap[validator]
 			if exists {
 				rpValidators[position] = minipoolInfo
@@ -935,7 +937,7 @@ func (r *treeGeneratorImpl_v5) getDutiesForEpoch(committees []beacon.Committee) 
 func (r *treeGeneratorImpl_v5) createMinipoolIndexMap() error {
 
 	// Get the status for all uncached minipool validators and add them to the cache
-	r.validatorIndexMap = map[uint64]*MinipoolInfo{}
+	r.validatorIndexMap = map[string]*MinipoolInfo{}
 	for _, details := range r.nodeDetails {
 		if details.IsEligible {
 			for _, minipoolInfo := range details.Minipools {
@@ -948,7 +950,7 @@ func (r *treeGeneratorImpl_v5) createMinipoolIndexMap() error {
 					switch status.Status {
 					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
 						// Remove minipools that don't have indices yet since they're not actually viable
-						r.log.Printlnf("NOTE: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
+						r.log.Printlnf("NOTE: minipool %s (index %s, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
 						minipoolInfo.WasActive = false
 					default:
 						// Get the validator index

@@ -2,24 +2,25 @@ package client
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
+
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Request types
 type VoluntaryExitMessage struct {
 	Epoch          uinteger `json:"epoch"`
-	ValidatorIndex uinteger `json:"validator_index"`
+	ValidatorIndex string   `json:"validator_index"`
 }
 type VoluntaryExitRequest struct {
 	Message   VoluntaryExitMessage `json:"message"`
 	Signature byteArray            `json:"signature"`
 }
 type BLSToExecutionChangeMessage struct {
-	ValidatorIndex     uinteger  `json:"validator_index"`
+	ValidatorIndex     string    `json:"validator_index"`
 	FromBLSPubkey      byteArray `json:"from_bls_pubkey"`
 	ToExecutionAddress byteArray `json:"to_execution_address"`
 }
@@ -83,7 +84,7 @@ type BeaconBlockResponse struct {
 	Data struct {
 		Message struct {
 			Slot          uinteger `json:"slot"`
-			ProposerIndex uinteger `json:"proposer_index"`
+			ProposerIndex string   `json:"proposer_index"`
 			Body          struct {
 				Eth1Data struct {
 					DepositRoot  byteArray `json:"deposit_root"`
@@ -103,7 +104,7 @@ type ValidatorsResponse struct {
 	Data []Validator `json:"data"`
 }
 type Validator struct {
-	Index     uinteger `json:"index"`
+	Index     string   `json:"index"`
 	Balance   uinteger `json:"balance"`
 	Status    string   `json:"status"`
 	Validator struct {
@@ -122,24 +123,18 @@ type SyncDutiesResponse struct {
 }
 type SyncDuty struct {
 	Pubkey               byteArray  `json:"pubkey"`
-	ValidatorIndex       uinteger   `json:"validator_index"`
+	ValidatorIndex       string     `json:"validator_index"`
 	SyncCommitteeIndices []uinteger `json:"validator_sync_committee_indices"`
 }
 type ProposerDutiesResponse struct {
 	Data []ProposerDuty `json:"data"`
 }
 type ProposerDuty struct {
-	ValidatorIndex uinteger `json:"validator_index"`
+	ValidatorIndex string `json:"validator_index"`
 }
 
 type CommitteesResponse struct {
 	Data []Committee `json:"data"`
-}
-
-type Committee struct {
-	Index      uinteger   `json:"index"`
-	Slot       uinteger   `json:"slot"`
-	Validators []uinteger `json:"validators"`
 }
 
 type Attestation struct {

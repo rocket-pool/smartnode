@@ -17,7 +17,7 @@ const defaultGraffiti string = ""
 const defaultCheckpointSyncProvider string = ""
 const defaultP2pPort uint16 = 9001
 const defaultBnApiPort uint16 = 5052
-const defaultOpenBnApiPort bool = false
+const defaultOpenBnApiPort string = string(config.RPC_Closed)
 const defaultDoppelgangerDetection bool = true
 
 // Env var names
@@ -48,6 +48,8 @@ type ConsensusCommonConfig struct {
 
 // Create a new ConsensusCommonParams struct
 func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
+	portModes := config.PortModes("Allow connections from external hosts. This is safe if you're running your node on your local network. If you're a VPS user, this would expose your node to the internet and could make it vulnerable to MEV/tips theft")
+
 	return &ConsensusCommonConfig{
 		Title: "Common Consensus Client Settings",
 
@@ -105,13 +107,14 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 		OpenApiPort: config.Parameter{
 			ID:                   OpenApiPortID,
 			Name:                 "Expose API Port",
-			Description:          "Enable this to expose your Consensus client's API port to your local network, so other machines can access it too.",
-			Type:                 config.ParameterType_Bool,
+			Description:          "Select an option to expose your Consensus client's API port to your localhost or external hosts on the network, so other machines can access it too.",
+			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultOpenBnApiPort},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_OPEN_API_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+			Options:              portModes,
 		},
 
 		DoppelgangerDetection: config.Parameter{

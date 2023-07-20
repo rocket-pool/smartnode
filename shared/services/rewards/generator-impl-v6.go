@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
@@ -32,7 +31,7 @@ type treeGeneratorImpl_v6 struct {
 	networkState           *state.NetworkState
 	rewardsFile            *RewardsFile
 	elSnapshotHeader       *types.Header
-	log                    log.ColorLogger
+	log                    *log.ColorLogger
 	logPrefix              string
 	rp                     *rocketpool.RocketPool
 	cfg                    *config.RocketPoolConfig
@@ -43,7 +42,7 @@ type treeGeneratorImpl_v6 struct {
 	smoothingPoolAddress   common.Address
 	intervalDutiesInfo     *IntervalDutiesInfo
 	slotsPerEpoch          uint64
-	validatorIndexMap      map[uint64]*MinipoolInfo
+	validatorIndexMap      map[string]*MinipoolInfo
 	elStartTime            time.Time
 	elEndTime              time.Time
 	validNetworkCache      map[uint64]bool
@@ -58,7 +57,7 @@ type treeGeneratorImpl_v6 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v6(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v6 {
+func newTreeGeneratorImpl_v6(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v6 {
 	return &treeGeneratorImpl_v6{
 		zero: big.NewInt(0),
 		rewardsFile: &RewardsFile{
@@ -91,7 +90,7 @@ func newTreeGeneratorImpl_v6(log log.ColorLogger, logPrefix string, index uint64
 			},
 		},
 		validatorStatusMap:    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
-		validatorIndexMap:     map[uint64]*MinipoolInfo{},
+		validatorIndexMap:     map[string]*MinipoolInfo{},
 		elSnapshotHeader:      elSnapshotHeader,
 		log:                   log,
 		logPrefix:             logPrefix,
@@ -324,17 +323,8 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 		return fmt.Errorf("error calculating effective RPL stakes: %w", err)
 	}
 
-	r.log.Printlnf("%s Calculating individual collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
-	nodesDone := 0
-	startTime := time.Now()
-	nodeCount := len(r.networkState.NodeDetails)
+	r.log.Printlnf("%s Calculating individual collateral rewards...", r.logPrefix)
 	for i, nodeDetails := range r.networkState.NodeDetails {
-		if nodesDone == 100 {
-			timeTaken := time.Since(startTime)
-			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
-			nodesDone = 0
-		}
-
 		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
 		nodeRplRewards := big.NewInt(0)
 		nodeRplRewards.Mul(trueNodeEffectiveStakes[nodeDetails.NodeAddress], totalNodeRewards)
@@ -377,8 +367,6 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 			}
 			rewardsForNetwork.CollateralRpl.Add(&rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 		}
-
-		nodesDone++
 	}
 
 	// Sanity check to make sure we arrived at the correct total
@@ -401,21 +389,14 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 	totalODaoRewards.Div(totalODaoRewards, eth.EthToWei(1))
 	r.log.Printlnf("%s Total Oracle DAO RPL rewards: %s (%.3f)", r.logPrefix, totalODaoRewards.String(), eth.WeiToEth(totalODaoRewards))
 
-	oDaoAddresses, err := trustednode.GetMemberAddresses(r.rp, r.opts)
-	if err != nil {
-		return err
-	}
+	oDaoDetails := r.networkState.OracleDaoMemberDetails
 
 	// Calculate the true effective time of each oDAO node based on their participation in this interval
 	totalODaoNodeTime := big.NewInt(0)
 	trueODaoNodeTimes := map[common.Address]*big.Int{}
-	for _, address := range oDaoAddresses {
+	for _, details := range oDaoDetails {
 		// Get the timestamp of the node joining the oDAO
-		joinTimeUint, err := trustednode.GetMemberJoinedTime(r.rp, address, r.opts)
-		if err != nil {
-			return fmt.Errorf("error getting time that node %s joined the oDAO: %w", address.Hex(), err)
-		}
-		joinTime := time.Unix(int64(joinTimeUint), 0)
+		joinTime := details.JoinedTime
 
 		// Get the actual effective time, scaled based on participation
 		intervalDuration := r.networkState.NetworkDetails.IntervalDuration
@@ -426,13 +407,15 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 		if eligibleDuration < intervalDuration {
 			participationTime = big.NewInt(int64(eligibleDuration.Seconds()))
 		}
-		trueODaoNodeTimes[address] = participationTime
+		trueODaoNodeTimes[details.Address] = participationTime
 
 		// Add it to the total
 		totalODaoNodeTime.Add(totalODaoNodeTime, participationTime)
 	}
 
-	for _, address := range oDaoAddresses {
+	for _, details := range oDaoDetails {
+		address := details.Address
+
 		// Calculate the oDAO rewards for the node: (participation time) * (total oDAO rewards) / (total participation time)
 		individualOdaoRewards := big.NewInt(0)
 		individualOdaoRewards.Mul(trueODaoNodeTimes[address], totalODaoRewards)
@@ -509,16 +492,7 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
-	smoothingPoolContract, err := r.rp.GetContract("rocketSmoothingPool", r.opts)
-	if err != nil {
-		return fmt.Errorf("error getting smoothing pool contract: %w", err)
-	}
-	r.smoothingPoolAddress = *smoothingPoolContract.Address
-
-	r.smoothingPoolBalance, err = r.rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, r.elSnapshotHeader.Number)
-	if err != nil {
-		return fmt.Errorf("error getting smoothing pool balance: %w", err)
-	}
+	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
 	r.log.Printlnf("%s Smoothing Pool Balance: %s (%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
 
 	// Ignore the ETH calculation if there are no rewards
@@ -532,7 +506,8 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 	}
 
 	// Get the start time of this interval based on the event from the previous one
-	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1)
+	//previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts) // This is immutable so querying at the head is fine and mitigates issues around calls for pruned EL state
+	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, nil)
 	if err != nil {
 		return err
 	}
@@ -642,7 +617,8 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 					MissingAttestationSlots: []uint64{},
 				}
 				if successfulAttestations+missingAttestations == 0 {
-					performance.ParticipationRate = 0
+					// Don't include minipools that have zero attestations
+					continue
 				} else {
 					performance.ParticipationRate = float64(successfulAttestations) / float64(successfulAttestations+missingAttestations)
 				}
@@ -781,7 +757,7 @@ func (r *treeGeneratorImpl_v6) processAttestationsForInterval() error {
 func (r *treeGeneratorImpl_v6) processEpoch(getDuties bool, epoch uint64) error {
 
 	// Get the committee info and attestation records for this epoch
-	var committeeData []beacon.Committee
+	var committeeData beacon.Committees
 	attestationsPerSlot := make([][]beacon.AttestationInfo, r.slotsPerEpoch)
 	var wg errgroup.Group
 
@@ -843,7 +819,6 @@ func (r *treeGeneratorImpl_v6) checkDutiesForSlot(attestations []beacon.Attestat
 
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
-
 		// Get the RP committees for this attestation's slot and index
 		slotInfo, exists := r.intervalDutiesInfo.Slots[attestation.SlotIndex]
 		if !exists {
@@ -901,21 +876,21 @@ func (r *treeGeneratorImpl_v6) checkDutiesForSlot(attestations []beacon.Attestat
 }
 
 // Maps out the attestaion duties for the given epoch
-func (r *treeGeneratorImpl_v6) getDutiesForEpoch(committees []beacon.Committee) error {
+func (r *treeGeneratorImpl_v6) getDutiesForEpoch(committees beacon.Committees) error {
 
 	// Crawl the committees
-	for _, committee := range committees {
-		slotIndex := committee.Slot
+	for idx := 0; idx < committees.Count(); idx++ {
+		slotIndex := committees.Slot(idx)
 		if slotIndex < r.rewardsFile.ConsensusStartBlock || slotIndex > r.rewardsFile.ConsensusEndBlock {
 			// Ignore slots that are out of bounds
 			continue
 		}
 		blockTime := r.genesisTime.Add(time.Second * time.Duration(r.beaconConfig.SecondsPerSlot*slotIndex))
-		committeeIndex := committee.Index
+		committeeIndex := committees.Index(idx)
 
 		// Check if there are any RP validators in this committee
 		rpValidators := map[int]*MinipoolInfo{}
-		for position, validator := range committee.Validators {
+		for position, validator := range committees.Validators(idx) {
 			minipoolInfo, exists := r.validatorIndexMap[validator]
 			if !exists {
 				// This isn't an RP validator, so ignore it
@@ -968,20 +943,20 @@ func (r *treeGeneratorImpl_v6) getDutiesForEpoch(committees []beacon.Committee) 
 func (r *treeGeneratorImpl_v6) createMinipoolIndexMap() error {
 
 	// Get the status for all uncached minipool validators and add them to the cache
-	r.validatorIndexMap = map[uint64]*MinipoolInfo{}
+	r.validatorIndexMap = map[string]*MinipoolInfo{}
 	for _, details := range r.nodeDetails {
 		if details.IsEligible {
 			for _, minipoolInfo := range details.Minipools {
 				status, exists := r.networkState.ValidatorDetails[minipoolInfo.ValidatorPubkey]
 				if !exists {
 					// Remove minipools that don't have indices yet since they're not actually viable
-					r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
+					//r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
 					minipoolInfo.WasActive = false
 				} else {
 					switch status.Status {
 					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
 						// Remove minipools that don't have indices yet since they're not actually viable
-						r.log.Printlnf("NOTE: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
+						//r.log.Printlnf("NOTE: minipool %s (index %s, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
 						minipoolInfo.WasActive = false
 					default:
 						// Get the validator index
@@ -994,17 +969,17 @@ func (r *treeGeneratorImpl_v6) createMinipoolIndexMap() error {
 
 						// Verify this minipool has already started
 						if status.ActivationEpoch == FarEpoch {
-							r.log.Printlnf("NOTE: minipool %s hasn't been scheduled for activation yet; removing it", minipoolInfo.Address.Hex())
+							//r.log.Printlnf("NOTE: minipool %s hasn't been scheduled for activation yet; removing it", minipoolInfo.Address.Hex())
 							minipoolInfo.WasActive = false
 							continue
 						} else if startSlot > r.rewardsFile.ConsensusEndBlock {
-							r.log.Printlnf("NOTE: minipool %s activates on slot %d which is after interval end %d; removing it", minipoolInfo.Address.Hex(), startSlot, r.rewardsFile.ConsensusEndBlock)
+							//r.log.Printlnf("NOTE: minipool %s activates on slot %d which is after interval end %d; removing it", minipoolInfo.Address.Hex(), startSlot, r.rewardsFile.ConsensusEndBlock)
 							minipoolInfo.WasActive = false
 						}
 
 						// Check if the minipool exited before this interval
 						if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
-							r.log.Printlnf("NOTE: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
+							//r.log.Printlnf("NOTE: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
 							minipoolInfo.WasActive = false
 							continue
 						}
@@ -1024,11 +999,8 @@ func (r *treeGeneratorImpl_v6) getSmoothingPoolNodeDetails() error {
 	farFutureTime := time.Unix(1000000000000000000, 0) // Far into the future
 	farPastTime := time.Unix(0, 0)
 
-	nodesDone := uint64(0)
-	startTime := time.Now()
-	r.log.Printlnf("%s Getting details of nodes for Smoothing Pool calculation (progress is reported every 100 nodes)", r.logPrefix)
-
 	// For each NO, get their opt-in status and time of last change in batches
+	r.log.Printlnf("%s Getting details of nodes for Smoothing Pool calculation...", r.logPrefix)
 	nodeCount := uint64(len(r.networkState.NodeDetails))
 	r.nodeDetails = make([]*NodeSmoothingDetails, nodeCount)
 	for batchStartIndex := uint64(0); batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
@@ -1038,12 +1010,6 @@ func (r *treeGeneratorImpl_v6) getSmoothingPoolNodeDetails() error {
 		iterationEndIndex := batchStartIndex + SmoothingPoolDetailsBatchSize
 		if iterationEndIndex > nodeCount {
 			iterationEndIndex = nodeCount
-		}
-
-		if nodesDone >= 100 {
-			timeTaken := time.Since(startTime)
-			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, iterationStartIndex, nodeCount, float64(iterationStartIndex)/float64(nodeCount)*100.0, timeTaken)
-			nodesDone = 0
 		}
 
 		// Load details
@@ -1109,8 +1075,6 @@ func (r *treeGeneratorImpl_v6) getSmoothingPoolNodeDetails() error {
 		if err := wg.Wait(); err != nil {
 			return err
 		}
-
-		nodesDone += SmoothingPoolDetailsBatchSize
 	}
 
 	return nil

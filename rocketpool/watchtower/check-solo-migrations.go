@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -90,7 +91,7 @@ func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger 
 }
 
 // Start the solo migration checking thread
-func (t *checkSoloMigrations) run(state *state.NetworkState, isAtlasDeployed bool) error {
+func (t *checkSoloMigrations) run(state *state.NetworkState) error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -98,11 +99,6 @@ func (t *checkSoloMigrations) run(state *state.NetworkState, isAtlasDeployed boo
 	}
 	if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
 		return err
-	}
-
-	// Check if Atlas has been deployed yet
-	if !isAtlasDeployed {
-		return nil
 	}
 
 	// Log
@@ -290,14 +286,14 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(getWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
 		return
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(getWatchtowerPrioFee(t.cfg))
+	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Cancel the reduction
@@ -308,7 +304,7 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
 	if err != nil {
 		t.printMessage(fmt.Sprintf("error waiting for scrub transaction: %s", err.Error()))
 		return

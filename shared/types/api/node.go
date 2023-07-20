@@ -40,7 +40,6 @@ type NodeStatusResponse struct {
 	PendingBondedCollateralRatio      float64         `json:"pendingBondedCollateralRatio"`
 	VotingDelegate                    common.Address  `json:"votingDelegate"`
 	VotingDelegateFormatted           string          `json:"votingDelegateFormatted"`
-	IsAtlasDeployed                   bool            `json:"isAtlasDeployed"`
 	MinipoolLimit                     uint64          `json:"minipoolLimit"`
 	EthMatched                        *big.Int        `json:"ethMatched"`
 	EthMatchedLimit                   *big.Int        `json:"ethMatchedLimit"`
@@ -164,7 +163,6 @@ type CanNodeStakeRplResponse struct {
 	Error               string             `json:"error"`
 	CanStake            bool               `json:"canStake"`
 	InsufficientBalance bool               `json:"insufficientBalance"`
-	IsAtlasDeployed     bool               `json:"isAtlasDeployed"`
 	InConsensus         bool               `json:"inConsensus"`
 	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
 }
@@ -209,7 +207,6 @@ type CanNodeWithdrawRplResponse struct {
 	MinipoolsUndercollateralized bool               `json:"minipoolsUndercollateralized"`
 	WithdrawalDelayActive        bool               `json:"withdrawalDelayActive"`
 	InConsensus                  bool               `json:"inConsensus"`
-	IsAtlasDeployed              bool               `json:"isAtlasDeployed"`
 	GasInfo                      rocketpool.GasInfo `json:"gasInfo"`
 }
 type NodeWithdrawRplResponse struct {
@@ -233,7 +230,6 @@ type CanNodeDepositResponse struct {
 	UnbondedMinipoolsAtMax           bool               `json:"unbondedMinipoolsAtMax"`
 	DepositDisabled                  bool               `json:"depositDisabled"`
 	InConsensus                      bool               `json:"inConsensus"`
-	IsAtlasDeployed                  bool               `json:"isAtlasDeployed"`
 	MinipoolAddress                  common.Address     `json:"minipoolAddress"`
 	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
 }
@@ -424,7 +420,6 @@ type NodeGetRewardsInfoResponse struct {
 	RplStake                *big.Int               `json:"rplStake"`
 	RplPrice                *big.Int               `json:"rplPrice"`
 	ActiveMinipools         int                    `json:"activeMinipools"`
-	IsAtlasDeployed         bool                   `json:"isAtlasDeployed"`
 	EffectiveRplStake       *big.Int               `json:"effectiveRplStake"`
 	MinimumRplStake         *big.Int               `json:"minimumRplStake"`
 	MaximumRplStake         *big.Int               `json:"maximumRplStake"`

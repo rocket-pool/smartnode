@@ -39,7 +39,7 @@ type BeaconHead struct {
 }
 type ValidatorStatus struct {
 	Pubkey                     types.ValidatorPubkey
-	Index                      uint64
+	Index                      string
 	WithdrawalCredentials      common.Hash
 	Balance                    uint64
 	Status                     ValidatorState
@@ -58,17 +58,34 @@ type Eth1Data struct {
 }
 type BeaconBlock struct {
 	Slot                 uint64
-	ProposerIndex        uint64
+	ProposerIndex        string
 	HasExecutionPayload  bool
 	Attestations         []AttestationInfo
 	FeeRecipient         common.Address
 	ExecutionBlockNumber uint64
 }
 
-type Committee struct {
-	Index      uint64
-	Slot       uint64
-	Validators []uint64
+// Committees is an interface as an optimization- since committees responses
+// are quite large, there's a decent cpu/memory improvement to removing the
+// translation to an intermediate storage class.
+//
+// Instead, the interface provides the access pattern that smartnode (or more
+// specifically, tree-gen) wants, and the underlying format is just the format
+// of the Beacon Node response.
+type Committees interface {
+	// Index returns the index of the committee at the provided offset
+	Index(int) uint64
+	// Slot returns the slot of the committee at the provided offset
+	Slot(int) uint64
+	// Validators returns the list of validators of the committee at
+	// the provided offset
+	Validators(int) []string
+	// Count returns the number of committees in the response
+	Count() int
+	// Release returns the reused validators slice buffer to the pool for
+	// further reuse, and must be called when the user is done with this
+	// committees instance
+	Release()
 }
 
 type AttestationInfo struct {
@@ -121,13 +138,13 @@ type Client interface {
 	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
-	GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error)
-	GetValidatorSyncDuties(indices []uint64, epoch uint64) (map[uint64]bool, error)
-	GetValidatorProposerDuties(indices []uint64, epoch uint64) (map[uint64]uint64, error)
+	GetValidatorIndex(pubkey types.ValidatorPubkey) (string, error)
+	GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error)
+	GetValidatorProposerDuties(indices []string, epoch uint64) (map[string]uint64, error)
 	GetDomainData(domainType []byte, epoch uint64, useGenesisFork bool) ([]byte, error)
-	ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error
+	ExitValidator(validatorIndex string, epoch uint64, signature types.ValidatorSignature) error
 	Close() error
 	GetEth1DataForEth2Block(blockId string) (Eth1Data, bool, error)
-	GetCommitteesForEpoch(epoch *uint64) ([]Committee, error)
-	ChangeWithdrawalCredentials(validatorIndex uint64, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error
+	GetCommitteesForEpoch(epoch *uint64) (Committees, error)
+	ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error
 }

@@ -29,14 +29,6 @@ func processQueue(c *cli.Context) error {
 		if canProcess.AssignDepositsDisabled {
 			fmt.Println("Deposit assignments are currently disabled.")
 		}
-		if !canProcess.IsAtlasDeployed {
-			if canProcess.NoMinipoolsAvailable {
-				fmt.Println("No minipools are available for assignment.")
-			}
-			if canProcess.InsufficientDepositBalance {
-				fmt.Println("The deposit pool has an insufficient balance for assignment.")
-			}
-		}
 		return nil
 	}
 

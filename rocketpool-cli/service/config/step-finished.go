@@ -87,7 +87,7 @@ func processConfigAfterQuit(md *mainDisplay) {
 		// Get the map of changed settings by category
 		_, totalAffectedContainers, changeNetworks := md.Config.GetChanges(md.PreviousConfig)
 
-		if md.isUpdate || md.isMigration {
+		if md.isUpdate {
 			totalAffectedContainers[cfgtypes.ContainerID_Api] = true
 			totalAffectedContainers[cfgtypes.ContainerID_Node] = true
 			totalAffectedContainers[cfgtypes.ContainerID_Watchtower] = true

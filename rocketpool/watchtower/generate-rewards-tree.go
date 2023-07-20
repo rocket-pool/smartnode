@@ -2,7 +2,6 @@ package watchtower
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/goccy/go-json"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -143,7 +143,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)
 
 	// Find the event for this interval
-	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, t.cfg, index)
+	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, t.cfg, index, nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
 		return
@@ -222,7 +222,7 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 
 	// Generate the rewards file
 	start := time.Now()
-	treegen, err := rprewards.NewTreeGenerator(t.log, generationPrefix, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state)
+	treegen, err := rprewards.NewTreeGenerator(&t.log, generationPrefix, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state, nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error creating Merkle tree generator: %w", generationPrefix, err))
 		return

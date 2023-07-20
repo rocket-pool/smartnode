@@ -43,16 +43,6 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 
 	fmt.Println("Your eth2 client is on the correct network.\n")
 
-	// Check for Atlas
-	atlasResponse, err := rp.IsAtlasDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Atlas has been deployed: %w", err)
-	}
-	if !atlasResponse.IsAtlasDeployed {
-		fmt.Println("You cannot create a vacant minipool to migrate a solo validator until Atlas has been deployed.")
-		return nil
-	}
-
 	// Check if the fee distributor has been initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
 	if err != nil {

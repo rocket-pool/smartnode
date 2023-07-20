@@ -2,12 +2,12 @@ package prysm
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/rocket-pool/rocketpool-go/types"
 	rpkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore"

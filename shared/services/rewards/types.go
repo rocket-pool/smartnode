@@ -29,7 +29,7 @@ type IntervalInfo struct {
 type MinipoolInfo struct {
 	Address                 common.Address
 	ValidatorPubkey         types.ValidatorPubkey
-	ValidatorIndex          uint64
+	ValidatorIndex          string
 	NodeAddress             common.Address
 	NodeIndex               uint64
 	Fee                     *big.Int
@@ -42,6 +42,7 @@ type MinipoolInfo struct {
 	EndSlot                 uint64
 	AttestationScore        *big.Int
 	CompletedAttestations   map[uint64]bool
+	AttestationCount        int
 }
 
 type IntervalDutiesInfo struct {

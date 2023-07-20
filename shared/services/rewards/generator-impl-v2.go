@@ -36,7 +36,7 @@ const (
 type treeGeneratorImpl_v2 struct {
 	rewardsFile          *RewardsFile
 	elSnapshotHeader     *types.Header
-	log                  log.ColorLogger
+	log                  *log.ColorLogger
 	logPrefix            string
 	rp                   *rocketpool.RocketPool
 	cfg                  *config.RocketPoolConfig
@@ -48,7 +48,7 @@ type treeGeneratorImpl_v2 struct {
 	smoothingPoolAddress common.Address
 	intervalDutiesInfo   *IntervalDutiesInfo
 	slotsPerEpoch        uint64
-	validatorIndexMap    map[uint64]*MinipoolInfo
+	validatorIndexMap    map[string]*MinipoolInfo
 	elStartTime          time.Time
 	elEndTime            time.Time
 	validNetworkCache    map[uint64]bool
@@ -58,7 +58,7 @@ type treeGeneratorImpl_v2 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v2(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *treeGeneratorImpl_v2 {
+func newTreeGeneratorImpl_v2(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *treeGeneratorImpl_v2 {
 	return &treeGeneratorImpl_v2{
 		rewardsFile: &RewardsFile{
 			RewardsFileVersion: 1,
@@ -594,7 +594,7 @@ func (r *treeGeneratorImpl_v2) calculateEthRewards(checkBeaconPerformance bool) 
 	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
 
 	// Get the start time of this interval based on the event from the previous one
-	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1)
+	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts)
 	if err != nil {
 		return err
 	}
@@ -869,7 +869,7 @@ func (r *treeGeneratorImpl_v2) processAttestationsForInterval() error {
 func (r *treeGeneratorImpl_v2) processEpoch(getDuties bool, epoch uint64) error {
 
 	// Get the committee info and attestation records for this epoch
-	var committeeData []beacon.Committee
+	var committeeData beacon.Committees
 	attestationsPerSlot := make([][]beacon.AttestationInfo, r.slotsPerEpoch)
 	var wg errgroup.Group
 
@@ -958,20 +958,22 @@ func (r *treeGeneratorImpl_v2) checkDutiesForSlot(attestations []beacon.Attestat
 }
 
 // Maps out the attestaion duties for the given epoch
-func (r *treeGeneratorImpl_v2) getDutiesForEpoch(committees []beacon.Committee) error {
+func (r *treeGeneratorImpl_v2) getDutiesForEpoch(committees beacon.Committees) error {
+
+	defer committees.Release()
 
 	// Crawl the committees
-	for _, committee := range committees {
-		slotIndex := committee.Slot
+	for idx := 0; idx < committees.Count(); idx++ {
+		slotIndex := committees.Slot(idx)
 		if slotIndex < r.rewardsFile.ConsensusStartBlock || slotIndex > r.rewardsFile.ConsensusEndBlock {
 			// Ignore slots that are out of bounds
 			continue
 		}
-		committeeIndex := committee.Index
+		committeeIndex := committees.Index(idx)
 
 		// Check if there are any RP validators in this committee
 		rpValidators := map[int]*MinipoolInfo{}
-		for position, validator := range committee.Validators {
+		for position, validator := range committees.Validators(idx) {
 			minipoolInfo, exists := r.validatorIndexMap[validator]
 			if exists {
 				rpValidators[position] = minipoolInfo
@@ -1015,7 +1017,7 @@ func (r *treeGeneratorImpl_v2) createMinipoolIndexMap() error {
 	}
 
 	// Get indices for all minipool validators
-	r.validatorIndexMap = map[uint64]*MinipoolInfo{}
+	r.validatorIndexMap = map[string]*MinipoolInfo{}
 	statusMap, err := r.bc.GetValidatorStatuses(minipoolPubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &r.rewardsFile.ConsensusEndBlock,
 	})
@@ -1036,7 +1038,7 @@ func (r *treeGeneratorImpl_v2) createMinipoolIndexMap() error {
 					switch status.Status {
 					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
 						// Remove minipools that don't have indices yet since they're not actually viable
-						r.log.Printlnf("WARNING: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
+						r.log.Printlnf("WARNING: minipool %s (index %s, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
 						minipoolInfo.StartSlot = 0
 						minipoolInfo.EndSlot = 0
 						minipoolInfo.WasActive = false

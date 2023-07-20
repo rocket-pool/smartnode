@@ -22,9 +22,6 @@ const (
 )
 
 type NetworkState struct {
-	// Network version
-	IsAtlasDeployed bool
-
 	// Block / slot for this state
 	ElBlockNumber    uint64
 	BeaconSlotNumber uint64
@@ -44,6 +41,9 @@ type NetworkState struct {
 
 	// Validator details
 	ValidatorDetails map[types.ValidatorPubkey]beacon.ValidatorStatus
+
+	// Oracle DAO details
+	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails
 
 	// Internal fields
 	log *log.ColorLogger
@@ -70,11 +70,6 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
-	isAtlasDeployed, err := IsAtlasDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-	}
-
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -84,42 +79,35 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
 		log:                      log,
-		IsAtlasDeployed:          isAtlasDeployed,
 	}
 
 	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, isAtlasDeployed)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	/*
-		err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
-		if err != nil {
-			return nil, fmt.Errorf("error getting network details: %w", err)
-		}
-	*/
-	state.logLine("1/5 - Retrieved network details (%s so far)", time.Since(start))
+	state.logLine("1/6 - Retrieved network details (%s so far)", time.Since(start))
 
 	// Node details
-	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, contracts, isAtlasDeployed)
+	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all node details: %w", err)
 	}
-	state.logLine("2/5 - Retrieved node details (%s so far)", time.Since(start))
+	state.logLine("2/6 - Retrieved node details (%s so far)", time.Since(start))
 
 	// Minipool details
 	state.MinipoolDetails, err = rpstate.GetAllNativeMinipoolDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
-	state.logLine("3/5 - Retrieved minipool details (%s so far)", time.Since(start))
+	state.logLine("3/6 - Retrieved minipool details (%s so far)", time.Since(start))
 
 	// Create the node lookup
 	for i, details := range state.NodeDetails {
@@ -149,6 +137,13 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
 	}
 
+	// Oracle DAO member details
+	state.OracleDaoMemberDetails, err = rpstate.GetAllOracleDaoMemberDetails(rp, contracts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting Oracle DAO details: %w", err)
+	}
+	state.logLine("4/6 - Retrieved Oracle DAO details (%s so far)", time.Since(start))
+
 	// Get the validator stats from Beacon
 	statusMap, err := bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &slotNumber,
@@ -157,7 +152,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		return nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("4/5 - Retrieved validator details (total time: %s)", time.Since(start))
+	state.logLine("5/6 - Retrieved validator details (total time: %s)", time.Since(start))
 
 	// Get the complete node and user shares
 	mpds := make([]*rpstate.NativeMinipoolDetails, len(state.MinipoolDetails))
@@ -176,7 +171,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		return nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("5/5 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
+	state.logLine("6/6 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
 
 	return state, nil
 }
@@ -208,11 +203,6 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
-	isAtlasDeployed, err := IsAtlasDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
-	if err != nil {
-		return nil, nil, fmt.Errorf("error checking if Atlas is deployed: %w", err)
-	}
-
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -222,31 +212,24 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
 		log:                      log,
-		IsAtlasDeployed:          isAtlasDeployed,
 	}
 
 	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isAtlasDeployed, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, isAtlasDeployed)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	/*
-		err = state.getNetworkDetails(cfg, rp, opts, isAtlasDeployed)
-		if err != nil {
-			return nil, fmt.Errorf("error getting network details: %w", err)
-		}
-	*/
 	state.logLine("1/%d - Retrieved network details (%s so far)", steps, time.Since(start))
 
 	// Node details
-	nodeDetails, err := rpstate.GetNativeNodeDetails(rp, contracts, nodeAddress, isAtlasDeployed)
+	nodeDetails, err := rpstate.GetNativeNodeDetails(rp, contracts, nodeAddress)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting node details: %w", err)
 	}
@@ -361,20 +344,20 @@ func (s *NetworkState) CalculateTrueEffectiveStakes(scaleByParticipation bool) (
 					// Doesn't exist on Beacon yet
 					validatorStatus, exists := s.ValidatorDetails[mpd.Pubkey]
 					if !exists {
-						s.logLine("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
+						//s.logLine("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
 						continue
 					}
 
 					// Starts too late
 					intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
 					if validatorStatus.ActivationEpoch > intervalEndEpoch {
-						s.logLine("NOTE: Minipool %s starts on epoch %d which is after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ActivationEpoch, intervalEndEpoch)
+						//s.logLine("NOTE: Minipool %s starts on epoch %d which is after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ActivationEpoch, intervalEndEpoch)
 						continue
 					}
 
 					// Already exited
 					if validatorStatus.ExitEpoch <= intervalEndEpoch {
-						s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
+						//s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
 						continue
 					}
 					// It's eligible, so add up the borrowed and bonded amounts

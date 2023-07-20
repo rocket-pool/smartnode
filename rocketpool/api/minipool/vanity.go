@@ -7,13 +7,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	v110_minipool "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/minipool"
-	v110_node "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
-	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
@@ -31,10 +27,6 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
 	}
@@ -67,57 +59,23 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 	if err != nil {
 		return nil, fmt.Errorf("Error getting RocketMinipool ABI: %w", err)
 	}
-	var minipoolBytecode []byte
 
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+	// Get the address of rocketMinipoolBase
+	rocketMinipoolBaseAddress, err := rp.GetAddress(rocketMinipoolBaseName, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error checking if Atlas has been deployed: %w", err)
+		return nil, fmt.Errorf("error getting minipool base address: %w", err)
+	}
+	bytecodeString := fmt.Sprintf(ozMinipoolBytecode, hexutils.RemovePrefix(rocketMinipoolBaseAddress.Hex()))
+	bytecodeString = hexutils.RemovePrefix(bytecodeString)
+	minipoolBytecode, err := hex.DecodeString(bytecodeString)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding minipool bytecode [%s]: %w", bytecodeString, err)
 	}
 
-	var packedConstructorArgs []byte
-	if !isAtlasDeployed {
-		nodeDepositAddress := cfg.Smartnode.GetV110NodeDepositAddress()
-		minipoolFactoryAddress := cfg.Smartnode.GetV110MinipoolFactoryAddress()
-
-		minipoolBytecode, err = v110_minipool.GetMinipoolBytecode(rp, nil, &minipoolFactoryAddress)
-		if err != nil {
-			return nil, fmt.Errorf("Error getting minipool contract bytecode: %w", err)
-		}
-
-		// Get the deposit type
-		depositType, err := v110_node.GetDepositType(rp, depositAmount, nil, &nodeDepositAddress)
-		if err != nil {
-			return nil, err
-		}
-		if depositType == types.None {
-			return nil, fmt.Errorf("Invalid deposit amount")
-		}
-
-		// Create the hash of the minipool constructor call
-		depositTypeBytes := [32]byte{}
-		depositTypeBytes[0] = byte(depositType)
-		packedConstructorArgs, err = minipoolAbi.Pack("", rp.RocketStorageContract.Address, nodeAddress, depositType)
-		if err != nil {
-			return nil, fmt.Errorf("Error creating minipool constructor args: %w", err)
-		}
-	} else {
-		// Get the address of rocketMinipoolBase
-		rocketMinipoolBaseAddress, err := rp.GetAddress(rocketMinipoolBaseName, nil)
-		if err != nil {
-			return nil, fmt.Errorf("error getting minipool base address: %w", err)
-		}
-		bytecodeString := fmt.Sprintf(ozMinipoolBytecode, hexutils.RemovePrefix(rocketMinipoolBaseAddress.Hex()))
-		bytecodeString = hexutils.RemovePrefix(bytecodeString)
-		minipoolBytecode, err = hex.DecodeString(bytecodeString)
-		if err != nil {
-			return nil, fmt.Errorf("error decoding minipool bytecode [%s]: %w", bytecodeString, err)
-		}
-
-		// Create the hash of the minipool constructor call
-		packedConstructorArgs, err = minipoolAbi.Pack("")
-		if err != nil {
-			return nil, fmt.Errorf("Error creating minipool constructor args: %w", err)
-		}
+	// Create the hash of the minipool constructor call
+	packedConstructorArgs, err := minipoolAbi.Pack("")
+	if err != nil {
+		return nil, fmt.Errorf("Error creating minipool constructor args: %w", err)
 	}
 
 	// Get the initialization data hash

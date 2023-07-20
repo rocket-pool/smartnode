@@ -19,7 +19,7 @@ import (
 const TimeoutSafetyFactor int = 2
 
 // Print the gas price and cost of a TX
-func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasThresholdGwei float64, logger log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) bool {
+func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) bool {
 
 	// Check the gas threshold if requested
 	if checkThreshold {
@@ -55,7 +55,7 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
 }
 
 // Print a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, ec rocketpool.ExecutionClient, logger log.ColorLogger) error {
+func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, ec rocketpool.ExecutionClient, logger *log.ColorLogger) error {
 
 	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
 	hashString := hash.String()

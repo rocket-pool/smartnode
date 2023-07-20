@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/docker/docker/client"
-	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/urfave/cli"
 
@@ -91,16 +90,7 @@ func (d *downloadRewardsTrees) run(state *state.NetworkState) error {
 	}
 
 	// Get the current interval
-	var currentIndex uint64
-	if !state.IsAtlasDeployed {
-		currentIndexBig, err := rewards.GetRewardIndex(d.rp, nil)
-		if err != nil {
-			return err
-		}
-		currentIndex = currentIndexBig.Uint64()
-	} else {
-		currentIndex = state.NetworkDetails.RewardIndex
-	}
+	currentIndex := state.NetworkDetails.RewardIndex
 
 	// Check for missing intervals
 	missingIntervals := []uint64{}
@@ -123,7 +113,7 @@ func (d *downloadRewardsTrees) run(state *state.NetworkState) error {
 	// Download missing intervals
 	for _, missingInterval := range missingIntervals {
 		fmt.Printf("Downloading interval %d file... ", missingInterval)
-		intervalInfo, err := rprewards.GetIntervalInfo(d.rp, d.cfg, nodeAccount.Address, missingInterval)
+		intervalInfo, err := rprewards.GetIntervalInfo(d.rp, d.cfg, nodeAccount.Address, missingInterval, nil)
 		if err != nil {
 			return fmt.Errorf("error getting interval %d info: %w", missingInterval, err)
 		}

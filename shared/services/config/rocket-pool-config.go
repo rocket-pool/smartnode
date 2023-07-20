@@ -836,10 +836,11 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		envVars["EC_ENGINE_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.EnginePort.Value)
 
 		// Handle open API ports
-		if cfg.ExecutionCommon.OpenRpcPorts.Value == true {
-			ecHttpPort := cfg.ExecutionCommon.HttpPort.Value.(uint16)
-			ecWsPort := cfg.ExecutionCommon.WsPort.Value.(uint16)
-			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+		rpcMode := cfg.ExecutionCommon.OpenRpcPorts.Value.(config.RPCMode)
+		if rpcMode.Open() {
+			httpMapping := rpcMode.DockerPortMapping(cfg.ExecutionCommon.HttpPort.Value.(uint16))
+			wsMapping := rpcMode.DockerPortMapping(cfg.ExecutionCommon.WsPort.Value.(uint16))
+			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%s\", \"%s\"", httpMapping, wsMapping)
 		}
 
 		// Common params
@@ -875,14 +876,19 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
 		// Handle open API ports
 		bnOpenPorts := ""
-		if cfg.ConsensusCommon.OpenApiPort.Value == true {
-			ccApiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\"", ccApiPort, ccApiPort)
+		apiPortMode := cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode)
+		if apiPortMode.Open() {
+			apiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
+			bnOpenPorts += fmt.Sprintf(", \"%s\"", apiPortMode.DockerPortMapping(apiPort))
 		}
-		if consensusClient == config.ConsensusClient_Prysm && cfg.Prysm.OpenRpcPort.Value == true {
-			prysmRpcPort := cfg.Prysm.RpcPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\"", prysmRpcPort, prysmRpcPort)
+		if consensusClient == config.ConsensusClient_Prysm {
+			prysmRpcPortMode := cfg.Prysm.OpenRpcPort.Value.(config.RPCMode)
+			if prysmRpcPortMode.Open() {
+				prysmRpcPort := cfg.Prysm.RpcPort.Value.(uint16)
+				bnOpenPorts += fmt.Sprintf(", \"%s\"", prysmRpcPortMode.DockerPortMapping(prysmRpcPort))
+			}
 		}
+
 		envVars["BN_OPEN_PORTS"] = bnOpenPorts
 
 		// Common params
@@ -974,8 +980,9 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 			envVars["EXPORTER_ROOTFS_VOLUME"] = ", \"/:/rootfs:ro\""
 		}
 
-		if cfg.Prometheus.OpenPort.Value == true {
-			envVars["PROMETHEUS_OPEN_PORTS"] = fmt.Sprintf("%d:%d/tcp", cfg.Prometheus.Port.Value, cfg.Prometheus.Port.Value)
+		portMode := cfg.Prometheus.OpenPort.Value.(config.RPCMode)
+		if portMode.Open() {
+			envVars["PROMETHEUS_OPEN_PORTS"] = fmt.Sprintf(", \"%s\"", portMode.DockerPortMapping(cfg.Prometheus.Port.Value.(uint16)))
 		}
 
 		// Additional metrics flags
@@ -1000,9 +1007,10 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 			envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
 
 			// Handle open API port
-			if cfg.MevBoost.OpenRpcPort.Value == true {
+			portMode := cfg.MevBoost.OpenRpcPort.Value.(config.RPCMode)
+			if portMode.Open() {
 				port := cfg.MevBoost.Port.Value.(uint16)
-				envVars["MEV_BOOST_OPEN_API_PORT"] = fmt.Sprintf("\"%d:%d/tcp\"", port, port)
+				envVars["MEV_BOOST_OPEN_API_PORT"] = fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
 			}
 		}
 	}
