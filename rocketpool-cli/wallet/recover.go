@@ -14,7 +14,7 @@ import (
 func recoverWallet(c *cli.Context) error {
 
 	// Get RP client
-	rp, ready, err := rocketpool.NewClientFromCtx(c)
+	rp, ready, err := rocketpool.NewClientFromCtx(c).WithStatus()
 	if err != nil {
 		return err
 	}

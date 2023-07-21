@@ -160,81 +160,57 @@ func checkClientStatus(rp *Client) (bool, error) {
 
 // Create new Rocket Pool client from CLI context without checking for sync status
 // Only use this function from commands that may work if the Daemon service doesn't exist
-func NewClientFromCtxWithoutStatus(c *cli.Context) (*Client, error) {
-	return NewClient(c.GlobalString("config-path"),
-		c.GlobalString("daemon-path"),
-		c.GlobalFloat64("maxFee"),
-		c.GlobalFloat64("maxPrioFee"),
-		c.GlobalUint64("gasLimit"),
-		c.GlobalString("nonce"),
-		c.GlobalBool("debug"))
+// Most users should call NewClientFromCtx(c).WithStatus() or NewClientFromCtx(c).WithReady()
+func NewClientFromCtx(c *cli.Context) *Client {
+
+	// Return client
+	client := &Client{
+		configPath:         os.ExpandEnv(c.GlobalString("config-path")),
+		daemonPath:         os.ExpandEnv(c.GlobalString("daemon-path")),
+		maxFee:             c.GlobalFloat64("maxFee"),
+		maxPrioFee:         c.GlobalFloat64("maxPrioFee"),
+		gasLimit:           c.GlobalUint64("gasLimit"),
+		originalMaxFee:     c.GlobalFloat64("maxFee"),
+		originalMaxPrioFee: c.GlobalFloat64("maxPrioFee"),
+		originalGasLimit:   c.GlobalUint64("gasLimit"),
+		debugPrint:         c.GlobalBool("debug"),
+		forceFallbacks:     false,
+		ignoreSyncCheck:    false,
+	}
+
+	if nonce, ok := c.App.Metadata["nonce"]; ok {
+		client.customNonce = nonce.(*big.Int)
+	}
+
+	return client
 }
 
-// Create new Rocket Pool client from CLI context
+// Check the status of a newly created client and return it
 // Only use this function from commands that may work without the clients being synced-
-// most users should use NewReadyClientFromCtx instead
-func NewClientFromCtx(c *cli.Context) (*Client, bool, error) {
-	out, err := NewClientFromCtxWithoutStatus(c)
+// most users should use WithReady instead
+func (c *Client) WithStatus() (*Client, bool, error) {
+	ready, err := checkClientStatus(c)
 	if err != nil {
+		c.Close()
 		return nil, false, err
 	}
 
-	ready, err := checkClientStatus(out)
-	if err != nil {
-		out.Close()
-		return nil, false, err
-	}
-
-	return out, ready, nil
+	return c, ready, nil
 }
 
-// Create new Rocket Pool client from CLI context and ensure the eth clients are synced and ready
-func NewReadyClientFromCtx(c *cli.Context) (*Client, error) {
-	out, ready, err := NewClientFromCtx(c)
+// Check the status of a newly created client and ensure the eth clients are synced and ready
+func (c *Client) WithReady() (*Client, error) {
+	_, ready, err := c.WithStatus()
 	if err != nil {
 		return nil, err
 	}
 
 	if !ready {
+		c.Close()
 		return nil, fmt.Errorf("clients not ready")
 	}
 
-	return out, nil
-}
-
-// Create new Rocket Pool client
-func NewClient(configPath string, daemonPath string, maxFee float64, maxPrioFee float64, gasLimit uint64, customNonce string, debug bool) (*Client, error) {
-
-	// Initialize SSH client if configured for SSH
-	var sshClient *ssh.Client
-	var customNonceBigInt *big.Int = nil
-	var success bool
-	if customNonce != "" {
-		customNonceBigInt, success = big.NewInt(0).SetString(customNonce, 0)
-		if !success {
-			return nil, fmt.Errorf("Invalid nonce: %s", customNonce)
-		}
-	}
-
-	// Return client
-	client := &Client{
-		configPath:         os.ExpandEnv(configPath),
-		daemonPath:         os.ExpandEnv(daemonPath),
-		maxFee:             maxFee,
-		maxPrioFee:         maxPrioFee,
-		gasLimit:           gasLimit,
-		originalMaxFee:     maxFee,
-		originalMaxPrioFee: maxPrioFee,
-		originalGasLimit:   gasLimit,
-		customNonce:        customNonceBigInt,
-		client:             sshClient,
-		debugPrint:         debug,
-		forceFallbacks:     false,
-		ignoreSyncCheck:    false,
-	}
-
-	return client, nil
-
+	return c, nil
 }
 
 // Close client remote connection

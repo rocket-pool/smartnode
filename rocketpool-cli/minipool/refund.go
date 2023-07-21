@@ -19,7 +19,7 @@ import (
 func refundMinipools(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewReadyClientFromCtx(c)
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}

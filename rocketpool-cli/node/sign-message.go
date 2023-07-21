@@ -23,10 +23,7 @@ type PersonalSignature struct {
 func signMessage(c *cli.Context) error {
 
 	// Get RP client
-	rp, _, err := rocketpool.NewClientFromCtx(c)
-	if err != nil {
-		return err
-	}
+	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
 	// Get & check wallet status

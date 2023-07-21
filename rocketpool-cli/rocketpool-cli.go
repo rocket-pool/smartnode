@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 	"os"
 
 	"github.com/mitchellh/go-homedir"
@@ -62,6 +63,9 @@ ______           _        _    ______           _
 		},
 	}
 	app.Copyright = "(c) 2023 Rocket Pool Pty Ltd"
+
+	// Initialize app metadata
+	app.Metadata = make(map[string]interface{})
 
 	// Set application flags
 	app.Flags = []cli.Flag{
@@ -156,6 +160,19 @@ ______           _        _    ______           _
 			fmt.Fprintln(os.Stderr, "rocketpool should not be run as root. Please try again without 'sudo'.")
 			fmt.Fprintln(os.Stderr, "If you want to run rocketpool as root anyway, use the '--allow-root' option to override this warning.")
 			os.Exit(1)
+		}
+
+		// If set, validate custom nonce
+		customNonce := c.GlobalString("nonce")
+		if customNonce != "" {
+			nonce, ok := big.NewInt(0).SetString(customNonce, 0)
+			if !ok {
+				fmt.Fprintf(os.Stderr, "Invalid nonce: %s\n", customNonce)
+				os.Exit(1)
+			}
+
+			// Save the parsed value on Metadata so we don't need to reparse it later
+			c.App.Metadata["nonce"] = nonce
 		}
 
 		return nil
