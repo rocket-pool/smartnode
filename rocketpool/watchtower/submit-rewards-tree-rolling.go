@@ -186,7 +186,15 @@ func getStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beac
 }
 
 // Update the rolling record and run the submission process if applicable
-func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
+func (t *submitRewardsTree_Rolling) run(headState *state.NetworkState) error {
+	// Wait for clients to sync
+	if err := services.WaitEthClientSynced(t.c, true); err != nil {
+		return err
+	}
+	if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
+		return err
+	}
+
 	t.lock.Lock()
 	if t.isRunning {
 		t.log.Println("Record update is already running in the background.")
@@ -208,7 +216,7 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 		t.log.Printlnf("%s Running record update in a separate thread.", t.logPrefix)
 
 		// Capture the latest head state if one isn't passed in
-		if state == nil {
+		if headState == nil {
 			// Get the latest Beacon block
 			latestBlock, err := t.stateMgr.GetLatestBeaconBlock()
 			if err != nil {
@@ -217,7 +225,7 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 			}
 
 			// Get the state of the network
-			state, err = t.stateMgr.GetStateForSlot(latestBlock.Slot)
+			headState, err = t.stateMgr.GetStateForSlot(latestBlock.Slot)
 			if err != nil {
 				t.handleError(fmt.Errorf("error getting network state: %w", err))
 				return
@@ -226,7 +234,7 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 
 		// Check whether or not the node is in the Oracle DAO
 		isInOdao := false
-		for _, details := range state.OracleDaoMemberDetails {
+		for _, details := range headState.OracleDaoMemberDetails {
 			if details.Address == nodeAddress {
 				isInOdao = true
 				break
@@ -239,10 +247,10 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 			t.handleError(fmt.Errorf("error getting latest finalized block: %w", err))
 			return
 		}
-		latestFinalizedEpoch := latestFinalizedBlock.Slot / state.BeaconConfig.SlotsPerEpoch
+		latestFinalizedEpoch := latestFinalizedBlock.Slot / headState.BeaconConfig.SlotsPerEpoch
 
 		// Check if a rewards interval is due
-		isRewardsSubmissionDue, rewardsSlot, intervalsPassed, startTime, endTime, err := t.isRewardsIntervalSubmissionRequired(state)
+		isRewardsSubmissionDue, rewardsSlot, intervalsPassed, startTime, endTime, err := t.isRewardsIntervalSubmissionRequired(headState)
 		if err != nil {
 			t.handleError(fmt.Errorf("error checking if rewards submission is required: %w", err))
 			return
@@ -250,7 +258,7 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 
 		// If no special upcoming state is required, update normally
 		if !isRewardsSubmissionDue {
-			err = t.recordMgr.UpdateRecordToState(state, latestFinalizedBlock.Slot)
+			err = t.recordMgr.UpdateRecordToState(headState, latestFinalizedBlock.Slot)
 			if err != nil {
 				t.handleError(fmt.Errorf("error updating record: %w", err))
 				return
@@ -263,52 +271,66 @@ func (t *submitRewardsTree_Rolling) run(state *state.NetworkState) error {
 		}
 
 		// Check if rewards reporting is ready
-		rewardsEpoch := rewardsSlot / state.BeaconConfig.SlotsPerEpoch
+		rewardsEpoch := rewardsSlot / headState.BeaconConfig.SlotsPerEpoch
 		requiredRewardsEpoch := rewardsEpoch + 1
 		isRewardsReadyForReport := isRewardsSubmissionDue && (latestFinalizedEpoch >= requiredRewardsEpoch)
 
 		// Run updates and submissions as required
 		if isRewardsReadyForReport {
 			// Check if there's an existing file for this interval, and try submitting that
-			rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(state.NetworkDetails.RewardIndex, true)
+			rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(headState.NetworkDetails.RewardIndex, true)
 			existingRewardsFile, fileBytes, valid, mustRegenerate := t.isExistingFileValid(rewardsTreePath, intervalsPassed, nodeAddress, isInOdao)
 			if existingRewardsFile != nil {
 				if valid && !mustRegenerate {
 					// We already have a valid file and submission
-					t.log.Printlnf("%s Rewards tree has already been submitted for interval %d and is still valid but consensus hasn't been reached yet; nothing to do.", t.logPrefix, state.NetworkDetails.RewardIndex)
+					t.log.Printlnf("%s Rewards tree has already been submitted for interval %d and is still valid but consensus hasn't been reached yet; nothing to do.", t.logPrefix, headState.NetworkDetails.RewardIndex)
 					return
 				} else if !valid && !mustRegenerate {
 					// We already have a valid file but need to submit again
-					t.log.Printlnf("%s Rewards tree has already been created for interval %d but hasn't been submitted yet, attempting resubmission.", t.logPrefix, state.NetworkDetails.RewardIndex)
+					t.log.Printlnf("%s Rewards tree has already been created for interval %d but hasn't been submitted yet, attempting resubmission.", t.logPrefix, headState.NetworkDetails.RewardIndex)
 				} else if !valid && mustRegenerate {
 					// We have a file but it's not valid (probably because too many intervals have passed)
-					t.log.Printlnf("%s Rewards submission for interval %d is due and current file is no longer valid (likely too many intervals have passed since its creation), regenerating it.", t.logPrefix, state.NetworkDetails.RewardIndex)
+					t.log.Printlnf("%s Rewards submission for interval %d is due and current file is no longer valid (likely too many intervals have passed since its creation), regenerating it.", t.logPrefix, headState.NetworkDetails.RewardIndex)
 				}
 			}
 
 			// Get the actual slot to report on
-			rewardsSlot, _, err = t.getTrueRewardsIntervalSubmissionSlot(rewardsSlot)
+			var elBlockNumber uint64
+			rewardsSlot, elBlockNumber, err = t.getTrueRewardsIntervalSubmissionSlot(rewardsSlot)
 			if err != nil {
 				t.handleError(fmt.Errorf("error getting the true rewards interval slot: %w", err))
 				return
 			}
 
-			// Generate the rewards state
-			state, err := t.stateMgr.GetStateForSlot(rewardsSlot)
+			// Get an appropriate client that has access to the target state - this is required if the state gets pruned by the local EC and the
+			// archive EC is required
+			client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, big.NewInt(0).SetUint64(elBlockNumber))
 			if err != nil {
-				t.handleError(fmt.Errorf("error getting state for network balances slot: %w", err))
+				t.handleError(fmt.Errorf("error getting best API client during rewards submission: %w", err))
+				return
+			}
+
+			// Generate the rewards state
+			stateMgr, err := state.NewNetworkStateManager(client, t.cfg, client.Client, t.bc, &t.log)
+			if err != nil {
+				t.handleError(fmt.Errorf("error creating state manager for rewards slot: %w", err))
+				return
+			}
+			state, err := stateMgr.GetStateForSlot(rewardsSlot)
+			if err != nil {
+				t.handleError(fmt.Errorf("error getting state for rewards slot: %w", err))
 				return
 			}
 
 			// Process the rewards interval
 			t.log.Printlnf("%s Running rewards interval submission.", t.logPrefix)
-			err = t.runRewardsIntervalReport(state, isInOdao, intervalsPassed, startTime, endTime, mustRegenerate, existingRewardsFile, fileBytes)
+			err = t.runRewardsIntervalReport(client, state, isInOdao, intervalsPassed, startTime, endTime, mustRegenerate, existingRewardsFile, fileBytes)
 			if err != nil {
 				t.handleError(fmt.Errorf("error running rewards interval report: %w", err))
 				return
 			}
 		} else {
-			t.log.Printlnf("%s Rewards submission for interval %d is due... waiting for epoch %d to be finalized (currently on epoch %d)", t.logPrefix, state.NetworkDetails.RewardIndex, requiredRewardsEpoch, latestFinalizedEpoch)
+			t.log.Printlnf("%s Rewards submission for interval %d is due... waiting for epoch %d to be finalized (currently on epoch %d)", t.logPrefix, headState.NetworkDetails.RewardIndex, requiredRewardsEpoch, latestFinalizedEpoch)
 		}
 
 		t.lock.Lock()
@@ -454,7 +476,7 @@ func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardsTreePath string, 
 }
 
 // Run a rewards interval report submission
-func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(state *state.NetworkState, isInOdao bool, intervalsPassed uint64, startTime time.Time, endTime time.Time, mustRegenerate bool, existingRewardsFile *rprewards.RewardsFile, fileBytes []byte) error {
+func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.RocketPool, state *state.NetworkState, isInOdao bool, intervalsPassed uint64, startTime time.Time, endTime time.Time, mustRegenerate bool, existingRewardsFile *rprewards.RewardsFile, fileBytes []byte) error {
 	// Prep the record for reporting
 	err := t.recordMgr.PrepareRecordForReport(state)
 	if err != nil {
@@ -509,24 +531,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(state *state.Networ
 	}
 
 	// Generate the tree
-	err = t.generateTree(state, intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
-	if err != nil {
-		return fmt.Errorf("error generating rewards tree: %w", err)
-	}
-
-	return nil
-}
-
-// Generate a new rewards tree
-func (t *submitRewardsTree_Rolling) generateTree(state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
-	// Get an appropriate client
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, snapshotElBlockHeader.Number)
-	if err != nil {
-		return fmt.Errorf("error getting best API client during rewards submission: %w", err)
-	}
-
-	// Generate the tree
-	err = t.generateTreeImpl(client, state, intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	err = t.generateTree(client, state, intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
 	if err != nil {
 		return fmt.Errorf("error generating rewards tree: %w", err)
 	}
@@ -535,7 +540,7 @@ func (t *submitRewardsTree_Rolling) generateTree(state *state.NetworkState, inte
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *submitRewardsTree_Rolling) generateTreeImpl(rp *rocketpool.RocketPool, state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
+func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
 
 	// Log
 	if intervalsPassed > 1 {
