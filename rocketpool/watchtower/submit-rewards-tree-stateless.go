@@ -456,10 +456,10 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
 	if err != nil {
 		if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
-			// Set a 21k gas limit which will intentionally be too low and revert
+			// Set a gas limit which will intentionally be too low and revert
 			gasInfo = rocketpool.GasInfo{
-				EstGasLimit:  21000,
-				SafeGasLimit: 21000,
+				EstGasLimit:  utils.RewardsSubmissionForcedGas,
+				SafeGasLimit: utils.RewardsSubmissionForcedGas,
 			}
 			t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
 		} else {

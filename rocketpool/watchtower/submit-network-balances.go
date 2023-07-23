@@ -514,10 +514,10 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	gasInfo, err := network.EstimateSubmitBalancesGas(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	if err != nil {
 		if enableSubmissionAfterConsensus_Balances && strings.Contains(err.Error(), "Network balances for an equal or higher block are set") {
-			// Set a 21k gas limit which will intentionally be too low and revert
+			// Set a gas limit which will intentionally be too low and revert
 			gasInfo = rocketpool.GasInfo{
-				EstGasLimit:  21000,
-				SafeGasLimit: 21000,
+				EstGasLimit:  utils.BalanceSubmissionForcedGas,
+				SafeGasLimit: utils.BalanceSubmissionForcedGas,
 			}
 			t.log.Println("Network balance consensus has already been reached but submitting anyway for the health check.")
 		} else {
