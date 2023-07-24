@@ -5,7 +5,7 @@ import "github.com/rocket-pool/smartnode/shared/services/config"
 const (
 	MinWatchtowerMaxFee        float64 = 200
 	MinWatchtowerPriorityFee   float64 = 3
-	BalanceSubmissionForcedGas uint64  = 32000
+	BalanceSubmissionForcedGas uint64  = 64000
 	RewardsSubmissionForcedGas uint64  = 64000
 )
 

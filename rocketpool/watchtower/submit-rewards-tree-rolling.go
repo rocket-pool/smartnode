@@ -284,6 +284,9 @@ func (t *submitRewardsTree_Rolling) run(headState *state.NetworkState) error {
 				if valid && !mustRegenerate {
 					// We already have a valid file and submission
 					t.log.Printlnf("%s Rewards tree has already been submitted for interval %d and is still valid but consensus hasn't been reached yet; nothing to do.", t.logPrefix, headState.NetworkDetails.RewardIndex)
+					t.lock.Lock()
+					t.isRunning = false
+					t.lock.Unlock()
 					return
 				} else if !valid && !mustRegenerate {
 					// We already have a valid file but need to submit again
