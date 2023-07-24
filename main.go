@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	version    string = "1.3.0"
+	version    string = "1.4.0"
 	colorReset string = "\033[0m"
 	colorRed   string = "\033[31m"
 )
@@ -92,7 +92,7 @@ func main() {
 		&cli.BoolFlag{
 			Name:    "use-rolling-records",
 			Aliases: []string{"rr"},
-			Usage:   "Enable the in-development rolling record capability of the Smartnode tree generator. Only use if you know what you're doing.",
+			Usage:   "Enable the rolling record capability of the Smartnode tree generator. Use this to store and load record caches instead of recalculating attestation performance each time you run treegen.",
 			Value:   false,
 		},
 		&cli.StringFlag{

@@ -33,6 +33,7 @@ Options:
    --ruleset value, -r value      The ruleset to use during generation. If not included, treegen will use the default ruleset for the network based on the rewards interval at the chosen block. Default of 0 will use whatever the ruleset specified by the network based on which block is being targeted. (default: 0)
    --network-info, -n             If provided, this will simply print out info about the network being used, the current rewards interval, and the current ruleset. (default: false)
    --approximate-only, -a         Approximates the rETH stakers' share of the Smoothing Pool at the current block instead of generating the entire rewards tree. Ignores -i. (default: false)
+   --use-rolling-records, -rr     Enable the rolling record capability of the Smartnode tree generator. Use this to store and load record caches instead of recalculating attestation performance each time you run treegen. (default: false)
 ```
 
 
@@ -55,6 +56,7 @@ Options:
    --ruleset value, -r value      The ruleset to use during generation. If not included, treegen will use the default ruleset for the network based on the rewards interval at the chosen block. Default of 0 will use whatever the ruleset specified by the network based on which block is being targeted. (default: 0)
    --network-info, -n             If provided, this will simply print out info about the network being used, the current rewards interval, and the current ruleset. (default: false)
    --approximate-only, -a         Approximates the rETH stakers' share of the Smoothing Pool at the current block instead of generating the entire rewards tree. Ignores -i. (default: false)
+   --use-rolling-records, -rr     Enable the rolling record capability of the Smartnode tree generator. Use this to store and load record caches instead of recalculating attestation performance each time you run treegen. (default: false)
 ```
 
 NOTE: Do *not* use the `-o` flag if you are using this script, as it is already built into the script.
