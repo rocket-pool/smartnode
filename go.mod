@@ -6,8 +6,8 @@ require (
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/fatih/color v1.14.1
 	github.com/goccy/go-json v0.10.2
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20230626055935-da0762dfe203
-	github.com/rocket-pool/smartnode v1.9.3
+	github.com/rocket-pool/rocketpool-go v1.7.0
+	github.com/rocket-pool/smartnode v1.10.0
 	github.com/urfave/cli/v2 v2.23.0
 )
 
