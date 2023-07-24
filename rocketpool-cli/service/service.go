@@ -133,17 +133,11 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== New Grafana Dashboard ===%s\n", colorGreen, colorReset)
-	fmt.Println("We have a new Grafana dashboard out that supports many of the Atlas and Shapella features, such as how much ETH is waiting in your minipools to be distributed. To grab it, follow the import instructions: https://docs.rocketpool.net/guides/node/grafana.html#importing-the-rocket-pool-dashboard\n")
+	fmt.Printf("%s=== BREAKING CHANGE: Port Forwarding ===%s\n", colorGreen, colorReset)
+	fmt.Println("The \"Expose Port\" options for your Execution Client, Consensus Client, MEV-Boost, and Prometheus have changed with the release. Instead of being a simple checkbox, they are now a dropdown: \"Closed\" (previously unchecked), \"Open to Localhost\" (will only be accessible via your local machine, useful for people running on the Cloud / a VPS), and \"Open to External Hosts\" (previously checked). If you previously had your ports opened, you will need to go into the `service config` TUI and reopen them with the appropriate dropdown option after upgrading.\n")
 
-	fmt.Printf("%s=== Rescuing Dissolved Minipools ===%s\n", colorGreen, colorReset)
-	fmt.Println("The new `rocketpool minipool rescue-dissolved` command can be used to \"rescue\" a dissolved minipool so you can retrieve the ETH it has locked on the Beacon Chain. You'll need enough ETH to complete its 32 ETH bond in order to do this. Please see the guide for more details: https://docs.rocketpool.net/guides/node/rescue-dissolved.html\n")
-
-	fmt.Printf("%s=== Geth Changes ===%s\n", colorGreen, colorReset)
-	fmt.Println("Geth now uses the modern Pebble database for all new syncs which is faster and more reliable than the old LevelDB database, so the checkbox for \"Use Pebble\" has been removed from its settings in the config TUI.\nIf you previously synced Geth using the old LevelDB format, it will still work but if you want to upgrade to the new database, you'll need to resync it with `rocketpool service resync-eth1`.\n")
-
-	fmt.Printf("%s=== Nethermind Changes ===%s\n", colorGreen, colorReset)
-	fmt.Println("Nethermind has undergone a significant update and now uses *dramatically* less disk space and RAM. To take advantage of the new disk space savings, you'll need to resync it with `rocketpool service resync-eth1`.")
+	fmt.Printf("%s=== Rolling Records ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode now has experimental support for Rolling Records, which capture snapshots of the entire Rocket Pool network's attestation performance in real time. This makes generating rewards trees at the end of the interval almost instantaneous, rather than taking hours. To learn more about Rolling Records, please visit the v1.10.0 release notes.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
