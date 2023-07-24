@@ -982,7 +982,7 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
 		portMode := cfg.Prometheus.OpenPort.Value.(config.RPCMode)
 		if portMode.Open() {
-			envVars["PROMETHEUS_OPEN_PORTS"] = fmt.Sprintf(", \"%s\"", portMode.DockerPortMapping(cfg.Prometheus.Port.Value.(uint16)))
+			envVars["PROMETHEUS_OPEN_PORTS"] = fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Prometheus.Port.Value.(uint16)))
 		}
 
 		// Additional metrics flags
