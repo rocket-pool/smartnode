@@ -194,6 +194,11 @@ func (c *Erc20Contract) BalanceOf(address common.Address, opts *bind.CallOpts) (
 	return *balance, nil
 }
 
+// Estimate the gas for transferring an ERC20 from one address to another
+func (c *Erc20Contract) EstimateTransferFromGas(from common.Address, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return c.contract.GetTransactionGasInfo(opts, "transferFrom", from, to, amount)
+}
+
 // Transfer an ERC20 from one address to another
 func (c *Erc20Contract) TransferFrom(from common.Address, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
 	tx, err := c.contract.Transact(opts, "transferFrom", from, to, amount)
