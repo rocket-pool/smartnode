@@ -102,7 +102,7 @@ var erc20Abi *abi.ABI
 type Erc20Contract struct {
 	Name     string
 	Symbol   string
-	Decimals uint64
+	Decimals uint8
 	contract *rocketpool.Contract
 }
 
@@ -171,13 +171,13 @@ func (c *Erc20Contract) GetSymbol(opts *bind.CallOpts) (string, error) {
 }
 
 // Get the token decimals
-func (c *Erc20Contract) GetDecimals(opts *bind.CallOpts) (uint64, error) {
-	decimals := new(*big.Int)
+func (c *Erc20Contract) GetDecimals(opts *bind.CallOpts) (uint8, error) {
+	decimals := new(uint8)
 	err := c.contract.Call(opts, decimals, "decimals")
 	if err != nil {
 		return 0, fmt.Errorf("could not get ERC20 decimals: %w", err)
 	}
-	return (*decimals).Uint64(), nil
+	return *decimals, nil
 }
 
 // Get the token balance for an address
