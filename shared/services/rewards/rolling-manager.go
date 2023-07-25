@@ -295,6 +295,12 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 			continue
 		}
 
+		// Check if it has the proper start slot
+		if record.StartSlot != startSlot {
+			r.log.Printlnf("%s File [%s] started on slot %d instead of %d so it cannot be used, trying an earlier checkpoint.", r.logPrefix, filename, record.StartSlot, startSlot)
+			continue
+		}
+
 		epoch := slot / r.beaconCfg.SlotsPerEpoch
 		r.log.Printlnf("%s Loaded file [%s] which ended on slot %d (epoch %d) for rewards interval %d.", r.logPrefix, filename, slot, epoch, record.RewardsInterval)
 		r.Record = record
@@ -581,7 +587,6 @@ func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error 
 	prevAddresses := r.cfg.Smartnode.GetPreviousRewardsPoolAddresses()
 
 	// Get the last rewards event and starting epoch
-	startSlot := uint64(0)
 	found, event, err := rprewards.GetRewardsEvent(r.rp, currentIndex-1, prevAddresses, nil)
 	if err != nil {
 		return fmt.Errorf("error getting event for rewards interval %d: %w", currentIndex-1, err)
@@ -591,9 +596,11 @@ func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error 
 	}
 
 	// Get the start slot of the current interval
-	previousEpoch := event.ConsensusBlock.Uint64() / r.beaconCfg.SlotsPerEpoch
-	newEpoch := previousEpoch + 1
-	startSlot = newEpoch * r.beaconCfg.SlotsPerEpoch
+	startSlot, err := GetStartSlotForInterval(event, r.bc, r.beaconCfg)
+	if err != nil {
+		return fmt.Errorf("error getting start slot for interval %d: %w", currentIndex, err)
+	}
+	newEpoch := startSlot / r.beaconCfg.SlotsPerEpoch
 
 	// Create a new record for the start slot
 	r.log.Printlnf("%s Current record is for interval %d which has passed, creating a new record for interval %d starting on slot %d (epoch %d).", r.logPrefix, r.Record.RewardsInterval, state.NetworkDetails.RewardIndex, startSlot, newEpoch)

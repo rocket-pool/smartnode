@@ -29,6 +29,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/web3-storage/go-w3s-client/adder"
@@ -371,6 +372,52 @@ func decompressFile(compressedBytes []byte) ([]byte, error) {
 	}
 
 	return decompressedBytes, nil
+}
+
+// Gets the start slot for the given interval
+func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beacon.Client, beaconConfig beacon.Eth2Config) (uint64, error) {
+	// Get the chain head
+	head, err := bc.GetBeaconHead()
+	if err != nil {
+		return 0, fmt.Errorf("error getting Beacon chain head: %w", err)
+	}
+
+	// Sanity check to confirm the BN can access the block from the previous interval
+	_, exists, err := bc.GetBeaconBlock(previousIntervalEvent.ConsensusBlock.String())
+	if err != nil {
+		return 0, fmt.Errorf("error verifying block from previous interval: %w", err)
+	}
+	if !exists {
+		return 0, fmt.Errorf("couldn't retrieve CL block from previous interval (slot %d); this likely means you checkpoint sync'd your Beacon Node and it has not backfilled to the previous interval yet so it cannot be used for tree generation", previousIntervalEvent.ConsensusBlock.Uint64())
+	}
+
+	previousEpoch := previousIntervalEvent.ConsensusBlock.Uint64() / beaconConfig.SlotsPerEpoch
+	nextEpoch := previousEpoch + 1
+	consensusStartBlock := nextEpoch * beaconConfig.SlotsPerEpoch
+
+	// Get the first block that isn't missing
+	currentEpoch := consensusStartBlock / beaconConfig.SlotsPerEpoch
+	found := false
+	for currentEpoch <= head.Epoch {
+		_, exists, err := bc.GetBeaconBlock(fmt.Sprint(consensusStartBlock))
+		if err != nil {
+			return 0, fmt.Errorf("error getting EL data for BC slot %d: %w", consensusStartBlock, err)
+		}
+		if !exists {
+			consensusStartBlock++
+			currentEpoch = consensusStartBlock / beaconConfig.SlotsPerEpoch
+		} else {
+			found = true
+			break
+		}
+	}
+
+	// If we've processed all of the blocks up to the chain head and still didn't find it, error out
+	if !found {
+		return 0, fmt.Errorf("scanned up to the chain head (Beacon block %d) but none of the blocks were found.", consensusStartBlock)
+	}
+
+	return consensusStartBlock, nil
 }
 
 // Get the bond and node fee of a minipool for the specified time
