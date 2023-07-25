@@ -75,10 +75,6 @@ const (
 			"constant": false,
 			"inputs": [
 			{
-				"name": "_from",
-				"type": "address"
-			},
-			{
 				"name": "_to",
 				"type": "address"
 			},
@@ -87,7 +83,7 @@ const (
 				"type": "uint256"
 			}
 			],
-			"name": "transferFrom",
+			"name": "transfer",
 			"outputs": [
 			{
 				"name": "success",
@@ -96,7 +92,7 @@ const (
 			],
 			"payable": false,
 			"type": "function"
-		},
+		  },
 	]`
 )
 
@@ -194,16 +190,16 @@ func (c *Erc20Contract) BalanceOf(address common.Address, opts *bind.CallOpts) (
 	return *balance, nil
 }
 
-// Estimate the gas for transferring an ERC20 from one address to another
-func (c *Erc20Contract) EstimateTransferFromGas(from common.Address, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return c.contract.GetTransactionGasInfo(opts, "transferFrom", from, to, amount)
+// Estimate the gas for transferring an ERC20 to another address
+func (c *Erc20Contract) EstimateTransferGas(to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return c.contract.GetTransactionGasInfo(opts, "transfer", to, amount)
 }
 
-// Transfer an ERC20 from one address to another
-func (c *Erc20Contract) TransferFrom(from common.Address, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
-	tx, err := c.contract.Transact(opts, "transferFrom", from, to, amount)
+// Transfer an ERC20 to another address
+func (c *Erc20Contract) Transfer(to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+	tx, err := c.contract.Transact(opts, "transfer", to, amount)
 	if err != nil {
-		return nil, fmt.Errorf("could not transfer ERC20 from %s to %s: %w", from.Hex(), to.Hex(), err)
+		return nil, fmt.Errorf("could not transfer ERC20 to %s: %w", to.Hex(), err)
 	}
 	return tx, nil
 }
