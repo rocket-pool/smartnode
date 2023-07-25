@@ -31,10 +31,16 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 	if err != nil {
 		return err
 	}
+	tokenString := fmt.Sprintf("%s (%s)", canSend.TokenSymbol, token)
+
 	if !canSend.CanSend {
 		fmt.Println("Cannot send tokens:")
 		if canSend.InsufficientBalance {
-			fmt.Printf("The node's %s balance is insufficient.\n", token)
+			if strings.HasPrefix(token, "0x") {
+				fmt.Printf("The node's balance of %s is insufficient.\n", tokenString)
+			} else {
+				fmt.Printf("The node's %s balance is insufficient.\n", token)
+			}
 		}
 		return nil
 	}
@@ -56,9 +62,16 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString))) {
-		fmt.Println("Cancelled.")
-		return nil
+	if strings.HasPrefix(token, "0x") {
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f of %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	} else {
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
 	}
 
 	// Assign max fees
@@ -73,14 +86,22 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 		return err
 	}
 
-	fmt.Printf("Sending %s to %s...\n", token, toAddressString)
+	if strings.HasPrefix(token, "0x") {
+		fmt.Printf("Sending %s to %s...\n", tokenString, toAddressString)
+	} else {
+		fmt.Printf("Sending %s to %s...\n", token, toAddressString)
+	}
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully sent %.6f %s to %s.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString)
+	if strings.HasPrefix(token, "0x") {
+		fmt.Printf("Successfully sent %.6f of %s to %s.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString)
+	} else {
+		fmt.Printf("Successfully sent %.6f %s to %s.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString)
+	}
 	return nil
 
 }

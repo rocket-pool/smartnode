@@ -264,6 +264,8 @@ type CreateVacantMinipoolResponse struct {
 type CanNodeSendResponse struct {
 	Status              string             `json:"status"`
 	Error               string             `json:"error"`
+	TokenName           string             `json:"name"`
+	TokenSymbol         string             `json:"symbol"`
 	CanSend             bool               `json:"canSend"`
 	InsufficientBalance bool               `json:"insufficientBalance"`
 	GasInfo             rocketpool.GasInfo `json:"gasInfo"`

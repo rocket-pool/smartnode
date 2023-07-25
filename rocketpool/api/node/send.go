@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -49,76 +50,100 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 		return nil, err
 	}
 
-	// Handle token type
-	switch token {
-	case "eth":
-
-		// Check node ETH balance
-		ethBalanceWei, err := ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
+	// Handle explicit token addresses
+	if strings.HasPrefix(token, "0x") {
+		tokenAddress := common.HexToAddress(token)
+		contract, err := eth.NewErc20Contract(tokenAddress, ec, nil)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error creating ERC20 contract binding: %w", err)
 		}
-		response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
-		gasInfo, err := eth.EstimateSendTransactionGas(ec, nodeAccount.Address, nil, false, opts)
-		if err != nil {
-			return nil, err
-		}
-		response.GasInfo = gasInfo
+		response.TokenName = contract.Name
+		response.TokenSymbol = contract.Symbol
 
-	case "rpl":
-
-		// Get RocketStorage
-		if err := services.RequireRocketStorage(c); err != nil {
-			return nil, err
-		}
-		// Check node RPL balance
-		rplBalanceWei, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
+		// Get the balance
+		balance, err := contract.BalanceOf(nodeAccount.Address, nil)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error getting ERC20 balance: %w", err)
 		}
-		response.InsufficientBalance = (amountWei.Cmp(rplBalanceWei) > 0)
-		gasInfo, err := tokens.EstimateTransferRPLGas(rp, nodeAccount.Address, amountWei, opts)
+
+		response.InsufficientBalance = (amountWei.Cmp(balance) > 0)
+		gasInfo, err := contract.EstimateTransferGas(nodeAccount.Address, amountWei, opts)
 		if err != nil {
 			return nil, err
 		}
 		response.GasInfo = gasInfo
+	} else {
+		// Handle well-known token types
+		switch token {
+		case "eth":
 
-	case "fsrpl":
+			// Check node ETH balance
+			ethBalanceWei, err := ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+			response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
+			gasInfo, err := eth.EstimateSendTransactionGas(ec, nodeAccount.Address, nil, false, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo = gasInfo
 
-		// Get RocketStorage
-		if err := services.RequireRocketStorage(c); err != nil {
-			return nil, err
-		}
-		// Check node fixed-supply RPL balance
-		fixedSupplyRplBalanceWei, err := tokens.GetFixedSupplyRPLBalance(rp, nodeAccount.Address, nil)
-		if err != nil {
-			return nil, err
-		}
-		response.InsufficientBalance = (amountWei.Cmp(fixedSupplyRplBalanceWei) > 0)
-		gasInfo, err := tokens.EstimateTransferFixedSupplyRPLGas(rp, nodeAccount.Address, amountWei, opts)
-		if err != nil {
-			return nil, err
-		}
-		response.GasInfo = gasInfo
+		case "rpl":
 
-	case "reth":
+			// Get RocketStorage
+			if err := services.RequireRocketStorage(c); err != nil {
+				return nil, err
+			}
+			// Check node RPL balance
+			rplBalanceWei, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+			response.InsufficientBalance = (amountWei.Cmp(rplBalanceWei) > 0)
+			gasInfo, err := tokens.EstimateTransferRPLGas(rp, nodeAccount.Address, amountWei, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo = gasInfo
 
-		// Get RocketStorage
-		if err := services.RequireRocketStorage(c); err != nil {
-			return nil, err
-		}
-		// Check node rETH balance
-		rethBalanceWei, err := tokens.GetRETHBalance(rp, nodeAccount.Address, nil)
-		if err != nil {
-			return nil, err
-		}
-		response.InsufficientBalance = (amountWei.Cmp(rethBalanceWei) > 0)
-		gasInfo, err := tokens.EstimateTransferRETHGas(rp, nodeAccount.Address, amountWei, opts)
-		if err != nil {
-			return nil, err
-		}
-		response.GasInfo = gasInfo
+		case "fsrpl":
 
+			// Get RocketStorage
+			if err := services.RequireRocketStorage(c); err != nil {
+				return nil, err
+			}
+			// Check node fixed-supply RPL balance
+			fixedSupplyRplBalanceWei, err := tokens.GetFixedSupplyRPLBalance(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+			response.InsufficientBalance = (amountWei.Cmp(fixedSupplyRplBalanceWei) > 0)
+			gasInfo, err := tokens.EstimateTransferFixedSupplyRPLGas(rp, nodeAccount.Address, amountWei, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo = gasInfo
+
+		case "reth":
+
+			// Get RocketStorage
+			if err := services.RequireRocketStorage(c); err != nil {
+				return nil, err
+			}
+			// Check node rETH balance
+			rethBalanceWei, err := tokens.GetRETHBalance(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+			response.InsufficientBalance = (amountWei.Cmp(rethBalanceWei) > 0)
+			gasInfo, err := tokens.EstimateTransferRETHGas(rp, nodeAccount.Address, amountWei, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo = gasInfo
+
+		}
 	}
 
 	// Update & return response
@@ -161,57 +186,72 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Handle token type
-	switch token {
-	case "eth":
+	// Handle explicit token addresses
+	if strings.HasPrefix(token, "0x") {
+		tokenAddress := common.HexToAddress(token)
+		contract, err := eth.NewErc20Contract(tokenAddress, ec, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error creating ERC20 contract binding: %w", err)
+		}
 
-		// Transfer ETH
-		opts.Value = amountWei
-		hash, err := eth.SendTransaction(ec, to, w.GetChainID(), nil, false, opts)
+		tx, err := contract.Transfer(to, amountWei, opts)
 		if err != nil {
 			return nil, err
 		}
-		response.TxHash = hash
+		response.TxHash = tx.Hash()
+	} else {
+		// Handle token type
+		switch token {
+		case "eth":
 
-	case "rpl":
+			// Transfer ETH
+			opts.Value = amountWei
+			hash, err := eth.SendTransaction(ec, to, w.GetChainID(), nil, false, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.TxHash = hash
 
-		// Get RocketStorage
-		if err := services.RequireRocketStorage(c); err != nil {
-			return nil, err
+		case "rpl":
+
+			// Get RocketStorage
+			if err := services.RequireRocketStorage(c); err != nil {
+				return nil, err
+			}
+			// Transfer RPL
+			hash, err := tokens.TransferRPL(rp, to, amountWei, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.TxHash = hash
+
+		case "fsrpl":
+
+			// Get RocketStorage
+			if err := services.RequireRocketStorage(c); err != nil {
+				return nil, err
+			}
+			// Transfer fixed-supply RPL
+			hash, err := tokens.TransferFixedSupplyRPL(rp, to, amountWei, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.TxHash = hash
+
+		case "reth":
+
+			// Get RocketStorage
+			if err := services.RequireRocketStorage(c); err != nil {
+				return nil, err
+			}
+			// Transfer rETH
+			hash, err := tokens.TransferRETH(rp, to, amountWei, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.TxHash = hash
+
 		}
-		// Transfer RPL
-		hash, err := tokens.TransferRPL(rp, to, amountWei, opts)
-		if err != nil {
-			return nil, err
-		}
-		response.TxHash = hash
-
-	case "fsrpl":
-
-		// Get RocketStorage
-		if err := services.RequireRocketStorage(c); err != nil {
-			return nil, err
-		}
-		// Transfer fixed-supply RPL
-		hash, err := tokens.TransferFixedSupplyRPL(rp, to, amountWei, opts)
-		if err != nil {
-			return nil, err
-		}
-		response.TxHash = hash
-
-	case "reth":
-
-		// Get RocketStorage
-		if err := services.RequireRocketStorage(c); err != nil {
-			return nil, err
-		}
-		// Transfer rETH
-		hash, err := tokens.TransferRETH(rp, to, amountWei, opts)
-		if err != nil {
-			return nil, err
-		}
-		response.TxHash = hash
-
 	}
 
 	// Return response

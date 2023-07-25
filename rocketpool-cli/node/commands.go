@@ -482,7 +482,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "send",
 				Aliases:   []string{"n"},
-				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported.",
+				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).",
 				UsageText: "rocketpool node send [options] amount token to",
 				Flags: []cli.Flag{
 					cli.BoolFlag{

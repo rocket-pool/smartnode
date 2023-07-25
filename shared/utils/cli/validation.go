@@ -110,6 +110,28 @@ func ValidatePercentage(name, value string) (float64, error) {
 
 // Validate a token type
 func ValidateTokenType(name, value string) (string, error) {
+	// Check if this is a token address
+	// This was taken from the Ethereum library: https://github.com/ethereum/go-ethereum/blob/master/common/types.go
+	if strings.HasPrefix(value, "0x") {
+		// Remove the 0x prefix
+		val := value[2:]
+
+		// Zero pad if it's an odd number of chars
+		if len(val)%2 == 1 {
+			val = "0" + val
+		}
+
+		// Attempt parsing
+		_, err := hex.DecodeString(val)
+		if err != nil {
+			return "", fmt.Errorf("Invalid %s '%s' - could not parse address: %w", name, value, err)
+		}
+
+		// If it passes, return the original value
+		return value, nil
+	}
+
+	// Not a token address, check against the well-known names
 	val := strings.ToLower(value)
 	if !(val == "eth" || val == "rpl" || val == "fsrpl" || val == "reth") {
 		return "", fmt.Errorf("Invalid %s '%s' - valid types are 'ETH', 'RPL', 'fsRPL', and 'rETH'", name, value)
