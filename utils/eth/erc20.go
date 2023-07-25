@@ -92,7 +92,7 @@ const (
 			],
 			"payable": false,
 			"type": "function"
-		  },
+		}
 	]`
 )
 
