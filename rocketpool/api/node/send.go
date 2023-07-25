@@ -16,7 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNodeSendResponse, error) {
+func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Address) (*api.CanNodeSendResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -44,15 +44,53 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 		return nil, err
 	}
 
-	// Get gas estimate
+	// Get the sending opts
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
 
+	// Get the well-known contracts
+	rplContract, err := rp.GetContract("rocketTokenRPL", nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting RPL contract address: %w", err)
+	}
+	fsrplContract, err := rp.GetContract("rocketTokenRPLFixedSupply", nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting legacy RPL contract address: %w", err)
+	}
+	rethContract, err := rp.GetContract("rocketTokenRETH", nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting rETH contract address: %w", err)
+	}
+
+	// Error out if the recipient is one of the contract addresses
+	if to == *rplContract.Address {
+		return nil, fmt.Errorf("sending tokens to the RPL contract address is prohibited for safety")
+	}
+	if to == *fsrplContract.Address {
+		return nil, fmt.Errorf("sending tokens to the legacy RPL contract address is prohibited for safety")
+	}
+	if to == *rethContract.Address {
+		return nil, fmt.Errorf("sending tokens to the rETH contract address is prohibited for safety")
+	}
+
 	// Handle explicit token addresses
 	if strings.HasPrefix(token, "0x") {
 		tokenAddress := common.HexToAddress(token)
+
+		// Error out if using one of the well-known ones
+		if tokenAddress == *rplContract.Address {
+			return nil, fmt.Errorf("sending RPL via the token address is prohibited for safety; please use 'rpl' as the token to send instead of its address")
+		}
+		if tokenAddress == *fsrplContract.Address {
+			return nil, fmt.Errorf("sending legacy RPL via the token address is prohibited for safety; please use 'fsrpl' as the token to send instead of its address")
+		}
+		if tokenAddress == *rethContract.Address {
+			return nil, fmt.Errorf("sending rETH via the token address is prohibited for safety; please use 'reth' as the token to send instead of its address")
+		}
+
+		// Create the ERC20 binding
 		contract, err := eth.NewErc20Contract(tokenAddress, ec, nil)
 		if err != nil {
 			return nil, fmt.Errorf("error creating ERC20 contract binding: %w", err)
@@ -65,9 +103,11 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 		if err != nil {
 			return nil, fmt.Errorf("error getting ERC20 balance: %w", err)
 		}
-
+		response.Balance = balance
 		response.InsufficientBalance = (amountWei.Cmp(balance) > 0)
-		gasInfo, err := contract.EstimateTransferGas(nodeAccount.Address, amountWei, opts)
+
+		// Get the gas info
+		gasInfo, err := contract.EstimateTransferGas(to, amountWei, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -82,8 +122,9 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 			if err != nil {
 				return nil, err
 			}
+			response.Balance = ethBalanceWei
 			response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
-			gasInfo, err := eth.EstimateSendTransactionGas(ec, nodeAccount.Address, nil, false, opts)
+			gasInfo, err := eth.EstimateSendTransactionGas(ec, to, nil, false, opts)
 			if err != nil {
 				return nil, err
 			}
@@ -100,8 +141,9 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 			if err != nil {
 				return nil, err
 			}
+			response.Balance = rplBalanceWei
 			response.InsufficientBalance = (amountWei.Cmp(rplBalanceWei) > 0)
-			gasInfo, err := tokens.EstimateTransferRPLGas(rp, nodeAccount.Address, amountWei, opts)
+			gasInfo, err := tokens.EstimateTransferRPLGas(rp, to, amountWei, opts)
 			if err != nil {
 				return nil, err
 			}
@@ -118,8 +160,9 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 			if err != nil {
 				return nil, err
 			}
+			response.Balance = fixedSupplyRplBalanceWei
 			response.InsufficientBalance = (amountWei.Cmp(fixedSupplyRplBalanceWei) > 0)
-			gasInfo, err := tokens.EstimateTransferFixedSupplyRPLGas(rp, nodeAccount.Address, amountWei, opts)
+			gasInfo, err := tokens.EstimateTransferFixedSupplyRPLGas(rp, to, amountWei, opts)
 			if err != nil {
 				return nil, err
 			}
@@ -136,8 +179,9 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 			if err != nil {
 				return nil, err
 			}
+			response.Balance = rethBalanceWei
 			response.InsufficientBalance = (amountWei.Cmp(rethBalanceWei) > 0)
-			gasInfo, err := tokens.EstimateTransferRETHGas(rp, nodeAccount.Address, amountWei, opts)
+			gasInfo, err := tokens.EstimateTransferRETHGas(rp, to, amountWei, opts)
 			if err != nil {
 				return nil, err
 			}

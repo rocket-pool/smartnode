@@ -26,24 +26,7 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 	// Get amount in wei
 	amountWei := eth.EthToWei(amount)
 
-	// Check tokens can be sent
-	canSend, err := rp.CanNodeSend(amountWei, token)
-	if err != nil {
-		return err
-	}
-	tokenString := fmt.Sprintf("%s (%s)", canSend.TokenSymbol, token)
-
-	if !canSend.CanSend {
-		fmt.Println("Cannot send tokens:")
-		if canSend.InsufficientBalance {
-			if strings.HasPrefix(token, "0x") {
-				fmt.Printf("The node's balance of %s is insufficient.\n", tokenString)
-			} else {
-				fmt.Printf("The node's %s balance is insufficient.\n", token)
-			}
-		}
-		return nil
-	}
+	// Get the recipient
 	var toAddress common.Address
 	var toAddressString string
 	if strings.Contains(toAddressOrENS, ".") {
@@ -61,13 +44,39 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 		toAddressString = toAddress.Hex()
 	}
 
+	// Check tokens can be sent
+	canSend, err := rp.CanNodeSend(amountWei, token, toAddress)
+	if err != nil {
+		return err
+	}
+	tokenString := fmt.Sprintf("%s (%s)", canSend.TokenSymbol, token)
+
+	if !canSend.CanSend {
+		fmt.Println("Cannot send tokens:")
+		if canSend.InsufficientBalance {
+			if strings.HasPrefix(token, "0x") {
+				fmt.Printf("The node's balance of %s is insufficient.\n", tokenString)
+			} else {
+				fmt.Printf("The node's %s balance is insufficient.\n", token)
+			}
+		}
+		return nil
+	}
+
 	// Prompt for confirmation
 	if strings.HasPrefix(token, "0x") {
+		fmt.Printf("Token address:   %s\n", token)
+		fmt.Printf("Token name:      %s\n", canSend.TokenName)
+		fmt.Printf("Token symbol:    %s\n", canSend.TokenSymbol)
+		fmt.Printf("Node balance:    %.6f %s\n\n", eth.WeiToEth(canSend.Balance), canSend.TokenSymbol)
+		fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", colorYellow, colorReset)
+
 		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f of %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	} else {
+		fmt.Printf("Node balance:    %.6f %s\n\n", eth.WeiToEth(canSend.Balance), token)
 		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString))) {
 			fmt.Println("Cancelled.")
 			return nil

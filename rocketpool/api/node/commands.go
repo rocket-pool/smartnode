@@ -668,11 +668,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-send",
 				Usage:     "Check whether the node can send ETH or tokens to an address",
-				UsageText: "rocketpool api node can-send amount token",
+				UsageText: "rocketpool api node can-send amount token to",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
 					amountWei, err := cliutils.ValidatePositiveWeiAmount("send amount", c.Args().Get(0))
@@ -683,9 +683,13 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
+					toAddress, err := cliutils.ValidateAddress("to address", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
 
 					// Run
-					api.PrintResponse(canNodeSend(c, amountWei, token))
+					api.PrintResponse(canNodeSend(c, amountWei, token, toAddress))
 					return nil
 
 				},
