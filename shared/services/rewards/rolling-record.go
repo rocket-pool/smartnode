@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -24,6 +25,7 @@ type RollingRecord struct {
 	LastDutiesSlot    uint64                   `json:"lastDutiesSlot"`
 	ValidatorIndexMap map[string]*MinipoolInfo `json:"validatorIndexMap"`
 	RewardsInterval   uint64                   `json:"rewardsInterval"`
+	SmartnodeVersion  string                   `json:"smartnodeVersion,omitempty"`
 
 	// Private fields
 	bc                 beacon.Client       `json:"-"`
@@ -45,6 +47,7 @@ func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, 
 		LastDutiesSlot:    0,
 		ValidatorIndexMap: map[string]*MinipoolInfo{},
 		RewardsInterval:   rewardsInterval,
+		SmartnodeVersion:  shared.RocketPoolVersion,
 
 		bc:           bc,
 		beaconConfig: beaconConfig,
