@@ -123,6 +123,7 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		finalizedCount = float64(finalizedCountUint)
+		stakingCount -= finalizedCount // Remove finalized minipools from the staking count
 		return nil
 	})
 
