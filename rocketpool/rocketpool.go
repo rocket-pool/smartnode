@@ -50,42 +50,6 @@ func main() {
 			Usage: "Rocket Pool service user config absolute `path`",
 			Value: "/.rocketpool/user-settings.yml",
 		},
-		cli.StringFlag{
-			Name:  "storageAddress, a",
-			Usage: "Rocket Pool storage contract `address`",
-		},
-		cli.StringFlag{
-			Name:  "oneInchOracleAddress, o",
-			Usage: "1inch exchange oracle contract `address`",
-		},
-		cli.StringFlag{
-			Name:  "rplTokenAddress, t",
-			Usage: "RPL token contract `address`",
-		},
-		cli.StringFlag{
-			Name:  "rplFaucetAddress, f",
-			Usage: "Rocket Pool RPL token faucet `address`",
-		},
-		cli.StringFlag{
-			Name:  "password, p",
-			Usage: "Rocket Pool wallet password file absolute `path`",
-		},
-		cli.StringFlag{
-			Name:  "wallet, w",
-			Usage: "Rocket Pool wallet file absolute `path`",
-		},
-		cli.StringFlag{
-			Name:  "validatorKeychain, k",
-			Usage: "Rocket Pool validator keychain absolute `path`",
-		},
-		cli.StringFlag{
-			Name:  "eth1Provider, e",
-			Usage: "Eth 1.0 provider `address`",
-		},
-		cli.StringFlag{
-			Name:  "eth2Provider, b",
-			Usage: "Eth 2.0 provider `address`",
-		},
 		cli.Float64Flag{
 			Name:  "maxFee",
 			Usage: "Desired max fee in gwei",
@@ -123,10 +87,6 @@ func main() {
 		cli.BoolFlag{
 			Name:  "use-protected-api",
 			Usage: "Set this to true to use the Flashbots Protect RPC instead of your local Execution Client. Useful to ensure your transactions aren't front-run.",
-		},
-		cli.BoolFlag{
-			Name:  "use-rolling-records",
-			Usage: "**FOR DEVELOPMENT TESTING ONLY, DO NOT ENABLE THIS FLAG.**",
 		},
 	}
 
