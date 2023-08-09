@@ -432,6 +432,10 @@ func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardsTreePath string, 
 			return nil, nil, false, true
 		}
 		if !hasSubmitted {
+			if proofWrapper.IntervalsPassed != intervalsPassed {
+				t.log.Printlnf("%s Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...", t.logPrefix, proofWrapper.Index, proofWrapper.IntervalsPassed, intervalsPassed)
+				return &proofWrapper, fileBytes, false, true
+			}
 			t.log.Printlnf("%s Existing file for interval %d has not been submitted yet.", t.logPrefix, proofWrapper.Index)
 			return &proofWrapper, fileBytes, false, false
 		}
