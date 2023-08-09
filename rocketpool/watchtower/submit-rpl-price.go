@@ -292,6 +292,13 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		t.log.Printlnf("Error submitting zkSync Era price: %s", err.Error())
 	}
 
+	// Check if Base rate is stale and submit
+	err = t.submitBasePrice()
+	if err != nil {
+		// Error is not fatal for this task so print and continue
+		t.log.Printlnf("Error submitting Base price: %s", err.Error())
+	}
+
 	// Log
 	t.log.Println("Checking for RPL price checkpoint...")
 
@@ -1143,6 +1150,146 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 
 		// Log
 		t.log.Printlnf("Successfully submitted zkSync Era price for block %d.", blockNumber)
+
+	}
+
+	return nil
+}
+
+// Checks if Base rate is stale and if it's our turn to submit, calls submitRate on the messenger
+func (t *submitRplPrice) submitBasePrice() error {
+	priceMessengerAddress := t.cfg.Smartnode.GetBaseMessengerAddress()
+
+	if priceMessengerAddress == "" {
+		// No price messenger deployed on the current network
+		return nil
+	}
+
+	// Get transactor
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return fmt.Errorf("Failed getting transactor: %q", err)
+	}
+
+	// Construct the price messenger contract instance - this is the same as the Optimism messenger
+	parsed, err := abi.JSON(strings.NewReader(OptimismMessengerAbi))
+	if err != nil {
+		return fmt.Errorf("Failed decoding ABI: %q", err)
+	}
+
+	addr := common.HexToAddress(priceMessengerAddress)
+	priceMessengerContract := bind.NewBoundContract(addr, parsed, t.ec, t.ec, t.ec)
+	priceMessenger := rocketpool.Contract{
+		Contract: priceMessengerContract,
+		Address:  &addr,
+		ABI:      &parsed,
+		Client:   t.ec,
+	}
+
+	// Check if the rate is stale
+	var out []interface{}
+	err = priceMessengerContract.Call(nil, &out, "rateStale")
+
+	if err != nil {
+		return fmt.Errorf("Failed to query rate staleness for Base: %q", err)
+	}
+
+	rateStale := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	if !rateStale {
+		// Nothing to do
+		return nil
+	}
+
+	// Get total number of ODAO members
+	count, err := trustednode.GetMemberCount(t.rp, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to get member count: %q", err)
+	}
+
+	// Find out which index we are
+	var index = uint64(0)
+	for i := uint64(0); i < count; i++ {
+		addr, err := trustednode.GetMemberAt(t.rp, i, nil)
+		if err != nil {
+			return fmt.Errorf("Failed to get member at %d: %q", i, err)
+		}
+
+		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+			index = i
+			break
+		}
+	}
+
+	// Get current block number
+	blockNumber, err := t.ec.BlockNumber(context.Background())
+	if err != nil {
+		return fmt.Errorf("Failed to get block number: %q", err)
+	}
+
+	// Calculate whose turn it is to submit
+	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+
+	if index == indexToSubmit {
+
+		// Temporary gas calculations until this gets put into a binding
+		input, err := priceMessenger.ABI.Pack("submitRate")
+		if err != nil {
+			return fmt.Errorf("Could not encode input data: %w", err)
+		}
+
+		// Estimate gas limit
+		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
+			From:     opts.From,
+			To:       priceMessenger.Address,
+			GasPrice: big.NewInt(0), // use 0 gwei for simulation
+			Value:    opts.Value,
+			Data:     input,
+		})
+		if err != nil {
+			return fmt.Errorf("Error estimating gas limit of submitBasePrice: %w", err)
+		}
+
+		// Get the safe gas limit
+		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
+		if gasLimit > rocketpool.MaxGasLimit {
+			gasLimit = rocketpool.MaxGasLimit
+		}
+		if safeGasLimit > rocketpool.MaxGasLimit {
+			safeGasLimit = rocketpool.MaxGasLimit
+		}
+		gasInfo := rocketpool.GasInfo{
+			EstGasLimit:  gasLimit,
+			SafeGasLimit: safeGasLimit,
+		}
+
+		// Print the gas info
+		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+			return nil
+		}
+
+		// Set the gas settings
+		opts.GasFeeCap = maxFee
+		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasLimit = gasInfo.SafeGasLimit
+
+		t.log.Println("Submitting rate to Base...")
+
+		// Submit rates
+		tx, err := priceMessenger.Transact(opts, "submitRate")
+		if err != nil {
+			return fmt.Errorf("Failed to submit rate: %q", err)
+		}
+
+		// Print TX info and wait for it to be included in a block
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+		if err != nil {
+			return err
+		}
+
+		// Log
+		t.log.Printlnf("Successfully submitted Base price for block %d.", blockNumber)
 
 	}
 

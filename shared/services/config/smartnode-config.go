@@ -179,6 +179,9 @@ type SmartnodeConfig struct {
 	// The RocketZkSyncPriceMessenger zkSyncEra address for each network
 	zkSyncEraPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
+	// The RocketBasePriceMessenger Base address for each network
+	basePriceMessengerAddress map[config.Network]string `yaml:"-"`
+
 	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
 	rplTwapPoolAddress map[config.Network]string `yaml:"-"`
 
@@ -564,6 +567,12 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Devnet:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
 		},
 
+		basePriceMessengerAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x64A5856869C06B0188C84A5F83d712bbAc03517d",
+			config.Network_Prater:  "",
+			config.Network_Devnet:  "",
+		},
+
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
 			config.Network_Prater:  "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
@@ -854,6 +863,10 @@ func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
 
 func (cfg *SmartnodeConfig) GetZkSyncEraMessengerAddress() string {
 	return cfg.zkSyncEraPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetBaseMessengerAddress() string {
+	return cfg.basePriceMessengerAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetRplTwapPoolAddress() string {
