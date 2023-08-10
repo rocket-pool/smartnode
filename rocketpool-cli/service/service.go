@@ -134,10 +134,10 @@ ______           _        _    ______           _
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
 	fmt.Printf("%s=== BREAKING CHANGE: Port Forwarding ===%s\n", colorGreen, colorReset)
-	fmt.Println("The \"Expose Port\" options for your Execution Client, Consensus Client, MEV-Boost, and Prometheus have changed with the release. Instead of being a simple checkbox, they are now a dropdown: \"Closed\" (previously unchecked), \"Open to Localhost\" (will only be accessible via your local machine, useful for people running on the Cloud / a VPS), and \"Open to External Hosts\" (previously checked). If you previously had your ports opened, you will need to go into the `service config` TUI and reopen them with the appropriate dropdown option after upgrading.\n")
+	fmt.Println("The \"Expose Port\" options for your Execution Client, Consensus Client, MEV-Boost, and Prometheus have changed from the v1.9 series. Instead of being a simple checkbox, they are now a dropdown: \"Closed\" (previously unchecked), \"Open to Localhost\" (will only be accessible via your local machine, useful for people running on the Cloud / a VPS), and \"Open to External Hosts\" (previously checked). If you previously had your ports opened, you will need to go into the `service config` TUI and reopen them with the appropriate dropdown option after upgrading.\n")
 
 	fmt.Printf("%s=== Rolling Records ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now has experimental support for Rolling Records, which capture snapshots of the entire Rocket Pool network's attestation performance in real time. This makes generating rewards trees at the end of the interval almost instantaneous, rather than taking hours. To learn more about Rolling Records, please visit the v1.10.0 release notes.")
+	fmt.Println("The Smartnode now has experimental support for Rolling Records, which capture snapshots of the entire Rocket Pool network's attestation performance in real time. This makes generating rewards trees at the end of the interval almost instantaneous, rather than taking hours. To learn more about Rolling Records, please visit the release notes for Smartnode v1.10.0.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
