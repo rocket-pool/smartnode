@@ -11,9 +11,7 @@ func createLocalMevStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxW
 
 	// Create the labels
 	regulatedAllLabel := strings.TrimPrefix(wiz.md.Config.MevBoost.EnableRegulatedAllMev.Name, "Enable ")
-	regulatedNoSandwichLabel := strings.TrimPrefix(wiz.md.Config.MevBoost.EnableRegulatedNoSandwich.Name, "Enable ")
 	unregulatedAllLabel := strings.TrimPrefix(wiz.md.Config.MevBoost.EnableUnregulatedAllMev.Name, "Enable ")
-	unregulatedNoSandwichLabel := strings.TrimPrefix(wiz.md.Config.MevBoost.EnableUnregulatedNoSandwich.Name, "Enable ")
 
 	helperText := "Select the profiles you would like to enable below. Read the descriptions carefully! Leave all options unchecked if you wish to opt out of MEV-Boost for now, [orange]but it will be required in the future.[white]\n\n[lime]Please read our guide to learn more about MEV:\nhttps://docs.rocketpool.net/guides/node/mev.html\n"
 
@@ -36,19 +34,9 @@ func createLocalMevStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxW
 			wiz.md.Config.MevBoost.EnableRegulatedAllMev.Value = enabled
 			atLeastOneEnabled = atLeastOneEnabled || enabled
 		}
-		enabled, exists = choices[regulatedNoSandwichLabel]
-		if exists {
-			wiz.md.Config.MevBoost.EnableRegulatedNoSandwich.Value = enabled
-			atLeastOneEnabled = atLeastOneEnabled || enabled
-		}
 		enabled, exists = choices[unregulatedAllLabel]
 		if exists {
 			wiz.md.Config.MevBoost.EnableUnregulatedAllMev.Value = enabled
-			atLeastOneEnabled = atLeastOneEnabled || enabled
-		}
-		enabled, exists = choices[unregulatedNoSandwichLabel]
-		if exists {
-			wiz.md.Config.MevBoost.EnableUnregulatedNoSandwich.Value = enabled
 			atLeastOneEnabled = atLeastOneEnabled || enabled
 		}
 
@@ -80,7 +68,7 @@ func getMevChoices(config *config.MevBoostConfig) ([]string, []string, []bool) {
 	descriptions := []string{}
 	settings := []bool{}
 
-	regulatedAllMev, regulatedNoSandwich, unregulatedAllMev, unregulatedNoSandwich := config.GetAvailableProfiles()
+	regulatedAllMev, unregulatedAllMev := config.GetAvailableProfiles()
 
 	if unregulatedAllMev {
 		label := strings.TrimPrefix(config.EnableUnregulatedAllMev.Name, "Enable ")
@@ -88,23 +76,11 @@ func getMevChoices(config *config.MevBoostConfig) ([]string, []string, []bool) {
 		descriptions = append(descriptions, getDescriptionBody(config.EnableUnregulatedAllMev.Description))
 		settings = append(settings, config.EnableUnregulatedAllMev.Value.(bool))
 	}
-	if unregulatedNoSandwich {
-		label := strings.TrimPrefix(config.EnableUnregulatedNoSandwich.Name, "Enable ")
-		labels = append(labels, label)
-		descriptions = append(descriptions, getDescriptionBody(config.EnableUnregulatedNoSandwich.Description))
-		settings = append(settings, config.EnableUnregulatedNoSandwich.Value.(bool))
-	}
 	if regulatedAllMev {
 		label := strings.TrimPrefix(config.EnableRegulatedAllMev.Name, "Enable ")
 		labels = append(labels, label)
 		descriptions = append(descriptions, getDescriptionBody(config.EnableRegulatedAllMev.Description))
 		settings = append(settings, config.EnableRegulatedAllMev.Value.(bool))
-	}
-	if regulatedNoSandwich {
-		label := strings.TrimPrefix(config.EnableRegulatedNoSandwich.Name, "Enable ")
-		labels = append(labels, label)
-		descriptions = append(descriptions, getDescriptionBody(config.EnableRegulatedNoSandwich.Description))
-		settings = append(settings, config.EnableRegulatedNoSandwich.Value.(bool))
 	}
 
 	return labels, descriptions, settings

@@ -32,20 +32,11 @@ type MevBoostConfig struct {
 	// Regulated, all types
 	EnableRegulatedAllMev config.Parameter `yaml:"enableRegulatedAllMev,omitempty"`
 
-	// Regulated, no sandwiching
-	EnableRegulatedNoSandwich config.Parameter `yaml:"enableRegulatedNoSandwich,omitempty"`
-
 	// Unregulated, all types
 	EnableUnregulatedAllMev config.Parameter `yaml:"enableUnregulatedAllMev,omitempty"`
 
-	// Unregulated, no sandwiching
-	EnableUnregulatedNoSandwich config.Parameter `yaml:"enableUnregulatedNoSandwich,omitempty"`
-
 	// Flashbots relay
 	FlashbotsRelay config.Parameter `yaml:"flashbotsEnabled,omitempty"`
-
-	// bloXroute ethical relay
-	BloxRouteEthicalRelay config.Parameter `yaml:"bloxRouteEthicalEnabled,omitempty"`
 
 	// bloXroute max profit relay
 	BloxRouteMaxProfitRelay config.Parameter `yaml:"bloxRouteMaxProfitEnabled,omitempty"`
@@ -147,15 +138,12 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			}},
 		},
 
-		EnableRegulatedAllMev:       generateProfileParameter("enableRegulatedAllMev", relays, true, false),
-		EnableRegulatedNoSandwich:   generateProfileParameter("enableRegulatedNoSandwich", relays, true, true),
-		EnableUnregulatedAllMev:     generateProfileParameter("enableUnregulatedAllMev", relays, false, false),
-		EnableUnregulatedNoSandwich: generateProfileParameter("enableUnregulatedNoSandwich", relays, false, true),
+		EnableRegulatedAllMev:   generateProfileParameter("enableRegulatedAllMev", relays, true),
+		EnableUnregulatedAllMev: generateProfileParameter("enableUnregulatedAllMev", relays, false),
 
 		// Explicit relay params
 		FlashbotsRelay:          generateRelayParameter("flashbotsEnabled", relayMap[config.MevRelayID_Flashbots]),
 		BloxRouteMaxProfitRelay: generateRelayParameter("bloxRouteMaxProfitEnabled", relayMap[config.MevRelayID_BloxrouteMaxProfit]),
-		BloxRouteEthicalRelay:   generateRelayParameter("bloxRouteEthicalEnabled", relayMap[config.MevRelayID_BloxrouteEthical]),
 		BloxRouteRegulatedRelay: generateRelayParameter("bloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
 		BlocknativeRelay:        generateRelayParameter("blocknativeEnabled", relayMap[config.MevRelayID_Blocknative]),
 		EdenRelay:               generateRelayParameter("edenEnabled", relayMap[config.MevRelayID_Eden]),
@@ -234,11 +222,8 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.Mode,
 		&cfg.SelectionMode,
 		&cfg.EnableRegulatedAllMev,
-		&cfg.EnableRegulatedNoSandwich,
 		&cfg.EnableUnregulatedAllMev,
-		&cfg.EnableUnregulatedNoSandwich,
 		&cfg.FlashbotsRelay,
-		&cfg.BloxRouteEthicalRelay,
 		&cfg.BloxRouteMaxProfitRelay,
 		&cfg.BloxRouteRegulatedRelay,
 		&cfg.BlocknativeRelay,
@@ -259,11 +244,9 @@ func (cfg *MevBoostConfig) GetConfigTitle() string {
 }
 
 // Get the profiles that are available for the current network
-func (cfg *MevBoostConfig) GetAvailableProfiles() (bool, bool, bool, bool) {
+func (cfg *MevBoostConfig) GetAvailableProfiles() (bool, bool) {
 	regulatedAllMev := false
-	regulatedNoSandwich := false
 	unregulatedAllMev := false
-	unregulatedNoSandwich := false
 
 	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
 	for _, relay := range cfg.relays {
@@ -271,13 +254,11 @@ func (cfg *MevBoostConfig) GetAvailableProfiles() (bool, bool, bool, bool) {
 		if !exists {
 			continue
 		}
-		regulatedAllMev = regulatedAllMev || (relay.Regulated && !relay.NoSandwiching)
-		regulatedNoSandwich = regulatedNoSandwich || (relay.Regulated && relay.NoSandwiching)
-		unregulatedAllMev = unregulatedAllMev || (!relay.Regulated && !relay.NoSandwiching)
-		unregulatedNoSandwich = unregulatedNoSandwich || (!relay.Regulated && relay.NoSandwiching)
+		regulatedAllMev = regulatedAllMev || relay.Regulated
+		unregulatedAllMev = unregulatedAllMev || !relay.Regulated
 	}
 
-	return regulatedAllMev, regulatedNoSandwich, unregulatedAllMev, unregulatedNoSandwich
+	return regulatedAllMev, unregulatedAllMev
 }
 
 // Get the relays that are available for the current network
@@ -309,24 +290,12 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 				continue
 			}
 			if relay.Regulated {
-				if relay.NoSandwiching {
-					if cfg.EnableRegulatedNoSandwich.Value == true {
-						relays = append(relays, relay)
-					}
-				} else {
-					if cfg.EnableRegulatedAllMev.Value == true {
-						relays = append(relays, relay)
-					}
+				if cfg.EnableRegulatedAllMev.Value == true {
+					relays = append(relays, relay)
 				}
 			} else {
-				if relay.NoSandwiching {
-					if cfg.EnableUnregulatedNoSandwich.Value == true {
-						relays = append(relays, relay)
-					}
-				} else {
-					if cfg.EnableUnregulatedAllMev.Value == true {
-						relays = append(relays, relay)
-					}
+				if cfg.EnableUnregulatedAllMev.Value == true {
+					relays = append(relays, relay)
 				}
 			}
 		}
@@ -336,12 +305,6 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 			_, exists := cfg.relayMap[config.MevRelayID_Flashbots].Urls[currentNetwork]
 			if exists {
 				relays = append(relays, cfg.relayMap[config.MevRelayID_Flashbots])
-			}
-		}
-		if cfg.BloxRouteEthicalRelay.Value == true {
-			_, exists := cfg.relayMap[config.MevRelayID_BloxrouteEthical].Urls[currentNetwork]
-			if exists {
-				relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteEthical])
 			}
 		}
 		if cfg.BloxRouteMaxProfitRelay.Value == true {
@@ -411,8 +374,7 @@ func createDefaultRelays() []config.MevRelay {
 				config.Network_Prater:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@builder-relay-goerli.flashbots.net?id=rocketpool",
 				config.Network_Devnet:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@builder-relay-goerli.flashbots.net?id=rocketpool",
 			},
-			Regulated:     true,
-			NoSandwiching: false,
+			Regulated: true,
 		},
 
 		// bloXroute Max Profit
@@ -425,20 +387,7 @@ func createDefaultRelays() []config.MevRelay {
 				config.Network_Prater:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.goerli.blxrbdn.com?id=rocketpool",
 				config.Network_Devnet:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.goerli.blxrbdn.com?id=rocketpool",
 			},
-			Regulated:     false,
-			NoSandwiching: false,
-		},
-
-		// bloXroute Ethical
-		{
-			ID:          config.MevRelayID_BloxrouteEthical,
-			Name:        "bloXroute Ethical",
-			Description: "Select this to enable the \"ethical\" relay from bloXroute.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xad0a8bb54565c2211cee576363f3a347089d2f07cf72679d16911d740262694cadb62d7fd7483f27afd714ca0f1b9118@bloxroute.ethical.blxrbdn.com?id=rocketpool",
-			},
-			Regulated:     false,
-			NoSandwiching: true,
+			Regulated: false,
 		},
 
 		// bloXroute Regulated
@@ -449,8 +398,7 @@ func createDefaultRelays() []config.MevRelay {
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com?id=rocketpool",
 			},
-			Regulated:     true,
-			NoSandwiching: false,
+			Regulated: true,
 		},
 
 		// Blocknative
@@ -463,8 +411,7 @@ func createDefaultRelays() []config.MevRelay {
 				config.Network_Prater:  "https://0x8f7b17a74569b7a57e9bdafd2e159380759f5dc3ccbd4bf600414147e8c4e1dc6ebada83c0139ac15850eb6c975e82d0@builder-relay-goerli.blocknative.com?id=rocketpool",
 				config.Network_Devnet:  "https://0x8f7b17a74569b7a57e9bdafd2e159380759f5dc3ccbd4bf600414147e8c4e1dc6ebada83c0139ac15850eb6c975e82d0@builder-relay-goerli.blocknative.com?id=rocketpool",
 			},
-			Regulated:     true,
-			NoSandwiching: false,
+			Regulated: true,
 		},
 
 		// Eden
@@ -477,8 +424,7 @@ func createDefaultRelays() []config.MevRelay {
 				config.Network_Prater:  "https://0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b@relay-goerli.edennetwork.io?id=rocketpool",
 				config.Network_Devnet:  "https://0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b@relay-goerli.edennetwork.io?id=rocketpool",
 			},
-			Regulated:     true,
-			NoSandwiching: false,
+			Regulated: true,
 		},
 
 		// Ultrasound
@@ -491,8 +437,7 @@ func createDefaultRelays() []config.MevRelay {
 				config.Network_Prater:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-stag.ultrasound.money?id=rocketpool",
 				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-stag.ultrasound.money?id=rocketpool",
 			},
-			Regulated:     false,
-			NoSandwiching: false,
+			Regulated: false,
 		},
 
 		// Aestus
@@ -505,8 +450,7 @@ func createDefaultRelays() []config.MevRelay {
 				config.Network_Prater:  "https://0xab78bf8c781c58078c3beb5710c57940874dd96aef2835e7742c866b4c7c0406754376c2c8285a36c630346aa5c5f833@goerli.aestus.live?id=rocketpool",
 				config.Network_Devnet:  "https://0xab78bf8c781c58078c3beb5710c57940874dd96aef2835e7742c866b4c7c0406754376c2c8285a36c630346aa5c5f833@goerli.aestus.live?id=rocketpool",
 			},
-			Regulated:     false,
-			NoSandwiching: false,
+			Regulated: false,
 		},
 	}
 
@@ -514,7 +458,7 @@ func createDefaultRelays() []config.MevRelay {
 }
 
 // Generate one of the profile parameters
-func generateProfileParameter(id string, relays []config.MevRelay, regulated bool, noSandwiching bool) config.Parameter {
+func generateProfileParameter(id string, relays []config.MevRelay, regulated bool) config.Parameter {
 	name := "Enable "
 	description := fmt.Sprintf("[lime]NOTE: You can enable multiple options.\n\nTo learn more about MEV, please visit %s.\n\n[white]", mevDocsUrl)
 
@@ -526,14 +470,6 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 		description += UnregulatedRelayDescription
 	}
 
-	if noSandwiching {
-		name += "(No Sandwiching)"
-		description += NoSandwichRelayDescription
-	} else {
-		name += "(All MEV Types)"
-		description += AllMevRelayDescription
-	}
-
 	// Generate the Mainnet description
 	mainnetRelays := []string{}
 	mainnetDescription := description + "\n\nRelays: "
@@ -542,7 +478,7 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 		if !exists {
 			continue
 		}
-		if relay.Regulated == regulated && relay.NoSandwiching == noSandwiching {
+		if relay.Regulated == regulated {
 			mainnetRelays = append(mainnetRelays, relay.Name)
 		}
 	}
@@ -556,7 +492,7 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 		if !exists {
 			continue
 		}
-		if relay.Regulated == regulated && relay.NoSandwiching == noSandwiching {
+		if relay.Regulated == regulated {
 			praterRelays = append(praterRelays, relay.Name)
 		}
 	}
@@ -587,12 +523,6 @@ func generateRelayParameter(id string, relay config.MevRelay) config.Parameter {
 		description += "Complies with Regulations: YES\n"
 	} else {
 		description += "Complies with Regulations: NO\n"
-	}
-
-	if relay.NoSandwiching {
-		description += "Allows Sandwich Attacks: NO"
-	} else {
-		description += "Allows Sandwich Attacks: YES"
 	}
 
 	return config.Parameter{

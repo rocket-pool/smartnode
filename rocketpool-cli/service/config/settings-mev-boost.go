@@ -9,27 +9,24 @@ import (
 
 // The page wrapper for the MEV-boost config
 type MevBoostConfigPage struct {
-	home                     *settingsHome
-	page                     *page
-	layout                   *standardLayout
-	masterConfig             *config.RocketPoolConfig
-	enableBox                *parameterizedFormItem
-	modeBox                  *parameterizedFormItem
-	selectionModeBox         *parameterizedFormItem
-	localItems               []*parameterizedFormItem
-	externalItems            []*parameterizedFormItem
-	regulatedAllMevBox       *parameterizedFormItem
-	regulatedNoSandwichBox   *parameterizedFormItem
-	unregulatedAllMevBox     *parameterizedFormItem
-	unregulatedNoSandwichBox *parameterizedFormItem
-	flashbotsBox             *parameterizedFormItem
-	bloxrouteMaxProfitBox    *parameterizedFormItem
-	bloxrouteEthicalBox      *parameterizedFormItem
-	bloxrouteRegulatedBox    *parameterizedFormItem
-	blocknativeBox           *parameterizedFormItem
-	edenBox                  *parameterizedFormItem
-	ultrasoundBox            *parameterizedFormItem
-	aestusBox                *parameterizedFormItem
+	home                  *settingsHome
+	page                  *page
+	layout                *standardLayout
+	masterConfig          *config.RocketPoolConfig
+	enableBox             *parameterizedFormItem
+	modeBox               *parameterizedFormItem
+	selectionModeBox      *parameterizedFormItem
+	localItems            []*parameterizedFormItem
+	externalItems         []*parameterizedFormItem
+	regulatedAllMevBox    *parameterizedFormItem
+	unregulatedAllMevBox  *parameterizedFormItem
+	flashbotsBox          *parameterizedFormItem
+	bloxrouteMaxProfitBox *parameterizedFormItem
+	bloxrouteRegulatedBox *parameterizedFormItem
+	blocknativeBox        *parameterizedFormItem
+	edenBox               *parameterizedFormItem
+	ultrasoundBox         *parameterizedFormItem
+	aestusBox             *parameterizedFormItem
 }
 
 // Creates a new page for the MEV-Boost settings
@@ -102,7 +99,6 @@ func (configPage *MevBoostConfigPage) createContent() {
 
 	configPage.flashbotsBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.FlashbotsRelay)
 	configPage.bloxrouteMaxProfitBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BloxRouteMaxProfitRelay)
-	configPage.bloxrouteEthicalBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BloxRouteEthicalRelay)
 	configPage.bloxrouteRegulatedBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BloxRouteRegulatedRelay)
 	configPage.blocknativeBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BlocknativeRelay)
 	configPage.edenBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EdenRelay)
@@ -111,7 +107,7 @@ func (configPage *MevBoostConfigPage) createContent() {
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox, configPage.selectionModeBox)
-	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteEthicalBox, configPage.bloxrouteRegulatedBox, configPage.blocknativeBox, configPage.edenBox, configPage.ultrasoundBox, configPage.aestusBox)
+	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteRegulatedBox, configPage.blocknativeBox, configPage.edenBox, configPage.ultrasoundBox, configPage.aestusBox)
 	configPage.layout.mapParameterizedFormItems(configPage.localItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalItems...)
 
@@ -174,18 +170,12 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 	selectedMode := configPage.masterConfig.MevBoost.SelectionMode.Value.(cfgtypes.MevSelectionMode)
 	switch selectedMode {
 	case cfgtypes.MevSelectionMode_Profile:
-		regulatedAllMev, regulatedNoSandwich, unregulatedAllMev, unregulatedNoSandwich := configPage.masterConfig.MevBoost.GetAvailableProfiles()
+		regulatedAllMev, unregulatedAllMev := configPage.masterConfig.MevBoost.GetAvailableProfiles()
 		if unregulatedAllMev {
 			configPage.layout.form.AddFormItem(configPage.unregulatedAllMevBox.item)
 		}
-		if unregulatedNoSandwich {
-			configPage.layout.form.AddFormItem(configPage.unregulatedNoSandwichBox.item)
-		}
 		if regulatedAllMev {
 			configPage.layout.form.AddFormItem(configPage.regulatedAllMevBox.item)
-		}
-		if regulatedNoSandwich {
-			configPage.layout.form.AddFormItem(configPage.regulatedNoSandwichBox.item)
 		}
 
 	case cfgtypes.MevSelectionMode_Relay:
@@ -196,8 +186,6 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 				configPage.layout.form.AddFormItem(configPage.flashbotsBox.item)
 			case cfgtypes.MevRelayID_BloxrouteMaxProfit:
 				configPage.layout.form.AddFormItem(configPage.bloxrouteMaxProfitBox.item)
-			case cfgtypes.MevRelayID_BloxrouteEthical:
-				configPage.layout.form.AddFormItem(configPage.bloxrouteEthicalBox.item)
 			case cfgtypes.MevRelayID_BloxrouteRegulated:
 				configPage.layout.form.AddFormItem(configPage.bloxrouteRegulatedBox.item)
 			case cfgtypes.MevRelayID_Blocknative:
@@ -219,10 +207,8 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 func (configPage *MevBoostConfigPage) handleLayoutChanged() {
 	// Rebuild the profile boxes with the new descriptions
 	configPage.regulatedAllMevBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableRegulatedAllMev)
-	configPage.regulatedNoSandwichBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableRegulatedNoSandwich)
 	configPage.unregulatedAllMevBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableUnregulatedAllMev)
-	configPage.unregulatedNoSandwichBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableUnregulatedNoSandwich)
-	configPage.layout.mapParameterizedFormItems(configPage.regulatedAllMevBox, configPage.regulatedNoSandwichBox, configPage.unregulatedAllMevBox, configPage.unregulatedNoSandwichBox)
+	configPage.layout.mapParameterizedFormItems(configPage.regulatedAllMevBox, configPage.unregulatedAllMevBox)
 
 	// Rebuild the parameter maps based on the selected network
 	configPage.handleModeChanged()

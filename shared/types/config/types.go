@@ -139,10 +139,9 @@ type ChangedSetting struct {
 
 // A MEV relay
 type MevRelay struct {
-	ID            MevRelayID
-	Name          string
-	Description   string
-	Urls          map[Network]string
-	Regulated     bool
-	NoSandwiching bool
+	ID          MevRelayID
+	Name        string
+	Description string
+	Urls        map[Network]string
+	Regulated   bool
 }
