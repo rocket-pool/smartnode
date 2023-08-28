@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -88,6 +89,54 @@ func distributeBalance(c *cli.Context) error {
 		fmt.Println("No minipools are eligible for balance distribution.")
 		return nil
 	}
+
+	// Filter on the threshold if applicable
+	threshold := c.Float64("threshold")
+	if threshold != 0 {
+		filteredMps := []api.MinipoolBalanceDistributionDetails{}
+
+		for _, mp := range eligibleMinipools {
+			var amount float64
+			if mp.Status == types.Dissolved {
+				amount = math.RoundDown(eth.WeiToEth(mp.Balance), 6)
+			} else {
+				amount = math.RoundDown(eth.WeiToEth(mp.NodeShareOfBalance), 6) + math.RoundDown(eth.WeiToEth(mp.Refund), 6)
+			}
+
+			if amount > threshold {
+				filteredMps = append(filteredMps, mp)
+			}
+		}
+
+		if len(filteredMps) == 0 {
+			fmt.Printf("No minipools have a node operatore share larger than the threshold of %.6f ETH.\n", threshold)
+			return nil
+		}
+		eligibleMinipools = filteredMps
+	}
+
+	// Sort the minipools by their balance, so the most comes first
+	sort.Slice(eligibleMinipools, func(i, j int) bool {
+		firstDetails := eligibleMinipools[i]
+		secondDetails := eligibleMinipools[j]
+
+		var firstAmount float64
+		if firstDetails.Status == types.Dissolved {
+			firstAmount = math.RoundDown(eth.WeiToEth(firstDetails.Balance), 6)
+		} else {
+			firstAmount = math.RoundDown(eth.WeiToEth(firstDetails.NodeShareOfBalance), 6) + math.RoundDown(eth.WeiToEth(firstDetails.Refund), 6)
+		}
+
+		var secondAmount float64
+		if secondDetails.Status == types.Dissolved {
+			secondAmount = math.RoundDown(eth.WeiToEth(secondDetails.Balance), 6)
+		} else {
+			secondAmount = math.RoundDown(eth.WeiToEth(secondDetails.NodeShareOfBalance), 6) + math.RoundDown(eth.WeiToEth(secondDetails.Refund), 6)
+		}
+
+		// Sort highest-to-lowest
+		return firstAmount > secondAmount
+	})
 
 	// Get selected minipools
 	var selectedMinipools []api.MinipoolBalanceDistributionDetails

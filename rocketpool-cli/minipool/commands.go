@@ -265,6 +265,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "minipool, m",
 						Usage: "The minipool/s to distribute the balance of (address or 'all')",
 					},
+					cli.Float64Flag{
+						Name:  "threshold, t",
+						Usage: "Filter on a minimum amount of ETH that can be distributed - minipools below this amount won't be shown",
+					},
 				},
 				Action: func(c *cli.Context) error {
 
