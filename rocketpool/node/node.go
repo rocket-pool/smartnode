@@ -97,6 +97,13 @@ func run(c *cli.Context) error {
 		return err
 	}
 
+	// Print the current mode
+	if cfg.IsNativeMode {
+		fmt.Println("Starting node daemon in Native Mode.")
+	} else {
+		fmt.Println("Starting node daemon in Docker Mode.")
+	}
+
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return fmt.Errorf("error getting node account: %w", err)

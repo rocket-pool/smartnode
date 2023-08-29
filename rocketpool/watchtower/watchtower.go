@@ -87,6 +87,13 @@ func run(c *cli.Context) error {
 		return err
 	}
 
+	// Print the current mode
+	if cfg.IsNativeMode {
+		fmt.Println("Starting node daemon in Native Mode.")
+	} else {
+		fmt.Println("Starting node daemon in Docker Mode.")
+	}
+
 	// Check if rolling records are enabled
 	useRollingRecords := cfg.Smartnode.UseRollingRecords.Value.(bool)
 	if useRollingRecords {
