@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/rocketpool/api/debug"
 	"github.com/urfave/cli"
@@ -19,6 +21,10 @@ import (
 	apitypes "github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+)
+
+const (
+	MaxConcurrentEth1Requests = 200
 )
 
 // Waits for an auction transaction
@@ -93,5 +99,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 	// Register CLI command
 	app.Commands = append(app.Commands, command)
+
+	// The daemon makes a large number of concurrent RPC requests to the Eth1 client
+	// The HTTP transport is set to cache connections for future re-use equal to the maximum expected number of concurrent requests
+	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
+	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
 
 }

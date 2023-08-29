@@ -237,7 +237,7 @@ func run(c *cli.Context) error {
 // Configure HTTP transport settings
 func configureHTTP() {
 
-	// The watchtower daemon makes a large number of concurrent RPC requests to the Eth1 client
+	// The daemon makes a large number of concurrent RPC requests to the Eth1 client
 	// The HTTP transport is set to cache connections for future re-use equal to the maximum expected number of concurrent requests
 	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
