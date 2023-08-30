@@ -154,7 +154,7 @@ func checkClientStatus(rp *Client) (bool, error) {
 	}
 
 	// Primary isn't ready and fallback isn't enabled
-	fmt.Printf("Error: primary client pair isn't ready and fallback clients aren't enabled.\n\tPrimary EC status: %s\n\tPrimary CC status: %s", primaryEcStatus, primaryBcStatus)
+	fmt.Printf("Error: primary client pair isn't ready and fallback clients aren't enabled.\n\tPrimary EC status: %s\n\tPrimary CC status: %s\n", primaryEcStatus, primaryBcStatus)
 	return false, nil
 }
 
