@@ -54,23 +54,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-create-lot",
-				Usage:     "Check whether the node can create a new lot",
-				UsageText: "rocketpool api auction can-create-lot",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canCreateLot(c))
-					return nil
-
-				},
-			},
-			{
 				Name:      "create-lot",
 				Aliases:   []string{"t"},
 				Usage:     "Create a new lot",
@@ -89,31 +72,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 
-			{
-				Name:      "can-bid-lot",
-				Usage:     "Check whether the node can bid on a lot",
-				UsageText: "rocketpool api auction can-bid-lot lot-id amount",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					lotIndex, err := cliutils.ValidateUint("lot ID", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("bid amount", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canBidOnLot(c, lotIndex, amountWei))
-					return nil
-
-				},
-			},
 			{
 				Name:      "bid-lot",
 				Aliases:   []string{"b"},
@@ -142,27 +100,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-claim-lot",
-				Usage:     "Check whether the node can claim RPL from a lot",
-				UsageText: "rocketpool api auction can-claim-lot lot-id",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					lotIndex, err := cliutils.ValidateUint("lot ID", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canClaimFromLot(c, lotIndex))
-					return nil
-
-				},
-			},
-			{
 				Name:      "claim-lot",
 				Aliases:   []string{"c"},
 				Usage:     "Claim RPL from a lot",
@@ -185,27 +122,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 
-			{
-				Name:      "can-recover-lot",
-				Usage:     "Check whether the node can recover unclaimed RPL from a lot",
-				UsageText: "rocketpool api auction can-recover-lot lot-id",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					lotIndex, err := cliutils.ValidateUint("lot ID", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canRecoverRplFromLot(c, lotIndex))
-					return nil
-
-				},
-			},
 			{
 				Name:      "recover-lot",
 				Aliases:   []string{"r"},

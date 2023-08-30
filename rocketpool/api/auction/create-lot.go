@@ -2,85 +2,20 @@ package auction
 
 import (
 	"fmt"
+	"math/big"
 
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/settings"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canCreateLot(c *cli.Context) (*api.CanCreateLotResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.CanCreateLotResponse{}
-
-	// Sync
-	var wg errgroup.Group
-
-	// Check if sufficient remaining RPL is available to create a lot
-	wg.Go(func() error {
-		sufficientRemainingRplForLot, err := getSufficientRemainingRPLForLot(rp)
-		if err == nil {
-			response.InsufficientBalance = !sufficientRemainingRplForLot
-		}
-		return err
-	})
-
-	// Check if lot creation is enabled
-	wg.Go(func() error {
-		createLotEnabled, err := protocol.GetCreateLotEnabled(rp, nil)
-		if err == nil {
-			response.CreateLotDisabled = !createLotEnabled
-		}
-		return err
-	})
-
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		gasInfo, err := auction.EstimateCreateLotGas(rp, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.CanCreate = !(response.InsufficientBalance || response.CreateLotDisabled)
-	return &response, nil
-
-}
-
 func createLot(c *cli.Context) (*api.CreateLotResponse, error) {
-
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -100,27 +35,54 @@ func createLot(c *cli.Context) (*api.CreateLotResponse, error) {
 	// Response
 	response := api.CreateLotResponse{}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	// Create the bindings
+	auctionMgr, err := auction.NewAuctionManager(rp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating auction manager binding: %w", err)
+	}
+	pSettings, err := settings.NewProtocolDaoSettings(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating pDAO settings binding: %w", err)
+	}
+	networkPrices, err := network.NewNetworkPrices(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating network prices binding: %w", err)
 	}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	// Get contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		auctionMgr.GetRemainingRPLBalance(mc)
+		pSettings.GetAuctionLotMinimumEthValue(mc)
+		networkPrices.GetRplPrice(mc)
+		pSettings.GetCreateAuctionLotEnabled(mc)
+		return nil
+	}, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return nil, fmt.Errorf("error getting contract state: %w", err)
 	}
 
-	// Create lot
-	lotIndex, hash, err := auction.CreateLot(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.LotId = lotIndex
-	response.TxHash = hash
+	// Check the balance requirement
+	lotMinimumRplAmount := big.NewInt(0).Mul(pSettings.Details.Auction.LotMinimumEthValue, eth.EthToWei(1))
+	lotMinimumRplAmount.Quo(lotMinimumRplAmount, networkPrices.Details.RplPrice.RawValue)
+	sufficientRemainingRplForLot := (auctionMgr.Details.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
 
-	// Return response
+	// Check for validity
+	response.InsufficientBalance = !sufficientRemainingRplForLot
+	response.CreateLotDisabled = !pSettings.Details.Auction.IsCreateLotEnabled
+	response.CanCreate = !(response.InsufficientBalance || response.CreateLotDisabled)
+
+	// Get tx info
+	if response.CanCreate {
+		opts, err := w.GetNodeAccountTransactor()
+		if err != nil {
+			return nil, fmt.Errorf("error getting node account transactor: %w", err)
+		}
+		txInfo, err := auctionMgr.CreateLot(opts)
+		if err != nil {
+			return nil, fmt.Errorf("error getting TX info for CreateLot: %w", err)
+		}
+		response.TxInfo = txInfo
+	}
+
 	return &response, nil
-
 }
