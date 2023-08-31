@@ -28,6 +28,10 @@ func claimFromLot(c *cli.Context, lotIndex uint64) (*api.ClaimFromLotResponse, e
 	if err != nil {
 		return nil, err
 	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, fmt.Errorf("error getting node account: %w", err)
+	}
 
 	// Response
 	response := api.ClaimFromLotResponse{}
@@ -42,10 +46,6 @@ func claimFromLot(c *cli.Context, lotIndex uint64) (*api.ClaimFromLotResponse, e
 	}
 
 	// Get contract state
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, fmt.Errorf("error getting node account: %w", err)
-	}
 	err = rp.Query(func(mc *batch.MultiCaller) error {
 		lot.GetLotExists(mc)
 		lot.GetLotAddressBidAmount(mc, &addressBidAmount, nodeAccount.Address)

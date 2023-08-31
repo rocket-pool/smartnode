@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
@@ -42,7 +43,7 @@ var (
 	ecManager          *ExecutionClientManager
 	bcManager          *BeaconClientManager
 	rocketPool         *rocketpool.RocketPool
-	rplFaucet          *contracts.RPLFaucet
+	rplFaucet          *contracts.RplFaucet
 	snapshotDelegation *contracts.SnapshotDelegation
 	beaconClient       beacon.Client
 	docker             *client.Client
@@ -102,7 +103,7 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
 	if err != nil {
 		return nil, err
 	}
-	var ec rocketpool.ExecutionClient
+	var ec core.ExecutionClient
 	if c.GlobalBool("use-protected-api") {
 		url := cfg.Smartnode.GetFlashbotsProtectUrl()
 		ec, err = ethclient.Dial(url)
@@ -116,7 +117,7 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
 	return getRocketPool(cfg, ec)
 }
 
-func GetRplFaucet(c *cli.Context) (*contracts.RPLFaucet, error) {
+func GetRplFaucet(c *cli.Context) (*contracts.RplFaucet, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
@@ -236,7 +237,7 @@ func getEthClient(c *cli.Context, cfg *config.RocketPoolConfig) (*ExecutionClien
 	return ecManager, err
 }
 
-func getRocketPool(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*rocketpool.RocketPool, error) {
+func getRocketPool(cfg *config.RocketPoolConfig, client core.ExecutionClient) (*rocketpool.RocketPool, error) {
 	var err error
 	initRocketPool.Do(func() {
 		rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Smartnode.GetStorageAddress()))
@@ -244,15 +245,15 @@ func getRocketPool(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClie
 	return rocketPool, err
 }
 
-func getRplFaucet(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*contracts.RPLFaucet, error) {
+func getRplFaucet(cfg *config.RocketPoolConfig, client core.ExecutionClient) (*contracts.RplFaucet, error) {
 	var err error
 	initRplFaucet.Do(func() {
-		rplFaucet, err = contracts.NewRPLFaucet(common.HexToAddress(cfg.Smartnode.GetRplFaucetAddress()), client)
+		rplFaucet, err = contracts.NewRplFaucet(common.HexToAddress(cfg.Smartnode.GetRplFaucetAddress()), client)
 	})
 	return rplFaucet, err
 }
 
-func getSnapshotDelegation(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*contracts.SnapshotDelegation, error) {
+func getSnapshotDelegation(cfg *config.RocketPoolConfig, client core.ExecutionClient) (*contracts.SnapshotDelegation, error) {
 	var err error
 	initSnapshotDelegation.Do(func() {
 		address := cfg.Smartnode.GetSnapshotDelegationAddress()

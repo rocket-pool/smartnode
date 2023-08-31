@@ -2,7 +2,9 @@ package faucet
 
 import (
 	"context"
+	"fmt"
 
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -23,6 +25,10 @@ func getStatus(c *cli.Context) (*api.FaucetStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
 	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return nil, err
@@ -31,15 +37,13 @@ func getStatus(c *cli.Context) (*api.FaucetStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, fmt.Errorf("error getting node account: %w", err)
+	}
 
 	// Response
 	response := api.FaucetStatusResponse{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
 
 	// Data
 	var wg errgroup.Group
@@ -47,58 +51,43 @@ func getStatus(c *cli.Context) (*api.FaucetStatusResponse, error) {
 	var withdrawalPeriodBlocks uint64
 	var currentBlock uint64
 
-	// Get faucet balance
+	// Get contract state
 	wg.Go(func() error {
-		var err error
-		response.Balance, err = f.GetBalance(nil)
-		return err
-	})
-
-	// Get allowance
-	wg.Go(func() error {
-		var err error
-		response.Allowance, err = f.GetAllowanceFor(nil, nodeAccount.Address)
-		return err
-	})
-
-	// Get withdrawal fee
-	wg.Go(func() error {
-		var err error
-		response.WithdrawalFee, err = f.WithdrawalFee(nil)
-		return err
-	})
-
-	// Get current withdrawal period start block
-	wg.Go(func() error {
-		withdrawalPeriodStart, err := f.GetWithdrawalPeriodStart(nil)
-		if err == nil {
-			currentPeriodStartBlock = withdrawalPeriodStart.Uint64()
+		err = rp.Query(func(mc *batch.MultiCaller) error {
+			f.GetBalance(mc)
+			f.GetAllowanceFor(mc, &response.Allowance, nodeAccount.Address)
+			f.GetWithdrawalFee(mc)
+			f.GetWithdrawalPeriodStart(mc)
+			f.GetWithdrawalPeriod(mc)
+			return nil
+		}, nil)
+		if err != nil {
+			return fmt.Errorf("error getting contract state: %w", err)
 		}
-		return err
-	})
-
-	// Get withdrawal period
-	wg.Go(func() error {
-		withdrawalPeriod, err := f.WithdrawalPeriod(nil)
-		if err == nil {
-			withdrawalPeriodBlocks = withdrawalPeriod.Uint64()
-		}
-		return err
+		return nil
 	})
 
 	// Get current block
 	wg.Go(func() error {
 		header, err := ec.HeaderByNumber(context.Background(), nil)
-		if err == nil {
-			currentBlock = header.Number.Uint64()
+		if err != nil {
+			return fmt.Errorf("error getting latest block header: %w", err)
 		}
-		return err
+		currentBlock = header.Number.Uint64()
+		return nil
 	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return nil, err
 	}
+
+	// Populate the response
+	response.Balance = f.Details.Balance
+	response.Allowance = f.Details.Allowance
+	response.WithdrawalFee = f.Details.WithdrawalFee
+	currentPeriodStartBlock = f.Details.WithdrawalPeriodStart.Formatted()
+	withdrawalPeriodBlocks = f.Details.WithdrawalPeriod.Formatted()
 
 	// Get withdrawable amount
 	if response.Balance.Cmp(response.Allowance) > 0 {

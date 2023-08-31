@@ -35,23 +35,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-withdraw-rpl",
-				Usage:     "Check whether the node can withdraw legacy RPL from the faucet",
-				UsageText: "rocketpool api faucet can-withdraw-rpl",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canWithdrawRpl(c))
-					return nil
-
-				},
-			},
-			{
 				Name:      "withdraw-rpl",
 				Aliases:   []string{"w"},
 				Usage:     "Withdraw legacy RPL from the faucet",

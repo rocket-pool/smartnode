@@ -3,8 +3,7 @@ package api
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/core"
 )
 
 type FaucetStatusResponse struct {
@@ -17,18 +16,12 @@ type FaucetStatusResponse struct {
 	ResetsInBlocks     uint64   `json:"resetsInBlocks"`
 }
 
-type CanFaucetWithdrawRplResponse struct {
-	Status                    string             `json:"status"`
-	Error                     string             `json:"error"`
-	CanWithdraw               bool               `json:"canWithdraw"`
-	InsufficientFaucetBalance bool               `json:"insufficientFaucetBalance"`
-	InsufficientAllowance     bool               `json:"insufficientAllowance"`
-	InsufficientNodeBalance   bool               `json:"insufficientNodeBalance"`
-	GasInfo                   rocketpool.GasInfo `json:"gasInfo"`
-}
 type FaucetWithdrawRplResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	Amount *big.Int    `json:"amount"`
-	TxHash common.Hash `json:"txHash"`
+	Status                    string                `json:"status"`
+	Error                     string                `json:"error"`
+	CanWithdraw               bool                  `json:"canWithdraw"`
+	InsufficientFaucetBalance bool                  `json:"insufficientFaucetBalance"`
+	InsufficientAllowance     bool                  `json:"insufficientAllowance"`
+	InsufficientNodeBalance   bool                  `json:"insufficientNodeBalance"`
+	TxInfo                    *core.TransactionInfo `json:"txInfo"`
 }
