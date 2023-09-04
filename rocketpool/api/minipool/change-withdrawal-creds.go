@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
@@ -47,46 +48,48 @@ func canChangeWithdrawalCreds(c *cli.Context, minipoolAddress common.Address, mn
 	if err != nil {
 		return nil, err
 	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, fmt.Errorf("error getting node account: %w", err)
+	}
 
 	// Response
 	response := api.CanChangeWithdrawalCredentialsResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
+	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	// Validate minipool owner
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-	if err := validateMinipoolOwner(mp, nodeAccount.Address); err != nil {
-		return nil, err
-	}
-
-	// Check minipool status
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
 		return nil, fmt.Errorf("minipool delegate is too old - it must be upgraded before you can change the withdrawal credentials to this minipool")
 	}
-	details, err := mpv3.GetStatusDetails(nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting status details for minipool %s: %w", minipoolAddress.Hex(), err)
+
+	// Get minipool details
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		mpv3.GetVacant(mc)
+		mpv3.GetStatus(mc)
+		mpv3.GetNodeAddress(mc)
+		mpv3.GetPubkey(mc)
+		return nil
+	}, nil)
+
+	// Validate minipool owner
+	if mpv3.GetCommonDetails().NodeAddress != nodeAccount.Address {
+		return nil, fmt.Errorf("minipool %s does not belong to the node", minipoolAddress.Hex())
 	}
-	if !details.IsVacant {
+
+	// Check minipool status
+	if !mpv3.Details.IsVacant {
 		return nil, fmt.Errorf("minipool %s is not vacant", minipoolAddress.Hex())
 	}
-	if details.Status != types.Prelaunch {
+	if mpv3.GetCommonDetails().Status.Formatted() != types.Prelaunch {
 		return nil, fmt.Errorf("minipool %s is not in prelaunch state", minipoolAddress.Hex())
 	}
 
 	// Check the validator's status and current creds
-	pubkey, err := minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get the pubkey for minipool %s: %w", minipoolAddress.Hex(), err)
-	}
+	pubkey := mpv3.GetCommonDetails().Pubkey
 	beaconStatus, err := bc.GetValidatorStatus(pubkey, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting Beacon status for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), pubkey.Hex(), err)
@@ -160,11 +163,20 @@ func changeWithdrawalCreds(c *cli.Context, minipoolAddress common.Address, mnemo
 	// Response
 	response := api.ChangeWithdrawalCredentialsResponse{}
 
-	// Get minipool validator pubkey
-	pubkey, err := minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
+	// Create minipool
+	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	// Get minipool details
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		mp.GetMinipoolCommon().GetPubkey(mc)
+		return nil
+	}, nil)
+
+	// Get minipool validator pubkey
+	pubkey := mp.GetMinipoolCommon().Details.Pubkey
 
 	// Get the index for this validator based on the mnemonic
 	index := uint(0)

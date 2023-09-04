@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -150,11 +151,28 @@ type MinipoolCloseDetails struct {
 	Distributed        bool                  `json:"distributed"`
 	CanClose           bool                  `json:"canClose"`
 	Balance            *big.Int              `json:"balance"`
+	EffectiveBalance   *big.Int              `json:"effectiveBalance"`
 	Refund             *big.Int              `json:"refund"`
 	UserDepositBalance *big.Int              `json:"userDepositBalance"`
 	BeaconState        beacon.ValidatorState `json:"beaconState"`
 	NodeShare          *big.Int              `json:"nodeShare"`
-	GasInfo            rocketpool.GasInfo    `json:"gasInfo"`
+	TxInfo             *core.TransactionInfo `json:"txInfo"`
+}
+
+type MinipoolDelegateDetails struct {
+	Address                         common.Address `json:"address"`
+	Delegate                        common.Address `json:"delegate"`
+	EffectiveDelegate               common.Address `json:"effectiveDelegate"`
+	PreviousDelegate                common.Address `json:"previousDelegate"`
+	UseLatestDelegate               bool           `json:"useLatestDelegate"`
+	RollbackVersionTooLow           bool           `json:"rollbackVersionTooLow"`
+	VersionTooLowToDisableUseLatest bool           `json:"versionTooLowToDisableUseLatest"`
+}
+type GetMinipoolDelegateDetailsForNodeResponse struct {
+	Status         string                    `json:"status"`
+	Error          string                    `json:"error"`
+	LatestDelegate common.Address            `json:"latestDelegate"`
+	Details        []MinipoolDelegateDetails `json:"details"`
 }
 
 type GetMinipoolCloseDetailsForNodeResponse struct {
@@ -164,9 +182,9 @@ type GetMinipoolCloseDetailsForNodeResponse struct {
 	Details                     []MinipoolCloseDetails `json:"details"`
 }
 type CloseMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
+	Status string                `json:"status"`
+	Error  string                `json:"error"`
+	TxInfo *core.TransactionInfo `json:"txInfo"`
 }
 
 type GetDistributeBalanceDetailsResponse struct {
@@ -200,41 +218,6 @@ type CanFinaliseMinipoolResponse struct {
 	GasInfo rocketpool.GasInfo `json:"gasInfo"`
 }
 type FinaliseMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
-
-type CanDelegateUpgradeResponse struct {
-	Status                string             `json:"status"`
-	Error                 string             `json:"error"`
-	LatestDelegateAddress common.Address     `json:"latestDelegateAddress"`
-	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
-}
-type DelegateUpgradeResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
-
-type CanDelegateRollbackResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	RollbackAddress common.Address     `json:"rollbackAddress"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
-}
-type DelegateRollbackResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
-
-type CanSetUseLatestDelegateResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
-}
-type SetUseLatestDelegateResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`

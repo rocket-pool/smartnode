@@ -273,43 +273,43 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "close",
 				Aliases:   []string{"c"},
-				Usage:     "Withdraw balance from a dissolved minipool and close it",
-				UsageText: "rocketpool api minipool close minipool-address",
+				Usage:     "Withdraw balance from a dissolved minipool and close it, optionally checking if such an operation is legal first",
+				UsageText: "rocketpool api minipool close minipool-address check-validity",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
 					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
+					checkValidity, err := cliutils.ValidateBool("check validity", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
 
 					// Run
-					api.PrintResponse(closeMinipool(c, minipoolAddress))
+					api.PrintResponse(closeMinipool(c, minipoolAddress, checkValidity))
 					return nil
 
 				},
 			},
 
 			{
-				Name:      "can-delegate-upgrade",
-				Usage:     "Check whether the minipool delegate can be upgraded",
-				UsageText: "rocketpool api minipool can-delegate-upgrade minipool-address",
+				Name:      "get-minipool-delegate-details-for-node",
+				Usage:     "Get delegate information for all minipools belonging to the node",
+				UsageText: "rocketpool api minipool get-minipool-delegate-details-for-node",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canDelegateUpgrade(c, minipoolAddress))
+					api.PrintResponse(getMinipoolDelegateDetailsForNode(c))
 					return nil
 
 				},
@@ -337,52 +337,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-delegate-rollback",
-				Usage:     "Check whether the minipool delegate can be rolled back",
-				UsageText: "rocketpool api minipool can-delegate-rollback minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canDelegateRollback(c, minipoolAddress))
-					return nil
-
-				},
-			},
-			{
 				Name:      "delegate-rollback",
-				Usage:     "Rollback the minipool to the previous delegate contract",
-				UsageText: "rocketpool api minipool delegate-rollback minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(delegateRollback(c, minipoolAddress))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "can-set-use-latest-delegate",
-				Usage:     "Check whether the 'always use latest delegate' toggle can be set",
-				UsageText: "rocketpool api minipool can-set-use-latest-delegate minipool-address setting",
+				Usage:     "Rollback the minipool to the previous delegate contract, optionally checking if such an operation is legal first",
+				UsageText: "rocketpool api minipool delegate-rollback minipool-address check-validity",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -393,25 +350,26 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					setting, err := cliutils.ValidateBool("setting", c.Args().Get(1))
+					checkValidity, err := cliutils.ValidateBool("check validity", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canSetUseLatestDelegate(c, minipoolAddress, setting))
+					api.PrintResponse(delegateRollback(c, minipoolAddress, checkValidity))
 					return nil
 
 				},
 			},
+
 			{
 				Name:      "set-use-latest-delegate",
-				Usage:     "Set whether or not to ignore the minipool's current delegate, and always use the latest delegate instead",
-				UsageText: "rocketpool api minipool set-use-latest-delegate minipool-address setting",
+				Usage:     "Set whether or not to ignore the minipool's current delegate and always use the latest delegate instead, optionally checking if such an operation is legal first",
+				UsageText: "rocketpool api minipool set-use-latest-delegate minipool-address setting check-validity",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
 					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
@@ -422,97 +380,13 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-
-					// Run
-					api.PrintResponse(setUseLatestDelegate(c, minipoolAddress, setting))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "get-use-latest-delegate",
-				Usage:     "Gets the current setting of the 'always use latest delegate' toggle",
-				UsageText: "rocketpool api minipool get-use-latest-delegate minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+					checkValidity, err := cliutils.ValidateBool("check validity", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(getUseLatestDelegate(c, minipoolAddress))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "get-delegate",
-				Usage:     "Gets the address of the current delegate contract used by the minipool",
-				UsageText: "rocketpool api minipool get-delegate minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getDelegate(c, minipoolAddress))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "get-previous-delegate",
-				Usage:     "Gets the address of the previous delegate contract that the minipool will use during a rollback",
-				UsageText: "rocketpool api minipool get-previous-delegate minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getPreviousDelegate(c, minipoolAddress))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "get-effective-delegate",
-				Usage:     "Gets the address of the effective delegate contract used by the minipool, which takes the UseLatestDelegate setting into account",
-				UsageText: "rocketpool api minipool get-effective-delegate minipool-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getEffectiveDelegate(c, minipoolAddress))
+					api.PrintResponse(setUseLatestDelegate(c, minipoolAddress, setting, checkValidity))
 					return nil
 
 				},

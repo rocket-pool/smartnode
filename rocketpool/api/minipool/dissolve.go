@@ -13,6 +13,32 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
+func getMinipoolDissolveDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetailsForNodeResponse, error) {
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, fmt.Errorf("error getting node account: %w", err)
+	}
+
+	// Response
+	response := api.GetMinipoolCloseDetailsForNodeResponse{}
+}
+
 func canDissolveMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanDissolveMinipoolResponse, error) {
 
 	// Get services
@@ -27,6 +53,10 @@ func canDissolveMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
 	if err != nil {
 		return nil, err
 	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, fmt.Errorf("error getting node account: %w", err)
+	}
 
 	// Response
 	response := api.CanDissolveMinipoolResponse{}
@@ -38,10 +68,6 @@ func canDissolveMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
 	}
 
 	// Validate minipool owner
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
 	if err := validateMinipoolOwner(mp, nodeAccount.Address); err != nil {
 		return nil, err
 	}
