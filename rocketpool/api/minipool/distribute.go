@@ -1,24 +1,23 @@
 package minipool
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetailsResponse, error) {
-
+func getDistributeBalanceDetailsForNode(c *cli.Context) (*api.GetMinipoolDistributeDetailsForNodeResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -31,168 +30,154 @@ func getDistributeBalanceDetails(c *cli.Context) (*api.GetDistributeBalanceDetai
 	if err != nil {
 		return nil, err
 	}
-
-	// Response
-	response := api.GetDistributeBalanceDetailsResponse{}
-
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, fmt.Errorf("error getting node account: %w", err)
 	}
 
-	addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAccount.Address, nil)
+	// Response
+	response := api.GetMinipoolDistributeDetailsForNodeResponse{}
+
+	// Create the bindings
+	node, err := node.NewNode(rp, nodeAccount.Address)
+	if err != nil {
+		return nil, fmt.Errorf("error creating node %s binding: %w", nodeAccount.Address.Hex(), err)
+	}
+
+	// Get contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		node.GetMinipoolCount(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract state: %w", err)
+	}
+
+	// Get the minipool addresses for this node
+	addresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
 
-	// Load details in batches
-	zero := big.NewInt(0)
-	details := make([]api.MinipoolBalanceDistributionDetails, len(addresses))
-	for bsi := 0; bsi < len(addresses); bsi += MinipoolDetailsBatchSize {
+	// Create each minipool binding
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, addresses, false, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating minipool bindings: %w", err)
+	}
 
-		// Get batch start & end index
-		msi := bsi
-		mei := bsi + MinipoolDetailsBatchSize
-		if mei > len(addresses) {
-			mei = len(addresses)
+	// Get the relevant details
+	err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mpCommon := mps[i].GetMinipoolCommon()
+		mpCommon.GetNodeAddress(mc)
+		mpCommon.GetNodeRefundBalance(mc)
+		mpCommon.GetFinalised(mc)
+		mpCommon.GetStatus(mc)
+		mpCommon.GetUserDepositBalance(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool details: %w", err)
+	}
+
+	// Get the current ETH balances of each minipool
+	balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool balances: %w", err)
+	}
+
+	// Get the distribute details
+	details := make([]api.MinipoolDistributeDetails, len(addresses))
+	for i, mp := range mps {
+		mpDetails, err := getMinipoolDistributeDetails(rp, mp, nodeAccount.Address, balances[i])
+		if err != nil {
+			return nil, fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetMinipoolCommon().Details.Address.Hex(), err)
 		}
+		details[i] = mpDetails
+	}
 
-		// Load details
-		var wg errgroup.Group
-		for mi := msi; mi < mei; mi++ {
-			mi := mi
-			wg.Go(func() error {
-				address := addresses[mi]
-				minipoolDetails := &details[mi]
-				minipoolDetails.Address = address
-				minipoolDetails.Balance = big.NewInt(0)
-				minipoolDetails.Refund = big.NewInt(0)
-				minipoolDetails.NodeShareOfBalance = big.NewInt(0)
-				mp, err := minipool.NewMinipool(rp, address, nil)
-				if err != nil {
-					return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
-				}
-				minipoolDetails.MinipoolVersion = mp.GetVersion()
-
-				// Ignore minipools that are too old
-				if minipoolDetails.MinipoolVersion < 3 {
-					minipoolDetails.CanDistribute = false
-					return nil
-				}
-
-				var wg2 errgroup.Group
-				wg2.Go(func() error {
-					var err error
-					minipoolDetails.Balance, err = rp.Client.BalanceAt(context.Background(), address, nil)
-					if err != nil {
-						return fmt.Errorf("error getting balance of minipool %s: %w", address.Hex(), err)
-					}
-					return nil
-				})
-				wg2.Go(func() error {
-					var err error
-					minipoolDetails.Refund, err = mp.GetNodeRefundBalance(nil)
-					if err != nil {
-						return fmt.Errorf("error getting refund balance of minipool %s: %w", address.Hex(), err)
-					}
-					return nil
-				})
-				wg2.Go(func() error {
-					var err error
-					minipoolDetails.Status, err = mp.GetStatus(nil)
-					if err != nil {
-						return fmt.Errorf("error getting status of minipool %s: %w", address.Hex(), err)
-					}
-					return nil
-				})
-				wg2.Go(func() error {
-					var err error
-					minipoolDetails.IsFinalized, err = mp.GetFinalised(nil)
-					if err != nil {
-						return fmt.Errorf("error getting finalized status of minipool %s: %w", address.Hex(), err)
-					}
-					return nil
-				})
-
-				// Wait for data
-				if err := wg2.Wait(); err != nil {
-					return err
-				}
-
-				// Can't distribute a minipool that's already finalized
-				if minipoolDetails.IsFinalized {
-					minipoolDetails.CanDistribute = false
-					return nil
-				}
-
-				// Ignore minipools with 0 balance
-				if minipoolDetails.Balance.Cmp(zero) == 0 {
-					minipoolDetails.CanDistribute = false
-					return nil
-				}
-
-				// Handle staking minipools
-				if minipoolDetails.Status == types.Staking {
-					// Ignore minipools with a balance lower than the refund
-					if minipoolDetails.Balance.Cmp(minipoolDetails.Refund) == -1 {
-						minipoolDetails.CanDistribute = false
-						return nil
-					}
-
-					// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
-					distributableBalance := big.NewInt(0).Sub(minipoolDetails.Balance, minipoolDetails.Refund)
-					eight := eth.EthToWei(8)
-					if distributableBalance.Cmp(eight) >= 0 {
-						minipoolDetails.CanDistribute = false
-						return nil
-					}
-
-					// Get the node share of the balance
-					minipoolDetails.NodeShareOfBalance, err = mp.CalculateNodeShare(distributableBalance, nil)
-					if err != nil {
-						return fmt.Errorf("error calculating node share for minipool %s: %w", address.Hex(), err)
-					}
-				} else if minipoolDetails.Status == types.Dissolved {
-					// Dissolved but non-finalized / non-closed minipools can just have the whole balance sent back to the NO
-					minipoolDetails.NodeShareOfBalance = minipoolDetails.Balance
-				} else {
-					// Can't distribute in any other state
-					minipoolDetails.CanDistribute = false
-					return nil
-				}
-
-				// Get gas estimate
-				opts, err := w.GetNodeAccountTransactor()
-				if err != nil {
-					return err
-				}
-				mpv3, success := minipool.GetMinipoolAsV3(mp)
-				if !success {
-					return fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", address.Hex(), minipoolDetails.MinipoolVersion)
-				}
-				minipoolDetails.GasInfo, err = mpv3.EstimateDistributeBalanceGas(true, opts)
-				if err != nil {
-					return fmt.Errorf("error estimating gas to distribute minipool %s: %w", address.Hex(), err)
-				}
-
-				minipoolDetails.CanDistribute = true
-				return nil
-			})
+	// Get the node shares
+	err = rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mpDetails := details[i]
+		status := mpDetails.Status
+		if status == types.Staking && mpDetails.CanDistribute {
+			mps[i].GetMinipoolCommon().CalculateNodeShare(mc, &details[i].NodeShareOfDistributableBalance, details[i].DistributableBalance)
 		}
-		if err := wg.Wait(); err != nil {
-			return nil, err
-		}
-
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting node shares of minipool balances: %w", err)
 	}
 
 	// Update & return response
 	response.Details = details
 	return &response, nil
-
 }
 
-func distributeBalance(c *cli.Context, minipoolAddress common.Address) (*api.CloseMinipoolResponse, error) {
+func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, nodeAddress common.Address, balance *big.Int) (api.MinipoolDistributeDetails, error) {
+	mpCommonDetails := mp.GetMinipoolCommon().Details
 
+	// Validate minipool owner
+	if mpCommonDetails.NodeAddress != nodeAddress {
+		return api.MinipoolDistributeDetails{}, fmt.Errorf("minipool %s does not belong to the node", mpCommonDetails.Address.Hex())
+	}
+
+	// Create the details with the balance / share info and status details
+	var details api.MinipoolDistributeDetails
+	details.Address = mpCommonDetails.Address
+	details.Version = mpCommonDetails.Version
+	details.Balance = balance
+	details.Refund = mpCommonDetails.NodeRefundBalance
+	details.IsFinalized = mpCommonDetails.IsFinalised
+	details.Status = mpCommonDetails.Status.Formatted()
+	details.NodeShareOfDistributableBalance = big.NewInt(0)
+
+	// Ignore minipools that are too old
+	if details.Version < 3 {
+		details.CanDistribute = false
+		return details, nil
+	}
+
+	// Can't distribute a minipool that's already finalized
+	if details.IsFinalized {
+		details.CanDistribute = false
+		return details, nil
+	}
+
+	// Ignore minipools with 0 balance
+	if details.Balance.Cmp(zero()) == 0 {
+		details.CanDistribute = false
+		return details, nil
+	}
+
+	// Make sure it's in a distributable state
+	switch details.Status {
+	case types.Staking:
+		// Ignore minipools with a balance lower than the refund
+		if details.Balance.Cmp(details.Refund) == -1 {
+			details.CanDistribute = false
+			return details, nil
+		}
+
+		// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
+		details.DistributableBalance = big.NewInt(0).Sub(details.Balance, details.Refund)
+		eight := eth.EthToWei(8)
+		if details.DistributableBalance.Cmp(eight) >= 0 {
+			details.CanDistribute = false
+			return details, nil
+		}
+	case types.Dissolved:
+		// Dissolved but non-finalized / non-closed minipools can just have the whole balance sent back to the NO
+		details.NodeShareOfDistributableBalance = details.Balance
+	default:
+		details.CanDistribute = false
+		return details, nil
+	}
+
+	details.CanDistribute = true
+	return details, nil
+}
+
+func distributeBalance(c *cli.Context, minipoolAddress common.Address) (*api.TxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -207,10 +192,10 @@ func distributeBalance(c *cli.Context, minipoolAddress common.Address) (*api.Clo
 	}
 
 	// Response
-	response := api.CloseMinipoolResponse{}
+	response := api.TxResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
+	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -221,24 +206,15 @@ func distributeBalance(c *cli.Context, minipoolAddress common.Address) (*api.Clo
 		return nil, err
 	}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Distribute the minipool's balance
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
-		return nil, fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", minipoolAddress.Hex(), mp.GetVersion())
+		return nil, fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", minipoolAddress.Hex(), mp.GetMinipoolCommon().Details.Version)
 	}
-	hash, err := mpv3.DistributeBalance(true, opts)
+	txInfo, err := mpv3.DistributeBalance(opts, true)
 	if err != nil {
 		return nil, err
 	}
-	response.TxHash = hash
-
-	// Return response
+	response.TxInfo = txInfo
 	return &response, nil
-
 }

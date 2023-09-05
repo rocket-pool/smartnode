@@ -57,13 +57,13 @@ func closeMinipools(c *cli.Context) error {
 		if mp.CanClose {
 			closableMinipools = append(closableMinipools, mp)
 		} else {
-			if mp.MinipoolVersion < 3 {
+			if mp.Version < 3 {
 				versionTooLowMinipools = append(versionTooLowMinipools, mp)
 			}
 			if mp.Balance.Cmp(mp.Refund) == -1 {
 				balanceLessThanRefundMinipools = append(balanceLessThanRefundMinipools, mp)
 			}
-			if mp.MinipoolStatus != types.Dissolved &&
+			if mp.Status != types.Dissolved &&
 				mp.BeaconState != beacon.ValidatorState_WithdrawalDone {
 				unwithdrawnMinipools = append(unwithdrawnMinipools, mp)
 			}
@@ -107,10 +107,10 @@ func closeMinipools(c *cli.Context) error {
 		options := make([]string, len(closableMinipools)+1)
 		options[0] = "All available minipools"
 		for mi, minipool := range closableMinipools {
-			if minipool.MinipoolStatus == types.Dissolved {
+			if minipool.Status == types.Dissolved {
 				options[mi+1] = fmt.Sprintf("%s (%.6f ETH will be returned)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6))
 			} else {
-				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH is yours plus a refund of %.6f ETH)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), math.RoundDown(eth.WeiToEth(minipool.Refund), 6))
+				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH is yours plus a refund of %.6f ETH)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfEffectiveBalance), 6), math.RoundDown(eth.WeiToEth(minipool.Refund), 6))
 			}
 		}
 		selected, _ := cliutils.Select("Please select a minipool to close:", options)
@@ -163,13 +163,13 @@ func closeMinipools(c *cli.Context) error {
 				}
 			} else if distributableBalance.Cmp(yellowThreshold) < 0 {
 				// More than the user deposit balance but less than 31.5, ETH will be slashed with a red warning
-				if !cliutils.ConfirmWithIAgree(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), colorReset)) {
+				if !cliutils.ConfirmWithIAgree(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfEffectiveBalance), 6), colorReset)) {
 					fmt.Println("Cancelled.")
 					return nil
 				}
 			} else if distributableBalance.Cmp(thirtyTwo) < 0 {
 				// More than 31.5 but less than 32, ETH will be slashed with a yellow warning
-				if !cliutils.Confirm(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorYellow, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), colorReset)) {
+				if !cliutils.Confirm(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorYellow, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfEffectiveBalance), 6), colorReset)) {
 					fmt.Println("Cancelled.")
 					return nil
 				}

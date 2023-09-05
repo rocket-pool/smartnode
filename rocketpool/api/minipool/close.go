@@ -1,11 +1,9 @@
 package minipool
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -82,6 +80,7 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 	// Get the relevant details
 	err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
 		mpCommon := mps[i].GetMinipoolCommon()
+		mpCommon.GetNodeAddress(mc)
 		mpCommon.GetNodeRefundBalance(mc)
 		mpCommon.GetFinalised(mc)
 		mpCommon.GetStatus(mc)
@@ -99,16 +98,10 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 		return nil, fmt.Errorf("error getting minipool balances: %w", err)
 	}
 
-	// Get the transaction opts
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
 	// Get the closure details
 	details := make([]api.MinipoolCloseDetails, len(addresses))
 	for i, mp := range mps {
-		mpDetails, err := getMinipoolCloseDetails(rp, mp, nodeAccount.Address, balances[i], opts)
+		mpDetails, err := getMinipoolCloseDetails(rp, mp, nodeAccount.Address, balances[i])
 		if err != nil {
 			return nil, fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetMinipoolCommon().Details.Address.Hex(), err)
 		}
@@ -119,7 +112,8 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 	err = rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
 		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
 		if success {
-			mpv3.CalculateNodeShare(mc, &details[i].NodeShare, details[i].EffectiveBalance)
+			details[i].Distributed = mpv3.Details.HasUserDistributed
+			mpv3.CalculateNodeShare(mc, &details[i].NodeShareOfEffectiveBalance, details[i].EffectiveBalance)
 		}
 		return nil
 	}, nil)
@@ -131,7 +125,7 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 	pubkeys := []types.ValidatorPubkey{}
 	pubkeyMap := map[common.Address]types.ValidatorPubkey{}
 	for i, mp := range details {
-		if mp.MinipoolStatus == types.Dissolved {
+		if mp.Status == types.Dissolved {
 			// Ignore dissolved minipools
 			continue
 		}
@@ -148,7 +142,7 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 	for i, mp := range details {
 		pubkey := pubkeyMap[mp.Address]
 		validator := statusMap[pubkey]
-		if mp.MinipoolStatus != types.Dissolved {
+		if mp.Status != types.Dissolved {
 			details[i].BeaconState = validator.Status
 			if validator.Status != beacon.ValidatorState_WithdrawalDone {
 				details[i].CanClose = false
@@ -160,105 +154,7 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 	return &response, nil
 }
 
-func closeMinipool(c *cli.Context, minipoolAddress common.Address, checkValidity bool) (*api.CloseMinipoolResponse, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, fmt.Errorf("error getting node account: %w", err)
-	}
-
-	// Response
-	response := api.CloseMinipoolResponse{}
-
-	// Create minipool
-	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
-	if err != nil {
-		return nil, err
-	}
-	mpCommon := mp.GetMinipoolCommon()
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Check validity if requested
-	if checkValidity {
-		// Get the relevant details
-		err = rp.Query(func(mc *batch.MultiCaller) error {
-			mpCommon.GetNodeRefundBalance(mc)
-			mpCommon.GetFinalised(mc)
-			mpCommon.GetStatus(mc)
-			mpCommon.GetUserDepositBalance(mc)
-			mpCommon.GetPubkey(mc)
-			return nil
-		}, nil)
-		if err != nil {
-			return nil, fmt.Errorf("error getting minipool details: %w", err)
-		}
-
-		// Get the balance
-		balance, err := rp.Client.BalanceAt(context.Background(), minipoolAddress, nil)
-		if err != nil {
-			return nil, fmt.Errorf("error getting minipool balance: %w", err)
-		}
-
-		// Check the EL details
-		mpDetails, err := getMinipoolCloseDetails(rp, mp, nodeAccount.Address, balance, opts)
-		if err != nil {
-			return nil, fmt.Errorf("error checking closure details for minipool: %w", mp.GetMinipoolCommon().Details.Address.Hex(), err)
-		}
-		if !mpDetails.CanClose {
-			return nil, fmt.Errorf("minipool cannot be closed in its current state")
-		}
-
-		// Get the CL details
-		pubkey := mpCommon.Details.Pubkey
-		statusMap, err := bc.GetValidatorStatuses([]types.ValidatorPubkey{pubkey}, nil)
-		if err != nil {
-			return nil, fmt.Errorf("error getting beacon status of minipool: %w", err)
-		}
-
-		// Review closeability based on validator status
-		validator := statusMap[pubkey]
-		if mpDetails.MinipoolStatus != types.Dissolved {
-			mpDetails.BeaconState = validator.Status
-			if validator.Status != beacon.ValidatorState_WithdrawalDone {
-				mpDetails.CanClose = false
-			}
-		}
-		if !mpDetails.CanClose {
-			return nil, fmt.Errorf("minipool cannot be closed in its current state")
-		}
-	}
-
-	// Close
-	txInfo, err := mp.GetMinipoolCommon().Close(opts)
-	if err != nil {
-		return nil, err
-	}
-	response.TxInfo = txInfo
-
-	return &response, nil
-}
-
-func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, nodeAddress common.Address, balance *big.Int, opts *bind.TransactOpts) (api.MinipoolCloseDetails, error) {
+func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, nodeAddress common.Address, balance *big.Int) (api.MinipoolCloseDetails, error) {
 	mpCommonDetails := mp.GetMinipoolCommon().Details
 
 	// Validate minipool owner
@@ -269,16 +165,16 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, no
 	// Create the details with the balance / share info and status details
 	var details api.MinipoolCloseDetails
 	details.Address = mpCommonDetails.Address
-	details.MinipoolVersion = mpCommonDetails.Version
+	details.Version = mpCommonDetails.Version
 	details.Balance = balance
 	details.Refund = mpCommonDetails.NodeRefundBalance
 	details.IsFinalized = mpCommonDetails.IsFinalised
-	details.MinipoolStatus = mpCommonDetails.Status.Formatted()
+	details.Status = mpCommonDetails.Status.Formatted()
 	details.UserDepositBalance = mpCommonDetails.UserDepositBalance
-	details.NodeShare = big.NewInt(0)
+	details.NodeShareOfEffectiveBalance = big.NewInt(0)
 
 	// Ignore minipools that are too old
-	if details.MinipoolVersion < 3 {
+	if details.Version < 3 {
 		details.CanClose = false
 		return details, nil
 	}
@@ -291,7 +187,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, no
 
 	// Make sure it's in a closeable state
 	details.EffectiveBalance = big.NewInt(0).Sub(details.Balance, details.Refund)
-	switch details.MinipoolStatus {
+	switch details.Status {
 	case types.Dissolved:
 		details.CanClose = true
 
@@ -316,38 +212,82 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, no
 		return details, nil
 	}
 
+	return details, nil
+}
+
+func closeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.TxResponse, error) {
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.TxResponse{}
+
+	// Create minipool
+	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
+	if err != nil {
+		return nil, err
+	}
+	mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)
+	mpCommon := mp.GetMinipoolCommon()
+
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Run the details getter
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		mpCommon.GetStatus(mc)
+		if isMpv3 {
+			mpv3.GetUserDistributed(mc)
+		}
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool details: %w", err)
+	}
+
 	// If it's dissolved, just close it
-	if details.MinipoolStatus == types.Dissolved {
+	if mpCommon.Details.Status.Formatted() == types.Dissolved {
 		// Get gas estimate
 		txInfo, err := mp.GetMinipoolCommon().Close(opts)
 		if err != nil {
-			return api.MinipoolCloseDetails{}, fmt.Errorf("error simulating close for MP %s: %w", mpCommonDetails.Address.Hex(), err)
+			return nil, fmt.Errorf("error simulating close for MP %s: %w", minipoolAddress.Hex(), err)
 		}
-		details.TxInfo = txInfo
+		response.TxInfo = txInfo
 	} else {
 		// Check if it's an upgraded Atlas-era minipool
-		mpv3, success := minipool.GetMinipoolAsV3(mp)
-		if success {
-			details.Distributed = mpv3.Details.HasUserDistributed
-			if details.Distributed {
+		if isMpv3 {
+			if mpv3.Details.HasUserDistributed {
 				// It's already been distributed so just finalize it
 				txInfo, err := mpv3.Finalise(opts)
 				if err != nil {
-					return api.MinipoolCloseDetails{}, fmt.Errorf("error simulating finalise for MP %s: %w", mpCommonDetails.Address.Hex(), err)
+					return nil, fmt.Errorf("error simulating finalise for MP %s: %w", minipoolAddress.Hex(), err)
 				}
-				details.TxInfo = txInfo
+				response.TxInfo = txInfo
 			} else {
 				// Do a distribution, which will finalize it
 				txInfo, err := mpv3.DistributeBalance(opts, false)
 				if err != nil {
-					return api.MinipoolCloseDetails{}, fmt.Errorf("error simulation distribute balance for MP %s: %w", mpCommonDetails.Address.Hex(), err)
+					return nil, fmt.Errorf("error simulation distribute balance for MP %s: %w", minipoolAddress.Hex(), err)
 				}
-				details.TxInfo = txInfo
+				response.TxInfo = txInfo
 			}
 		} else {
-			return api.MinipoolCloseDetails{}, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", mpCommonDetails.Address.Hex(), mpCommonDetails.Version)
+			return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mpCommon.Details.Version)
 		}
 	}
 
-	return details, nil
+	return &response, nil
 }

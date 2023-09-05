@@ -166,22 +166,18 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-dissolve",
-				Usage:     "Check whether the minipool can be dissolved",
-				UsageText: "rocketpool api minipool can-dissolve minipool-address",
+				Name:      "get-minipool-dissolve-details-for-node",
+				Usage:     "Get all of the details for dissolve eligibility of each node's minipools",
+				UsageText: "rocketpool api minipool get-minipool-dissolve-details-for-node",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canDissolveMinipool(c, minipoolAddress))
+					api.PrintResponse(getMinipoolDissolveDetailsForNode(c))
 					return nil
 
 				},
@@ -273,25 +269,21 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "close",
 				Aliases:   []string{"c"},
-				Usage:     "Withdraw balance from a dissolved minipool and close it, optionally checking if such an operation is legal first",
-				UsageText: "rocketpool api minipool close minipool-address check-validity",
+				Usage:     "Withdraw balance from a dissolved minipool and close it",
+				UsageText: "rocketpool api minipool close minipool-address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
-					checkValidity, err := cliutils.ValidateBool("check validity", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
 
 					// Run
-					api.PrintResponse(closeMinipool(c, minipoolAddress, checkValidity))
+					api.PrintResponse(closeMinipool(c, minipoolAddress))
 					return nil
 
 				},
@@ -338,8 +330,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 			{
 				Name:      "delegate-rollback",
-				Usage:     "Rollback the minipool to the previous delegate contract, optionally checking if such an operation is legal first",
-				UsageText: "rocketpool api minipool delegate-rollback minipool-address check-validity",
+				Usage:     "Rollback the minipool to the previous delegate contract",
+				UsageText: "rocketpool api minipool delegate-rollback minipool-address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -350,13 +342,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					checkValidity, err := cliutils.ValidateBool("check validity", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
 
 					// Run
-					api.PrintResponse(delegateRollback(c, minipoolAddress, checkValidity))
+					api.PrintResponse(delegateRollback(c, minipoolAddress))
 					return nil
 
 				},
@@ -364,12 +352,12 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 			{
 				Name:      "set-use-latest-delegate",
-				Usage:     "Set whether or not to ignore the minipool's current delegate and always use the latest delegate instead, optionally checking if such an operation is legal first",
-				UsageText: "rocketpool api minipool set-use-latest-delegate minipool-address setting check-validity",
+				Usage:     "Set whether or not to ignore the minipool's current delegate and always use the latest delegate instead",
+				UsageText: "rocketpool api minipool set-use-latest-delegate minipool-address setting",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
 					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
@@ -380,13 +368,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					checkValidity, err := cliutils.ValidateBool("check validity", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
 
 					// Run
-					api.PrintResponse(setUseLatestDelegate(c, minipoolAddress, setting, checkValidity))
+					api.PrintResponse(setUseLatestDelegate(c, minipoolAddress, setting))
 					return nil
 
 				},
@@ -511,9 +495,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "get-distribute-balance-details",
+				Name:      "get-distribute-balance-details-for-node",
 				Usage:     "Get the balance distribution details for all of the node's minipools",
-				UsageText: "rocketpool api minipool get-distribute-balance-details",
+				UsageText: "rocketpool api minipool get-distribute-balance-details-for-node",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -522,7 +506,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(getDistributeBalanceDetails(c))
+					api.PrintResponse(getDistributeBalanceDetailsForNode(c))
 					return nil
 
 				},

@@ -176,7 +176,7 @@ func delegateUpgrade(c *cli.Context, minipoolAddress common.Address) (*api.TxRes
 	return &response, nil
 }
 
-func delegateRollback(c *cli.Context, minipoolAddress common.Address, checkValidity bool) (*api.TxResponse, error) {
+func delegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.TxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -199,37 +199,6 @@ func delegateRollback(c *cli.Context, minipoolAddress common.Address, checkValid
 		return nil, fmt.Errorf("error creating minipool %s binding: %w", minipoolAddress.Hex(), err)
 	}
 
-	if checkValidity {
-		// Get some contract state
-		mpCommon := mp.GetMinipoolCommon()
-		err = rp.Query(func(mc *batch.MultiCaller) error {
-			mpCommon.GetDepositType(mc)
-			mpCommon.GetPreviousDelegate(mc)
-			return nil
-		}, nil)
-		if err != nil {
-			return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
-		}
-
-		// Check the version and deposit type
-		mpCommonDetails := mpCommon.Details
-		if mpCommonDetails.DepositType.Formatted() == rptypes.Variable && mpCommonDetails.Version >= 3 {
-			// Get the previous delegate version
-			oldDelegate := mpCommonDetails.PreviousDelegateAddress
-			var oldDelegateVersion uint8
-			err = rp.Query(func(mc *batch.MultiCaller) error {
-				return rocketpool.GetContractVersion(mc, &oldDelegateVersion, oldDelegate)
-			}, nil)
-			if err != nil {
-				return nil, fmt.Errorf("error getting version of old delegate %s for minipool %s: %w", oldDelegate.Hex(), minipoolAddress.Hex(), err)
-			}
-
-			if oldDelegateVersion < 3 {
-				return nil, fmt.Errorf("you cannot rollback your delegate after reducing your bond, as this would render your minipool unable to distribute its balance")
-			}
-		}
-	}
-
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
@@ -247,7 +216,7 @@ func delegateRollback(c *cli.Context, minipoolAddress common.Address, checkValid
 	return &response, nil
 }
 
-func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, setting bool, checkValidity bool) (*api.TxResponse, error) {
+func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, setting bool) (*api.TxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -270,36 +239,6 @@ func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, settin
 		return nil, fmt.Errorf("error creating minipool %s binding: %w", minipoolAddress.Hex(), err)
 	}
 	mpCommon := mp.GetMinipoolCommon()
-
-	if checkValidity && !setting {
-		// Get some contract state
-		err = rp.Query(func(mc *batch.MultiCaller) error {
-			mpCommon.GetDepositType(mc)
-			mpCommon.GetDelegate(mc)
-			return nil
-		}, nil)
-		if err != nil {
-			return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
-		}
-
-		// Check the version and deposit type
-		mpCommonDetails := mpCommon.Details
-		if mpCommonDetails.DepositType.Formatted() == rptypes.Variable && mpCommonDetails.Version >= 3 {
-			// Get the active delegate version
-			oldDelegate := mpCommonDetails.DelegateAddress
-			var oldDelegateVersion uint8
-			err = rp.Query(func(mc *batch.MultiCaller) error {
-				return rocketpool.GetContractVersion(mc, &oldDelegateVersion, oldDelegate)
-			}, nil)
-			if err != nil {
-				return nil, fmt.Errorf("error getting version of delegate %s for minipool %s: %w", oldDelegate.Hex(), minipoolAddress.Hex(), err)
-			}
-
-			if oldDelegateVersion < 3 {
-				return nil, fmt.Errorf("you cannot unset 'use-latest-delegate' for minipool %s after reducing your ETH bond, as this would revert to the Redstone delegate and render your minipool unable to distribute its balance; please upgrade your minipool's delegate first before unsetting this flag", minipoolAddress.Hex())
-			}
-		}
-	}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()

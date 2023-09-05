@@ -39,10 +39,10 @@ func distributeBalance(c *cli.Context) error {
 	}
 
 	// Sort minipools by status
-	eligibleMinipools := []api.MinipoolBalanceDistributionDetails{}
-	versionTooLowMinipools := []api.MinipoolBalanceDistributionDetails{}
-	balanceLessThanRefundMinipools := []api.MinipoolBalanceDistributionDetails{}
-	balanceTooBigMinipools := []api.MinipoolBalanceDistributionDetails{}
+	eligibleMinipools := []api.MinipoolDistributeDetails{}
+	versionTooLowMinipools := []api.MinipoolDistributeDetails{}
+	balanceLessThanRefundMinipools := []api.MinipoolDistributeDetails{}
+	balanceTooBigMinipools := []api.MinipoolDistributeDetails{}
 	finalizationAmount := eth.EthToWei(finalizationThreshold)
 
 	for _, mp := range details.Details {
@@ -93,14 +93,14 @@ func distributeBalance(c *cli.Context) error {
 	// Filter on the threshold if applicable
 	threshold := c.Float64("threshold")
 	if threshold != 0 {
-		filteredMps := []api.MinipoolBalanceDistributionDetails{}
+		filteredMps := []api.MinipoolDistributeDetails{}
 
 		for _, mp := range eligibleMinipools {
 			var amount float64
 			if mp.Status == types.Dissolved {
 				amount = math.RoundDown(eth.WeiToEth(mp.Balance), 6)
 			} else {
-				amount = math.RoundDown(eth.WeiToEth(mp.NodeShareOfBalance), 6) + math.RoundDown(eth.WeiToEth(mp.Refund), 6)
+				amount = math.RoundDown(eth.WeiToEth(mp.NodeShareOfDistributableBalance), 6) + math.RoundDown(eth.WeiToEth(mp.Refund), 6)
 			}
 
 			if amount > threshold {
@@ -124,14 +124,14 @@ func distributeBalance(c *cli.Context) error {
 		if firstDetails.Status == types.Dissolved {
 			firstAmount = math.RoundDown(eth.WeiToEth(firstDetails.Balance), 6)
 		} else {
-			firstAmount = math.RoundDown(eth.WeiToEth(firstDetails.NodeShareOfBalance), 6) + math.RoundDown(eth.WeiToEth(firstDetails.Refund), 6)
+			firstAmount = math.RoundDown(eth.WeiToEth(firstDetails.NodeShareOfDistributableBalance), 6) + math.RoundDown(eth.WeiToEth(firstDetails.Refund), 6)
 		}
 
 		var secondAmount float64
 		if secondDetails.Status == types.Dissolved {
 			secondAmount = math.RoundDown(eth.WeiToEth(secondDetails.Balance), 6)
 		} else {
-			secondAmount = math.RoundDown(eth.WeiToEth(secondDetails.NodeShareOfBalance), 6) + math.RoundDown(eth.WeiToEth(secondDetails.Refund), 6)
+			secondAmount = math.RoundDown(eth.WeiToEth(secondDetails.NodeShareOfDistributableBalance), 6) + math.RoundDown(eth.WeiToEth(secondDetails.Refund), 6)
 		}
 
 		// Sort highest-to-lowest
@@ -139,7 +139,7 @@ func distributeBalance(c *cli.Context) error {
 	})
 
 	// Get selected minipools
-	var selectedMinipools []api.MinipoolBalanceDistributionDetails
+	var selectedMinipools []api.MinipoolDistributeDetails
 	if c.String("minipool") == "" {
 
 		// Get total rewards
@@ -152,7 +152,7 @@ func distributeBalance(c *cli.Context) error {
 				totalEthShare.Add(totalEthShare, minipool.Balance)
 			} else {
 				totalEthAvailable.Add(totalEthAvailable, minipool.Balance)
-				totalEthShare.Add(totalEthShare, minipool.NodeShareOfBalance)
+				totalEthShare.Add(totalEthShare, minipool.NodeShareOfDistributableBalance)
 				totalRefund.Add(totalRefund, minipool.Refund)
 			}
 		}
@@ -165,7 +165,7 @@ func distributeBalance(c *cli.Context) error {
 				// Dissolved minipools are a special case
 				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, all of which goes to you)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6))
 			} else {
-				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH goes to you plus a refund of %.6f ETH)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfBalance), 6), math.RoundDown(eth.WeiToEth(minipool.Refund), 6))
+				options[mi+1] = fmt.Sprintf("%s (%.6f ETH available, %.6f ETH goes to you plus a refund of %.6f ETH)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfDistributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.Refund), 6))
 			}
 		}
 		selected, _ := cliutils.Select("Please select a minipool to distribute the balance of:", options)
@@ -174,7 +174,7 @@ func distributeBalance(c *cli.Context) error {
 		if selected == 0 {
 			selectedMinipools = eligibleMinipools
 		} else {
-			selectedMinipools = []api.MinipoolBalanceDistributionDetails{eligibleMinipools[selected-1]}
+			selectedMinipools = []api.MinipoolDistributeDetails{eligibleMinipools[selected-1]}
 		}
 
 	} else {
@@ -186,7 +186,7 @@ func distributeBalance(c *cli.Context) error {
 			selectedAddress := common.HexToAddress(c.String("minipool"))
 			for _, minipool := range eligibleMinipools {
 				if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
-					selectedMinipools = []api.MinipoolBalanceDistributionDetails{minipool}
+					selectedMinipools = []api.MinipoolDistributeDetails{minipool}
 					break
 				}
 			}

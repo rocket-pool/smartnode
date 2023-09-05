@@ -425,17 +425,17 @@ func (c *Client) ReduceBondAmount(address common.Address) (api.ReduceBondAmountR
 }
 
 // Get the balance distribution details for all of the node's minipools
-func (c *Client) GetDistributeBalanceDetails() (api.GetDistributeBalanceDetailsResponse, error) {
+func (c *Client) GetDistributeBalanceDetails() (api.GetMinipoolDistributeDetailsForNodeResponse, error) {
 	responseBytes, err := c.callAPI("minipool get-distribute-balance-details")
 	if err != nil {
-		return api.GetDistributeBalanceDetailsResponse{}, fmt.Errorf("Could not get distribute balance details: %w", err)
+		return api.GetMinipoolDistributeDetailsForNodeResponse{}, fmt.Errorf("Could not get distribute balance details: %w", err)
 	}
-	var response api.GetDistributeBalanceDetailsResponse
+	var response api.GetMinipoolDistributeDetailsForNodeResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetDistributeBalanceDetailsResponse{}, fmt.Errorf("Could not decode get distribute balance details response: %w", err)
+		return api.GetMinipoolDistributeDetailsForNodeResponse{}, fmt.Errorf("Could not decode get distribute balance details response: %w", err)
 	}
 	if response.Error != "" {
-		return api.GetDistributeBalanceDetailsResponse{}, fmt.Errorf("Could not get distribute balance details: %s", response.Error)
+		return api.GetMinipoolDistributeDetailsForNodeResponse{}, fmt.Errorf("Could not get distribute balance details: %s", response.Error)
 	}
 	return response, nil
 }

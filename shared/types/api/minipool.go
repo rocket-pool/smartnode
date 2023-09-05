@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -53,17 +52,6 @@ type ValidatorDetails struct {
 	Balance     *big.Int `json:"balance"`
 	NodeBalance *big.Int `json:"nodeBalance"`
 }
-type MinipoolBalanceDistributionDetails struct {
-	Address            common.Address       `json:"address"`
-	Balance            *big.Int             `json:"balance"`
-	Refund             *big.Int             `json:"refund"`
-	NodeShareOfBalance *big.Int             `json:"nodeShareOfBalance"`
-	MinipoolVersion    uint8                `json:"minipoolVersion"`
-	Status             types.MinipoolStatus `json:"status"`
-	IsFinalized        bool                 `json:"isFinalized"`
-	CanDistribute      bool                 `json:"canDistribute"`
-	GasInfo            rocketpool.GasInfo   `json:"gasInfo"`
-}
 
 type CanRefundMinipoolResponse struct {
 	Status                    string             `json:"status"`
@@ -78,17 +66,15 @@ type RefundMinipoolResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type CanDissolveMinipoolResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanDissolve   bool               `json:"canDissolve"`
-	InvalidStatus bool               `json:"invalidStatus"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+type MinipoolDissolveDetails struct {
+	Address       common.Address `json:"address"`
+	CanDissolve   bool           `json:"canDissolve"`
+	InvalidStatus bool           `json:"invalidStatus"`
 }
-type DissolveMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
+type GetMinipoolDissolveDetailsForNodeResponse struct {
+	Status  string                    `json:"status"`
+	Error   string                    `json:"error"`
+	Details []MinipoolDissolveDetails `json:"details"`
 }
 
 type CanExitMinipoolResponse struct {
@@ -143,22 +129,6 @@ type ProcessWithdrawalAndFinaliseResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type MinipoolCloseDetails struct {
-	Address            common.Address        `json:"address"`
-	IsFinalized        bool                  `json:"isFinalized"`
-	MinipoolStatus     types.MinipoolStatus  `json:"minipoolStatus"`
-	MinipoolVersion    uint8                 `json:"minipoolVersion"`
-	Distributed        bool                  `json:"distributed"`
-	CanClose           bool                  `json:"canClose"`
-	Balance            *big.Int              `json:"balance"`
-	EffectiveBalance   *big.Int              `json:"effectiveBalance"`
-	Refund             *big.Int              `json:"refund"`
-	UserDepositBalance *big.Int              `json:"userDepositBalance"`
-	BeaconState        beacon.ValidatorState `json:"beaconState"`
-	NodeShare          *big.Int              `json:"nodeShare"`
-	TxInfo             *core.TransactionInfo `json:"txInfo"`
-}
-
 type MinipoolDelegateDetails struct {
 	Address                         common.Address `json:"address"`
 	Delegate                        common.Address `json:"delegate"`
@@ -175,41 +145,42 @@ type GetMinipoolDelegateDetailsForNodeResponse struct {
 	Details        []MinipoolDelegateDetails `json:"details"`
 }
 
+type MinipoolCloseDetails struct {
+	Address                     common.Address        `json:"address"`
+	IsFinalized                 bool                  `json:"isFinalized"`
+	Status                      types.MinipoolStatus  `json:"status"`
+	Version                     uint8                 `json:"version"`
+	Distributed                 bool                  `json:"distributed"`
+	CanClose                    bool                  `json:"canClose"`
+	Balance                     *big.Int              `json:"balance"`
+	EffectiveBalance            *big.Int              `json:"effectiveBalance"`
+	Refund                      *big.Int              `json:"refund"`
+	UserDepositBalance          *big.Int              `json:"userDepositBalance"`
+	BeaconState                 beacon.ValidatorState `json:"beaconState"`
+	NodeShareOfEffectiveBalance *big.Int              `json:"nodeShareOfEffectiveBalance"`
+}
 type GetMinipoolCloseDetailsForNodeResponse struct {
 	Status                      string                 `json:"status"`
 	Error                       string                 `json:"error"`
 	IsFeeDistributorInitialized bool                   `json:"isFeeDistributorInitialized"`
 	Details                     []MinipoolCloseDetails `json:"details"`
 }
-type CloseMinipoolResponse struct {
-	Status string                `json:"status"`
-	Error  string                `json:"error"`
-	TxInfo *core.TransactionInfo `json:"txInfo"`
-}
 
-type GetDistributeBalanceDetailsResponse struct {
-	Status  string                               `json:"status"`
-	Error   string                               `json:"error"`
-	Details []MinipoolBalanceDistributionDetails `json:"details"`
+type MinipoolDistributeDetails struct {
+	Address                         common.Address       `json:"address"`
+	Balance                         *big.Int             `json:"balance"`
+	Refund                          *big.Int             `json:"refund"`
+	DistributableBalance            *big.Int             `json:"distributableBalance"`
+	NodeShareOfDistributableBalance *big.Int             `json:"nodeShareOfDistributableBalance"`
+	Version                         uint8                `json:"version"`
+	Status                          types.MinipoolStatus `json:"status"`
+	IsFinalized                     bool                 `json:"isFinalized"`
+	CanDistribute                   bool                 `json:"canDistribute"`
 }
-type CanDistributeBalanceResponse struct {
-	Status          string               `json:"status"`
-	Error           string               `json:"error"`
-	MinipoolVersion uint8                `json:"minipoolVersion"`
-	MinipoolStatus  types.MinipoolStatus `json:"minipoolStatus"`
-	Balance         *big.Int             `json:"balance"`
-	CanDistribute   bool                 `json:"canDistribute"`
-	GasInfo         rocketpool.GasInfo   `json:"gasInfo"`
-}
-type EstimateDistributeBalanceGasResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
-}
-type DistributeBalanceResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
+type GetMinipoolDistributeDetailsForNodeResponse struct {
+	Status  string                      `json:"status"`
+	Error   string                      `json:"error"`
+	Details []MinipoolDistributeDetails `json:"details"`
 }
 
 type CanFinaliseMinipoolResponse struct {
