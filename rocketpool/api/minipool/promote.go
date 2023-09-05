@@ -6,17 +6,18 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canPromoteMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanPromoteMinipoolResponse, error) {
-
+func getMinipoolPromoteDetailsForNode(c *cli.Context) (*api.GetMinipoolPromoteDetailsForNodeResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -29,90 +30,100 @@ func canPromoteMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Ca
 	if err != nil {
 		return nil, err
 	}
-
-	// Response
-	response := api.CanPromoteMinipoolResponse{
-		CanPromote: false,
-	}
-
-	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Validate minipool owner
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
-		return nil, err
-	}
-	if err := validateMinipoolOwner(mp, nodeAccount.Address); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting node account: %w", err)
 	}
 
-	// Check the minipool's status
-	status, err := mp.GetStatusDetails(nil)
+	// Response
+	response := api.GetMinipoolPromoteDetailsForNodeResponse{}
+
+	// Create the bindings
+	node, err := node.NewNode(rp, nodeAccount.Address)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating node %s binding: %w", nodeAccount.Address.Hex(), err)
+	}
+	oSettings, err := settings.NewOracleDaoSettings(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating oDAO settings binding: %w", err)
 	}
 
-	if status.IsVacant {
-
-		// Get the scrub period
-		scrubPeriodSeconds, err := trustednode.GetPromotionScrubPeriod(rp, nil)
-		if err != nil {
-			return nil, err
-		}
-		scrubPeriod := time.Duration(scrubPeriodSeconds) * time.Second
-
-		// Get the time of the latest block
-		latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
-		if err != nil {
-			return nil, fmt.Errorf("Can't get the latest block time: %w", err)
-		}
-		latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
-
-		creationTime := status.StatusTime
-		remainingTime := creationTime.Add(scrubPeriod).Sub(latestBlockTime)
-		if remainingTime < 0 {
-			response.CanPromote = true
-		}
+	// Get contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		node.GetMinipoolCount(mc)
+		oSettings.GetPromotionScrubPeriod(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract state: %w", err)
 	}
 
-	if response.CanPromote {
-
-		// Get the updated minipool interface
-		mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-		if err != nil {
-			return nil, err
-		}
-		mpv3, success := minipool.GetMinipoolAsV3(mp)
-		if !success {
-			return nil, fmt.Errorf("cannot check if minipool %s can be promoted because its delegate version is too low (v%d); please update the delegate to promote it", mp.GetAddress().Hex(), mp.GetVersion())
-		}
-
-		// Get transactor
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return nil, err
-		}
-
-		// Get the gas limit
-		gasInfo, err := mpv3.EstimatePromoteGas(opts)
-		if err != nil {
-			return nil, fmt.Errorf("Could not estimate the gas required to promote the minipool: %w", err)
-		}
-		response.GasInfo = gasInfo
-
+	// Get the minipool addresses for this node
+	addresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
 
-	// Return response
+	// Create each minipool binding
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, addresses, false, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating minipool bindings: %w", err)
+	}
+
+	// Get the relevant details
+	err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mpCommon := mps[i].GetMinipoolCommon()
+		mpCommon.GetNodeAddress(mc)
+		mpCommon.GetStatusTime(mc)
+		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
+		if success {
+			mpv3.GetVacant(mc)
+		}
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool details: %w", err)
+	}
+
+	// Get the time of the latest block
+	latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("Can't get the latest block time: %w", err)
+	}
+	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
+
+	// Get the promotion details
+	details := make([]api.MinipoolPromoteDetails, len(addresses))
+	for i, mp := range mps {
+		mpCommon := mp.GetMinipoolCommon()
+		mpDetails := api.MinipoolPromoteDetails{
+			Address:    mpCommon.Details.Address,
+			CanPromote: false,
+		}
+
+		// Validate minipool owner
+		if mpCommon.Details.NodeAddress != nodeAccount.Address {
+			return nil, fmt.Errorf("minipool %s does not belong to the node", mpCommon.Details.Address.Hex())
+		}
+
+		// Check its eligibility
+		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
+		if success && mpv3.Details.IsVacant {
+			creationTime := mpCommon.Details.StatusTime.Formatted()
+			remainingTime := creationTime.Add(oSettings.Details.Minipools.ScrubPeriod.Formatted()).Sub(latestBlockTime)
+			if remainingTime < 0 {
+				mpDetails.CanPromote = true
+			}
+		}
+
+		details[i] = mpDetails
+	}
+
+	response.Details = details
 	return &response, nil
-
 }
 
-func promoteMinipool(c *cli.Context, minipoolAddress common.Address) (*api.StakeMinipoolResponse, error) {
-
+func promoteMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -125,40 +136,38 @@ func promoteMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Stake
 	if err != nil {
 		return nil, err
 	}
-
-	// Response
-	response := api.StakeMinipoolResponse{}
-
-	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-	mpv3, success := minipool.GetMinipoolAsV3(mp)
-	if !success {
-		return nil, fmt.Errorf("cannot promte minipool %s because its delegate version is too low (v%d); please update the delegate to promote it", mp.GetAddress().Hex(), mp.GetVersion())
-	}
-
-	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
+	// Response
+	response := api.BatchTxResponse{}
 
-	// Promote
-	hash, err := mpv3.Promote(opts)
+	// Create minipools
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
 	if err != nil {
 		return nil, err
 	}
-	response.TxHash = hash
 
-	// Return response
+	// Get the TXs
+	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
+	for i, mp := range mps {
+		mpCommon := mp.GetMinipoolCommon()
+		minipoolAddress := mpCommon.Details.Address
+
+		mpv3, success := minipool.GetMinipoolAsV3(mp)
+		if !success {
+			return nil, fmt.Errorf("cannot promte minipool %s because its delegate version is too low (v%d); please update the delegate to promote it", minipoolAddress.Hex(), mpCommon.Details.Version)
+		}
+
+		txInfo, err := mpv3.Promote(opts)
+		if err != nil {
+			return nil, fmt.Errorf("error simulating dissolve transaction for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		txInfos[i] = txInfo
+	}
+
+	response.TxInfos = txInfos
 	return &response, nil
-
 }

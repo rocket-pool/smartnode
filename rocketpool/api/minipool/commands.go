@@ -322,7 +322,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(delegateUpgrade(c, minipoolAddress))
+					api.PrintResponse(upgradeDelegates(c, minipoolAddress))
 					return nil
 
 				},
@@ -344,7 +344,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(delegateRollback(c, minipoolAddress))
+					api.PrintResponse(rollbackDelegates(c, minipoolAddress))
 					return nil
 
 				},
@@ -370,7 +370,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(setUseLatestDelegate(c, minipoolAddress, setting))
+					api.PrintResponse(setUseLatestDelegates(c, minipoolAddress, setting))
 					return nil
 
 				},

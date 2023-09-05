@@ -77,15 +77,15 @@ type GetMinipoolDissolveDetailsForNodeResponse struct {
 	Details []MinipoolDissolveDetails `json:"details"`
 }
 
-type CanExitMinipoolResponse struct {
-	Status        string `json:"status"`
-	Error         string `json:"error"`
-	CanExit       bool   `json:"canExit"`
-	InvalidStatus bool   `json:"invalidStatus"`
+type MinipoolExitDetails struct {
+	Address       common.Address `json:"address"`
+	CanExit       bool           `json:"canExit"`
+	InvalidStatus bool           `json:"invalidStatus"`
 }
-type ExitMinipoolResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+type GetMinipoolExitDetailsForNodeResponse struct {
+	Status  string                `json:"status"`
+	Error   string                `json:"error"`
+	Details []MinipoolExitDetails `json:"details"`
 }
 
 type CanChangeWithdrawalCredentialsResponse struct {
@@ -94,11 +94,6 @@ type CanChangeWithdrawalCredentialsResponse struct {
 	CanChange bool   `json:"canChange"`
 }
 type ChangeWithdrawalCredentialsResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
-}
-
-type ImportKeyResponse struct {
 	Status string `json:"status"`
 	Error  string `json:"error"`
 }
@@ -206,16 +201,14 @@ type StakeMinipoolResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type CanPromoteMinipoolResponse struct {
-	Status     string             `json:"status"`
-	Error      string             `json:"error"`
-	CanPromote bool               `json:"canPromote"`
-	GasInfo    rocketpool.GasInfo `json:"gasInfo"`
+type MinipoolPromoteDetails struct {
+	Address    common.Address `json:"address"`
+	CanPromote bool           `json:"canPromote"`
 }
-type PromoteMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
+type GetMinipoolPromoteDetailsForNodeResponse struct {
+	Status  string                   `json:"status"`
+	Error   string                   `json:"error"`
+	Details []MinipoolPromoteDetails `json:"details"`
 }
 
 type GetUseLatestDelegateResponse struct {
@@ -250,23 +243,22 @@ type GetVanityArtifactsResponse struct {
 	InitHash               common.Hash    `json:"initHash"`
 }
 
-type CanBeginReduceBondAmountResponse struct {
-	Status                string                `json:"status"`
-	Error                 string                `json:"error"`
-	BondReductionDisabled bool                  `json:"bondReductionDisabled"`
+type MinipoolBeginReduceBondDetails struct {
+	Address               common.Address        `json:"address"`
 	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
 	Balance               uint64                `json:"balance"`
 	BalanceTooLow         bool                  `json:"balanceTooLow"`
 	MatchRequest          *big.Int              `json:"matchRequest"`
 	BeaconState           beacon.ValidatorState `json:"beaconState"`
+	InvalidElState        bool                  `json:"invalidElState"`
 	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
 	CanReduce             bool                  `json:"canReduce"`
-	GasInfo               rocketpool.GasInfo    `json:"gasInfo"`
 }
-type BeginReduceBondAmountResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
+type GetMinipoolBeginReduceBondDetailsForNodeResponse struct {
+	Status                string                           `json:"status"`
+	Error                 string                           `json:"error"`
+	BondReductionDisabled bool                             `json:"bondReductionDisabled"`
+	Details               []MinipoolBeginReduceBondDetails `json:"details"`
 }
 
 type CanReduceBondAmountResponse struct {

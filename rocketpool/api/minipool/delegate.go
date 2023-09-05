@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -136,7 +137,7 @@ func getMinipoolDelegateDetailsForNode(c *cli.Context) (*api.GetMinipoolDelegate
 	return &response, nil
 }
 
-func delegateUpgrade(c *cli.Context, minipoolAddress common.Address) (*api.TxResponse, error) {
+func upgradeDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -149,34 +150,38 @@ func delegateUpgrade(c *cli.Context, minipoolAddress common.Address) (*api.TxRes
 	if err != nil {
 		return nil, err
 	}
-
-	// Response
-	response := api.TxResponse{}
-
-	// Create minipool
-	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating minipool %s binding: %w", minipoolAddress.Hex(), err)
-	}
-
-	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
 
-	// Upgrade
-	txInfo, err := mp.GetMinipoolCommon().DelegateUpgrade(opts)
-	if err != nil {
-		return nil, fmt.Errorf("error simulating delegate upgrade transaction for minipool %s: %w", minipoolAddress.Hex(), err)
-	}
-	response.TxInfo = txInfo
+	// Response
+	response := api.BatchTxResponse{}
 
-	// Return response
+	// Create minipools
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the TXs
+	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
+	for i, mp := range mps {
+		mpCommon := mp.GetMinipoolCommon()
+		minipoolAddress := mpCommon.Details.Address
+
+		txInfo, err := mpCommon.DelegateUpgrade(opts)
+		if err != nil {
+			return nil, fmt.Errorf("error simulating delegate upgrade transaction for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		txInfos[i] = txInfo
+	}
+
+	response.TxInfos = txInfos
 	return &response, nil
 }
 
-func delegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.TxResponse, error) {
+func rollbackDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -189,34 +194,38 @@ func delegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.TxRe
 	if err != nil {
 		return nil, err
 	}
-
-	// Response
-	response := api.TxResponse{}
-
-	// Create minipool
-	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating minipool %s binding: %w", minipoolAddress.Hex(), err)
-	}
-
-	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
 
-	// Rollback
-	txInfo, err := mp.GetMinipoolCommon().DelegateRollback(opts)
+	// Response
+	response := api.BatchTxResponse{}
+
+	// Create minipools
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
 	if err != nil {
 		return nil, err
 	}
-	response.TxInfo = txInfo
 
-	// Return response
+	// Get the TXs
+	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
+	for i, mp := range mps {
+		mpCommon := mp.GetMinipoolCommon()
+		minipoolAddress := mpCommon.Details.Address
+
+		txInfo, err := mpCommon.DelegateRollback(opts)
+		if err != nil {
+			return nil, fmt.Errorf("error simulating delegate rollback transaction for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		txInfos[i] = txInfo
+	}
+
+	response.TxInfos = txInfos
 	return &response, nil
 }
 
-func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, setting bool) (*api.TxResponse, error) {
+func setUseLatestDelegates(c *cli.Context, minipoolAddresses []common.Address, setting bool) (*api.BatchTxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -229,30 +238,33 @@ func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, settin
 	if err != nil {
 		return nil, err
 	}
-
-	// Response
-	response := api.TxResponse{}
-
-	// Create minipool
-	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating minipool %s binding: %w", minipoolAddress.Hex(), err)
-	}
-	mpCommon := mp.GetMinipoolCommon()
-
-	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
 
-	// Set the new setting
-	txInfo, err := mpCommon.SetUseLatestDelegate(setting, opts)
+	// Response
+	response := api.BatchTxResponse{}
+
+	// Create minipools
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
 	if err != nil {
 		return nil, err
 	}
-	response.TxInfo = txInfo
 
-	// Return response
+	// Get the TXs
+	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
+	for i, mp := range mps {
+		mpCommon := mp.GetMinipoolCommon()
+		minipoolAddress := mpCommon.Details.Address
+
+		txInfo, err := mpCommon.SetUseLatestDelegate(setting, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error simulating set-use-latest-delegate transaction for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		txInfos[i] = txInfo
+	}
+
+	response.TxInfos = txInfos
 	return &response, nil
 }

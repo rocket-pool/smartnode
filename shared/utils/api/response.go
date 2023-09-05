@@ -68,5 +68,5 @@ func PrintResponse(response interface{}, responseError error) {
 
 // Print an API error response
 func PrintErrorResponse(err error) {
-	PrintResponse(&api.APIResponse{}, err)
+	PrintResponse(&api.ApiResponse{}, err)
 }

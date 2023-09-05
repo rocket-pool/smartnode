@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
@@ -15,8 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
-func importKey(c *cli.Context, minipoolAddress common.Address, mnemonic string) (*api.ImportKeyResponse, error) {
-
+func importKey(c *cli.Context, minipoolAddress common.Address, mnemonic string) (*api.ApiResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -32,30 +32,38 @@ func importKey(c *cli.Context, minipoolAddress common.Address, mnemonic string) 
 	if err != nil {
 		return nil, err
 	}
-
-	// Response
-	response := api.ImportKeyResponse{}
-
-	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Validate minipool owner
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
 	}
-	if err := validateMinipoolOwner(mp, nodeAccount.Address); err != nil {
-		return nil, err
-	}
 
-	// Get minipool validator pubkey
-	pubkey, err := minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
+	// Response
+	response := api.ApiResponse{}
+
+	// Create minipool
+	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
 	if err != nil {
 		return nil, err
 	}
+	mpCommon := mp.GetMinipoolCommon()
+
+	// Get the relevant details
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		mpCommon.GetNodeAddress(mc)
+		mpCommon.GetPubkey(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool details: %w", err)
+	}
+
+	// Validate minipool owner
+	if mpCommon.Details.NodeAddress != nodeAccount.Address {
+		return nil, fmt.Errorf("minipool %s does not belong to the node", minipoolAddress.Hex())
+	}
+
+	// Get minipool validator pubkey
+	pubkey := mpCommon.Details.Pubkey
 	emptyPubkey := types.ValidatorPubkey{}
 	if pubkey == emptyPubkey {
 		return nil, fmt.Errorf("minipool %s does not have a validator pubkey associated with it", minipoolAddress.Hex())

@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -177,7 +178,7 @@ func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.Minipoo
 	return details, nil
 }
 
-func distributeBalance(c *cli.Context, minipoolAddress common.Address) (*api.TxResponse, error) {
+func distributeBalances(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -190,31 +191,37 @@ func distributeBalance(c *cli.Context, minipoolAddress common.Address) (*api.TxR
 	if err != nil {
 		return nil, err
 	}
-
-	// Response
-	response := api.TxResponse{}
-
-	// Create minipool
-	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
 
-	// Distribute the minipool's balance
-	mpv3, success := minipool.GetMinipoolAsV3(mp)
-	if !success {
-		return nil, fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", minipoolAddress.Hex(), mp.GetMinipoolCommon().Details.Version)
-	}
-	txInfo, err := mpv3.DistributeBalance(opts, true)
+	// Response
+	response := api.BatchTxResponse{}
+
+	// Create minipools
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
 	if err != nil {
 		return nil, err
 	}
-	response.TxInfo = txInfo
+
+	// Get the TXs
+	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
+	for i, mp := range mps {
+		mpCommon := mp.GetMinipoolCommon()
+		minipoolAddress := mpCommon.Details.Address
+		mpv3, success := minipool.GetMinipoolAsV3(mp)
+		if !success {
+			return nil, fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", minipoolAddress.Hex(), mp.GetMinipoolCommon().Details.Version)
+		}
+
+		txInfo, err := mpv3.DistributeBalance(opts, true)
+		if err != nil {
+			return nil, fmt.Errorf("error simulating delegate upgrade transaction for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		txInfos[i] = txInfo
+	}
+
+	response.TxInfos = txInfos
 	return &response, nil
 }

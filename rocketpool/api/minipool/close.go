@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -215,7 +216,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, no
 	return details, nil
 }
 
-func closeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.TxResponse, error) {
+func closeMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -228,27 +229,24 @@ func closeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.TxRespo
 	if err != nil {
 		return nil, err
 	}
-
-	// Response
-	response := api.TxResponse{}
-
-	// Create minipool
-	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
-	if err != nil {
-		return nil, err
-	}
-	mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)
-	mpCommon := mp.GetMinipoolCommon()
-
-	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
 
+	// Response
+	response := api.BatchTxResponse{}
+
+	// Create minipools
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Run the details getter
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		mpCommon.GetStatus(mc)
+	err = rp.BatchQuery(len(minipoolAddresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mps[i].GetMinipoolCommon().GetStatus(mc)
+		mpv3, isMpv3 := minipool.GetMinipoolAsV3(mps[i])
 		if isMpv3 {
 			mpv3.GetUserDistributed(mc)
 		}
@@ -258,36 +256,45 @@ func closeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.TxRespo
 		return nil, fmt.Errorf("error getting minipool details: %w", err)
 	}
 
-	// If it's dissolved, just close it
-	if mpCommon.Details.Status.Formatted() == types.Dissolved {
-		// Get gas estimate
-		txInfo, err := mp.GetMinipoolCommon().Close(opts)
-		if err != nil {
-			return nil, fmt.Errorf("error simulating close for MP %s: %w", minipoolAddress.Hex(), err)
-		}
-		response.TxInfo = txInfo
-	} else {
-		// Check if it's an upgraded Atlas-era minipool
-		if isMpv3 {
-			if mpv3.Details.HasUserDistributed {
-				// It's already been distributed so just finalize it
-				txInfo, err := mpv3.Finalise(opts)
-				if err != nil {
-					return nil, fmt.Errorf("error simulating finalise for MP %s: %w", minipoolAddress.Hex(), err)
-				}
-				response.TxInfo = txInfo
-			} else {
-				// Do a distribution, which will finalize it
-				txInfo, err := mpv3.DistributeBalance(opts, false)
-				if err != nil {
-					return nil, fmt.Errorf("error simulation distribute balance for MP %s: %w", minipoolAddress.Hex(), err)
-				}
-				response.TxInfo = txInfo
+	// Get the TXs
+	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
+	for i, mp := range mps {
+		mpCommon := mp.GetMinipoolCommon()
+		minipoolAddress := mpCommon.Details.Address
+		mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)
+
+		// If it's dissolved, just close it
+		if mpCommon.Details.Status.Formatted() == types.Dissolved {
+			// Get gas estimate
+			txInfo, err := mp.GetMinipoolCommon().Close(opts)
+			if err != nil {
+				return nil, fmt.Errorf("error simulating close for minipool %s: %w", minipoolAddress.Hex(), err)
 			}
+			txInfos[i] = txInfo
 		} else {
-			return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mpCommon.Details.Version)
+			// Check if it's an upgraded Atlas-era minipool
+			if isMpv3 {
+				if mpv3.Details.HasUserDistributed {
+					// It's already been distributed so just finalize it
+					txInfo, err := mpv3.Finalise(opts)
+					if err != nil {
+						return nil, fmt.Errorf("error simulating finalise for minipool %s: %w", minipoolAddress.Hex(), err)
+					}
+					txInfos[i] = txInfo
+				} else {
+					// Do a distribution, which will finalize it
+					txInfo, err := mpv3.DistributeBalance(opts, false)
+					if err != nil {
+						return nil, fmt.Errorf("error simulation distribute balance for minipool %s: %w", minipoolAddress.Hex(), err)
+					}
+					txInfos[i] = txInfo
+				}
+			} else {
+				return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mpCommon.Details.Version)
+			}
 		}
 	}
 
+	response.TxInfos = txInfos
 	return &response, nil
 }

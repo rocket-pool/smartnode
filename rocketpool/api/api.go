@@ -28,7 +28,7 @@ const (
 )
 
 // Waits for an auction transaction
-func waitForTransaction(c *cli.Context, hash common.Hash) (*apitypes.APIResponse, error) {
+func waitForTransaction(c *cli.Context, hash common.Hash) (*apitypes.ApiResponse, error) {
 
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
@@ -36,7 +36,7 @@ func waitForTransaction(c *cli.Context, hash common.Hash) (*apitypes.APIResponse
 	}
 
 	// Response
-	response := apitypes.APIResponse{}
+	response := apitypes.ApiResponse{}
 	_, err = utils.WaitForTransaction(rp.Client, hash)
 	if err != nil {
 		return nil, err
