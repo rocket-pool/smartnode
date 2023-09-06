@@ -37,7 +37,7 @@ func createMinipoolQuery[responseType any](
 	getState func(node *node.Node, mc *batch.MultiCaller),
 	checkState func(node *node.Node, response *responseType) bool,
 	getMinipoolDetails func(mc *batch.MultiCaller, mp minipool.Minipool),
-	prepareResponse func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *responseType) error,
+	prepareResponse func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *responseType) error,
 ) (*responseType, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -117,7 +117,7 @@ func createMinipoolQuery[responseType any](
 
 	// Supplemental function-specific response construction
 	if prepareResponse != nil {
-		err = prepareResponse(rp, addresses, mps, response)
+		err = prepareResponse(rp, nodeAccount.Address, addresses, mps, response)
 		if err != nil {
 			return nil, err
 		}
