@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -16,26 +15,20 @@ import (
 )
 
 func getMinipoolRefundDetailsForNode(c *cli.Context) (*api.GetMinipoolRefundDetailsForNodeResponse, error) {
-	return createMinipoolQuery(c,
-		nil,
-		nil,
-		nil,
-		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolRefundDetailsForNodeResponse]{
+		CreateBindings: nil,
+		GetState:       nil,
+		CheckState:     nil,
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetNodeAddress(mc)
 			mpCommon.GetNodeRefundBalance(mc)
 		},
-		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolRefundDetailsForNodeResponse) error {
+		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolRefundDetailsForNodeResponse) error {
 			// Get the refund details
 			details := make([]api.MinipoolRefundDetails, len(addresses))
 			for i, mp := range mps {
 				mpCommonDetails := mp.GetMinipoolCommon().Details
-
-				// Validate minipool owner
-				if mpCommonDetails.NodeAddress != nodeAddress {
-					return fmt.Errorf("minipool %s does not belong to the node", mpCommonDetails.Address.Hex())
-				}
-
 				mpDetails := api.MinipoolRefundDetails{
 					Address:                   mpCommonDetails.Address,
 					InsufficientRefundBalance: (mpCommonDetails.NodeRefundBalance.Cmp(big.NewInt(0)) == 0),
@@ -47,7 +40,7 @@ func getMinipoolRefundDetailsForNode(c *cli.Context) (*api.GetMinipoolRefundDeta
 			response.Details = details
 			return nil
 		},
-	)
+	})
 }
 
 func refundMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {

@@ -18,8 +18,8 @@ import (
 func getMinipoolDelegateDetailsForNode(c *cli.Context) (*api.GetMinipoolDelegateDetailsForNodeResponse, error) {
 	var delegate *core.Contract
 
-	return createMinipoolQuery(c,
-		func(rp *rocketpool.RocketPool) error {
+	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolDelegateDetailsForNodeResponse]{
+		CreateBindings: func(rp *rocketpool.RocketPool) error {
 			var err error
 			delegate, err = rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
 			if err != nil {
@@ -27,16 +27,16 @@ func getMinipoolDelegateDetailsForNode(c *cli.Context) (*api.GetMinipoolDelegate
 			}
 			return nil
 		},
-		nil,
-		nil,
-		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetState:   nil,
+		CheckState: nil,
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetDelegate(mc)
 			mpCommon.GetEffectiveDelegate(mc)
 			mpCommon.GetPreviousDelegate(mc)
 			mpCommon.GetUseLatestDelegate(mc)
 		},
-		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDelegateDetailsForNodeResponse) error {
+		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDelegateDetailsForNodeResponse) error {
 			// Get all of the unique delegate addresses used by this node
 			delegateAddresses := []common.Address{}
 			delegateAddressMap := map[common.Address]bool{}
@@ -92,7 +92,7 @@ func getMinipoolDelegateDetailsForNode(c *cli.Context) (*api.GetMinipoolDelegate
 			response.Details = details
 			return nil
 		},
-	)
+	})
 }
 
 func upgradeDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {

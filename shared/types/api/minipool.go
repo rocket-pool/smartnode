@@ -279,16 +279,17 @@ type GetMinipoolReduceBondDetailsForNodeResponse struct {
 }
 
 type MinipoolRescueDissolvedDetails struct {
-	Address         common.Address        `json:"address"`
-	CanRescue       bool                  `json:"canRescue"`
-	IsFinalized     bool                  `json:"isFinalized"`
-	MinipoolStatus  types.MinipoolStatus  `json:"minipoolStatus"`
-	MinipoolVersion uint8                 `json:"minipoolVersion"`
-	BeaconBalance   *big.Int              `json:"beaconBalance"`
-	BeaconState     beacon.ValidatorState `json:"beaconState"`
-	GasInfo         rocketpool.GasInfo    `json:"gasInfo"`
+	Address            common.Address        `json:"address"`
+	CanRescue          bool                  `json:"canRescue"`
+	IsFinalized        bool                  `json:"isFinalized"`
+	MinipoolState      types.MinipoolStatus  `json:"minipoolStatus"`
+	InvalidElState     bool                  `json:"invalidElState"`
+	MinipoolVersion    uint8                 `json:"minipoolVersion"`
+	BeaconBalance      *big.Int              `json:"beaconBalance"`
+	BeaconState        beacon.ValidatorState `json:"beaconState"`
+	InvalidBeaconState bool                  `json:"invalidBeaconState"`
+	HasFullBalance     bool                  `json:"hasFullBalance"`
 }
-
 type GetMinipoolRescueDissolvedDetailsForNodeResponse struct {
 	Status  string                           `json:"status"`
 	Error   string                           `json:"error"`

@@ -14,16 +14,16 @@ import (
 )
 
 func getMinipoolDissolveDetailsForNode(c *cli.Context) (*api.GetMinipoolDissolveDetailsForNodeResponse, error) {
-	return createMinipoolQuery(c,
-		nil,
-		nil,
-		nil,
-		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolDissolveDetailsForNodeResponse]{
+		CreateBindings: nil,
+		GetState:       nil,
+		CheckState:     nil,
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetNodeAddress(mc)
 			mpCommon.GetStatus(mc)
 		},
-		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDissolveDetailsForNodeResponse) error {
+		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDissolveDetailsForNodeResponse) error {
 			details := make([]api.MinipoolDissolveDetails, len(mps))
 			for i, mp := range mps {
 				mpCommonDetails := mp.GetMinipoolCommon().Details
@@ -39,7 +39,7 @@ func getMinipoolDissolveDetailsForNode(c *cli.Context) (*api.GetMinipoolDissolve
 			response.Details = details
 			return nil
 		},
-	)
+	})
 }
 
 func dissolveMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {

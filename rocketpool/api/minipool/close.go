@@ -20,16 +20,16 @@ import (
 )
 
 func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetailsForNodeResponse, error) {
-	return createMinipoolQuery(c,
-		nil,
-		func(node *node.Node, mc *batch.MultiCaller) {
+	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolCloseDetailsForNodeResponse]{
+		CreateBindings: nil,
+		GetState: func(node *node.Node, mc *batch.MultiCaller) {
 			node.GetFeeDistributorInitialized(mc)
 		},
-		func(node *node.Node, response *api.GetMinipoolCloseDetailsForNodeResponse) bool {
+		CheckState: func(node *node.Node, response *api.GetMinipoolCloseDetailsForNodeResponse) bool {
 			response.IsFeeDistributorInitialized = node.Details.IsFeeDistributorInitialized
 			return response.IsFeeDistributorInitialized
 		},
-		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetNodeAddress(mc)
 			mpCommon.GetNodeRefundBalance(mc)
@@ -38,7 +38,7 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 			mpCommon.GetUserDepositBalance(mc)
 			mpCommon.GetPubkey(mc)
 		},
-		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolCloseDetailsForNodeResponse) error {
+		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolCloseDetailsForNodeResponse) error {
 			// Get the BN client
 			bc, err := services.GetBeaconClient(c)
 			if err != nil {
@@ -54,7 +54,7 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 			// Get the closure details
 			details := make([]api.MinipoolCloseDetails, len(addresses))
 			for i, mp := range mps {
-				mpDetails, err := getMinipoolCloseDetails(rp, mp, nodeAddress, balances[i])
+				mpDetails, err := getMinipoolCloseDetails(rp, mp, balances[i])
 				if err != nil {
 					return fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetMinipoolCommon().Details.Address.Hex(), err)
 				}
@@ -106,16 +106,11 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 			response.Details = details
 			return nil
 		},
-	)
+	})
 }
 
-func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, nodeAddress common.Address, balance *big.Int) (api.MinipoolCloseDetails, error) {
+func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, balance *big.Int) (api.MinipoolCloseDetails, error) {
 	mpCommonDetails := mp.GetMinipoolCommon().Details
-
-	// Validate minipool owner
-	if mpCommonDetails.NodeAddress != nodeAddress {
-		return api.MinipoolCloseDetails{}, fmt.Errorf("minipool %s does not belong to the node", mpCommonDetails.Address.Hex())
-	}
 
 	// Create the details with the balance / share info and status details
 	var details api.MinipoolCloseDetails

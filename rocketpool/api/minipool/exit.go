@@ -19,27 +19,21 @@ import (
 )
 
 func getMinipoolExitDetailsForNode(c *cli.Context) (*api.GetMinipoolExitDetailsForNodeResponse, error) {
-	return createMinipoolQuery(c,
-		nil,
-		nil,
-		nil,
-		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolExitDetailsForNodeResponse]{
+		CreateBindings: nil,
+		GetState:       nil,
+		CheckState:     nil,
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetNodeAddress(mc)
 			mpCommon.GetStatus(mc)
 		},
-		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolExitDetailsForNodeResponse) error {
+		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolExitDetailsForNodeResponse) error {
 			// Get the exit details
 			details := make([]api.MinipoolExitDetails, len(addresses))
 			for i, mp := range mps {
 				mpCommonDetails := mp.GetMinipoolCommon().Details
 				status := mpCommonDetails.Status.Formatted()
-
-				// Validate minipool owner
-				if mpCommonDetails.NodeAddress != nodeAddress {
-					return fmt.Errorf("minipool %s does not belong to the node", mpCommonDetails.Address.Hex())
-				}
-
 				mpDetails := api.MinipoolExitDetails{
 					Address:       mpCommonDetails.Address,
 					InvalidStatus: (status != types.Staking),
@@ -51,7 +45,7 @@ func getMinipoolExitDetailsForNode(c *cli.Context) (*api.GetMinipoolExitDetailsF
 			response.Details = details
 			return nil
 		},
-	)
+	})
 }
 
 func exitMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.ApiResponse, error) {

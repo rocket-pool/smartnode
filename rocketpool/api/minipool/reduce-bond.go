@@ -25,8 +25,8 @@ func getMinipoolBeginReduceBondDetailsForNode(c *cli.Context, newBondAmountWei *
 	var pSettings *settings.ProtocolDaoSettings
 	var oSettings *settings.OracleDaoSettings
 
-	return createMinipoolQuery(c,
-		func(rp *rocketpool.RocketPool) error {
+	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolBeginReduceBondDetailsForNodeResponse]{
+		CreateBindings: func(rp *rocketpool.RocketPool) error {
 			var err error
 			pSettings, err = settings.NewProtocolDaoSettings(rp)
 			if err != nil {
@@ -38,16 +38,16 @@ func getMinipoolBeginReduceBondDetailsForNode(c *cli.Context, newBondAmountWei *
 			}
 			return nil
 		},
-		func(node *node.Node, mc *batch.MultiCaller) {
+		GetState: func(node *node.Node, mc *batch.MultiCaller) {
 			pSettings.GetBondReductionEnabled(mc)
 			oSettings.GetBondReductionWindowStart(mc)
 			oSettings.GetBondReductionWindowLength(mc)
 		},
-		func(node *node.Node, response *api.GetMinipoolBeginReduceBondDetailsForNodeResponse) bool {
+		CheckState: func(node *node.Node, response *api.GetMinipoolBeginReduceBondDetailsForNodeResponse) bool {
 			response.BondReductionDisabled = !pSettings.Details.Minipool.IsBondReductionEnabled
 			return !response.BondReductionDisabled
 		},
-		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
 			mpv3, success := minipool.GetMinipoolAsV3(mp)
 			if success {
 				mpv3.GetNodeDepositBalance(mc)
@@ -57,7 +57,7 @@ func getMinipoolBeginReduceBondDetailsForNode(c *cli.Context, newBondAmountWei *
 				mpv3.GetReduceBondTime(mc)
 			}
 		},
-		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolBeginReduceBondDetailsForNodeResponse) error {
+		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolBeginReduceBondDetailsForNodeResponse) error {
 			// Get the Beacon Node client
 			bc, err := services.GetBeaconClient(c)
 			if err != nil {
@@ -132,7 +132,7 @@ func getMinipoolBeginReduceBondDetailsForNode(c *cli.Context, newBondAmountWei *
 			response.Details = details
 			return nil
 		},
-	)
+	})
 }
 
 func beginReduceBondAmounts(c *cli.Context, minipoolAddresses []common.Address, newBondAmountWei *big.Int) (*api.BatchTxResponse, error) {
@@ -145,8 +145,8 @@ func getMinipoolReduceBondDetailsForNode(c *cli.Context) (*api.GetMinipoolReduce
 	var pSettings *settings.ProtocolDaoSettings
 	var oSettings *settings.OracleDaoSettings
 
-	return createMinipoolQuery(c,
-		func(rp *rocketpool.RocketPool) error {
+	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolReduceBondDetailsForNodeResponse]{
+		CreateBindings: func(rp *rocketpool.RocketPool) error {
 			var err error
 			pSettings, err = settings.NewProtocolDaoSettings(rp)
 			if err != nil {
@@ -158,16 +158,16 @@ func getMinipoolReduceBondDetailsForNode(c *cli.Context) (*api.GetMinipoolReduce
 			}
 			return nil
 		},
-		func(node *node.Node, mc *batch.MultiCaller) {
+		GetState: func(node *node.Node, mc *batch.MultiCaller) {
 			pSettings.GetBondReductionEnabled(mc)
 			oSettings.GetBondReductionWindowStart(mc)
 			oSettings.GetBondReductionWindowLength(mc)
 		},
-		func(node *node.Node, response *api.GetMinipoolReduceBondDetailsForNodeResponse) bool {
+		CheckState: func(node *node.Node, response *api.GetMinipoolReduceBondDetailsForNodeResponse) bool {
 			response.BondReductionDisabled = !pSettings.Details.Minipool.IsBondReductionEnabled
 			return !response.BondReductionDisabled
 		},
-		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
 			mpv3, success := minipool.GetMinipoolAsV3(mp)
 			if success {
 				mpv3.GetFinalised(mc)
@@ -176,7 +176,7 @@ func getMinipoolReduceBondDetailsForNode(c *cli.Context) (*api.GetMinipoolReduce
 				mpv3.GetReduceBondTime(mc)
 			}
 		},
-		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolReduceBondDetailsForNodeResponse) error {
+		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolReduceBondDetailsForNodeResponse) error {
 			// Get the Beacon Node client
 			bc, err := services.GetBeaconClient(c)
 			if err != nil {
@@ -250,7 +250,7 @@ func getMinipoolReduceBondDetailsForNode(c *cli.Context) (*api.GetMinipoolReduce
 			response.Details = details
 			return nil
 		},
-	)
+	})
 }
 
 func reduceBondAmounts(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {

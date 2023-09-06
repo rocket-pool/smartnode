@@ -18,11 +18,11 @@ import (
 )
 
 func getDistributeBalanceDetailsForNode(c *cli.Context) (*api.GetMinipoolDistributeDetailsForNodeResponse, error) {
-	return createMinipoolQuery(c,
-		nil,
-		nil,
-		nil,
-		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolDistributeDetailsForNodeResponse]{
+		CreateBindings: nil,
+		GetState:       nil,
+		CheckState:     nil,
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetNodeAddress(mc)
 			mpCommon.GetNodeRefundBalance(mc)
@@ -30,7 +30,7 @@ func getDistributeBalanceDetailsForNode(c *cli.Context) (*api.GetMinipoolDistrib
 			mpCommon.GetStatus(mc)
 			mpCommon.GetUserDepositBalance(mc)
 		},
-		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDistributeDetailsForNodeResponse) error {
+		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDistributeDetailsForNodeResponse) error {
 			// Get the current ETH balances of each minipool
 			balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
 			if err != nil {
@@ -40,7 +40,7 @@ func getDistributeBalanceDetailsForNode(c *cli.Context) (*api.GetMinipoolDistrib
 			// Get the distribute details
 			details := make([]api.MinipoolDistributeDetails, len(addresses))
 			for i, mp := range mps {
-				mpDetails, err := getMinipoolDistributeDetails(rp, mp, nodeAddress, balances[i])
+				mpDetails, err := getMinipoolDistributeDetails(rp, mp, balances[i])
 				if err != nil {
 					return fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetMinipoolCommon().Details.Address.Hex(), err)
 				}
@@ -64,16 +64,11 @@ func getDistributeBalanceDetailsForNode(c *cli.Context) (*api.GetMinipoolDistrib
 			response.Details = details
 			return nil
 		},
-	)
+	})
 }
 
-func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, nodeAddress common.Address, balance *big.Int) (api.MinipoolDistributeDetails, error) {
+func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, balance *big.Int) (api.MinipoolDistributeDetails, error) {
 	mpCommonDetails := mp.GetMinipoolCommon().Details
-
-	// Validate minipool owner
-	if mpCommonDetails.NodeAddress != nodeAddress {
-		return api.MinipoolDistributeDetails{}, fmt.Errorf("minipool %s does not belong to the node", mpCommonDetails.Address.Hex())
-	}
 
 	// Create the details with the balance / share info and status details
 	var details api.MinipoolDistributeDetails

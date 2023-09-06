@@ -60,7 +60,7 @@ func rescueDissolved(c *cli.Context) error {
 			// Ignore minipools that are already closed
 			continue
 		}
-		if mp.MinipoolStatus != types.Dissolved {
+		if mp.MinipoolState != types.Dissolved {
 			// Ignore minipools that are aren't dissolved
 			continue
 		}

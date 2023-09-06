@@ -21,8 +21,8 @@ import (
 func getMinipoolPromoteDetailsForNode(c *cli.Context) (*api.GetMinipoolPromoteDetailsForNodeResponse, error) {
 	var oSettings *settings.OracleDaoSettings
 
-	return createMinipoolQuery(c,
-		func(rp *rocketpool.RocketPool) error {
+	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolPromoteDetailsForNodeResponse]{
+		CreateBindings: func(rp *rocketpool.RocketPool) error {
 			var err error
 			oSettings, err = settings.NewOracleDaoSettings(rp)
 			if err != nil {
@@ -30,11 +30,11 @@ func getMinipoolPromoteDetailsForNode(c *cli.Context) (*api.GetMinipoolPromoteDe
 			}
 			return nil
 		},
-		func(node *node.Node, mc *batch.MultiCaller) {
+		GetState: func(node *node.Node, mc *batch.MultiCaller) {
 			oSettings.GetPromotionScrubPeriod(mc)
 		},
-		nil,
-		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		CheckState: nil,
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
 			mpv3, success := minipool.GetMinipoolAsV3(mp)
 			if success {
 				mpv3.GetNodeAddress(mc)
@@ -42,7 +42,7 @@ func getMinipoolPromoteDetailsForNode(c *cli.Context) (*api.GetMinipoolPromoteDe
 				mpv3.GetVacant(mc)
 			}
 		},
-		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolPromoteDetailsForNodeResponse) error {
+		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolPromoteDetailsForNodeResponse) error {
 			// Get the time of the latest block
 			latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
 			if err != nil {
@@ -57,11 +57,6 @@ func getMinipoolPromoteDetailsForNode(c *cli.Context) (*api.GetMinipoolPromoteDe
 				mpDetails := api.MinipoolPromoteDetails{
 					Address:    mpCommon.Details.Address,
 					CanPromote: false,
-				}
-
-				// Validate minipool owner
-				if mpCommon.Details.NodeAddress != nodeAddress {
-					return fmt.Errorf("minipool %s does not belong to the node", mpCommon.Details.Address.Hex())
 				}
 
 				// Check its eligibility
@@ -80,7 +75,7 @@ func getMinipoolPromoteDetailsForNode(c *cli.Context) (*api.GetMinipoolPromoteDe
 			response.Details = details
 			return nil
 		},
-	)
+	})
 }
 
 func promoteMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {

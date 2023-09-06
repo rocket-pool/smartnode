@@ -30,15 +30,29 @@ import (
 // Settings
 const MinipoolDetailsBatchSize = 10
 
+// Wrapper for callbacks used by runMinipoolQuery; this implements the caller-specific functionality
+type MinipoolQuerier[responseType any] struct {
+	// Used to create supplemental contract bindings (other than node.Node, which will already be created by the scaffolder);
+	// this should create local variables that the caller keeps in scope throughout the life of runMinipoolQuery
+	CreateBindings func(rp *rocketpool.RocketPool) error
+
+	// Used to get any supplemental state required during initialization - anything in here will be fed into an rp.Query() multicall
+	GetState func(node *node.Node, mc *batch.MultiCaller)
+
+	// Check the initialized state after being queried to see if the response needs to be updated and the query can be ended prematurely
+	// Return true if the function should continue, or false if it needs to end and just return the response as-is
+	CheckState func(node *node.Node, response *responseType) bool
+
+	// Get whatever details of the given minipool are necessary; this will be passed into an rp.BatchQuery call, one run per minipool
+	// belonging to the node
+	GetMinipoolDetails func(mc *batch.MultiCaller, mp minipool.Minipool)
+
+	// Prepare the response object using all of the provided artifacts
+	PrepareResponse func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *responseType) error
+}
+
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
-func createMinipoolQuery[responseType any](
-	c *cli.Context,
-	createBindings func(rp *rocketpool.RocketPool) error,
-	getState func(node *node.Node, mc *batch.MultiCaller),
-	checkState func(node *node.Node, response *responseType) bool,
-	getMinipoolDetails func(mc *batch.MultiCaller, mp minipool.Minipool),
-	prepareResponse func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *responseType) error,
-) (*responseType, error) {
+func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[responseType]) (*responseType, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, fmt.Errorf("error checking if node is registered: %w", err)
@@ -64,9 +78,9 @@ func createMinipoolQuery[responseType any](
 	if err != nil {
 		return nil, fmt.Errorf("error creating node %s binding: %w", nodeAccount.Address.Hex(), err)
 	}
-	if createBindings != nil {
+	if q.CreateBindings != nil {
 		// Supplemental function-specific bindings
-		err = createBindings(rp)
+		err = q.CreateBindings(rp)
 		if err != nil {
 			return nil, err
 		}
@@ -75,9 +89,9 @@ func createMinipoolQuery[responseType any](
 	// Get contract state
 	err = rp.Query(func(mc *batch.MultiCaller) error {
 		node.GetMinipoolCount(mc)
-		if getState != nil {
+		if q.GetState != nil {
 			// Supplemental function-specific state
-			getState(node, mc)
+			q.GetState(node, mc)
 		}
 		return nil
 	}, nil)
@@ -86,8 +100,8 @@ func createMinipoolQuery[responseType any](
 	}
 
 	// Supplemental function-specific check to see if minipool processing should continue
-	if checkState != nil {
-		if !checkState(node, response) {
+	if q.CheckState != nil {
+		if !q.CheckState(node, response) {
 			return response, nil
 		}
 	}
@@ -105,22 +119,18 @@ func createMinipoolQuery[responseType any](
 	}
 
 	// Get the relevant details
-	if getMinipoolDetails != nil {
-		err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
-			getMinipoolDetails(mc, mps[i]) // Supplemental function-specific minipool details
-			return nil
-		}, nil)
-		if err != nil {
-			return nil, fmt.Errorf("error getting minipool details: %w", err)
-		}
+	err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
+		q.GetMinipoolDetails(mc, mps[i]) // Supplemental function-specific minipool details
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool details: %w", err)
 	}
 
 	// Supplemental function-specific response construction
-	if prepareResponse != nil {
-		err = prepareResponse(rp, nodeAccount.Address, addresses, mps, response)
-		if err != nil {
-			return nil, err
-		}
+	err = q.PrepareResponse(rp, addresses, mps, response)
+	if err != nil {
+		return nil, err
 	}
 
 	// Return
