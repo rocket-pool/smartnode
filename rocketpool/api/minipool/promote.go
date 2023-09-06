@@ -11,117 +11,76 @@ import (
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 func getMinipoolPromoteDetailsForNode(c *cli.Context) (*api.GetMinipoolPromoteDetailsForNodeResponse, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, fmt.Errorf("error getting node account: %w", err)
-	}
+	var oSettings *settings.OracleDaoSettings
 
-	// Response
-	response := api.GetMinipoolPromoteDetailsForNodeResponse{}
-
-	// Create the bindings
-	node, err := node.NewNode(rp, nodeAccount.Address)
-	if err != nil {
-		return nil, fmt.Errorf("error creating node %s binding: %w", nodeAccount.Address.Hex(), err)
-	}
-	oSettings, err := settings.NewOracleDaoSettings(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error creating oDAO settings binding: %w", err)
-	}
-
-	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		node.GetMinipoolCount(mc)
-		oSettings.GetPromotionScrubPeriod(mc)
-		return nil
-	}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting contract state: %w", err)
-	}
-
-	// Get the minipool addresses for this node
-	addresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
-	}
-
-	// Create each minipool binding
-	mps, err := minipool.CreateMinipoolsFromAddresses(rp, addresses, false, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating minipool bindings: %w", err)
-	}
-
-	// Get the relevant details
-	err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
-		mpCommon := mps[i].GetMinipoolCommon()
-		mpCommon.GetNodeAddress(mc)
-		mpCommon.GetStatusTime(mc)
-		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
-		if success {
-			mpv3.GetVacant(mc)
-		}
-		return nil
-	}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting minipool details: %w", err)
-	}
-
-	// Get the time of the latest block
-	latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("Can't get the latest block time: %w", err)
-	}
-	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
-
-	// Get the promotion details
-	details := make([]api.MinipoolPromoteDetails, len(addresses))
-	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
-		mpDetails := api.MinipoolPromoteDetails{
-			Address:    mpCommon.Details.Address,
-			CanPromote: false,
-		}
-
-		// Validate minipool owner
-		if mpCommon.Details.NodeAddress != nodeAccount.Address {
-			return nil, fmt.Errorf("minipool %s does not belong to the node", mpCommon.Details.Address.Hex())
-		}
-
-		// Check its eligibility
-		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
-		if success && mpv3.Details.IsVacant {
-			creationTime := mpCommon.Details.StatusTime.Formatted()
-			remainingTime := creationTime.Add(oSettings.Details.Minipools.ScrubPeriod.Formatted()).Sub(latestBlockTime)
-			if remainingTime < 0 {
-				mpDetails.CanPromote = true
+	return createMinipoolQuery(c,
+		func(rp *rocketpool.RocketPool) error {
+			var err error
+			oSettings, err = settings.NewOracleDaoSettings(rp)
+			if err != nil {
+				return fmt.Errorf("error creating oDAO settings binding: %w", err)
 			}
-		}
+			return nil
+		},
+		func(node *node.Node, mc *batch.MultiCaller) {
+			oSettings.GetPromotionScrubPeriod(mc)
+		},
+		nil,
+		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+			mpv3, success := minipool.GetMinipoolAsV3(mp)
+			if success {
+				mpv3.GetNodeAddress(mc)
+				mpv3.GetStatusTime(mc)
+				mpv3.GetVacant(mc)
+			}
+		},
+		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolPromoteDetailsForNodeResponse) error {
+			// Get the time of the latest block
+			latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
+			if err != nil {
+				return fmt.Errorf("Can't get the latest block time: %w", err)
+			}
+			latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
 
-		details[i] = mpDetails
-	}
+			// Get the promotion details
+			details := make([]api.MinipoolPromoteDetails, len(addresses))
+			for i, mp := range mps {
+				mpCommon := mp.GetMinipoolCommon()
+				mpDetails := api.MinipoolPromoteDetails{
+					Address:    mpCommon.Details.Address,
+					CanPromote: false,
+				}
 
-	response.Details = details
-	return &response, nil
+				// Validate minipool owner
+				if mpCommon.Details.NodeAddress != nodeAddress {
+					return fmt.Errorf("minipool %s does not belong to the node", mpCommon.Details.Address.Hex())
+				}
+
+				// Check its eligibility
+				mpv3, success := minipool.GetMinipoolAsV3(mps[i])
+				if success && mpv3.Details.IsVacant {
+					creationTime := mpCommon.Details.StatusTime.Formatted()
+					remainingTime := creationTime.Add(oSettings.Details.Minipools.ScrubPeriod.Formatted()).Sub(latestBlockTime)
+					if remainingTime < 0 {
+						mpDetails.CanPromote = true
+					}
+				}
+
+				details[i] = mpDetails
+			}
+
+			response.Details = details
+			return nil
+		},
+	)
 }
 
 func promoteMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {

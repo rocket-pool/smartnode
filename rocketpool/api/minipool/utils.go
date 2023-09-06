@@ -8,8 +8,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
@@ -27,6 +29,103 @@ import (
 
 // Settings
 const MinipoolDetailsBatchSize = 10
+
+// Create a scaffolded generic minipool query, with caller-specific functionality where applicable
+func createMinipoolQuery[responseType any](
+	c *cli.Context,
+	createBindings func(rp *rocketpool.RocketPool) error,
+	getState func(node *node.Node, mc *batch.MultiCaller),
+	checkState func(node *node.Node, response *responseType) bool,
+	getMinipoolDetails func(mc *batch.MultiCaller, mp minipool.Minipool),
+	prepareResponse func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *responseType) error,
+) (*responseType, error) {
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, fmt.Errorf("error checking if node is registered: %w", err)
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, fmt.Errorf("error getting wallet: %w", err)
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, fmt.Errorf("error getting Rocket Pool binding: %w", err)
+	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, fmt.Errorf("error getting node account: %w", err)
+	}
+
+	// Response
+	response := new(responseType)
+
+	// Create the bindings
+	node, err := node.NewNode(rp, nodeAccount.Address)
+	if err != nil {
+		return nil, fmt.Errorf("error creating node %s binding: %w", nodeAccount.Address.Hex(), err)
+	}
+	if createBindings != nil {
+		// Supplemental function-specific bindings
+		err = createBindings(rp)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Get contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		node.GetMinipoolCount(mc)
+		if getState != nil {
+			// Supplemental function-specific state
+			getState(node, mc)
+		}
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract state: %w", err)
+	}
+
+	// Supplemental function-specific check to see if minipool processing should continue
+	if checkState != nil {
+		if !checkState(node, response) {
+			return response, nil
+		}
+	}
+
+	// Get the minipool addresses for this node
+	addresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
+	}
+
+	// Create each minipool binding
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, addresses, false, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating minipool bindings: %w", err)
+	}
+
+	// Get the relevant details
+	if getMinipoolDetails != nil {
+		err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
+			getMinipoolDetails(mc, mps[i]) // Supplemental function-specific minipool details
+			return nil
+		}, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error getting minipool details: %w", err)
+		}
+	}
+
+	// Supplemental function-specific response construction
+	if prepareResponse != nil {
+		err = prepareResponse(rp, addresses, mps, response)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Return
+	return response, nil
+}
 
 // Get transaction info for an operation on all of the provided minipools, using the common minipool API (for version-agnostic functions)
 func createBatchTxResponseForCommon(c *cli.Context, minipoolAddresses []common.Address, txCreator func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) (*api.BatchTxResponse, error) {

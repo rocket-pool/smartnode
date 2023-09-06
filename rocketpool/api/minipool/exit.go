@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -19,89 +19,42 @@ import (
 )
 
 func getMinipoolExitDetailsForNode(c *cli.Context) (*api.GetMinipoolExitDetailsForNodeResponse, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, fmt.Errorf("error getting node account: %w", err)
-	}
+	return createMinipoolQuery(c,
+		nil,
+		nil,
+		nil,
+		func(mc *batch.MultiCaller, mp minipool.Minipool) {
+			mpCommon := mp.GetMinipoolCommon()
+			mpCommon.GetNodeAddress(mc)
+			mpCommon.GetStatus(mc)
+		},
+		func(rp *rocketpool.RocketPool, nodeAddress common.Address, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolExitDetailsForNodeResponse) error {
+			// Get the exit details
+			details := make([]api.MinipoolExitDetails, len(addresses))
+			for i, mp := range mps {
+				mpCommonDetails := mp.GetMinipoolCommon().Details
+				status := mpCommonDetails.Status.Formatted()
 
-	// Response
-	response := api.GetMinipoolExitDetailsForNodeResponse{}
+				// Validate minipool owner
+				if mpCommonDetails.NodeAddress != nodeAddress {
+					return fmt.Errorf("minipool %s does not belong to the node", mpCommonDetails.Address.Hex())
+				}
 
-	// Create the bindings
-	node, err := node.NewNode(rp, nodeAccount.Address)
-	if err != nil {
-		return nil, fmt.Errorf("error creating node %s binding: %w", nodeAccount.Address.Hex(), err)
-	}
+				mpDetails := api.MinipoolExitDetails{
+					Address:       mpCommonDetails.Address,
+					InvalidStatus: (status != types.Staking),
+				}
+				mpDetails.CanExit = !mpDetails.InvalidStatus
+				details[i] = mpDetails
+			}
 
-	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		node.GetMinipoolCount(mc)
-		return nil
-	}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting contract state: %w", err)
-	}
-
-	// Get the minipool addresses for this node
-	addresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
-	}
-
-	// Create each minipool binding
-	mps, err := minipool.CreateMinipoolsFromAddresses(rp, addresses, false, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating minipool bindings: %w", err)
-	}
-
-	// Get the relevant details
-	err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
-		mpCommon := mps[i].GetMinipoolCommon()
-		mpCommon.GetNodeAddress(mc)
-		mpCommon.GetStatus(mc)
-		return nil
-	}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting minipool details: %w", err)
-	}
-
-	// Get the exit details
-	details := make([]api.MinipoolExitDetails, len(addresses))
-	for i, mp := range mps {
-		mpCommonDetails := mp.GetMinipoolCommon().Details
-		status := mpCommonDetails.Status.Formatted()
-
-		// Validate minipool owner
-		if mpCommonDetails.NodeAddress != nodeAccount.Address {
-			return nil, fmt.Errorf("minipool %s does not belong to the node", mpCommonDetails.Address.Hex())
-		}
-
-		mpDetails := api.MinipoolExitDetails{
-			Address:       mpCommonDetails.Address,
-			InvalidStatus: (status != types.Staking),
-		}
-		mpDetails.CanExit = !mpDetails.InvalidStatus
-		details[i] = mpDetails
-	}
-
-	response.Details = details
-	return &response, nil
+			response.Details = details
+			return nil
+		},
+	)
 }
 
 func exitMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.ApiResponse, error) {
-
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
