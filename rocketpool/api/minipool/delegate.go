@@ -3,6 +3,7 @@ package minipool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
@@ -138,133 +139,19 @@ func getMinipoolDelegateDetailsForNode(c *cli.Context) (*api.GetMinipoolDelegate
 }
 
 func upgradeDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.BatchTxResponse{}
-
-	// Create minipools
-	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the TXs
-	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
-	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
-		minipoolAddress := mpCommon.Details.Address
-
-		txInfo, err := mpCommon.DelegateUpgrade(opts)
-		if err != nil {
-			return nil, fmt.Errorf("error simulating delegate upgrade transaction for minipool %s: %w", minipoolAddress.Hex(), err)
-		}
-		txInfos[i] = txInfo
-	}
-
-	response.TxInfos = txInfos
-	return &response, nil
+	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+		return mpCommon.DelegateUpgrade(opts)
+	}, "upgrade-delegate")
 }
 
 func rollbackDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.BatchTxResponse{}
-
-	// Create minipools
-	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the TXs
-	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
-	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
-		minipoolAddress := mpCommon.Details.Address
-
-		txInfo, err := mpCommon.DelegateRollback(opts)
-		if err != nil {
-			return nil, fmt.Errorf("error simulating delegate rollback transaction for minipool %s: %w", minipoolAddress.Hex(), err)
-		}
-		txInfos[i] = txInfo
-	}
-
-	response.TxInfos = txInfos
-	return &response, nil
+	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+		return mpCommon.DelegateRollback(opts)
+	}, "rollback-delegate")
 }
 
 func setUseLatestDelegates(c *cli.Context, minipoolAddresses []common.Address, setting bool) (*api.BatchTxResponse, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.BatchTxResponse{}
-
-	// Create minipools
-	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the TXs
-	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
-	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
-		minipoolAddress := mpCommon.Details.Address
-
-		txInfo, err := mpCommon.SetUseLatestDelegate(setting, opts)
-		if err != nil {
-			return nil, fmt.Errorf("error simulating set-use-latest-delegate transaction for minipool %s: %w", minipoolAddress.Hex(), err)
-		}
-		txInfos[i] = txInfo
-	}
-
-	response.TxInfos = txInfos
-	return &response, nil
+	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+		return mpCommon.SetUseLatestDelegate(setting, opts)
+	}, "set-use-latest-delegate")
 }

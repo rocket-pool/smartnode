@@ -53,17 +53,15 @@ type ValidatorDetails struct {
 	NodeBalance *big.Int `json:"nodeBalance"`
 }
 
-type CanRefundMinipoolResponse struct {
-	Status                    string             `json:"status"`
-	Error                     string             `json:"error"`
-	CanRefund                 bool               `json:"canRefund"`
-	InsufficientRefundBalance bool               `json:"insufficientRefundBalance"`
-	GasInfo                   rocketpool.GasInfo `json:"gasInfo"`
+type MinipoolRefundDetails struct {
+	Address                   common.Address `json:"address"`
+	InsufficientRefundBalance bool           `json:"insufficientRefundBalance"`
+	CanRefund                 bool           `json:"canRefund"`
 }
-type RefundMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
+type GetMinipoolRefundDetailsForNodeResponse struct {
+	Status  string                  `json:"status"`
+	Error   string                  `json:"error"`
+	Details []MinipoolRefundDetails `json:"details"`
 }
 
 type MinipoolDissolveDetails struct {
@@ -248,6 +246,7 @@ type MinipoolBeginReduceBondDetails struct {
 	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
 	Balance               uint64                `json:"balance"`
 	BalanceTooLow         bool                  `json:"balanceTooLow"`
+	AlreadyInWindow       bool                  `json:"alreadyInWindow"`
 	MatchRequest          *big.Int              `json:"matchRequest"`
 	BeaconState           beacon.ValidatorState `json:"beaconState"`
 	InvalidElState        bool                  `json:"invalidElState"`
@@ -261,17 +260,22 @@ type GetMinipoolBeginReduceBondDetailsForNodeResponse struct {
 	Details               []MinipoolBeginReduceBondDetails `json:"details"`
 }
 
-type CanReduceBondAmountResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	MinipoolVersion uint8              `json:"minipoolVersion"`
-	CanReduce       bool               `json:"canReduce"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
+type MinipoolReduceBondDetails struct {
+	Address               common.Address        `json:"address"`
+	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
+	Balance               uint64                `json:"balance"`
+	BalanceTooLow         bool                  `json:"balanceTooLow"`
+	OutOfWindow           bool                  `json:"outOfWindow"`
+	BeaconState           beacon.ValidatorState `json:"beaconState"`
+	InvalidElState        bool                  `json:"invalidElState"`
+	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
+	CanReduce             bool                  `json:"canReduce"`
 }
-type ReduceBondAmountResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
+type GetMinipoolReduceBondDetailsForNodeResponse struct {
+	Status                string                      `json:"status"`
+	Error                 string                      `json:"error"`
+	BondReductionDisabled bool                        `json:"bondReductionDisabled"`
+	Details               []MinipoolReduceBondDetails `json:"details"`
 }
 
 type MinipoolRescueDissolvedDetails struct {

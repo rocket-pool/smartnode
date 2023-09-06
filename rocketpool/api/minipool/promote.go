@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
@@ -124,50 +125,7 @@ func getMinipoolPromoteDetailsForNode(c *cli.Context) (*api.GetMinipoolPromoteDe
 }
 
 func promoteMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.BatchTxResponse{}
-
-	// Create minipools
-	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the TXs
-	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
-	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
-		minipoolAddress := mpCommon.Details.Address
-
-		mpv3, success := minipool.GetMinipoolAsV3(mp)
-		if !success {
-			return nil, fmt.Errorf("cannot promte minipool %s because its delegate version is too low (v%d); please update the delegate to promote it", minipoolAddress.Hex(), mpCommon.Details.Version)
-		}
-
-		txInfo, err := mpv3.Promote(opts)
-		if err != nil {
-			return nil, fmt.Errorf("error simulating dissolve transaction for minipool %s: %w", minipoolAddress.Hex(), err)
-		}
-		txInfos[i] = txInfo
-	}
-
-	response.TxInfos = txInfos
-	return &response, nil
+	return createBatchTxResponseForV3(c, minipoolAddresses, func(mpv3 *minipool.MinipoolV3, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+		return mpv3.Promote(opts)
+	}, "promote")
 }
