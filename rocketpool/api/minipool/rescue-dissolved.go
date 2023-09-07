@@ -7,6 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/beacon"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -14,11 +16,9 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/contracts"
+	rpbeacon "github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
@@ -73,7 +73,7 @@ func getMinipoolRescueDissolvedDetailsForNode(c *cli.Context) (*api.GetMinipoolR
 				i := detailsMap[pubkey]
 				mpDetails := &details[i]
 				mpDetails.BeaconState = beaconStatus.Status
-				mpDetails.InvalidBeaconState = beaconStatus.Status != beacon.ValidatorState_PendingInitialized
+				mpDetails.InvalidBeaconState = beaconStatus.Status != rpbeacon.ValidatorState_PendingInitialized
 
 				if !mpDetails.InvalidBeaconState {
 					beaconBalanceGwei := big.NewInt(0).SetUint64(beaconStatus.Balance)
@@ -95,74 +95,7 @@ func getMinipoolRescueDissolvedDetailsForNode(c *cli.Context) (*api.GetMinipoolR
 	})
 }
 
-// Create a transaction for submitting a rescue deposit, optionally simulating it only for gas estimation
-func getDepositTx(rp *rocketpool.RocketPool, w *wallet.Wallet, bc beacon.Client, minipoolAddress common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
-
-	blankAddress := common.Address{}
-	casperAddress, err := rp.GetAddress("casperDeposit", nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting Beacon deposit contract address: %w", err)
-	}
-	if casperAddress == nil || *casperAddress == blankAddress {
-		return nil, fmt.Errorf("Beacon deposit contract address was empty (0x0).")
-	}
-
-	depositContract, err := contracts.NewBeaconDeposit(*casperAddress, rp.Client)
-	if err != nil {
-		return nil, fmt.Errorf("error creating Beacon deposit contract binding: %w", err)
-	}
-
-	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get eth2 config
-	eth2Config, err := bc.GetEth2Config()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get minipool withdrawal credentials
-	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.GetAddress(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the validator key for the minipool
-	validatorPubkey, err := minipool.GetMinipoolPubkey(rp, mp.GetAddress(), nil)
-	if err != nil {
-		return nil, err
-	}
-	validatorKey, err := w.GetValidatorKeyByPubkey(validatorPubkey)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the deposit amount in gwei
-	amountGwei := big.NewInt(0).Div(amount, big.NewInt(1e9)).Uint64()
-
-	// Get validator deposit data
-	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, amountGwei)
-	if err != nil {
-		return nil, err
-	}
-	signature := types.BytesToValidatorSignature(depositData.Signature)
-
-	// Get the tx
-	tx, err := depositContract.Deposit(opts, validatorPubkey[:], withdrawalCredentials[:], signature[:], depositDataRoot)
-	if err != nil {
-		return nil, fmt.Errorf("error performing rescue deposit: %s", err.Error())
-	}
-
-	// Return
-	return tx, nil
-
-}
-
-func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address, amount *big.Int) (*api.RescueDissolvedMinipoolResponse, error) {
-
+func rescueDissolvedMinipool(c *cli.Context, minipoolAddresses []common.Address, amounts []*big.Int) (*api.BatchTxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -177,33 +110,87 @@ func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address, amo
 	}
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting Beacon Node binding: %w", err)
 	}
-
-	// Response
-	response := api.RescueDissolvedMinipoolResponse{}
-
-	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
-	opts.Value = amount
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	// Response
+	response := api.BatchTxResponse{}
+
+	// Sanity check
+	if len(minipoolAddresses) != len(amounts) {
+		return nil, fmt.Errorf("addresses and amounts must have the same length (%d vs. %d)", len(minipoolAddresses), len(amounts))
 	}
 
-	// Submit the rescue deposit
-	tx, err := getDepositTx(rp, w, bc, minipoolAddress, amount, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error submitting rescue deposit: %w", err)
+	// Get the TXs
+	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
+	for i, address := range minipoolAddresses {
+		amount := amounts[i]
+		opts.Value = amount
+		txInfo, err := getDepositTx(rp, w, bc, address, amount, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error simulating deposit transaction for minipool %s: %w", address.Hex(), err)
+		}
+		txInfos[i] = txInfo
 	}
-	response.TxHash = tx.Hash()
 
-	// Return response
+	response.TxInfos = txInfos
 	return &response, nil
+}
 
+// Create a transaction for submitting a rescue deposit, optionally simulating it only for gas estimation
+func getDepositTx(rp *rocketpool.RocketPool, w *wallet.Wallet, bc rpbeacon.Client, minipoolAddress common.Address, amount *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+	beaconDeposit, err := beacon.NewBeaconDeposit(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating Beacon deposit contract binding: %w", err)
+	}
+
+	// Create minipool
+	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)
+	if err != nil {
+		return nil, err
+	}
+	mpCommon := mp.GetMinipoolCommon()
+
+	// Get eth2 config
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		mpCommon.GetWithdrawalCredentials(mc)
+		mpCommon.GetPubkey(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract state: %w", err)
+	}
+
+	// Get minipool withdrawal credentials and keys
+	withdrawalCredentials := mpCommon.Details.WithdrawalCredentials
+	validatorPubkey := mpCommon.Details.Pubkey
+	validatorKey, err := w.GetValidatorKeyByPubkey(validatorPubkey)
+	if err != nil {
+		return nil, fmt.Errorf("error getting validator private key for pubkey %s: %w", validatorPubkey.Hex(), err)
+	}
+
+	// Get validator deposit data
+	amountGwei := big.NewInt(0).Div(amount, big.NewInt(1e9)).Uint64()
+	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, amountGwei)
+	if err != nil {
+		return nil, err
+	}
+	signature := types.BytesToValidatorSignature(depositData.Signature)
+
+	// Get the tx info
+	txInfo, err := beaconDeposit.Deposit(opts, validatorPubkey, withdrawalCredentials, signature, depositDataRoot)
+	if err != nil {
+		return nil, fmt.Errorf("error performing rescue deposit: %s", err.Error())
+	}
+	return txInfo, nil
 }

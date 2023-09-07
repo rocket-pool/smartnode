@@ -20,7 +20,7 @@ const (
 
 // ABI cache
 var faucetAbi abi.ABI
-var mcOnce sync.Once
+var faucetOnce sync.Once
 
 // ===============
 // === Structs ===
@@ -55,7 +55,7 @@ type RplFaucetDetails struct {
 func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFaucet, error) {
 	// Parse the ABI
 	var err error
-	mcOnce.Do(func() {
+	faucetOnce.Do(func() {
 		var parsedAbi abi.ABI
 		parsedAbi, err = abi.JSON(strings.NewReader(faucetAbiString))
 		if err == nil {

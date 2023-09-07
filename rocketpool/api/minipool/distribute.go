@@ -17,7 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getDistributeBalanceDetailsForNode(c *cli.Context) (*api.GetMinipoolDistributeDetailsForNodeResponse, error) {
+func getMinipoolDistributeBalanceDetailsForNode(c *cli.Context) (*api.GetMinipoolDistributeDetailsForNodeResponse, error) {
 	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolDistributeDetailsForNodeResponse]{
 		CreateBindings: nil,
 		GetState:       nil,

@@ -45,7 +45,7 @@ type MinipoolQuerier[responseType any] struct {
 
 	// Get whatever details of the given minipool are necessary; this will be passed into an rp.BatchQuery call, one run per minipool
 	// belonging to the node
-	GetMinipoolDetails func(mc *batch.MultiCaller, mp minipool.Minipool)
+	GetMinipoolDetails func(mc *batch.MultiCaller, mp minipool.Minipool, index int)
 
 	// Prepare the response object using all of the provided artifacts
 	PrepareResponse func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *responseType) error
