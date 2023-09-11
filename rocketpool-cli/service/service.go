@@ -55,10 +55,6 @@ const (
 func installService(c *cli.Context) error {
 	dataPath := ""
 
-	if c.String("network") != "" {
-		fmt.Printf("%sNOTE: The --network flag is deprecated. You no longer need to specify it.%s\n\n", colorLightBlue, colorReset)
-	}
-
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
 		"The Rocket Pool service will be installed --Version: %s\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
@@ -86,7 +82,7 @@ func installService(c *cli.Context) error {
 	}
 
 	// Install service
-	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("network"), c.String("version"), c.String("path"), dataPath)
+	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("version"), c.String("path"), dataPath)
 	if err != nil {
 		return err
 	}

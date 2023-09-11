@@ -1001,16 +1001,21 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
 	// MEV-Boost
 	if cfg.EnableMevBoost.Value == true {
-		config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)
-		if cfg.MevBoost.Mode.Value == config.Mode_Local {
-			envVars[mevBoostRelaysEnvVar] = cfg.MevBoost.GetRelayString()
-			envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
+		// Disable for Holesky
+		if cfg.Smartnode.Network.Value == config.Network_Holesky {
+			cfg.EnableMevBoost.Value = false
+		} else {
+			config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)
+			if cfg.MevBoost.Mode.Value == config.Mode_Local {
+				envVars[mevBoostRelaysEnvVar] = cfg.MevBoost.GetRelayString()
+				envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
 
-			// Handle open API port
-			portMode := cfg.MevBoost.OpenRpcPort.Value.(config.RPCMode)
-			if portMode.Open() {
-				port := cfg.MevBoost.Port.Value.(uint16)
-				envVars["MEV_BOOST_OPEN_API_PORT"] = fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
+				// Handle open API port
+				portMode := cfg.MevBoost.OpenRpcPort.Value.(config.RPCMode)
+				if portMode.Open() {
+					port := cfg.MevBoost.Port.Value.(uint16)
+					envVars["MEV_BOOST_OPEN_API_PORT"] = fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
+				}
 			}
 		}
 	}
@@ -1122,7 +1127,7 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	}
 
 	// Ensure there's a MEV-boost URL
-	if !cfg.IsNativeMode && cfg.EnableMevBoost.Value == true {
+	if !cfg.IsNativeMode && cfg.EnableMevBoost.Value == true && cfg.Smartnode.Network.Value != config.Network_Holesky {
 		switch cfg.MevBoost.Mode.Value.(config.Mode) {
 		case config.Mode_Local:
 			// In local MEV-boost mode, the user has to have at least one relay
