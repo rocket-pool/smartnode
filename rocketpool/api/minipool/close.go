@@ -19,94 +19,93 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetailsForNodeResponse, error) {
-	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolCloseDetailsForNodeResponse]{
-		CreateBindings: nil,
-		GetState: func(node *node.Node, mc *batch.MultiCaller) {
-			node.GetFeeDistributorInitialized(mc)
-		},
-		CheckState: func(node *node.Node, response *api.GetMinipoolCloseDetailsForNodeResponse) bool {
-			response.IsFeeDistributorInitialized = node.Details.IsFeeDistributorInitialized
-			return response.IsFeeDistributorInitialized
-		},
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-			mpCommon := mp.GetMinipoolCommon()
-			mpCommon.GetNodeAddress(mc)
-			mpCommon.GetNodeRefundBalance(mc)
-			mpCommon.GetFinalised(mc)
-			mpCommon.GetStatus(mc)
-			mpCommon.GetUserDepositBalance(mc)
-			mpCommon.GetPubkey(mc)
-		},
-		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolCloseDetailsForNodeResponse) error {
-			// Get the BN client
-			bc, err := services.GetBeaconClient(c)
-			if err != nil {
-				return fmt.Errorf("error getting Beacon Node binding: %w", err)
-			}
+type minipoolCloseManager struct {
+}
 
-			// Get the current ETH balances of each minipool
-			balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
-			if err != nil {
-				return fmt.Errorf("error getting minipool balances: %w", err)
-			}
+func (m *minipoolCloseManager) CreateBindings(rp *rocketpool.RocketPool) error {
+	return nil
+}
 
-			// Get the closure details
-			details := make([]api.MinipoolCloseDetails, len(addresses))
-			for i, mp := range mps {
-				mpDetails, err := getMinipoolCloseDetails(rp, mp, balances[i])
-				if err != nil {
-					return fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetMinipoolCommon().Details.Address.Hex(), err)
-				}
-				details[i] = mpDetails
-			}
+func (m *minipoolCloseManager) GetState(node *node.Node, mc *batch.MultiCaller) {
+	node.GetFeeDistributorInitialized(mc)
+}
 
-			// Get the node shares
-			err = rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
-				mpv3, success := minipool.GetMinipoolAsV3(mps[i])
-				if success {
-					details[i].Distributed = mpv3.Details.HasUserDistributed
-					mpv3.CalculateNodeShare(mc, &details[i].NodeShareOfEffectiveBalance, details[i].EffectiveBalance)
-				}
-				return nil
-			}, nil)
-			if err != nil {
-				return fmt.Errorf("error getting node shares of minipool balances: %w", err)
-			}
+func (m *minipoolCloseManager) CheckState(node *node.Node, response *api.GetMinipoolCloseDetailsForNodeResponse) bool {
+	response.IsFeeDistributorInitialized = node.Details.IsFeeDistributorInitialized
+	return response.IsFeeDistributorInitialized
+}
 
-			// Get the beacon statuses for each closeable minipool
-			pubkeys := []types.ValidatorPubkey{}
-			pubkeyMap := map[common.Address]types.ValidatorPubkey{}
-			for i, mp := range details {
-				if mp.Status == types.Dissolved {
-					// Ignore dissolved minipools
-					continue
-				}
-				pubkey := mps[i].GetMinipoolCommon().Details.Pubkey
-				pubkeyMap[mp.Address] = pubkey
-				pubkeys = append(pubkeys, pubkey)
-			}
-			statusMap, err := bc.GetValidatorStatuses(pubkeys, nil)
-			if err != nil {
-				return fmt.Errorf("error getting beacon status of minipools: %w", err)
-			}
+func (m *minipoolCloseManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+	mpCommon := mp.GetMinipoolCommon()
+	mpCommon.GetNodeAddress(mc)
+	mpCommon.GetNodeRefundBalance(mc)
+	mpCommon.GetFinalised(mc)
+	mpCommon.GetStatus(mc)
+	mpCommon.GetUserDepositBalance(mc)
+	mpCommon.GetPubkey(mc)
+}
 
-			// Review closeability based on validator status
-			for i, mp := range details {
-				pubkey := pubkeyMap[mp.Address]
-				validator := statusMap[pubkey]
-				if mp.Status != types.Dissolved {
-					details[i].BeaconState = validator.Status
-					if validator.Status != beacon.ValidatorState_WithdrawalDone {
-						details[i].CanClose = false
-					}
-				}
-			}
+func (m *minipoolCloseManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolCloseDetailsForNodeResponse) error {
+	// Get the current ETH balances of each minipool
+	balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
+	if err != nil {
+		return fmt.Errorf("error getting minipool balances: %w", err)
+	}
 
-			response.Details = details
-			return nil
-		},
-	})
+	// Get the closure details
+	details := make([]api.MinipoolCloseDetails, len(addresses))
+	for i, mp := range mps {
+		mpDetails, err := getMinipoolCloseDetails(rp, mp, balances[i])
+		if err != nil {
+			return fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetMinipoolCommon().Details.Address.Hex(), err)
+		}
+		details[i] = mpDetails
+	}
+
+	// Get the node shares
+	err = rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
+		if success {
+			details[i].Distributed = mpv3.Details.HasUserDistributed
+			mpv3.CalculateNodeShare(mc, &details[i].NodeShareOfEffectiveBalance, details[i].EffectiveBalance)
+		}
+		return nil
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("error getting node shares of minipool balances: %w", err)
+	}
+
+	// Get the beacon statuses for each closeable minipool
+	pubkeys := []types.ValidatorPubkey{}
+	pubkeyMap := map[common.Address]types.ValidatorPubkey{}
+	for i, mp := range details {
+		if mp.Status == types.Dissolved {
+			// Ignore dissolved minipools
+			continue
+		}
+		pubkey := mps[i].GetMinipoolCommon().Details.Pubkey
+		pubkeyMap[mp.Address] = pubkey
+		pubkeys = append(pubkeys, pubkey)
+	}
+	statusMap, err := bc.GetValidatorStatuses(pubkeys, nil)
+	if err != nil {
+		return fmt.Errorf("error getting beacon status of minipools: %w", err)
+	}
+
+	// Review closeability based on validator status
+	for i, mp := range details {
+		pubkey := pubkeyMap[mp.Address]
+		validator := statusMap[pubkey]
+		if mp.Status != types.Dissolved {
+			details[i].BeaconState = validator.Status
+			if validator.Status != beacon.ValidatorState_WithdrawalDone {
+				details[i].CanClose = false
+			}
+		}
+	}
+
+	response.Details = details
+	return nil
 }
 
 func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, balance *big.Int) (api.MinipoolCloseDetails, error) {

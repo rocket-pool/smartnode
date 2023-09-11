@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
@@ -18,34 +19,42 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
-func getMinipoolExitDetailsForNode(c *cli.Context) (*api.GetMinipoolExitDetailsForNodeResponse, error) {
-	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolExitDetailsForNodeResponse]{
-		CreateBindings: nil,
-		GetState:       nil,
-		CheckState:     nil,
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-			mpCommon := mp.GetMinipoolCommon()
-			mpCommon.GetNodeAddress(mc)
-			mpCommon.GetStatus(mc)
-		},
-		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolExitDetailsForNodeResponse) error {
-			// Get the exit details
-			details := make([]api.MinipoolExitDetails, len(addresses))
-			for i, mp := range mps {
-				mpCommonDetails := mp.GetMinipoolCommon().Details
-				status := mpCommonDetails.Status.Formatted()
-				mpDetails := api.MinipoolExitDetails{
-					Address:       mpCommonDetails.Address,
-					InvalidStatus: (status != types.Staking),
-				}
-				mpDetails.CanExit = !mpDetails.InvalidStatus
-				details[i] = mpDetails
-			}
+type minipoolExitManager struct {
+}
 
-			response.Details = details
-			return nil
-		},
-	})
+func (m *minipoolExitManager) CreateBindings(rp *rocketpool.RocketPool) error {
+	return nil
+}
+
+func (m *minipoolExitManager) GetState(node *node.Node, mc *batch.MultiCaller) {
+}
+
+func (m *minipoolExitManager) CheckState(node *node.Node, response *api.GetMinipoolExitDetailsForNodeResponse) bool {
+	return true
+}
+
+func (m *minipoolExitManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+	mpCommon := mp.GetMinipoolCommon()
+	mpCommon.GetNodeAddress(mc)
+	mpCommon.GetStatus(mc)
+}
+
+func (m *minipoolExitManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolExitDetailsForNodeResponse) error {
+	// Get the exit details
+	details := make([]api.MinipoolExitDetails, len(addresses))
+	for i, mp := range mps {
+		mpCommonDetails := mp.GetMinipoolCommon().Details
+		status := mpCommonDetails.Status.Formatted()
+		mpDetails := api.MinipoolExitDetails{
+			Address:       mpCommonDetails.Address,
+			InvalidStatus: (status != types.Staking),
+		}
+		mpDetails.CanExit = !mpDetails.InvalidStatus
+		details[i] = mpDetails
+	}
+
+	response.Details = details
+	return nil
 }
 
 func exitMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.ApiResponse, error) {

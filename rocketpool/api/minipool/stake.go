@@ -17,69 +17,74 @@ import (
 
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
-func getMinipoolStakeDetailsForNode(c *cli.Context) (*api.GetMinipoolStakeDetailsForNodeResponse, error) {
-	var oSettings *settings.OracleDaoSettings
+type minipoolStakeManager struct {
+	oSettings *settings.OracleDaoSettings
+}
 
-	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolStakeDetailsForNodeResponse]{
-		CreateBindings: func(rp *rocketpool.RocketPool) error {
-			var err error
-			oSettings, err = settings.NewOracleDaoSettings(rp)
-			if err != nil {
-				return fmt.Errorf("error creating oDAO settings binding: %w", err)
+func (m *minipoolStakeManager) CreateBindings(rp *rocketpool.RocketPool) error {
+	var err error
+	m.oSettings, err = settings.NewOracleDaoSettings(rp)
+	if err != nil {
+		return fmt.Errorf("error creating oDAO settings binding: %w", err)
+	}
+	return nil
+}
+
+func (m *minipoolStakeManager) GetState(node *node.Node, mc *batch.MultiCaller) {
+	m.oSettings.GetScrubPeriod(mc)
+}
+
+func (m *minipoolStakeManager) CheckState(node *node.Node, response *api.GetMinipoolStakeDetailsForNodeResponse) bool {
+	return true
+}
+
+func (m *minipoolStakeManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+	mpCommon := mp.GetMinipoolCommon()
+	mpCommon.GetStatus(mc)
+	mpCommon.GetStatusTime(mc)
+}
+
+func (m *minipoolStakeManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolStakeDetailsForNodeResponse) error {
+	scrubPeriod := m.oSettings.Details.Minipools.ScrubPeriod.Formatted()
+
+	// Get the time of the latest block
+	latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return fmt.Errorf("error getting the latest block header: %w", err)
+	}
+	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
+
+	// Get the stake details
+	details := make([]api.MinipoolStakeDetails, len(addresses))
+	for i, mp := range mps {
+		mpCommonDetails := mp.GetMinipoolCommon().Details
+		mpDetails := api.MinipoolStakeDetails{
+			Address: mpCommonDetails.Address,
+		}
+
+		mpDetails.State = mpCommonDetails.Status.Formatted()
+		if mpDetails.State != types.Prelaunch {
+			mpDetails.InvalidState = true
+		} else {
+			creationTime := mpCommonDetails.StatusTime.Formatted()
+			mpDetails.RemainingTime = creationTime.Add(scrubPeriod).Sub(latestBlockTime)
+			if mpDetails.RemainingTime > 0 {
+				mpDetails.StillInScrubPeriod = true
 			}
-			return nil
-		},
-		GetState: func(node *node.Node, mc *batch.MultiCaller) {
-			oSettings.GetScrubPeriod(mc)
-		},
-		CheckState: nil,
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-			mpCommon := mp.GetMinipoolCommon()
-			mpCommon.GetStatus(mc)
-			mpCommon.GetStatusTime(mc)
-		},
-		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolStakeDetailsForNodeResponse) error {
-			scrubPeriod := oSettings.Details.Minipools.ScrubPeriod.Formatted()
+		}
 
-			// Get the time of the latest block
-			latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
-			if err != nil {
-				return fmt.Errorf("error getting the latest block header: %w", err)
-			}
-			latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
+		mpDetails.CanStake = !(mpDetails.InvalidState || mpDetails.StillInScrubPeriod)
+		details[i] = mpDetails
+	}
 
-			// Get the stake details
-			details := make([]api.MinipoolStakeDetails, len(addresses))
-			for i, mp := range mps {
-				mpCommonDetails := mp.GetMinipoolCommon().Details
-				mpDetails := api.MinipoolStakeDetails{
-					Address: mpCommonDetails.Address,
-				}
-
-				mpDetails.State = mpCommonDetails.Status.Formatted()
-				if mpDetails.State != types.Prelaunch {
-					mpDetails.InvalidState = true
-				} else {
-					creationTime := mpCommonDetails.StatusTime.Formatted()
-					mpDetails.RemainingTime = creationTime.Add(scrubPeriod).Sub(latestBlockTime)
-					if mpDetails.RemainingTime > 0 {
-						mpDetails.StillInScrubPeriod = true
-					}
-				}
-
-				mpDetails.CanStake = !(mpDetails.InvalidState || mpDetails.StillInScrubPeriod)
-				details[i] = mpDetails
-			}
-
-			// Update & return response
-			response.Details = details
-			return nil
-		},
-	})
+	// Update & return response
+	response.Details = details
+	return nil
 }
 
 func stakeMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {

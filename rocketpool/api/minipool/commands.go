@@ -3,6 +3,7 @@ package minipool
 import (
 	"github.com/urfave/cli"
 
+	types "github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -401,26 +402,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-begin-reduce-bond-amount",
-				Usage:     "Check whether the minipool can begin the bond reduction process",
-				UsageText: "rocketpool api minipool can-begin-reduce-bond-amount minipool-address new-bond-amount-wei",
+				Name:      "get-minipool-begin-reduce-bond-details-for-node",
+				Usage:     "Check whether any of the minipools belonging to the node can begin the bond reduction process",
+				UsageText: "rocketpool api minipool get-minipool-begin-reduce-bond-details-for-node new-bond-amount-wei",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					newBondAmountWei, err := cliutils.ValidateWeiAmount("new bond amount", c.Args().Get(1))
+					newBondAmountWei, err := cliutils.ValidateWeiAmount("new bond amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canBeginReduceBondAmount(c, minipoolAddress, newBondAmountWei))
+					response, err := runMinipoolQuery[types.GetMinipoolBeginReduceBondDetailsForNodeResponse](c, &minipoolBeginReduceBondManager{
+						newBondAmountWei: newBondAmountWei,
+					})
+					api.PrintResponse(response, err)
 					return nil
 
 				},

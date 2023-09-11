@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/beacon"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -22,77 +23,79 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
-func getMinipoolRescueDissolvedDetailsForNode(c *cli.Context) (*api.GetMinipoolRescueDissolvedDetailsForNodeResponse, error) {
-	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolRescueDissolvedDetailsForNodeResponse]{
-		CreateBindings: nil,
-		GetState:       nil,
-		CheckState:     nil,
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-			mpCommon := mp.GetMinipoolCommon()
-			mpCommon.GetFinalised(mc)
-			mpCommon.GetStatus(mc)
-			mpCommon.GetPubkey(mc)
-		},
-		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolRescueDissolvedDetailsForNodeResponse) error {
-			// Get the Beacon Node client
-			bc, err := services.GetBeaconClient(c)
-			if err != nil {
-				return fmt.Errorf("error getting Beacon Node binding: %w", err)
+type minipoolRescueDissolvedManager struct {
+}
+
+func (m *minipoolRescueDissolvedManager) CreateBindings(rp *rocketpool.RocketPool) error {
+	return nil
+}
+
+func (m *minipoolRescueDissolvedManager) GetState(node *node.Node, mc *batch.MultiCaller) {
+}
+
+func (m *minipoolRescueDissolvedManager) CheckState(node *node.Node, response *api.GetMinipoolRescueDissolvedDetailsForNodeResponse) bool {
+	return true
+}
+
+func (m *minipoolRescueDissolvedManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+	mpCommon := mp.GetMinipoolCommon()
+	mpCommon.GetFinalised(mc)
+	mpCommon.GetStatus(mc)
+	mpCommon.GetPubkey(mc)
+}
+
+func (m *minipoolRescueDissolvedManager) PrepareResponse(rp *rocketpool.RocketPool, bc rpbeacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolRescueDissolvedDetailsForNodeResponse) error {
+	// Get the rescue details
+	pubkeys := []types.ValidatorPubkey{}
+	detailsMap := map[types.ValidatorPubkey]int{}
+	details := make([]api.MinipoolRescueDissolvedDetails, len(addresses))
+	for i, mp := range mps {
+		mpCommon := mp.GetMinipoolCommon()
+		mpDetails := api.MinipoolRescueDissolvedDetails{
+			Address:       mpCommon.Details.Address,
+			MinipoolState: mpCommon.Details.Status.Formatted(),
+			IsFinalized:   mpCommon.Details.IsFinalised,
+		}
+
+		if mpDetails.MinipoolState != types.Dissolved || mpDetails.IsFinalized {
+			mpDetails.InvalidElState = true
+		} else {
+			pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
+			detailsMap[mpCommon.Details.Pubkey] = i
+		}
+
+		details[i] = mpDetails
+	}
+
+	// Get the statuses on Beacon
+	beaconStatuses, err := bc.GetValidatorStatuses(pubkeys, nil)
+	if err != nil {
+		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
+	}
+
+	// Do a complete viability check
+	for pubkey, beaconStatus := range beaconStatuses {
+		i := detailsMap[pubkey]
+		mpDetails := &details[i]
+		mpDetails.BeaconState = beaconStatus.Status
+		mpDetails.InvalidBeaconState = beaconStatus.Status != rpbeacon.ValidatorState_PendingInitialized
+
+		if !mpDetails.InvalidBeaconState {
+			beaconBalanceGwei := big.NewInt(0).SetUint64(beaconStatus.Balance)
+			mpDetails.BeaconBalance = big.NewInt(0).Mul(beaconBalanceGwei, big.NewInt(1e9))
+
+			// Make sure it doesn't already have 32 ETH in it
+			requiredBalance := eth.EthToWei(32)
+			if mpDetails.BeaconBalance.Cmp(requiredBalance) >= 0 {
+				mpDetails.HasFullBalance = true
 			}
+		}
 
-			// Get the rescue details
-			pubkeys := []types.ValidatorPubkey{}
-			detailsMap := map[types.ValidatorPubkey]int{}
-			details := make([]api.MinipoolRescueDissolvedDetails, len(addresses))
-			for i, mp := range mps {
-				mpCommon := mp.GetMinipoolCommon()
-				mpDetails := api.MinipoolRescueDissolvedDetails{
-					Address:       mpCommon.Details.Address,
-					MinipoolState: mpCommon.Details.Status.Formatted(),
-					IsFinalized:   mpCommon.Details.IsFinalised,
-				}
+		mpDetails.CanRescue = !(mpDetails.IsFinalized || mpDetails.InvalidElState || mpDetails.InvalidBeaconState || mpDetails.HasFullBalance)
+	}
 
-				if mpDetails.MinipoolState != types.Dissolved || mpDetails.IsFinalized {
-					mpDetails.InvalidElState = true
-				} else {
-					pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
-					detailsMap[mpCommon.Details.Pubkey] = i
-				}
-
-				details[i] = mpDetails
-			}
-
-			// Get the statuses on Beacon
-			beaconStatuses, err := bc.GetValidatorStatuses(pubkeys, nil)
-			if err != nil {
-				return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
-			}
-
-			// Do a complete viability check
-			for pubkey, beaconStatus := range beaconStatuses {
-				i := detailsMap[pubkey]
-				mpDetails := &details[i]
-				mpDetails.BeaconState = beaconStatus.Status
-				mpDetails.InvalidBeaconState = beaconStatus.Status != rpbeacon.ValidatorState_PendingInitialized
-
-				if !mpDetails.InvalidBeaconState {
-					beaconBalanceGwei := big.NewInt(0).SetUint64(beaconStatus.Balance)
-					mpDetails.BeaconBalance = big.NewInt(0).Mul(beaconBalanceGwei, big.NewInt(1e9))
-
-					// Make sure it doesn't already have 32 ETH in it
-					requiredBalance := eth.EthToWei(32)
-					if mpDetails.BeaconBalance.Cmp(requiredBalance) >= 0 {
-						mpDetails.HasFullBalance = true
-					}
-				}
-
-				mpDetails.CanRescue = !(mpDetails.IsFinalized || mpDetails.InvalidElState || mpDetails.InvalidBeaconState || mpDetails.HasFullBalance)
-			}
-
-			response.Details = details
-			return nil
-		},
-	})
+	response.Details = details
+	return nil
 }
 
 func rescueDissolvedMinipool(c *cli.Context, minipoolAddresses []common.Address, amounts []*big.Int) (*api.BatchTxResponse, error) {

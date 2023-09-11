@@ -9,62 +9,72 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getMinipoolDistributeBalanceDetailsForNode(c *cli.Context) (*api.GetMinipoolDistributeDetailsForNodeResponse, error) {
-	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolDistributeDetailsForNodeResponse]{
-		CreateBindings: nil,
-		GetState:       nil,
-		CheckState:     nil,
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-			mpCommon := mp.GetMinipoolCommon()
-			mpCommon.GetNodeAddress(mc)
-			mpCommon.GetNodeRefundBalance(mc)
-			mpCommon.GetFinalised(mc)
-			mpCommon.GetStatus(mc)
-			mpCommon.GetUserDepositBalance(mc)
-		},
-		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDistributeDetailsForNodeResponse) error {
-			// Get the current ETH balances of each minipool
-			balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
-			if err != nil {
-				return fmt.Errorf("error getting minipool balances: %w", err)
-			}
+type minipoolDistributeManager struct {
+}
 
-			// Get the distribute details
-			details := make([]api.MinipoolDistributeDetails, len(addresses))
-			for i, mp := range mps {
-				mpDetails, err := getMinipoolDistributeDetails(rp, mp, balances[i])
-				if err != nil {
-					return fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetMinipoolCommon().Details.Address.Hex(), err)
-				}
-				details[i] = mpDetails
-			}
+func (m *minipoolDistributeManager) CreateBindings(rp *rocketpool.RocketPool) error {
+	return nil
+}
 
-			// Get the node shares
-			err = rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
-				mpDetails := details[i]
-				status := mpDetails.Status
-				if status == types.Staking && mpDetails.CanDistribute {
-					mps[i].GetMinipoolCommon().CalculateNodeShare(mc, &details[i].NodeShareOfDistributableBalance, details[i].DistributableBalance)
-				}
-				return nil
-			}, nil)
-			if err != nil {
-				return fmt.Errorf("error getting node shares of minipool balances: %w", err)
-			}
+func (m *minipoolDistributeManager) GetState(node *node.Node, mc *batch.MultiCaller) {
+}
 
-			// Update & return response
-			response.Details = details
-			return nil
-		},
-	})
+func (m *minipoolDistributeManager) CheckState(node *node.Node, response *api.GetMinipoolDistributeDetailsForNodeResponse) bool {
+	return true
+}
+
+func (m *minipoolDistributeManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+	mpCommon := mp.GetMinipoolCommon()
+	mpCommon.GetNodeAddress(mc)
+	mpCommon.GetNodeRefundBalance(mc)
+	mpCommon.GetFinalised(mc)
+	mpCommon.GetStatus(mc)
+	mpCommon.GetUserDepositBalance(mc)
+}
+
+func (m *minipoolDistributeManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDistributeDetailsForNodeResponse) error {
+	// Get the current ETH balances of each minipool
+	balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
+	if err != nil {
+		return fmt.Errorf("error getting minipool balances: %w", err)
+	}
+
+	// Get the distribute details
+	details := make([]api.MinipoolDistributeDetails, len(addresses))
+	for i, mp := range mps {
+		mpDetails, err := getMinipoolDistributeDetails(rp, mp, balances[i])
+		if err != nil {
+			return fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetMinipoolCommon().Details.Address.Hex(), err)
+		}
+		details[i] = mpDetails
+	}
+
+	// Get the node shares
+	err = rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mpDetails := details[i]
+		status := mpDetails.Status
+		if status == types.Staking && mpDetails.CanDistribute {
+			mps[i].GetMinipoolCommon().CalculateNodeShare(mc, &details[i].NodeShareOfDistributableBalance, details[i].DistributableBalance)
+		}
+		return nil
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("error getting node shares of minipool balances: %w", err)
+	}
+
+	// Update & return response
+	response.Details = details
+	return nil
 }
 
 func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, balance *big.Int) (api.MinipoolDistributeDetails, error) {

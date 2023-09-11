@@ -6,40 +6,50 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getMinipoolDissolveDetailsForNode(c *cli.Context) (*api.GetMinipoolDissolveDetailsForNodeResponse, error) {
-	return runMinipoolQuery(c, MinipoolQuerier[api.GetMinipoolDissolveDetailsForNodeResponse]{
-		CreateBindings: nil,
-		GetState:       nil,
-		CheckState:     nil,
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-			mpCommon := mp.GetMinipoolCommon()
-			mpCommon.GetNodeAddress(mc)
-			mpCommon.GetStatus(mc)
-		},
-		PrepareResponse: func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDissolveDetailsForNodeResponse) error {
-			details := make([]api.MinipoolDissolveDetails, len(mps))
-			for i, mp := range mps {
-				mpCommonDetails := mp.GetMinipoolCommon().Details
-				status := mpCommonDetails.Status.Formatted()
-				mpDetails := api.MinipoolDissolveDetails{
-					Address:       mpCommonDetails.Address,
-					InvalidStatus: !(status == types.Initialized || status == types.Prelaunch),
-				}
-				mpDetails.CanDissolve = !mpDetails.InvalidStatus
-				details[i] = mpDetails
-			}
+type minipoolDissolveManager struct {
+}
 
-			response.Details = details
-			return nil
-		},
-	})
+func (m *minipoolDissolveManager) CreateBindings(rp *rocketpool.RocketPool) error {
+	return nil
+}
+
+func (m *minipoolDissolveManager) GetState(node *node.Node, mc *batch.MultiCaller) {
+}
+
+func (m *minipoolDissolveManager) CheckState(node *node.Node, response *api.GetMinipoolDissolveDetailsForNodeResponse) bool {
+	return true
+}
+
+func (m *minipoolDissolveManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+	mpCommon := mp.GetMinipoolCommon()
+	mpCommon.GetNodeAddress(mc)
+	mpCommon.GetStatus(mc)
+}
+
+func (m *minipoolDissolveManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDissolveDetailsForNodeResponse) error {
+	details := make([]api.MinipoolDissolveDetails, len(mps))
+	for i, mp := range mps {
+		mpCommonDetails := mp.GetMinipoolCommon().Details
+		status := mpCommonDetails.Status.Formatted()
+		mpDetails := api.MinipoolDissolveDetails{
+			Address:       mpCommonDetails.Address,
+			InvalidStatus: !(status == types.Initialized || status == types.Prelaunch),
+		}
+		mpDetails.CanDissolve = !mpDetails.InvalidStatus
+		details[i] = mpDetails
+	}
+
+	response.Details = details
+	return nil
 }
 
 func dissolveMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {

@@ -13,6 +13,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -20,24 +21,24 @@ import (
 const MinipoolDetailsBatchSize = 10
 
 // Wrapper for callbacks used by runMinipoolQuery; this implements the caller-specific functionality
-type MinipoolQuerier[responseType any] struct {
+type MinipoolQuerier[responseType any] interface {
 	// Used to create supplemental contract bindings (other than node.Node, which will already be created by the scaffolder);
 	// this should create local variables that the caller keeps in scope throughout the life of runMinipoolQuery
-	CreateBindings func(rp *rocketpool.RocketPool) error
+	CreateBindings(rp *rocketpool.RocketPool) error
 
 	// Used to get any supplemental state required during initialization - anything in here will be fed into an rp.Query() multicall
-	GetState func(node *node.Node, mc *batch.MultiCaller)
+	GetState(node *node.Node, mc *batch.MultiCaller)
 
 	// Check the initialized state after being queried to see if the response needs to be updated and the query can be ended prematurely
 	// Return true if the function should continue, or false if it needs to end and just return the response as-is
-	CheckState func(node *node.Node, response *responseType) bool
+	CheckState(node *node.Node, response *responseType) bool
 
 	// Get whatever details of the given minipool are necessary; this will be passed into an rp.BatchQuery call, one run per minipool
 	// belonging to the node
-	GetMinipoolDetails func(mc *batch.MultiCaller, mp minipool.Minipool, index int)
+	GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int)
 
 	// Prepare the response object using all of the provided artifacts
-	PrepareResponse func(rp *rocketpool.RocketPool, addresses []common.Address, mps []minipool.Minipool, response *responseType) error
+	PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *responseType) error
 }
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
@@ -54,6 +55,11 @@ func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[respon
 	if err != nil {
 		return nil, fmt.Errorf("error getting Rocket Pool binding: %w", err)
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, fmt.Errorf("error getting Beacon Node binding: %w", err)
+	}
+
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, fmt.Errorf("error getting node account: %w", err)
@@ -117,7 +123,7 @@ func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[respon
 	}
 
 	// Supplemental function-specific response construction
-	err = q.PrepareResponse(rp, addresses, mps, response)
+	err = q.PrepareResponse(rp, bc, addresses, mps, response)
 	if err != nil {
 		return nil, err
 	}
