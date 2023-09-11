@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/rivo/tview"
+	"github.com/rocket-pool/smartnode/shared/types/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -33,7 +34,12 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	}
 
 	back := func() {
-		wiz.mevModeModal.show()
+		if wiz.md.Config.Smartnode.Network.Value == config.Network_Holesky {
+			// Skip MEV for Holesky
+			wiz.metricsModal.show()
+		} else {
+			wiz.mevModeModal.show()
+		}
 	}
 
 	return newChoiceStep(

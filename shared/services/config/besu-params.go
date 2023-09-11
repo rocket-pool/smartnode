@@ -6,8 +6,8 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:23.7.1"
-	besuTagProd          string = "hyperledger/besu:23.7.1"
+	besuTagTest          string = "hyperledger/besu:23.7.2"
+	besuTagProd          string = "hyperledger/besu:23.7.2"
 	besuEventLogInterval int    = 1000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"
@@ -104,6 +104,7 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 				config.Network_Mainnet: besuTagProd,
 				config.Network_Prater:  besuTagTest,
 				config.Network_Devnet:  besuTagTest,
+				config.Network_Holesky: besuTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},

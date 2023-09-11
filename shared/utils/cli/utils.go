@@ -146,6 +146,8 @@ func PrintNetwork(rp *rocketpool.Client) error {
 		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", colorLightBlue, colorReset)
 	case cfgtypes.Network_Devnet:
 		fmt.Printf("Your Smartnode is currently using the %sPrater Development Network.%s\n\n", colorYellow, colorReset)
+	case cfgtypes.Network_Holesky:
+		fmt.Printf("Your Smartnode is currently using the %sHolesky Test Network.%s\n\n", colorYellow, colorReset)
 	default:
 		fmt.Printf("%sYou are on an unexpected network [%v].%s\n\n", colorYellow, currentNetwork, colorReset)
 	}

@@ -1,5 +1,7 @@
 package config
 
+import "github.com/rocket-pool/smartnode/shared/types/config"
+
 func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
 	helperText := "Would you like to enable the Smartnode's metrics monitoring system? This will monitor things such as hardware stats (CPU usage, RAM usage, free disk space), your minipool stats, stats about your node such as total RPL and ETH rewards, and much more. It also enables the Grafana dashboard to quickly and easily view these metrics (see https://docs.rocketpool.net/guides/node/grafana.html for an example).\n\nNone of this information will be sent to any remote servers for collection an analysis; this is purely for your own usage on your node."
@@ -19,7 +21,12 @@ func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		} else {
 			wiz.md.Config.EnableMetrics.Value = false
 		}
-		wiz.mevModeModal.show()
+		if wiz.md.Config.Smartnode.Network.Value == config.Network_Holesky {
+			// Skip MEV for Holesky
+			wiz.finishedModal.show()
+		} else {
+			wiz.mevModeModal.show()
+		}
 	}
 
 	back := func() {

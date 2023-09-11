@@ -10,7 +10,7 @@ import (
 // Constants
 const (
 	gethTagProd          string = "ethereum/client-go:v1.12.2"
-	gethTagTest          string = "ethereum/client-go:v1.12.2"
+	gethTagTest          string = "rocketpool/client-go:5cf53f5"
 	gethEventLogInterval int    = 1000
 	gethStopSignal       string = "SIGTERM"
 )
@@ -91,6 +91,7 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 				config.Network_Mainnet: gethTagProd,
 				config.Network_Prater:  gethTagTest,
 				config.Network_Devnet:  gethTagTest,
+				config.Network_Holesky: gethTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},

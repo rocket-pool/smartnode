@@ -8,12 +8,12 @@ import (
 
 const (
 	// Prater
-	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.8.0"
-	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.8.0"
+	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.9.0"
+	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.9.0"
 
 	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.8.0"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.8.0"
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.9.0"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.9.0"
 
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
@@ -71,6 +71,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 				config.Network_Mainnet: nimbusBnTagProd,
 				config.Network_Prater:  nimbusBnTagTest,
 				config.Network_Devnet:  nimbusBnTagTest,
+				config.Network_Holesky: nimbusBnTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG"},
@@ -87,6 +88,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 				config.Network_Mainnet: nimbusVcTagProd,
 				config.Network_Prater:  nimbusVcTagTest,
 				config.Network_Devnet:  nimbusVcTagTest,
+				config.Network_Holesky: nimbusVcTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
