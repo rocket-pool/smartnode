@@ -3,6 +3,7 @@ package minipool
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -19,12 +20,13 @@ import (
 	"github.com/urfave/cli"
 )
 
-type minipoolReduceBondManager struct {
-	pSettings *settings.ProtocolDaoSettings
-	oSettings *settings.OracleDaoSettings
+type minipoolBeginReduceBondManager struct {
+	newBondAmountWei *big.Int
+	pSettings        *settings.ProtocolDaoSettings
+	oSettings        *settings.OracleDaoSettings
 }
 
-func (m *minipoolReduceBondManager) CreateBindings(rp *rocketpool.RocketPool) error {
+func (m *minipoolBeginReduceBondManager) CreateBindings(rp *rocketpool.RocketPool) error {
 	var err error
 	m.pSettings, err = settings.NewProtocolDaoSettings(rp)
 	if err != nil {
@@ -37,20 +39,21 @@ func (m *minipoolReduceBondManager) CreateBindings(rp *rocketpool.RocketPool) er
 	return nil
 }
 
-func (m *minipoolReduceBondManager) GetState(node *node.Node, mc *batch.MultiCaller) {
+func (m *minipoolBeginReduceBondManager) GetState(node *node.Node, mc *batch.MultiCaller) {
 	m.pSettings.GetBondReductionEnabled(mc)
 	m.oSettings.GetBondReductionWindowStart(mc)
 	m.oSettings.GetBondReductionWindowLength(mc)
 }
 
-func (m *minipoolReduceBondManager) CheckState(node *node.Node, response *api.GetMinipoolReduceBondDetailsForNodeResponse) bool {
+func (m *minipoolBeginReduceBondManager) CheckState(node *node.Node, response *api.GetMinipoolBeginReduceBondDetailsForNodeResponse) bool {
 	response.BondReductionDisabled = !m.pSettings.Details.Minipool.IsBondReductionEnabled
 	return !response.BondReductionDisabled
 }
 
-func (m *minipoolReduceBondManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+func (m *minipoolBeginReduceBondManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
+		mpv3.GetNodeDepositBalance(mc)
 		mpv3.GetFinalised(mc)
 		mpv3.GetStatus(mc)
 		mpv3.GetPubkey(mc)
@@ -58,7 +61,7 @@ func (m *minipoolReduceBondManager) GetMinipoolDetails(mc *batch.MultiCaller, mp
 	}
 }
 
-func (m *minipoolReduceBondManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolReduceBondDetailsForNodeResponse) error {
+func (m *minipoolBeginReduceBondManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolBeginReduceBondDetailsForNodeResponse) error {
 	// Get the latest block header
 	header, err := rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
@@ -69,10 +72,10 @@ func (m *minipoolReduceBondManager) PrepareResponse(rp *rocketpool.RocketPool, b
 	// Get the bond reduction details
 	pubkeys := []types.ValidatorPubkey{}
 	detailsMap := map[types.ValidatorPubkey]int{}
-	details := make([]api.MinipoolReduceBondDetails, len(addresses))
+	details := make([]api.MinipoolBeginReduceBondDetails, len(addresses))
 	for i, mp := range mps {
 		mpCommon := mp.GetMinipoolCommon()
-		mpDetails := api.MinipoolReduceBondDetails{
+		mpDetails := api.MinipoolBeginReduceBondDetails{
 			Address: mpCommon.Details.Address,
 		}
 
@@ -87,9 +90,10 @@ func (m *minipoolReduceBondManager) PrepareResponse(rp *rocketpool.RocketPool, b
 			windowStart := m.oSettings.Details.Minipools.BondReductionWindowStart.Formatted()
 			windowEnd := windowStart + m.oSettings.Details.Minipools.BondReductionWindowLength.Formatted()
 
-			if timeSinceBondReductionStart < windowStart || timeSinceBondReductionStart > windowEnd {
-				mpDetails.OutOfWindow = true
+			if timeSinceBondReductionStart < windowEnd {
+				mpDetails.AlreadyInWindow = true
 			} else {
+				mpDetails.MatchRequest = big.NewInt(0).Sub(mpCommon.Details.NodeDepositBalance, m.newBondAmountWei)
 				pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
 				detailsMap[mpCommon.Details.Pubkey] = i
 			}
@@ -120,15 +124,15 @@ func (m *minipoolReduceBondManager) PrepareResponse(rp *rocketpool.RocketPool, b
 		threshold := uint64(32000000000)
 		mpDetails.BalanceTooLow = mpDetails.Balance < threshold
 
-		mpDetails.CanReduce = !(response.BondReductionDisabled || mpDetails.MinipoolVersionTooLow || mpDetails.OutOfWindow || mpDetails.BalanceTooLow || mpDetails.InvalidBeaconState)
+		mpDetails.CanReduce = !(response.BondReductionDisabled || mpDetails.MinipoolVersionTooLow || mpDetails.AlreadyInWindow || mpDetails.BalanceTooLow || mpDetails.InvalidBeaconState)
 	}
 
 	response.Details = details
 	return nil
 }
 
-func reduceBondAmounts(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
+func beginReduceBondAmounts(c *cli.Context, minipoolAddresses []common.Address, newBondAmountWei *big.Int) (*api.BatchTxResponse, error) {
 	return createBatchTxResponseForV3(c, minipoolAddresses, func(mpv3 *minipool.MinipoolV3, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-		return mpv3.ReduceBondAmount(opts)
-	}, "reduce-bond")
+		return mpv3.BeginReduceBondAmount(newBondAmountWei, opts)
+	}, "begin-reduce-bond")
 }
