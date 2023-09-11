@@ -34,7 +34,7 @@ func getMinipoolPromoteDetailsForNode(c *cli.Context) (*api.GetMinipoolPromoteDe
 			oSettings.GetPromotionScrubPeriod(mc)
 		},
 		CheckState: nil,
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 			mpv3, success := minipool.GetMinipoolAsV3(mp)
 			if success {
 				mpv3.GetNodeAddress(mc)

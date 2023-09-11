@@ -18,7 +18,7 @@ func getMinipoolDissolveDetailsForNode(c *cli.Context) (*api.GetMinipoolDissolve
 		CreateBindings: nil,
 		GetState:       nil,
 		CheckState:     nil,
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetNodeAddress(mc)
 			mpCommon.GetStatus(mc)

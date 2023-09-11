@@ -29,7 +29,7 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 			response.IsFeeDistributorInitialized = node.Details.IsFeeDistributorInitialized
 			return response.IsFeeDistributorInitialized
 		},
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetNodeAddress(mc)
 			mpCommon.GetNodeRefundBalance(mc)

@@ -37,7 +37,7 @@ func getMinipoolStakeDetailsForNode(c *cli.Context) (*api.GetMinipoolStakeDetail
 			oSettings.GetScrubPeriod(mc)
 		},
 		CheckState: nil,
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetStatus(mc)
 			mpCommon.GetStatusTime(mc)

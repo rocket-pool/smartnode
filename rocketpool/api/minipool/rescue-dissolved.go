@@ -27,7 +27,7 @@ func getMinipoolRescueDissolvedDetailsForNode(c *cli.Context) (*api.GetMinipoolR
 		CreateBindings: nil,
 		GetState:       nil,
 		CheckState:     nil,
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetFinalised(mc)
 			mpCommon.GetStatus(mc)

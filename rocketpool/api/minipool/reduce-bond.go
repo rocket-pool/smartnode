@@ -47,7 +47,7 @@ func getMinipoolBeginReduceBondDetailsForNode(c *cli.Context, newBondAmountWei *
 			response.BondReductionDisabled = !pSettings.Details.Minipool.IsBondReductionEnabled
 			return !response.BondReductionDisabled
 		},
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 			mpv3, success := minipool.GetMinipoolAsV3(mp)
 			if success {
 				mpv3.GetNodeDepositBalance(mc)
@@ -167,7 +167,7 @@ func getMinipoolReduceBondDetailsForNode(c *cli.Context) (*api.GetMinipoolReduce
 			response.BondReductionDisabled = !pSettings.Details.Minipool.IsBondReductionEnabled
 			return !response.BondReductionDisabled
 		},
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 			mpv3, success := minipool.GetMinipoolAsV3(mp)
 			if success {
 				mpv3.GetFinalised(mc)

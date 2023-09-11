@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -138,11 +139,19 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 			timeSinceGenesis := currentTime.Sub(genesis)
 			currentEpoch := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerEpoch
 
+			// Get some protocol settings
+			launchTimeout := pSettings.Details.Minipool.LaunchTimeout.Formatted()
+			scrubPeriod := oSettings.Details.Minipools.ScrubPeriod.Formatted()
+			promotionScrubPeriod := oSettings.Details.Minipools.PromotionScrubPeriod.Formatted()
+
 			// Get the statuses on Beacon
-			pubkeys := make([]rptypes.ValidatorPubkey, len(addresses))
-			for i, mp := range mps {
-				pubkey := mp.GetMinipoolCommon().Details.Pubkey
-				pubkeys[i] = pubkey
+			pubkeys := make([]rptypes.ValidatorPubkey, 0, len(addresses))
+			for _, mp := range mps {
+				mpCommon := mp.GetMinipoolCommon()
+				status := mpCommon.Details.Status.Formatted()
+				if status == rptypes.Staking || (status == rptypes.Dissolved && !mpCommon.Details.IsFinalised) {
+					pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
+				}
 			}
 			beaconStatuses, err := bc.GetValidatorStatuses(pubkeys, nil)
 			if err != nil {
@@ -154,9 +163,9 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 			for i, mp := range mps {
 				mpCommonDetails := mp.GetMinipoolCommon().Details
 				pubkey := mpCommonDetails.Pubkey
-				beaconStatus, existsOnBeacon := beaconStatuses[pubkey]
 				mpv3, isv3 := minipool.GetMinipoolAsV3(mp)
 
+				// Basic info
 				mpDetails := api.MinipoolDetails{
 					Address: mpCommonDetails.Address,
 				}
@@ -184,10 +193,53 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 				mpDetails.Finalised = mpCommonDetails.IsFinalised
 				mpDetails.Penalties = mpCommonDetails.PenaltyCount.Formatted()
 				mpDetails.Queue.Position = mpCommonDetails.QueuePosition.Formatted() + 1 // Queue pos is -1 indexed so make it 0
+				mpDetails.RefundAvailable = (mpDetails.Node.RefundBalance.Cmp(zero()) > 0) && (mpDetails.Balances.Eth.Cmp(mpDetails.Node.RefundBalance) >= 0)
+				mpDetails.CloseAvailable = (mpDetails.Status.Status == rptypes.Dissolved)
+				mpDetails.WithdrawalAvailable = (mpDetails.Status.Status == rptypes.Withdrawable)
 
+				// Check the stake status of each minipool
+				if mpDetails.Status.Status == rptypes.Prelaunch {
+					creationTime := mpDetails.Status.StatusTime
+					dissolveTime := creationTime.Add(launchTimeout)
+					remainingTime := creationTime.Add(scrubPeriod).Sub(currentTime)
+					if remainingTime < 0 {
+						mpDetails.CanStake = true
+						mpDetails.TimeUntilDissolve = time.Until(dissolveTime)
+					}
+				}
+
+				// Atlas info
 				if isv3 {
 					mpDetails.Status.IsVacant = mpv3.Details.IsVacant
 					mpDetails.ReduceBondTime = mpv3.Details.ReduceBondTime.Formatted()
+
+					// Check the promotion status of each minipool
+					if mpDetails.Status.IsVacant {
+						creationTime := mpDetails.Status.StatusTime
+						dissolveTime := creationTime.Add(launchTimeout)
+						remainingTime := creationTime.Add(promotionScrubPeriod).Sub(currentTime)
+						if remainingTime < 0 {
+							mpDetails.CanPromote = true
+							mpDetails.TimeUntilDissolve = time.Until(dissolveTime)
+						}
+					}
+				}
+
+				// Beacon info
+				beaconStatus, existsOnBeacon := beaconStatuses[pubkey]
+				validatorActivated := false
+				mpDetails.Validator.Exists = existsOnBeacon
+				if existsOnBeacon {
+					mpDetails.Validator.Active = (beaconStatus.ActivationEpoch < currentEpoch && beaconStatus.ExitEpoch > currentEpoch)
+					mpDetails.Validator.Index = beaconStatus.Index
+					validatorActivated = (beaconStatus.ActivationEpoch < currentEpoch)
+				}
+				if !validatorActivated {
+					// Use deposit balances if the validator isn't activated yet
+					mpDetails.Validator.Balance = big.NewInt(0).Add(mpDetails.Node.DepositBalance, mpDetails.User.DepositBalance)
+					mpDetails.Validator.NodeBalance = big.NewInt(0).Set(mpDetails.Node.DepositBalance)
+				} else {
+					mpDetails.Validator.Balance = eth.GweiToWei(float64(beaconStatus.Balance))
 				}
 
 				details[i] = mpDetails
@@ -197,12 +249,23 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 			err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
 				mpCommon := mps[i].GetMinipoolCommon()
 				mpDetails := &details[i]
+
+				// Get the node share of the ETH balance
 				if mpDetails.Balances.Eth.Cmp(mpDetails.Node.RefundBalance) == -1 {
 					mpDetails.NodeShareOfEthBalance = big.NewInt(0)
 				} else {
 					effectiveBalance := big.NewInt(0).Sub(mpDetails.Balances.Eth, mpDetails.Node.RefundBalance)
 					mpCommon.CalculateNodeShare(mc, &mpDetails.NodeShareOfEthBalance, effectiveBalance)
 				}
+
+				// Get the node share of the Beacon balance
+				pubkey := mpCommon.Details.Pubkey
+				beaconStatus, existsOnBeacon := beaconStatuses[pubkey]
+				validatorActivated := (beaconStatus.ActivationEpoch < currentEpoch)
+				if validatorActivated && existsOnBeacon {
+					mpCommon.CalculateNodeShare(mc, &mpDetails.Validator.NodeBalance, mpDetails.Validator.Balance)
+				}
+
 				return nil
 			}, nil)
 
@@ -210,59 +273,4 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 			return nil
 		},
 	})
-
-	///
-	///
-	///
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireBeaconClientSynced(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.MinipoolStatusResponse{}
-
-	// Get the legacy MinipoolQueue contract address
-	legacyMinipoolQueueAddress := cfg.Smartnode.GetV110MinipoolQueueAddress()
-
-	// Get minipool details
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-	details, err := getNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress)
-	if err != nil {
-		return nil, err
-	}
-	response.Minipools = details
-
-	delegate, err := rp.GetContract("rocketMinipoolDelegate", nil)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting latest minipool delegate contract: %w", err)
-	}
-
-	response.LatestDelegate = *delegate.Address
-
-	// Return response
-	return &response, nil
 }

@@ -29,7 +29,7 @@ func getMinipoolDelegateDetailsForNode(c *cli.Context) (*api.GetMinipoolDelegate
 		},
 		GetState:   nil,
 		CheckState: nil,
-		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool) {
+		GetMinipoolDetails: func(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 			mpCommon := mp.GetMinipoolCommon()
 			mpCommon.GetDelegate(mc)
 			mpCommon.GetEffectiveDelegate(mc)
