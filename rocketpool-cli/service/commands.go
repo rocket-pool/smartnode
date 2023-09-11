@@ -125,10 +125,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Usage: "Do not install Operating System dependencies",
 					},
 					cli.StringFlag{
-						Name:  "network, n",
-						Usage: "[DEPRECATED] The Eth 2.0 network to run Rocket Pool on - use 'prater' for Rocket Pool's test network",
-					},
-					cli.StringFlag{
 						Name:  "path, p",
 						Usage: "A custom path to install Rocket Pool to",
 					},

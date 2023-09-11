@@ -104,6 +104,7 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 				config.Network_Mainnet: besuTagProd,
 				config.Network_Prater:  besuTagTest,
 				config.Network_Devnet:  besuTagTest,
+				config.Network_Holesky: besuTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},

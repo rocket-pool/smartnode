@@ -91,6 +91,7 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 				config.Network_Mainnet: tekuTagProd,
 				config.Network_Prater:  tekuTagTest,
 				config.Network_Devnet:  tekuTagTest,
+				config.Network_Holesky: tekuTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},

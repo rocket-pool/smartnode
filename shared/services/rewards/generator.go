@@ -32,6 +32,13 @@ const (
 	PraterV4Interval uint64 = 60
 	PraterV5Interval uint64 = 76
 	PraterV6Interval uint64 = 118
+
+	// Holesky intervals
+	HoleskyV2Interval uint64 = 0
+	HoleskyV3Interval uint64 = 0
+	HoleskyV4Interval uint64 = 0
+	HoleskyV5Interval uint64 = 0
+	HoleskyV6Interval uint64 = 0
 )
 
 type TreeGenerator struct {
@@ -85,31 +92,37 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 			rewardsRulesetVersion: 6,
 			mainnetStartInterval:  MainnetV6Interval,
 			praterStartInterval:   PraterV6Interval,
+			holeskyStartInterval:  HoleskyV6Interval,
 			generator:             v6_generator,
 		}, {
 			rewardsRulesetVersion: 5,
 			mainnetStartInterval:  MainnetV5Interval,
 			praterStartInterval:   PraterV5Interval,
+			holeskyStartInterval:  HoleskyV5Interval,
 			generator:             newTreeGeneratorImpl_v5(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state),
 		}, {
 			rewardsRulesetVersion: 4,
 			mainnetStartInterval:  MainnetV4Interval,
 			praterStartInterval:   PraterV4Interval,
+			holeskyStartInterval:  HoleskyV4Interval,
 			generator:             newTreeGeneratorImpl_v4(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		}, {
 			rewardsRulesetVersion: 3,
 			mainnetStartInterval:  MainnetV3Interval,
 			praterStartInterval:   PraterV3Interval,
+			holeskyStartInterval:  HoleskyV3Interval,
 			generator:             newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		}, {
 			rewardsRulesetVersion: 2,
 			mainnetStartInterval:  MainnetV2Interval,
 			praterStartInterval:   PraterV2Interval,
+			holeskyStartInterval:  HoleskyV2Interval,
 			generator:             newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		}, {
 			rewardsRulesetVersion: 1,
 			mainnetStartInterval:  0,
 			praterStartInterval:   0,
+			holeskyStartInterval:  0,
 			generator:             newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		},
 	}

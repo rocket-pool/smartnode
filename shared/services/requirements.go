@@ -93,20 +93,6 @@ func RequireRocketStorage(c *cli.Context) error {
 	return nil
 }
 
-func RequireOneInchOracle(c *cli.Context) error {
-	if err := RequireEthClientSynced(c); err != nil {
-		return err
-	}
-	oneInchOracleLoaded, err := getOneInchOracleLoaded(c)
-	if err != nil {
-		return err
-	}
-	if !oneInchOracleLoaded {
-		return errors.New("The 1inch oracle contract was not found; the configured address may be incorrect, or the mainnet Eth 1.0 node may not be synced. Please try again later.")
-	}
-	return nil
-}
-
 func RequireRplFaucet(c *cli.Context) error {
 	if err := RequireEthClientSynced(c); err != nil {
 		return err
@@ -278,23 +264,6 @@ func getRocketStorageLoaded(c *cli.Context) (bool, error) {
 		return false, err
 	}
 	code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Smartnode.GetStorageAddress()), nil)
-	if err != nil {
-		return false, err
-	}
-	return (len(code) > 0), nil
-}
-
-// Check if the 1inch exchange oracle contract is loaded
-func getOneInchOracleLoaded(c *cli.Context) (bool, error) {
-	cfg, err := GetConfig(c)
-	if err != nil {
-		return false, err
-	}
-	ec, err := GetEthClient(c)
-	if err != nil {
-		return false, err
-	}
-	code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Smartnode.GetOneInchOracleAddress()), nil)
 	if err != nil {
 		return false, err
 	}

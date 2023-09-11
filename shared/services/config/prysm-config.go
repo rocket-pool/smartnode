@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	prysmBnTagAmd64PortableTest string = "rocketpool/prysm:v4.0.8-portable"
-	prysmVcTagAmd64PortableTest string = "rocketpool/prysm:v4.0.8-portable"
-	prysmTagArm64PortableTest   string = "rocketpool/prysm:v4.0.8-portable"
-	prysmBnTagAmd64ModernTest   string = "rocketpool/prysm:v4.0.8" //"prysmaticlabs/prysm-beacon-chain:HEAD-58df1f1-debug"
-	prysmVcTagAmd64ModernTest   string = "rocketpool/prysm:v4.0.8" //"prysmaticlabs/prysm-validator:HEAD-58df1f1-debug"
-	prysmTagArm64ModernTest     string = "rocketpool/prysm:v4.0.8"
+	prysmBnTagAmd64PortableTest string = "rocketpool/prysm:v4.1.0-alpha.0-portable"
+	prysmVcTagAmd64PortableTest string = "rocketpool/prysm:v4.1.0-alpha.0-portable"
+	prysmTagArm64PortableTest   string = "rocketpool/prysm:v4.1.0-alpha.0-portable"
+	prysmBnTagAmd64ModernTest   string = "rocketpool/prysm:v4.1.0-alpha.0" //"prysmaticlabs/prysm-beacon-chain:HEAD-58df1f1-debug"
+	prysmVcTagAmd64ModernTest   string = "rocketpool/prysm:v4.1.0-alpha.0" //"prysmaticlabs/prysm-validator:HEAD-58df1f1-debug"
+	prysmTagArm64ModernTest     string = "rocketpool/prysm:v4.1.0-alpha.0"
 
 	prysmBnTagAmd64PortableProd string = "rocketpool/prysm:v4.0.8-portable"
 	prysmVcTagAmd64PortableProd string = "rocketpool/prysm:v4.0.8-portable"
@@ -111,6 +111,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 				config.Network_Mainnet: getPrysmBnProdTag(),
 				config.Network_Prater:  getPrysmBnTestTag(),
 				config.Network_Devnet:  getPrysmBnTestTag(),
+				config.Network_Holesky: getPrysmBnTestTag(),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG"},
@@ -127,6 +128,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 				config.Network_Mainnet: getPrysmVcProdTag(),
 				config.Network_Prater:  getPrysmVcTestTag(),
 				config.Network_Devnet:  getPrysmVcTestTag(),
+				config.Network_Holesky: getPrysmVcTestTag(),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
