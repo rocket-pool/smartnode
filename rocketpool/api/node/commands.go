@@ -3,6 +3,7 @@ package node
 import (
 	"github.com/urfave/cli"
 
+	types "github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -14,6 +15,71 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage the node",
 		Subcommands: []cli.Command{
+			// Balances
+			{
+				Name:      "get-eth-balance",
+				Usage:     "Get the ETH balance of the node address",
+				UsageText: "rocketpool api node get-eth-balance",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getNodeEthBalance(c))
+					return nil
+
+				},
+			},
+
+			// Burn
+			{
+				Name:      "burn",
+				Aliases:   []string{"b"},
+				Usage:     "Exchange rETH for ETH",
+				UsageText: "rocketpool api node burn amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("burn amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					response, err := runNodeCallWithTx[types.NodeBurnResponse](c, &nodeBurnHandler{
+						amountWei: amountWei,
+					})
+					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
+
+			// Check Collateral
+			{
+				Name:      "check-collateral",
+				Usage:     "Check if the node is above the minimum collateralization threshold, including pending bond reductions",
+				UsageText: "rocketpool api node check-collateral",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					response, err := runNodeCall[types.CheckCollateralResponse](c, &nodeCollateralHandler{})
+					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
 
 			{
 				Name:      "status",
@@ -726,58 +792,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-burn",
-				Usage:     "Check whether the node can burn tokens for ETH",
-				UsageText: "rocketpool api node can-burn amount token",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("burn amount", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					token, err := cliutils.ValidateBurnableTokenType("token type", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canNodeBurn(c, amountWei, token))
-					return nil
-
-				},
-			},
-			{
-				Name:      "burn",
-				Aliases:   []string{"b"},
-				Usage:     "Burn tokens for ETH",
-				UsageText: "rocketpool api node burn amount token",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("burn amount", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					token, err := cliutils.ValidateBurnableTokenType("token type", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(nodeBurn(c, amountWei, token))
-					return nil
-
-				},
-			},
-
-			{
 				Name:      "can-claim-rpl-rewards",
 				Usage:     "Check whether the node has RPL rewards available to claim",
 				UsageText: "rocketpool api node can-claim-rpl-rewards",
@@ -1376,42 +1390,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(createVacantMinipool(c, amountWei, minNodeFee, salt, pubkey))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "check-collateral",
-				Usage:     "Check if the node is above the minimum collateralization threshold, including pending bond reductions",
-				UsageText: "rocketpool api node check-collateral",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(checkCollateral(c))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "get-eth-balance",
-				Usage:     "Get the ETH balance of the node address",
-				UsageText: "rocketpool api node get-eth-balance",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getNodeEthBalance(c))
 					return nil
 
 				},

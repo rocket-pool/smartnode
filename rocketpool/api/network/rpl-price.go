@@ -16,7 +16,7 @@ import (
 
 func getRplPrice(c *cli.Context) (*api.RplPriceResponse, error) {
 	// Get services
-	if err := services.RequireRocketStorage(c); err != nil {
+	if err := services.RequireEthClientSynced(c); err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)

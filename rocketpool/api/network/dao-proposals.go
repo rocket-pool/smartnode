@@ -8,11 +8,14 @@ import (
 )
 
 func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, error) {
+	// Get services
+	if err := services.RequireEthClientSynced(c); err != nil {
+		return nil, err
+	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
 	}
-
 	s, err := services.GetSnapshotDelegation(c)
 	if err != nil {
 		return nil, err

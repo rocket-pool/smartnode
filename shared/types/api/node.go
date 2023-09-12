@@ -274,17 +274,13 @@ type NodeSendMessageResponse struct {
 	TxInfo *core.TransactionInfo `json:"txInfo"`
 }
 
-type CanNodeBurnResponse struct {
-	Status                 string `json:"status"`
-	Error                  string `json:"error"`
-	CanBurn                bool   `json:"canBurn"`
-	InsufficientBalance    bool   `json:"insufficientBalance"`
-	InsufficientCollateral bool   `json:"insufficientCollateral"`
-}
 type NodeBurnResponse struct {
-	Status string                `json:"status"`
-	Error  string                `json:"error"`
-	TxInfo *core.TransactionInfo `json:"txInfo"`
+	Status                 string                `json:"status"`
+	Error                  string                `json:"error"`
+	CanBurn                bool                  `json:"canBurn"`
+	InsufficientBalance    bool                  `json:"insufficientBalance"`
+	InsufficientCollateral bool                  `json:"insufficientCollateral"`
+	TxInfo                 *core.TransactionInfo `json:"txInfo"`
 }
 
 type NodeSyncProgressResponse struct {

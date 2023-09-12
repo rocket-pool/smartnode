@@ -9,8 +9,10 @@ import (
 
 // Get the latest delegate contract address
 func getLatestDelegate(c *cli.Context) (*api.GetLatestDelegateResponse, error) {
-
 	// Get services
+	if err := services.RequireEthClientSynced(c); err != nil {
+		return nil, err
+	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -28,5 +30,4 @@ func getLatestDelegate(c *cli.Context) (*api.GetLatestDelegateResponse, error) {
 
 	// Return response
 	return &response, nil
-
 }

@@ -10,8 +10,10 @@ import (
 )
 
 func downloadRewardsFile(c *cli.Context, interval uint64) (*api.DownloadRewardsFileResponse, error) {
-
 	// Get services
+	if err := services.RequireEthClientSynced(c); err != nil {
+		return nil, err
+	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err

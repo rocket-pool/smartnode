@@ -14,7 +14,7 @@ import (
 
 func getTimezones(c *cli.Context) (*api.NetworkTimezonesResponse, error) {
 	// Get services
-	if err := services.RequireRocketStorage(c); err != nil {
+	if err := services.RequireEthClientSynced(c); err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)

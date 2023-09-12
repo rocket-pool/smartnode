@@ -19,6 +19,9 @@ const (
 
 func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenerateRewardsTreeResponse, error) {
 	// Get services
+	if err := services.RequireEthClientSynced(c); err != nil {
+		return nil, err
+	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
