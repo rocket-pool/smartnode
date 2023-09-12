@@ -8,7 +8,6 @@ import (
 )
 
 func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, error) {
-
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err

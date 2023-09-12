@@ -9,30 +9,62 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"golang.org/x/sync/errgroup"
 )
 
-func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, nodeAddress common.Address) ([]string, error) {
-	// Get current block number so all subsequent queries are done at same point in time
-	blockNumber, err := ec.BlockNumber(context.Background())
+const (
+	minipoolPubkeyBatchSize        int = 500
+	minipoolReduceDetailsBatchSize int = 200
+)
+
+func GetNodeValidatorIndices(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, opts *bind.CallOpts) ([]string, error) {
+	// Create the bindings
+	node, err := node.NewNode(rp, nodeAddress)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting block number: %w", err)
+		return nil, fmt.Errorf("error getting node %s binding: %w", nodeAddress.Hex(), err)
 	}
 
-	// Setup call opts
-	blockNumberBig := big.NewInt(0).SetUint64(blockNumber)
-	callOpts := bind.CallOpts{BlockNumber: blockNumberBig}
-
-	// Get list of pubkeys for this given node
-	pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAddress, &callOpts)
+	// Get contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		node.GetValidatingMinipoolCount(mc)
+		return nil
+	}, opts)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting contract state: %w", err)
+	}
+
+	// Get the validating addresses
+	addresses, err := node.GetValidatingMinipoolAddresses(node.Details.ValidatingMinipoolCount.Formatted(), opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting validating minipool addresses: %w", err)
+	}
+
+	// Create the minipools
+	minipools, err := minipool.CreateMinipoolsFromAddresses(rp, addresses, false, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting validating minipools: %w", err)
+	}
+
+	// Get the list of pubkeys
+	pubkeys := make([]types.ValidatorPubkey, len(addresses))
+	err = rp.BatchQuery(len(addresses), minipoolPubkeyBatchSize, func(mc *batch.MultiCaller, i int) error {
+		minipools[i].GetMinipoolCommon().GetPubkey(mc)
+		return nil
+	}, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting validating pubkeys: %w", err)
+	}
+
+	// Populate the slice of pubkeys
+	for i, mp := range minipools {
+		pubkeys[i] = mp.GetMinipoolCommon().Details.Pubkey
 	}
 
 	// Remove zero pubkeys
@@ -52,130 +84,125 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionC
 	}
 
 	// Enumerate validators statuses and fill indices array
-	validatorIndices := make([]string, len(statuses)+1)
-
-	i := 0
+	validatorIndices := make([]string, 0, len(statuses)+1)
 	for _, status := range statuses {
-		validatorIndices[i] = status.Index
-		i++
+		validatorIndices = append(validatorIndices, status.Index)
 	}
-
 	return validatorIndices, nil
 }
 
+type CollateralAmounts struct {
+	EthMatched         *big.Int
+	EthMatchedLimit    *big.Int
+	PendingMatchAmount *big.Int
+}
+
 // Checks the given node's current matched ETH, its limit on matched ETH, and how much ETH is preparing to be matched by pending bond reductions
-func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (ethMatched *big.Int, ethMatchedLimit *big.Int, pendingMatchAmount *big.Int, err error) {
-	// Get the node's minipool addresses
-	addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress, opts)
+func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*CollateralAmounts, error) {
+	// Get the relevant header
+	var blockHeader *ethtypes.Header
+	var err error
+	if opts != nil {
+		blockHeader, err = rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
+	} else {
+		blockHeader, err = rp.Client.HeaderByNumber(context.Background(), nil)
+	}
 	if err != nil {
-		err = fmt.Errorf("error getting minipool addresses for node %s: %w", nodeAddress.Hex(), err)
-		return
+		return nil, fmt.Errorf("error getting latest block header: %w", err)
 	}
 
-	latestBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), nil)
+	// Get the time and set up opts from the header
+	blockTime := time.Unix(int64(blockHeader.Time), 0)
+	if opts == nil {
+		opts = &bind.CallOpts{
+			BlockNumber: blockHeader.Number,
+		}
+	}
+
+	// Create the bindings
+	node, err := node.NewNode(rp, nodeAddress)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("error getting latest block header: %w", err)
+		return nil, fmt.Errorf("error getting node %s binding: %w", nodeAddress.Hex(), err)
 	}
-	blockTime := time.Unix(int64(latestBlockHeader.Time), 0)
-	var reductionWindowStart uint64
-	var reductionWindowLength uint64
-
-	// Data
-	var wg1 errgroup.Group
-
-	wg1.Go(func() error {
-		var err error
-		reductionWindowStart, err = tnsettings.GetBondReductionWindowStart(rp, nil)
-		return err
-	})
-	wg1.Go(func() error {
-		var err error
-		reductionWindowLength, err = tnsettings.GetBondReductionWindowLength(rp, nil)
-		return err
-	})
-
-	// Wait for data
-	if err = wg1.Wait(); err != nil {
-		return nil, nil, nil, err
+	oSettings, err := settings.NewOracleDaoSettings(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error getting oracle DAO settings binding: %w", err)
 	}
 
-	reductionWindowEnd := time.Duration(reductionWindowStart+reductionWindowLength) * time.Second
+	// Get contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		node.GetMinipoolCount(mc)
+		node.GetEthMatched(mc)
+		node.GetEthMatchedLimit(mc)
+		oSettings.GetBondReductionWindowStart(mc)
+		oSettings.GetBondReductionWindowLength(mc)
+		return nil
+	}, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract state: %w", err)
+	}
 
-	// Data
-	var wg errgroup.Group
-	deltas := make([]*big.Int, len(addresses))
-	zeroTime := time.Unix(0, 0)
+	reductionWindowStart := oSettings.Details.Minipools.BondReductionWindowStart.Formatted()
+	reductionWindowLength := oSettings.Details.Minipools.BondReductionWindowLength.Formatted()
+	reductionWindowEnd := reductionWindowStart + reductionWindowLength
 
-	wg.Go(func() error {
-		var err error
-		ethMatched, err = node.GetNodeEthMatched(rp, nodeAddress, opts)
-		if err != nil {
-			return fmt.Errorf("error getting node's matched ETH amount: %w", err)
+	// Get the minipool addresses
+	addresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
+	}
+
+	// Create the minipool bindings
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, addresses, false, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error creating minipool bindings: %w", err)
+	}
+
+	// Get the minipool details
+	err = rp.BatchQuery(len(addresses), minipoolReduceDetailsBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mpv3, isMpv3 := minipool.GetMinipoolAsV3(mps[i])
+		if isMpv3 {
+			mpv3.GetReduceBondTime(mc)
+			mpv3.GetReduceBondCancelled(mc)
+			mpv3.GetNodeDepositBalance(mc)
+			mpv3.GetReduceBondValue(mc)
 		}
 		return nil
-	})
-	wg.Go(func() error {
-		var err error
-		ethMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAddress, opts)
-		if err != nil {
-			return fmt.Errorf("error getting how much ETH the node is able to borrow: %w", err)
-		}
-		return nil
-	})
-	for i, address := range addresses {
-		i := i
-		address := address
-		wg.Go(func() error {
-			reduceBondTime, err := minipool.GetReduceBondTime(rp, address, opts)
-			if err != nil {
-				return fmt.Errorf("error getting bond reduction time for minipool %s: %w", address.Hex(), err)
-			}
-
-			reduceBondCancelled, err := minipool.GetReduceBondCancelled(rp, address, nil)
-			if err != nil {
-				return fmt.Errorf("error getting bond reduction cancel status for minipool %s: %w", address.Hex(), err)
-			}
-
-			// Ignore minipools that don't have a bond reduction pending
-			timeSinceReductionStart := blockTime.Sub(reduceBondTime)
-			if reduceBondTime == zeroTime ||
-				reduceBondCancelled ||
-				timeSinceReductionStart > reductionWindowEnd {
-				deltas[i] = big.NewInt(0)
-				return nil
-			}
-
-			// Get the old and new (pending) bonds
-			mp, err := minipool.NewMinipool(rp, address, opts)
-			if err != nil {
-				return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
-			}
-			oldBond, err := mp.GetNodeDepositBalance(opts)
-			if err != nil {
-				return fmt.Errorf("error getting node deposit balance for minipool %s: %w", address.Hex(), err)
-			}
-			newBond, err := minipool.GetReduceBondValue(rp, address, opts)
-			if err != nil {
-				return fmt.Errorf("error getting pending bond reduced balance for minipool %s: %w", address.Hex(), err)
-			}
-
-			// Delta = old - new
-			deltas[i] = big.NewInt(0).Sub(oldBond, newBond)
-			return nil
-		})
+	}, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting minipool details: %w", err)
 	}
 
-	// Wait for data
-	if err = wg.Wait(); err != nil {
-		return
-	}
-
-	// Get the total pending match
+	// Calculate the deltas
 	totalDelta := big.NewInt(0)
-	for _, delta := range deltas {
-		totalDelta.Add(totalDelta, delta)
-	}
-	pendingMatchAmount = totalDelta
+	zeroTime := time.Unix(0, 0)
+	for _, mp := range mps {
+		mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)
+		if !isMpv3 {
+			continue
+		}
+		mpCommon := mp.GetMinipoolCommon()
+		reduceBondTime := mpv3.Details.ReduceBondTime.Formatted()
+		reduceBondCancelled := mpv3.Details.IsBondReduceCancelled
 
-	return
+		// Ignore minipools that don't have a bond reduction pending
+		timeSinceReductionStart := blockTime.Sub(reduceBondTime)
+		if reduceBondTime == zeroTime ||
+			reduceBondCancelled ||
+			timeSinceReductionStart > reductionWindowEnd {
+			continue
+		}
+
+		// Calculate the bond delta from the pending reduction
+		oldBond := mpCommon.Details.NodeDepositBalance
+		newBond := mpv3.Details.ReduceBondValue
+		mpDelta := big.NewInt(0).Sub(oldBond, newBond)
+		totalDelta.Add(totalDelta, mpDelta)
+	}
+
+	return &CollateralAmounts{
+		EthMatched:         node.Details.EthMatched,
+		EthMatchedLimit:    node.Details.EthMatchedLimit,
+		PendingMatchAmount: totalDelta,
+	}, nil
 }

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -79,39 +79,11 @@ func RequireBeaconClientSynced(c *cli.Context) error {
 	return nil
 }
 
-func RequireRocketStorage(c *cli.Context) error {
-	if err := RequireEthClientSynced(c); err != nil {
-		return err
-	}
-	rocketStorageLoaded, err := getRocketStorageLoaded(c)
-	if err != nil {
-		return err
-	}
-	if !rocketStorageLoaded {
-		return errors.New("The Rocket Pool storage contract was not found; the configured address may be incorrect, or the Eth 1.0 node may not be synced. Please try again later.")
-	}
-	return nil
-}
-
-func RequireRplFaucet(c *cli.Context) error {
-	if err := RequireEthClientSynced(c); err != nil {
-		return err
-	}
-	rplFaucetLoaded, err := getRplFaucetLoaded(c)
-	if err != nil {
-		return err
-	}
-	if !rplFaucetLoaded {
-		return errors.New("The RPL faucet contract was not found; the configured address may be incorrect, or the Eth 1.0 node may not be synced. Please try again later.")
-	}
-	return nil
-}
-
 func RequireNodeRegistered(c *cli.Context) error {
 	if err := RequireNodeWallet(c); err != nil {
 		return err
 	}
-	if err := RequireRocketStorage(c); err != nil {
+	if err := RequireEthClientSynced(c); err != nil {
 		return err
 	}
 	nodeRegistered, err := getNodeRegistered(c)
@@ -128,7 +100,7 @@ func RequireNodeTrusted(c *cli.Context) error {
 	if err := RequireNodeWallet(c); err != nil {
 		return err
 	}
-	if err := RequireRocketStorage(c); err != nil {
+	if err := RequireEthClientSynced(c); err != nil {
 		return err
 	}
 	nodeTrusted, err := getNodeTrusted(c)
@@ -190,30 +162,11 @@ func WaitBeaconClientSynced(c *cli.Context, verbose bool) error {
 	return err
 }
 
-func WaitRocketStorage(c *cli.Context, verbose bool) error {
-	if err := WaitEthClientSynced(c, verbose); err != nil {
-		return err
-	}
-	for {
-		rocketStorageLoaded, err := getRocketStorageLoaded(c)
-		if err != nil {
-			return err
-		}
-		if rocketStorageLoaded {
-			return nil
-		}
-		if verbose {
-			log.Printf("The Rocket Pool storage contract was not found, retrying in %s...\n", checkRocketStorageInterval.String())
-		}
-		time.Sleep(checkRocketStorageInterval)
-	}
-}
-
 func WaitNodeRegistered(c *cli.Context, verbose bool) error {
 	if err := WaitNodeWallet(c, verbose); err != nil {
 		return err
 	}
-	if err := WaitRocketStorage(c, verbose); err != nil {
+	if err := WaitEthClientSynced(c, verbose); err != nil {
 		return err
 	}
 	for {
@@ -251,40 +204,6 @@ func getNodeWalletInitialized(c *cli.Context) (bool, error) {
 		return false, err
 	}
 	return w.GetInitialized()
-}
-
-// Check if the RocketStorage contract is loaded
-func getRocketStorageLoaded(c *cli.Context) (bool, error) {
-	cfg, err := GetConfig(c)
-	if err != nil {
-		return false, err
-	}
-	ec, err := GetEthClient(c)
-	if err != nil {
-		return false, err
-	}
-	code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Smartnode.GetStorageAddress()), nil)
-	if err != nil {
-		return false, err
-	}
-	return (len(code) > 0), nil
-}
-
-// Check if the RPL faucet contract is loaded
-func getRplFaucetLoaded(c *cli.Context) (bool, error) {
-	cfg, err := GetConfig(c)
-	if err != nil {
-		return false, err
-	}
-	ec, err := GetEthClient(c)
-	if err != nil {
-		return false, err
-	}
-	code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Smartnode.GetRplFaucetAddress()), nil)
-	if err != nil {
-		return false, err
-	}
-	return (len(code) > 0), nil
 }
 
 // Check if the node is registered
@@ -325,7 +244,7 @@ func getNodeTrusted(c *cli.Context) (bool, error) {
 // timeout of 0 indicates no timeout
 var ethClientSyncLock sync.Mutex
 
-func checkExecutionClientStatus(ecMgr *ExecutionClientManager, cfg *config.RocketPoolConfig) (bool, rocketpool.ExecutionClient, error) {
+func checkExecutionClientStatus(ecMgr *ExecutionClientManager, cfg *config.RocketPoolConfig) (bool, core.ExecutionClient, error) {
 
 	// Check the EC status
 	mgrStatus := ecMgr.CheckStatus(cfg)

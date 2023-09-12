@@ -1,7 +1,9 @@
 package minipool
 
 import (
+	"context"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -16,9 +18,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
-
-// Settings
-const MinipoolDetailsBatchSize = 10
 
 // Wrapper for callbacks used by runMinipoolQuery; this implements the caller-specific functionality
 type MinipoolQuerier[responseType any] interface {
@@ -59,10 +58,18 @@ func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[respon
 	if err != nil {
 		return nil, fmt.Errorf("error getting Beacon Node binding: %w", err)
 	}
-
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, fmt.Errorf("error getting node account: %w", err)
+	}
+
+	// Get the latest block for consistency
+	latestBlock, err := rp.Client.BlockNumber(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("error getting latest block number: %w", err)
+	}
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(int64(latestBlock)),
 	}
 
 	// Response
@@ -73,42 +80,36 @@ func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[respon
 	if err != nil {
 		return nil, fmt.Errorf("error creating node %s binding: %w", nodeAccount.Address.Hex(), err)
 	}
-	if q.CreateBindings != nil {
-		// Supplemental function-specific bindings
-		err = q.CreateBindings(rp)
-		if err != nil {
-			return nil, err
-		}
+
+	// Supplemental function-specific bindings
+	err = q.CreateBindings(rp)
+	if err != nil {
+		return nil, err
 	}
 
 	// Get contract state
 	err = rp.Query(func(mc *batch.MultiCaller) error {
 		node.GetMinipoolCount(mc)
-		if q.GetState != nil {
-			// Supplemental function-specific state
-			q.GetState(node, mc)
-		}
+		q.GetState(node, mc)
 		return nil
-	}, nil)
+	}, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting contract state: %w", err)
 	}
 
 	// Supplemental function-specific check to see if minipool processing should continue
-	if q.CheckState != nil {
-		if !q.CheckState(node, response) {
-			return response, nil
-		}
+	if !q.CheckState(node, response) {
+		return response, nil
 	}
 
 	// Get the minipool addresses for this node
-	addresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), nil)
+	addresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
 
 	// Create each minipool binding
-	mps, err := minipool.CreateMinipoolsFromAddresses(rp, addresses, false, nil)
+	mps, err := minipool.CreateMinipoolsFromAddresses(rp, addresses, false, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating minipool bindings: %w", err)
 	}
@@ -117,7 +118,7 @@ func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[respon
 	err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
 		q.GetMinipoolDetails(mc, mps[i], i) // Supplemental function-specific minipool details
 		return nil
-	}, nil)
+	}, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting minipool details: %w", err)
 	}

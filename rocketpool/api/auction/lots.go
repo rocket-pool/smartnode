@@ -4,65 +4,41 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-// Settings
-const (
-	lotDetailsBatchSize uint64 = 200
-)
+type auctionLotHandler struct {
+	auctionMgr *auction.AuctionManager
+}
 
-func getLots(c *cli.Context) (*api.AuctionLotsResponse, error) {
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+func (h *auctionLotHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+	var err error
+	h.auctionMgr, err = auction.NewAuctionManager(rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating auction manager binding: %w", err)
 	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
+	return nil
+}
 
-	// Response
-	response := api.AuctionLotsResponse{}
+func (h *auctionLotHandler) GetState(nodeAddress common.Address, mc *batch.MultiCaller) {
+	h.auctionMgr.GetLotCount(mc)
+}
 
-	// Create the bindings
-	auctionMgr, err := auction.NewAuctionManager(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error creating auction manager binding: %w", err)
-	}
-
-	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		auctionMgr.GetLotCount(mc)
-		return nil
-	}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting contract state: %w", err)
-	}
-
+func (h *auctionLotHandler) PrepareResponse(rp *rocketpool.RocketPool, nodeAccount accounts.Account, opts *bind.TransactOpts, response *api.AuctionLotsResponse) error {
 	// Get lot details
-	lotCount := auctionMgr.Details.LotCount.Formatted()
+	lotCount := h.auctionMgr.Details.LotCount.Formatted()
 	lots := make([]*auction.AuctionLot, lotCount)
 	details := make([]api.LotDetails, lotCount)
 
 	// Load details
-	err = rp.BatchQuery(int(lotCount), int(lotCountDetailsBatchSize), func(mc *batch.MultiCaller, i int) error {
+	err := rp.BatchQuery(int(lotCount), int(lotCountDetailsBatchSize), func(mc *batch.MultiCaller, i int) error {
 		lot, err := auction.NewAuctionLot(rp, uint64(i))
 		if err != nil {
 			return fmt.Errorf("error creating lot %d binding: %w", i, err)
@@ -73,7 +49,7 @@ func getLots(c *cli.Context) (*api.AuctionLotsResponse, error) {
 		return nil
 	}, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting lot details: %w", err)
+		return fmt.Errorf("error getting lot details: %w", err)
 	}
 
 	// Process details
@@ -90,6 +66,5 @@ func getLots(c *cli.Context) (*api.AuctionLotsResponse, error) {
 		fullDetails.RPLRecoveryAvailable = (fullDetails.Details.IsCleared && hasRemainingRpl && !fullDetails.Details.RplRecovered)
 	}
 	response.Lots = details
-
-	return &response, nil
+	return nil
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
@@ -11,15 +13,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-)
-
-// Settings
-const (
-	lotCountDetailsBatchSize uint64 = 500
 )
 
 // Lot count details
@@ -30,69 +25,49 @@ type lotCountDetails struct {
 	RplRecovered    bool
 }
 
-func getStatus(c *cli.Context) (*api.AuctionStatusResponse, error) {
+type auctionStatusHandler struct {
+	auctionMgr    *auction.AuctionManager
+	pSettings     *settings.ProtocolDaoSettings
+	networkPrices *network.NetworkPrices
+}
 
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+func (h *auctionStatusHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+	var err error
+	h.auctionMgr, err = auction.NewAuctionManager(rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating auction manager binding: %w", err)
 	}
-	rp, err := services.GetRocketPool(c)
+	h.pSettings, err = settings.NewProtocolDaoSettings(rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating pDAO settings binding: %w", err)
 	}
-	nodeAccount, err := w.GetNodeAccount()
+	h.networkPrices, err = network.NewNetworkPrices(rp)
 	if err != nil {
-		return nil, fmt.Errorf("error getting node account: %w", err)
+		return fmt.Errorf("error creating network prices binding: %w", err)
 	}
+	return nil
+}
 
-	// Response
-	response := api.AuctionStatusResponse{}
+func (h *auctionStatusHandler) GetState(nodeAddress common.Address, mc *batch.MultiCaller) {
+	h.auctionMgr.GetTotalRPLBalance(mc)
+	h.auctionMgr.GetAllottedRPLBalance(mc)
+	h.auctionMgr.GetRemainingRPLBalance(mc)
+	h.auctionMgr.GetLotCount(mc)
+	h.pSettings.GetAuctionLotMinimumEthValue(mc)
+	h.networkPrices.GetRplPrice(mc)
+	h.pSettings.GetCreateAuctionLotEnabled(mc)
+}
 
-	// Create the bindings
-	auctionMgr, err := auction.NewAuctionManager(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error creating auction manager binding: %w", err)
-	}
-	pSettings, err := settings.NewProtocolDaoSettings(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error creating pDAO settings binding: %w", err)
-	}
-	networkPrices, err := network.NewNetworkPrices(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error creating network prices binding: %w", err)
-	}
-
-	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		auctionMgr.GetTotalRPLBalance(mc)
-		auctionMgr.GetAllottedRPLBalance(mc)
-		auctionMgr.GetRemainingRPLBalance(mc)
-		auctionMgr.GetLotCount(mc)
-		pSettings.GetAuctionLotMinimumEthValue(mc)
-		networkPrices.GetRplPrice(mc)
-		pSettings.GetCreateAuctionLotEnabled(mc)
-		return nil
-	}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting contract state: %w", err)
-	}
-
+func (h *auctionStatusHandler) PrepareResponse(rp *rocketpool.RocketPool, nodeAccount accounts.Account, opts *bind.TransactOpts, response *api.AuctionStatusResponse) error {
 	// Check the balance requirement
-	lotMinimumRplAmount := big.NewInt(0).Mul(pSettings.Details.Auction.LotMinimumEthValue, eth.EthToWei(1))
-	lotMinimumRplAmount.Quo(lotMinimumRplAmount, networkPrices.Details.RplPrice.RawValue)
-	sufficientRemainingRplForLot := (auctionMgr.Details.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
+	lotMinimumRplAmount := big.NewInt(0).Mul(h.pSettings.Details.Auction.LotMinimumEthValue, eth.EthToWei(1))
+	lotMinimumRplAmount.Quo(lotMinimumRplAmount, h.networkPrices.Details.RplPrice.RawValue)
+	sufficientRemainingRplForLot := (h.auctionMgr.Details.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
 
 	// Get lot counts
-	lotCountDetails, err := getAllLotCountDetails(rp, nodeAccount.Address, auctionMgr.Details.LotCount.Formatted())
+	lotCountDetails, err := getAllLotCountDetails(rp, nodeAccount.Address, h.auctionMgr.Details.LotCount.Formatted())
 	if err != nil {
-		return nil, fmt.Errorf("error getting auction lot count details: %w", err)
+		return fmt.Errorf("error getting auction lot count details: %w", err)
 	}
 	for _, details := range lotCountDetails {
 		if details.AddressHasBid && details.Cleared {
@@ -107,19 +82,15 @@ func getStatus(c *cli.Context) (*api.AuctionStatusResponse, error) {
 	}
 
 	// Set response details
-	response.TotalRPLBalance = auctionMgr.Details.TotalRplBalance
-	response.AllottedRPLBalance = auctionMgr.Details.AllottedRplBalance
-	response.RemainingRPLBalance = auctionMgr.Details.RemainingRplBalance
+	response.TotalRPLBalance = h.auctionMgr.Details.TotalRplBalance
+	response.AllottedRPLBalance = h.auctionMgr.Details.AllottedRplBalance
+	response.RemainingRPLBalance = h.auctionMgr.Details.RemainingRplBalance
 	response.CanCreateLot = sufficientRemainingRplForLot
-
-	// Return response
-	return &response, nil
-
+	return nil
 }
 
 // Get all lot count details
 func getAllLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address, lotCount uint64) ([]lotCountDetails, error) {
-
 	details := make([]lotCountDetails, lotCount)
 	lots := make([]*auction.AuctionLot, lotCount)
 	addressBids := make([]*big.Int, lotCount)

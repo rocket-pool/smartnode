@@ -32,6 +32,7 @@ const (
 	GithubRewardsFileUrl               string = "https://github.com/rocket-pool/rewards-trees/raw/main/%s/%s"
 	FeeRecipientFilename               string = "rp-fee-recipient.txt"
 	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
+	SocketFilename                     string = "smartnode.sock"
 )
 
 // Defaults
@@ -822,6 +823,18 @@ func (cfg *SmartnodeConfig) GetFeeRecipientFilePath() string {
 	}
 
 	return filepath.Join(cfg.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
+}
+
+func (cfg *SmartnodeConfig) GetSocketPath() string {
+	if !cfg.parent.IsNativeMode {
+		return filepath.Join(DaemonDataPath, SocketFilename)
+	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), SocketFilename)
+}
+
+func (cfg *SmartnodeConfig) GetSocketPathInCLI() string {
+	return filepath.Join(cfg.DataPath.Value.(string), SocketFilename)
 }
 
 func (cfg *SmartnodeConfig) GetV100RewardsPoolAddress() common.Address {

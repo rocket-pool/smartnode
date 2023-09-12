@@ -3,91 +3,47 @@ package faucet
 import (
 	"context"
 	"fmt"
+	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getStatus(c *cli.Context) (*api.FaucetStatusResponse, error) {
+type faucetStatusHandler struct {
+	allowance *big.Int
+}
 
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRplFaucet(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+func (h *faucetStatusHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+	return nil
+}
+
+func (h *faucetStatusHandler) GetState(f *contracts.RplFaucet, nodeAddress common.Address, mc *batch.MultiCaller) {
+	f.GetBalance(mc)
+	f.GetAllowanceFor(mc, &h.allowance, nodeAddress)
+	f.GetWithdrawalFee(mc)
+	f.GetWithdrawalPeriodStart(mc)
+	f.GetWithdrawalPeriod(mc)
+}
+
+func (h *faucetStatusHandler) PrepareResponse(rp *rocketpool.RocketPool, f *contracts.RplFaucet, nodeAccount accounts.Account, opts *bind.TransactOpts, response *api.FaucetStatusResponse) error {
+	// Get the current block
+	currentBlock, err := rp.Client.BlockNumber(context.Background())
 	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-	f, err := services.GetRplFaucet(c)
-	if err != nil {
-		return nil, err
-	}
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, fmt.Errorf("error getting node account: %w", err)
-	}
-
-	// Response
-	response := api.FaucetStatusResponse{}
-
-	// Data
-	var wg errgroup.Group
-	var currentPeriodStartBlock uint64
-	var withdrawalPeriodBlocks uint64
-	var currentBlock uint64
-
-	// Get contract state
-	wg.Go(func() error {
-		err = rp.Query(func(mc *batch.MultiCaller) error {
-			f.GetBalance(mc)
-			f.GetAllowanceFor(mc, &response.Allowance, nodeAccount.Address)
-			f.GetWithdrawalFee(mc)
-			f.GetWithdrawalPeriodStart(mc)
-			f.GetWithdrawalPeriod(mc)
-			return nil
-		}, nil)
-		if err != nil {
-			return fmt.Errorf("error getting contract state: %w", err)
-		}
-		return nil
-	})
-
-	// Get current block
-	wg.Go(func() error {
-		header, err := ec.HeaderByNumber(context.Background(), nil)
-		if err != nil {
-			return fmt.Errorf("error getting latest block header: %w", err)
-		}
-		currentBlock = header.Number.Uint64()
-		return nil
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
+		return fmt.Errorf("error getting current EL block: %w", err)
 	}
 
 	// Populate the response
 	response.Balance = f.Details.Balance
 	response.Allowance = f.Details.Allowance
 	response.WithdrawalFee = f.Details.WithdrawalFee
-	currentPeriodStartBlock = f.Details.WithdrawalPeriodStart.Formatted()
-	withdrawalPeriodBlocks = f.Details.WithdrawalPeriod.Formatted()
+	currentPeriodStartBlock := f.Details.WithdrawalPeriodStart.Formatted()
+	withdrawalPeriodBlocks := f.Details.WithdrawalPeriod.Formatted()
 
 	// Get withdrawable amount
 	if response.Balance.Cmp(response.Allowance) > 0 {
@@ -98,8 +54,5 @@ func getStatus(c *cli.Context) (*api.FaucetStatusResponse, error) {
 
 	// Get reset block
 	response.ResetsInBlocks = (currentPeriodStartBlock + withdrawalPeriodBlocks) - currentBlock
-
-	// Return response
-	return &response, nil
-
+	return nil
 }

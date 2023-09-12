@@ -240,7 +240,12 @@ func getEthClient(c *cli.Context, cfg *config.RocketPoolConfig) (*ExecutionClien
 func getRocketPool(cfg *config.RocketPoolConfig, client core.ExecutionClient) (*rocketpool.RocketPool, error) {
 	var err error
 	initRocketPool.Do(func() {
-		rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Smartnode.GetStorageAddress()))
+		rocketPool, err = rocketpool.NewRocketPool(
+			client,
+			common.HexToAddress(cfg.Smartnode.GetStorageAddress()),
+			common.HexToAddress(cfg.Smartnode.GetMulticallAddress()),
+			common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress()),
+		)
 	})
 	return rocketPool, err
 }

@@ -6,11 +6,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
-	"golang.org/x/sync/errgroup"
 )
 
 type FeeRecipientInfo struct {
@@ -73,51 +73,36 @@ func GetFeeRecipientInfoWithoutState(rp *rocketpool.RocketPool, bc beacon.Client
 		OptOutEpoch:        0,
 	}
 
-	// Sync
-	var wg errgroup.Group
-
-	// Get the smoothing pool address
-	wg.Go(func() error {
-		smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool", opts)
-		if err != nil {
-			return fmt.Errorf("Error getting smoothing pool contract: %w", err)
-		}
-		info.SmoothingPoolAddress = *smoothingPoolContract.Address
-		return nil
-	})
-
-	// Get the node's fee distributor
-	wg.Go(func() error {
-		distributorAddress, err := node.GetDistributorAddress(rp, nodeAddress, opts)
-		if err != nil {
-			return fmt.Errorf("Error getting the fee distributor for %s: %w", nodeAddress.Hex(), err)
-		}
-		info.FeeDistributorAddress = distributorAddress
-		return nil
-	})
-
-	// Check if the user's opted into the smoothing pool
-	wg.Go(func() error {
-		isOptedIn, err := node.GetSmoothingPoolRegistrationState(rp, nodeAddress, opts)
-		if err != nil {
-			return err
-		}
-		info.IsInSmoothingPool = isOptedIn
-		return nil
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
+	// Create the bindings
+	sp, err := rp.GetContract(rocketpool.ContractName_RocketSmoothingPool)
+	if err != nil {
+		return nil, fmt.Errorf("error getting smoothing pool binding: %w", err)
 	}
+	node, err := node.NewNode(rp, nodeAddress)
+	if err != nil {
+		return nil, fmt.Errorf("error getting node %s binding: %w", nodeAddress.Hex(), err)
+	}
+
+	// Get contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		node.GetDistributorAddress(mc)
+		node.GetSmoothingPoolRegistrationState(mc)
+		node.GetSmoothingPoolRegistrationChanged(mc)
+		return nil
+	}, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract state: %w", err)
+	}
+
+	// Handle the details
+	info.SmoothingPoolAddress = *sp.Address
+	info.FeeDistributorAddress = node.Details.DistributorAddress
+	info.IsInSmoothingPool = node.Details.SmoothingPoolRegistrationState
 
 	// Calculate the safe opt-out epoch if applicable
 	if !info.IsInSmoothingPool {
 		// Get the opt out time
-		optOutTime, err := node.GetSmoothingPoolRegistrationChanged(rp, nodeAddress, opts)
-		if err != nil {
-			return nil, fmt.Errorf("Error getting smoothing pool opt-out time: %w", err)
-		}
+		optOutTime := node.Details.SmoothingPoolRegistrationChanged.Formatted()
 
 		// Get the Beacon info
 		beaconConfig, err := bc.GetEth2Config()
@@ -146,5 +131,4 @@ func GetFeeRecipientInfoWithoutState(rp *rocketpool.RocketPool, bc beacon.Client
 	}
 
 	return info, nil
-
 }
