@@ -3,7 +3,6 @@ package minipool
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -19,7 +18,7 @@ const (
 	ozMinipoolBytecode string = "0x3d602d80600a3d3981f3363d3d373d3d3d363d73%s5af43d82803e903d91602b57fd5bf3"
 )
 
-func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr string) (*api.GetVanityArtifactsResponse, error) {
+func getVanityArtifacts(c *cli.Context, nodeAddressStr string) (*api.VanityArtifactsResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -31,7 +30,7 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 	}
 
 	// Response
-	response := api.GetVanityArtifactsResponse{}
+	response := api.VanityArtifactsResponse{}
 
 	// Get node account
 	var nodeAddress common.Address

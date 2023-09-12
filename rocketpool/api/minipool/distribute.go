@@ -29,7 +29,7 @@ func (m *minipoolDistributeManager) CreateBindings(rp *rocketpool.RocketPool) er
 func (m *minipoolDistributeManager) GetState(node *node.Node, mc *batch.MultiCaller) {
 }
 
-func (m *minipoolDistributeManager) CheckState(node *node.Node, response *api.GetMinipoolDistributeDetailsForNodeResponse) bool {
+func (m *minipoolDistributeManager) CheckState(node *node.Node, response *api.MinipoolDistributeDetailsResponse) bool {
 	return true
 }
 
@@ -42,7 +42,7 @@ func (m *minipoolDistributeManager) GetMinipoolDetails(mc *batch.MultiCaller, mp
 	mpCommon.GetUserDepositBalance(mc)
 }
 
-func (m *minipoolDistributeManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolDistributeDetailsForNodeResponse) error {
+func (m *minipoolDistributeManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolDistributeDetailsResponse) error {
 	// Get the current ETH balances of each minipool
 	balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {

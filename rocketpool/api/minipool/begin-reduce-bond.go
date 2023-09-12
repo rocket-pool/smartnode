@@ -45,7 +45,7 @@ func (m *minipoolBeginReduceBondManager) GetState(node *node.Node, mc *batch.Mul
 	m.oSettings.GetBondReductionWindowLength(mc)
 }
 
-func (m *minipoolBeginReduceBondManager) CheckState(node *node.Node, response *api.GetMinipoolBeginReduceBondDetailsForNodeResponse) bool {
+func (m *minipoolBeginReduceBondManager) CheckState(node *node.Node, response *api.MinipoolBeginReduceBondDetailsResponse) bool {
 	response.BondReductionDisabled = !m.pSettings.Details.Minipool.IsBondReductionEnabled
 	return !response.BondReductionDisabled
 }
@@ -61,7 +61,7 @@ func (m *minipoolBeginReduceBondManager) GetMinipoolDetails(mc *batch.MultiCalle
 	}
 }
 
-func (m *minipoolBeginReduceBondManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolBeginReduceBondDetailsForNodeResponse) error {
+func (m *minipoolBeginReduceBondManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolBeginReduceBondDetailsResponse) error {
 	// Get the latest block header
 	header, err := rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {

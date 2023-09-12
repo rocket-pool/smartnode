@@ -33,7 +33,7 @@ func (m *minipoolRescueDissolvedManager) CreateBindings(rp *rocketpool.RocketPoo
 func (m *minipoolRescueDissolvedManager) GetState(node *node.Node, mc *batch.MultiCaller) {
 }
 
-func (m *minipoolRescueDissolvedManager) CheckState(node *node.Node, response *api.GetMinipoolRescueDissolvedDetailsForNodeResponse) bool {
+func (m *minipoolRescueDissolvedManager) CheckState(node *node.Node, response *api.MinipoolRescueDissolvedDetailsResponse) bool {
 	return true
 }
 
@@ -44,7 +44,7 @@ func (m *minipoolRescueDissolvedManager) GetMinipoolDetails(mc *batch.MultiCalle
 	mpCommon.GetPubkey(mc)
 }
 
-func (m *minipoolRescueDissolvedManager) PrepareResponse(rp *rocketpool.RocketPool, bc rpbeacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolRescueDissolvedDetailsForNodeResponse) error {
+func (m *minipoolRescueDissolvedManager) PrepareResponse(rp *rocketpool.RocketPool, bc rpbeacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolRescueDissolvedDetailsResponse) error {
 	// Get the rescue details
 	pubkeys := []types.ValidatorPubkey{}
 	detailsMap := map[types.ValidatorPubkey]int{}
@@ -98,7 +98,7 @@ func (m *minipoolRescueDissolvedManager) PrepareResponse(rp *rocketpool.RocketPo
 	return nil
 }
 
-func rescueDissolvedMinipool(c *cli.Context, minipoolAddresses []common.Address, amounts []*big.Int) (*api.BatchTxResponse, error) {
+func rescueDissolvedMinipools(c *cli.Context, minipoolAddresses []common.Address, amounts []*big.Int) (*api.BatchTxResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err

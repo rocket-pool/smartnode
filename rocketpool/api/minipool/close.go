@@ -30,7 +30,7 @@ func (m *minipoolCloseManager) GetState(node *node.Node, mc *batch.MultiCaller) 
 	node.GetFeeDistributorInitialized(mc)
 }
 
-func (m *minipoolCloseManager) CheckState(node *node.Node, response *api.GetMinipoolCloseDetailsForNodeResponse) bool {
+func (m *minipoolCloseManager) CheckState(node *node.Node, response *api.MinipoolCloseDetailsResponse) bool {
 	response.IsFeeDistributorInitialized = node.Details.IsFeeDistributorInitialized
 	return response.IsFeeDistributorInitialized
 }
@@ -45,7 +45,7 @@ func (m *minipoolCloseManager) GetMinipoolDetails(mc *batch.MultiCaller, mp mini
 	mpCommon.GetPubkey(mc)
 }
 
-func (m *minipoolCloseManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolCloseDetailsForNodeResponse) error {
+func (m *minipoolCloseManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolCloseDetailsResponse) error {
 	// Get the current ETH balances of each minipool
 	balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {

@@ -76,7 +76,7 @@ type MinipoolRefundDetails struct {
 	InsufficientRefundBalance bool           `json:"insufficientRefundBalance"`
 	CanRefund                 bool           `json:"canRefund"`
 }
-type GetMinipoolRefundDetailsForNodeResponse struct {
+type MinipoolRefundDetailsResponse struct {
 	Status  string                  `json:"status"`
 	Error   string                  `json:"error"`
 	Details []MinipoolRefundDetails `json:"details"`
@@ -87,7 +87,7 @@ type MinipoolDissolveDetails struct {
 	CanDissolve   bool           `json:"canDissolve"`
 	InvalidStatus bool           `json:"invalidStatus"`
 }
-type GetMinipoolDissolveDetailsForNodeResponse struct {
+type MinipoolDissolveDetailsResponse struct {
 	Status  string                    `json:"status"`
 	Error   string                    `json:"error"`
 	Details []MinipoolDissolveDetails `json:"details"`
@@ -98,7 +98,7 @@ type MinipoolExitDetails struct {
 	CanExit       bool           `json:"canExit"`
 	InvalidStatus bool           `json:"invalidStatus"`
 }
-type GetMinipoolExitDetailsForNodeResponse struct {
+type MinipoolExitDetailsResponse struct {
 	Status  string                `json:"status"`
 	Error   string                `json:"error"`
 	Details []MinipoolExitDetails `json:"details"`
@@ -149,7 +149,7 @@ type MinipoolDelegateDetails struct {
 	RollbackVersionTooLow           bool           `json:"rollbackVersionTooLow"`
 	VersionTooLowToDisableUseLatest bool           `json:"versionTooLowToDisableUseLatest"`
 }
-type GetMinipoolDelegateDetailsForNodeResponse struct {
+type MinipoolDelegateDetailsResponse struct {
 	Status         string                    `json:"status"`
 	Error          string                    `json:"error"`
 	LatestDelegate common.Address            `json:"latestDelegate"`
@@ -170,7 +170,7 @@ type MinipoolCloseDetails struct {
 	BeaconState                 beacon.ValidatorState `json:"beaconState"`
 	NodeShareOfEffectiveBalance *big.Int              `json:"nodeShareOfEffectiveBalance"`
 }
-type GetMinipoolCloseDetailsForNodeResponse struct {
+type MinipoolCloseDetailsResponse struct {
 	Status                      string                 `json:"status"`
 	Error                       string                 `json:"error"`
 	IsFeeDistributorInitialized bool                   `json:"isFeeDistributorInitialized"`
@@ -188,7 +188,7 @@ type MinipoolDistributeDetails struct {
 	IsFinalized                     bool                 `json:"isFinalized"`
 	CanDistribute                   bool                 `json:"canDistribute"`
 }
-type GetMinipoolDistributeDetailsForNodeResponse struct {
+type MinipoolDistributeDetailsResponse struct {
 	Status  string                      `json:"status"`
 	Error   string                      `json:"error"`
 	Details []MinipoolDistributeDetails `json:"details"`
@@ -213,7 +213,7 @@ type MinipoolStakeDetails struct {
 	StillInScrubPeriod bool                 `json:"stillInScrubPeriod"`
 	CanStake           bool                 `json:"canStake"`
 }
-type GetMinipoolStakeDetailsForNodeResponse struct {
+type MinipoolStakeDetailsResponse struct {
 	Status  string                 `json:"status"`
 	Error   string                 `json:"error"`
 	Details []MinipoolStakeDetails `json:"details"`
@@ -223,7 +223,7 @@ type MinipoolPromoteDetails struct {
 	Address    common.Address `json:"address"`
 	CanPromote bool           `json:"canPromote"`
 }
-type GetMinipoolPromoteDetailsForNodeResponse struct {
+type MinipoolPromoteDetailsResponse struct {
 	Status  string                   `json:"status"`
 	Error   string                   `json:"error"`
 	Details []MinipoolPromoteDetails `json:"details"`
@@ -253,7 +253,7 @@ type GetEffectiveDelegateResponse struct {
 	Address common.Address `json:"address"`
 }
 
-type GetVanityArtifactsResponse struct {
+type VanityArtifactsResponse struct {
 	Status                 string         `json:"status"`
 	Error                  string         `json:"error"`
 	NodeAddress            common.Address `json:"nodeAddress"`
@@ -273,7 +273,7 @@ type MinipoolBeginReduceBondDetails struct {
 	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
 	CanReduce             bool                  `json:"canReduce"`
 }
-type GetMinipoolBeginReduceBondDetailsForNodeResponse struct {
+type MinipoolBeginReduceBondDetailsResponse struct {
 	Status                string                           `json:"status"`
 	Error                 string                           `json:"error"`
 	BondReductionDisabled bool                             `json:"bondReductionDisabled"`
@@ -291,7 +291,7 @@ type MinipoolReduceBondDetails struct {
 	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
 	CanReduce             bool                  `json:"canReduce"`
 }
-type GetMinipoolReduceBondDetailsForNodeResponse struct {
+type MinipoolReduceBondDetailsResponse struct {
 	Status                string                      `json:"status"`
 	Error                 string                      `json:"error"`
 	BondReductionDisabled bool                        `json:"bondReductionDisabled"`
@@ -310,7 +310,7 @@ type MinipoolRescueDissolvedDetails struct {
 	InvalidBeaconState bool                  `json:"invalidBeaconState"`
 	HasFullBalance     bool                  `json:"hasFullBalance"`
 }
-type GetMinipoolRescueDissolvedDetailsForNodeResponse struct {
+type MinipoolRescueDissolvedDetailsResponse struct {
 	Status  string                           `json:"status"`
 	Error   string                           `json:"error"`
 	Details []MinipoolRescueDissolvedDetails `json:"details"`

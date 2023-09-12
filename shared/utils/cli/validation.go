@@ -43,6 +43,20 @@ func ValidateBigInt(name, value string) (*big.Int, error) {
 	return val, nil
 }
 
+// Validate an array of big ints
+func ValidateBigInts(name, value string) ([]*big.Int, error) {
+	elements := strings.Split(value, ",")
+	ints := make([]*big.Int, len(elements))
+	for i, element := range elements {
+		val, success := big.NewInt(0).SetString(element, 0)
+		if !success {
+			return nil, fmt.Errorf("Invalid int %d in %s '%s'", i, name, value)
+		}
+		ints = append(ints, val)
+	}
+	return ints, nil
+}
+
 // Validate a boolean value
 func ValidateBool(name, value string) (bool, error) {
 	val := strings.ToLower(value)
@@ -70,6 +84,19 @@ func ValidateAddress(name, value string) (common.Address, error) {
 		return common.Address{}, fmt.Errorf("Invalid %s '%s'", name, value)
 	}
 	return common.HexToAddress(value), nil
+}
+
+// Validate a collection of addresses
+func ValidateAddresses(name, value string) ([]common.Address, error) {
+	elements := strings.Split(value, ",")
+	addresses := make([]common.Address, len(elements))
+	for i, element := range elements {
+		if !common.IsHexAddress(element) {
+			return nil, fmt.Errorf("Invalid address %d in %s '%s'", i, name, value)
+		}
+		addresses[i] = common.HexToAddress(element)
+	}
+	return addresses, nil
 }
 
 // Validate a wei amount

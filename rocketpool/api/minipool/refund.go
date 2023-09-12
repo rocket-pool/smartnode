@@ -26,7 +26,7 @@ func (m *minipoolRefundManager) CreateBindings(rp *rocketpool.RocketPool) error 
 func (m *minipoolRefundManager) GetState(node *node.Node, mc *batch.MultiCaller) {
 }
 
-func (m *minipoolRefundManager) CheckState(node *node.Node, response *api.GetMinipoolRefundDetailsForNodeResponse) bool {
+func (m *minipoolRefundManager) CheckState(node *node.Node, response *api.MinipoolRefundDetailsResponse) bool {
 	return true
 }
 
@@ -36,7 +36,7 @@ func (m *minipoolRefundManager) GetMinipoolDetails(mc *batch.MultiCaller, mp min
 	mpCommon.GetNodeRefundBalance(mc)
 }
 
-func (m *minipoolRefundManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolRefundDetailsForNodeResponse) error {
+func (m *minipoolRefundManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolRefundDetailsResponse) error {
 	// Get the refund details
 	details := make([]api.MinipoolRefundDetails, len(addresses))
 	for i, mp := range mps {

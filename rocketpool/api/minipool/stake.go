@@ -39,7 +39,7 @@ func (m *minipoolStakeManager) GetState(node *node.Node, mc *batch.MultiCaller) 
 	m.oSettings.GetScrubPeriod(mc)
 }
 
-func (m *minipoolStakeManager) CheckState(node *node.Node, response *api.GetMinipoolStakeDetailsForNodeResponse) bool {
+func (m *minipoolStakeManager) CheckState(node *node.Node, response *api.MinipoolStakeDetailsResponse) bool {
 	return true
 }
 
@@ -49,7 +49,7 @@ func (m *minipoolStakeManager) GetMinipoolDetails(mc *batch.MultiCaller, mp mini
 	mpCommon.GetStatusTime(mc)
 }
 
-func (m *minipoolStakeManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.GetMinipoolStakeDetailsForNodeResponse) error {
+func (m *minipoolStakeManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolStakeDetailsResponse) error {
 	scrubPeriod := m.oSettings.Details.Minipools.ScrubPeriod.Formatted()
 
 	// Get the time of the latest block
