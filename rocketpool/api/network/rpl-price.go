@@ -1,20 +1,20 @@
 package network
 
 import (
+	"fmt"
 	"math/big"
 
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 func getRplPrice(c *cli.Context) (*api.RplPriceResponse, error) {
-
 	// Get services
 	if err := services.RequireRocketStorage(c); err != nil {
 		return nil, err
@@ -28,7 +28,6 @@ func getRplPrice(c *cli.Context) (*api.RplPriceResponse, error) {
 	response := api.RplPriceResponse{}
 
 	// Data
-	var wg errgroup.Group
 	var rplPrice *big.Int
 	_24Eth := eth.EthToWei(24)
 	_16Eth := eth.EthToWei(16)
@@ -36,36 +35,33 @@ func getRplPrice(c *cli.Context) (*api.RplPriceResponse, error) {
 	var minPerMinipoolStake *big.Int
 	var maxPerMinipoolStake *big.Int
 
-	// Get RPL price set block
-	wg.Go(func() error {
-		pricesBlock, err := network.GetPricesBlock(rp, nil)
-		if err == nil {
-			response.RplPriceBlock = pricesBlock
-		}
-		return err
-	})
-
-	// Get data
-	wg.Go(func() error {
-		var err error
-		rplPrice, err = network.GetRPLPrice(rp, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		minPerMinipoolStake, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		maxPerMinipoolStake, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
+	// Create bindings
+	network, err := network.NewNetworkPrices(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating network prices binding: %w", err)
 	}
+	pSettings, err := settings.NewProtocolDaoSettings(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating protocol DAO settings binding: %w", err)
+	}
+
+	// Get contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		network.GetPricesBlock(mc)
+		network.GetRplPrice(mc)
+		pSettings.GetMinimumPerMinipoolStake(mc)
+		pSettings.GetMaximumPerMinipoolStake(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract state: %w", err)
+	}
+
+	// Get the details
+	response.RplPriceBlock = network.Details.PricesBlock.Formatted()
+	rplPrice = network.Details.RplPrice.RawValue
+	minPerMinipoolStake = pSettings.Details.Node.MinimumPerMinipoolStake.RawValue
+	maxPerMinipoolStake = pSettings.Details.Node.MaximumPerMinipoolStake.RawValue
 
 	// Min for LEB8s
 	minPer8EthMinipoolRplStake := big.NewInt(0)
@@ -98,5 +94,4 @@ func getRplPrice(c *cli.Context) (*api.RplPriceResponse, error) {
 	// Update & return response
 	response.RplPrice = rplPrice
 	return &response, nil
-
 }

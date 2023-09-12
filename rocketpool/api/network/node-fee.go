@@ -1,17 +1,18 @@
 package network
 
 import (
+	"fmt"
+
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 func getNodeFee(c *cli.Context) (*api.NodeFeeResponse, error) {
-
 	// Get services
 	if err := services.RequireRocketStorage(c); err != nil {
 		return nil, err
@@ -24,45 +25,32 @@ func getNodeFee(c *cli.Context) (*api.NodeFeeResponse, error) {
 	// Response
 	response := api.NodeFeeResponse{}
 
-	// Sync
-	var wg errgroup.Group
-
-	// Get data
-	wg.Go(func() error {
-		nodeFee, err := network.GetNodeFee(rp, nil)
-		if err == nil {
-			response.NodeFee = nodeFee
-		}
-		return err
-	})
-	wg.Go(func() error {
-		minNodeFee, err := protocol.GetMinimumNodeFee(rp, nil)
-		if err == nil {
-			response.MinNodeFee = minNodeFee
-		}
-		return err
-	})
-	wg.Go(func() error {
-		targetNodeFee, err := protocol.GetTargetNodeFee(rp, nil)
-		if err == nil {
-			response.TargetNodeFee = targetNodeFee
-		}
-		return err
-	})
-	wg.Go(func() error {
-		maxNodeFee, err := protocol.GetMaximumNodeFee(rp, nil)
-		if err == nil {
-			response.MaxNodeFee = maxNodeFee
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
+	// Create bindings
+	network, err := network.NewNetworkFees(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error getting network fees binding: %w", err)
+	}
+	pSettings, err := settings.NewProtocolDaoSettings(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error getting protocol DAO settings binding: %w", err)
 	}
 
-	// Return response
-	return &response, nil
+	// Get contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		network.GetNodeFee(mc)
+		pSettings.GetMinimumNodeFee(mc)
+		pSettings.GetTargetNodeFee(mc)
+		pSettings.GetMaximumNodeFee(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract state: %w", err)
+	}
 
+	// Update the response
+	response.NodeFee = network.Details.NodeFee.Formatted()
+	response.MinNodeFee = pSettings.Details.Network.MinimumNodeFee.Formatted()
+	response.TargetNodeFee = pSettings.Details.Network.TargetNodeFee.Formatted()
+	response.MaxNodeFee = pSettings.Details.Network.MaximumNodeFee.Formatted()
+	return &response, nil
 }

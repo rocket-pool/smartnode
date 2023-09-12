@@ -1,6 +1,7 @@
 package network
 
 import (
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/urfave/cli"
@@ -19,11 +20,11 @@ func getLatestDelegate(c *cli.Context) (*api.GetLatestDelegateResponse, error) {
 	response := api.GetLatestDelegateResponse{}
 
 	// Get latest delegate address
-	latestDelegateAddress, err := rp.GetAddress("rocketMinipoolDelegate", nil)
+	delegateContract, err := rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
 	if err != nil {
 		return nil, err
 	}
-	response.Address = *latestDelegateAddress
+	response.Address = *delegateContract.Address
 
 	// Return response
 	return &response, nil

@@ -1,9 +1,10 @@
 package network
 
 import (
-	"math/big"
+	"fmt"
 	"time"
 
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/urfave/cli"
 
@@ -12,7 +13,6 @@ import (
 )
 
 func getTimezones(c *cli.Context) (*api.NetworkTimezonesResponse, error) {
-
 	// Get services
 	if err := services.RequireRocketStorage(c); err != nil {
 		return nil, err
@@ -26,15 +26,28 @@ func getTimezones(c *cli.Context) (*api.NetworkTimezonesResponse, error) {
 	response := api.NetworkTimezonesResponse{}
 	response.TimezoneCounts = map[string]uint64{}
 
-	zero := big.NewInt(0)
-	timezoneCounts, err := node.GetNodeCountPerTimezone(rp, zero, zero, nil)
+	// Create bindings
+	nodeMgr, err := node.NewNodeManager(rp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting node manager binding: %w", err)
 	}
 
-	for _, timezoneCount := range timezoneCounts {
-		location, err := time.LoadLocation(timezoneCount.Timezone)
-		count := timezoneCount.Count.Uint64()
+	// Get contract state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		nodeMgr.GetNodeCount(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract state: %w", err)
+	}
+
+	timezoneCounts, err := nodeMgr.GetNodeCountPerTimezone(nodeMgr.Details.NodeCount.Formatted(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting node counts per timezone: %w", err)
+	}
+
+	for timezone, count := range timezoneCounts {
+		location, err := time.LoadLocation(timezone)
 		if err != nil {
 			response.TimezoneCounts["Other"] += count
 		} else {
@@ -46,5 +59,4 @@ func getTimezones(c *cli.Context) (*api.NetworkTimezonesResponse, error) {
 
 	// Return response
 	return &response, nil
-
 }

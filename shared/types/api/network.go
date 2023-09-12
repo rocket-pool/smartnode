@@ -29,11 +29,11 @@ type RplPriceResponse struct {
 type NetworkStatsResponse struct {
 	Status                    string         `json:"status"`
 	Error                     string         `json:"error"`
-	TotalValueLocked          float64        `json:"totalValueLocked"`
-	DepositPoolBalance        float64        `json:"depositPoolBalance"`
-	MinipoolCapacity          float64        `json:"minipoolCapacity"`
-	StakerUtilization         float64        `json:"stakerUtilization"`
-	NodeFee                   float64        `json:"nodeFee"`
+	TotalValueLocked          *big.Int       `json:"totalValueLocked"`
+	DepositPoolBalance        *big.Int       `json:"depositPoolBalance"`
+	MinipoolCapacity          *big.Int       `json:"minipoolCapacity"`
+	StakerUtilization         *big.Int       `json:"stakerUtilization"`
+	NodeFee                   *big.Int       `json:"nodeFee"`
 	NodeCount                 uint64         `json:"nodeCount"`
 	InitializedMinipoolCount  uint64         `json:"initializedMinipoolCount"`
 	PrelaunchMinipoolCount    uint64         `json:"prelaunchMinipoolCount"`
@@ -41,13 +41,13 @@ type NetworkStatsResponse struct {
 	WithdrawableMinipoolCount uint64         `json:"withdrawableMinipoolCount"`
 	DissolvedMinipoolCount    uint64         `json:"dissolvedMinipoolCount"`
 	FinalizedMinipoolCount    uint64         `json:"finalizedMinipoolCount"`
-	RplPrice                  float64        `json:"rplPrice"`
-	TotalRplStaked            float64        `json:"totalRplStaked"`
-	EffectiveRplStaked        float64        `json:"effectiveRplStaked"`
-	RethPrice                 float64        `json:"rethPrice"`
+	RplPrice                  *big.Int       `json:"rplPrice"`
+	TotalRplStaked            *big.Int       `json:"totalRplStaked"`
+	EffectiveRplStaked        *big.Int       `json:"effectiveRplStaked"`
+	RethPrice                 *big.Int       `json:"rethPrice"`
 	SmoothingPoolNodes        uint64         `json:"smoothingPoolNodes"`
 	SmoothingPoolAddress      common.Address `json:"SmoothingPoolAddress"`
-	SmoothingPoolBalance      float64        `json:"smoothingPoolBalance"`
+	SmoothingPoolBalance      *big.Int       `json:"smoothingPoolBalance"`
 }
 
 type NetworkTimezonesResponse struct {

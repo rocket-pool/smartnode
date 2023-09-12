@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/fatih/color"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -17,7 +18,6 @@ const (
 )
 
 func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenerateRewardsTreeResponse, error) {
-
 	// Get services
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
@@ -32,11 +32,18 @@ func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenera
 	response := api.CanNetworkGenerateRewardsTreeResponse{}
 
 	// Get the current interval
-	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
+	rewards, err := rewards.NewRewardsPool(rp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting rewards pool binding: %w", err)
 	}
-	response.CurrentIndex = currentIndexBig.Uint64()
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		rewards.GetRewardIndex(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting contract state: %w", err)
+	}
+	response.CurrentIndex = rewards.Details.RewardIndex.Formatted()
 
 	// Get the path of the file to save
 	filePath := cfg.Smartnode.GetRewardsTreePath(index, true)
@@ -48,11 +55,9 @@ func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenera
 	}
 
 	return &response, nil
-
 }
 
 func generateRewardsTree(c *cli.Context, index uint64) (*api.NetworkGenerateRewardsTreeResponse, error) {
-
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -73,5 +78,4 @@ func generateRewardsTree(c *cli.Context, index uint64) (*api.NetworkGenerateRewa
 	}
 
 	return &response, nil
-
 }
