@@ -1,6 +1,11 @@
 package faucet
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/gorilla/mux"
 	"github.com/urfave/cli"
 
 	types "github.com/rocket-pool/smartnode/shared/types/api"
@@ -58,4 +63,35 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 		},
 	})
+}
+
+func RegisterRoutes(router *mux.Router, name string, handler ResponseHandler) {
+	route := "faucet"
+
+	// Status
+	router.HandleFunc(fmt.Sprintf("/%s/status", route), func(w http.ResponseWriter, r *http.Request) {
+		response, err := runFaucetCall[types.FaucetStatusResponse](c, &faucetStatusHandler{})
+		handler(w, response, err)
+	})
+}
+
+type ResponseHandler func(w http.ResponseWriter, response any, err error)
+
+func HandleResponse(w http.ResponseWriter, response any, err error) {
+	// Write out any errors
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+	}
+
+	// Write the serialized response
+	bytes, err := json.Marshal(response)
+	if err != nil {
+		err = fmt.Errorf("error serializing response: %w", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Write(bytes)
+	}
 }

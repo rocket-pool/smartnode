@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/mux"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -17,6 +18,7 @@ type Server struct {
 	socketPath string
 	socket     net.Listener
 	server     http.Server
+	router     *mux.Router
 }
 
 // Creates a new Server instance
@@ -37,15 +39,11 @@ func (s *Server) Start() error {
 	}
 	s.socket = socket
 
-	// Register the routes
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Default route"))
-	})
-
 	// Create the HTTP server
+	s.router = mux.NewRouter()
+	s.router.Use(amendMessage)
 	s.server = http.Server{
-		Handler: mux,
+		Handler: s.router,
 	}
 
 	// Start listening
@@ -74,4 +72,12 @@ func (s *Server) Stop() error {
 	}
 
 	return nil
+}
+
+// Middleware for appending the content-type header to HTTP responses
+func amendMessage(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
 }
