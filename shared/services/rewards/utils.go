@@ -26,6 +26,7 @@ import (
 	"github.com/ipfs/go-merkledag"
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
+	batchquery "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
@@ -38,33 +39,37 @@ import (
 // Simple container for the zero value so it doesn't have to be recreated over and over
 var zero *big.Int
 
+type ClaimStatus struct {
+	Claimed   []uint64
+	Unclaimed []uint64
+}
+
 // Gets the intervals the node can claim and the intervals that have already been claimed
-func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (unclaimed []uint64, claimed []uint64, err error) {
-	// Get the current interval
-	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
-	if err != nil {
-		return
-	}
-
-	currentIndex := currentIndexBig.Uint64() // This is guaranteed to be from 0 to 65535 so the conversion is legal
-	if currentIndex == 0 {
-		// If we're still in the first interval, there's nothing to report.
-		return
-	}
-
+func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address, currentIndex uint64) (*ClaimStatus, error) {
 	// Get the claim status of every interval that's happened so far
 	one := big.NewInt(1)
 	bucket := currentIndex / 256
-	for i := uint64(0); i <= bucket; i++ {
-		bucketBig := big.NewInt(int64(i))
-		bucketBytes := [32]byte{}
-		bucketBig.FillBytes(bucketBytes[:])
 
-		var bitmap *big.Int
-		bitmap, err = rp.RocketStorage.GetUint(nil, crypto.Keccak256Hash([]byte("rewards.interval.claimed"), nodeAddress.Bytes(), bucketBytes[:]))
-		if err != nil {
-			return
+	// Get the bucket bitmaps
+	bucketBitmaps := make([]*big.Int, bucket+1)
+	err := rp.Query(func(mc *batchquery.MultiCaller) error {
+		for i := uint64(0); i <= bucket; i++ {
+			bucketBig := big.NewInt(int64(i))
+			bucketBytes := [32]byte{}
+			bucketBig.FillBytes(bucketBytes[:])
+			key := crypto.Keccak256Hash([]byte("rewards.interval.claimed"), nodeAddress.Bytes(), bucketBytes[:])
+			rp.Storage.GetUint(mc, &bucketBitmaps[i], key)
 		}
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting reward bucket bitmaps: %w", err)
+	}
+
+	// Get the reward status per bucket
+	claimStatus := &ClaimStatus{}
+	for i := uint64(0); i <= bucket; i++ {
+		bitmap := bucketBitmaps[i]
 		for j := uint64(0); j < 256; j++ {
 			targetIndex := i*256 + j
 			if targetIndex >= currentIndex {
@@ -79,15 +84,15 @@ func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (uncl
 
 			if maskedBitmap.Cmp(mask) == 0 {
 				// This bit was flipped, so it's been claimed already
-				claimed = append(claimed, targetIndex)
+				claimStatus.Claimed = append(claimStatus.Claimed, targetIndex)
 			} else {
 				// This bit was not flipped, so it hasn't been claimed yet
-				unclaimed = append(unclaimed, targetIndex)
+				claimStatus.Unclaimed = append(claimStatus.Unclaimed, targetIndex)
 			}
 		}
 	}
 
-	return
+	return claimStatus, nil
 }
 
 // Gets the information for an interval including the file status, the validity, and the node's rewards
@@ -164,9 +169,13 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 
 // Get the event for a rewards snapshot
 func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {
-
 	addresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
-	found, event, err := rewards.GetRewardsEvent(rp, interval, addresses, opts)
+	rewardsPool, err := rewards.NewRewardsPool(rp)
+	if err != nil {
+		return rewards.RewardsEvent{}, fmt.Errorf("error getting rewards pool binding: %w", err)
+	}
+
+	found, event, err := rewardsPool.GetRewardsEvent(rp, interval, addresses, opts)
 	if err != nil {
 		return rewards.RewardsEvent{}, fmt.Errorf("error getting rewards event for interval %d: %w", interval, err)
 	}
@@ -175,7 +184,6 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 	}
 
 	return event, nil
-
 }
 
 // Get the number of the latest EL block that was created before the given timestamp

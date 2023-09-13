@@ -231,22 +231,17 @@ type NodeDepositResponse struct {
 	ScrubPeriod     time.Duration           `json:"scrubPeriod"`
 }
 
-type CanCreateVacantMinipoolResponse struct {
-	Status               string         `json:"status"`
-	Error                string         `json:"error"`
-	CanDeposit           bool           `json:"canDeposit"`
-	InsufficientRplStake bool           `json:"insufficientRplStake"`
-	InvalidAmount        bool           `json:"invalidAmount"`
-	DepositDisabled      bool           `json:"depositDisabled"`
-	MinipoolAddress      common.Address `json:"minipoolAddress"`
-}
 type CreateVacantMinipoolResponse struct {
 	Status                string                `json:"status"`
 	Error                 string                `json:"error"`
-	TxInfo                *core.TransactionInfo `json:"txInfo"`
+	CanDeposit            bool                  `json:"canDeposit"`
+	InsufficientRplStake  bool                  `json:"insufficientRplStake"`
+	InvalidAmount         bool                  `json:"invalidAmount"`
+	DepositDisabled       bool                  `json:"depositDisabled"`
 	MinipoolAddress       common.Address        `json:"minipoolAddress"`
 	ScrubPeriod           time.Duration         `json:"scrubPeriod"`
 	WithdrawalCredentials common.Hash           `json:"withdrawalCredentials"`
+	TxInfo                *core.TransactionInfo `json:"txInfo"`
 }
 
 type CanNodeSendResponse struct {
@@ -392,13 +387,12 @@ type NodeDistributeResponse struct {
 type NodeGetRewardsInfoResponse struct {
 	Status                  string                 `json:"status"`
 	Error                   string                 `json:"error"`
-	Registered              bool                   `json:"registered"`
 	ClaimedIntervals        []uint64               `json:"claimedIntervals"`
 	UnclaimedIntervals      []rewards.IntervalInfo `json:"unclaimedIntervals"`
 	InvalidIntervals        []rewards.IntervalInfo `json:"invalidIntervals"`
 	RplStake                *big.Int               `json:"rplStake"`
 	RplPrice                *big.Int               `json:"rplPrice"`
-	ActiveMinipools         int                    `json:"activeMinipools"`
+	ActiveMinipools         uint64                 `json:"activeMinipools"`
 	EffectiveRplStake       *big.Int               `json:"effectiveRplStake"`
 	MinimumRplStake         *big.Int               `json:"minimumRplStake"`
 	MaximumRplStake         *big.Int               `json:"maximumRplStake"`
@@ -407,26 +401,6 @@ type NodeGetRewardsInfoResponse struct {
 	PendingMatchAmount      *big.Int               `json:"pendingMatchAmount"`
 	BorrowedCollateralRatio float64                `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio   float64                `json:"bondedCollateralRatio"`
-}
-
-type CanNodeClaimRewardsResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
-}
-type NodeClaimRewardsResponse struct {
-	Status string                `json:"status"`
-	Error  string                `json:"error"`
-	TxInfo *core.TransactionInfo `json:"txInfo"`
-}
-
-type CanNodeClaimAndStakeRewardsResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
-}
-type NodeClaimAndStakeRewardsResponse struct {
-	Status string                `json:"status"`
-	Error  string                `json:"error"`
-	TxInfo *core.TransactionInfo `json:"txInfo"`
 }
 
 type GetSmoothingPoolRegistrationStatusResponse struct {
@@ -500,7 +474,7 @@ type SmoothingRewardsResponse struct {
 	EthBalance *big.Int `json:"eth_balance"`
 }
 
-type CheckCollateralResponse struct {
+type NodeCheckCollateralResponse struct {
 	Status                 string   `json:"status"`
 	Error                  string   `json:"error"`
 	EthMatched             *big.Int `json:"ethMatched"`

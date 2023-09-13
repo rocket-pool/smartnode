@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -29,12 +29,12 @@ func (h *nodeBurnHandler) CreateBindings(rp *rocketpool.RocketPool) error {
 	return nil
 }
 
-func (h *nodeBurnHandler) GetState(nodeAddress common.Address, mc *batch.MultiCaller) {
-	h.reth.GetBalance(mc, &h.balance, nodeAddress)
+func (h *nodeBurnHandler) GetState(node *node.Node, mc *batch.MultiCaller) {
+	h.reth.GetBalance(mc, &h.balance, node.Details.Address)
 	h.reth.GetTotalCollateral(mc)
 }
 
-func (h *nodeBurnHandler) PrepareResponse(rp *rocketpool.RocketPool, nodeAccount accounts.Account, opts *bind.TransactOpts, response *api.NodeBurnResponse) error {
+func (h *nodeBurnHandler) PrepareResponse(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, node *node.Node, opts *bind.TransactOpts, response *api.NodeBurnResponse) error {
 	// Check for validity
 	response.InsufficientBalance = (h.amountWei.Cmp(h.balance) > 0)
 	response.InsufficientCollateral = (h.amountWei.Cmp(h.reth.Details.TotalCollateral) > 0)

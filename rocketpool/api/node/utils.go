@@ -5,100 +5,51 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 )
 
-// Wrapper for callbacks used by runNodeCall; this implements the caller-specific functionality
+// Wrapper for callbacks used by runNodeCallWithTx; this implements the caller-specific functionality
 type NodeCallHandler[responseType any] interface {
 	// Used to create supplemental contract bindings
 	CreateBindings(rp *rocketpool.RocketPool) error
 
 	// Used to get any supplemental state required during initialization - anything in here will be fed into an rp.Query() multicall
-	GetState(nodeAddress common.Address, mc *batch.MultiCaller)
+	GetState(node *node.Node, mc *batch.MultiCaller)
 
 	// Prepare the response object using all of the provided artifacts
-	PrepareResponse(rp *rocketpool.RocketPool, nodeAccount accounts.Account, response *responseType) error
+	PrepareResponse(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, node *node.Node, opts *bind.TransactOpts, response *responseType) error
 }
 
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable
 func runNodeCall[responseType any](c *cli.Context, h NodeCallHandler[responseType]) (*responseType, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error checking if node is registered: %w", err)
 	}
 	w, err := services.GetWallet(c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting wallet: %w", err)
 	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting Rocket Pool binding: %w", err)
 	}
-	nodeAccount, err := w.GetNodeAccount()
+	cfg, err := services.GetConfig(c)
 	if err != nil {
-		return nil, fmt.Errorf("error getting node account: %w", err)
+		return nil, fmt.Errorf("error getting Smartnode config: %w", err)
 	}
-
-	// Response
-	response := new(responseType)
-
-	// Supplemental function-specific bindings
-	err = h.CreateBindings(rp)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		h.GetState(nodeAccount.Address, mc)
-		return nil
-	}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting contract state: %w", err)
-	}
-
-	// Supplemental function-specific response construction
-	err = h.PrepareResponse(rp, nodeAccount, response)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return
-	return response, nil
-}
-
-// Wrapper for callbacks used by runNodeCallWithTx; this implements the caller-specific functionality
-type NodeCallWithTxHandler[responseType any] interface {
-	// Used to create supplemental contract bindings
-	CreateBindings(rp *rocketpool.RocketPool) error
-
-	// Used to get any supplemental state required during initialization - anything in here will be fed into an rp.Query() multicall
-	GetState(nodeAddress common.Address, mc *batch.MultiCaller)
-
-	// Prepare the response object using all of the provided artifacts
-	PrepareResponse(rp *rocketpool.RocketPool, nodeAccount accounts.Account, opts *bind.TransactOpts, response *responseType) error
-}
-
-// Create a scaffolded generic call handler that supports creating transaction infos, with caller-specific functionality where applicable
-func runNodeCallWithTx[responseType any](c *cli.Context, h NodeCallWithTxHandler[responseType]) (*responseType, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +65,12 @@ func runNodeCallWithTx[responseType any](c *cli.Context, h NodeCallWithTxHandler
 	// Response
 	response := new(responseType)
 
+	// Create the bindings
+	node, err := node.NewNode(rp, nodeAccount.Address)
+	if err != nil {
+		return nil, fmt.Errorf("error creating node %s binding: %w", nodeAccount.Address.Hex(), err)
+	}
+
 	// Supplemental function-specific bindings
 	err = h.CreateBindings(rp)
 	if err != nil {
@@ -122,7 +79,7 @@ func runNodeCallWithTx[responseType any](c *cli.Context, h NodeCallWithTxHandler
 
 	// Get contract state
 	err = rp.Query(func(mc *batch.MultiCaller) error {
-		h.GetState(nodeAccount.Address, mc)
+		h.GetState(node, mc)
 		return nil
 	}, nil)
 	if err != nil {
@@ -130,13 +87,26 @@ func runNodeCallWithTx[responseType any](c *cli.Context, h NodeCallWithTxHandler
 	}
 
 	// Supplemental function-specific response construction
-	err = h.PrepareResponse(rp, nodeAccount, opts, response)
+	err = h.PrepareResponse(rp, cfg, node, opts, response)
 	if err != nil {
 		return nil, err
 	}
 
 	// Return
 	return response, nil
+}
+
+// Get the node's Beacon client and make sure it's synced
+func getSyncedBeaconClient(c *cli.Context) (beacon.Client, error) {
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, fmt.Errorf("error getting Beacon client: %w", err)
+	}
+	err = services.RequireBeaconClientSynced(c)
+	if err != nil {
+		return nil, fmt.Errorf("error checking Beacon client's sync status: %w", err)
+	}
+	return bc, nil
 }
 
 // Settings
@@ -154,7 +124,9 @@ type minipoolCountDetails struct {
 }
 
 // Get all node minipool count details
-func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]minipoolCountDetails, error) {
+func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, node *node.Node) ([]minipoolCountDetails, error) {
+
+	node.GetMinipoolAddresses(node.Details.mini)
 
 	// Data
 	var wg1 errgroup.Group

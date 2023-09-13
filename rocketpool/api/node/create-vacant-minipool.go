@@ -4,274 +4,137 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
-func canCreateVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey) (*api.CanCreateVacantMinipoolResponse, error) {
+type nodeCreateVacantHandler struct {
+	bc         beacon.Client
+	amountWei  *big.Int
+	minNodeFee float64
+	salt       *big.Int
+	pubkey     rptypes.ValidatorPubkey
+	pSettings  *settings.ProtocolDaoSettings
+	oSettings  *settings.OracleDaoSettings
+	mpMgr      *minipool.MinipoolManager
+}
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+func (h *nodeCreateVacantHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+	var err error
+	h.pSettings, err = settings.NewProtocolDaoSettings(rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting pDAO settings binding: %w", err)
 	}
-	ec, err := services.GetEthClient(c)
+	h.oSettings, err = settings.NewOracleDaoSettings(rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting oDAO settings binding: %w", err)
 	}
-	rp, err := services.GetRocketPool(c)
+	h.mpMgr, err = minipool.NewMinipoolManager(rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting minipool manager binding: %w", err)
 	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
+	return nil
+}
 
-	// Response
-	response := api.CanCreateVacantMinipoolResponse{}
+func (h *nodeCreateVacantHandler) GetState(node *node.Node, mc *batch.MultiCaller) {
+	node.GetEthMatched(mc)
+	node.GetEthMatchedLimit(mc)
+	h.pSettings.GetVacantMinipoolsEnabled(mc)
+	h.oSettings.GetPromotionScrubPeriod(mc)
+}
 
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
+func (h *nodeCreateVacantHandler) PrepareResponse(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, node *node.Node, opts *bind.TransactOpts, response *api.CreateVacantMinipoolResponse) error {
+	// Initial population
+	response.DepositDisabled = !h.pSettings.Details.Node.AreVacantMinipoolsEnabled
+	response.ScrubPeriod = h.oSettings.Details.Minipools.ScrubPeriod.Formatted()
 
 	// Adjust the salt
-	if salt.Cmp(big.NewInt(0)) == 0 {
-		nonce, err := ec.NonceAt(context.Background(), nodeAccount.Address, nil)
+	if h.salt.Cmp(big.NewInt(0)) == 0 {
+		nonce, err := rp.Client.NonceAt(context.Background(), node.Details.Address, nil)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("error getting node's latest nonce: %w", err)
 		}
-		salt.SetUint64(nonce)
+		h.salt.SetUint64(nonce)
 	}
 
-	// Data
-	var wg1 errgroup.Group
-	var ethMatched *big.Int
-	var ethMatchedLimit *big.Int
-
-	// Check node deposits are enabled
-	wg1.Go(func() error {
-		depositEnabled, err := protocol.GetVacantMinipoolsEnabled(rp, nil)
-		if err == nil {
-			response.DepositDisabled = !depositEnabled
-		}
-		return err
-	})
-
-	// Get node staking information
-	wg1.Go(func() error {
-		var err error
-		ethMatched, err = node.GetNodeEthMatched(rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg1.Go(func() error {
-		var err error
-		ethMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAccount.Address, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg1.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
+	// Get the next minipool address
+	err := rp.Query(func(mc *batch.MultiCaller) error {
+		node.GetExpectedMinipoolAddress(mc, &response.MinipoolAddress, h.salt)
+		return nil
+	}, nil)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting expected minipool address: %w", err)
+	}
+
+	// Get the withdrawal credentials
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		h.mpMgr.GetMinipoolWithdrawalCredentials(mc, &response.WithdrawalCredentials, response.MinipoolAddress)
+		return nil
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("error getting minipool withdrawal credentials: %w", err)
 	}
 
 	// Check data
 	validatorEthWei := eth.EthToWei(ValidatorEth)
-	matchRequest := big.NewInt(0).Sub(validatorEthWei, amountWei)
-	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)
-
+	matchRequest := big.NewInt(0).Sub(validatorEthWei, h.amountWei)
+	availableToMatch := big.NewInt(0).Sub(node.Details.EthMatchedLimit, node.Details.EthMatched)
 	response.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
-	response.MinipoolAddress = minipoolAddress
 
 	// Update response
 	response.CanDeposit = !(response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
-	if !response.CanDeposit {
-		return &response, nil
-	}
-
-	// Get gas estimate
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if the pubkey is for an existing active_ongoing validator
-	validatorStatus, err := bc.GetValidatorStatus(pubkey, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking status of existing validator: %w", err)
-	}
-	if !validatorStatus.Exists {
-		return nil, fmt.Errorf("validator %s does not exist on the Beacon chain. If you recently created it, please wait until the Consensus layer has processed your deposits.", pubkey.Hex())
-	}
-	if validatorStatus.Status != beacon.ValidatorState_ActiveOngoing {
-		return nil, fmt.Errorf("validator %s must be in the active_ongoing state to be migrated, but it is currently in %s.", pubkey.Hex(), string(validatorStatus.Status))
-	}
-	if cfg.Smartnode.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
-		return nil, fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
-	}
-
-	// Convert the existing balance from gwei to wei
-	balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
-	balanceWei.Mul(balanceWei, big.NewInt(1e9))
-
-	// Run the deposit gas estimator
-	gasInfo, err := node.EstimateCreateVacantMinipoolGas(rp, amountWei, minNodeFee, pubkey, salt, minipoolAddress, balanceWei, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.GasInfo = gasInfo
-
-	return &response, nil
-
-}
-
-func createVacantMinipool(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey) (*api.CreateVacantMinipoolResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.CreateVacantMinipoolResponse{}
-
-	// Adjust the salt
-	if salt.Cmp(big.NewInt(0)) == 0 {
-		nonce, err := ec.NonceAt(context.Background(), nodeAccount.Address, nil)
+	if response.CanDeposit {
+		// Make sure ETH2 is on the correct chain
+		depositContractInfo, err := rputils.GetDepositContractInfoImpl(rp, cfg, h.bc)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
 		}
-		salt.SetUint64(nonce)
-	}
+		if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+			depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
+			return fmt.Errorf("FATAL: Beacon network mismatch! Expected %s on chain %d, but beacon is using %s on chain %d.",
+				depositContractInfo.RPDepositContract.Hex(),
+				depositContractInfo.RPNetwork,
+				depositContractInfo.BeaconDepositContract.Hex(),
+				depositContractInfo.BeaconNetwork)
+		}
 
-	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := getDepositContractInfo(c)
-	if err != nil {
-		return nil, err
-	}
-	if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
-		depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
-		return nil, fmt.Errorf("Beacon network mismatch! Expected %s on chain %d, but beacon is using %s on chain %d.",
-			depositContractInfo.RPDepositContract.Hex(),
-			depositContractInfo.RPNetwork,
-			depositContractInfo.BeaconDepositContract.Hex(),
-			depositContractInfo.BeaconNetwork)
-	}
+		// Check if the pubkey is for an existing active_ongoing validator
+		validatorStatus, err := h.bc.GetValidatorStatus(h.pubkey, nil)
+		if err != nil {
+			return fmt.Errorf("error checking status of existing validator: %w", err)
+		}
+		if !validatorStatus.Exists {
+			return fmt.Errorf("validator %s does not exist on the Beacon chain. If you recently created it, please wait until the Consensus layer has processed your deposits.", h.pubkey.Hex())
+		}
+		if validatorStatus.Status != beacon.ValidatorState_ActiveOngoing {
+			return fmt.Errorf("validator %s must be in the active_ongoing state to be migrated, but it is currently in %s.", h.pubkey.Hex(), string(validatorStatus.Status))
+		}
+		if cfg.Smartnode.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
+			return fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", h.pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
+		}
 
-	// Get the scrub period
-	scrubPeriodUnix, err := trustednode.GetPromotionScrubPeriod(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-	scrubPeriod := time.Duration(scrubPeriodUnix) * time.Second
-	response.ScrubPeriod = scrubPeriod
+		// Convert the existing balance from gwei to wei
+		balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
+		balanceWei.Mul(balanceWei, big.NewInt(1e9))
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
+		// Run the deposit gas estimator
+		txInfo, err := node.CreateVacantMinipool(h.amountWei, h.minNodeFee, h.pubkey, h.salt, response.MinipoolAddress, balanceWei, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for CreateVacantMinipool: %w", err)
+		}
+		response.TxInfo = txInfo
 	}
-
-	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
-	if err != nil {
-		return nil, err
-	}
-	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-	response.WithdrawalCredentials = withdrawalCredentials
-
-	// Check if the pubkey is for an existing active_ongoing validator
-	validatorStatus, err := bc.GetValidatorStatus(pubkey, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking status of existing validator: %w", err)
-	}
-	if !validatorStatus.Exists {
-		return nil, fmt.Errorf("validator %s does not exist.", pubkey.Hex())
-	}
-	if validatorStatus.Status != beacon.ValidatorState_ActiveOngoing {
-		return nil, fmt.Errorf("validator %s must be in the active_ongoing state to be migrated, but it is currently in %s.", pubkey.Hex(), string(validatorStatus.Status))
-	}
-	if cfg.Smartnode.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
-		return nil, fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
-	}
-
-	// Convert the existing balance from gwei to wei
-	balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
-	balanceWei.Mul(balanceWei, big.NewInt(1e9))
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
-	// Create the minipool
-	tx, err := node.CreateVacantMinipool(rp, amountWei, minNodeFee, pubkey, salt, minipoolAddress, balanceWei, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	response.TxHash = tx.Hash()
-	response.MinipoolAddress = minipoolAddress
-
-	// Return response
-	return &response, nil
-
+	return nil
 }

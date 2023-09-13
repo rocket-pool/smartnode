@@ -41,7 +41,7 @@ func runFaucetCall[responseType any](c *cli.Context, q FaucetCallHandler[respons
 	}
 	f, err := services.GetRplFaucet(c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting faucet binding: %w", err)
 	}
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {

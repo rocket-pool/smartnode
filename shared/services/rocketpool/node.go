@@ -980,17 +980,17 @@ func (c *Client) CreateVacantMinipool(amountWei *big.Int, minFee float64, salt *
 }
 
 // Get the node's collateral info, including pending bond reductions
-func (c *Client) CheckCollateral() (api.CheckCollateralResponse, error) {
+func (c *Client) CheckCollateral() (api.NodeCheckCollateralResponse, error) {
 	responseBytes, err := c.callAPI("node check-collateral")
 	if err != nil {
-		return api.CheckCollateralResponse{}, fmt.Errorf("Could not get check-collateral status: %w", err)
+		return api.NodeCheckCollateralResponse{}, fmt.Errorf("Could not get check-collateral status: %w", err)
 	}
-	var response api.CheckCollateralResponse
+	var response api.NodeCheckCollateralResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CheckCollateralResponse{}, fmt.Errorf("Could not decode check-collateral response: %w", err)
+		return api.NodeCheckCollateralResponse{}, fmt.Errorf("Could not decode check-collateral response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CheckCollateralResponse{}, fmt.Errorf("Could not get check-collateral status: %s", response.Error)
+		return api.NodeCheckCollateralResponse{}, fmt.Errorf("Could not get check-collateral status: %s", response.Error)
 	}
 	return response, nil
 }

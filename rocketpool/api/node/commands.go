@@ -1,6 +1,8 @@
 package node
 
 import (
+	"fmt"
+
 	"github.com/urfave/cli"
 
 	types "github.com/rocket-pool/smartnode/shared/types/api"
@@ -52,7 +54,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCallWithTx[types.NodeBurnResponse](c, &nodeBurnHandler{
+					response, err := runNodeCall[types.NodeBurnResponse](c, &nodeBurnHandler{
 						amountWei: amountWei,
 					})
 					api.PrintResponse(response, err)
@@ -74,7 +76,150 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.CheckCollateralResponse](c, &nodeCollateralHandler{})
+					response, err := runNodeCall[types.NodeCheckCollateralResponse](c, &nodeCollateralHandler{})
+					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
+
+			// Claim / Claim and Stake
+			{
+				Name:      "claim-rewards",
+				Usage:     "Claim rewards for the given reward intervals",
+				UsageText: "rocketpool api node claim-rewards 0,1,2,5,6",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					indices, err := cliutils.ValidateBigInts("indices", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					response, err := runNodeCall[types.TxResponse](c, &nodeClaimAndStakeHandler{
+						indices:     indices,
+						stakeAmount: nil,
+					})
+					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
+			{
+				Name:      "claim-and-stake-rewards",
+				Usage:     "Claim rewards for the given reward intervals and restake RPL automatically",
+				UsageText: "rocketpool api node claim-and-stake-rewards 0,1,2,5,6 amount-to-restake",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					indices, err := cliutils.ValidateBigInts("indices", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					stakeAmount, err := cliutils.ValidateBigInt("stakeAmount", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					response, err := runNodeCall[types.TxResponse](c, &nodeClaimAndStakeHandler{
+						indices:     indices,
+						stakeAmount: stakeAmount,
+					})
+					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
+
+			// Create vacant minipool
+			{
+				Name:      "create-vacant-minipool",
+				Usage:     "Create a vacant minipool, which can be used to migrate a solo staker",
+				UsageText: "rocketpool api node create-vacant-minipool amount min-fee salt pubkey",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					pubkey, err := cliutils.ValidatePubkey("pubkey", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+
+					// Get a synced Beacon client
+					bc, err := getSyncedBeaconClient(c)
+					if err != nil {
+						return fmt.Errorf("error getting synced Beacon client: %w", err)
+					}
+
+					// Run
+					response, err := runNodeCall[types.CreateVacantMinipoolResponse](c, &nodeCreateVacantHandler{
+						bc:         bc,
+						amountWei:  amountWei,
+						minNodeFee: minNodeFee,
+						salt:       salt,
+						pubkey:     pubkey,
+					})
+					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
+
+			// Deposit contract info
+			{
+				Name:      "deposit-contract-info",
+				Usage:     "Get information about the deposit contract specified by Rocket Pool and the Beacon Chain client",
+				UsageText: "rocketpool api node deposit-contract-info",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getDepositContractInfo(c))
+					return nil
+
+				},
+			},
+
+			// Get rewards info
+			{
+				Name:      "get-rewards-info",
+				Usage:     "Get info about your eligible rewards periods, including balances and Merkle proofs",
+				UsageText: "rocketpool api node get-rewards-info",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					response, err := runNodeCall[types.NodeGetRewardsInfoResponse](c, &nodeRewardsInfoHandler{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -792,41 +937,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-claim-rpl-rewards",
-				Usage:     "Check whether the node has RPL rewards available to claim",
-				UsageText: "rocketpool api node can-claim-rpl-rewards",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canNodeClaimRpl(c))
-					return nil
-
-				},
-			},
-			{
-				Name:      "claim-rpl-rewards",
-				Usage:     "Claim available RPL rewards",
-				UsageText: "rocketpool api node claim-rpl-rewards",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(nodeClaimRpl(c))
-					return nil
-
-				},
-			},
-
-			{
 				Name:      "rewards",
 				Usage:     "Get RPL rewards info",
 				UsageText: "rocketpool api node rewards",
@@ -839,24 +949,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(getRewards(c))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "deposit-contract-info",
-				Usage:     "Get information about the deposit contract specified by Rocket Pool and the Beacon Chain client",
-				UsageText: "rocketpool api node deposit-contract-info",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getDepositContractInfo(c))
 					return nil
 
 				},
@@ -1131,106 +1223,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "get-rewards-info",
-				Usage:     "Get info about your eligible rewards periods, including balances and Merkle proofs",
-				UsageText: "rocketpool api node get-rewards-info",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getRewardsInfo(c))
-					return nil
-
-				},
-			},
-			{
-				Name:      "can-claim-rewards",
-				Usage:     "Check if the rewards for the given intervals can be claimed",
-				UsageText: "rocketpool api node can-claim-rewards 0,1,2,5,6",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					indicesString := c.Args().Get(0)
-
-					// Run
-					api.PrintResponse(canClaimRewards(c, indicesString))
-					return nil
-
-				},
-			},
-			{
-				Name:      "claim-rewards",
-				Usage:     "Claim rewards for the given reward intervals",
-				UsageText: "rocketpool api node claim-rewards 0,1,2,5,6",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					indicesString := c.Args().Get(0)
-
-					// Run
-					api.PrintResponse(claimRewards(c, indicesString))
-					return nil
-
-				},
-			},
-			{
-				Name:      "can-claim-and-stake-rewards",
-				Usage:     "Check if the rewards for the given intervals can be claimed, and RPL restaked automatically",
-				UsageText: "rocketpool api node can-claim-and-stake-rewards 0,1,2,5,6 amount-to-restake",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					indicesString := c.Args().Get(0)
-
-					stakeAmount, err := cliutils.ValidateBigInt("stakeAmount", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canClaimAndStakeRewards(c, indicesString, stakeAmount))
-					return nil
-
-				},
-			},
-			{
-				Name:      "claim-and-stake-rewards",
-				Usage:     "Claim rewards for the given reward intervals and restake RPL automatically",
-				UsageText: "rocketpool api node claim-and-stake-rewards 0,1,2,5,6 amount-to-restake",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					indicesString := c.Args().Get(0)
-
-					stakeAmount, err := cliutils.ValidateBigInt("stakeAmount", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(claimAndStakeRewards(c, indicesString, stakeAmount))
-					return nil
-
-				},
-			},
-
-			{
 				Name:      "get-smoothing-pool-registration-status",
 				Usage:     "Check whether or not the node is opted into the Smoothing Pool",
 				UsageText: "rocketpool api node get-smoothing-pool-registration-status",
@@ -1323,73 +1315,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 					// Run
 					api.PrintResponse(reverseResolveEnsName(c, address))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "can-create-vacant-minipool",
-				Usage:     "Check whether a vacant minipool can be created for solo staker migration",
-				UsageText: "rocketpool api node can-create-vacant-minipool amount min-fee salt pubkey",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 4); err != nil {
-						return err
-					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-					salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
-					pubkey, err := cliutils.ValidatePubkey("pubkey", c.Args().Get(3))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canCreateVacantMinipool(c, amountWei, minNodeFee, salt, pubkey))
-					return nil
-
-				},
-			},
-			{
-				Name:      "create-vacant-minipool",
-				Usage:     "Create a vacant minipool, which can be used to migrate a solo staker",
-				UsageText: "rocketpool api node create-vacant-minipool amount min-fee salt pubkey",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 4); err != nil {
-						return err
-					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-					salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
-					pubkey, err := cliutils.ValidatePubkey("pubkey", c.Args().Get(3))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(createVacantMinipool(c, amountWei, minNodeFee, salt, pubkey))
 					return nil
 
 				},

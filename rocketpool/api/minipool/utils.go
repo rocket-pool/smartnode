@@ -20,7 +20,7 @@ import (
 )
 
 // Wrapper for callbacks used by runMinipoolQuery; this implements the caller-specific functionality
-type MinipoolQuerier[responseType any] interface {
+type MinipoolCallHandler[responseType any] interface {
 	// Used to create supplemental contract bindings (other than node.Node, which will already be created by the scaffolder);
 	// this should create local variables that the caller keeps in scope throughout the life of runMinipoolQuery
 	CreateBindings(rp *rocketpool.RocketPool) error
@@ -41,7 +41,7 @@ type MinipoolQuerier[responseType any] interface {
 }
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
-func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[responseType]) (*responseType, error) {
+func runMinipoolQuery[responseType any](c *cli.Context, h MinipoolCallHandler[responseType]) (*responseType, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, fmt.Errorf("error checking if node is registered: %w", err)
@@ -82,7 +82,7 @@ func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[respon
 	}
 
 	// Supplemental function-specific bindings
-	err = q.CreateBindings(rp)
+	err = h.CreateBindings(rp)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[respon
 	// Get contract state
 	err = rp.Query(func(mc *batch.MultiCaller) error {
 		node.GetMinipoolCount(mc)
-		q.GetState(node, mc)
+		h.GetState(node, mc)
 		return nil
 	}, opts)
 	if err != nil {
@@ -98,7 +98,7 @@ func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[respon
 	}
 
 	// Supplemental function-specific check to see if minipool processing should continue
-	if !q.CheckState(node, response) {
+	if !h.CheckState(node, response) {
 		return response, nil
 	}
 
@@ -116,7 +116,7 @@ func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[respon
 
 	// Get the relevant details
 	err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
-		q.GetMinipoolDetails(mc, mps[i], i) // Supplemental function-specific minipool details
+		h.GetMinipoolDetails(mc, mps[i], i) // Supplemental function-specific minipool details
 		return nil
 	}, opts)
 	if err != nil {
@@ -124,7 +124,7 @@ func runMinipoolQuery[responseType any](c *cli.Context, q MinipoolQuerier[respon
 	}
 
 	// Supplemental function-specific response construction
-	err = q.PrepareResponse(rp, bc, addresses, mps, response)
+	err = h.PrepareResponse(rp, bc, addresses, mps, response)
 	if err != nil {
 		return nil, err
 	}
