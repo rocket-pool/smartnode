@@ -53,7 +53,7 @@ func (h *nodeCreateVacantHandler) GetState(ctx *callContext, mc *batch.MultiCall
 	h.oSettings.GetPromotionScrubPeriod(mc)
 }
 
-func (h *nodeCreateVacantHandler) PrepareResponse(ctx *callContext, response *api.CreateVacantMinipoolResponse) error {
+func (h *nodeCreateVacantHandler) PrepareResponse(ctx *callContext, response *api.NodeCreateVacantMinipoolResponse) error {
 	rp := ctx.rp
 	node := ctx.node
 	bc := ctx.bc
@@ -99,46 +99,47 @@ func (h *nodeCreateVacantHandler) PrepareResponse(ctx *callContext, response *ap
 
 	// Update response
 	response.CanDeposit = !(response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
-	if response.CanDeposit {
-		// Make sure ETH2 is on the correct chain
-		depositContractInfo, err := rputils.GetDepositContractInfo(rp, cfg, bc)
-		if err != nil {
-			return fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
-		}
-		if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
-			depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
-			return fmt.Errorf("FATAL: Beacon network mismatch! Expected %s on chain %d, but beacon is using %s on chain %d.",
-				depositContractInfo.RPDepositContract.Hex(),
-				depositContractInfo.RPNetwork,
-				depositContractInfo.BeaconDepositContract.Hex(),
-				depositContractInfo.BeaconNetwork)
-		}
-
-		// Check if the pubkey is for an existing active_ongoing validator
-		validatorStatus, err := bc.GetValidatorStatus(h.pubkey, nil)
-		if err != nil {
-			return fmt.Errorf("error checking status of existing validator: %w", err)
-		}
-		if !validatorStatus.Exists {
-			return fmt.Errorf("validator %s does not exist on the Beacon chain. If you recently created it, please wait until the Consensus layer has processed your deposits.", h.pubkey.Hex())
-		}
-		if validatorStatus.Status != beacon.ValidatorState_ActiveOngoing {
-			return fmt.Errorf("validator %s must be in the active_ongoing state to be migrated, but it is currently in %s.", h.pubkey.Hex(), string(validatorStatus.Status))
-		}
-		if cfg.Smartnode.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
-			return fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", h.pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
-		}
-
-		// Convert the existing balance from gwei to wei
-		balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
-		balanceWei.Mul(balanceWei, big.NewInt(1e9))
-
-		// Get tx info
-		txInfo, err := node.CreateVacantMinipool(h.amountWei, h.minNodeFee, h.pubkey, h.salt, response.MinipoolAddress, balanceWei, opts)
-		if err != nil {
-			return fmt.Errorf("error getting TX info for CreateVacantMinipool: %w", err)
-		}
-		response.TxInfo = txInfo
+	if !response.CanDeposit {
+		return nil
 	}
+	// Make sure ETH2 is on the correct chain
+	depositContractInfo, err := rputils.GetDepositContractInfo(rp, cfg, bc)
+	if err != nil {
+		return fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
+	}
+	if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+		depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
+		return fmt.Errorf("FATAL: Beacon network mismatch! Expected %s on chain %d, but beacon is using %s on chain %d.",
+			depositContractInfo.RPDepositContract.Hex(),
+			depositContractInfo.RPNetwork,
+			depositContractInfo.BeaconDepositContract.Hex(),
+			depositContractInfo.BeaconNetwork)
+	}
+
+	// Check if the pubkey is for an existing active_ongoing validator
+	validatorStatus, err := bc.GetValidatorStatus(h.pubkey, nil)
+	if err != nil {
+		return fmt.Errorf("error checking status of existing validator: %w", err)
+	}
+	if !validatorStatus.Exists {
+		return fmt.Errorf("validator %s does not exist on the Beacon chain. If you recently created it, please wait until the Consensus layer has processed your deposits.", h.pubkey.Hex())
+	}
+	if validatorStatus.Status != beacon.ValidatorState_ActiveOngoing {
+		return fmt.Errorf("validator %s must be in the active_ongoing state to be migrated, but it is currently in %s.", h.pubkey.Hex(), string(validatorStatus.Status))
+	}
+	if cfg.Smartnode.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
+		return fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", h.pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
+	}
+
+	// Convert the existing balance from gwei to wei
+	balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
+	balanceWei.Mul(balanceWei, big.NewInt(1e9))
+
+	// Get tx info
+	txInfo, err := node.CreateVacantMinipool(h.amountWei, h.minNodeFee, h.pubkey, h.salt, response.MinipoolAddress, balanceWei, opts)
+	if err != nil {
+		return fmt.Errorf("error getting TX info for CreateVacantMinipool: %w", err)
+	}
+	response.TxInfo = txInfo
 	return nil
 }

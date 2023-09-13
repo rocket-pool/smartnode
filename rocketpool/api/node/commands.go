@@ -52,7 +52,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.NodeBurnResponse](c, &nodeBurnHandler{
+					response, err := runNodeCall[types.NodeBurnResponse](c, true, &nodeBurnHandler{
 						amountWei: amountWei,
 					})
 					api.PrintResponse(response, err)
@@ -74,7 +74,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.NodeCheckCollateralResponse](c, &nodeCollateralHandler{})
+					response, err := runNodeCall[types.NodeCheckCollateralResponse](c, true, &nodeCollateralHandler{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -98,7 +98,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.TxInfoResponse](c, &nodeClaimAndStakeHandler{
+					response, err := runNodeCall[types.TxInfoResponse](c, true, &nodeClaimAndStakeHandler{
 						indices:     indices,
 						stakeAmount: nil,
 					})
@@ -127,7 +127,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.TxInfoResponse](c, &nodeClaimAndStakeHandler{
+					response, err := runNodeCall[types.TxInfoResponse](c, true, &nodeClaimAndStakeHandler{
 						indices:     indices,
 						stakeAmount: stakeAmount,
 					})
@@ -166,7 +166,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.CreateVacantMinipoolResponse](c, &nodeCreateVacantHandler{
+					response, err := runNodeCall[types.NodeCreateVacantMinipoolResponse](c, true, &nodeCreateVacantHandler{
 						amountWei:  amountWei,
 						minNodeFee: minNodeFee,
 						salt:       salt,
@@ -204,12 +204,72 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.NodeDepositResponse](c, &nodeDepositHandler{
+					response, err := runNodeCall[types.NodeDepositResponse](c, true, &nodeDepositHandler{
 						amountWei:  amountWei,
 						minNodeFee: minNodeFee,
 						salt:       salt,
 					})
 					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
+
+			// Distribute
+			{
+				Name:      "distribute",
+				Usage:     "Distribute ETH from the node's fee distributor",
+				UsageText: "rocketpool api node distribute",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					response, err := runNodeCall[types.NodeDistributeResponse](c, true, &nodeDistributeHandler{})
+					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
+
+			// ENS functions
+			{
+				Name:      "resolve-ens-name",
+				Usage:     "Resolve an ENS name",
+				UsageText: "rocketpool api node resolve-ens-name name",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(resolveEnsName(c, c.Args().Get(0)))
+					return nil
+
+				},
+			},
+			{
+				Name:      "reverse-resolve-ens-name",
+				Usage:     "Reverse resolve an address to an ENS name",
+				UsageText: "rocketpool api node reverse-resolve-ens-name address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(reverseResolveEnsName(c, address))
 					return nil
 
 				},
@@ -228,8 +288,82 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.NodeGetRewardsInfoResponse](c, &nodeRewardsInfoHandler{})
+					response, err := runNodeCall[types.NodeGetRewardsInfoResponse](c, true, &nodeRewardsInfoHandler{})
 					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
+
+			// Initialize fee distributor
+			{
+				Name:      "initialize-fee-distributor",
+				Usage:     "Check if the fee distributor has already been initialized; if not, deploy the fee distributor contract for this node",
+				UsageText: "rocketpool api node initialize-fee-distributor",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					response, err := runNodeCall[types.NodeInitializeFeeDistributorResponse](c, true, &nodeFeeDistributorInitHandler{})
+					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
+
+			// Register
+			{
+				Name:      "register",
+				Aliases:   []string{"r"},
+				Usage:     "Register the node with Rocket Pool",
+				UsageText: "rocketpool api node register timezone-location",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					timezoneLocation, err := cliutils.ValidateTimezoneLocation("timezone location", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					response, err := runNodeCall[types.NodeRegisterResponse](c, false, &nodeRegisterHandler{
+						timezoneLocation: timezoneLocation,
+					})
+					api.PrintResponse(response, err)
+					return nil
+
+				},
+			},
+
+			// Send message
+			{
+				Name:      "send-message",
+				Usage:     "Sends a zero-value message with a payload",
+				UsageText: "rocketpool api node send-message address message",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					message, err := cliutils.ValidateByteArray("message", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(sendMessage(c, address, message))
 					return nil
 
 				},
@@ -268,50 +402,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(getSyncProgress(c))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "can-register",
-				Usage:     "Check whether the node can be registered with Rocket Pool",
-				UsageText: "rocketpool api node can-register timezone-location",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					timezoneLocation, err := cliutils.ValidateTimezoneLocation("timezone location", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canRegisterNode(c, timezoneLocation))
-					return nil
-
-				},
-			},
-			{
-				Name:      "register",
-				Aliases:   []string{"r"},
-				Usage:     "Register the node with Rocket Pool",
-				UsageText: "rocketpool api node register timezone-location",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					timezoneLocation, err := cliutils.ValidateTimezoneLocation("timezone location", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(registerNode(c, timezoneLocation))
 					return nil
 
 				},
@@ -1013,40 +1103,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "is-fee-distributor-initialized",
-				Usage:     "Check if the fee distributor contract for this node is initialized and deployed",
-				UsageText: "rocketpool api node is-fee-distributor-initialized",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(isFeeDistributorInitialized(c))
-					return nil
-
-				},
-			},
-			{
-				Name:      "get-initialize-fee-distributor-gas",
-				Usage:     "Estimate the cost of initializing the fee distributor",
-				UsageText: "rocketpool api node get-initialize-fee-distributor-gas",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getInitializeFeeDistributorGas(c))
-					return nil
-				},
-			},
-
-			{
 				Name:      "estimate-set-snapshot-delegate-gas",
 				Usage:     "Estimate the gas required to set a voting snapshot delegate",
 				UsageText: "rocketpool api node estimate-set-snapshot-delegate-gas address",
@@ -1068,41 +1124,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
-			{
-				Name:      "initialize-fee-distributor",
-				Usage:     "Initialize and deploy the fee distributor contract for this node",
-				UsageText: "rocketpool api node initialize-fee-distributor",
-				Action: func(c *cli.Context) error {
 
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(initializeFeeDistributor(c))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "can-distribute",
-				Usage:     "Check if distributing ETH from the node's fee distributor is possible",
-				UsageText: "rocketpool api node can-distribute",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canDistribute(c))
-					return nil
-
-				},
-			},
 			{
 				Name:      "set-snapshot-delegate",
 				Usage:     "Set a voting snapshot delegate for the node",
@@ -1121,40 +1143,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(setSnapshotDelegate(c, delegate))
-					return nil
-
-				},
-			},
-			{
-				Name:      "distribute",
-				Usage:     "Distribute ETH from the node's fee distributor",
-				UsageText: "rocketpool api node distribute",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(distribute(c))
-					return nil
-
-				},
-			},
-			{
-				Name:      "claim-rpl-rewards",
-				Usage:     "Claim available RPL rewards",
-				UsageText: "rocketpool api node claim-rpl-rewards",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(nodeClaimRpl(c))
 					return nil
 
 				},
@@ -1215,95 +1203,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(setSmoothingPoolStatus(c, status))
-					return nil
-
-				},
-			},
-			{
-				Name:      "resolve-ens-name",
-				Usage:     "Resolve an ENS name",
-				UsageText: "rocketpool api node resolve-ens-name name",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(resolveEnsName(c, c.Args().Get(0)))
-					return nil
-
-				},
-			},
-			{
-				Name:      "reverse-resolve-ens-name",
-				Usage:     "Reverse resolve an address to an ENS name",
-				UsageText: "rocketpool api node reverse-resolve-ens-name address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-
-					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					// Run
-					api.PrintResponse(reverseResolveEnsName(c, address))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "can-send-message",
-				Usage:     "Estimates the gas for sending a zero-value message with a payload",
-				UsageText: "rocketpool api node can-send-message address message",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					message, err := cliutils.ValidateByteArray("message", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canSendMessage(c, address, message))
-					return nil
-
-				},
-			},
-			{
-				Name:      "send-message",
-				Usage:     "Sends a zero-value message with a payload",
-				UsageText: "rocketpool api node send-message address message",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					message, err := cliutils.ValidateByteArray("message", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(sendMessage(c, address, message))
 					return nil
 
 				},

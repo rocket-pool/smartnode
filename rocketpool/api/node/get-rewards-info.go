@@ -4,15 +4,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -24,8 +20,10 @@ type nodeRewardsInfoHandler struct {
 	rewardsPool   *rewards.RewardsPool
 }
 
-func (h *nodeRewardsInfoHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+func (h *nodeRewardsInfoHandler) CreateBindings(ctx *callContext) error {
 	var err error
+	rp := ctx.rp
+
 	h.networkPrices, err = network.NewNetworkPrices(rp)
 	if err != nil {
 		return fmt.Errorf("error creating network prices binding: %w", err)
@@ -41,7 +39,9 @@ func (h *nodeRewardsInfoHandler) CreateBindings(rp *rocketpool.RocketPool) error
 	return nil
 }
 
-func (h *nodeRewardsInfoHandler) GetState(node *node.Node, mc *batch.MultiCaller) {
+func (h *nodeRewardsInfoHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
+	node := ctx.node
+
 	node.GetActiveMinipoolCount(mc)
 	node.GetRplStake(mc)
 	node.GetMinimumRplStake(mc)
@@ -53,7 +53,11 @@ func (h *nodeRewardsInfoHandler) GetState(node *node.Node, mc *batch.MultiCaller
 	h.rewardsPool.GetRewardIndex(mc)
 }
 
-func (h *nodeRewardsInfoHandler) PrepareResponse(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, node *node.Node, opts *bind.TransactOpts, response *api.NodeGetRewardsInfoResponse) error {
+func (h *nodeRewardsInfoHandler) PrepareResponse(ctx *callContext, response *api.NodeGetRewardsInfoResponse) error {
+	rp := ctx.rp
+	node := ctx.node
+	cfg := ctx.cfg
+
 	// Basic details
 	response.RplPrice = h.networkPrices.Details.RplPrice.RawValue
 	response.RplStake = node.Details.RplStake

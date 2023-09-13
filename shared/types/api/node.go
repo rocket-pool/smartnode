@@ -68,17 +68,13 @@ type NodeStatusResponse struct {
 	} `json:"snapshotResponse"`
 }
 
-type CanRegisterNodeResponse struct {
-	Status               string `json:"status"`
-	Error                string `json:"error"`
-	CanRegister          bool   `json:"canRegister"`
-	AlreadyRegistered    bool   `json:"alreadyRegistered"`
-	RegistrationDisabled bool   `json:"registrationDisabled"`
-}
-type RegisterNodeResponse struct {
-	Status string                `json:"status"`
-	Error  string                `json:"error"`
-	TxInfo *core.TransactionInfo `json:"txInfo"`
+type NodeRegisterResponse struct {
+	Status               string                `json:"status"`
+	Error                string                `json:"error"`
+	CanRegister          bool                  `json:"canRegister"`
+	AlreadyRegistered    bool                  `json:"alreadyRegistered"`
+	RegistrationDisabled bool                  `json:"registrationDisabled"`
+	TxInfo               *core.TransactionInfo `json:"txInfo"`
 }
 
 type CanSetNodeWithdrawalAddressResponse struct {
@@ -226,7 +222,7 @@ type NodeDepositResponse struct {
 	TxInfo                           *core.TransactionInfo   `json:"txInfo"`
 }
 
-type CreateVacantMinipoolResponse struct {
+type NodeCreateVacantMinipoolResponse struct {
 	Status                string                `json:"status"`
 	Error                 string                `json:"error"`
 	CanDeposit            bool                  `json:"canDeposit"`
@@ -352,31 +348,20 @@ type ClearSnapshotDelegateResponse struct {
 	TxInfo *core.TransactionInfo `json:"txInfo"`
 }
 
-type NodeIsFeeDistributorInitializedResponse struct {
-	Status        string `json:"status"`
-	Error         string `json:"error"`
-	IsInitialized bool   `json:"isInitialized"`
-}
-type NodeInitializeFeeDistributorGasResponse struct {
-	Status      string         `json:"status"`
-	Error       string         `json:"error"`
-	Distributor common.Address `json:"distributor"`
-}
 type NodeInitializeFeeDistributorResponse struct {
-	Status string                `json:"status"`
-	Error  string                `json:"error"`
-	TxInfo *core.TransactionInfo `json:"txInfo"`
-}
-type NodeCanDistributeResponse struct {
-	Status    string   `json:"status"`
-	Error     string   `json:"error"`
-	Balance   *big.Int `json:"balance"`
-	NodeShare float64  `json:"nodeShare"`
+	Status        string                `json:"status"`
+	Error         string                `json:"error"`
+	IsInitialized bool                  `json:"isInitialized"`
+	Distributor   common.Address        `json:"distributor"`
+	TxInfo        *core.TransactionInfo `json:"txInfo"`
 }
 type NodeDistributeResponse struct {
-	Status string                `json:"status"`
-	Error  string                `json:"error"`
-	TxInfo *core.TransactionInfo `json:"txInfo"`
+	Status        string                `json:"status"`
+	Error         string                `json:"error"`
+	IsInitialized bool                  `json:"isInitialized"`
+	Balance       *big.Int              `json:"balance"`
+	NodeShare     *big.Int              `json:"nodeShare"`
+	TxInfo        *core.TransactionInfo `json:"txInfo"`
 }
 
 type NodeGetRewardsInfoResponse struct {

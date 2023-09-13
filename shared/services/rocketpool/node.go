@@ -68,17 +68,17 @@ func (c *Client) CanRegisterNode(timezoneLocation string) (api.CanRegisterNodeRe
 }
 
 // Register the node
-func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse, error) {
+func (c *Client) RegisterNode(timezoneLocation string) (api.NodeRegisterResponse, error) {
 	responseBytes, err := c.callAPI("node register", timezoneLocation)
 	if err != nil {
-		return api.RegisterNodeResponse{}, fmt.Errorf("Could not register node: %w", err)
+		return api.NodeRegisterResponse{}, fmt.Errorf("Could not register node: %w", err)
 	}
-	var response api.RegisterNodeResponse
+	var response api.NodeRegisterResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RegisterNodeResponse{}, fmt.Errorf("Could not decode register node response: %w", err)
+		return api.NodeRegisterResponse{}, fmt.Errorf("Could not decode register node response: %w", err)
 	}
 	if response.Error != "" {
-		return api.RegisterNodeResponse{}, fmt.Errorf("Could not register node: %s", response.Error)
+		return api.NodeRegisterResponse{}, fmt.Errorf("Could not register node: %s", response.Error)
 	}
 	return response, nil
 }
@@ -676,17 +676,17 @@ func (c *Client) ClearSnapshotDelegate() (api.ClearSnapshotDelegateResponse, err
 }
 
 // Get the initialization status of the fee distributor contract
-func (c *Client) IsFeeDistributorInitialized() (api.NodeIsFeeDistributorInitializedResponse, error) {
+func (c *Client) IsFeeDistributorInitialized() (api.NodeFeeDistributorStatusResponse, error) {
 	responseBytes, err := c.callAPI("node is-fee-distributor-initialized")
 	if err != nil {
-		return api.NodeIsFeeDistributorInitializedResponse{}, fmt.Errorf("Could not get fee distributor initialization status: %w", err)
+		return api.NodeFeeDistributorStatusResponse{}, fmt.Errorf("Could not get fee distributor initialization status: %w", err)
 	}
-	var response api.NodeIsFeeDistributorInitializedResponse
+	var response api.NodeFeeDistributorStatusResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeIsFeeDistributorInitializedResponse{}, fmt.Errorf("Could not decode fee distributor initialization status response: %w", err)
+		return api.NodeFeeDistributorStatusResponse{}, fmt.Errorf("Could not decode fee distributor initialization status response: %w", err)
 	}
 	if response.Error != "" {
-		return api.NodeIsFeeDistributorInitializedResponse{}, fmt.Errorf("Could not get fee distributor initialization status: %s", response.Error)
+		return api.NodeFeeDistributorStatusResponse{}, fmt.Errorf("Could not get fee distributor initialization status: %s", response.Error)
 	}
 	return response, nil
 }
@@ -964,17 +964,17 @@ func (c *Client) CanCreateVacantMinipool(amountWei *big.Int, minFee float64, sal
 }
 
 // Create a vacant minipool, which can be used to migrate a solo staker
-func (c *Client) CreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey) (api.CreateVacantMinipoolResponse, error) {
+func (c *Client) CreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey) (api.NodeCreateVacantMinipoolResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node create-vacant-minipool %s %f %s %s", amountWei.String(), minFee, salt.String(), pubkey.Hex()))
 	if err != nil {
-		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %w", err)
+		return api.NodeCreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %w", err)
 	}
-	var response api.CreateVacantMinipoolResponse
+	var response api.NodeCreateVacantMinipoolResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not decode create vacant minipool response: %w", err)
+		return api.NodeCreateVacantMinipoolResponse{}, fmt.Errorf("Could not decode create vacant minipool response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %s", response.Error)
+		return api.NodeCreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %s", response.Error)
 	}
 	return response, nil
 }

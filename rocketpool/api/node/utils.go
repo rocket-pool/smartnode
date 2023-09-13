@@ -46,10 +46,19 @@ type callContext struct {
 }
 
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable
-func runNodeCall[responseType any](c *cli.Context, h NodeCallHandler[responseType]) (*responseType, error) {
+func runNodeCall[responseType any](c *cli.Context, requireRegistered bool, h NodeCallHandler[responseType]) (*responseType, error) {
 	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, fmt.Errorf("error checking if node is registered: %w", err)
+	if requireRegistered {
+		if err := services.RequireNodeRegistered(c); err != nil {
+			return nil, fmt.Errorf("error checking if node is registered: %w", err)
+		}
+	} else {
+		if err := services.RequireNodeWallet(c); err != nil {
+			return nil, fmt.Errorf("error getting node wallet: %w", err)
+		}
+		if err := services.RequireEthClientSynced(c); err != nil {
+			return nil, fmt.Errorf("error getting Execution client sync status: %w", err)
+		}
 	}
 	w, err := services.GetWallet(c)
 	if err != nil {
