@@ -4,15 +4,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -23,8 +19,10 @@ type nodeClaimAndStakeHandler struct {
 	distMainnet *rewards.MerkleDistributorMainnet
 }
 
-func (h *nodeClaimAndStakeHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+func (h *nodeClaimAndStakeHandler) CreateBindings(ctx *callContext) error {
+	rp := ctx.rp
 	var err error
+
 	h.distMainnet, err = rewards.NewMerkleDistributorMainnet(rp)
 	if err != nil {
 		return fmt.Errorf("error getting merkle distributor mainnet binding: %w", err)
@@ -32,10 +30,15 @@ func (h *nodeClaimAndStakeHandler) CreateBindings(rp *rocketpool.RocketPool) err
 	return nil
 }
 
-func (h *nodeClaimAndStakeHandler) GetState(node *node.Node, mc *batch.MultiCaller) {
+func (h *nodeClaimAndStakeHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
 }
 
-func (h *nodeClaimAndStakeHandler) PrepareResponse(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, node *node.Node, opts *bind.TransactOpts, response *api.TxResponse) error {
+func (h *nodeClaimAndStakeHandler) PrepareResponse(ctx *callContext, response *api.TxInfoResponse) error {
+	rp := ctx.rp
+	cfg := ctx.cfg
+	node := ctx.node
+	opts := ctx.opts
+
 	// Read the tree files to get the details
 	rplAmount := []*big.Int{}
 	ethAmount := []*big.Int{}

@@ -1,8 +1,6 @@
 package node
 
 import (
-	"fmt"
-
 	"github.com/urfave/cli"
 
 	types "github.com/rocket-pool/smartnode/shared/types/api"
@@ -100,7 +98,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.TxResponse](c, &nodeClaimAndStakeHandler{
+					response, err := runNodeCall[types.TxInfoResponse](c, &nodeClaimAndStakeHandler{
 						indices:     indices,
 						stakeAmount: nil,
 					})
@@ -129,7 +127,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.TxResponse](c, &nodeClaimAndStakeHandler{
+					response, err := runNodeCall[types.TxInfoResponse](c, &nodeClaimAndStakeHandler{
 						indices:     indices,
 						stakeAmount: stakeAmount,
 					})
@@ -167,15 +165,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-					// Get a synced Beacon client
-					bc, err := getSyncedBeaconClient(c)
-					if err != nil {
-						return fmt.Errorf("error getting synced Beacon client: %w", err)
-					}
-
 					// Run
 					response, err := runNodeCall[types.CreateVacantMinipoolResponse](c, &nodeCreateVacantHandler{
-						bc:         bc,
 						amountWei:  amountWei,
 						minNodeFee: minNodeFee,
 						salt:       salt,
@@ -187,20 +178,38 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 
-			// Deposit contract info
+			// Deposit
 			{
-				Name:      "deposit-contract-info",
-				Usage:     "Get information about the deposit contract specified by Rocket Pool and the Beacon Chain client",
-				UsageText: "rocketpool api node deposit-contract-info",
+				Name:      "deposit",
+				Aliases:   []string{"d"},
+				Usage:     "Make a deposit and create a minipool, using the node's credit balance if possible",
+				UsageText: "rocketpool api node deposit amount min-fee salt",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
+					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(getDepositContractInfo(c))
+					response, err := runNodeCall[types.NodeDepositResponse](c, &nodeDepositHandler{
+						amountWei:  amountWei,
+						minNodeFee: minNodeFee,
+						salt:       salt,
+					})
+					api.PrintResponse(response, err)
 					return nil
 
 				},
@@ -800,77 +809,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(nodeWithdrawRpl(c, amountWei))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "can-deposit",
-				Usage:     "Check whether the node can make a deposit",
-				UsageText: "rocketpool api node can-deposit amount min-fee salt",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
-						return err
-					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-					salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canNodeDeposit(c, amountWei, minNodeFee, salt))
-					return nil
-
-				},
-			},
-			{
-				Name:      "deposit",
-				Aliases:   []string{"d"},
-				Usage:     "Make a deposit and create a minipool, or just make and sign the transaction (when submit = false)",
-				UsageText: "rocketpool api node deposit amount min-fee salt use-credit-balance submit",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 5); err != nil {
-						return err
-					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-					salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
-					useCreditBalance, err := cliutils.ValidateBool("use-credit-balance", c.Args().Get(3))
-					if err != nil {
-						return err
-					}
-					submit, err := cliutils.ValidateBool("submit", c.Args().Get(4))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					response, err := nodeDeposit(c, amountWei, minNodeFee, salt, useCreditBalance, submit)
-					if submit {
-						api.PrintResponse(response, err)
-					} // else nodeDeposit already printed the encoded transaction
 					return nil
 
 				},

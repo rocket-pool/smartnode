@@ -53,7 +53,7 @@ func (m *minipoolRefundManager) PrepareResponse(rp *rocketpool.RocketPool, bc be
 	return nil
 }
 
-func refundMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
+func refundMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoResponse, error) {
 	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 		return mpCommon.Refund(opts)
 	}, "refund")

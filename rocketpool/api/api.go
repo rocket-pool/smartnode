@@ -1,13 +1,13 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/rocketpool/api/debug"
+	"github.com/rocket-pool/smartnode/rocketpool/api/tx"
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/smartnode/rocketpool/api/auction"
 	"github.com/rocket-pool/smartnode/rocketpool/api/faucet"
 	"github.com/rocket-pool/smartnode/rocketpool/api/minipool"
@@ -29,7 +29,6 @@ const (
 
 // Waits for an auction transaction
 func waitForTransaction(c *cli.Context, hash common.Hash) (*apitypes.ApiResponse, error) {
-
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -37,19 +36,17 @@ func waitForTransaction(c *cli.Context, hash common.Hash) (*apitypes.ApiResponse
 
 	// Response
 	response := apitypes.ApiResponse{}
-	_, err = utils.WaitForTransaction(rp.Client, hash)
+	err = rp.WaitForTransactionByHash(hash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error waiting for transaction %s: %w", hash.Hex(), err)
 	}
 
 	// Return response
 	return &response, nil
-
 }
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-
 	// CLI command
 	command := cli.Command{
 		Name:        name,
@@ -71,14 +68,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	node.RegisterSubcommands(&command, "node", []string{"n"})
 	odao.RegisterSubcommands(&command, "odao", []string{"o"})
 	queue.RegisterSubcommands(&command, "queue", []string{"q"})
+	tx.RegisterSubcommands(&command, "tx", []string{"t"})
 	wallet.RegisterSubcommands(&command, "wallet", []string{"w"})
 	apiservice.RegisterSubcommands(&command, "service", []string{"s"})
-	debug.RegisterSubcommands(&command, "debug", []string{"d"})
 
 	// Append a general wait-for-transaction command to support async operations
 	command.Subcommands = append(command.Subcommands, cli.Command{
 		Name:      "wait",
-		Aliases:   []string{"t"},
 		Usage:     "Wait for a transaction to complete",
 		UsageText: "rocketpool api wait tx-hash",
 		Action: func(c *cli.Context) error {
@@ -104,5 +100,4 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	// The HTTP transport is set to cache connections for future re-use equal to the maximum expected number of concurrent requests
 	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
-
 }

@@ -102,19 +102,19 @@ func (m *minipoolDelegateManager) PrepareResponse(rp *rocketpool.RocketPool, bc 
 	return nil
 }
 
-func upgradeDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
+func upgradeDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoResponse, error) {
 	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 		return mpCommon.DelegateUpgrade(opts)
 	}, "upgrade-delegate")
 }
 
-func rollbackDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
+func rollbackDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoResponse, error) {
 	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 		return mpCommon.DelegateRollback(opts)
 	}, "rollback-delegate")
 }
 
-func setUseLatestDelegates(c *cli.Context, minipoolAddresses []common.Address, setting bool) (*api.BatchTxResponse, error) {
+func setUseLatestDelegates(c *cli.Context, minipoolAddresses []common.Address, setting bool) (*api.BatchTxInfoResponse, error) {
 	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 		return mpCommon.SetUseLatestDelegate(setting, opts)
 	}, "set-use-latest-delegate")

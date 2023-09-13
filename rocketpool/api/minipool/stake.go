@@ -87,7 +87,7 @@ func (m *minipoolStakeManager) PrepareResponse(rp *rocketpool.RocketPool, bc bea
 	return nil
 }
 
-func stakeMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
+func stakeMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func stakeMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.Ba
 	}
 
 	// Response
-	response := api.BatchTxResponse{}
+	response := api.BatchTxInfoResponse{}
 
 	// Get eth2 config
 	eth2Config, err := bc.GetEth2Config()

@@ -127,7 +127,7 @@ func (m *minipoolReduceBondManager) PrepareResponse(rp *rocketpool.RocketPool, b
 	return nil
 }
 
-func reduceBondAmounts(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
+func reduceBondAmounts(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoResponse, error) {
 	return createBatchTxResponseForV3(c, minipoolAddresses, func(mpv3 *minipool.MinipoolV3, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 		return mpv3.ReduceBondAmount(opts)
 	}, "reduce-bond")

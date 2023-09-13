@@ -136,7 +136,7 @@ func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.Minipoo
 	return details, nil
 }
 
-func distributeBalances(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
+func distributeBalances(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoResponse, error) {
 	return createBatchTxResponseForV3(c, minipoolAddresses, func(mpv3 *minipool.MinipoolV3, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 		return mpv3.DistributeBalance(opts, true)
 	}, "distribute-balance")

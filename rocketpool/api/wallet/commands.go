@@ -14,6 +14,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage the node wallet",
 		Subcommands: []cli.Command{
+			{
+				Name:      "create-next-pubkey",
+				Aliases:   []string{"s"},
+				Usage:     "Creates the next available pubkey for the node wallet, saves it, and updates the wallet on disk",
+				UsageText: "rocketpool api wallet create-next-pubkey",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(createNextPubkey(c))
+					return nil
+
+				},
+			},
 
 			{
 				Name:      "status",

@@ -5,23 +5,18 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 type nodeCreateVacantHandler struct {
-	bc         beacon.Client
 	amountWei  *big.Int
 	minNodeFee float64
 	salt       *big.Int
@@ -31,8 +26,10 @@ type nodeCreateVacantHandler struct {
 	mpMgr      *minipool.MinipoolManager
 }
 
-func (h *nodeCreateVacantHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+func (h *nodeCreateVacantHandler) CreateBindings(ctx *callContext) error {
+	rp := ctx.rp
 	var err error
+
 	h.pSettings, err = settings.NewProtocolDaoSettings(rp)
 	if err != nil {
 		return fmt.Errorf("error getting pDAO settings binding: %w", err)
@@ -48,14 +45,21 @@ func (h *nodeCreateVacantHandler) CreateBindings(rp *rocketpool.RocketPool) erro
 	return nil
 }
 
-func (h *nodeCreateVacantHandler) GetState(node *node.Node, mc *batch.MultiCaller) {
+func (h *nodeCreateVacantHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
+	node := ctx.node
 	node.GetEthMatched(mc)
 	node.GetEthMatchedLimit(mc)
 	h.pSettings.GetVacantMinipoolsEnabled(mc)
 	h.oSettings.GetPromotionScrubPeriod(mc)
 }
 
-func (h *nodeCreateVacantHandler) PrepareResponse(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, node *node.Node, opts *bind.TransactOpts, response *api.CreateVacantMinipoolResponse) error {
+func (h *nodeCreateVacantHandler) PrepareResponse(ctx *callContext, response *api.CreateVacantMinipoolResponse) error {
+	rp := ctx.rp
+	node := ctx.node
+	bc := ctx.bc
+	cfg := ctx.cfg
+	opts := ctx.opts
+
 	// Initial population
 	response.DepositDisabled = !h.pSettings.Details.Node.AreVacantMinipoolsEnabled
 	response.ScrubPeriod = h.oSettings.Details.Minipools.ScrubPeriod.Formatted()
@@ -97,7 +101,7 @@ func (h *nodeCreateVacantHandler) PrepareResponse(rp *rocketpool.RocketPool, cfg
 	response.CanDeposit = !(response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
 	if response.CanDeposit {
 		// Make sure ETH2 is on the correct chain
-		depositContractInfo, err := rputils.GetDepositContractInfoImpl(rp, cfg, h.bc)
+		depositContractInfo, err := rputils.GetDepositContractInfo(rp, cfg, bc)
 		if err != nil {
 			return fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
 		}
@@ -111,7 +115,7 @@ func (h *nodeCreateVacantHandler) PrepareResponse(rp *rocketpool.RocketPool, cfg
 		}
 
 		// Check if the pubkey is for an existing active_ongoing validator
-		validatorStatus, err := h.bc.GetValidatorStatus(h.pubkey, nil)
+		validatorStatus, err := bc.GetValidatorStatus(h.pubkey, nil)
 		if err != nil {
 			return fmt.Errorf("error checking status of existing validator: %w", err)
 		}
@@ -129,7 +133,7 @@ func (h *nodeCreateVacantHandler) PrepareResponse(rp *rocketpool.RocketPool, cfg
 		balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
 		balanceWei.Mul(balanceWei, big.NewInt(1e9))
 
-		// Run the deposit gas estimator
+		// Get tx info
 		txInfo, err := node.CreateVacantMinipool(h.amountWei, h.minNodeFee, h.pubkey, h.salt, response.MinipoolAddress, balanceWei, opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for CreateVacantMinipool: %w", err)

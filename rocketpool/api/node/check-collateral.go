@@ -1,13 +1,10 @@
 package node
 
 import (
+	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
@@ -15,18 +12,21 @@ import (
 type nodeCollateralHandler struct {
 }
 
-func (h *nodeCollateralHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+func (h *nodeCollateralHandler) CreateBindings(ctx *callContext) error {
 	return nil
 }
 
-func (h *nodeCollateralHandler) GetState(node *node.Node, mc *batch.MultiCaller) {
+func (h *nodeCollateralHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
 }
 
-func (h *nodeCollateralHandler) PrepareResponse(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, node *node.Node, opts *bind.TransactOpts, response *api.NodeCheckCollateralResponse) error {
+func (h *nodeCollateralHandler) PrepareResponse(ctx *callContext, response *api.NodeCheckCollateralResponse) error {
+	rp := ctx.rp
+	node := ctx.node
+
 	// Check collateral
 	collateral, err := rputils.CheckCollateral(rp, node.Details.Address, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("error checking node collateral: %w", err)
 	}
 	response.EthMatched = collateral.EthMatched
 	response.EthMatchedLimit = collateral.EthMatchedLimit

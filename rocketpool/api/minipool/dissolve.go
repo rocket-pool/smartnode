@@ -52,7 +52,7 @@ func (m *minipoolDissolveManager) PrepareResponse(rp *rocketpool.RocketPool, bc 
 	return nil
 }
 
-func dissolveMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
+func dissolveMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoResponse, error) {
 	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 		return mpCommon.Dissolve(opts)
 	}, "dissolve")

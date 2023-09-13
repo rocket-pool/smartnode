@@ -35,7 +35,7 @@ func getDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, e
 	response.SufficientSync = true
 
 	// Get the deposit contract info
-	info, err := rputils.GetDepositContractInfoImpl(rp, cfg, bc)
+	info, err := rputils.GetDepositContractInfo(rp, cfg, bc)
 	if err != nil {
 		return nil, fmt.Errorf("error getting deposit contract info: %w", err)
 	}

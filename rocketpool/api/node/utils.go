@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 )
@@ -22,13 +23,26 @@ import (
 // Wrapper for callbacks used by runNodeCallWithTx; this implements the caller-specific functionality
 type NodeCallHandler[responseType any] interface {
 	// Used to create supplemental contract bindings
-	CreateBindings(rp *rocketpool.RocketPool) error
+	CreateBindings(ctx *callContext) error
 
 	// Used to get any supplemental state required during initialization - anything in here will be fed into an rp.Query() multicall
-	GetState(node *node.Node, mc *batch.MultiCaller)
+	GetState(ctx *callContext, mc *batch.MultiCaller)
 
 	// Prepare the response object using all of the provided artifacts
-	PrepareResponse(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, node *node.Node, opts *bind.TransactOpts, response *responseType) error
+	PrepareResponse(ctx *callContext, response *responseType) error
+}
+
+// Context with services and common bindings for calls
+type callContext struct {
+	// Services
+	w    *wallet.Wallet
+	rp   *rocketpool.RocketPool
+	cfg  *config.RocketPoolConfig
+	bc   beacon.Client
+	opts *bind.TransactOpts
+
+	// Common Bindings
+	node *node.Node
 }
 
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable
@@ -71,15 +85,25 @@ func runNodeCall[responseType any](c *cli.Context, h NodeCallHandler[responseTyp
 		return nil, fmt.Errorf("error creating node %s binding: %w", nodeAccount.Address.Hex(), err)
 	}
 
+	// Create the context
+	context := &callContext{
+		w:    w,
+		rp:   rp,
+		cfg:  cfg,
+		bc:   bc,
+		opts: opts,
+		node: node,
+	}
+
 	// Supplemental function-specific bindings
-	err = h.CreateBindings(rp)
+	err = h.CreateBindings(context)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get contract state
 	err = rp.Query(func(mc *batch.MultiCaller) error {
-		h.GetState(node, mc)
+		h.GetState(context, mc)
 		return nil
 	}, nil)
 	if err != nil {
@@ -87,7 +111,7 @@ func runNodeCall[responseType any](c *cli.Context, h NodeCallHandler[responseTyp
 	}
 
 	// Supplemental function-specific response construction
-	err = h.PrepareResponse(rp, cfg, node, opts, response)
+	err = h.PrepareResponse(context, response)
 	if err != nil {
 		return nil, err
 	}

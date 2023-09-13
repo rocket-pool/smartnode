@@ -205,30 +205,25 @@ type NodeWithdrawRplResponse struct {
 	TxInfo *core.TransactionInfo `json:"txInfo"`
 }
 
-type CanNodeDepositResponse struct {
-	Status                           string         `json:"status"`
-	Error                            string         `json:"error"`
-	CanDeposit                       bool           `json:"canDeposit"`
-	CreditBalance                    *big.Int       `json:"creditBalance"`
-	DepositBalance                   *big.Int       `json:"depositBalance"`
-	CanUseCredit                     bool           `json:"canUseCredit"`
-	NodeBalance                      *big.Int       `json:"nodeBalance"`
-	InsufficientBalance              bool           `json:"insufficientBalance"`
-	InsufficientBalanceWithoutCredit bool           `json:"insufficientBalanceWithoutCredit"`
-	InsufficientRplStake             bool           `json:"insufficientRplStake"`
-	InvalidAmount                    bool           `json:"invalidAmount"`
-	UnbondedMinipoolsAtMax           bool           `json:"unbondedMinipoolsAtMax"`
-	DepositDisabled                  bool           `json:"depositDisabled"`
-	InConsensus                      bool           `json:"inConsensus"`
-	MinipoolAddress                  common.Address `json:"minipoolAddress"`
-}
 type NodeDepositResponse struct {
-	Status          string                  `json:"status"`
-	Error           string                  `json:"error"`
-	TxInfo          *core.TransactionInfo   `json:"txInfo"`
-	MinipoolAddress common.Address          `json:"minipoolAddress"`
-	ValidatorPubkey rptypes.ValidatorPubkey `json:"validatorPubkey"`
-	ScrubPeriod     time.Duration           `json:"scrubPeriod"`
+	Status                           string                  `json:"status"`
+	Error                            string                  `json:"error"`
+	CanDeposit                       bool                    `json:"canDeposit"`
+	CreditBalance                    *big.Int                `json:"creditBalance"`
+	DepositBalance                   *big.Int                `json:"depositBalance"`
+	CanUseCredit                     bool                    `json:"canUseCredit"`
+	NodeBalance                      *big.Int                `json:"nodeBalance"`
+	InsufficientBalance              bool                    `json:"insufficientBalance"`
+	InsufficientBalanceWithoutCredit bool                    `json:"insufficientBalanceWithoutCredit"`
+	InsufficientRplStake             bool                    `json:"insufficientRplStake"`
+	InvalidAmount                    bool                    `json:"invalidAmount"`
+	UnbondedMinipoolsAtMax           bool                    `json:"unbondedMinipoolsAtMax"`
+	DepositDisabled                  bool                    `json:"depositDisabled"`
+	InConsensus                      bool                    `json:"inConsensus"`
+	MinipoolAddress                  common.Address          `json:"minipoolAddress"`
+	ValidatorPubkey                  rptypes.ValidatorPubkey `json:"validatorPubkey"`
+	ScrubPeriod                      time.Duration           `json:"scrubPeriod"`
+	TxInfo                           *core.TransactionInfo   `json:"txInfo"`
 }
 
 type CreateVacantMinipoolResponse struct {

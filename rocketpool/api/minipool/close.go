@@ -164,7 +164,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, ba
 	return details, nil
 }
 
-func closeMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxResponse, error) {
+func closeMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func closeMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.Ba
 	}
 
 	// Response
-	response := api.BatchTxResponse{}
+	response := api.BatchTxInfoResponse{}
 
 	// Create minipools
 	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
