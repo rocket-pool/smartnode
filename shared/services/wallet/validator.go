@@ -2,13 +2,11 @@ package wallet
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/rocket-pool/rocketpool-go/types"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2util "github.com/wealdtech/go-eth2-util"
@@ -29,20 +27,21 @@ type ValidatorKey struct {
 
 // Get the number of validator keys recorded in the wallet
 func (w *LocalWallet) GetValidatorKeyCount() (uint, error) {
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return 0, errors.New("Wallet is not initialized")
+	err := w.checkIfReady()
+	if err != nil {
+		return 0, err
 	}
 
 	// Return validator key count
-	return w.keystoreManager.data.NextAccount, nil
+	keystore, _ := w.keystoreManager.Get()
+	return keystore.NextAccount, nil
 }
 
 // Get a validator key by index
 func (w *LocalWallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error) {
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
+	err := w.checkIfReady()
+	if err != nil {
+		return nil, err
 	}
 
 	// Return validator key
@@ -51,10 +50,10 @@ func (w *LocalWallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, e
 }
 
 // Get a validator key by public key
-func (w *LocalWallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
+func (w *LocalWallet) GetValidatorKeyByPubkey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+	err := w.checkIfReady()
+	if err != nil {
+		return nil, err
 	}
 
 	// Load the key from the wallet's keystores
@@ -63,14 +62,15 @@ func (w *LocalWallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*
 
 // Create a new validator key
 func (w *LocalWallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
+	err := w.checkIfReady()
+	if err != nil {
+		return nil, err
 	}
 
 	// Get & increment account index
-	index := w.keystoreManager.data.NextAccount
-	w.keystoreManager.data.NextAccount++
+	keystore, _ := w.keystoreManager.Get()
+	index := keystore.NextAccount
+	keystore.NextAccount++
 
 	// Get validator key
 	key, path, err := w.getValidatorPrivateKey(index)
@@ -93,7 +93,7 @@ func (w *LocalWallet) StoreValidatorKey(key *eth2types.BLSPrivateKey, path strin
 	for name := range w.validatorKeystores {
 		// Update the keystore in the wallet - using an iterator variable only runs it on the local copy
 		if err := w.validatorKeystores[name].StoreValidatorKey(key, path); err != nil {
-			return fmt.Errorf("Could not store %s validator key: %w", name, err)
+			return fmt.Errorf("error storing %s validator key: %w", name, err)
 		}
 	}
 
@@ -139,13 +139,14 @@ func (w *LocalWallet) DeleteValidatorStores() error {
 
 // Returns the next validator key that will be generated without saving it
 func (w *LocalWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
+	err := w.checkIfReady()
+	if err != nil {
+		return nil, err
 	}
 
 	// Get account index
-	index := w.keystoreManager.data.NextAccount
+	keystore, _ := w.keystoreManager.Get()
+	index := keystore.NextAccount
 
 	// Get validator key
 	key, _, err := w.getValidatorPrivateKey(index)
@@ -159,9 +160,9 @@ func (w *LocalWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
 
 // Recover a set of validator keys by their public key
 func (w *LocalWallet) GetValidatorKeys(startIndex uint, length uint) ([]ValidatorKey, error) {
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
+	err := w.checkIfReady()
+	if err != nil {
+		return nil, err
 	}
 
 	validatorKeys := make([]ValidatorKey, 0, length)
@@ -184,9 +185,14 @@ func (w *LocalWallet) GetValidatorKeys(startIndex uint, length uint) ([]Validato
 
 // Save a validator key
 func (w *LocalWallet) SaveValidatorKey(key ValidatorKey) error {
+	keystore, isSet := w.keystoreManager.Get()
+	if !isSet {
+		return fmt.Errorf("wallet keystore has not been set yet")
+	}
+
 	// Update account index
-	if key.WalletIndex >= w.keystoreManager.data.NextAccount {
-		w.keystoreManager.data.NextAccount = key.WalletIndex + 1
+	if key.WalletIndex >= keystore.NextAccount {
+		keystore.NextAccount = key.WalletIndex + 1
 	}
 
 	// Update keystores
@@ -202,10 +208,10 @@ func (w *LocalWallet) SaveValidatorKey(key ValidatorKey) error {
 }
 
 // Recover a validator key by public key
-func (w *LocalWallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error) {
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return 0, errors.New("Wallet is not initialized")
+func (w *LocalWallet) RecoverValidatorKey(pubkey types.ValidatorPubkey, startIndex uint) (uint, error) {
+	err := w.checkIfReady()
+	if err != nil {
+		return 0, err
 	}
 
 	// Find matching validator key
@@ -224,20 +230,21 @@ func (w *LocalWallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startI
 
 	// Check validator key
 	if validatorKey == nil {
-		return 0, fmt.Errorf("Validator %s key not found", pubkey.Hex())
+		return 0, fmt.Errorf("validator %s key not found", pubkey.Hex())
 	}
 
 	// Update account index
+	keystore, _ := w.keystoreManager.Get()
 	nextIndex := index + startIndex + 1
-	if nextIndex > w.keystoreManager.data.NextAccount {
-		w.keystoreManager.data.NextAccount = nextIndex
+	if nextIndex > keystore.NextAccount {
+		keystore.NextAccount = nextIndex
 	}
 
 	// Update keystores
 	for name := range w.validatorKeystores {
 		// Update the keystore in the wallet - using an iterator variable only runs it on the local copy
 		if err := w.validatorKeystores[name].StoreValidatorKey(validatorKey, derivationPath); err != nil {
-			return 0, fmt.Errorf("Could not store %s validator key: %w", name, err)
+			return 0, fmt.Errorf("error storing %s validator key: %w", name, err)
 		}
 	}
 
@@ -246,10 +253,10 @@ func (w *LocalWallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startI
 }
 
 // Test recovery of a validator key by public key
-func (w *LocalWallet) TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error) {
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return 0, errors.New("Wallet is not initialized")
+func (w *LocalWallet) TestRecoverValidatorKey(pubkey types.ValidatorPubkey, startIndex uint) (uint, error) {
+	err := w.checkIfReady()
+	if err != nil {
+		return 0, err
 	}
 
 	// Find matching validator key
@@ -266,7 +273,7 @@ func (w *LocalWallet) TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, st
 
 	// Check validator key
 	if validatorKey == nil {
-		return 0, fmt.Errorf("Validator %s key not found", pubkey.Hex())
+		return 0, fmt.Errorf("validator %s key not found", pubkey.Hex())
 	}
 
 	// Return
@@ -285,13 +292,13 @@ func (w *LocalWallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateK
 
 	// Initialize BLS support
 	if err := validator.InitializeBLS(); err != nil {
-		return nil, "", fmt.Errorf("Could not initialize BLS library: %w", err)
+		return nil, "", fmt.Errorf("error initializing BLS library: %w", err)
 	}
 
 	// Get private key
 	privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, derivationPath)
 	if err != nil {
-		return nil, "", fmt.Errorf("Could not get validator %d private key: %w", index, err)
+		return nil, "", fmt.Errorf("error getting validator %d private key: %w", index, err)
 	}
 
 	// Cache validator key
@@ -299,4 +306,22 @@ func (w *LocalWallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateK
 
 	// Return
 	return privateKey, derivationPath, nil
+}
+
+func (w *LocalWallet) checkIfReady() error {
+	status := w.GetStatus()
+	switch status {
+	case WalletStatus_NoAddress:
+		return fmt.Errorf("node wallet does not have an address loaded - please create or recover a node wallet")
+	case WalletStatus_NoKeystore:
+		return fmt.Errorf("cannot process validator keys because no keystore is loaded")
+	case WalletStatus_NoPassword:
+		return fmt.Errorf("cannot process validator keys because no password is loaded for the wallet")
+	case WalletStatus_KeystoreMismatch:
+		return fmt.Errorf("cannot process validator keys because the keystore is for a different wallet than the node address")
+	case WalletStatus_Ready:
+		return nil
+	default:
+		return fmt.Errorf("unknown wallet status %v", status)
+	}
 }

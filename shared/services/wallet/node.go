@@ -40,16 +40,21 @@ func (w *LocalWallet) GetNodePrivateKeyBytes() []byte {
 
 // Get the derived key & derivation path for the node account at the index
 func (w *LocalWallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string, error) {
-	// Get the derivation path
-	if w.keystoreManager.data.DerivationPath == "" {
-		w.keystoreManager.data.DerivationPath = DefaultNodeKeyPath
+	keystore, isSet := w.keystoreManager.Get()
+	if !isSet {
+		return nil, "", fmt.Errorf("wallet keystore has not been set")
 	}
-	derivationPath := fmt.Sprintf(w.keystoreManager.data.DerivationPath, index)
+
+	// Get the derivation path
+	if keystore.DerivationPath == "" {
+		keystore.DerivationPath = DefaultNodeKeyPath
+	}
+	derivationPath := fmt.Sprintf(keystore.DerivationPath, index)
 
 	// Parse derivation path
 	path, err := accounts.ParseDerivationPath(derivationPath)
 	if err != nil {
-		return nil, "", fmt.Errorf("Invalid node key derivation path '%s': %w", derivationPath, err)
+		return nil, "", fmt.Errorf("invalid node key derivation path '%s': %w", derivationPath, err)
 	}
 
 	// Follow derivation path
@@ -65,7 +70,7 @@ func (w *LocalWallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, st
 		if err == hdkeychain.ErrInvalidChild {
 			return w.getNodeDerivedKey(index + 1)
 		} else if err != nil {
-			return nil, "", fmt.Errorf("Invalid child key at depth %d: %w", i, err)
+			return nil, "", fmt.Errorf("invalid child key at depth %d: %w", i, err)
 		}
 	}
 

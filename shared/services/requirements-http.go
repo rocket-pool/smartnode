@@ -1,1 +1,3 @@
 package services
+
+func IsNodePasswordSet

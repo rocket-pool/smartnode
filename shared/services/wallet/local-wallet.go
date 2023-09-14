@@ -3,7 +3,6 @@ package wallet
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"io/fs"
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
@@ -17,15 +16,12 @@ import (
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
+	"github.com/rocket-pool/smartnode/shared/services/wallet/data"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
 
 // Config
 const (
-	passwordFileMode       fs.FileMode = 0600
-	walletKeystoreFileMode fs.FileMode = 0600
-	walletAddressFileMode  fs.FileMode = 0664
-
 	EntropyBits              = 256
 	FileMode                 = 0600
 	DefaultNodeKeyPath       = "m/44'/60'/0'/0/%d"
@@ -47,9 +43,9 @@ const (
 // LocalWallet
 type LocalWallet struct {
 	// Managers
-	addressManager  *FileManager[common.Address]
-	keystoreManager *FileManager[*WalletKeystoreFile]
-	passwordManager *FileManager[[]byte]
+	addressManager  *data.DataManager[common.Address]
+	keystoreManager *data.DataManager[*data.WalletKeystoreFile]
+	passwordManager *data.DataManager[[]byte]
 
 	// Node private key info
 	encryptor      *eth2ks.Encryptor
@@ -71,9 +67,9 @@ func NewLocalWallet(walletKeystorePath string, walletAddressPath string, passwor
 	// Create the wallet
 	w := &LocalWallet{
 		// Create managers
-		addressManager:  NewFileManager[common.Address]("wallet address", walletAddressPath, walletAddressFileMode, WalletAddressSerializer{}),
-		keystoreManager: NewFileManager[*WalletKeystoreFile]("wallet keystore", walletKeystorePath, walletKeystoreFileMode, WalletKeystoreSerializer{}),
-		passwordManager: NewFileManager[[]byte]("password", passwordFilePath, passwordFileMode, PasswordSerializer{}),
+		addressManager:  data.NewAddressManager(walletAddressPath),
+		keystoreManager: data.NewKeystoreManager(walletKeystorePath),
+		passwordManager: data.NewPasswordManager(passwordFilePath),
 
 		// Initialize other fields
 		encryptor:          eth2ks.New(),
@@ -163,13 +159,16 @@ func (w *LocalWallet) AddValidatorKeystore(name string, ks keystore.Keystore) {
 // Serialize the wallet keystore to a JSON string
 func (w *LocalWallet) String() (string, error) {
 	// Encode the wallet keystore
-	bytes, err := w.keystoreManager.serializer.Serialize(w.keystoreManager.data)
+	keystoreString, isSet, err := w.keystoreManager.String()
 	if err != nil {
 		return "", fmt.Errorf("error serializing wallet keystore into a string: %w", err)
 	}
+	if !isSet {
+		return "", fmt.Errorf("wallet keystore has not been set yet")
+	}
 
 	// Return
-	return string(bytes), nil
+	return keystoreString, nil
 }
 
 // Initialize the wallet from a random seed
@@ -245,6 +244,16 @@ func (w *LocalWallet) DeletePassword() error {
 	return nil
 }
 
+// Delete the wallet keystore from disk and purge it from memory
+func (w *LocalWallet) DeleteKeystore() error {
+	w.keystoreManager.Clear()
+	err := w.keystoreManager.Delete()
+	if err != nil {
+		return fmt.Errorf("error deleting wallet keystore: %w", err)
+	}
+	return nil
+}
+
 // Signs a serialized TX using the wallet's private key
 func (w *LocalWallet) Sign(serializedTx []byte) ([]byte, error) {
 	tx := types.Transaction{}
@@ -305,7 +314,7 @@ func (w *LocalWallet) initializeKeystore(derivationPath string, walletIndex uint
 	}
 
 	// Create a new wallet keystore
-	keystore := &WalletKeystoreFile{
+	keystore := &data.WalletKeystoreFile{
 		Crypto:         encryptedSeed,
 		Name:           w.encryptor.Name(),
 		Version:        w.encryptor.Version(),
@@ -316,7 +325,8 @@ func (w *LocalWallet) initializeKeystore(derivationPath string, walletIndex uint
 	}
 
 	// Save it
-	err = w.keystoreManager.SetAndSave(keystore)
+	w.keystoreManager.Set(keystore)
+	err = w.keystoreManager.Save()
 	if err != nil {
 		return fmt.Errorf("error saving new wallet keystore: %w", err)
 	}
@@ -330,7 +340,7 @@ func (w *LocalWallet) initializeKeystore(derivationPath string, walletIndex uint
 }
 
 // Load the node wallet's private key from the keystore on disk
-func (w *LocalWallet) loadKeyFromKeystore(keystore *WalletKeystoreFile, password []byte, updateAddressFile bool) error {
+func (w *LocalWallet) loadKeyFromKeystore(keystore *data.WalletKeystoreFile, password []byte, updateAddressFile bool) error {
 	// Upgrade legacy wallets to include derivation paths
 	if keystore.DerivationPath == "" {
 		keystore.DerivationPath = DefaultNodeKeyPath
@@ -371,7 +381,8 @@ func (w *LocalWallet) loadKeyFromKeystore(keystore *WalletKeystoreFile, password
 
 	if updateAddressFile {
 		// Set the address to the derived address and save it
-		err = w.addressManager.SetAndSave(derivedAddress)
+		w.addressManager.Set(derivedAddress)
+		err = w.addressManager.Save()
 		if err != nil {
 			return fmt.Errorf("error saving wallet address file for address derived from keystore (%s): %w", derivedAddress.Hex(), err)
 		}

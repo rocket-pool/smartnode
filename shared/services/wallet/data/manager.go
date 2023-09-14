@@ -1,4 +1,4 @@
-package wallet
+package data
 
 import (
 	"fmt"
@@ -7,20 +7,20 @@ import (
 )
 
 // File manager
-type FileManager[DataType any] struct {
+type DataManager[DataType any] struct {
 	name          string
 	path          string
 	fileMode      fs.FileMode
-	serializer    FileSerializer[DataType]
+	serializer    dataSerializer[DataType]
 	isInitialized bool
 	data          DataType
 	hasValue      bool
 }
 
-// Create a new general file manager
-func NewFileManager[DataType any](name string, path string, fileMode fs.FileMode, serializer FileSerializer[DataType]) *FileManager[DataType] {
+// Create a new general data manager that can load from and save to a file
+func NewDataManager[DataType any](name string, path string, fileMode fs.FileMode, serializer dataSerializer[DataType]) *DataManager[DataType] {
 	var data DataType
-	return &FileManager[DataType]{
+	return &DataManager[DataType]{
 		name:          name,
 		path:          path,
 		fileMode:      fileMode,
@@ -31,12 +31,12 @@ func NewFileManager[DataType any](name string, path string, fileMode fs.FileMode
 }
 
 // Checks whether or not a value has been set
-func (m *FileManager[DataType]) HasValue() bool {
+func (m *DataManager[DataType]) HasValue() bool {
 	return m.hasValue
 }
 
 // Get the data - if it isn't loaded yet, read it from disk
-func (m *FileManager[DataType]) InitializeData() (DataType, bool, error) {
+func (m *DataManager[DataType]) InitializeData() (DataType, bool, error) {
 	// Done if it's already initialized
 	if m.isInitialized {
 		return m.data, true, nil
@@ -59,7 +59,7 @@ func (m *FileManager[DataType]) InitializeData() (DataType, bool, error) {
 	}
 
 	// Deserialize
-	m.data, err = m.serializer.Deserialize(value)
+	m.data, err = m.serializer.deserialize(value)
 	if err != nil {
 		return m.data, false, fmt.Errorf("error deserializing %s file: %w", m.name, err)
 	}
@@ -69,19 +69,33 @@ func (m *FileManager[DataType]) InitializeData() (DataType, bool, error) {
 }
 
 // Gets the data and whether or not it's been set
-func (m *FileManager[DataType]) Get() (DataType, bool) {
+func (m *DataManager[DataType]) Get() (DataType, bool) {
 	return m.data, m.hasValue
 }
 
+// Gets the data as a string, and whether or not it's been set
+func (m *DataManager[DataType]) String() (string, bool, error) {
+	if m.hasValue {
+		// Serialize the data
+		bytes, err := m.serializer.serialize(m.data)
+		if err != nil {
+			return "", true, fmt.Errorf("error serializing %s data: %w", m.name, err)
+		}
+
+		return string(bytes), true, nil
+	}
+	return "", false, nil
+}
+
 // Sets the data value
-func (m *FileManager[DataType]) Set(data DataType) {
+func (m *DataManager[DataType]) Set(data DataType) {
 	m.data = data
 	m.hasValue = true
 	m.isInitialized = true
 }
 
 // Clears the data value, setting it to the data type's default value
-func (m *FileManager[DataType]) Clear() {
+func (m *DataManager[DataType]) Clear() {
 	var data DataType
 	m.data = data
 	m.hasValue = false
@@ -89,9 +103,13 @@ func (m *FileManager[DataType]) Clear() {
 }
 
 // Stores the data to disk
-func (m *FileManager[DataType]) Save() error {
+func (m *DataManager[DataType]) Save() error {
+	if !m.hasValue {
+		return fmt.Errorf("data has not been set")
+	}
+
 	// Serialize the data
-	bytes, err := m.serializer.Serialize(m.data)
+	bytes, err := m.serializer.serialize(m.data)
 	if err != nil {
 		return fmt.Errorf("error serializing %s data: %w", m.name, err)
 	}
@@ -106,18 +124,8 @@ func (m *FileManager[DataType]) Save() error {
 	return nil
 }
 
-// Sets the data and stores it to disk
-func (m *FileManager[DataType]) SetAndSave(data DataType) error {
-	m.Set(data)
-	err := m.Save()
-	if err != nil {
-		return fmt.Errorf("error saving data: %w", err)
-	}
-	return nil
-}
-
 // Delete the file from disk
-func (m *FileManager[DataType]) Delete() error {
+func (m *DataManager[DataType]) Delete() error {
 	if m.path == "" {
 		return nil
 	}
