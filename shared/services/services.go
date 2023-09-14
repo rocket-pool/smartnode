@@ -17,7 +17,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
-	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	lhkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 	lokeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lodestar"
@@ -38,7 +37,6 @@ const (
 // Service instances & initializers
 var (
 	cfg                *config.RocketPoolConfig
-	passwordManager    *passwords.PasswordManager
 	nodeWallet         *wallet.LocalWallet
 	ecManager          *ExecutionClientManager
 	bcManager          *BeaconClientManager
@@ -69,21 +67,12 @@ func GetConfig(c *cli.Context) (*config.RocketPoolConfig, error) {
 	return getConfig(c)
 }
 
-func GetPasswordManager(c *cli.Context) (*passwords.PasswordManager, error) {
-	cfg, err := getConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	return getPasswordManager(cfg), nil
-}
-
 func GetWallet(c *cli.Context) (*wallet.LocalWallet, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
 	}
-	pm := getPasswordManager(cfg)
-	return getWallet(c, cfg, pm)
+	return getWallet(c, cfg)
 }
 
 func GetEthClient(c *cli.Context) (*ExecutionClientManager, error) {
@@ -169,14 +158,7 @@ func getConfig(c *cli.Context) (*config.RocketPoolConfig, error) {
 	return cfg, err
 }
 
-func getPasswordManager(cfg *config.RocketPoolConfig) *passwords.PasswordManager {
-	initPasswordManager.Do(func() {
-		passwordManager = passwords.NewPasswordManager(os.ExpandEnv(cfg.Smartnode.GetPasswordPath()))
-	})
-	return passwordManager
-}
-
-func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.LocalWallet, error) {
+func getWallet(c *cli.Context, cfg *config.RocketPoolConfig) (*wallet.LocalWallet, error) {
 	var err error
 	initNodeWallet.Do(func() {
 		var maxFee *big.Int
@@ -205,16 +187,16 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 		}
 
 		// Keystores
-		lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
-		lodestarKeystore := lokeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
-		nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
-		prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
-		tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
-		nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
-		nodeWallet.AddKeystore("lodestar", lodestarKeystore)
-		nodeWallet.AddKeystore("nimbus", nimbusKeystore)
-		nodeWallet.AddKeystore("prysm", prysmKeystore)
-		nodeWallet.AddKeystore("teku", tekuKeystore)
+		lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()))
+		lodestarKeystore := lokeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()))
+		nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()))
+		prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()))
+		tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()))
+		nodeWallet.AddValidatorKeystore("lighthouse", lighthouseKeystore)
+		nodeWallet.AddValidatorKeystore("lodestar", lodestarKeystore)
+		nodeWallet.AddValidatorKeystore("nimbus", nimbusKeystore)
+		nodeWallet.AddValidatorKeystore("prysm", prysmKeystore)
+		nodeWallet.AddValidatorKeystore("teku", tekuKeystore)
 	})
 	return nodeWallet, err
 }

@@ -12,7 +12,6 @@ import (
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
-	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	keystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
@@ -30,7 +29,6 @@ const (
 // Lodestar keystore
 type Keystore struct {
 	keystorePath string
-	pm           *passwords.PasswordManager
 	encryptor    *eth2ks.Encryptor
 }
 
@@ -44,10 +42,9 @@ type validatorKey struct {
 }
 
 // Create new lodestar keystore
-func NewKeystore(keystorePath string, passwordManager *passwords.PasswordManager) *Keystore {
+func NewKeystore(keystorePath string) *Keystore {
 	return &Keystore{
 		keystorePath: keystorePath,
-		pm:           passwordManager,
 		encryptor:    eth2ks.New(eth2ks.WithCipher("scrypt")),
 	}
 }

@@ -2,8 +2,6 @@ package wallet
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -13,119 +11,40 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-// Get the node account
-func (w *LocalWallet) GetNodeAccount() (accounts.Account, error) {
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return accounts.Account{}, errors.New("Wallet is not initialized")
-	}
-
-	// Get private key
-	privateKey, path, err := w.getNodePrivateKey()
-	if err != nil {
-		return accounts.Account{}, err
-	}
-
-	// Get public key
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return accounts.Account{}, errors.New("Could not get node public key")
-	}
-
-	// Create & return account
-	return accounts.Account{
-		Address: crypto.PubkeyToAddress(*publicKeyECDSA),
-		URL: accounts.URL{
-			Scheme: "",
-			Path:   path,
-		},
-	}, nil
-
-}
-
 // Get a transactor for the node account
 func (w *LocalWallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
+	status := w.GetStatus()
+	switch status {
+	case WalletStatus_NoAddress:
+		return nil, fmt.Errorf("node wallet does not have an address loaded - please create or recover a node wallet")
+	case WalletStatus_NoKeystore:
+		return nil, fmt.Errorf("node wallet is in read-only mode; it cannot transact because no keystore is loaded")
+	case WalletStatus_NoPassword:
+		return nil, fmt.Errorf("node wallet is in read-only mode; no password is loaded for the wallet")
+	case WalletStatus_KeystoreMismatch:
+		return nil, fmt.Errorf("node wallet is in read-only mode; the keystore is for a different wallet than the one it is using")
+	case WalletStatus_Ready:
+		transactor, err := bind.NewKeyedTransactorWithChainID(w.nodePrivateKey, w.chainID)
+		transactor.Context = context.Background()
+		return transactor, err
+	default:
+		return nil, fmt.Errorf("unknown wallet status %v", status)
 	}
-
-	// Get private key
-	privateKey, _, err := w.getNodePrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
-	// Create & return transactor
-	transactor, err := bind.NewKeyedTransactorWithChainID(privateKey, w.chainID)
-	transactor.GasFeeCap = w.maxFee
-	transactor.GasTipCap = w.maxPriorityFee
-	transactor.GasLimit = w.gasLimit
-	transactor.Context = context.Background()
-	return transactor, err
-
 }
 
 // Get the node account private key bytes
-func (w *LocalWallet) GetNodePrivateKeyBytes() ([]byte, error) {
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
-	}
-
-	// Get private key
-	privateKey, _, err := w.getNodePrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
+func (w *LocalWallet) GetNodePrivateKeyBytes() []byte {
 	// Return private key bytes
-	return crypto.FromECDSA(privateKey), nil
-
-}
-
-// Get the node private key
-func (w *LocalWallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
-
-	// Check for cached node key
-	if w.nodeKey != nil {
-		return w.nodeKey, w.nodeKeyPath, nil
-	}
-
-	// Get derived key
-	derivedKey, path, err := w.getNodeDerivedKey(w.ws.WalletIndex)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// Get private key
-	privateKey, err := derivedKey.ECPrivKey()
-	if err != nil {
-		return nil, "", fmt.Errorf("Could not get node private key: %w", err)
-	}
-	privateKeyECDSA := privateKey.ToECDSA()
-
-	// Cache node key
-	w.nodeKey = privateKeyECDSA
-	w.nodeKeyPath = path
-
-	// Return
-	return privateKeyECDSA, path, nil
-
+	return crypto.FromECDSA(w.nodePrivateKey)
 }
 
 // Get the derived key & derivation path for the node account at the index
 func (w *LocalWallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string, error) {
-
-	// Get derivation path
-	if w.ws.DerivationPath == "" {
-		w.ws.DerivationPath = DefaultNodeKeyPath
+	// Get the derivation path
+	if w.keystoreManager.data.DerivationPath == "" {
+		w.keystoreManager.data.DerivationPath = DefaultNodeKeyPath
 	}
-	derivationPath := fmt.Sprintf(w.ws.DerivationPath, index)
+	derivationPath := fmt.Sprintf(w.keystoreManager.data.DerivationPath, index)
 
 	// Parse derivation path
 	path, err := accounts.ParseDerivationPath(derivationPath)
@@ -134,7 +53,7 @@ func (w *LocalWallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, st
 	}
 
 	// Follow derivation path
-	key := w.mk
+	key := w.masterKey
 	for i, n := range path {
 		// Use the legacy implementation for Goerli
 		// TODO: remove this if Prater ever goes away!
@@ -152,5 +71,4 @@ func (w *LocalWallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, st
 
 	// Return
 	return key, derivationPath, nil
-
 }

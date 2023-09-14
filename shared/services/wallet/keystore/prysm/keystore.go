@@ -13,8 +13,6 @@ import (
 	rpkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
-
-	"github.com/rocket-pool/smartnode/shared/services/passwords"
 )
 
 // Config
@@ -34,7 +32,6 @@ const (
 // Prysm keystore
 type Keystore struct {
 	keystorePath string
-	pm           *passwords.PasswordManager
 	as           *accountStore
 	encryptor    *eth2ks.Encryptor
 }
@@ -58,10 +55,9 @@ type walletConfig struct {
 }
 
 // Create new prysm keystore
-func NewKeystore(keystorePath string, passwordManager *passwords.PasswordManager) *Keystore {
+func NewKeystore(keystorePath string) *Keystore {
 	return &Keystore{
 		keystorePath: keystorePath,
-		pm:           passwordManager,
 		encryptor:    eth2ks.New(),
 	}
 }

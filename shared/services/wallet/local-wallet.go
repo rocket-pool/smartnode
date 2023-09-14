@@ -2,28 +2,30 @@ package wallet
 
 import (
 	"crypto/ecdsa"
-	"errors"
 	"fmt"
+	"io/fs"
 	"math/big"
-	"os"
 
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/tyler-smith/go-bip39"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
-	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
 
 // Config
 const (
+	passwordFileMode       fs.FileMode = 0600
+	walletKeystoreFileMode fs.FileMode = 0600
+	walletAddressFileMode  fs.FileMode = 0664
+
 	EntropyBits              = 256
 	FileMode                 = 0600
 	DefaultNodeKeyPath       = "m/44'/60'/0'/0/%d"
@@ -31,72 +33,90 @@ const (
 	MyEtherWalletNodeKeyPath = "m/44'/60'/0'/%d"
 )
 
+type WalletStatus int
+
+const (
+	WalletStatus_Unknown          WalletStatus = iota
+	WalletStatus_Ready            WalletStatus = iota
+	WalletStatus_NoAddress        WalletStatus = iota
+	WalletStatus_NoKeystore       WalletStatus = iota
+	WalletStatus_NoPassword       WalletStatus = iota
+	WalletStatus_KeystoreMismatch WalletStatus = iota
+)
+
 // LocalWallet
 type LocalWallet struct {
-	// Core
-	walletPath string
-	pm         *passwords.PasswordManager
-	encryptor  *eth2ks.Encryptor
-	chainID    *big.Int
+	// Managers
+	addressManager  *FileManager[common.Address]
+	keystoreManager *FileManager[*WalletKeystoreFile]
+	passwordManager *FileManager[[]byte]
 
-	// Encrypted store
-	ws *localWalletStore
+	// Node private key info
+	encryptor      *eth2ks.Encryptor
+	seed           []byte
+	masterKey      *hdkeychain.ExtendedKey
+	nodePrivateKey *ecdsa.PrivateKey
+	nodeKeyPath    string
 
-	// Seed & master key
-	seed []byte
-	mk   *hdkeychain.ExtendedKey
+	// Validator keys
+	validatorKeys      map[uint]*eth2types.BLSPrivateKey
+	validatorKeystores map[string]keystore.Keystore
 
-	// Node key cache
-	nodeKey     *ecdsa.PrivateKey
-	nodeKeyPath string
-
-	// Validator key caches
-	validatorKeys map[uint]*eth2types.BLSPrivateKey
-
-	// Keystores
-	keystores map[string]keystore.Keystore
-
-	// Desired gas price & limit from config
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
-}
-
-// Encrypted wallet store
-type localWalletStore struct {
-	Crypto         map[string]interface{} `json:"crypto"`
-	Name           string                 `json:"name"`
-	Version        uint                   `json:"version"`
-	UUID           uuid.UUID              `json:"uuid"`
-	DerivationPath string                 `json:"derivationPath,omitempty"`
-	WalletIndex    uint                   `json:"walletIndex,omitempty"`
-	NextAccount    uint                   `json:"next_account"`
+	// Misc cache
+	chainID *big.Int
 }
 
 // Create new wallet
-func NewLocalWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager) (*LocalWallet, error) {
-
-	// Initialize wallet
+func NewLocalWallet(walletKeystorePath string, walletAddressPath string, passwordFilePath string, chainID uint, init bool) (*LocalWallet, error) {
+	// Create the wallet
 	w := &LocalWallet{
-		walletPath:     walletPath,
-		pm:             passwordManager,
-		encryptor:      eth2ks.New(),
-		chainID:        big.NewInt(int64(chainId)),
-		validatorKeys:  map[uint]*eth2types.BLSPrivateKey{},
-		keystores:      map[string]keystore.Keystore{},
-		maxFee:         maxFee,
-		maxPriorityFee: maxPriorityFee,
-		gasLimit:       gasLimit,
+		// Create managers
+		addressManager:  NewFileManager[common.Address]("wallet address", walletAddressPath, walletAddressFileMode, WalletAddressSerializer{}),
+		keystoreManager: NewFileManager[*WalletKeystoreFile]("wallet keystore", walletKeystorePath, walletKeystoreFileMode, WalletKeystoreSerializer{}),
+		passwordManager: NewFileManager[[]byte]("password", passwordFilePath, passwordFileMode, PasswordSerializer{}),
+
+		// Initialize other fields
+		encryptor:          eth2ks.New(),
+		validatorKeys:      map[uint]*eth2types.BLSPrivateKey{},
+		validatorKeystores: map[string]keystore.Keystore{},
+		chainID:            big.NewInt(int64(chainID)),
 	}
 
-	// Load & decrypt wallet store
-	if _, err := w.loadStore(); err != nil {
-		return nil, err
-	}
+	// Initialize it
+	if init {
+		// Load the files from disk
+		_, addressFileExists, err := w.addressManager.InitializeData()
+		if err != nil {
+			return nil, fmt.Errorf("error getting wallet address: %w", err)
+		}
+		keystore, keystoreFileExists, err := w.keystoreManager.InitializeData()
+		if err != nil {
+			return nil, fmt.Errorf("error getting wallet keystore: %w", err)
+		}
+		password, passwordFileExists, err := w.passwordManager.InitializeData()
+		if err != nil {
+			return nil, fmt.Errorf("error getting wallet password: %w", err)
+		}
 
-	// Return
+		// Load the keystore if possible and compare it to the node address
+		if keystoreFileExists {
+			// If there's no password, don't load the keystore
+			if !passwordFileExists {
+				return w, nil
+			}
+
+			// Load the keystore, saving the address file if it doesn't exist
+			err = w.loadKeyFromKeystore(keystore, password, !addressFileExists)
+			if err != nil {
+				return nil, fmt.Errorf("error loading wallet key from keystore: %w", err)
+			}
+
+		}
+		if err != nil {
+			return nil, fmt.Errorf("error initializing wallet: %w", err)
+		}
+	}
 	return w, nil
-
 }
 
 // Gets the wallet's chain ID
@@ -105,186 +125,136 @@ func (w *LocalWallet) GetChainID() *big.Int {
 	return copy
 }
 
-// Add a keystore to the wallet
-func (w *LocalWallet) AddKeystore(name string, ks keystore.Keystore) {
-	w.keystores[name] = ks
-}
+// Gets the status of the wallet and its artifacts
+func (w *LocalWallet) GetStatus() WalletStatus {
+	// Get the data and its existence
+	address, hasAddress := w.addressManager.Get()
+	_, hasKeystore := w.keystoreManager.Get()
+	_, hasPassword := w.passwordManager.Get()
 
-// Check if the wallet has been initialized
-func (w *LocalWallet) IsInitialized() bool {
-	return (w.ws != nil && w.seed != nil && w.mk != nil)
-}
-
-// Attempt to initialize the wallet if not initialized and return status
-func (w *LocalWallet) GetInitialized() (bool, error) {
-	if w.IsInitialized() {
-		return true, nil
+	if !hasAddress {
+		return WalletStatus_NoAddress
 	}
-	return w.loadStore()
+	if !hasKeystore {
+		return WalletStatus_NoKeystore
+	}
+	if !hasPassword {
+		return WalletStatus_NoPassword
+	}
+
+	// If we have all three, check if the keystore matches the address
+	derivedAddress := crypto.PubkeyToAddress(w.nodePrivateKey.PublicKey)
+	if derivedAddress != address {
+		return WalletStatus_KeystoreMismatch
+	}
+	return WalletStatus_Ready
 }
 
-// Serialize the wallet to a JSON string
+// Get the wallet's address, if one is loaded
+func (w *LocalWallet) GetAddress() (common.Address, bool) {
+	return w.addressManager.Get()
+}
+
+// Add a validator keystore to the wallet
+func (w *LocalWallet) AddValidatorKeystore(name string, ks keystore.Keystore) {
+	w.validatorKeystores[name] = ks
+}
+
+// Serialize the wallet keystore to a JSON string
 func (w *LocalWallet) String() (string, error) {
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return "", errors.New("Wallet is not initialized")
-	}
-
-	// Encode wallet store
-	wsBytes, err := json.Marshal(w.ws)
+	// Encode the wallet keystore
+	bytes, err := w.keystoreManager.serializer.Serialize(w.keystoreManager.data)
 	if err != nil {
-		return "", fmt.Errorf("Could not encode wallet: %w", err)
+		return "", fmt.Errorf("error serializing wallet keystore into a string: %w", err)
 	}
 
 	// Return
-	return string(wsBytes), nil
-
+	return string(bytes), nil
 }
 
 // Initialize the wallet from a random seed
-func (w *LocalWallet) Initialize(derivationPath string, walletIndex uint) (string, error) {
-
-	// Check wallet is not initialized
-	if w.IsInitialized() {
-		return "", errors.New("Wallet is already initialized")
+func (w *LocalWallet) CreateNewWallet(derivationPath string, walletIndex uint) (string, error) {
+	if w.keystoreManager.HasValue() {
+		return "", fmt.Errorf("wallet keystore is already present - please delete it before creating a new wallet")
 	}
 
-	// Generate mnemonic entropy
+	// Generate random entropy for the mnemonic
 	entropy, err := bip39.NewEntropy(EntropyBits)
 	if err != nil {
-		return "", fmt.Errorf("Could not generate wallet mnemonic entropy bytes: %w", err)
+		return "", fmt.Errorf("error generating wallet mnemonic entropy bytes: %w", err)
 	}
 
-	// Generate mnemonic
+	// Generate a new mnemonic
 	mnemonic, err := bip39.NewMnemonic(entropy)
 	if err != nil {
-		return "", fmt.Errorf("Could not generate wallet mnemonic: %w", err)
+		return "", fmt.Errorf("error generating wallet mnemonic: %w", err)
 	}
 
-	// Initialize wallet store
-	if err := w.initializeStore(derivationPath, walletIndex, mnemonic); err != nil {
-		return "", err
+	// Initialize the wallet with it
+	err = w.initializeKeystore(derivationPath, walletIndex, mnemonic)
+	if err != nil {
+		return "", fmt.Errorf("error initializing new wallet keystore: %w", err)
 	}
-
-	// Return
 	return mnemonic, nil
-
 }
 
 // Recover a wallet from a mnemonic
 func (w *LocalWallet) Recover(derivationPath string, walletIndex uint, mnemonic string) error {
-
-	// Check wallet is not initialized
-	if w.IsInitialized() {
-		return errors.New("Wallet is already initialized")
+	if w.keystoreManager.HasValue() {
+		return fmt.Errorf("wallet keystore is already present - please delete it before recovering an existing wallet")
 	}
 
-	// Check mnemonic
+	// Check the mnemonic
 	if !bip39.IsMnemonicValid(mnemonic) {
-		return fmt.Errorf("Invalid mnemonic '%s'", mnemonic)
+		return fmt.Errorf("invalid mnemonic '%s'", mnemonic)
 	}
 
-	// Initialize wallet store
-	if err := w.initializeStore(derivationPath, walletIndex, mnemonic); err != nil {
-		return err
-	}
-
-	// Return
-	return nil
-
-}
-
-// Recover a wallet from a mnemonic - only used for testing mnemonics
-func (w *LocalWallet) TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error {
-
-	// Check mnemonic
-	if !bip39.IsMnemonicValid(mnemonic) {
-		return fmt.Errorf("Invalid mnemonic '%s'", mnemonic)
-	}
-
-	// Generate seed
-	w.seed = bip39.NewSeed(mnemonic, "")
-
-	// Create master key
-	var err error
-	w.mk, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
+	// Initialize the wallet with it
+	err := w.initializeKeystore(derivationPath, walletIndex, mnemonic)
 	if err != nil {
-		return fmt.Errorf("Could not create wallet master key: %w", err)
+		return fmt.Errorf("error initializing wallet keystore with recovered data: %w", err)
 	}
-
-	// Create wallet store
-	w.ws = &localWalletStore{
-		Name:           w.encryptor.Name(),
-		Version:        w.encryptor.Version(),
-		UUID:           uuid.New(),
-		DerivationPath: derivationPath,
-		WalletIndex:    walletIndex,
-		NextAccount:    0,
-	}
-
-	// Return
 	return nil
-
 }
 
-// Save the wallet store to disk
-func (w *LocalWallet) Save() error {
+// Stores a new password in memory but does not save it to disk, then reloads the keystore and corresponding details
+func (w *LocalWallet) RememberPassword(password []byte) {
+	w.passwordManager.Set(password)
+}
 
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return errors.New("Wallet is not initialized")
-	}
+// Removes the wallet's password from memory and invalidates the keystore so it can no longer transact
+func (w *LocalWallet) ForgetPassword() {
+	w.passwordManager.Clear()
+}
 
-	// Encode wallet store
-	wsBytes, err := json.Marshal(w.ws)
+// Save the wallet's password to disk
+func (w *LocalWallet) SavePassword() error {
+	err := w.passwordManager.Save()
 	if err != nil {
-		return fmt.Errorf("Could not encode wallet: %w", err)
+		return fmt.Errorf("error saving wallet password: %w", err)
 	}
-
-	// Write wallet store to disk
-	if err := os.WriteFile(w.walletPath, wsBytes, FileMode); err != nil {
-		return fmt.Errorf("Could not write wallet to disk: %w", err)
-	}
-
-	// Return
 	return nil
-
 }
 
-// Delete the wallet store from disk
-func (w *LocalWallet) Delete() error {
-
-	// Check if it exists
-	_, err := os.Stat(w.walletPath)
-	if os.IsNotExist(err) {
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("error checking wallet file path: %w", err)
+// Delete the wallet password from disk, but retain it in memory
+func (w *LocalWallet) DeletePassword() error {
+	err := w.passwordManager.Delete()
+	if err != nil {
+		return fmt.Errorf("error deleting wallet password: %w", err)
 	}
-
-	// Write wallet store to disk
-	err = os.Remove(w.walletPath)
-	return err
-
+	return nil
 }
 
 // Signs a serialized TX using the wallet's private key
 func (w *LocalWallet) Sign(serializedTx []byte) ([]byte, error) {
-	// Get private key
-	privateKey, _, err := w.getNodePrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
 	tx := types.Transaction{}
-	err = tx.UnmarshalBinary(serializedTx)
+	err := tx.UnmarshalBinary(serializedTx)
 	if err != nil {
 		return nil, fmt.Errorf("Error unmarshalling TX: %w", err)
 	}
 
 	signer := types.NewLondonSigner(w.chainID)
-	signedTx, err := types.SignTx(&tx, signer, privateKey)
+	signedTx, err := types.SignTx(&tx, signer, w.nodePrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("Error signing TX: %w", err)
 	}
@@ -299,14 +269,8 @@ func (w *LocalWallet) Sign(serializedTx []byte) ([]byte, error) {
 
 // Signs an arbitrary message using the wallet's private key
 func (w *LocalWallet) SignMessage(message string) ([]byte, error) {
-	// Get the wallet's private key
-	privateKey, _, err := w.getNodePrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
 	messageHash := accounts.TextHash([]byte(message))
-	signedMessage, err := crypto.Sign(messageHash, privateKey)
+	signedMessage, err := crypto.Sign(messageHash, w.nodePrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("Error signing message: %w", err)
 	}
@@ -316,82 +280,32 @@ func (w *LocalWallet) SignMessage(message string) ([]byte, error) {
 	return signedMessage, nil
 }
 
-// Reloads wallet from disk
-func (w *LocalWallet) Reload() error {
-	_, err := w.loadStore()
-	return err
-}
-
-// Load the wallet store from disk and decrypt it
-func (w *LocalWallet) loadStore() (bool, error) {
-
-	// Read wallet store from disk; cancel if not found
-	wsBytes, err := os.ReadFile(w.walletPath)
-	if err != nil {
-		return false, nil
+// Initialize the wallet keystore from a mnemonic and derivation path
+func (w *LocalWallet) initializeKeystore(derivationPath string, walletIndex uint, mnemonic string) error {
+	// Get the wallet password
+	password, hasPassword := w.passwordManager.Get()
+	if !hasPassword {
+		return fmt.Errorf("password has not been set yet")
 	}
 
-	// Decode wallet store
-	w.ws = new(localWalletStore)
-	if err = json.Unmarshal(wsBytes, w.ws); err != nil {
-		return false, fmt.Errorf("Could not decode wallet: %w", err)
-	}
-
-	// Upgrade legacy wallets to include derivation paths
-	if w.ws.DerivationPath == "" {
-		w.ws.DerivationPath = DefaultNodeKeyPath
-	}
-
-	// Get wallet password
-	password, err := w.pm.GetPassword()
-	if err != nil {
-		return false, fmt.Errorf("Could not get wallet password: %w", err)
-	}
-
-	// Decrypt seed
-	w.seed, err = w.encryptor.Decrypt(w.ws.Crypto, password)
-	if err != nil {
-		return false, fmt.Errorf("Could not decrypt wallet seed: %w", err)
-	}
-
-	// Create master key
-	w.mk, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
-	if err != nil {
-		return false, fmt.Errorf("Could not create wallet master key: %w", err)
-	}
-
-	// Return
-	return true, nil
-
-}
-
-// Initialize the encrypted wallet store from a mnemonic
-func (w *LocalWallet) initializeStore(derivationPath string, walletIndex uint, mnemonic string) error {
-
-	// Generate seed
+	// Generate the seed from the mnemonic
 	w.seed = bip39.NewSeed(mnemonic, "")
 
-	// Create master key
+	// Create the master key
 	var err error
-	w.mk, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
+	w.masterKey, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
 	if err != nil {
-		return fmt.Errorf("Could not create wallet master key: %w", err)
+		return fmt.Errorf("error creating wallet master key: %w", err)
 	}
 
-	// Get wallet password
-	password, err := w.pm.GetPassword()
+	// Encrypt the seed with the password
+	encryptedSeed, err := w.encryptor.Encrypt(w.seed, string(password))
 	if err != nil {
-		return fmt.Errorf("Could not get wallet password: %w", err)
+		return fmt.Errorf("error encrypting wallet seed: %w", err)
 	}
 
-	// Encrypt seed
-	encryptedSeed, err := w.encryptor.Encrypt(w.seed, password)
-	if err != nil {
-		return fmt.Errorf("Could not encrypt wallet seed: %w", err)
-	}
-
-	// Create wallet store
-	w.ws = &localWalletStore{
+	// Create a new wallet keystore
+	keystore := &WalletKeystoreFile{
 		Crypto:         encryptedSeed,
 		Name:           w.encryptor.Name(),
 		Version:        w.encryptor.Version(),
@@ -401,7 +315,66 @@ func (w *LocalWallet) initializeStore(derivationPath string, walletIndex uint, m
 		NextAccount:    0,
 	}
 
-	// Return
-	return nil
+	// Save it
+	err = w.keystoreManager.SetAndSave(keystore)
+	if err != nil {
+		return fmt.Errorf("error saving new wallet keystore: %w", err)
+	}
 
+	// Load the derived key and update the node address
+	err = w.loadKeyFromKeystore(keystore, password, true)
+	if err != nil {
+		return fmt.Errorf("error loading wallet key from keystore: %w", err)
+	}
+	return nil
+}
+
+// Load the node wallet's private key from the keystore on disk
+func (w *LocalWallet) loadKeyFromKeystore(keystore *WalletKeystoreFile, password []byte, updateAddressFile bool) error {
+	// Upgrade legacy wallets to include derivation paths
+	if keystore.DerivationPath == "" {
+		keystore.DerivationPath = DefaultNodeKeyPath
+	}
+
+	// Decrypt the seed
+	var err error
+	w.seed, err = w.encryptor.Decrypt(keystore.Crypto, string(password))
+	if err != nil {
+		return fmt.Errorf("error decrypting wallet keystore: %w", err)
+	}
+
+	// Create the master key
+	w.masterKey, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
+	if err != nil {
+		return fmt.Errorf("error creating wallet master key: %w", err)
+	}
+
+	// Get the derived key
+	derivedKey, path, err := w.getNodeDerivedKey(keystore.WalletIndex)
+	if err != nil {
+		return fmt.Errorf("error getting node wallet derived key: %w", err)
+	}
+
+	// Get the private key
+	privateKey, err := derivedKey.ECPrivKey()
+	if err != nil {
+		return fmt.Errorf("error getting node wallet private key: %w", err)
+	}
+	privateKeyECDSA := privateKey.ToECDSA()
+
+	// Store it
+	w.nodePrivateKey = privateKeyECDSA
+	w.nodeKeyPath = path
+
+	// Make sure the pubkey matches the node address
+	derivedAddress := crypto.PubkeyToAddress(w.nodePrivateKey.PublicKey)
+
+	if updateAddressFile {
+		// Set the address to the derived address and save it
+		err = w.addressManager.SetAndSave(derivedAddress)
+		if err != nil {
+			return fmt.Errorf("error saving wallet address file for address derived from keystore (%s): %w", derivedAddress.Hex(), err)
+		}
+	}
+	return nil
 }
