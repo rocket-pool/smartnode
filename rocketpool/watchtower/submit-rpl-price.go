@@ -197,7 +197,7 @@ type submitRplPrice struct {
 	errLog    log.ColorLogger
 	cfg       *config.RocketPoolConfig
 	ec        rocketpool.ExecutionClient
-	w         *wallet.Wallet
+	w         *wallet.LocalWallet
 	rp        *rocketpool.RocketPool
 	bc        beacon.Client
 	lock      *sync.Mutex

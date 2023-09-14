@@ -39,7 +39,7 @@ const (
 var (
 	cfg                *config.RocketPoolConfig
 	passwordManager    *passwords.PasswordManager
-	nodeWallet         *wallet.Wallet
+	nodeWallet         *wallet.LocalWallet
 	ecManager          *ExecutionClientManager
 	bcManager          *BeaconClientManager
 	rocketPool         *rocketpool.RocketPool
@@ -77,7 +77,7 @@ func GetPasswordManager(c *cli.Context) (*passwords.PasswordManager, error) {
 	return getPasswordManager(cfg), nil
 }
 
-func GetWallet(c *cli.Context) (*wallet.Wallet, error) {
+func GetWallet(c *cli.Context) (*wallet.LocalWallet, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func getPasswordManager(cfg *config.RocketPoolConfig) *passwords.PasswordManager
 	return passwordManager
 }
 
-func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
+func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.LocalWallet, error) {
 	var err error
 	initNodeWallet.Do(func() {
 		var maxFee *big.Int
@@ -199,7 +199,7 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 
 		chainId := cfg.Smartnode.GetChainID()
 
-		nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm)
+		nodeWallet, err = wallet.NewLocalWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm)
 		if err != nil {
 			return
 		}

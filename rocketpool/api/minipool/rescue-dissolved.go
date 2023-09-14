@@ -145,7 +145,7 @@ func rescueDissolvedMinipools(c *cli.Context, minipoolAddresses []common.Address
 }
 
 // Create a transaction for submitting a rescue deposit, optionally simulating it only for gas estimation
-func getDepositTx(rp *rocketpool.RocketPool, w *wallet.Wallet, bc rpbeacon.Client, minipoolAddress common.Address, amount *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func getDepositTx(rp *rocketpool.RocketPool, w *wallet.LocalWallet, bc rpbeacon.Client, minipoolAddress common.Address, amount *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	beaconDeposit, err := beacon.NewBeaconDeposit(rp)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Beacon deposit contract binding: %w", err)

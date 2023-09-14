@@ -35,7 +35,7 @@ type NodeCallHandler[responseType any] interface {
 // Context with services and common bindings for calls
 type callContext struct {
 	// Services
-	w    *wallet.Wallet
+	w    *wallet.LocalWallet
 	rp   *rocketpool.RocketPool
 	cfg  *config.RocketPoolConfig
 	bc   beacon.Client
