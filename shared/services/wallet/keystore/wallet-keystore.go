@@ -1,8 +1,9 @@
-package data
+package keystore
 
 import "github.com/google/uuid"
 
-type WalletKeystoreFile struct {
+// Keystore for node wallets
+type WalletKeystore struct {
 	Crypto         map[string]interface{} `json:"crypto"`
 	Name           string                 `json:"name"`
 	Version        uint                   `json:"version"`

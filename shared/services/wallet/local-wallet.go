@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"fmt"
 	"math/big"
@@ -8,6 +9,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -44,7 +46,7 @@ const (
 type LocalWallet struct {
 	// Managers
 	addressManager  *data.DataManager[common.Address]
-	keystoreManager *data.DataManager[*data.WalletKeystoreFile]
+	keystoreManager *data.DataManager[*keystore.WalletKeystore]
 	passwordManager *data.DataManager[[]byte]
 
 	// Node private key info
@@ -254,6 +256,33 @@ func (w *LocalWallet) DeleteKeystore() error {
 	return nil
 }
 
+// Get a transactor for the wallet
+func (w *LocalWallet) GetTransactor() (*bind.TransactOpts, error) {
+	status := w.GetStatus()
+	switch status {
+	case WalletStatus_NoAddress:
+		return nil, fmt.Errorf("node wallet does not have an address loaded - please create or recover a node wallet")
+	case WalletStatus_NoKeystore:
+		return nil, fmt.Errorf("node wallet is in read-only mode; it cannot transact because no keystore is loaded")
+	case WalletStatus_NoPassword:
+		return nil, fmt.Errorf("node wallet is in read-only mode; no password is loaded for the wallet")
+	case WalletStatus_KeystoreMismatch:
+		return nil, fmt.Errorf("node wallet is in read-only mode; the keystore is for a different wallet than the one it is using")
+	case WalletStatus_Ready:
+		transactor, err := bind.NewKeyedTransactorWithChainID(w.nodePrivateKey, w.chainID)
+		transactor.Context = context.Background()
+		return transactor, err
+	default:
+		return nil, fmt.Errorf("unknown wallet status %v", status)
+	}
+}
+
+// Get the node account private key bytes
+func (w *LocalWallet) GetNodePrivateKeyBytes() []byte {
+	// Return private key bytes
+	return crypto.FromECDSA(w.nodePrivateKey)
+}
+
 // Signs a serialized TX using the wallet's private key
 func (w *LocalWallet) Sign(serializedTx []byte) ([]byte, error) {
 	tx := types.Transaction{}
@@ -314,7 +343,7 @@ func (w *LocalWallet) initializeKeystore(derivationPath string, walletIndex uint
 	}
 
 	// Create a new wallet keystore
-	keystore := &data.WalletKeystoreFile{
+	keystore := &keystore.WalletKeystore{
 		Crypto:         encryptedSeed,
 		Name:           w.encryptor.Name(),
 		Version:        w.encryptor.Version(),
@@ -340,7 +369,7 @@ func (w *LocalWallet) initializeKeystore(derivationPath string, walletIndex uint
 }
 
 // Load the node wallet's private key from the keystore on disk
-func (w *LocalWallet) loadKeyFromKeystore(keystore *data.WalletKeystoreFile, password []byte, updateAddressFile bool) error {
+func (w *LocalWallet) loadKeyFromKeystore(keystore *keystore.WalletKeystore, password []byte, updateAddressFile bool) error {
 	// Upgrade legacy wallets to include derivation paths
 	if keystore.DerivationPath == "" {
 		keystore.DerivationPath = DefaultNodeKeyPath
@@ -360,7 +389,7 @@ func (w *LocalWallet) loadKeyFromKeystore(keystore *data.WalletKeystoreFile, pas
 	}
 
 	// Get the derived key
-	derivedKey, path, err := w.getNodeDerivedKey(keystore.WalletIndex)
+	derivedKey, path, err := w.getDerivedKey(keystore.WalletIndex)
 	if err != nil {
 		return fmt.Errorf("error getting node wallet derived key: %w", err)
 	}
@@ -388,4 +417,44 @@ func (w *LocalWallet) loadKeyFromKeystore(keystore *data.WalletKeystoreFile, pas
 		}
 	}
 	return nil
+}
+
+// Get the derived key & derivation path for the account at the index
+func (w *LocalWallet) getDerivedKey(index uint) (*hdkeychain.ExtendedKey, string, error) {
+	keystore, isSet := w.keystoreManager.Get()
+	if !isSet {
+		return nil, "", fmt.Errorf("wallet keystore has not been set")
+	}
+
+	// Get the derivation path
+	if keystore.DerivationPath == "" {
+		keystore.DerivationPath = DefaultNodeKeyPath
+	}
+	derivationPath := fmt.Sprintf(keystore.DerivationPath, index)
+
+	// Parse derivation path
+	path, err := accounts.ParseDerivationPath(derivationPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("invalid node key derivation path '%s': %w", derivationPath, err)
+	}
+
+	// Follow derivation path
+	key := w.masterKey
+	for i, n := range path {
+		// Use the legacy implementation for Goerli
+		// TODO: remove this if Prater ever goes away!
+		if w.chainID.Cmp(big.NewInt(5)) == 0 {
+			key, err = key.DeriveNonStandard(n)
+		} else {
+			key, err = key.Derive(n)
+		}
+		if err == hdkeychain.ErrInvalidChild {
+			return w.getDerivedKey(index + 1)
+		} else if err != nil {
+			return nil, "", fmt.Errorf("invalid child key at depth %d: %w", i, err)
+		}
+	}
+
+	// Return
+	return key, derivationPath, nil
 }

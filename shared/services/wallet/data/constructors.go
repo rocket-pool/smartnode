@@ -4,6 +4,7 @@ import (
 	"io/fs"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
 
 const (
@@ -18,8 +19,8 @@ func NewAddressManager(walletAddressPath string) *DataManager[common.Address] {
 }
 
 // Creates a new wallet keystore manager
-func NewKeystoreManager(walletKeystorePath string) *DataManager[*WalletKeystoreFile] {
-	return NewDataManager[*WalletKeystoreFile]("wallet keystore", walletKeystorePath, walletKeystoreFileMode, walletKeystoreSerializer{})
+func NewKeystoreManager(walletKeystorePath string) *DataManager[*keystore.WalletKeystore] {
+	return NewDataManager[*keystore.WalletKeystore]("wallet keystore", walletKeystorePath, walletKeystoreFileMode, walletKeystoreSerializer{})
 }
 
 // Creates a new wallet keystore password manager

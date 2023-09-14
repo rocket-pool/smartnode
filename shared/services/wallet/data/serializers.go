@@ -3,6 +3,7 @@ package data
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
 
 // Interface for serializing and deserializing arbitrary data to disk
@@ -48,12 +49,12 @@ func (s walletAddressSerializer) deserialize(bytes []byte) (common.Address, erro
 type walletKeystoreSerializer struct {
 }
 
-func (s walletKeystoreSerializer) serialize(file *WalletKeystoreFile) ([]byte, error) {
+func (s walletKeystoreSerializer) serialize(file *keystore.WalletKeystore) ([]byte, error) {
 	return json.Marshal(file)
 }
 
-func (s walletKeystoreSerializer) deserialize(bytes []byte) (*WalletKeystoreFile, error) {
-	file := new(WalletKeystoreFile)
+func (s walletKeystoreSerializer) deserialize(bytes []byte) (*keystore.WalletKeystore, error) {
+	file := new(keystore.WalletKeystore)
 	err := json.Unmarshal(bytes, file)
 	if err != nil {
 		return nil, err

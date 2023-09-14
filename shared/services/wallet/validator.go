@@ -308,6 +308,7 @@ func (w *LocalWallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateK
 	return privateKey, derivationPath, nil
 }
 
+// Checks if the wallet is ready for validator key processing
 func (w *LocalWallet) checkIfReady() error {
 	status := w.GetStatus()
 	switch status {
