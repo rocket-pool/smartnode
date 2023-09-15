@@ -32,7 +32,7 @@ func RegisterRoutes(router *mux.Router, name string) {
 	route := "auction"
 
 	// Bid
-	server.RegisterSingleStageHandler[api.BidOnLotData](router, route, "bid-lot", []func(*auctionBidHandler, map[string]string) error{
+	server.RegisterSingleStageHandler(router, route, "bid-lot", []server.Parser[*auctionBidHandler]{
 		func(h *auctionBidHandler, vars map[string]string) error {
 			return server.ValidateArg("index", vars, cliutils.ValidateUint, &h.lotIndex)
 		},
@@ -40,27 +40,6 @@ func RegisterRoutes(router *mux.Router, name string) {
 			return server.ValidateArg("amount", vars, cliutils.ValidatePositiveWeiAmount, &h.amountWei)
 		},
 	}, runAuctionCall[api.BidOnLotData])
-
-	// Bid
-	router.HandleFunc(fmt.Sprintf("/%s/bid-lot", route), func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		lotIndex, err := server.ValidateArg("index", vars, cliutils.ValidateUint)
-		if err != nil {
-			server.HandleInputError(w, err)
-			return
-		}
-		amountWei, err := server.ValidateArg("amount", vars, cliutils.ValidatePositiveWeiAmount)
-		if err != nil {
-			server.HandleInputError(w, err)
-			return
-		}
-
-		response, err := runAuctionCall[api.BidOnLotData](&auctionBidHandler{
-			lotIndex:  lotIndex,
-			amountWei: amountWei,
-		})
-		server.HandleResponse(w, response, err)
-	})
 
 	// Claim
 	router.HandleFunc(fmt.Sprintf("/%s/claim-lot", route), func(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +92,7 @@ func RegisterRoutes(router *mux.Router, name string) {
 }
 
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable
-func runAuctionCall[dataType any, implType any](h handlers.ISingleStageCallHandler[dataType, callContext, implType]) (*api.ApiResponse[dataType], error) {
+func runAuctionCall[dataType any](h handlers.ISingleStageCallHandler[dataType, callContext]) (*api.ApiResponse[dataType], error) {
 	// Get services
 	if err := services.RequireNodeRegistered(); err != nil {
 		return nil, fmt.Errorf("error checking if node is registered: %w", err)
