@@ -10,12 +10,6 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-const colorReset string = "\033[0m"
-const colorRed string = "\033[31m"
-const colorGreen string = "\033[32m"
-const colorYellow string = "\033[33m"
-const colorLightBlue string = "\033[36m"
-
 // Print a TX's details to the console.
 func PrintTransactionHash(rp *rocketpool.Client, hash common.Hash) {
 

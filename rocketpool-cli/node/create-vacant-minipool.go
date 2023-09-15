@@ -178,9 +178,6 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 
 	// Check to see if eth2 is synced
-	colorReset := "\033[0m"
-	colorRed := "\033[31m"
-	colorYellow := "\033[33m"
 	syncResponse, err := rp.NodeSync()
 	if err != nil {
 		return fmt.Errorf("error checking if your clients are in sync: %w", err)

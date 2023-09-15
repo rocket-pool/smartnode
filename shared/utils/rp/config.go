@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/alessio/shellescape"
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"gopkg.in/yaml.v2"
 )
 

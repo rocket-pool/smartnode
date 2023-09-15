@@ -5,9 +5,9 @@ import (
 
 	"github.com/urfave/cli"
 
+	rputils "github.com/rocket-pool/smartnode/rocketpool/utils/rp"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, error) {

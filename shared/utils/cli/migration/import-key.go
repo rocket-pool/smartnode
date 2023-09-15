@@ -10,12 +10,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-const (
-	colorReset  string = "\033[0m"
-	colorRed    string = "\033[31m"
-	colorYellow string = "\033[33m"
-)
-
 // Imports the private key for a vacant minipool's validator
 func ImportKey(c *cli.Context, rp *rocketpool.Client, minipoolAddress common.Address, mnemonic string) bool {
 

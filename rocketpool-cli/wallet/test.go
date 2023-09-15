@@ -11,13 +11,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
-const (
-	colorReset  string = "\033[0m"
-	colorRed    string = "\033[31m"
-	colorGreen  string = "\033[32m"
-	colorYellow string = "\033[33m"
-)
-
 func testRecovery(c *cli.Context) error {
 
 	// Get RP client

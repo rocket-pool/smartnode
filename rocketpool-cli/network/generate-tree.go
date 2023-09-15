@@ -9,12 +9,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-const (
-	colorReset  string = "\033[0m"
-	colorGreen  string = "\033[32m"
-	colorYellow string = "\033[33m"
-)
-
 func generateRewardsTree(c *cli.Context) error {
 
 	// Get RP client

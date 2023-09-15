@@ -41,9 +41,6 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 	}
 
 	// Print the "pending" disclaimer
-	colorReset := "\033[0m"
-	colorRed := "\033[31m"
-	colorYellow := "\033[33m"
 	var confirm bool
 	fmt.Println("You are about to change your withdrawal address. All future ETH & RPL rewards/refunds will be sent there.")
 	if !c.Bool("force") {

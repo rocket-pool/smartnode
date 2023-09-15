@@ -65,8 +65,6 @@ func getSyncProgress(c *cli.Context) error {
 		return err
 	}
 	if !depositContractInfo.SufficientSync {
-		colorReset := "\033[0m"
-		colorYellow := "\033[33m"
 		fmt.Printf("%sYour execution client hasn't synced enough to determine if your execution and consensus clients are on the same network.\n", colorYellow)
 		fmt.Printf("To run this safety check, try again later when the execution client has made more sync progress.%s\n\n", colorReset)
 	} else if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||

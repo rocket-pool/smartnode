@@ -16,10 +16,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-const colorReset string = "\033[0m"
-const colorRed string = "\033[31m"
-const colorYellow string = "\033[33m"
-
 func getStatus(c *cli.Context) error {
 
 	// Get RP client

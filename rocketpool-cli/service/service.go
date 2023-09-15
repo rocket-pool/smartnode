@@ -42,13 +42,6 @@ const (
 
 	PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
 	dockerImageRegex       string = ".*/(?P<image>.*):.*"
-	colorReset             string = "\033[0m"
-	colorBold              string = "\033[1m"
-	colorRed               string = "\033[31m"
-	colorYellow            string = "\033[33m"
-	colorGreen             string = "\033[32m"
-	colorLightBlue         string = "\033[36m"
-	clearLine              string = "\033[2K"
 )
 
 // Install the Rocket Pool service
@@ -161,8 +154,6 @@ func installUpdateTracker(c *cli.Context) error {
 	}
 
 	// Print success message & return
-	colorReset := "\033[0m"
-	colorYellow := "\033[33m"
 	fmt.Println("")
 	fmt.Println("The Rocket Pool update tracker service was successfully installed!")
 	fmt.Println("")

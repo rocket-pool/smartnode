@@ -19,10 +19,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-const (
-	colorBlue string = "\033[36m"
-)
-
 func closeMinipools(c *cli.Context) error {
 
 	// Get RP client

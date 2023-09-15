@@ -16,10 +16,6 @@ import (
 )
 
 const (
-	colorReset        string = "\033[0m"
-	colorRed          string = "\033[31m"
-	colorGreen        string = "\033[32m"
-	colorYellow       string = "\033[33m"
 	smoothingPoolLink string = "https://docs.rocketpool.net/guides/redstone/whats-new.html#smoothing-pool"
 )
 
