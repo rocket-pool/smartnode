@@ -13,6 +13,11 @@ type auctionLotHandler struct {
 	auctionMgr *auction.AuctionManager
 }
 
+func NewAuctionLotHandler(vars map[string]string) (*auctionLotHandler, error) {
+	h := &auctionLotHandler{}
+	return h, nil
+}
+
 func (h *auctionLotHandler) CreateBindings(ctx *callContext) error {
 	var err error
 	rp := ctx.rp

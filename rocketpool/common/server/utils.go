@@ -40,43 +40,24 @@ func HandleInputError(w http.ResponseWriter, err error) {
 	}
 }
 
-// Intermediate interface for getting the underlying struct type of ISingleStageCallHandlers so they can be created dynamically
-type ISingleStageCallHandlerImpl[DataType any, ContextType any, ImplType any] interface {
-	// The underlying handler
-	handlers.ISingleStageCallHandler[DataType, ContextType]
-
-	// Enforce that implementing types must be a pointer (all functions must have pointer)
-	*ImplType
-}
-
-type Parser[HandlerType any] func(h HandlerType, vars map[string]string) error
-
-func RegisterSingleStageHandler[DataType any, ContextType any, ImplType any, HandlerType ISingleStageCallHandlerImpl[DataType, ContextType, ImplType]](
+func RegisterSingleStageHandler[DataType any, ContextType any, HandlerType handlers.ISingleStageCallHandler[DataType, ContextType]](
 	router *mux.Router,
 	packageName string,
 	functionName string,
-	inputParsers []Parser[HandlerType],
+	constructor func(vars map[string]string) (HandlerType, error),
 	runner func(handlers.ISingleStageCallHandler[DataType, ContextType]) (*api.ApiResponse[DataType], error),
 ) {
-
 	router.HandleFunc(fmt.Sprintf("/%s/%s", packageName, functionName), func(w http.ResponseWriter, r *http.Request) {
 		// Create the handler
-		impl := new(ImplType)
-		handler := HandlerType(impl)
-
-		// Parse the input
 		vars := mux.Vars(r)
-		for _, parser := range inputParsers {
-			err := parser(handler, vars)
-			if err != nil {
-				HandleInputError(w, err)
-				return
-			}
+		handler, err := constructor(vars)
+		if err != nil {
+			HandleInputError(w, err)
+			return
 		}
 
 		// Run the body
 		response, err := runner(handler)
 		HandleResponse(w, response, err)
 	})
-
 }

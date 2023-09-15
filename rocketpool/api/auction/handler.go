@@ -2,7 +2,6 @@ package auction
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -16,7 +15,6 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	wtypes "github.com/rocket-pool/smartnode/shared/types/wallet"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // Context with services and common bindings for calls
@@ -31,64 +29,12 @@ type callContext struct {
 func RegisterRoutes(router *mux.Router, name string) {
 	route := "auction"
 
-	// Bid
-	server.RegisterSingleStageHandler(router, route, "bid-lot", []server.Parser[*auctionBidHandler]{
-		func(h *auctionBidHandler, vars map[string]string) error {
-			return server.ValidateArg("index", vars, cliutils.ValidateUint, &h.lotIndex)
-		},
-		func(h *auctionBidHandler, vars map[string]string) error {
-			return server.ValidateArg("amount", vars, cliutils.ValidatePositiveWeiAmount, &h.amountWei)
-		},
-	}, runAuctionCall[api.BidOnLotData])
-
-	// Claim
-	router.HandleFunc(fmt.Sprintf("/%s/claim-lot", route), func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		lotIndex, err := server.ValidateArg("index", vars, cliutils.ValidateUint)
-		if err != nil {
-			server.HandleInputError(w, err)
-			return
-		}
-
-		response, err := runAuctionCall[api.ClaimFromLotData](&auctionClaimHandler{
-			lotIndex: lotIndex,
-		})
-		server.HandleResponse(w, response, err)
-	})
-
-	// Create
-	router.HandleFunc(fmt.Sprintf("/%s/create-lot", route), func(w http.ResponseWriter, r *http.Request) {
-		response, err := runAuctionCall[api.CreateLotData](&auctionCreateHandler{})
-		server.HandleResponse(w, response, err)
-	})
-
-	// Lots
-	router.HandleFunc(fmt.Sprintf("/%s/lots", route), func(w http.ResponseWriter, r *http.Request) {
-		response, err := runAuctionCall[api.AuctionLotsData](&auctionLotHandler{})
-		server.HandleResponse(w, response, err)
-	})
-
-	// Recover Lot
-	router.HandleFunc(fmt.Sprintf("/%s/recover-lot", route), func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		lotIndex, err := server.ValidateArg("index", vars, cliutils.ValidateUint)
-		if err != nil {
-			server.HandleInputError(w, err)
-			return
-		}
-
-		response, err := runAuctionCall[api.RecoverRplFromLotData](&auctionRecoverHandler{
-			lotIndex: lotIndex,
-		})
-		server.HandleResponse(w, response, err)
-	})
-
-	// Status
-	router.HandleFunc(fmt.Sprintf("/%s/status", route), func(w http.ResponseWriter, r *http.Request) {
-		response, err := runAuctionCall[api.AuctionStatusData](&auctionStatusHandler{})
-		server.HandleResponse(w, response, err)
-	})
-
+	server.RegisterSingleStageHandler(router, route, "bid-lot", NewAuctionBidHandler, runAuctionCall[api.BidOnLotData])
+	server.RegisterSingleStageHandler(router, route, "claim-lot", NewAuctionClaimHandler, runAuctionCall[api.ClaimFromLotData])
+	server.RegisterSingleStageHandler(router, route, "create-lot", NewAuctionCreateHandler, runAuctionCall[api.CreateLotData])
+	server.RegisterSingleStageHandler(router, route, "lots", NewAuctionLotHandler, runAuctionCall[api.AuctionLotsData])
+	server.RegisterSingleStageHandler(router, route, "recover-lot", NewAuctionRecoverHandler, runAuctionCall[api.RecoverRplFromLotData])
+	server.RegisterSingleStageHandler(router, route, "lots", NewAuctionStatusHandler, runAuctionCall[api.AuctionStatusData])
 }
 
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable

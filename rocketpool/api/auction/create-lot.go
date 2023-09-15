@@ -19,6 +19,11 @@ type auctionCreateHandler struct {
 	networkPrices *network.NetworkPrices
 }
 
+func NewAuctionCreateHandler(vars map[string]string) (*auctionCreateHandler, error) {
+	h := &auctionCreateHandler{}
+	return h, nil
+}
+
 func (h *auctionCreateHandler) CreateBindings(ctx *callContext) error {
 	var err error
 	rp := ctx.rp

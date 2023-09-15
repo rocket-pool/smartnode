@@ -2,6 +2,7 @@ package auction
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -9,13 +10,23 @@ import (
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/settings"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 type auctionRecoverHandler struct {
 	lotIndex  uint64
 	lot       *auction.AuctionLot
 	pSettings *settings.ProtocolDaoSettings
+}
+
+func NewAuctionRecoverHandler(vars map[string]string) (*auctionRecoverHandler, error) {
+	h := &auctionRecoverHandler{}
+	inputErrs := []error{
+		server.ValidateArg("index", vars, cliutils.ValidateUint, &h.lotIndex),
+	}
+	return h, errors.Join(inputErrs...)
 }
 
 func (h *auctionRecoverHandler) CreateBindings(ctx *callContext) error {

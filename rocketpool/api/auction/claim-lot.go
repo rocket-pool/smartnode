@@ -1,19 +1,30 @@
 package auction
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 type auctionClaimHandler struct {
 	lotIndex         uint64
 	addressBidAmount *big.Int
 	lot              *auction.AuctionLot
+}
+
+func NewAuctionClaimHandler(vars map[string]string) (*auctionClaimHandler, error) {
+	h := &auctionClaimHandler{}
+	inputErrs := []error{
+		server.ValidateArg("index", vars, cliutils.ValidateUint, &h.lotIndex),
+	}
+	return h, errors.Join(inputErrs...)
 }
 
 func (h *auctionClaimHandler) CreateBindings(ctx *callContext) error {

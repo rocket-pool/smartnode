@@ -2,6 +2,7 @@ package auction
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -9,7 +10,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/settings"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 type auctionBidHandler struct {
@@ -17,6 +20,15 @@ type auctionBidHandler struct {
 	amountWei *big.Int
 	lot       *auction.AuctionLot
 	pSettings *settings.ProtocolDaoSettings
+}
+
+func NewAuctionBidHandler(vars map[string]string) (*auctionBidHandler, error) {
+	h := &auctionBidHandler{}
+	inputErrs := []error{
+		server.ValidateArg("index", vars, cliutils.ValidateUint, &h.lotIndex),
+		server.ValidateArg("amount", vars, cliutils.ValidatePositiveWeiAmount, &h.amountWei),
+	}
+	return h, errors.Join(inputErrs...)
 }
 
 func (h *auctionBidHandler) CreateBindings(ctx *callContext) error {
