@@ -11,16 +11,17 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/settings"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
@@ -398,7 +399,23 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 	totalODaoRewards.Div(totalODaoRewards, eth.EthToWei(1))
 	r.log.Printlnf("%s Total Oracle DAO RPL rewards: %s (%.3f)", r.logPrefix, totalODaoRewards.String(), eth.WeiToEth(totalODaoRewards))
 
-	oDaoAddresses, err := trustednode.GetMemberAddresses(r.rp, r.opts)
+	// Create the bindings
+	dnt, err := trustednode.NewDaoNodeTrusted(r.rp)
+	if err != nil {
+		return fmt.Errorf("error getting DNT binding: %w", err)
+	}
+
+	// Get the contract state
+	err = r.rp.Query(func(mc *batch.MultiCaller) error {
+		dnt.GetMemberCount(mc)
+		return nil
+	}, r.opts)
+	if err != nil {
+		return fmt.Errorf("error getting oDAO member count: %w", err)
+	}
+
+	// Get the oDAO member addresses
+	oDaoAddresses, err := dnt.GetMemberAddresses(dnt.Details.MemberCount.Formatted(), r.opts)
 	if err != nil {
 		return err
 	}
@@ -503,7 +520,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
-	smoothingPoolContract, err := r.rp.GetContract("rocketSmoothingPool", r.opts)
+	smoothingPoolContract, err := r.rp.GetContract(rocketpool.ContractName_RocketSmoothingPool)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
@@ -1090,10 +1107,19 @@ func (r *treeGeneratorImpl_v5) getSmoothingPoolNodeDetails() error {
 func (r *treeGeneratorImpl_v5) validateNetwork(network uint64) (bool, error) {
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
-		var err error
-		valid, err = tnsettings.GetNetworkEnabled(r.rp, big.NewInt(int64(network)), r.opts)
+		// Make the oDAO settings binding
+		oSettings, err := settings.NewOracleDaoSettings(r.rp)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("error creating Oracle DAO settings binding: %w", err)
+		}
+
+		// Get the contract state
+		err = r.rp.Query(func(mc *batch.MultiCaller) error {
+			oSettings.GetNetworkEnabled(mc, &valid, network)
+			return nil
+		}, r.opts)
+		if err != nil {
+			return false, fmt.Errorf("error checking if network %d is enabled: %w", network, err)
 		}
 		r.validNetworkCache[network] = valid
 	}

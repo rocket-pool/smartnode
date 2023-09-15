@@ -1,3 +1,7 @@
+// === WARNING ===
+// This is kept around for legacy / reference purposes.
+// It is NOT optimized to work with rocketpool-go v2 and will run noticeably slower than the other intervals!
+
 package rewards
 
 import (
@@ -11,19 +15,18 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/settings"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
@@ -53,7 +56,7 @@ type treeGeneratorImpl_v4 struct {
 	epsilon                *big.Int
 	intervalSeconds        *big.Int
 	beaconConfig           beacon.Eth2Config
-	stakingMinipoolMap     map[common.Address][]minipool.MinipoolDetails
+	stakingMinipoolMap     map[common.Address][]MinipoolDetails
 	validatorStatusMap     map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
 	rplPrice               *big.Int
 	minCollateralFraction  *big.Int
@@ -94,7 +97,7 @@ func newTreeGeneratorImpl_v4(log *log.ColorLogger, logPrefix string, index uint6
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance{},
 			},
 		},
-		stakingMinipoolMap: map[common.Address][]minipool.MinipoolDetails{},
+		stakingMinipoolMap: map[common.Address][]MinipoolDetails{},
 		validatorStatusMap: map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
 		elSnapshotHeader:   elSnapshotHeader,
 		log:                log,
@@ -135,7 +138,28 @@ func (r *treeGeneratorImpl_v4) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.opts = &bind.CallOpts{
 		BlockNumber: r.elSnapshotHeader.Number,
 	}
-	nodeAddresses, err := node.GetNodeAddresses(rp, r.opts)
+
+	// Create the bindings
+	nodeMgr, err := node.NewNodeManager(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating node manager binding: %w", err)
+	}
+	mpMgr, err := minipool.NewMinipoolManager(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+
+	// Query the state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		nodeMgr.GetNodeCount(mc)
+		mpMgr.GetMinipoolCount(mc)
+		return nil
+	}, r.opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting initial contract state: %w", err)
+	}
+
+	nodeAddresses, err := nodeMgr.GetNodeAddresses(nodeMgr.Details.NodeCount.Formatted(), r.opts)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting node addresses: %w", err)
 	}
@@ -143,10 +167,7 @@ func (r *treeGeneratorImpl_v4) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.nodeAddresses = nodeAddresses
 
 	// Get the minipool count - this will be used for an error epsilon due to division truncation
-	minipoolCount, err := minipool.GetMinipoolCount(rp, r.opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting minipool count: %w", err)
-	}
+	minipoolCount := mpMgr.Details.MinipoolCount.Formatted()
 	r.epsilon = big.NewInt(int64(minipoolCount))
 
 	// Create the minipool details cache
@@ -215,7 +236,28 @@ func (r *treeGeneratorImpl_v4) approximateStakerShareOfSmoothingPool(rp *rocketp
 	r.opts = &bind.CallOpts{
 		BlockNumber: r.elSnapshotHeader.Number,
 	}
-	nodeAddresses, err := node.GetNodeAddresses(rp, r.opts)
+
+	// Create the bindings
+	nodeMgr, err := node.NewNodeManager(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating node manager binding: %w", err)
+	}
+	mpMgr, err := minipool.NewMinipoolManager(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+
+	// Query the state
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		nodeMgr.GetNodeCount(mc)
+		mpMgr.GetMinipoolCount(mc)
+		return nil
+	}, r.opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting initial contract state: %w", err)
+	}
+
+	nodeAddresses, err := nodeMgr.GetNodeAddresses(nodeMgr.Details.NodeCount.Formatted(), r.opts)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting node addresses: %w", err)
 	}
@@ -223,10 +265,7 @@ func (r *treeGeneratorImpl_v4) approximateStakerShareOfSmoothingPool(rp *rocketp
 	r.nodeAddresses = nodeAddresses
 
 	// Get the minipool count - this will be used for an error epsilon due to division truncation
-	minipoolCount, err := minipool.GetMinipoolCount(rp, r.opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting minipool count: %w", err)
-	}
+	minipoolCount := mpMgr.Details.MinipoolCount.Formatted()
 	r.epsilon = big.NewInt(int64(minipoolCount))
 
 	// Create the minipool details cache
@@ -344,36 +383,47 @@ func (r *treeGeneratorImpl_v4) updateNetworksAndTotals() {
 
 // Calculates the RPL rewards for the given interval
 func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
-
-	snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
-	intervalDuration, err := state.GetClaimIntervalTime(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	// Create the bindings
+	rewardsPool, err := rewards.NewRewardsPool(r.rp)
 	if err != nil {
-		return fmt.Errorf("error getting required registration time: %w", err)
+		return fmt.Errorf("error creating rewards pool binding: %w", err)
+	}
+	pSettings, err := settings.NewProtocolDaoSettings(r.rp)
+	if err != nil {
+		return fmt.Errorf("error creating protocol DAO settings binding: %w", err)
+	}
+	networkPrices, err := network.NewNetworkPrices(r.rp)
+	if err != nil {
+		return fmt.Errorf("error creating network prices binding: %w", err)
+	}
+
+	// Get the state
+	err = r.rp.Query(func(mc *batch.MultiCaller) error {
+		rewardsPool.GetPendingRplRewards(mc)
+		rewardsPool.GetNodeOperatorRewardsPercent(mc)
+		rewardsPool.GetOracleDaoRewardsPercent(mc)
+		rewardsPool.GetProtocolDaoRewardsPercent(mc)
+		rewardsPool.GetIntervalDuration(mc)
+		networkPrices.GetRplPrice(mc)
+		pSettings.GetMinimumPerMinipoolStake(mc)
+		pSettings.GetMaximumPerMinipoolStake(mc)
+		return nil
+	}, r.opts)
+	if err != nil {
+		return fmt.Errorf("error getting rewards pool details: %w", err)
 	}
 
 	// Get the RPL min and max collateral stats
-	r.rplPrice, err = network.GetRPLPrice(r.rp, r.opts)
-	if err != nil {
-		return fmt.Errorf("error getting RPL price ratio: %w", err)
-	}
-	r.minCollateralFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(r.rp, r.opts)
-	if err != nil {
-		return fmt.Errorf("error getting minimum per minipool stake: %w", err)
-	}
-	r.maxCollateralFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(r.rp, r.opts)
-	if err != nil {
-		return fmt.Errorf("error getting maximum per minipool stake: %w", err)
-	}
+	r.rplPrice = networkPrices.Details.RplPrice.RawValue
+	r.minCollateralFraction = pSettings.Details.Node.MinimumPerMinipoolStake.RawValue
+	r.maxCollateralFraction = pSettings.Details.Node.MaximumPerMinipoolStake.RawValue
 
 	// Handle node operator rewards
-	nodeOpPercent, err := state.GetNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return err
-	}
-	pendingRewards, err := state.GetPendingRPLRewards(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return err
-	}
+	snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
+	intervalDuration := rewardsPool.Details.IntervalDuration.Formatted()
+	nodeOpPercent := rewardsPool.Details.NodeOperatorRewardsPercent.RawValue
+	pendingRewards := rewardsPool.Details.PendingRplRewards
+
 	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
 	totalNodeRewards := big.NewInt(0)
 	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
@@ -394,20 +444,42 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	nodesDone := 0
 	startTime := time.Now()
 	nodeCount := len(r.nodeAddresses)
+
+	// Get node details
+	nodes := map[common.Address]*node.Node{}
+	for _, address := range r.nodeAddresses {
+		// Create the node binding
+		node, err := node.NewNode(r.rp, address)
+		if err != nil {
+			return fmt.Errorf("error creating node %s binding: %w", err)
+		}
+		nodes[address] = node
+	}
+	err = r.rp.BatchQuery(nodeCount, LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
+		address := r.nodeAddresses[i]
+		node := nodes[address]
+		node.GetEffectiveRplStake(mc)
+		node.GetRegistrationTime(mc)
+		node.GetRewardNetwork(mc)
+		return nil
+	}, r.opts)
+	if err != nil {
+		return fmt.Errorf("error getting node details: %w", err)
+	}
+
 	for i, address := range r.nodeAddresses {
 		if nodesDone == 100 {
 			timeTaken := time.Since(startTime)
 			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
 			nodesDone = 0
 		}
+
+		// Get the details
+		node := nodes[address]
+		regTime := node.Details.RegistrationTime.Formatted()
+
 		// Get the node's effective stake
 		nodeStake := effectiveStakes[i]
-
-		// Get the timestamp of the node's registration
-		regTime, err := node.GetNodeRegistrationTime(r.rp, address, r.opts)
-		if err != nil {
-			return fmt.Errorf("error getting registration time for node %s: %w", address, err)
-		}
 
 		// Get the actual effective stake, scaled based on participation
 		eligibleDuration := snapshotBlockTime.Sub(regTime)
@@ -433,6 +505,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
 			nodesDone = 0
 		}
+		node := nodes[address]
 
 		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
 		nodeRplRewards := big.NewInt(0)
@@ -446,10 +519,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 			rewardsForNode, exists := r.rewardsFile.NodeRewards[address]
 			if !exists {
 				// Get the network the rewards should go to
-				network, err := node.GetRewardNetwork(r.rp, address, r.opts)
-				if err != nil {
-					return err
-				}
+				network := node.Details.RewardNetwork.Formatted()
 				validNetwork, err := r.validateNetwork(network)
 				if err != nil {
 					return err
@@ -502,16 +572,29 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 
 	// Handle Oracle DAO rewards
-	oDaoPercent, err := state.GetTrustedNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return err
-	}
+	oDaoPercent := rewardsPool.Details.OracleDaoRewardsPercent.RawValue
 	totalODaoRewards := big.NewInt(0)
 	totalODaoRewards.Mul(pendingRewards, oDaoPercent)
 	totalODaoRewards.Div(totalODaoRewards, eth.EthToWei(1))
 	r.log.Printlnf("%s Total Oracle DAO RPL rewards: %s (%.3f)", r.logPrefix, totalODaoRewards.String(), eth.WeiToEth(totalODaoRewards))
 
-	oDaoAddresses, err := trustednode.GetMemberAddresses(r.rp, r.opts)
+	// Create the bindings
+	dnt, err := trustednode.NewDaoNodeTrusted(r.rp)
+	if err != nil {
+		return fmt.Errorf("error getting DNT binding: %w", err)
+	}
+
+	// Get the contract state
+	err = r.rp.Query(func(mc *batch.MultiCaller) error {
+		dnt.GetMemberCount(mc)
+		return nil
+	}, r.opts)
+	if err != nil {
+		return fmt.Errorf("error getting oDAO member count: %w", err)
+	}
+
+	// Get the oDAO member addresses
+	oDaoAddresses, err := dnt.GetMemberAddresses(dnt.Details.MemberCount.Formatted(), r.opts)
 	if err != nil {
 		return err
 	}
@@ -520,11 +603,9 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	totalODaoNodeTime := big.NewInt(0)
 	trueODaoNodeTimes := map[common.Address]*big.Int{}
 	for _, address := range oDaoAddresses {
+		node := nodes[address]
 		// Get the timestamp of the node's registration
-		regTime, err := node.GetNodeRegistrationTime(r.rp, address, r.opts)
-		if err != nil {
-			return fmt.Errorf("error getting registration time for node %s: %w", address, err)
-		}
+		regTime := node.Details.RegistrationTime.Formatted()
 
 		// Get the actual effective time, scaled based on participation
 		participationTime := big.NewInt(0).Set(intervalDurationBig)
@@ -546,11 +627,9 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 
 		rewardsForNode, exists := r.rewardsFile.NodeRewards[address]
 		if !exists {
+			node := nodes[address]
 			// Get the network the rewards should go to
-			network, err := node.GetRewardNetwork(r.rp, address, r.opts)
-			if err != nil {
-				return err
-			}
+			network := node.Details.RewardNetwork.Formatted()
 			validNetwork, err := r.validateNetwork(network)
 			if err != nil {
 				return err
@@ -601,10 +680,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get expected Protocol DAO rewards
-	pDaoPercent, err := state.GetProtocolDaoRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return err
-	}
+	pDaoPercent := rewardsPool.Details.ProtocolDaoRewardsPercent.RawValue
 	pDaoRewards := NewQuotedBigInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
 	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
@@ -624,7 +700,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 func (r *treeGeneratorImpl_v4) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
-	smoothingPoolContract, err := r.rp.GetContract("rocketSmoothingPool", r.opts)
+	smoothingPoolContract, err := r.rp.GetContract(rocketpool.ContractName_RocketSmoothingPool)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
@@ -1166,8 +1242,31 @@ func (r *treeGeneratorImpl_v4) getSmoothingPoolNodeDetails() error {
 	startTime := time.Now()
 	r.log.Printlnf("%s Getting details of nodes for Smoothing Pool calculation (progress is reported every 100 nodes)", r.logPrefix)
 
-	// For each NO, get their opt-in status and time of last change in batches
+	// Get node details
 	nodeCount := uint64(len(r.nodeAddresses))
+	nodes := map[common.Address]*node.Node{}
+	for _, address := range r.nodeAddresses {
+		// Create the node binding
+		node, err := node.NewNode(r.rp, address)
+		if err != nil {
+			return fmt.Errorf("error creating node %s binding: %w", err)
+		}
+		nodes[address] = node
+	}
+	err := r.rp.BatchQuery(int(nodeCount), LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
+		address := r.nodeAddresses[i]
+		node := nodes[address]
+		node.GetSmoothingPoolRegistrationState(mc)
+		node.GetSmoothingPoolRegistrationChanged(mc)
+		node.GetRewardNetwork(mc)
+		node.GetMinipoolCount(mc)
+		return nil
+	}, r.opts)
+	if err != nil {
+		return fmt.Errorf("error getting node details: %w", err)
+	}
+
+	// For each NO, get their opt-in status and time of last change in batches
 	r.nodeDetails = make([]*NodeSmoothingDetails, nodeCount)
 	for batchStartIndex := uint64(0); batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
 
@@ -1195,22 +1294,13 @@ func (r *treeGeneratorImpl_v4) getSmoothingPoolNodeDetails() error {
 					Minipools:        []*MinipoolInfo{},
 					SmoothingPoolEth: big.NewInt(0),
 				}
+				node := nodes[nodeDetails.Address]
 
-				// Get the node's rewards network
-				nodeDetails.RewardsNetwork, err = node.GetRewardNetwork(r.rp, nodeDetails.Address, r.opts)
-				if err != nil {
-					return fmt.Errorf("Error getting rewards network for node %s: %w", nodeDetails.Address.Hex(), err)
-				}
-
-				// Check if the node is opted into the smoothing pool
-				nodeDetails.IsOptedIn, err = node.GetSmoothingPoolRegistrationState(r.rp, nodeDetails.Address, r.opts)
-				if err != nil {
-					return fmt.Errorf("Error getting smoothing pool registration state for node %s: %w", nodeDetails.Address.Hex(), err)
-				}
-
-				// Get the slot of the last registration change
+				// Get some details
+				nodeDetails.RewardsNetwork = node.Details.RewardNetwork.Formatted()
+				nodeDetails.IsOptedIn = node.Details.SmoothingPoolRegistrationState
+				nodeDetails.StatusChangeTime = node.Details.SmoothingPoolRegistrationChanged.Formatted()
 				var changeSlot uint64
-				nodeDetails.StatusChangeTime, err = node.GetSmoothingPoolRegistrationChanged(r.rp, nodeDetails.Address, r.opts)
 				if err != nil {
 					return fmt.Errorf("Error getting smoothing pool registration change time for node %s: %w", nodeDetails.Address.Hex(), err)
 				}
@@ -1253,10 +1343,7 @@ func (r *treeGeneratorImpl_v4) getSmoothingPoolNodeDetails() error {
 					return fmt.Errorf("attempted to get the minipool details for node %s, but that node's minipools were missing from the cache", nodeDetails.Address.Hex())
 				}
 				for _, mpd := range minipoolDetails {
-					penaltyCount, err := minipool.GetMinipoolPenaltyCount(r.rp, mpd.Address, r.opts)
-					if err != nil {
-						return fmt.Errorf("Error getting penalty count for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
-					}
+					penaltyCount := mpd.PenaltyCount
 					if penaltyCount >= 3 {
 						// This node is a cheater
 						nodeDetails.IsEligible = false
@@ -1269,14 +1356,7 @@ func (r *treeGeneratorImpl_v4) getSmoothingPoolNodeDetails() error {
 					}
 
 					// This minipool is below the penalty count, so include it
-					mp, err := minipool.NewMinipool(r.rp, mpd.Address, r.opts)
-					if err != nil {
-						return fmt.Errorf("Error creating minipool wrapper for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
-					}
-					fee, err := mp.GetNodeFeeRaw(r.opts)
-					if err != nil {
-						return fmt.Errorf("Error getting fee for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
-					}
+					fee := mpd.NodeFee
 					nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
 						Address:                 mpd.Address,
 						ValidatorPubkey:         mpd.Pubkey,
@@ -1312,10 +1392,19 @@ func (r *treeGeneratorImpl_v4) getSmoothingPoolNodeDetails() error {
 func (r *treeGeneratorImpl_v4) validateNetwork(network uint64) (bool, error) {
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
-		var err error
-		valid, err = tnsettings.GetNetworkEnabled(r.rp, big.NewInt(int64(network)), r.opts)
+		// Make the oDAO settings binding
+		oSettings, err := settings.NewOracleDaoSettings(r.rp)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("error creating Oracle DAO settings binding: %w", err)
+		}
+
+		// Get the contract state
+		err = r.rp.Query(func(mc *batch.MultiCaller) error {
+			oSettings.GetNetworkEnabled(mc, &valid, network)
+			return nil
+		}, r.opts)
+		if err != nil {
+			return false, fmt.Errorf("error checking if network %d is enabled: %w", network, err)
 		}
 		r.validNetworkCache[network] = valid
 	}
@@ -1386,9 +1475,30 @@ func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 	r.log.Printlnf("%s Querying minipool info for nodes (progress is reported every 100 nodes)", r.logPrefix)
 
 	nodeCount := uint64(len(r.nodeAddresses))
-	stakingMinipoolDetailsList := make([][]minipool.MinipoolDetails, nodeCount)
+	stakingMinipoolDetailsList := make([][]MinipoolDetails, nodeCount)
 	pubkeyList := make([][]rptypes.ValidatorPubkey, nodeCount)
 	r.nodeStakes = make([]*big.Int, nodeCount)
+
+	// Get node details
+	nodes := map[common.Address]*node.Node{}
+	for _, address := range r.nodeAddresses {
+		// Create the node binding
+		node, err := node.NewNode(r.rp, address)
+		if err != nil {
+			return fmt.Errorf("error creating node %s binding: %w", err)
+		}
+		nodes[address] = node
+	}
+	err := r.rp.BatchQuery(int(nodeCount), LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
+		address := r.nodeAddresses[i]
+		node := nodes[address]
+		node.GetRplStake(mc)
+		node.GetMinipoolCount(mc)
+		return nil
+	}, r.opts)
+	if err != nil {
+		return fmt.Errorf("error getting node details: %w", err)
+	}
 
 	// Get the details for each minipool in each node
 	for batchStartIndex := uint64(0); batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
@@ -1412,22 +1522,48 @@ func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 			iterationIndex := iterationIndex
 			wg.Go(func() error {
 				address := r.nodeAddresses[iterationIndex]
-				minipoolDetails, err := minipool.GetNodeMinipools(r.rp, address, r.opts)
+				node := nodes[address]
+
+				// Get the details for each minipool in the node
+				mpAddresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), r.opts)
 				if err != nil {
-					return fmt.Errorf("Error getting minipool details for node %s: %w", address, err)
+					return fmt.Errorf("error getting node %s minipool addreses: %w", node.Details.Address.Hex(), err)
 				}
-				stakingMinipools := make([]minipool.MinipoolDetails, 0, len(minipoolDetails))
+				mps, err := minipool.CreateMinipoolsFromAddresses(r.rp, mpAddresses, false, r.opts)
+				if err != nil {
+					return fmt.Errorf("error getting node %s minipools: %w", node.Details.Address.Hex(), err)
+				}
+				err = r.rp.BatchQuery(len(mps), LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
+					mpCommon := mps[i].GetMinipoolCommon()
+					mpCommon.GetExists(mc)
+					mpCommon.GetStatus(mc)
+					mpCommon.GetPenaltyCount(mc)
+					mpCommon.GetNodeFee(mc)
+					mpCommon.GetPubkey(mc)
+					return nil
+				}, r.opts)
+				if err != nil {
+					return fmt.Errorf("error getting node %s minipool details: %w", node.Details.Address.Hex(), err)
+				}
+				minipoolDetails := make([]MinipoolDetails, len(mps))
+				for i, mp := range mps {
+					mpCommon := mp.GetMinipoolCommon()
+					mpd := MinipoolDetails{
+						Address:      mpCommon.Details.Address,
+						Exists:       mpCommon.Details.Exists,
+						Status:       mpCommon.Details.Status.Formatted(),
+						Pubkey:       mpCommon.Details.Pubkey,
+						PenaltyCount: mpCommon.Details.PenaltyCount.Formatted(),
+						NodeFee:      mpCommon.Details.NodeFee.RawValue,
+					}
+					minipoolDetails[i] = mpd
+				}
+
+				stakingMinipools := make([]MinipoolDetails, 0, len(minipoolDetails))
 				minipoolPubkeys := make([]rptypes.ValidatorPubkey, 0, len(minipoolDetails))
 				for _, mpd := range minipoolDetails {
 					if mpd.Exists {
-						mp, err := minipool.NewMinipool(r.rp, mpd.Address, r.opts)
-						if err != nil {
-							return fmt.Errorf("Error creating minipool wrapper for minipool %s on node %s: %w", mpd.Address.Hex(), address.Hex(), err)
-						}
-						status, err := mp.GetStatus(r.opts)
-						if err != nil {
-							return fmt.Errorf("Error getting status of minipool %s on node %s: %w", mpd.Address.Hex(), address.Hex(), err)
-						}
+						status := mpd.Status
 						if status == rptypes.Staking {
 							stakingMinipools = append(stakingMinipools, mpd)
 							minipoolPubkeys = append(minipoolPubkeys, mpd.Pubkey)
@@ -1438,10 +1574,7 @@ func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 				pubkeyList[iterationIndex] = minipoolPubkeys
 
 				// Cache the node stake since we're processing each node here anyway
-				nodeStake, err := node.GetNodeRPLStake(r.rp, address, r.opts)
-				if err != nil {
-					return fmt.Errorf("error getting RPL stake for node %s: %w", address.Hex(), err)
-				}
+				nodeStake := node.Details.RplStake
 				r.nodeStakes[iterationIndex] = nodeStake
 
 				return nil

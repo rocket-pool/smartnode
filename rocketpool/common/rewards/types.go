@@ -10,6 +10,16 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
+// Legacy carryover from rocketpool-go v1 for interval 4 and 5 generators
+type MinipoolDetails struct {
+	Address      common.Address
+	Exists       bool
+	Status       types.MinipoolStatus
+	Pubkey       types.ValidatorPubkey
+	PenaltyCount uint64
+	NodeFee      *big.Int
+}
+
 // Information about an interval
 type IntervalInfo struct {
 	Index                  uint64        `json:"index"`

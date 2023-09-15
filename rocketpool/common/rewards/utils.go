@@ -30,10 +30,16 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/shared/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/web3-storage/go-w3s-client/adder"
+)
+
+// Settings
+const (
+	FarEpoch                uint64 = 18446744073709551615
+	LegacyDetailsBatchCount int    = 200
 )
 
 // Simple container for the zero value so it doesn't have to be recreated over and over

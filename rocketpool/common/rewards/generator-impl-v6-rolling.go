@@ -11,12 +11,13 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	batchquery "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
@@ -659,10 +660,19 @@ func (r *treeGeneratorImpl_v6_rolling) calculateNodeRewards() (*big.Int, *big.In
 func (r *treeGeneratorImpl_v6_rolling) validateNetwork(network uint64) (bool, error) {
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
-		var err error
-		valid, err = tnsettings.GetNetworkEnabled(r.rp, big.NewInt(int64(network)), r.opts)
+		// Make the oDAO settings binding
+		oSettings, err := settings.NewOracleDaoSettings(r.rp)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("error creating Oracle DAO settings binding: %w", err)
+		}
+
+		// Get the contract state
+		err = r.rp.Query(func(mc *batchquery.MultiCaller) error {
+			oSettings.GetNetworkEnabled(mc, &valid, network)
+			return nil
+		}, r.opts)
+		if err != nil {
+			return false, fmt.Errorf("error checking if network %d is enabled: %w", network, err)
 		}
 		r.validNetworkCache[network] = valid
 	}
