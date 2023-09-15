@@ -2,7 +2,6 @@ package faucet
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -32,17 +31,8 @@ type callContext struct {
 func RegisterRoutes(router *mux.Router, name string) {
 	route := "faucet"
 
-	// Status
-	router.HandleFunc(fmt.Sprintf("/%s/status", route), func(w http.ResponseWriter, r *http.Request) {
-		response, err := runFaucetCall[api.FaucetStatusData](&faucetStatusHandler{})
-		server.HandleResponse(w, response, err)
-	})
-
-	// Withdraw RPL
-	router.HandleFunc(fmt.Sprintf("/%s/withdraw-rpl", route), func(w http.ResponseWriter, r *http.Request) {
-		response, err := runFaucetCall[api.FaucetWithdrawRplData](&faucetWithdrawHandler{})
-		server.HandleResponse(w, response, err)
-	})
+	server.RegisterSingleStageHandler(router, route, "status", NewFaucetStatusHandler, runFaucetCall[api.FaucetStatusData])
+	server.RegisterSingleStageHandler(router, route, "withdraw-rpl", NewFaucetWithdrawHandler, runFaucetCall[api.FaucetWithdrawRplData])
 }
 
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable

@@ -13,6 +13,11 @@ type faucetWithdrawHandler struct {
 	allowance *big.Int
 }
 
+func NewFaucetWithdrawHandler(vars map[string]string) (*faucetWithdrawHandler, error) {
+	h := &faucetWithdrawHandler{}
+	return h, nil
+}
+
 func (h *faucetWithdrawHandler) CreateBindings(ctx *callContext) error {
 	return nil
 }

@@ -14,6 +14,11 @@ type faucetStatusHandler struct {
 	allowance *big.Int
 }
 
+func NewFaucetStatusHandler(vars map[string]string) (*faucetStatusHandler, error) {
+	h := &faucetStatusHandler{}
+	return h, nil
+}
+
 func (h *faucetStatusHandler) CreateBindings(ctx *callContext) error {
 	return nil
 }

@@ -1,63 +1,60 @@
 package network
 
 import (
+	"fmt"
+
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/smartnode/rocketpool/api/node"
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
 )
 
-func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, error) {
-	// Get services
-	if err := services.RequireEthClientSynced(c); err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	s, err := services.GetSnapshotDelegation(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
+type networkProposalHandler struct {
+}
 
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-	response := api.NetworkDAOProposalsResponse{}
-	response.AccountAddress = nodeAccount.Address
+func NewAuctionBidHandler(vars map[string]string) (*networkProposalHandler, error) {
+	h := &networkProposalHandler{}
+	return h, nil
+}
 
-	// Return nothing if Snapshot isn't available on this network
+func (h *networkProposalHandler) CreateBindings(ctx *callContext) error {
+	return nil
+}
+
+func (h *networkProposalHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
+}
+
+// NOTE: the snapshot binding isn't built for multicall yet so this uses the old-school method of single getters
+func (h *networkProposalHandler) PrepareData(ctx *callContext, data *api.NetworkDAOProposalsResponse) error {
+	nodeAddress := ctx.nodeAddress
+	cfg := ctx.cfg
+	data.AccountAddress = nodeAddress
+
+	sp := services.GetServiceProvider()
+	s := sp.GetSnapshotDelegation()
 	if s == nil {
-		return &response, nil
+		return fmt.Errorf("snapshot voting is not available on this network")
 	}
 
 	// Get snapshot proposals
 	snapshotResponse, err := node.GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting snapshot proposals: %w", err)
 	}
 
 	// Get delegate address
 	idHash := cfg.Smartnode.GetVotingSnapshotID()
-	response.VotingDelegate, err = s.Delegation(nil, nodeAccount.Address, idHash)
+	data.VotingDelegate, err = s.Delegation(nil, nodeAddress, idHash)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting voting delegate info: %w", err)
 	}
 
 	// Get voted proposals
-	votedProposals, err := node.GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.VotingDelegate)
+	votedProposals, err := node.GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAddress, data.VotingDelegate)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting proposal votes: %w", err)
 	}
-	response.ProposalVotes = votedProposals.Data.Votes
-
-	response.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
-	return &response, nil
+	data.ProposalVotes = votedProposals.Data.Votes
+	data.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
+	return nil
 }
