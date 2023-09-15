@@ -5,12 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -22,8 +18,10 @@ type auctionRecoverHandler struct {
 	pSettings *settings.ProtocolDaoSettings
 }
 
-func (h *auctionRecoverHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+func (h *auctionRecoverHandler) CreateBindings(ctx *callContext) error {
 	var err error
+	rp := ctx.rp
+
 	h.lot, err = auction.NewAuctionLot(rp, h.lotIndex)
 	if err != nil {
 		return fmt.Errorf("error creating lot %d binding: %w", h.lotIndex, err)
@@ -35,7 +33,7 @@ func (h *auctionRecoverHandler) CreateBindings(rp *rocketpool.RocketPool) error 
 	return nil
 }
 
-func (h *auctionRecoverHandler) GetState(nodeAddress common.Address, mc *batch.MultiCaller) {
+func (h *auctionRecoverHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
 	h.lot.GetLotExists(mc)
 	h.lot.GetLotEndBlock(mc)
 	h.lot.GetLotRemainingRplAmount(mc)
@@ -43,7 +41,10 @@ func (h *auctionRecoverHandler) GetState(nodeAddress common.Address, mc *batch.M
 	h.pSettings.GetBidOnAuctionLotEnabled(mc)
 }
 
-func (h *auctionRecoverHandler) PrepareResponse(rp *rocketpool.RocketPool, nodeAccount accounts.Account, opts *bind.TransactOpts, response *api.RecoverRPLFromLotResponse) error {
+func (h *auctionRecoverHandler) PrepareData(ctx *callContext, data *api.RecoverRplFromLotData) error {
+	rp := ctx.rp
+	opts := ctx.opts
+
 	// Get the current block
 	currentBlock, err := rp.Client.BlockNumber(context.Background())
 	if err != nil {
@@ -51,19 +52,19 @@ func (h *auctionRecoverHandler) PrepareResponse(rp *rocketpool.RocketPool, nodeA
 	}
 
 	// Check for validity
-	response.DoesNotExist = !h.lot.Details.Exists
-	response.BiddingNotEnded = !(currentBlock >= h.lot.Details.EndBlock.Formatted())
-	response.NoUnclaimedRPL = (h.lot.Details.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
-	response.RPLAlreadyRecovered = h.lot.Details.RplRecovered
-	response.CanRecover = !(response.DoesNotExist || response.BiddingNotEnded || response.NoUnclaimedRPL || response.RPLAlreadyRecovered)
+	data.DoesNotExist = !h.lot.Details.Exists
+	data.BiddingNotEnded = !(currentBlock >= h.lot.Details.EndBlock.Formatted())
+	data.NoUnclaimedRPL = (h.lot.Details.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
+	data.RPLAlreadyRecovered = h.lot.Details.RplRecovered
+	data.CanRecover = !(data.DoesNotExist || data.BiddingNotEnded || data.NoUnclaimedRPL || data.RPLAlreadyRecovered)
 
 	// Get tx info
-	if response.CanRecover {
+	if data.CanRecover && opts != nil {
 		txInfo, err := h.lot.RecoverUnclaimedRpl(opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for RecoverUnclaimedRpl: %w", err)
 		}
-		response.TxInfo = txInfo
+		data.TxInfo = txInfo
 	}
 	return nil
 }

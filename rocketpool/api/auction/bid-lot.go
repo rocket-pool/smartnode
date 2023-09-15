@@ -5,12 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -23,8 +19,10 @@ type auctionBidHandler struct {
 	pSettings *settings.ProtocolDaoSettings
 }
 
-func (h *auctionBidHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+func (h *auctionBidHandler) CreateBindings(ctx *callContext) error {
 	var err error
+	rp := ctx.rp
+
 	h.lot, err = auction.NewAuctionLot(rp, h.lotIndex)
 	if err != nil {
 		return fmt.Errorf("error creating lot %d binding: %w", h.lotIndex, err)
@@ -36,14 +34,17 @@ func (h *auctionBidHandler) CreateBindings(rp *rocketpool.RocketPool) error {
 	return nil
 }
 
-func (h *auctionBidHandler) GetState(nodeAddress common.Address, mc *batch.MultiCaller) {
+func (h *auctionBidHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
 	h.lot.GetLotExists(mc)
 	h.lot.GetLotEndBlock(mc)
 	h.lot.GetLotRemainingRplAmount(mc)
 	h.pSettings.GetBidOnAuctionLotEnabled(mc)
 }
 
-func (h *auctionBidHandler) PrepareResponse(rp *rocketpool.RocketPool, nodeAccount accounts.Account, opts *bind.TransactOpts, response *api.BidOnLotResponse) error {
+func (h *auctionBidHandler) PrepareData(ctx *callContext, Data *api.BidOnLotData) error {
+	rp := ctx.rp
+	opts := ctx.opts
+
 	// Get the current block
 	currentBlock, err := rp.Client.BlockNumber(context.Background())
 	if err != nil {
@@ -51,19 +52,19 @@ func (h *auctionBidHandler) PrepareResponse(rp *rocketpool.RocketPool, nodeAccou
 	}
 
 	// Check for validity
-	response.DoesNotExist = !h.lot.Details.Exists
-	response.BiddingEnded = (currentBlock >= h.lot.Details.EndBlock.Formatted())
-	response.RPLExhausted = (h.lot.Details.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
-	response.BidOnLotDisabled = !h.pSettings.Details.Auction.IsBidOnLotEnabled
-	response.CanBid = !(response.DoesNotExist || response.BiddingEnded || response.RPLExhausted || response.BidOnLotDisabled)
+	Data.DoesNotExist = !h.lot.Details.Exists
+	Data.BiddingEnded = (currentBlock >= h.lot.Details.EndBlock.Formatted())
+	Data.RPLExhausted = (h.lot.Details.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
+	Data.BidOnLotDisabled = !h.pSettings.Details.Auction.IsBidOnLotEnabled
+	Data.CanBid = !(Data.DoesNotExist || Data.BiddingEnded || Data.RPLExhausted || Data.BidOnLotDisabled)
 
 	// Get tx info
-	if response.CanBid {
+	if Data.CanBid && opts != nil {
 		txInfo, err := h.lot.PlaceBid(opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for PlaceBid: %w", err)
 		}
-		response.TxInfo = txInfo
+		Data.TxInfo = txInfo
 	}
 	return nil
 }

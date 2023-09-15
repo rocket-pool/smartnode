@@ -29,7 +29,7 @@ func (h *faucetStatusHandler) GetState(ctx *callContext, mc *batch.MultiCaller) 
 	f.GetWithdrawalPeriod(mc)
 }
 
-func (h *faucetStatusHandler) PrepareResponse(ctx *callContext, response *api.FaucetStatusData) error {
+func (h *faucetStatusHandler) PrepareData(ctx *callContext, data *api.FaucetStatusData) error {
 	rp := ctx.rp
 	f := ctx.f
 
@@ -40,20 +40,20 @@ func (h *faucetStatusHandler) PrepareResponse(ctx *callContext, response *api.Fa
 	}
 
 	// Populate the response
-	response.Balance = f.Details.Balance
-	response.Allowance = f.Details.Allowance
-	response.WithdrawalFee = f.Details.WithdrawalFee
+	data.Balance = f.Details.Balance
+	data.Allowance = f.Details.Allowance
+	data.WithdrawalFee = f.Details.WithdrawalFee
 	currentPeriodStartBlock := f.Details.WithdrawalPeriodStart.Formatted()
 	withdrawalPeriodBlocks := f.Details.WithdrawalPeriod.Formatted()
 
 	// Get withdrawable amount
-	if response.Balance.Cmp(response.Allowance) > 0 {
-		response.WithdrawableAmount = response.Allowance
+	if data.Balance.Cmp(data.Allowance) > 0 {
+		data.WithdrawableAmount = data.Allowance
 	} else {
-		response.WithdrawableAmount = response.Balance
+		data.WithdrawableAmount = data.Balance
 	}
 
 	// Get reset block
-	response.ResetsInBlocks = (currentPeriodStartBlock + withdrawalPeriodBlocks) - currentBlock
+	data.ResetsInBlocks = (currentPeriodStartBlock + withdrawalPeriodBlocks) - currentBlock
 	return nil
 }

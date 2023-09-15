@@ -2,33 +2,25 @@ package faucet
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/handlers"
 	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	wtypes "github.com/rocket-pool/smartnode/shared/types/wallet"
 )
 
-// Wrapper for callbacks used by runFaucetCall; this implements the caller-specific functionality
-type FaucetCallHandler[dataType any] interface {
-	// Used to create supplemental contract bindings
-	CreateBindings(ctx *callContext) error
-
-	// Used to get any supplemental state required during initialization - anything in here will be fed into an rp.Query() multicall
-	GetState(ctx *callContext, mc *batch.MultiCaller)
-
-	// Prepare the response object using all of the provided artifacts
-	PrepareResponse(ctx *callContext, response *dataType) error
-}
-
 // Context with services and common bindings for calls
 type callContext struct {
-	// Services
 	w           *wallet.LocalWallet
 	rp          *rocketpool.RocketPool
 	f           *contracts.RplFaucet
@@ -36,8 +28,25 @@ type callContext struct {
 	nodeAddress common.Address
 }
 
+// Register routes
+func RegisterRoutes(router *mux.Router, name string) {
+	route := "faucet"
+
+	// Status
+	router.HandleFunc(fmt.Sprintf("/%s/status", route), func(w http.ResponseWriter, r *http.Request) {
+		response, err := runFaucetCall[api.FaucetStatusData](&faucetStatusHandler{})
+		server.HandleResponse(w, response, err)
+	})
+
+	// Withdraw RPL
+	router.HandleFunc(fmt.Sprintf("/%s/withdraw-rpl", route), func(w http.ResponseWriter, r *http.Request) {
+		response, err := runFaucetCall[api.FaucetWithdrawRplData](&faucetWithdrawHandler{})
+		server.HandleResponse(w, response, err)
+	})
+}
+
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable
-func runFaucetCall[dataType any](h FaucetCallHandler[dataType]) (*api.ApiResponse[dataType], error) {
+func runFaucetCall[dataType any](h handlers.ISingleStageCallHandler[dataType, callContext]) (*api.ApiResponse[dataType], error) {
 	// Get services
 	if err := services.RequireNodeRegistered(); err != nil {
 		return nil, fmt.Errorf("error checking if node is registered: %w", err)
@@ -48,6 +57,12 @@ func runFaucetCall[dataType any](h FaucetCallHandler[dataType]) (*api.ApiRespons
 	f := sp.GetRplFaucet()
 	address, _ := w.GetAddress()
 
+	// Make sure the faucet is available
+	if f == nil {
+		return nil, fmt.Errorf("the RPL faucet is not present on this netowrk")
+	}
+
+	// Get the transact opts if this node is ready for transaction
 	var opts *bind.TransactOpts
 	walletStatus := w.GetStatus()
 	if walletStatus == wtypes.WalletStatus_Ready {
@@ -90,7 +105,7 @@ func runFaucetCall[dataType any](h FaucetCallHandler[dataType]) (*api.ApiRespons
 	}
 
 	// Supplemental function-specific response construction
-	err = h.PrepareResponse(context, data)
+	err = h.PrepareData(context, data)
 	if err != nil {
 		return nil, err
 	}

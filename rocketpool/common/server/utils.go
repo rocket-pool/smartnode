@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/goccy/go-json"
+	"github.com/gorilla/mux"
+	"github.com/rocket-pool/smartnode/rocketpool/api/handlers"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -27,4 +29,43 @@ func HandleResponse[DataType any](w http.ResponseWriter, response *api.ApiRespon
 		w.WriteHeader(http.StatusOK)
 		w.Write(bytes)
 	}
+}
+
+// Handles an error related to parsing the input parameters of a request
+func HandleInputError(w http.ResponseWriter, err error) {
+	// Write out any errors
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+	}
+}
+
+func RegisterSingleStageHandler[DataType any, ContextType any, ImplType any, HandlerType handlers.ISingleStageCallHandler[DataType, ContextType, ImplType]](
+	router *mux.Router,
+	packageName string,
+	functionName string,
+	inputParsers []func(h HandlerType, vars map[string]string) error,
+	runner func(HandlerType) (*api.ApiResponse[DataType], error),
+) {
+
+	router.HandleFunc(fmt.Sprintf("/%s/%s", packageName, functionName), func(w http.ResponseWriter, r *http.Request) {
+		// Create the handler
+		var handlerImpl ImplType
+		handler := HandlerType(&handlerImpl)
+
+		// Parse the input
+		vars := mux.Vars(r)
+		for _, parser := range inputParsers {
+			err := parser(handler, vars)
+			if err != nil {
+				HandleInputError(w, err)
+				return
+			}
+		}
+
+		// Run the body
+		response, err := runner(handler)
+		HandleResponse(w, response, err)
+	})
+
 }

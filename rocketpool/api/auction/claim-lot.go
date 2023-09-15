@@ -4,12 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -20,8 +16,10 @@ type auctionClaimHandler struct {
 	lot              *auction.AuctionLot
 }
 
-func (h *auctionClaimHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+func (h *auctionClaimHandler) CreateBindings(ctx *callContext) error {
 	var err error
+	rp := ctx.rp
+
 	h.lot, err = auction.NewAuctionLot(rp, h.lotIndex)
 	if err != nil {
 		return fmt.Errorf("error creating lot %d binding: %w", h.lotIndex, err)
@@ -29,26 +27,30 @@ func (h *auctionClaimHandler) CreateBindings(rp *rocketpool.RocketPool) error {
 	return nil
 }
 
-func (h *auctionClaimHandler) GetState(nodeAddress common.Address, mc *batch.MultiCaller) {
+func (h *auctionClaimHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
+	nodeAddress := ctx.nodeAddress
+
 	h.lot.GetLotExists(mc)
 	h.lot.GetLotAddressBidAmount(mc, &h.addressBidAmount, nodeAddress)
 	h.lot.GetLotIsCleared(mc)
 }
 
-func (h *auctionClaimHandler) PrepareResponse(rp *rocketpool.RocketPool, nodeAccount accounts.Account, opts *bind.TransactOpts, response *api.ClaimFromLotResponse) error {
+func (h *auctionClaimHandler) PrepareData(ctx *callContext, data *api.ClaimFromLotData) error {
+	opts := ctx.opts
+
 	// Check for validity
-	response.DoesNotExist = !h.lot.Details.Exists
-	response.NoBidFromAddress = (h.addressBidAmount.Cmp(big.NewInt(0)) == 0)
-	response.NotCleared = !h.lot.Details.IsCleared
-	response.CanClaim = !(response.DoesNotExist || response.NoBidFromAddress || response.NotCleared)
+	data.DoesNotExist = !h.lot.Details.Exists
+	data.NoBidFromAddress = (h.addressBidAmount.Cmp(big.NewInt(0)) == 0)
+	data.NotCleared = !h.lot.Details.IsCleared
+	data.CanClaim = !(data.DoesNotExist || data.NoBidFromAddress || data.NotCleared)
 
 	// Get tx info
-	if response.CanClaim {
+	if data.CanClaim && opts != nil {
 		txInfo, err := h.lot.ClaimBid(opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for PlaceBid: %w", err)
 		}
-		response.TxInfo = txInfo
+		data.TxInfo = txInfo
 	}
 	return nil
 }

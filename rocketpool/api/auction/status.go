@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
@@ -31,8 +29,10 @@ type auctionStatusHandler struct {
 	networkPrices *network.NetworkPrices
 }
 
-func (h *auctionStatusHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+func (h *auctionStatusHandler) CreateBindings(ctx *callContext) error {
 	var err error
+	rp := ctx.rp
+
 	h.auctionMgr, err = auction.NewAuctionManager(rp)
 	if err != nil {
 		return fmt.Errorf("error creating auction manager binding: %w", err)
@@ -48,7 +48,7 @@ func (h *auctionStatusHandler) CreateBindings(rp *rocketpool.RocketPool) error {
 	return nil
 }
 
-func (h *auctionStatusHandler) GetState(nodeAddress common.Address, mc *batch.MultiCaller) {
+func (h *auctionStatusHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
 	h.auctionMgr.GetTotalRPLBalance(mc)
 	h.auctionMgr.GetAllottedRPLBalance(mc)
 	h.auctionMgr.GetRemainingRPLBalance(mc)
@@ -58,34 +58,37 @@ func (h *auctionStatusHandler) GetState(nodeAddress common.Address, mc *batch.Mu
 	h.pSettings.GetCreateAuctionLotEnabled(mc)
 }
 
-func (h *auctionStatusHandler) PrepareResponse(rp *rocketpool.RocketPool, nodeAccount accounts.Account, opts *bind.TransactOpts, response *api.AuctionStatusResponse) error {
+func (h *auctionStatusHandler) PrepareData(ctx *callContext, data *api.AuctionStatusData) error {
+	rp := ctx.rp
+	nodeAddress := ctx.nodeAddress
+
 	// Check the balance requirement
 	lotMinimumRplAmount := big.NewInt(0).Mul(h.pSettings.Details.Auction.LotMinimumEthValue, eth.EthToWei(1))
 	lotMinimumRplAmount.Quo(lotMinimumRplAmount, h.networkPrices.Details.RplPrice.RawValue)
 	sufficientRemainingRplForLot := (h.auctionMgr.Details.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
 
 	// Get lot counts
-	lotCountDetails, err := getAllLotCountDetails(rp, nodeAccount.Address, h.auctionMgr.Details.LotCount.Formatted())
+	lotCountDetails, err := getAllLotCountDetails(rp, nodeAddress, h.auctionMgr.Details.LotCount.Formatted())
 	if err != nil {
 		return fmt.Errorf("error getting auction lot count details: %w", err)
 	}
 	for _, details := range lotCountDetails {
 		if details.AddressHasBid && details.Cleared {
-			response.LotCounts.ClaimAvailable++
+			data.LotCounts.ClaimAvailable++
 		}
 		if !details.Cleared && details.HasRemainingRpl {
-			response.LotCounts.BiddingAvailable++
+			data.LotCounts.BiddingAvailable++
 		}
 		if details.Cleared && details.HasRemainingRpl && !details.RplRecovered {
-			response.LotCounts.RPLRecoveryAvailable++
+			data.LotCounts.RPLRecoveryAvailable++
 		}
 	}
 
 	// Set response details
-	response.TotalRPLBalance = h.auctionMgr.Details.TotalRplBalance
-	response.AllottedRPLBalance = h.auctionMgr.Details.AllottedRplBalance
-	response.RemainingRPLBalance = h.auctionMgr.Details.RemainingRplBalance
-	response.CanCreateLot = sufficientRemainingRplForLot
+	data.TotalRPLBalance = h.auctionMgr.Details.TotalRplBalance
+	data.AllottedRPLBalance = h.auctionMgr.Details.AllottedRplBalance
+	data.RemainingRPLBalance = h.auctionMgr.Details.RemainingRplBalance
+	data.CanCreateLot = sufficientRemainingRplForLot
 	return nil
 }
 

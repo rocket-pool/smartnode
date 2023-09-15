@@ -7,9 +7,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/core"
 )
 
-type AuctionStatusResponse struct {
-	Status              string   `json:"status"`
-	Error               string   `json:"error"`
+type AuctionStatusData struct {
 	TotalRPLBalance     *big.Int `json:"totalRPLBalance"`
 	AllottedRPLBalance  *big.Int `json:"allottedRPLBalance"`
 	RemainingRPLBalance *big.Int `json:"remainingRPLBalance"`
@@ -21,31 +19,25 @@ type AuctionStatusResponse struct {
 	} `json:"lotCounts"`
 }
 
-type AuctionLotsResponse struct {
-	Status string       `json:"status"`
-	Error  string       `json:"error"`
-	Lots   []LotDetails `json:"lots"`
-}
-type LotDetails struct {
+type AuctionLotDetails struct {
 	Details              auction.AuctionLotDetails `json:"details"`
 	ClaimAvailable       bool                      `json:"claimAvailable"`
 	BiddingAvailable     bool                      `json:"biddingAvailable"`
 	RPLRecoveryAvailable bool                      `json:"rplRecoveryAvailable"`
 	NodeBidAmount        *big.Int                  `json:"nodeBidAmount"`
 }
+type AuctionLotsData struct {
+	Lots []AuctionLotDetails `json:"lots"`
+}
 
-type CreateLotResponse struct {
-	Status              string                `json:"status"`
-	Error               string                `json:"error"`
+type CreateLotData struct {
 	CanCreate           bool                  `json:"canCreate"`
 	InsufficientBalance bool                  `json:"insufficientBalance"`
 	CreateLotDisabled   bool                  `json:"createLotDisabled"`
 	TxInfo              *core.TransactionInfo `json:"txInfo"`
 }
 
-type BidOnLotResponse struct {
-	Status           string                `json:"status"`
-	Error            string                `json:"error"`
+type BidOnLotData struct {
 	CanBid           bool                  `json:"canBid"`
 	DoesNotExist     bool                  `json:"doesNotExist"`
 	BiddingEnded     bool                  `json:"biddingEnded"`
@@ -54,9 +46,7 @@ type BidOnLotResponse struct {
 	TxInfo           *core.TransactionInfo `json:"txInfo"`
 }
 
-type ClaimFromLotResponse struct {
-	Status           string                `json:"status"`
-	Error            string                `json:"error"`
+type ClaimFromLotData struct {
 	CanClaim         bool                  `json:"canClaim"`
 	DoesNotExist     bool                  `json:"doesNotExist"`
 	NoBidFromAddress bool                  `json:"noBidFromAddress"`
@@ -64,9 +54,7 @@ type ClaimFromLotResponse struct {
 	TxInfo           *core.TransactionInfo `json:"txInfo"`
 }
 
-type RecoverRPLFromLotResponse struct {
-	Status              string                `json:"status"`
-	Error               string                `json:"error"`
+type RecoverRplFromLotData struct {
 	CanRecover          bool                  `json:"canRecover"`
 	DoesNotExist        bool                  `json:"doesNotExist"`
 	BiddingNotEnded     bool                  `json:"biddingNotEnded"`

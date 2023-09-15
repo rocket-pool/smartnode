@@ -4,13 +4,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -23,8 +19,10 @@ type auctionCreateHandler struct {
 	networkPrices *network.NetworkPrices
 }
 
-func (h *auctionCreateHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+func (h *auctionCreateHandler) CreateBindings(ctx *callContext) error {
 	var err error
+	rp := ctx.rp
+
 	h.auctionMgr, err = auction.NewAuctionManager(rp)
 	if err != nil {
 		return fmt.Errorf("error creating auction manager binding: %w", err)
@@ -40,31 +38,33 @@ func (h *auctionCreateHandler) CreateBindings(rp *rocketpool.RocketPool) error {
 	return nil
 }
 
-func (h *auctionCreateHandler) GetState(nodeAddress common.Address, mc *batch.MultiCaller) {
+func (h *auctionCreateHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
 	h.auctionMgr.GetRemainingRPLBalance(mc)
 	h.pSettings.GetAuctionLotMinimumEthValue(mc)
 	h.networkPrices.GetRplPrice(mc)
 	h.pSettings.GetCreateAuctionLotEnabled(mc)
 }
 
-func (h *auctionCreateHandler) PrepareResponse(rp *rocketpool.RocketPool, nodeAccount accounts.Account, opts *bind.TransactOpts, response *api.CreateLotResponse) error {
+func (h *auctionCreateHandler) PrepareData(ctx *callContext, data *api.CreateLotData) error {
+	opts := ctx.opts
+
 	// Check the balance requirement
 	lotMinimumRplAmount := big.NewInt(0).Mul(h.pSettings.Details.Auction.LotMinimumEthValue, eth.EthToWei(1))
 	lotMinimumRplAmount.Quo(lotMinimumRplAmount, h.networkPrices.Details.RplPrice.RawValue)
 	sufficientRemainingRplForLot := (h.auctionMgr.Details.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
 
 	// Check for validity
-	response.InsufficientBalance = !sufficientRemainingRplForLot
-	response.CreateLotDisabled = !h.pSettings.Details.Auction.IsCreateLotEnabled
-	response.CanCreate = !(response.InsufficientBalance || response.CreateLotDisabled)
+	data.InsufficientBalance = !sufficientRemainingRplForLot
+	data.CreateLotDisabled = !h.pSettings.Details.Auction.IsCreateLotEnabled
+	data.CanCreate = !(data.InsufficientBalance || data.CreateLotDisabled)
 
 	// Get tx info
-	if response.CanCreate {
+	if data.CanCreate && opts != nil {
 		txInfo, err := h.auctionMgr.CreateLot(opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for CreateLot: %w", err)
 		}
-		response.TxInfo = txInfo
+		data.TxInfo = txInfo
 	}
 	return nil
 }

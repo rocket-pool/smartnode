@@ -104,7 +104,6 @@ func NewServiceProvider(c *cli.Context) (*ServiceProvider, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error creating RPL faucet binding: %w", err)
 		}
-		return nil, nil
 	}
 
 	// Snapshot delegation
