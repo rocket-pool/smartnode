@@ -33,6 +33,9 @@ const (
 	FeeRecipientFilename               string = "rp-fee-recipient.txt"
 	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
 	SocketFilename                     string = "smartnode.sock"
+	NodeAddressFilename                string = "address"
+	WalletKeystoreFilename             string = "wallet"
+	WalletPasswordFilename             string = "password"
 )
 
 // Defaults
@@ -656,20 +659,28 @@ func (cfg *SmartnodeConfig) GetChainID() uint {
 	return cfg.chainID[cfg.Network.Value.(config.Network)]
 }
 
-func (cfg *SmartnodeConfig) GetWalletPath() string {
+func (cfg *SmartnodeConfig) GetNodeAddressPath() string {
 	if cfg.parent.IsNativeMode {
-		return filepath.Join(cfg.DataPath.Value.(string), "wallet")
+		return filepath.Join(cfg.DataPath.Value.(string), NodeAddressFilename)
 	}
 
-	return filepath.Join(DaemonDataPath, "wallet")
+	return filepath.Join(DaemonDataPath, NodeAddressFilename)
+}
+
+func (cfg *SmartnodeConfig) GetWalletPath() string {
+	if cfg.parent.IsNativeMode {
+		return filepath.Join(cfg.DataPath.Value.(string), WalletKeystoreFilename)
+	}
+
+	return filepath.Join(DaemonDataPath, WalletKeystoreFilename)
 }
 
 func (cfg *SmartnodeConfig) GetPasswordPath() string {
 	if cfg.parent.IsNativeMode {
-		return filepath.Join(cfg.DataPath.Value.(string), "password")
+		return filepath.Join(cfg.DataPath.Value.(string), WalletPasswordFilename)
 	}
 
-	return filepath.Join(DaemonDataPath, "password")
+	return filepath.Join(DaemonDataPath, WalletPasswordFilename)
 }
 
 func (cfg *SmartnodeConfig) GetValidatorKeychainPath() string {
@@ -688,12 +699,16 @@ func (cfg *SmartnodeConfig) GetRecordsPath() string {
 	return filepath.Join(DaemonDataPath, "records")
 }
 
+func (cfg *SmartnodeConfig) GeNodeAddressPathInCLI() string {
+	return filepath.Join(cfg.DataPath.Value.(string), NodeAddressFilename)
+}
+
 func (cfg *SmartnodeConfig) GetWalletPathInCLI() string {
-	return filepath.Join(cfg.DataPath.Value.(string), "wallet")
+	return filepath.Join(cfg.DataPath.Value.(string), WalletKeystoreFilename)
 }
 
 func (cfg *SmartnodeConfig) GetPasswordPathInCLI() string {
-	return filepath.Join(cfg.DataPath.Value.(string), "password")
+	return filepath.Join(cfg.DataPath.Value.(string), WalletPasswordFilename)
 }
 
 func (cfg *SmartnodeConfig) GetValidatorKeychainPathInCLI() string {
