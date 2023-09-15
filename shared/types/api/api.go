@@ -3,39 +3,30 @@ package api
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/smartnode/shared/types/wallet"
 )
 
-type ApiResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+type ApiResponse[Data any] struct {
+	WalletStatus wallet.WalletStatus `json:"walletStatus"`
+	Data         *Data               `json:"data"`
 }
 
-type TxInfoResponse struct {
-	Status string                `json:"status"`
-	Error  string                `json:"error"`
+type TxInfoData struct {
 	TxInfo *core.TransactionInfo `json:"txInfo"`
 }
 
-type BatchTxInfoResponse struct {
-	Status  string                  `json:"status"`
-	Error   string                  `json:"error"`
+type BatchTxInfoData struct {
 	TxInfos []*core.TransactionInfo `json:"txInfos"`
 }
 
-type TxResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+type TxData struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type BatchTxResponse struct {
-	Status   string        `json:"status"`
-	Error    string        `json:"error"`
+type BatchTxData struct {
 	TxHashes []common.Hash `json:"txHashes"`
 }
 
-type SignedTxResponse struct {
-	Status  string `json:"status"`
-	Error   string `json:"error"`
+type SignedTxData struct {
 	TxBytes []byte `json:"txBytes"`
 }

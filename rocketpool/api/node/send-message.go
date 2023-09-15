@@ -11,7 +11,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func sendMessage(c *cli.Context, address common.Address, message []byte) (*api.TxInfoResponse, error) {
+func sendMessage(c *cli.Context, address common.Address, message []byte) (*api.TxInfoData, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -26,7 +26,7 @@ func sendMessage(c *cli.Context, address common.Address, message []byte) (*api.T
 	}
 
 	// Response
-	response := api.TxInfoResponse{}
+	response := api.TxInfoData{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()

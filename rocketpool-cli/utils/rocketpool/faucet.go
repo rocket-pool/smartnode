@@ -8,17 +8,17 @@ import (
 )
 
 // Get faucet status
-func (c *Client) FaucetStatus() (api.FaucetStatusResponse, error) {
+func (c *Client) FaucetStatus() (api.FaucetStatusData, error) {
 	responseBytes, err := c.callAPI("faucet status")
 	if err != nil {
-		return api.FaucetStatusResponse{}, fmt.Errorf("Could not get faucet status: %w", err)
+		return api.FaucetStatusData{}, fmt.Errorf("Could not get faucet status: %w", err)
 	}
-	var response api.FaucetStatusResponse
+	var response api.FaucetStatusData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.FaucetStatusResponse{}, fmt.Errorf("Could not decode faucet status response: %w", err)
+		return api.FaucetStatusData{}, fmt.Errorf("Could not decode faucet status response: %w", err)
 	}
 	if response.Error != "" {
-		return api.FaucetStatusResponse{}, fmt.Errorf("Could not get faucet status: %s", response.Error)
+		return api.FaucetStatusData{}, fmt.Errorf("Could not get faucet status: %s", response.Error)
 	}
 	return response, nil
 }
@@ -40,17 +40,17 @@ func (c *Client) CanFaucetWithdrawRpl() (api.CanFaucetWithdrawRplResponse, error
 }
 
 // Withdraw RPL from the faucet
-func (c *Client) FaucetWithdrawRpl() (api.FaucetWithdrawRplResponse, error) {
+func (c *Client) FaucetWithdrawRpl() (api.FaucetWithdrawRplData, error) {
 	responseBytes, err := c.callAPI("faucet withdraw-rpl")
 	if err != nil {
-		return api.FaucetWithdrawRplResponse{}, fmt.Errorf("Could not withdraw RPL from faucet: %w", err)
+		return api.FaucetWithdrawRplData{}, fmt.Errorf("Could not withdraw RPL from faucet: %w", err)
 	}
-	var response api.FaucetWithdrawRplResponse
+	var response api.FaucetWithdrawRplData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.FaucetWithdrawRplResponse{}, fmt.Errorf("Could not decode withdraw RPL from faucet response: %w", err)
+		return api.FaucetWithdrawRplData{}, fmt.Errorf("Could not decode withdraw RPL from faucet response: %w", err)
 	}
 	if response.Error != "" {
-		return api.FaucetWithdrawRplResponse{}, fmt.Errorf("Could not withdraw RPL from faucet: %s", response.Error)
+		return api.FaucetWithdrawRplData{}, fmt.Errorf("Could not withdraw RPL from faucet: %s", response.Error)
 	}
 	return response, nil
 }

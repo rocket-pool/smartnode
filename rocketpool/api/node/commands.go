@@ -98,7 +98,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.TxInfoResponse](c, true, &nodeClaimAndStakeHandler{
+					response, err := runNodeCall[types.TxInfoData](c, true, &nodeClaimAndStakeHandler{
 						indices:     indices,
 						stakeAmount: nil,
 					})
@@ -127,7 +127,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runNodeCall[types.TxInfoResponse](c, true, &nodeClaimAndStakeHandler{
+					response, err := runNodeCall[types.TxInfoData](c, true, &nodeClaimAndStakeHandler{
 						indices:     indices,
 						stakeAmount: stakeAmount,
 					})

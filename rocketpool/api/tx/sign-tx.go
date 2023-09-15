@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func signTx(c *cli.Context, txInfo *core.TransactionInfo) (*api.SignedTxResponse, error) {
+func signTx(c *cli.Context, txInfo *core.TransactionInfo) (*api.SignedTxData, error) {
 	// Get services
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
@@ -25,7 +25,7 @@ func signTx(c *cli.Context, txInfo *core.TransactionInfo) (*api.SignedTxResponse
 	}
 
 	// Response
-	response := api.SignedTxResponse{}
+	response := api.SignedTxData{}
 
 	// Sign it
 	tx, err := rp.SignTransaction(txInfo, opts)

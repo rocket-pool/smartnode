@@ -98,7 +98,7 @@ func (m *minipoolRescueDissolvedManager) PrepareResponse(rp *rocketpool.RocketPo
 	return nil
 }
 
-func rescueDissolvedMinipools(c *cli.Context, minipoolAddresses []common.Address, amounts []*big.Int) (*api.BatchTxInfoResponse, error) {
+func rescueDissolvedMinipools(c *cli.Context, minipoolAddresses []common.Address, amounts []*big.Int) (*api.BatchTxInfoData, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func rescueDissolvedMinipools(c *cli.Context, minipoolAddresses []common.Address
 	}
 
 	// Response
-	response := api.BatchTxInfoResponse{}
+	response := api.BatchTxInfoData{}
 
 	// Sanity check
 	if len(minipoolAddresses) != len(amounts) {

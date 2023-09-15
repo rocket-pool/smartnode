@@ -83,7 +83,7 @@ func (m *minipoolPromoteManager) PrepareResponse(rp *rocketpool.RocketPool, bc b
 	return nil
 }
 
-func promoteMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoResponse, error) {
+func promoteMinipools(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoData, error) {
 	return createBatchTxResponseForV3(c, minipoolAddresses, func(mpv3 *minipool.MinipoolV3, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 		return mpv3.Promote(opts)
 	}, "promote")

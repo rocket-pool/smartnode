@@ -12,9 +12,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/urfave/cli"
+	wtypes "github.com/rocket-pool/smartnode/shared/types/wallet"
 )
 
 // Settings
@@ -44,7 +43,7 @@ var (
 func RequireNodeAddress() error {
 	w := GetServiceProvider().GetWallet()
 	status := w.GetStatus()
-	if status == wallet.WalletStatus_NoAddress {
+	if status == wtypes.WalletStatus_NoAddress {
 		return errors.New("The node currently does not have an address set. Please run 'rocketpool wallet init' and try again.")
 	}
 	return nil
@@ -54,15 +53,15 @@ func RequireWalletReady() error {
 	w := GetServiceProvider().GetWallet()
 	status := w.GetStatus()
 	switch status {
-	case wallet.WalletStatus_NoAddress:
+	case wtypes.WalletStatus_NoAddress:
 		return errors.New("The node currently does not have an address set. Please run 'rocketpool wallet init' and try again.")
-	case wallet.WalletStatus_NoKeystore:
+	case wtypes.WalletStatus_NoKeystore:
 		return errors.New("The node currently does not have a node wallet keystore. Please run 'rocketpool wallet init' and try again.")
-	case wallet.WalletStatus_NoPassword:
+	case wtypes.WalletStatus_NoPassword:
 		return errors.New("The node's wallet password has not been set. Please run 'rocketpool wallet enter-password' first.")
-	case wallet.WalletStatus_KeystoreMismatch:
+	case wtypes.WalletStatus_KeystoreMismatch:
 		return errors.New("The node's wallet keystore does not match the node address. This node is currently in read-only mode.")
-	case wallet.WalletStatus_Ready:
+	case wtypes.WalletStatus_Ready:
 		return nil
 	default:
 		return fmt.Errorf("error checking if wallet is ready: unknown status [%v]", status)
@@ -91,8 +90,8 @@ func RequireBeaconClientSynced() error {
 	return nil
 }
 
-func RequireNodeRegistered(c *cli.Context) error {
-	if err := RequireWalletReady(); err != nil {
+func RequireNodeRegistered() error {
+	if err := RequireNodeAddress(); err != nil {
 		return err
 	}
 	if err := RequireEthClientSynced(); err != nil {
@@ -109,7 +108,7 @@ func RequireNodeRegistered(c *cli.Context) error {
 }
 
 func RequireNodeTrusted() error {
-	if err := RequireWalletReady(); err != nil {
+	if err := RequireNodeAddress(); err != nil {
 		return err
 	}
 	if err := RequireEthClientSynced(); err != nil {
@@ -135,20 +134,20 @@ func WaitWalletReady(verbose bool) error {
 		status := w.GetStatus()
 		var message string
 		switch status {
-		case wallet.WalletStatus_NoAddress:
+		case wtypes.WalletStatus_NoAddress:
 			message = "The node currently does not have an address set"
-		case wallet.WalletStatus_NoKeystore:
+		case wtypes.WalletStatus_NoKeystore:
 			message = "The node currently does not have a node wallet keystore"
-		case wallet.WalletStatus_NoPassword:
+		case wtypes.WalletStatus_NoPassword:
 			message = "The node's wallet password has not been set"
-		case wallet.WalletStatus_KeystoreMismatch:
+		case wtypes.WalletStatus_KeystoreMismatch:
 			message = "The node's wallet keystore does not match the node address"
-		case wallet.WalletStatus_Ready:
+		case wtypes.WalletStatus_Ready:
 			return nil
 		default:
 			message = fmt.Sprintf("error checking if wallet is ready: unknown status [%v]", status)
 		}
-		if status == wallet.WalletStatus_Ready {
+		if status == wtypes.WalletStatus_Ready {
 			return nil
 		}
 		if verbose {

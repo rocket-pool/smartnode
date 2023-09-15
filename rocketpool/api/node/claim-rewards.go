@@ -33,7 +33,7 @@ func (h *nodeClaimAndStakeHandler) CreateBindings(ctx *callContext) error {
 func (h *nodeClaimAndStakeHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
 }
 
-func (h *nodeClaimAndStakeHandler) PrepareResponse(ctx *callContext, response *api.TxInfoResponse) error {
+func (h *nodeClaimAndStakeHandler) PrepareResponse(ctx *callContext, response *api.TxInfoData) error {
 	rp := ctx.rp
 	cfg := ctx.cfg
 	node := ctx.node

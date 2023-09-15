@@ -134,7 +134,7 @@ func runMinipoolQuery[responseType any](c *cli.Context, h MinipoolCallHandler[re
 }
 
 // Get transaction info for an operation on all of the provided minipools, using the common minipool API (for version-agnostic functions)
-func createBatchTxResponseForCommon(c *cli.Context, minipoolAddresses []common.Address, txCreator func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) (*api.BatchTxInfoResponse, error) {
+func createBatchTxResponseForCommon(c *cli.Context, minipoolAddresses []common.Address, txCreator func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) (*api.BatchTxInfoData, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -153,7 +153,7 @@ func createBatchTxResponseForCommon(c *cli.Context, minipoolAddresses []common.A
 	}
 
 	// Response
-	response := api.BatchTxInfoResponse{}
+	response := api.BatchTxInfoData{}
 
 	// Create minipools
 	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
@@ -177,7 +177,7 @@ func createBatchTxResponseForCommon(c *cli.Context, minipoolAddresses []common.A
 }
 
 // Get transaction info for an operation on all of the provided minipools, using the v3 minipool API (for Atlas-specific functions)
-func createBatchTxResponseForV3(c *cli.Context, minipoolAddresses []common.Address, txCreator func(mpv3 *minipool.MinipoolV3, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) (*api.BatchTxInfoResponse, error) {
+func createBatchTxResponseForV3(c *cli.Context, minipoolAddresses []common.Address, txCreator func(mpv3 *minipool.MinipoolV3, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) (*api.BatchTxInfoData, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -196,7 +196,7 @@ func createBatchTxResponseForV3(c *cli.Context, minipoolAddresses []common.Addre
 	}
 
 	// Response
-	response := api.BatchTxInfoResponse{}
+	response := api.BatchTxInfoData{}
 
 	// Create minipools
 	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)

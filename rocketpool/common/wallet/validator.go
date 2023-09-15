@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/rocket-pool/rocketpool-go/types"
+	wtypes "github.com/rocket-pool/smartnode/shared/types/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2util "github.com/wealdtech/go-eth2-util"
@@ -312,15 +313,15 @@ func (w *LocalWallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateK
 func (w *LocalWallet) checkIfReady() error {
 	status := w.GetStatus()
 	switch status {
-	case WalletStatus_NoAddress:
+	case wtypes.WalletStatus_NoAddress:
 		return fmt.Errorf("node wallet does not have an address loaded - please create or recover a node wallet")
-	case WalletStatus_NoKeystore:
+	case wtypes.WalletStatus_NoKeystore:
 		return fmt.Errorf("cannot process validator keys because no keystore is loaded")
-	case WalletStatus_NoPassword:
+	case wtypes.WalletStatus_NoPassword:
 		return fmt.Errorf("cannot process validator keys because no password is loaded for the wallet")
-	case WalletStatus_KeystoreMismatch:
+	case wtypes.WalletStatus_KeystoreMismatch:
 		return fmt.Errorf("cannot process validator keys because the keystore is for a different wallet than the node address")
-	case WalletStatus_Ready:
+	case wtypes.WalletStatus_Ready:
 		return nil
 	default:
 		return fmt.Errorf("unknown wallet status %v", status)

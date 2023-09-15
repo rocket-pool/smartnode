@@ -5,13 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -19,19 +14,25 @@ type faucetStatusHandler struct {
 	allowance *big.Int
 }
 
-func (h *faucetStatusHandler) CreateBindings(rp *rocketpool.RocketPool) error {
+func (h *faucetStatusHandler) CreateBindings(ctx *callContext) error {
 	return nil
 }
 
-func (h *faucetStatusHandler) GetState(f *contracts.RplFaucet, nodeAddress common.Address, mc *batch.MultiCaller) {
+func (h *faucetStatusHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
+	f := ctx.f
+	address := ctx.nodeAddress
+
 	f.GetBalance(mc)
-	f.GetAllowanceFor(mc, &h.allowance, nodeAddress)
+	f.GetAllowanceFor(mc, &h.allowance, address)
 	f.GetWithdrawalFee(mc)
 	f.GetWithdrawalPeriodStart(mc)
 	f.GetWithdrawalPeriod(mc)
 }
 
-func (h *faucetStatusHandler) PrepareResponse(rp *rocketpool.RocketPool, f *contracts.RplFaucet, nodeAccount accounts.Account, opts *bind.TransactOpts, response *api.FaucetStatusResponse) error {
+func (h *faucetStatusHandler) PrepareResponse(ctx *callContext, response *api.FaucetStatusData) error {
+	rp := ctx.rp
+	f := ctx.f
+
 	// Get the current block
 	currentBlock, err := rp.Client.BlockNumber(context.Background())
 	if err != nil {
