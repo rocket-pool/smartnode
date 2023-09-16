@@ -310,16 +310,6 @@ type NodeRewardsResponse struct {
 	TxInfo                      *core.TransactionInfo `json:"txInfo"`
 }
 
-type DepositContractInfoResponse struct {
-	Status                string         `json:"status"`
-	Error                 string         `json:"error"`
-	RPDepositContract     common.Address `json:"rpDepositContract"`
-	RPNetwork             uint64         `json:"rpNetwork"`
-	BeaconDepositContract common.Address `json:"beaconDepositContract"`
-	BeaconNetwork         uint64         `json:"beaconNetwork"`
-	SufficientSync        bool           `json:"sufficientSync"`
-}
-
 type NodeSignResponse struct {
 	Status     string `json:"status"`
 	Error      string `json:"error"`

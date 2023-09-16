@@ -3,45 +3,60 @@ package network
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	rputils "github.com/rocket-pool/smartnode/rocketpool/utils/rp"
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, error) {
-	// Get services
-	if err := services.RequireEthClientSynced(c); err != nil { // Needs to be synced so RP has been deployed
-		response := api.DepositContractInfoResponse{}
-		response.SufficientSync = false
-		return &response, nil
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, fmt.Errorf("error getting Rocket Pool binding: %w", err)
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, fmt.Errorf("error getting configuration: %w", err)
-	}
-	bc, err := services.GetBeaconClient(c) // Doesn't need to be synced because the deposit contract is in the genesis info
-	if err != nil {
-		return nil, fmt.Errorf("error getting beacon client: %w", err)
-	}
+// ===============
+// === Factory ===
+// ===============
 
-	// Response
-	response := api.DepositContractInfoResponse{}
-	response.SufficientSync = true
+type networkDepositInfoContextFactory struct {
+	handler *NetworkHandler
+}
 
+func (f *networkDepositInfoContextFactory) Create(vars map[string]string) (*networkDepositInfoContext, error) {
+	c := &networkDepositInfoContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
+
+func (f *networkDepositInfoContextFactory) Run(c *networkDepositInfoContext) (*api.ApiResponse[api.NetworkDepositContractInfoData], error) {
+	return runNetworkCall[api.NetworkDepositContractInfoData](c)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type networkDepositInfoContext struct {
+	handler *NetworkHandler
+	bc      beacon.Client
+	*commonContext
+}
+
+func (c *networkDepositInfoContext) CreateBindings(ctx *commonContext) error {
+	c.commonContext = ctx
+	c.bc = c.handler.serviceProvider.GetBeaconClient()
+	return nil
+}
+
+func (c *networkDepositInfoContext) GetState(mc *batch.MultiCaller) {
+}
+
+func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContractInfoData) error {
 	// Get the deposit contract info
-	info, err := rputils.GetDepositContractInfo(rp, cfg, bc)
+	info, err := rputils.GetDepositContractInfo(c.rp, c.cfg, c.bc)
 	if err != nil {
-		return nil, fmt.Errorf("error getting deposit contract info: %w", err)
+		return fmt.Errorf("error getting deposit contract info: %w", err)
 	}
-	response.RPNetwork = info.RPNetwork
-	response.RPDepositContract = info.RPDepositContract
-	response.BeaconNetwork = info.BeaconNetwork
-	response.BeaconDepositContract = info.BeaconDepositContract
-	return &response, nil
+	data.SufficientSync = true
+	data.RPNetwork = info.RPNetwork
+	data.RPDepositContract = info.RPDepositContract
+	data.BeaconNetwork = info.BeaconNetwork
+	data.BeaconDepositContract = info.BeaconDepositContract
+	return nil
 }

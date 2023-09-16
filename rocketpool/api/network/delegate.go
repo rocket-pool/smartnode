@@ -14,18 +14,18 @@ import (
 // ===============
 
 type networkDelegateContextFactory struct {
-	h *NetworkHandler
+	handler *NetworkHandler
 }
 
 func (f *networkDelegateContextFactory) Create(vars map[string]string) (*networkDelegateContext, error) {
 	c := &networkDelegateContext{
-		h: f.h,
+		handler: f.handler,
 	}
 	return c, nil
 }
 
-func (f *networkDelegateContextFactory) Run(c *networkDelegateContext) (*api.ApiResponse[api.GetLatestDelegateData], error) {
-	return runNetworkCall[api.GetLatestDelegateData](c)
+func (f *networkDelegateContextFactory) Run(c *networkDelegateContext) (*api.ApiResponse[api.NetworkLatestDelegateData], error) {
+	return runNetworkCall[api.NetworkLatestDelegateData](c)
 }
 
 // ===============
@@ -33,7 +33,7 @@ func (f *networkDelegateContextFactory) Run(c *networkDelegateContext) (*api.Api
 // ===============
 
 type networkDelegateContext struct {
-	h                *NetworkHandler
+	handler          *NetworkHandler
 	delegateContract *core.Contract
 	*commonContext
 }
@@ -52,7 +52,7 @@ func (c *networkDelegateContext) CreateBindings(ctx *commonContext) error {
 func (c *networkDelegateContext) GetState(mc *batch.MultiCaller) {
 }
 
-func (c *networkDelegateContext) PrepareData(Data *api.GetLatestDelegateData) error {
-	Data.Address = *c.delegateContract.Address
+func (c *networkDelegateContext) PrepareData(data *api.NetworkLatestDelegateData) error {
+	data.Address = *c.delegateContract.Address
 	return nil
 }

@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -18,18 +21,14 @@ import (
 // ===============
 
 type auctionStatusContextFactory struct {
-	h *AuctionHandler
+	handler *AuctionHandler
 }
 
 func (f *auctionStatusContextFactory) Create(vars map[string]string) (*auctionStatusContext, error) {
 	c := &auctionStatusContext{
-		h: f.h,
+		handler: f.handler,
 	}
 	return c, nil
-}
-
-func (f *auctionStatusContextFactory) Run(c *auctionStatusContext) (*api.ApiResponse[api.AuctionStatusData], error) {
-	return runAuctionCall[api.AuctionStatusData](c)
 }
 
 // ===============
@@ -45,17 +44,27 @@ type lotCountDetails struct {
 }
 
 type auctionStatusContext struct {
-	h             *AuctionHandler
+	handler     *AuctionHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
 	auctionMgr    *auction.AuctionManager
 	pSettings     *settings.ProtocolDaoSettings
 	networkPrices *network.NetworkPrices
-	*commonContext
 }
 
-func (c *auctionStatusContext) CreateBindings(ctx *commonContext) error {
-	var err error
-	c.commonContext = ctx
+func (c *auctionStatusContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	err := sp.RequireNodeRegistered()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
 	c.auctionMgr, err = auction.NewAuctionManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating auction manager binding: %w", err)
@@ -81,7 +90,7 @@ func (c *auctionStatusContext) GetState(mc *batch.MultiCaller) {
 	c.pSettings.GetCreateAuctionLotEnabled(mc)
 }
 
-func (c *auctionStatusContext) PrepareData(data *api.AuctionStatusData) error {
+func (c *auctionStatusContext) PrepareData(data *api.AuctionStatusData, opts *bind.TransactOpts) error {
 	// Check the balance requirement
 	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Details.Auction.LotMinimumEthValue, eth.EthToWei(1))
 	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkPrices.Details.RplPrice.RawValue)

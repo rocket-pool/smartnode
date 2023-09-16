@@ -24,9 +24,10 @@ import (
 // ===============
 
 type NetworkHandler struct {
-	serviceProvider  *services.ServiceProvider
-	proposalsFactory server.IContextFactory[*networkProposalContext, api.NetworkDaoProposalsData, commonContext]
-	delegateFactory  server.IContextFactory[*networkDelegateContext, api.GetLatestDelegateData, commonContext]
+	serviceProvider    *services.ServiceProvider
+	proposalsFactory   server.ISingleStageContextFactory[*networkProposalContext, api.NetworkDaoProposalsData, commonContext]
+	delegateFactory    server.ISingleStageContextFactory[*networkDelegateContext, api.NetworkLatestDelegateData, commonContext]
+	depositInfoFactory server.ISingleStageContextFactory[*networkDepositInfoContext, api.NetworkDepositContractInfoData, commonContext]
 }
 
 func NewNetworkHandler(serviceProvider *services.ServiceProvider) *NetworkHandler {
@@ -35,12 +36,14 @@ func NewNetworkHandler(serviceProvider *services.ServiceProvider) *NetworkHandle
 	}
 	h.proposalsFactory = &networkProposalContextFactory{h}
 	h.delegateFactory = &networkDelegateContextFactory{h}
+	h.depositInfoFactory = &networkDepositInfoContextFactory{h}
 	return h
 }
 
 func (h *NetworkHandler) RegisterRoutes(router *mux.Router) {
 	server.RegisterSingleStageRoute(router, "dao-proposals", h.proposalsFactory)
 	server.RegisterSingleStageRoute(router, "latest-delegate", h.delegateFactory)
+	server.RegisterSingleStageRoute(router, "deposit-contract-info", h.depositInfoFactory)
 }
 
 // ==============
@@ -54,25 +57,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage Rocket Pool network parameters",
 		Subcommands: []cli.Command{
-
-			// Deposit contract info
-			{
-				Name:      "deposit-contract-info",
-				Usage:     "Get information about the deposit contract specified by Rocket Pool and the Beacon Chain client",
-				UsageText: "rocketpool api network deposit-contract-info",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getDepositContractInfo(c))
-					return nil
-
-				},
-			},
 
 			{
 				Name:      "node-fee",

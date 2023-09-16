@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getRplPrice(c *cli.Context) (*api.RplPriceData, error) {
+func getRplPrice(c *cli.Context) (*api.NetworkRplPriceData, error) {
 	// Get services
 	if err := services.RequireEthClientSynced(c); err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func getRplPrice(c *cli.Context) (*api.RplPriceData, error) {
 	}
 
 	// Response
-	response := api.RplPriceData{}
+	response := api.NetworkRplPriceData{}
 
 	// Data
 	var rplPrice *big.Int

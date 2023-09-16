@@ -18,12 +18,12 @@ import (
 // ===============
 
 type networkProposalContextFactory struct {
-	h *NetworkHandler
+	handler *NetworkHandler
 }
 
 func (f *networkProposalContextFactory) Create(vars map[string]string) (*networkProposalContext, error) {
 	c := &networkProposalContext{
-		h: f.h,
+		handler: f.handler,
 	}
 	return c, nil
 }
@@ -37,7 +37,7 @@ func (f *networkProposalContextFactory) Run(c *networkProposalContext) (*api.Api
 // ===============
 
 type networkProposalContext struct {
-	h *NetworkHandler
+	handler *NetworkHandler
 	*commonContext
 }
 

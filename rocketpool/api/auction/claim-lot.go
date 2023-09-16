@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -18,12 +21,12 @@ import (
 // ===============
 
 type auctionClaimContextFactory struct {
-	h *AuctionHandler
+	handler *AuctionHandler
 }
 
 func (f *auctionClaimContextFactory) Create(vars map[string]string) (*auctionClaimContext, error) {
 	c := &auctionClaimContext{
-		h: f.h,
+		handler: f.handler,
 	}
 	inputErrs := []error{
 		server.ValidateArg("index", vars, cliutils.ValidateUint, &c.lotIndex),
@@ -31,26 +34,32 @@ func (f *auctionClaimContextFactory) Create(vars map[string]string) (*auctionCla
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *auctionClaimContextFactory) Run(c *auctionClaimContext) (*api.ApiResponse[api.ClaimFromLotData], error) {
-	return runAuctionCall[api.ClaimFromLotData](c)
-}
-
 // ===============
 // === Context ===
 // ===============
 
 type auctionClaimContext struct {
-	h                *AuctionHandler
+	handler     *AuctionHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
 	lotIndex         uint64
 	addressBidAmount *big.Int
 	lot              *auction.AuctionLot
-	*commonContext
 }
 
-func (c *auctionClaimContext) CreateBindings(ctx *commonContext) error {
-	var err error
-	c.commonContext = ctx
+func (c *auctionClaimContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	err := sp.RequireNodeRegistered()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
 	c.lot, err = auction.NewAuctionLot(c.rp, c.lotIndex)
 	if err != nil {
 		return fmt.Errorf("error creating lot %d binding: %w", c.lotIndex, err)
@@ -64,7 +73,7 @@ func (c *auctionClaimContext) GetState(mc *batch.MultiCaller) {
 	c.lot.GetLotIsCleared(mc)
 }
 
-func (c *auctionClaimContext) PrepareData(data *api.ClaimFromLotData) error {
+func (c *auctionClaimContext) PrepareData(data *api.ClaimFromLotData, opts *bind.TransactOpts) error {
 	// Check for validity
 	data.DoesNotExist = !c.lot.Details.Exists
 	data.NoBidFromAddress = (c.addressBidAmount.Cmp(big.NewInt(0)) == 0)
@@ -72,8 +81,8 @@ func (c *auctionClaimContext) PrepareData(data *api.ClaimFromLotData) error {
 	data.CanClaim = !(data.DoesNotExist || data.NoBidFromAddress || data.NotCleared)
 
 	// Get tx info
-	if data.CanClaim && c.opts != nil {
-		txInfo, err := c.lot.ClaimBid(c.opts)
+	if data.CanClaim && opts != nil {
+		txInfo, err := c.lot.ClaimBid(opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for PlaceBid: %w", err)
 		}

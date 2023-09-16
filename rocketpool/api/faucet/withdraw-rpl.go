@@ -14,12 +14,12 @@ import (
 // ===============
 
 type faucetWithdrawContextFactory struct {
-	h *FaucetHandler
+	handler *FaucetHandler
 }
 
 func (f *faucetWithdrawContextFactory) Create(vars map[string]string) (*faucetWithdrawContext, error) {
 	c := &faucetWithdrawContext{
-		h: f.h,
+		handler: f.handler,
 	}
 	return c, nil
 }
@@ -33,7 +33,7 @@ func (f *faucetWithdrawContextFactory) Run(c *faucetWithdrawContext) (*api.ApiRe
 // ===============
 
 type faucetWithdrawContext struct {
-	h         *FaucetHandler
+	handler   *FaucetHandler
 	allowance *big.Int
 	*commonContext
 }

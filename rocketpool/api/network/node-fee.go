@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getNodeFee(c *cli.Context) (*api.NodeFeeData, error) {
+func getNodeFee(c *cli.Context) (*api.NetworkNodeFeeData, error) {
 	// Get services
 	if err := services.RequireEthClientSynced(c); err != nil {
 		return nil, err
@@ -23,7 +23,7 @@ func getNodeFee(c *cli.Context) (*api.NodeFeeData, error) {
 	}
 
 	// Response
-	response := api.NodeFeeData{}
+	response := api.NetworkNodeFeeData{}
 
 	// Create bindings
 	network, err := network.NewNetworkFees(rp)

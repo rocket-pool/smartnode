@@ -9,33 +9,33 @@ import (
 )
 
 // Get network node fee
-func (c *Client) NodeFee() (api.NodeFeeData, error) {
+func (c *Client) NodeFee() (api.NetworkNodeFeeData, error) {
 	responseBytes, err := c.callAPI("network node-fee")
 	if err != nil {
-		return api.NodeFeeData{}, fmt.Errorf("Could not get network node fee: %w", err)
+		return api.NetworkNodeFeeData{}, fmt.Errorf("Could not get network node fee: %w", err)
 	}
-	var response api.NodeFeeData
+	var response api.NetworkNodeFeeData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeFeeData{}, fmt.Errorf("Could not decode network node fee response: %w", err)
+		return api.NetworkNodeFeeData{}, fmt.Errorf("Could not decode network node fee response: %w", err)
 	}
 	if response.Error != "" {
-		return api.NodeFeeData{}, fmt.Errorf("Could not get network node fee: %s", response.Error)
+		return api.NetworkNodeFeeData{}, fmt.Errorf("Could not get network node fee: %s", response.Error)
 	}
 	return response, nil
 }
 
 // Get network RPL price
-func (c *Client) RplPrice() (api.RplPriceData, error) {
+func (c *Client) RplPrice() (api.NetworkRplPriceData, error) {
 	responseBytes, err := c.callAPI("network rpl-price")
 	if err != nil {
-		return api.RplPriceData{}, fmt.Errorf("Could not get network RPL price: %w", err)
+		return api.NetworkRplPriceData{}, fmt.Errorf("Could not get network RPL price: %w", err)
 	}
-	var response api.RplPriceData
+	var response api.NetworkRplPriceData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RplPriceData{}, fmt.Errorf("Could not decode network RPL price response: %w", err)
+		return api.NetworkRplPriceData{}, fmt.Errorf("Could not decode network RPL price response: %w", err)
 	}
 	if response.Error != "" {
-		return api.RplPriceData{}, fmt.Errorf("Could not get network RPL price: %s", response.Error)
+		return api.NetworkRplPriceData{}, fmt.Errorf("Could not get network RPL price: %s", response.Error)
 	}
 	if response.RplPrice == nil {
 		response.RplPrice = big.NewInt(0)
@@ -168,17 +168,17 @@ func (c *Client) IsAtlasDeployed() (api.IsAtlasDeployedResponse, error) {
 }
 
 // Get the address of the latest minipool delegate contract
-func (c *Client) GetLatestDelegate() (api.GetLatestDelegateData, error) {
+func (c *Client) GetLatestDelegate() (api.NetworkLatestDelegateData, error) {
 	responseBytes, err := c.callAPI("network latest-delegate")
 	if err != nil {
-		return api.GetLatestDelegateData{}, fmt.Errorf("could not get latest delegate: %w", err)
+		return api.NetworkLatestDelegateData{}, fmt.Errorf("could not get latest delegate: %w", err)
 	}
-	var response api.GetLatestDelegateData
+	var response api.NetworkLatestDelegateData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetLatestDelegateData{}, fmt.Errorf("could not decode get-latest-delegate response: %w", err)
+		return api.NetworkLatestDelegateData{}, fmt.Errorf("could not decode get-latest-delegate response: %w", err)
 	}
 	if response.Error != "" {
-		return api.GetLatestDelegateData{}, fmt.Errorf("could not get latest delegate: %s", response.Error)
+		return api.NetworkLatestDelegateData{}, fmt.Errorf("could not get latest delegate: %s", response.Error)
 	}
 	return response, nil
 }

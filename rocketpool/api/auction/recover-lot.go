@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -20,12 +22,12 @@ import (
 // ===============
 
 type auctionRecoverContextFactory struct {
-	h *AuctionHandler
+	handler *AuctionHandler
 }
 
 func (f *auctionRecoverContextFactory) Create(vars map[string]string) (*auctionRecoverContext, error) {
 	c := &auctionRecoverContext{
-		h: f.h,
+		handler: f.handler,
 	}
 	inputErrs := []error{
 		server.ValidateArg("index", vars, cliutils.ValidateUint, &c.lotIndex),
@@ -33,26 +35,30 @@ func (f *auctionRecoverContextFactory) Create(vars map[string]string) (*auctionR
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *auctionRecoverContextFactory) Run(c *auctionRecoverContext) (*api.ApiResponse[api.RecoverRplFromLotData], error) {
-	return runAuctionCall[api.RecoverRplFromLotData](c)
-}
-
 // ===============
 // === Context ===
 // ===============
 
 type auctionRecoverContext struct {
-	h         *AuctionHandler
+	handler *AuctionHandler
+	rp      *rocketpool.RocketPool
+
 	lotIndex  uint64
 	lot       *auction.AuctionLot
 	pSettings *settings.ProtocolDaoSettings
-	*commonContext
 }
 
-func (c *auctionRecoverContext) CreateBindings(ctx *commonContext) error {
-	var err error
-	c.commonContext = ctx
+func (c *auctionRecoverContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
 
+	// Requirements
+	err := sp.RequireNodeRegistered()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
 	c.lot, err = auction.NewAuctionLot(c.rp, c.lotIndex)
 	if err != nil {
 		return fmt.Errorf("error creating lot %d binding: %w", c.lotIndex, err)
@@ -72,7 +78,7 @@ func (c *auctionRecoverContext) GetState(mc *batch.MultiCaller) {
 	c.pSettings.GetBidOnAuctionLotEnabled(mc)
 }
 
-func (c *auctionRecoverContext) PrepareData(data *api.RecoverRplFromLotData) error {
+func (c *auctionRecoverContext) PrepareData(data *api.RecoverRplFromLotData, opts *bind.TransactOpts) error {
 	// Get the current block
 	currentBlock, err := c.rp.Client.BlockNumber(context.Background())
 	if err != nil {
@@ -87,8 +93,8 @@ func (c *auctionRecoverContext) PrepareData(data *api.RecoverRplFromLotData) err
 	data.CanRecover = !(data.DoesNotExist || data.BiddingNotEnded || data.NoUnclaimedRpl || data.RplAlreadyRecovered)
 
 	// Get tx info
-	if data.CanRecover && c.opts != nil {
-		txInfo, err := c.lot.RecoverUnclaimedRpl(c.opts)
+	if data.CanRecover && opts != nil {
+		txInfo, err := c.lot.RecoverUnclaimedRpl(opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for RecoverUnclaimedRpl: %w", err)
 		}

@@ -23,8 +23,8 @@ import (
 
 type FaucetHandler struct {
 	serviceProvider *services.ServiceProvider
-	statusFactory   server.IContextFactory[*faucetStatusContext, api.FaucetStatusData, commonContext]
-	withdrawFactory server.IContextFactory[*faucetWithdrawContext, api.FaucetWithdrawRplData, commonContext]
+	statusFactory   server.ISingleStageContextFactory[*faucetStatusContext, api.FaucetStatusData, commonContext]
+	withdrawFactory server.ISingleStageContextFactory[*faucetWithdrawContext, api.FaucetWithdrawRplData, commonContext]
 }
 
 func NewFaucetHandler(serviceProvider *services.ServiceProvider) *FaucetHandler {

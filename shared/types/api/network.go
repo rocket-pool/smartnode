@@ -6,14 +6,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type NodeFeeData struct {
+type NetworkNodeFeeData struct {
 	NodeFee       float64 `json:"nodeFee"`
 	MinNodeFee    float64 `json:"minNodeFee"`
 	TargetNodeFee float64 `json:"targetNodeFee"`
 	MaxNodeFee    float64 `json:"maxNodeFee"`
 }
 
-type RplPriceData struct {
+type NetworkRplPriceData struct {
 	RplPrice                    *big.Int `json:"rplPrice"`
 	RplPriceBlock               uint64   `json:"rplPriceBlock"`
 	MinPer8EthMinipoolRplStake  *big.Int `json:"minPer8EthMinipoolRplStake"`
@@ -62,6 +62,16 @@ type NetworkDaoProposalsData struct {
 	ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 }
 
-type GetLatestDelegateData struct {
+type NetworkLatestDelegateData struct {
 	Address common.Address `json:"address"`
+}
+
+type NetworkDepositContractInfoData struct {
+	Status                string         `json:"status"`
+	Error                 string         `json:"error"`
+	RPDepositContract     common.Address `json:"rpDepositContract"`
+	RPNetwork             uint64         `json:"rpNetwork"`
+	BeaconDepositContract common.Address `json:"beaconDepositContract"`
+	BeaconNetwork         uint64         `json:"beaconNetwork"`
+	SufficientSync        bool           `json:"sufficientSync"`
 }

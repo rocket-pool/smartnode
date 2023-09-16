@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -14,18 +17,14 @@ import (
 // ===============
 
 type auctionLotContextFactory struct {
-	h *AuctionHandler
+	handler *AuctionHandler
 }
 
 func (f *auctionLotContextFactory) Create(vars map[string]string) (*auctionLotContext, error) {
 	c := &auctionLotContext{
-		h: f.h,
+		handler: f.handler,
 	}
 	return c, nil
-}
-
-func (f *auctionLotContextFactory) Run(c *auctionLotContext) (*api.ApiResponse[api.AuctionLotsData], error) {
-	return runAuctionCall[api.AuctionLotsData](c)
 }
 
 // ===============
@@ -33,15 +32,25 @@ func (f *auctionLotContextFactory) Run(c *auctionLotContext) (*api.ApiResponse[a
 // ===============
 
 type auctionLotContext struct {
-	h          *AuctionHandler
+	handler     *AuctionHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
 	auctionMgr *auction.AuctionManager
-	*commonContext
 }
 
-func (c *auctionLotContext) CreateBindings(ctx *commonContext) error {
-	var err error
-	c.commonContext = ctx
+func (c *auctionLotContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	err := sp.RequireNodeRegistered()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
 	c.auctionMgr, err = auction.NewAuctionManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating auction manager binding: %w", err)
@@ -53,7 +62,7 @@ func (c *auctionLotContext) GetState(mc *batch.MultiCaller) {
 	c.auctionMgr.GetLotCount(mc)
 }
 
-func (c *auctionLotContext) PrepareData(data *api.AuctionLotsData) error {
+func (c *auctionLotContext) PrepareData(data *api.AuctionLotsData, opts *bind.TransactOpts) error {
 	// Get lot details
 	lotCount := c.auctionMgr.Details.LotCount.Formatted()
 	lots := make([]*auction.AuctionLot, lotCount)

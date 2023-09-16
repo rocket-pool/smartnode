@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -18,18 +20,14 @@ import (
 // ===============
 
 type auctionCreateContextFactory struct {
-	h *AuctionHandler
+	handler *AuctionHandler
 }
 
 func (f *auctionCreateContextFactory) Create(vars map[string]string) (*auctionCreateContext, error) {
 	c := &auctionCreateContext{
-		h: f.h,
+		handler: f.handler,
 	}
 	return c, nil
-}
-
-func (f *auctionCreateContextFactory) Run(c *auctionCreateContext) (*api.ApiResponse[api.CreateLotData], error) {
-	return runAuctionCall[api.CreateLotData](c)
 }
 
 // ===============
@@ -37,17 +35,25 @@ func (f *auctionCreateContextFactory) Run(c *auctionCreateContext) (*api.ApiResp
 // ===============
 
 type auctionCreateContext struct {
-	h             *AuctionHandler
+	handler *AuctionHandler
+	rp      *rocketpool.RocketPool
+
 	auctionMgr    *auction.AuctionManager
 	pSettings     *settings.ProtocolDaoSettings
 	networkPrices *network.NetworkPrices
-	*commonContext
 }
 
-func (c *auctionCreateContext) CreateBindings(ctx *commonContext) error {
-	var err error
-	c.commonContext = ctx
+func (c *auctionCreateContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
 
+	// Requirements
+	err := sp.RequireNodeRegistered()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
 	c.auctionMgr, err = auction.NewAuctionManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating auction manager binding: %w", err)
@@ -70,7 +76,7 @@ func (c *auctionCreateContext) GetState(mc *batch.MultiCaller) {
 	c.pSettings.GetCreateAuctionLotEnabled(mc)
 }
 
-func (c *auctionCreateContext) PrepareData(data *api.CreateLotData) error {
+func (c *auctionCreateContext) PrepareData(data *api.CreateLotData, opts *bind.TransactOpts) error {
 	// Check the balance requirement
 	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Details.Auction.LotMinimumEthValue, eth.EthToWei(1))
 	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkPrices.Details.RplPrice.RawValue)
@@ -82,8 +88,8 @@ func (c *auctionCreateContext) PrepareData(data *api.CreateLotData) error {
 	data.CanCreate = !(data.InsufficientBalance || data.CreateLotDisabled)
 
 	// Get tx info
-	if data.CanCreate && c.opts != nil {
-		txInfo, err := c.auctionMgr.CreateLot(c.opts)
+	if data.CanCreate && opts != nil {
+		txInfo, err := c.auctionMgr.CreateLot(opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for CreateLot: %w", err)
 		}
