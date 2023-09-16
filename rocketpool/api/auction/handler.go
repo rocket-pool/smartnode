@@ -9,13 +9,52 @@ import (
 
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool/api/handlers"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	wtypes "github.com/rocket-pool/smartnode/shared/types/wallet"
 )
+
+// ===============
+// === Handler ===
+// ===============
+
+type AuctionHandler struct {
+	serviceProvider *services.ServiceProvider
+	bidFactory      server.IContextFactory[*auctionBidContext, api.BidOnLotData, callContext]
+	claimFactory    server.IContextFactory[*auctionClaimContext, api.ClaimFromLotData, callContext]
+	createFactory   server.IContextFactory[*auctionCreateContext, api.CreateLotData, callContext]
+	lotsFactory     server.IContextFactory[*auctionLotContext, api.AuctionLotsData, callContext]
+	recoverFactory  server.IContextFactory[*auctionRecoverContext, api.RecoverRplFromLotData, callContext]
+	statusFactory   server.IContextFactory[*auctionStatusContext, api.AuctionStatusData, callContext]
+}
+
+func NewAuctionHandler(serviceProvider *services.ServiceProvider) *AuctionHandler {
+	h := &AuctionHandler{
+		serviceProvider: serviceProvider,
+	}
+	h.bidFactory = &auctionBidContextFactory{h}
+	h.claimFactory = &auctionClaimContextFactory{h}
+	h.createFactory = &auctionCreateContextFactory{h}
+	h.lotsFactory = &auctionLotContextFactory{h}
+	h.recoverFactory = &auctionRecoverContextFactory{h}
+	h.statusFactory = &auctionStatusContextFactory{h}
+	return h
+}
+
+func (h *AuctionHandler) RegisterRoutes(router *mux.Router) {
+	server.RegisterSingleStageRoute(router, "bid-lot", h.bidFactory)
+	server.RegisterSingleStageRoute(router, "claim-lot", h.claimFactory)
+	server.RegisterSingleStageRoute(router, "create-lot", h.createFactory)
+	server.RegisterSingleStageRoute(router, "lots", h.lotsFactory)
+	server.RegisterSingleStageRoute(router, "recover-lot", h.recoverFactory)
+	server.RegisterSingleStageRoute(router, "status", h.statusFactory)
+}
+
+// ==============
+// === Common ===
+// ==============
 
 // Context with services and common bindings for calls
 type callContext struct {
@@ -25,20 +64,8 @@ type callContext struct {
 	nodeAddress common.Address
 }
 
-// Register routes
-func RegisterRoutes(router *mux.Router, name string) {
-	route := "auction"
-
-	server.RegisterSingleStageHandler(router, route, "bid-lot", NewAuctionBidHandler, runAuctionCall[api.BidOnLotData])
-	server.RegisterSingleStageHandler(router, route, "claim-lot", NewAuctionClaimHandler, runAuctionCall[api.ClaimFromLotData])
-	server.RegisterSingleStageHandler(router, route, "create-lot", NewAuctionCreateHandler, runAuctionCall[api.CreateLotData])
-	server.RegisterSingleStageHandler(router, route, "lots", NewAuctionLotHandler, runAuctionCall[api.AuctionLotsData])
-	server.RegisterSingleStageHandler(router, route, "recover-lot", NewAuctionRecoverHandler, runAuctionCall[api.RecoverRplFromLotData])
-	server.RegisterSingleStageHandler(router, route, "lots", NewAuctionStatusHandler, runAuctionCall[api.AuctionStatusData])
-}
-
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable
-func runAuctionCall[dataType any](h handlers.ISingleStageCallHandler[dataType, callContext]) (*api.ApiResponse[dataType], error) {
+func runAuctionCall[dataType any](h server.ISingleStageCallContext[dataType, callContext]) (*api.ApiResponse[dataType], error) {
 	// Get services
 	if err := services.RequireNodeRegistered(); err != nil {
 		return nil, fmt.Errorf("error checking if node is registered: %w", err)
@@ -82,7 +109,7 @@ func runAuctionCall[dataType any](h handlers.ISingleStageCallHandler[dataType, c
 
 	// Get contract state
 	err = rp.Query(func(mc *batch.MultiCaller) error {
-		h.GetState(context, mc)
+		h.GetState(mc)
 		return nil
 	}, nil)
 	if err != nil {
@@ -90,7 +117,7 @@ func runAuctionCall[dataType any](h handlers.ISingleStageCallHandler[dataType, c
 	}
 
 	// Supplemental function-specific response construction
-	err = h.PrepareData(context, data)
+	err = h.PrepareData(data)
 	if err != nil {
 		return nil, err
 	}

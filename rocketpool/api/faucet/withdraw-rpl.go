@@ -5,63 +5,86 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-type faucetWithdrawHandler struct {
-	allowance *big.Int
+// ===============
+// === Factory ===
+// ===============
+
+type faucetWithdrawContextFactory struct {
+	h *FaucetHandler
 }
 
-func NewFaucetWithdrawHandler(vars map[string]string) (*faucetWithdrawHandler, error) {
-	h := &faucetWithdrawHandler{}
-	return h, nil
+func (f *faucetWithdrawContextFactory) Create(vars map[string]string) (*faucetWithdrawContext, error) {
+	c := &faucetWithdrawContext{
+		h: f.h,
+	}
+	return c, nil
 }
 
-func (h *faucetWithdrawHandler) CreateBindings(ctx *callContext) error {
+func (f *faucetWithdrawContextFactory) Run(c *faucetWithdrawContext) (*api.ApiResponse[api.FaucetWithdrawRplData], error) {
+	return runFaucetCall[api.FaucetWithdrawRplData](c)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type faucetWithdrawContext struct {
+	h           *FaucetHandler
+	rp          *rocketpool.RocketPool
+	f           *contracts.RplFaucet
+	nodeAddress common.Address
+	opts        *bind.TransactOpts
+	allowance   *big.Int
+}
+
+func (c *faucetWithdrawContext) CreateBindings(ctx *commonContext) error {
+	c.rp = ctx.rp
+	c.f = ctx.f
+	c.nodeAddress = ctx.nodeAddress
+	c.opts = ctx.opts
 	return nil
 }
 
-func (h *faucetWithdrawHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
-	f := ctx.f
-	nodeAddress := ctx.nodeAddress
-
-	f.GetBalance(mc)
-	f.GetAllowanceFor(mc, &h.allowance, nodeAddress)
-	f.GetWithdrawalFee(mc)
+func (c *faucetWithdrawContext) GetState(mc *batch.MultiCaller) {
+	c.f.GetBalance(mc)
+	c.f.GetAllowanceFor(mc, &c.allowance, c.nodeAddress)
+	c.f.GetWithdrawalFee(mc)
 }
 
-func (h *faucetWithdrawHandler) PrepareData(ctx *callContext, data *api.FaucetWithdrawRplData) error {
-	rp := ctx.rp
-	f := ctx.f
-	address := ctx.nodeAddress
-	opts := ctx.opts
-
+func (c *faucetWithdrawContext) PrepareData(data *api.FaucetWithdrawRplData) error {
 	// Get node account balance
-	nodeAccountBalance, err := rp.Client.BalanceAt(context.Background(), address, nil)
+	nodeAccountBalance, err := c.rp.Client.BalanceAt(context.Background(), c.nodeAddress, nil)
 	if err != nil {
 		return fmt.Errorf("error getting node account balance: %w", err)
 	}
 
 	// Populate the response
-	data.InsufficientFaucetBalance = (f.Details.Balance.Cmp(big.NewInt(0)) == 0)
-	data.InsufficientAllowance = (h.allowance.Cmp(big.NewInt(0)) == 0)
-	data.InsufficientNodeBalance = (nodeAccountBalance.Cmp(f.Details.WithdrawalFee) < 0)
+	data.InsufficientFaucetBalance = (c.f.Details.Balance.Cmp(big.NewInt(0)) == 0)
+	data.InsufficientAllowance = (c.allowance.Cmp(big.NewInt(0)) == 0)
+	data.InsufficientNodeBalance = (nodeAccountBalance.Cmp(c.f.Details.WithdrawalFee) < 0)
 	data.CanWithdraw = !(data.InsufficientFaucetBalance || data.InsufficientAllowance || data.InsufficientNodeBalance)
 
-	if data.CanWithdraw && opts != nil {
-		opts.Value = f.Details.WithdrawalFee
+	if data.CanWithdraw && c.opts != nil {
+		c.opts.Value = c.f.Details.WithdrawalFee
 
 		// Get withdrawal amount
 		var amount *big.Int
-		balance := f.Details.Balance
-		if balance.Cmp(h.allowance) > 0 {
-			amount = h.allowance
+		balance := c.f.Details.Balance
+		if balance.Cmp(c.allowance) > 0 {
+			amount = c.allowance
 		} else {
 			amount = balance
 		}
 
-		txInfo, err := f.Withdraw(opts, amount)
+		txInfo, err := c.f.Withdraw(c.opts, amount)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for Withdraw: %w", err)
 		}

@@ -9,7 +9,6 @@ import (
 
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool/api/handlers"
 	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
@@ -18,8 +17,36 @@ import (
 	wtypes "github.com/rocket-pool/smartnode/shared/types/wallet"
 )
 
+// ===============
+// === Handler ===
+// ===============
+
+type FaucetHandler struct {
+	serviceProvider *services.ServiceProvider
+	statusFactory   server.IContextFactory[*faucetStatusContext, api.FaucetStatusData, commonContext]
+	withdrawFactory server.IContextFactory[*faucetWithdrawContext, api.FaucetWithdrawRplData, commonContext]
+}
+
+func NewFaucetHandler(serviceProvider *services.ServiceProvider) *FaucetHandler {
+	h := &FaucetHandler{
+		serviceProvider: serviceProvider,
+	}
+	h.statusFactory = &faucetStatusContextFactory{h}
+	h.withdrawFactory = &faucetWithdrawContextFactory{h}
+	return h
+}
+
+func (h *FaucetHandler) RegisterRoutes(router *mux.Router) {
+	server.RegisterSingleStageRoute(router, "status", h.statusFactory)
+	server.RegisterSingleStageRoute(router, "withdraw-rpl", h.withdrawFactory)
+}
+
+// ==============
+// === Common ===
+// ==============
+
 // Context with services and common bindings for calls
-type callContext struct {
+type commonContext struct {
 	w           *wallet.LocalWallet
 	rp          *rocketpool.RocketPool
 	f           *contracts.RplFaucet
@@ -27,16 +54,8 @@ type callContext struct {
 	nodeAddress common.Address
 }
 
-// Register routes
-func RegisterRoutes(router *mux.Router, name string) {
-	route := "faucet"
-
-	server.RegisterSingleStageHandler(router, route, "status", NewFaucetStatusHandler, runFaucetCall[api.FaucetStatusData])
-	server.RegisterSingleStageHandler(router, route, "withdraw-rpl", NewFaucetWithdrawHandler, runFaucetCall[api.FaucetWithdrawRplData])
-}
-
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable
-func runFaucetCall[dataType any](h handlers.ISingleStageCallHandler[dataType, callContext]) (*api.ApiResponse[dataType], error) {
+func runFaucetCall[dataType any](h server.ISingleStageCallContext[dataType, commonContext]) (*api.ApiResponse[dataType], error) {
 	// Get services
 	if err := services.RequireNodeRegistered(); err != nil {
 		return nil, fmt.Errorf("error checking if node is registered: %w", err)
@@ -71,7 +90,7 @@ func runFaucetCall[dataType any](h handlers.ISingleStageCallHandler[dataType, ca
 	}
 
 	// Create the context
-	context := &callContext{
+	context := &commonContext{
 		w:           w,
 		rp:          rp,
 		f:           f,
@@ -87,7 +106,7 @@ func runFaucetCall[dataType any](h handlers.ISingleStageCallHandler[dataType, ca
 
 	// Get contract state
 	err = rp.Query(func(mc *batch.MultiCaller) error {
-		h.GetState(context, mc)
+		h.GetState(mc)
 		return nil
 	}, nil)
 	if err != nil {
@@ -95,7 +114,7 @@ func runFaucetCall[dataType any](h handlers.ISingleStageCallHandler[dataType, ca
 	}
 
 	// Supplemental function-specific response construction
-	err = h.PrepareData(context, data)
+	err = h.PrepareData(data)
 	if err != nil {
 		return nil, err
 	}

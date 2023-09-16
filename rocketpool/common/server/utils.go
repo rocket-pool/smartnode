@@ -6,12 +6,10 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/smartnode/rocketpool/api/handlers"
-	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 // Handles a Node daemon response
-func HandleResponse[DataType any](w http.ResponseWriter, response *api.ApiResponse[DataType], err error) {
+func HandleResponse(w http.ResponseWriter, response any, err error) {
 	// Write out any errors
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -40,24 +38,22 @@ func HandleInputError(w http.ResponseWriter, err error) {
 	}
 }
 
-func RegisterSingleStageHandler[DataType any, ContextType any, HandlerType handlers.ISingleStageCallHandler[DataType, ContextType]](
+func RegisterSingleStageRoute[ContextType ISingleStageCallContext[DataType, CommonContextType], DataType any, CommonContextType any](
 	router *mux.Router,
-	packageName string,
 	functionName string,
-	constructor func(vars map[string]string) (HandlerType, error),
-	runner func(handlers.ISingleStageCallHandler[DataType, ContextType]) (*api.ApiResponse[DataType], error),
+	factory IContextFactory[ContextType, DataType, CommonContextType],
 ) {
-	router.HandleFunc(fmt.Sprintf("/%s/%s", packageName, functionName), func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
 		// Create the handler
 		vars := mux.Vars(r)
-		handler, err := constructor(vars)
+		context, err := factory.Create(vars)
 		if err != nil {
 			HandleInputError(w, err)
 			return
 		}
 
 		// Run the body
-		response, err := runner(handler)
+		response, err := factory.Run(context)
 		HandleResponse(w, response, err)
 	})
 }

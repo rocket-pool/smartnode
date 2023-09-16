@@ -31,10 +31,8 @@ type callContext struct {
 
 // Register routes
 func RegisterRoutes(router *mux.Router, name string) {
-	route := "network"
-
-	server.RegisterSingleStageHandler(router, route, "dao-proposals", NewNetworkProposalHandler, runNetworkCall[api.NetworkDAOProposalsResponse])
-	//server.RegisterSingleStageHandler(router, route, "withdraw-rpl", NewFaucetWithdrawHandler, runFaucetCall[api.FaucetWithdrawRplData])
+	server.RegisterSingleStageRoute(router, "dao-proposals", NewNetworkProposalHandler, runNetworkCall[api.NetworkDAOProposalsResponse])
+	//server.RegisterSingleStageHandler(router, "withdraw-rpl", NewFaucetWithdrawHandler, runFaucetCall[api.FaucetWithdrawRplData])
 }
 
 // Register subcommands
@@ -270,7 +268,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 }
 
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable
-func runNetworkCall[dataType any](h handlers.ISingleStageCallHandler[dataType, callContext]) (*api.ApiResponse[dataType], error) {
+func runNetworkCall[dataType any](h handlers.ISingleStageCallContext[dataType, callContext]) (*api.ApiResponse[dataType], error) {
 	// Get services
 	if err := services.RequireNodeRegistered(); err != nil {
 		return nil, fmt.Errorf("error checking if node is registered: %w", err)

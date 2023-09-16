@@ -5,51 +5,73 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-type faucetStatusHandler struct {
-	allowance *big.Int
+// ===============
+// === Factory ===
+// ===============
+
+type faucetStatusContextFactory struct {
+	h *FaucetHandler
 }
 
-func NewFaucetStatusHandler(vars map[string]string) (*faucetStatusHandler, error) {
-	h := &faucetStatusHandler{}
-	return h, nil
+func (f *faucetStatusContextFactory) Create(vars map[string]string) (*faucetStatusContext, error) {
+	c := &faucetStatusContext{
+		h: f.h,
+	}
+	return c, nil
 }
 
-func (h *faucetStatusHandler) CreateBindings(ctx *callContext) error {
+func (f *faucetStatusContextFactory) Run(c *faucetStatusContext) (*api.ApiResponse[api.FaucetStatusData], error) {
+	return runFaucetCall[api.FaucetStatusData](c)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type faucetStatusContext struct {
+	h           *FaucetHandler
+	rp          *rocketpool.RocketPool
+	f           *contracts.RplFaucet
+	nodeAddress common.Address
+	allowance   *big.Int
+}
+
+func (c *faucetStatusContext) CreateBindings(ctx *commonContext) error {
+	c.rp = ctx.rp
+	c.f = ctx.f
+	c.nodeAddress = ctx.nodeAddress
 	return nil
 }
 
-func (h *faucetStatusHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
-	f := ctx.f
-	address := ctx.nodeAddress
-
-	f.GetBalance(mc)
-	f.GetAllowanceFor(mc, &h.allowance, address)
-	f.GetWithdrawalFee(mc)
-	f.GetWithdrawalPeriodStart(mc)
-	f.GetWithdrawalPeriod(mc)
+func (c *faucetStatusContext) GetState(mc *batch.MultiCaller) {
+	c.f.GetBalance(mc)
+	c.f.GetAllowanceFor(mc, &c.allowance, c.nodeAddress)
+	c.f.GetWithdrawalFee(mc)
+	c.f.GetWithdrawalPeriodStart(mc)
+	c.f.GetWithdrawalPeriod(mc)
 }
 
-func (h *faucetStatusHandler) PrepareData(ctx *callContext, data *api.FaucetStatusData) error {
-	rp := ctx.rp
-	f := ctx.f
-
+func (c *faucetStatusContext) PrepareData(data *api.FaucetStatusData) error {
 	// Get the current block
-	currentBlock, err := rp.Client.BlockNumber(context.Background())
+	currentBlock, err := c.rp.Client.BlockNumber(context.Background())
 	if err != nil {
 		return fmt.Errorf("error getting current EL block: %w", err)
 	}
 
 	// Populate the response
-	data.Balance = f.Details.Balance
-	data.Allowance = f.Details.Allowance
-	data.WithdrawalFee = f.Details.WithdrawalFee
-	currentPeriodStartBlock := f.Details.WithdrawalPeriodStart.Formatted()
-	withdrawalPeriodBlocks := f.Details.WithdrawalPeriod.Formatted()
+	data.Balance = c.f.Details.Balance
+	data.Allowance = c.f.Details.Allowance
+	data.WithdrawalFee = c.f.Details.WithdrawalFee
+	currentPeriodStartBlock := c.f.Details.WithdrawalPeriodStart.Formatted()
+	withdrawalPeriodBlocks := c.f.Details.WithdrawalPeriod.Formatted()
 
 	// Get withdrawable amount
 	if data.Balance.Cmp(data.Allowance) > 0 {

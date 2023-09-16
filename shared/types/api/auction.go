@@ -8,14 +8,14 @@ import (
 )
 
 type AuctionStatusData struct {
-	TotalRPLBalance     *big.Int `json:"totalRPLBalance"`
-	AllottedRPLBalance  *big.Int `json:"allottedRPLBalance"`
-	RemainingRPLBalance *big.Int `json:"remainingRPLBalance"`
+	TotalRplBalance     *big.Int `json:"totalRPLBalance"`
+	AllottedRplBalance  *big.Int `json:"allottedRPLBalance"`
+	RemainingRplBalance *big.Int `json:"remainingRPLBalance"`
 	CanCreateLot        bool     `json:"canCreateLot"`
 	LotCounts           struct {
 		ClaimAvailable       int `json:"claimAvailable"`
 		BiddingAvailable     int `json:"biddingAvailable"`
-		RPLRecoveryAvailable int `json:"rplRecoveryAvailable"`
+		RplRecoveryAvailable int `json:"rplRecoveryAvailable"`
 	} `json:"lotCounts"`
 }
 
@@ -23,7 +23,7 @@ type AuctionLotDetails struct {
 	Details              auction.AuctionLotDetails `json:"details"`
 	ClaimAvailable       bool                      `json:"claimAvailable"`
 	BiddingAvailable     bool                      `json:"biddingAvailable"`
-	RPLRecoveryAvailable bool                      `json:"rplRecoveryAvailable"`
+	RplRecoveryAvailable bool                      `json:"rplRecoveryAvailable"`
 	NodeBidAmount        *big.Int                  `json:"nodeBidAmount"`
 }
 type AuctionLotsData struct {
@@ -41,7 +41,7 @@ type BidOnLotData struct {
 	CanBid           bool                  `json:"canBid"`
 	DoesNotExist     bool                  `json:"doesNotExist"`
 	BiddingEnded     bool                  `json:"biddingEnded"`
-	RPLExhausted     bool                  `json:"rplExhausted"`
+	RplExhausted     bool                  `json:"rplExhausted"`
 	BidOnLotDisabled bool                  `json:"bidOnLotDisabled"`
 	TxInfo           *core.TransactionInfo `json:"txInfo"`
 }
@@ -58,7 +58,7 @@ type RecoverRplFromLotData struct {
 	CanRecover          bool                  `json:"canRecover"`
 	DoesNotExist        bool                  `json:"doesNotExist"`
 	BiddingNotEnded     bool                  `json:"biddingNotEnded"`
-	NoUnclaimedRPL      bool                  `json:"noUnclaimedRpl"`
-	RPLAlreadyRecovered bool                  `json:"rplAlreadyRecovered"`
+	NoUnclaimedRpl      bool                  `json:"noUnclaimedRpl"`
+	RplAlreadyRecovered bool                  `json:"rplAlreadyRecovered"`
 	TxInfo              *core.TransactionInfo `json:"txInfo"`
 }

@@ -15,6 +15,29 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
+// ===============
+// === Factory ===
+// ===============
+
+type auctionStatusContextFactory struct {
+	h *AuctionHandler
+}
+
+func (f *auctionStatusContextFactory) Create(vars map[string]string) (*auctionStatusContext, error) {
+	c := &auctionStatusContext{
+		h: f.h,
+	}
+	return c, nil
+}
+
+func (f *auctionStatusContextFactory) Run(c *auctionStatusContext) (*api.ApiResponse[api.AuctionStatusData], error) {
+	return runAuctionCall[api.AuctionStatusData](c)
+}
+
+// ===============
+// === Context ===
+// ===============
+
 // Lot count details
 type lotCountDetails struct {
 	AddressHasBid   bool
@@ -23,57 +46,59 @@ type lotCountDetails struct {
 	RplRecovered    bool
 }
 
-type auctionStatusHandler struct {
+type auctionStatusContext struct {
+	h           *AuctionHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
 	auctionMgr    *auction.AuctionManager
 	pSettings     *settings.ProtocolDaoSettings
 	networkPrices *network.NetworkPrices
 }
 
-func NewAuctionStatusHandler(vars map[string]string) (*auctionStatusHandler, error) {
-	h := &auctionStatusHandler{}
+func NewAuctionStatusHandler(vars map[string]string) (*auctionStatusContext, error) {
+	h := &auctionStatusContext{}
 	return h, nil
 }
 
-func (h *auctionStatusHandler) CreateBindings(ctx *callContext) error {
+func (c *auctionStatusContext) CreateBindings(ctx *callContext) error {
 	var err error
-	rp := ctx.rp
+	c.rp = ctx.rp
+	c.nodeAddress = ctx.nodeAddress
 
-	h.auctionMgr, err = auction.NewAuctionManager(rp)
+	c.auctionMgr, err = auction.NewAuctionManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating auction manager binding: %w", err)
 	}
-	h.pSettings, err = settings.NewProtocolDaoSettings(rp)
+	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating pDAO settings binding: %w", err)
 	}
-	h.networkPrices, err = network.NewNetworkPrices(rp)
+	c.networkPrices, err = network.NewNetworkPrices(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating network prices binding: %w", err)
 	}
 	return nil
 }
 
-func (h *auctionStatusHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
-	h.auctionMgr.GetTotalRPLBalance(mc)
-	h.auctionMgr.GetAllottedRPLBalance(mc)
-	h.auctionMgr.GetRemainingRPLBalance(mc)
-	h.auctionMgr.GetLotCount(mc)
-	h.pSettings.GetAuctionLotMinimumEthValue(mc)
-	h.networkPrices.GetRplPrice(mc)
-	h.pSettings.GetCreateAuctionLotEnabled(mc)
+func (c *auctionStatusContext) GetState(mc *batch.MultiCaller) {
+	c.auctionMgr.GetTotalRPLBalance(mc)
+	c.auctionMgr.GetAllottedRPLBalance(mc)
+	c.auctionMgr.GetRemainingRPLBalance(mc)
+	c.auctionMgr.GetLotCount(mc)
+	c.pSettings.GetAuctionLotMinimumEthValue(mc)
+	c.networkPrices.GetRplPrice(mc)
+	c.pSettings.GetCreateAuctionLotEnabled(mc)
 }
 
-func (h *auctionStatusHandler) PrepareData(ctx *callContext, data *api.AuctionStatusData) error {
-	rp := ctx.rp
-	nodeAddress := ctx.nodeAddress
-
+func (c *auctionStatusContext) PrepareData(data *api.AuctionStatusData) error {
 	// Check the balance requirement
-	lotMinimumRplAmount := big.NewInt(0).Mul(h.pSettings.Details.Auction.LotMinimumEthValue, eth.EthToWei(1))
-	lotMinimumRplAmount.Quo(lotMinimumRplAmount, h.networkPrices.Details.RplPrice.RawValue)
-	sufficientRemainingRplForLot := (h.auctionMgr.Details.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
+	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Details.Auction.LotMinimumEthValue, eth.EthToWei(1))
+	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkPrices.Details.RplPrice.RawValue)
+	sufficientRemainingRplForLot := (c.auctionMgr.Details.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
 
 	// Get lot counts
-	lotCountDetails, err := getAllLotCountDetails(rp, nodeAddress, h.auctionMgr.Details.LotCount.Formatted())
+	lotCountDetails, err := c.getAllLotCountDetails(c.auctionMgr.Details.LotCount.Formatted())
 	if err != nil {
 		return fmt.Errorf("error getting auction lot count details: %w", err)
 	}
@@ -85,33 +110,33 @@ func (h *auctionStatusHandler) PrepareData(ctx *callContext, data *api.AuctionSt
 			data.LotCounts.BiddingAvailable++
 		}
 		if details.Cleared && details.HasRemainingRpl && !details.RplRecovered {
-			data.LotCounts.RPLRecoveryAvailable++
+			data.LotCounts.RplRecoveryAvailable++
 		}
 	}
 
 	// Set response details
-	data.TotalRPLBalance = h.auctionMgr.Details.TotalRplBalance
-	data.AllottedRPLBalance = h.auctionMgr.Details.AllottedRplBalance
-	data.RemainingRPLBalance = h.auctionMgr.Details.RemainingRplBalance
+	data.TotalRplBalance = c.auctionMgr.Details.TotalRplBalance
+	data.AllottedRplBalance = c.auctionMgr.Details.AllottedRplBalance
+	data.RemainingRplBalance = c.auctionMgr.Details.RemainingRplBalance
 	data.CanCreateLot = sufficientRemainingRplForLot
 	return nil
 }
 
 // Get all lot count details
-func getAllLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address, lotCount uint64) ([]lotCountDetails, error) {
+func (c *auctionStatusContext) getAllLotCountDetails(lotCount uint64) ([]lotCountDetails, error) {
 	details := make([]lotCountDetails, lotCount)
 	lots := make([]*auction.AuctionLot, lotCount)
 	addressBids := make([]*big.Int, lotCount)
 
 	// Load details
-	err := rp.BatchQuery(int(lotCount), int(lotCountDetailsBatchSize), func(mc *batch.MultiCaller, i int) error {
-		lot, err := auction.NewAuctionLot(rp, uint64(i))
+	err := c.rp.BatchQuery(int(lotCount), int(lotCountDetailsBatchSize), func(mc *batch.MultiCaller, i int) error {
+		lot, err := auction.NewAuctionLot(c.rp, uint64(i))
 		if err != nil {
 			return fmt.Errorf("error creating lot %d binding: %w", i, err)
 		}
 		lots[i] = lot
 
-		lot.GetLotAddressBidAmount(mc, &addressBids[i], bidderAddress)
+		lot.GetLotAddressBidAmount(mc, &addressBids[i], c.nodeAddress)
 		lot.GetLotIsCleared(mc)
 		lot.GetLotRemainingRplAmount(mc)
 		lot.GetLotRplRecovered(mc)

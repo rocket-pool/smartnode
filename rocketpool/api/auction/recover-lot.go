@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -15,63 +17,83 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-type auctionRecoverHandler struct {
+// ===============
+// === Factory ===
+// ===============
+
+type auctionRecoverContextFactory struct {
+	h *AuctionHandler
+}
+
+func (f *auctionRecoverContextFactory) Create(vars map[string]string) (*auctionRecoverContext, error) {
+	c := &auctionRecoverContext{
+		h: f.h,
+	}
+	inputErrs := []error{
+		server.ValidateArg("index", vars, cliutils.ValidateUint, &c.lotIndex),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *auctionRecoverContextFactory) Run(c *auctionRecoverContext) (*api.ApiResponse[api.RecoverRplFromLotData], error) {
+	return runAuctionCall[api.RecoverRplFromLotData](c)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type auctionRecoverContext struct {
+	h    *AuctionHandler
+	rp   *rocketpool.RocketPool
+	opts *bind.TransactOpts
+
 	lotIndex  uint64
 	lot       *auction.AuctionLot
 	pSettings *settings.ProtocolDaoSettings
 }
 
-func NewAuctionRecoverHandler(vars map[string]string) (*auctionRecoverHandler, error) {
-	h := &auctionRecoverHandler{}
-	inputErrs := []error{
-		server.ValidateArg("index", vars, cliutils.ValidateUint, &h.lotIndex),
-	}
-	return h, errors.Join(inputErrs...)
-}
-
-func (h *auctionRecoverHandler) CreateBindings(ctx *callContext) error {
+func (c *auctionRecoverContext) CreateBindings(ctx *callContext) error {
 	var err error
-	rp := ctx.rp
+	c.rp = ctx.rp
+	c.opts = ctx.opts
 
-	h.lot, err = auction.NewAuctionLot(rp, h.lotIndex)
+	c.lot, err = auction.NewAuctionLot(c.rp, c.lotIndex)
 	if err != nil {
-		return fmt.Errorf("error creating lot %d binding: %w", h.lotIndex, err)
+		return fmt.Errorf("error creating lot %d binding: %w", c.lotIndex, err)
 	}
-	h.pSettings, err = settings.NewProtocolDaoSettings(rp)
+	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating pDAO settings binding: %w", err)
 	}
 	return nil
 }
 
-func (h *auctionRecoverHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
-	h.lot.GetLotExists(mc)
-	h.lot.GetLotEndBlock(mc)
-	h.lot.GetLotRemainingRplAmount(mc)
-	h.lot.GetLotRplRecovered(mc)
-	h.pSettings.GetBidOnAuctionLotEnabled(mc)
+func (c *auctionRecoverContext) GetState(mc *batch.MultiCaller) {
+	c.lot.GetLotExists(mc)
+	c.lot.GetLotEndBlock(mc)
+	c.lot.GetLotRemainingRplAmount(mc)
+	c.lot.GetLotRplRecovered(mc)
+	c.pSettings.GetBidOnAuctionLotEnabled(mc)
 }
 
-func (h *auctionRecoverHandler) PrepareData(ctx *callContext, data *api.RecoverRplFromLotData) error {
-	rp := ctx.rp
-	opts := ctx.opts
-
+func (c *auctionRecoverContext) PrepareData(data *api.RecoverRplFromLotData) error {
 	// Get the current block
-	currentBlock, err := rp.Client.BlockNumber(context.Background())
+	currentBlock, err := c.rp.Client.BlockNumber(context.Background())
 	if err != nil {
 		return fmt.Errorf("error getting current EL block: %w", err)
 	}
 
 	// Check for validity
-	data.DoesNotExist = !h.lot.Details.Exists
-	data.BiddingNotEnded = !(currentBlock >= h.lot.Details.EndBlock.Formatted())
-	data.NoUnclaimedRPL = (h.lot.Details.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
-	data.RPLAlreadyRecovered = h.lot.Details.RplRecovered
-	data.CanRecover = !(data.DoesNotExist || data.BiddingNotEnded || data.NoUnclaimedRPL || data.RPLAlreadyRecovered)
+	data.DoesNotExist = !c.lot.Details.Exists
+	data.BiddingNotEnded = !(currentBlock >= c.lot.Details.EndBlock.Formatted())
+	data.NoUnclaimedRpl = (c.lot.Details.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
+	data.RplAlreadyRecovered = c.lot.Details.RplRecovered
+	data.CanRecover = !(data.DoesNotExist || data.BiddingNotEnded || data.NoUnclaimedRpl || data.RplAlreadyRecovered)
 
 	// Get tx info
-	if data.CanRecover && opts != nil {
-		txInfo, err := h.lot.RecoverUnclaimedRpl(opts)
+	if data.CanRecover && c.opts != nil {
+		txInfo, err := c.lot.RecoverUnclaimedRpl(c.opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for RecoverUnclaimedRpl: %w", err)
 		}
