@@ -15,42 +15,70 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/urfave/cli"
 )
 
-type minipoolBeginReduceBondManager struct {
+// ===============
+// === Factory ===
+// ===============
+
+type minipoolBeginReduceBondDetailsContextFactory struct {
+	handler *MinipoolHandler
+}
+
+func (f *minipoolBeginReduceBondDetailsContextFactory) Create(vars map[string]string) (*minipoolBeginReduceBondDetailsContext, error) {
+	c := &minipoolBeginReduceBondDetailsContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type minipoolBeginReduceBondDetailsContext struct {
+	handler *MinipoolHandler
+	rp      *rocketpool.RocketPool
+	bc      beacon.Client
+
 	newBondAmountWei *big.Int
 	pSettings        *settings.ProtocolDaoSettings
 	oSettings        *settings.OracleDaoSettings
 }
 
-func (m *minipoolBeginReduceBondManager) CreateBindings(rp *rocketpool.RocketPool) error {
+func (c *minipoolBeginReduceBondDetailsContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.bc = sp.GetBeaconClient()
+
 	var err error
-	m.pSettings, err = settings.NewProtocolDaoSettings(rp)
+	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating pDAO settings binding: %w", err)
 	}
-	m.oSettings, err = settings.NewOracleDaoSettings(rp)
+	c.oSettings, err = settings.NewOracleDaoSettings(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating oDAO settings binding: %w", err)
 	}
 	return nil
 }
 
-func (m *minipoolBeginReduceBondManager) GetState(node *node.Node, mc *batch.MultiCaller) {
-	m.pSettings.GetBondReductionEnabled(mc)
-	m.oSettings.GetBondReductionWindowStart(mc)
-	m.oSettings.GetBondReductionWindowLength(mc)
+func (c *minipoolBeginReduceBondDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
+	c.pSettings.GetBondReductionEnabled(mc)
+	c.oSettings.GetBondReductionWindowStart(mc)
+	c.oSettings.GetBondReductionWindowLength(mc)
 }
 
-func (m *minipoolBeginReduceBondManager) CheckState(node *node.Node, response *api.MinipoolBeginReduceBondDetailsResponse) bool {
-	response.BondReductionDisabled = !m.pSettings.Details.Minipool.IsBondReductionEnabled
+func (c *minipoolBeginReduceBondDetailsContext) CheckState(node *node.Node, response *api.MinipoolBeginReduceBondDetailsData) bool {
+	response.BondReductionDisabled = !c.pSettings.Details.Minipool.IsBondReductionEnabled
 	return !response.BondReductionDisabled
 }
 
-func (m *minipoolBeginReduceBondManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+func (c *minipoolBeginReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
 		mpv3.GetNodeDepositBalance(mc)
@@ -61,9 +89,9 @@ func (m *minipoolBeginReduceBondManager) GetMinipoolDetails(mc *batch.MultiCalle
 	}
 }
 
-func (m *minipoolBeginReduceBondManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolBeginReduceBondDetailsResponse) error {
+func (c *minipoolBeginReduceBondDetailsContext) PrepareResponse(addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolBeginReduceBondDetailsData, opts *bind.TransactOpts) error {
 	// Get the latest block header
-	header, err := rp.Client.HeaderByNumber(context.Background(), nil)
+	header, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
@@ -87,13 +115,13 @@ func (m *minipoolBeginReduceBondManager) PrepareResponse(rp *rocketpool.RocketPo
 		} else {
 			reductionStart := mpv3.Details.ReduceBondTime.Formatted()
 			timeSinceBondReductionStart := currentTime.Sub(reductionStart)
-			windowStart := m.oSettings.Details.Minipools.BondReductionWindowStart.Formatted()
-			windowEnd := windowStart + m.oSettings.Details.Minipools.BondReductionWindowLength.Formatted()
+			windowStart := c.oSettings.Details.Minipools.BondReductionWindowStart.Formatted()
+			windowEnd := windowStart + c.oSettings.Details.Minipools.BondReductionWindowLength.Formatted()
 
 			if timeSinceBondReductionStart < windowEnd {
 				mpDetails.AlreadyInWindow = true
 			} else {
-				mpDetails.MatchRequest = big.NewInt(0).Sub(mpCommon.Details.NodeDepositBalance, m.newBondAmountWei)
+				mpDetails.MatchRequest = big.NewInt(0).Sub(mpCommon.Details.NodeDepositBalance, c.newBondAmountWei)
 				pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
 				detailsMap[mpCommon.Details.Pubkey] = i
 			}
@@ -103,7 +131,7 @@ func (m *minipoolBeginReduceBondManager) PrepareResponse(rp *rocketpool.RocketPo
 	}
 
 	// Get the statuses on Beacon
-	beaconStatuses, err := bc.GetValidatorStatuses(pubkeys, nil)
+	beaconStatuses, err := c.bc.GetValidatorStatuses(pubkeys, nil)
 	if err != nil {
 		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}
@@ -116,9 +144,9 @@ func (m *minipoolBeginReduceBondManager) PrepareResponse(rp *rocketpool.RocketPo
 		mpDetails.BeaconState = beaconStatus.Status
 
 		// Check the beacon state
-		mpDetails.InvalidBeaconState = !(mpDetails.BeaconState == beacon.ValidatorState_PendingInitialized ||
-			mpDetails.BeaconState == beacon.ValidatorState_PendingQueued ||
-			mpDetails.BeaconState == beacon.ValidatorState_ActiveOngoing)
+		mpDetails.InvalidBeaconState = !(mpDetails.BeaconState == sharedtypes.ValidatorState_PendingInitialized ||
+			mpDetails.BeaconState == sharedtypes.ValidatorState_PendingQueued ||
+			mpDetails.BeaconState == sharedtypes.ValidatorState_ActiveOngoing)
 
 		// Make sure the balance is high enough
 		threshold := uint64(32000000000)

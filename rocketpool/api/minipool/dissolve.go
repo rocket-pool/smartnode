@@ -25,7 +25,7 @@ func (m *minipoolDissolveManager) CreateBindings(rp *rocketpool.RocketPool) erro
 func (m *minipoolDissolveManager) GetState(node *node.Node, mc *batch.MultiCaller) {
 }
 
-func (m *minipoolDissolveManager) CheckState(node *node.Node, response *api.MinipoolDissolveDetailsResponse) bool {
+func (m *minipoolDissolveManager) CheckState(node *node.Node, response *api.MinipoolDissolveDetailsData) bool {
 	return true
 }
 
@@ -35,7 +35,7 @@ func (m *minipoolDissolveManager) GetMinipoolDetails(mc *batch.MultiCaller, mp m
 	mpCommon.GetStatus(mc)
 }
 
-func (m *minipoolDissolveManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolDissolveDetailsResponse) error {
+func (m *minipoolDissolveManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolDissolveDetailsData) error {
 	details := make([]api.MinipoolDissolveDetails, len(mps))
 	for i, mp := range mps {
 		mpCommonDetails := mp.GetMinipoolCommon().Details

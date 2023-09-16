@@ -9,15 +9,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
-type MinipoolStatusResponse struct {
-	Status         string            `json:"status"`
-	Error          string            `json:"error"`
-	Minipools      []MinipoolDetails `json:"minipools"`
-	LatestDelegate common.Address    `json:"latestDelegate"`
-}
 type MinipoolDetails struct {
 	Address         common.Address        `json:"address"`
 	ValidatorPubkey types.ValidatorPubkey `json:"validatorPubkey"`
@@ -70,15 +64,17 @@ type MinipoolDetails struct {
 	ReduceBondTime      time.Time             `json:"reduceBondTime"`
 	ReduceBondCancelled bool                  `json:"reduceBondCancelled"`
 }
+type MinipoolStatusData struct {
+	Minipools      []MinipoolDetails `json:"minipools"`
+	LatestDelegate common.Address    `json:"latestDelegate"`
+}
 
 type MinipoolRefundDetails struct {
 	Address                   common.Address `json:"address"`
 	InsufficientRefundBalance bool           `json:"insufficientRefundBalance"`
 	CanRefund                 bool           `json:"canRefund"`
 }
-type MinipoolRefundDetailsResponse struct {
-	Status  string                  `json:"status"`
-	Error   string                  `json:"error"`
+type MinipoolRefundDetailsData struct {
 	Details []MinipoolRefundDetails `json:"details"`
 }
 
@@ -87,9 +83,7 @@ type MinipoolDissolveDetails struct {
 	CanDissolve   bool           `json:"canDissolve"`
 	InvalidStatus bool           `json:"invalidStatus"`
 }
-type MinipoolDissolveDetailsResponse struct {
-	Status  string                    `json:"status"`
-	Error   string                    `json:"error"`
+type MinipoolDissolveDetailsData struct {
 	Details []MinipoolDissolveDetails `json:"details"`
 }
 
@@ -98,46 +92,27 @@ type MinipoolExitDetails struct {
 	CanExit       bool           `json:"canExit"`
 	InvalidStatus bool           `json:"invalidStatus"`
 }
-type MinipoolExitDetailsResponse struct {
-	Status  string                `json:"status"`
-	Error   string                `json:"error"`
+type MinipoolExitDetailsData struct {
 	Details []MinipoolExitDetails `json:"details"`
 }
 
-type CanChangeWithdrawalCredentialsResponse struct {
-	Status    string `json:"status"`
-	Error     string `json:"error"`
-	CanChange bool   `json:"canChange"`
-}
-type ChangeWithdrawalCredentialsResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
+type MinipoolCanChangeWithdrawalCredentialsData struct {
+	CanChange bool `json:"canChange"`
 }
 
-type CanProcessWithdrawalResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
+type MinipoolCanProcessWithdrawalData struct {
 	CanWithdraw   bool               `json:"canWithdraw"`
 	InvalidStatus bool               `json:"invalidStatus"`
 	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
 }
-type ProcessWithdrawalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+type MinipoolProcessWithdrawalData struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type CanProcessWithdrawalAndFinaliseResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
+type MinipoolCanProcessWithdrawalAndFinaliseData struct {
 	CanWithdraw   bool               `json:"canWithdraw"`
 	InvalidStatus bool               `json:"invalidStatus"`
 	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
-}
-type ProcessWithdrawalAndFinaliseResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
 }
 
 type MinipoolDelegateDetails struct {
@@ -149,30 +124,26 @@ type MinipoolDelegateDetails struct {
 	RollbackVersionTooLow           bool           `json:"rollbackVersionTooLow"`
 	VersionTooLowToDisableUseLatest bool           `json:"versionTooLowToDisableUseLatest"`
 }
-type MinipoolDelegateDetailsResponse struct {
-	Status         string                    `json:"status"`
-	Error          string                    `json:"error"`
+type MinipoolDelegateDetailsData struct {
 	LatestDelegate common.Address            `json:"latestDelegate"`
 	Details        []MinipoolDelegateDetails `json:"details"`
 }
 
 type MinipoolCloseDetails struct {
-	Address                     common.Address        `json:"address"`
-	IsFinalized                 bool                  `json:"isFinalized"`
-	Status                      types.MinipoolStatus  `json:"status"`
-	Version                     uint8                 `json:"version"`
-	Distributed                 bool                  `json:"distributed"`
-	CanClose                    bool                  `json:"canClose"`
-	Balance                     *big.Int              `json:"balance"`
-	EffectiveBalance            *big.Int              `json:"effectiveBalance"`
-	Refund                      *big.Int              `json:"refund"`
-	UserDepositBalance          *big.Int              `json:"userDepositBalance"`
-	BeaconState                 beacon.ValidatorState `json:"beaconState"`
-	NodeShareOfEffectiveBalance *big.Int              `json:"nodeShareOfEffectiveBalance"`
+	Address                     common.Address             `json:"address"`
+	IsFinalized                 bool                       `json:"isFinalized"`
+	Status                      types.MinipoolStatus       `json:"status"`
+	Version                     uint8                      `json:"version"`
+	Distributed                 bool                       `json:"distributed"`
+	CanClose                    bool                       `json:"canClose"`
+	Balance                     *big.Int                   `json:"balance"`
+	EffectiveBalance            *big.Int                   `json:"effectiveBalance"`
+	Refund                      *big.Int                   `json:"refund"`
+	UserDepositBalance          *big.Int                   `json:"userDepositBalance"`
+	BeaconState                 sharedtypes.ValidatorState `json:"beaconState"`
+	NodeShareOfEffectiveBalance *big.Int                   `json:"nodeShareOfEffectiveBalance"`
 }
-type MinipoolCloseDetailsResponse struct {
-	Status                      string                 `json:"status"`
-	Error                       string                 `json:"error"`
+type MinipoolCloseDetailsData struct {
 	IsFeeDistributorInitialized bool                   `json:"isFeeDistributorInitialized"`
 	Details                     []MinipoolCloseDetails `json:"details"`
 }
@@ -188,20 +159,14 @@ type MinipoolDistributeDetails struct {
 	IsFinalized                     bool                 `json:"isFinalized"`
 	CanDistribute                   bool                 `json:"canDistribute"`
 }
-type MinipoolDistributeDetailsResponse struct {
-	Status  string                      `json:"status"`
-	Error   string                      `json:"error"`
+type MinipoolDistributeDetailsData struct {
 	Details []MinipoolDistributeDetails `json:"details"`
 }
 
-type CanFinaliseMinipoolResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
+type MinipoolCanFinaliseData struct {
 	GasInfo rocketpool.GasInfo `json:"gasInfo"`
 }
-type FinaliseMinipoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
+type MinipoolFinaliseData struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
@@ -213,9 +178,7 @@ type MinipoolStakeDetails struct {
 	StillInScrubPeriod bool                 `json:"stillInScrubPeriod"`
 	CanStake           bool                 `json:"canStake"`
 }
-type MinipoolStakeDetailsResponse struct {
-	Status  string                 `json:"status"`
-	Error   string                 `json:"error"`
+type MinipoolStakeDetailsData struct {
 	Details []MinipoolStakeDetails `json:"details"`
 }
 
@@ -223,95 +186,77 @@ type MinipoolPromoteDetails struct {
 	Address    common.Address `json:"address"`
 	CanPromote bool           `json:"canPromote"`
 }
-type MinipoolPromoteDetailsResponse struct {
-	Status  string                   `json:"status"`
-	Error   string                   `json:"error"`
+type MinipoolPromoteDetailsData struct {
 	Details []MinipoolPromoteDetails `json:"details"`
 }
 
-type GetUseLatestDelegateResponse struct {
-	Status  string `json:"status"`
-	Error   string `json:"error"`
-	Setting bool   `json:"setting"`
+type MinipoolGetUseLatestDelegateData struct {
+	Setting bool `json:"setting"`
 }
 
-type GetDelegateResponse struct {
-	Status  string         `json:"status"`
-	Error   string         `json:"error"`
+type MinipoolDelegateData struct {
 	Address common.Address `json:"address"`
 }
 
-type GetPreviousDelegateResponse struct {
-	Status  string         `json:"status"`
-	Error   string         `json:"error"`
+type MinipoolPreviousDelegateData struct {
 	Address common.Address `json:"address"`
 }
 
-type GetEffectiveDelegateResponse struct {
-	Status  string         `json:"status"`
-	Error   string         `json:"error"`
+type MinipoolEffectiveDelegateData struct {
 	Address common.Address `json:"address"`
 }
 
-type VanityArtifactsResponse struct {
-	Status                 string         `json:"status"`
-	Error                  string         `json:"error"`
+type MinipoolVanityArtifactsData struct {
 	NodeAddress            common.Address `json:"nodeAddress"`
 	MinipoolFactoryAddress common.Address `json:"minipoolFactoryAddress"`
 	InitHash               common.Hash    `json:"initHash"`
 }
 
 type MinipoolBeginReduceBondDetails struct {
-	Address               common.Address        `json:"address"`
-	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
-	Balance               uint64                `json:"balance"`
-	BalanceTooLow         bool                  `json:"balanceTooLow"`
-	AlreadyInWindow       bool                  `json:"alreadyInWindow"`
-	MatchRequest          *big.Int              `json:"matchRequest"`
-	BeaconState           beacon.ValidatorState `json:"beaconState"`
-	InvalidElState        bool                  `json:"invalidElState"`
-	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
-	CanReduce             bool                  `json:"canReduce"`
+	Address               common.Address             `json:"address"`
+	MinipoolVersionTooLow bool                       `json:"minipoolVersionTooLow"`
+	Balance               uint64                     `json:"balance"`
+	BalanceTooLow         bool                       `json:"balanceTooLow"`
+	AlreadyInWindow       bool                       `json:"alreadyInWindow"`
+	MatchRequest          *big.Int                   `json:"matchRequest"`
+	BeaconState           sharedtypes.ValidatorState `json:"beaconState"`
+	InvalidElState        bool                       `json:"invalidElState"`
+	InvalidBeaconState    bool                       `json:"invalidBeaconState"`
+	CanReduce             bool                       `json:"canReduce"`
 }
-type MinipoolBeginReduceBondDetailsResponse struct {
-	Status                string                           `json:"status"`
-	Error                 string                           `json:"error"`
+type MinipoolBeginReduceBondDetailsData struct {
 	BondReductionDisabled bool                             `json:"bondReductionDisabled"`
 	Details               []MinipoolBeginReduceBondDetails `json:"details"`
 }
 
 type MinipoolReduceBondDetails struct {
-	Address               common.Address        `json:"address"`
-	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
-	Balance               uint64                `json:"balance"`
-	BalanceTooLow         bool                  `json:"balanceTooLow"`
-	OutOfWindow           bool                  `json:"outOfWindow"`
-	BeaconState           beacon.ValidatorState `json:"beaconState"`
-	InvalidElState        bool                  `json:"invalidElState"`
-	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
-	CanReduce             bool                  `json:"canReduce"`
+	Address               common.Address             `json:"address"`
+	MinipoolVersionTooLow bool                       `json:"minipoolVersionTooLow"`
+	Balance               uint64                     `json:"balance"`
+	BalanceTooLow         bool                       `json:"balanceTooLow"`
+	OutOfWindow           bool                       `json:"outOfWindow"`
+	BeaconState           sharedtypes.ValidatorState `json:"beaconState"`
+	InvalidElState        bool                       `json:"invalidElState"`
+	InvalidBeaconState    bool                       `json:"invalidBeaconState"`
+	CanReduce             bool                       `json:"canReduce"`
 }
-type MinipoolReduceBondDetailsResponse struct {
-	Status                string                      `json:"status"`
-	Error                 string                      `json:"error"`
+type MinipoolReduceBondDetailsData struct {
 	BondReductionDisabled bool                        `json:"bondReductionDisabled"`
 	Details               []MinipoolReduceBondDetails `json:"details"`
 }
 
 type MinipoolRescueDissolvedDetails struct {
-	Address            common.Address        `json:"address"`
-	CanRescue          bool                  `json:"canRescue"`
-	IsFinalized        bool                  `json:"isFinalized"`
-	MinipoolState      types.MinipoolStatus  `json:"minipoolStatus"`
-	InvalidElState     bool                  `json:"invalidElState"`
-	MinipoolVersion    uint8                 `json:"minipoolVersion"`
-	BeaconBalance      *big.Int              `json:"beaconBalance"`
-	BeaconState        beacon.ValidatorState `json:"beaconState"`
-	InvalidBeaconState bool                  `json:"invalidBeaconState"`
-	HasFullBalance     bool                  `json:"hasFullBalance"`
+	Address            common.Address             `json:"address"`
+	CanRescue          bool                       `json:"canRescue"`
+	IsFinalized        bool                       `json:"isFinalized"`
+	MinipoolState      types.MinipoolStatus       `json:"minipoolStatus"`
+	InvalidElState     bool                       `json:"invalidElState"`
+	MinipoolVersion    uint8                      `json:"minipoolVersion"`
+	BeaconBalance      *big.Int                   `json:"beaconBalance"`
+	BeaconState        sharedtypes.ValidatorState `json:"beaconState"`
+	InvalidBeaconState bool                       `json:"invalidBeaconState"`
+	HasFullBalance     bool                       `json:"hasFullBalance"`
 }
-type MinipoolRescueDissolvedDetailsResponse struct {
-	Status  string                           `json:"status"`
-	Error   string                           `json:"error"`
+type MinipoolRescueDissolvedDetailsData struct {
 	Details []MinipoolRescueDissolvedDetails `json:"details"`
 }

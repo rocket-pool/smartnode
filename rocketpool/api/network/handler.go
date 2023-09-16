@@ -10,16 +10,16 @@ import (
 
 type NetworkHandler struct {
 	serviceProvider        *services.ServiceProvider
-	proposalsFactory       server.ISingleStageContextFactory[*networkProposalContext, api.NetworkDaoProposalsData]
-	delegateFactory        server.ISingleStageContextFactory[*networkDelegateContext, api.NetworkLatestDelegateData]
-	depositInfoFactory     server.ISingleStageContextFactory[*networkDepositInfoContext, api.NetworkDepositContractInfoData]
-	downloadRewardsFactory server.ISingleStageContextFactory[*networkDownloadRewardsContext, api.SuccessData]
-	rewardsFileFactory     server.ISingleStageContextFactory[*networkRewardsFileContext, api.NetworkRewardsFileData]
-	generateRewardsFactory server.ISingleStageContextFactory[*networkGenerateRewardsContext, api.SuccessData]
-	feeFactory             server.ISingleStageContextFactory[*networkFeeContext, api.NetworkNodeFeeData]
-	priceFactory           server.ISingleStageContextFactory[*networkPriceContext, api.NetworkRplPriceData]
-	statsFactory           server.ISingleStageContextFactory[*networkStatsContext, api.NetworkStatsData]
-	timezoneFactory        server.ISingleStageContextFactory[*networkTimezoneContext, api.NetworkTimezonesData]
+	proposalsFactory       server.ISingleStageCallContextFactory[*networkProposalContext, api.NetworkDaoProposalsData]
+	delegateFactory        server.ISingleStageCallContextFactory[*networkDelegateContext, api.NetworkLatestDelegateData]
+	depositInfoFactory     server.ISingleStageCallContextFactory[*networkDepositInfoContext, api.NetworkDepositContractInfoData]
+	downloadRewardsFactory server.ISingleStageCallContextFactory[*networkDownloadRewardsContext, api.SuccessData]
+	rewardsFileFactory     server.ISingleStageCallContextFactory[*networkRewardsFileContext, api.NetworkRewardsFileData]
+	generateRewardsFactory server.ISingleStageCallContextFactory[*networkGenerateRewardsContext, api.SuccessData]
+	feeFactory             server.ISingleStageCallContextFactory[*networkFeeContext, api.NetworkNodeFeeData]
+	priceFactory           server.ISingleStageCallContextFactory[*networkPriceContext, api.NetworkRplPriceData]
+	statsFactory           server.ISingleStageCallContextFactory[*networkStatsContext, api.NetworkStatsData]
+	timezoneFactory        server.ISingleStageCallContextFactory[*networkTimezoneContext, api.NetworkTimezonesData]
 }
 
 func NewNetworkHandler(serviceProvider *services.ServiceProvider) *NetworkHandler {

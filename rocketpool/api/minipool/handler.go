@@ -1,12 +1,31 @@
 package minipool
 
 import (
+	"github.com/gorilla/mux"
 	"github.com/urfave/cli"
 
-	types "github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
+
+type MinipoolHandler struct {
+	serviceProvider               *services.ServiceProvider
+	beginReduceBondDetailsFactory server.IMinipoolCallContextFactory[*minipoolBeginReduceBondDetailsContext, api.MinipoolBeginReduceBondDetailsData]
+}
+
+func NewMinipoolHandler(serviceProvider *services.ServiceProvider) *MinipoolHandler {
+	h := &MinipoolHandler{
+		serviceProvider: serviceProvider,
+	}
+	h.beginReduceBondDetailsFactory = &minipoolBeginReduceBondDetailsContextFactory{h}
+	return h
+}
+
+func (h *MinipoolHandler) RegisterRoutes(router *mux.Router) {
+	server.RegisterMinipoolRoute(router, "begin-reduce-bond/details", h.beginReduceBondDetailsFactory, h.serviceProvider)
+}
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
@@ -33,7 +52,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolBeginReduceBondDetailsResponse](c, &minipoolBeginReduceBondManager{
+					response, err := runMinipoolQuery[types.MinipoolBeginReduceBondDetailsData](c, &minipoolBeginReduceBondManager{
 						newBondAmountWei: newBondAmountWei,
 					})
 					api.PrintResponse(response, err)
@@ -132,7 +151,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolCloseDetailsResponse](c, &minipoolCloseManager{})
+					response, err := runMinipoolQuery[types.MinipoolCloseDetailsData](c, &minipoolCloseManager{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -174,7 +193,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolDelegateDetailsResponse](c, &minipoolDelegateManager{})
+					response, err := runMinipoolQuery[types.MinipoolDelegateDetailsData](c, &minipoolDelegateManager{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -261,7 +280,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolDissolveDetailsResponse](c, &minipoolDissolveManager{})
+					response, err := runMinipoolQuery[types.MinipoolDissolveDetailsData](c, &minipoolDissolveManager{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -303,7 +322,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolDistributeDetailsResponse](c, &minipoolDistributeManager{})
+					response, err := runMinipoolQuery[types.MinipoolDistributeDetailsData](c, &minipoolDistributeManager{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -344,7 +363,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolExitDetailsResponse](c, &minipoolExitManager{})
+					response, err := runMinipoolQuery[types.MinipoolExitDetailsData](c, &minipoolExitManager{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -413,7 +432,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolPromoteDetailsResponse](c, &minipoolPromoteManager{})
+					response, err := runMinipoolQuery[types.MinipoolPromoteDetailsData](c, &minipoolPromoteManager{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -454,7 +473,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolReduceBondDetailsResponse](c, &minipoolReduceBondManager{})
+					response, err := runMinipoolQuery[types.MinipoolReduceBondDetailsData](c, &minipoolReduceBondManager{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -495,7 +514,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolRefundDetailsResponse](c, &minipoolRefundManager{})
+					response, err := runMinipoolQuery[types.MinipoolRefundDetailsData](c, &minipoolRefundManager{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -537,7 +556,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolRescueDissolvedDetailsResponse](c, &minipoolRescueDissolvedManager{})
+					response, err := runMinipoolQuery[types.MinipoolRescueDissolvedDetailsData](c, &minipoolRescueDissolvedManager{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -582,7 +601,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolStakeDetailsResponse](c, &minipoolStakeManager{})
+					response, err := runMinipoolQuery[types.MinipoolStakeDetailsData](c, &minipoolStakeManager{})
 					api.PrintResponse(response, err)
 					return nil
 
@@ -625,7 +644,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := runMinipoolQuery[types.MinipoolStatusResponse](c, &minipoolStatusManager{})
+					response, err := runMinipoolQuery[types.MinipoolStatusData](c, &minipoolStatusManager{})
 					api.PrintResponse(response, err)
 					return nil
 

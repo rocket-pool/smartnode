@@ -10,8 +10,8 @@ import (
 
 type FaucetHandler struct {
 	serviceProvider *services.ServiceProvider
-	statusFactory   server.ISingleStageContextFactory[*faucetStatusContext, api.FaucetStatusData]
-	withdrawFactory server.ISingleStageContextFactory[*faucetWithdrawContext, api.FaucetWithdrawRplData]
+	statusFactory   server.ISingleStageCallContextFactory[*faucetStatusContext, api.FaucetStatusData]
+	withdrawFactory server.ISingleStageCallContextFactory[*faucetWithdrawContext, api.FaucetWithdrawRplData]
 }
 
 func NewFaucetHandler(serviceProvider *services.ServiceProvider) *FaucetHandler {

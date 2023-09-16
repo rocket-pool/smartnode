@@ -29,7 +29,7 @@ func (m *minipoolExitManager) CreateBindings(rp *rocketpool.RocketPool) error {
 func (m *minipoolExitManager) GetState(node *node.Node, mc *batch.MultiCaller) {
 }
 
-func (m *minipoolExitManager) CheckState(node *node.Node, response *api.MinipoolExitDetailsResponse) bool {
+func (m *minipoolExitManager) CheckState(node *node.Node, response *api.MinipoolExitDetailsData) bool {
 	return true
 }
 
@@ -39,7 +39,7 @@ func (m *minipoolExitManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minip
 	mpCommon.GetStatus(mc)
 }
 
-func (m *minipoolExitManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolExitDetailsResponse) error {
+func (m *minipoolExitManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolExitDetailsData) error {
 	// Get the exit details
 	details := make([]api.MinipoolExitDetails, len(addresses))
 	for i, mp := range mps {

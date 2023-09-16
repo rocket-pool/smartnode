@@ -19,6 +19,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
@@ -61,11 +62,6 @@ func NewStandardHttpClient(providerAddress string) *StandardHttpClient {
 // Close the client connection
 func (c *StandardHttpClient) Close() error {
 	return nil
-}
-
-// Get the client's process configuration type
-func (c *StandardHttpClient) GetClientType() (beacon.BeaconClientType, error) {
-	return beacon.SplitProcess, nil
 }
 
 // Get the node's sync status
@@ -220,7 +216,7 @@ func (c *StandardHttpClient) getValidatorStatus(pubkeyOrIndex string, opts *beac
 		WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
 		Balance:                    uint64(validator.Balance),
 		EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
-		Status:                     beacon.ValidatorState(validator.Status),
+		Status:                     sharedtypes.ValidatorState(validator.Status),
 		Slashed:                    validator.Validator.Slashed,
 		ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),
 		ActivationEpoch:            uint64(validator.Validator.ActivationEpoch),
@@ -281,7 +277,7 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 			WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
 			Balance:                    uint64(validator.Balance),
 			EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
-			Status:                     beacon.ValidatorState(validator.Status),
+			Status:                     sharedtypes.ValidatorState(validator.Status),
 			Slashed:                    validator.Validator.Slashed,
 			ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),
 			ActivationEpoch:            uint64(validator.Validator.ActivationEpoch),

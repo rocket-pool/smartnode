@@ -21,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
@@ -955,7 +956,7 @@ func (r *treeGeneratorImpl_v6) createMinipoolIndexMap() error {
 					minipoolInfo.WasActive = false
 				} else {
 					switch status.Status {
-					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
+					case sharedtypes.ValidatorState_PendingInitialized, sharedtypes.ValidatorState_PendingQueued:
 						// Remove minipools that don't have indices yet since they're not actually viable
 						//r.log.Printlnf("NOTE: minipool %s (index %s, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
 						minipoolInfo.WasActive = false

@@ -94,17 +94,6 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 /// BeaconClient Functions
 /// ======================
 
-// Get the client's process mode
-func (m *BeaconClientManager) GetClientType() (beacon.BeaconClientType, error) {
-	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
-		return client.GetClientType()
-	})
-	if err != nil {
-		return beacon.Unknown, err
-	}
-	return result.(beacon.BeaconClientType), nil
-}
-
 // Get the client's sync status
 func (m *BeaconClientManager) GetSyncStatus() (beacon.SyncStatus, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {

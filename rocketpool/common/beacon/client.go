@@ -4,6 +4,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/rocket-pool/rocketpool-go/types"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
 // API request options
@@ -42,7 +43,7 @@ type ValidatorStatus struct {
 	Index                      string
 	WithdrawalCredentials      common.Hash
 	Balance                    uint64
-	Status                     ValidatorState
+	Status                     sharedtypes.ValidatorState
 	EffectiveBalance           uint64
 	Slashed                    bool
 	ActivationEligibilityEpoch uint64
@@ -94,41 +95,8 @@ type AttestationInfo struct {
 	CommitteeIndex  uint64
 }
 
-// Beacon client type
-type BeaconClientType int
-
-const (
-	// This client is a traditional "split process" design, where the beacon
-	// client and validator process are separate and run in different
-	// containers
-	SplitProcess BeaconClientType = iota
-
-	// This client is a "single process" where the beacon client and
-	// validator run in the same process (or run as separate processes
-	// within the same docker container)
-	SingleProcess
-
-	// Unknown / missing client type
-	Unknown
-)
-
-type ValidatorState string
-
-const (
-	ValidatorState_PendingInitialized ValidatorState = "pending_initialized"
-	ValidatorState_PendingQueued      ValidatorState = "pending_queued"
-	ValidatorState_ActiveOngoing      ValidatorState = "active_ongoing"
-	ValidatorState_ActiveExiting      ValidatorState = "active_exiting"
-	ValidatorState_ActiveSlashed      ValidatorState = "active_slashed"
-	ValidatorState_ExitedUnslashed    ValidatorState = "exited_unslashed"
-	ValidatorState_ExitedSlashed      ValidatorState = "exited_slashed"
-	ValidatorState_WithdrawalPossible ValidatorState = "withdrawal_possible"
-	ValidatorState_WithdrawalDone     ValidatorState = "withdrawal_done"
-)
-
 // Beacon client interface
 type Client interface {
-	GetClientType() (BeaconClientType, error)
 	GetSyncStatus() (SyncStatus, error)
 	GetEth2Config() (Eth2Config, error)
 	GetEth2DepositContract() (Eth2DepositContract, error)

@@ -20,7 +20,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet/data"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet/keystore"
-	wtypes "github.com/rocket-pool/smartnode/shared/types/wallet"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
 // Config
@@ -114,28 +114,28 @@ func (w *LocalWallet) GetChainID() *big.Int {
 }
 
 // Gets the status of the wallet and its artifacts
-func (w *LocalWallet) GetStatus() wtypes.WalletStatus {
+func (w *LocalWallet) GetStatus() sharedtypes.WalletStatus {
 	// Get the data and its existence
 	address, hasAddress := w.addressManager.Get()
 	_, hasKeystore := w.keystoreManager.Get()
 	_, hasPassword := w.passwordManager.Get()
 
 	if !hasAddress {
-		return wtypes.WalletStatus_NoAddress
+		return sharedtypes.WalletStatus_NoAddress
 	}
 	if !hasKeystore {
-		return wtypes.WalletStatus_NoKeystore
+		return sharedtypes.WalletStatus_NoKeystore
 	}
 	if !hasPassword {
-		return wtypes.WalletStatus_NoPassword
+		return sharedtypes.WalletStatus_NoPassword
 	}
 
 	// If we have all three, check if the keystore matches the address
 	derivedAddress := crypto.PubkeyToAddress(w.nodePrivateKey.PublicKey)
 	if derivedAddress != address {
-		return wtypes.WalletStatus_KeystoreMismatch
+		return sharedtypes.WalletStatus_KeystoreMismatch
 	}
-	return wtypes.WalletStatus_Ready
+	return sharedtypes.WalletStatus_Ready
 }
 
 // Get the wallet's address, if one is loaded
@@ -254,15 +254,15 @@ func (w *LocalWallet) DeleteKeystore() error {
 func (w *LocalWallet) GetTransactor() (*bind.TransactOpts, error) {
 	status := w.GetStatus()
 	switch status {
-	case wtypes.WalletStatus_NoAddress:
+	case sharedtypes.WalletStatus_NoAddress:
 		return nil, fmt.Errorf("node wallet does not have an address loaded - please create or recover a node wallet")
-	case wtypes.WalletStatus_NoKeystore:
+	case sharedtypes.WalletStatus_NoKeystore:
 		return nil, fmt.Errorf("node wallet is in read-only mode; it cannot transact because no keystore is loaded")
-	case wtypes.WalletStatus_NoPassword:
+	case sharedtypes.WalletStatus_NoPassword:
 		return nil, fmt.Errorf("node wallet is in read-only mode; no password is loaded for the wallet")
-	case wtypes.WalletStatus_KeystoreMismatch:
+	case sharedtypes.WalletStatus_KeystoreMismatch:
 		return nil, fmt.Errorf("node wallet is in read-only mode; the keystore is for a different wallet than the one it is using")
-	case wtypes.WalletStatus_Ready:
+	case sharedtypes.WalletStatus_Ready:
 		transactor, err := bind.NewKeyedTransactorWithChainID(w.nodePrivateKey, w.chainID)
 		transactor.Context = context.Background()
 		return transactor, err

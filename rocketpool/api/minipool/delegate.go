@@ -33,7 +33,7 @@ func (m *minipoolDelegateManager) CreateBindings(rp *rocketpool.RocketPool) erro
 func (m *minipoolDelegateManager) GetState(node *node.Node, mc *batch.MultiCaller) {
 }
 
-func (m *minipoolDelegateManager) CheckState(node *node.Node, response *api.MinipoolDelegateDetailsResponse) bool {
+func (m *minipoolDelegateManager) CheckState(node *node.Node, response *api.MinipoolDelegateDetailsData) bool {
 	return true
 }
 
@@ -45,7 +45,7 @@ func (m *minipoolDelegateManager) GetMinipoolDetails(mc *batch.MultiCaller, mp m
 	mpCommon.GetUseLatestDelegate(mc)
 }
 
-func (m *minipoolDelegateManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolDelegateDetailsResponse) error {
+func (m *minipoolDelegateManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolDelegateDetailsData) error {
 	// Get all of the unique delegate addresses used by this node
 	delegateAddresses := []common.Address{}
 	delegateAddressMap := map[common.Address]bool{}

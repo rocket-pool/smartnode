@@ -18,7 +18,7 @@ const (
 	ozMinipoolBytecode string = "0x3d602d80600a3d3981f3363d3d373d3d3d363d73%s5af43d82803e903d91602b57fd5bf3"
 )
 
-func getVanityArtifacts(c *cli.Context, nodeAddressStr string) (*api.VanityArtifactsResponse, error) {
+func getVanityArtifacts(c *cli.Context, nodeAddressStr string) (*api.MinipoolVanityArtifactsData, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -30,7 +30,7 @@ func getVanityArtifacts(c *cli.Context, nodeAddressStr string) (*api.VanityArtif
 	}
 
 	// Response
-	response := api.VanityArtifactsResponse{}
+	response := api.MinipoolVanityArtifactsData{}
 
 	// Get node account
 	var nodeAddress common.Address

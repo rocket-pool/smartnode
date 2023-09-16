@@ -11,17 +11,17 @@ import (
 )
 
 // Get minipool status
-func (c *Client) MinipoolStatus() (api.MinipoolStatusResponse, error) {
+func (c *Client) MinipoolStatus() (api.MinipoolStatusData, error) {
 	responseBytes, err := c.callAPI("minipool status")
 	if err != nil {
-		return api.MinipoolStatusResponse{}, fmt.Errorf("Could not get minipool status: %w", err)
+		return api.MinipoolStatusData{}, fmt.Errorf("Could not get minipool status: %w", err)
 	}
-	var response api.MinipoolStatusResponse
+	var response api.MinipoolStatusData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.MinipoolStatusResponse{}, fmt.Errorf("Could not decode minipool status response: %w", err)
+		return api.MinipoolStatusData{}, fmt.Errorf("Could not decode minipool status response: %w", err)
 	}
 	if response.Error != "" {
-		return api.MinipoolStatusResponse{}, fmt.Errorf("Could not get minipool status: %s", response.Error)
+		return api.MinipoolStatusData{}, fmt.Errorf("Could not get minipool status: %s", response.Error)
 	}
 	for i := 0; i < len(response.Minipools); i++ {
 		mp := &response.Minipools[i]
@@ -217,17 +217,17 @@ func (c *Client) ExitMinipool(address common.Address) (api.ExitMinipoolResponse,
 }
 
 // Check all of the node's minipools for closure eligibility, and return the details of the closeable ones
-func (c *Client) GetMinipoolCloseDetailsForNode() (api.MinipoolCloseDetailsResponse, error) {
+func (c *Client) GetMinipoolCloseDetailsForNode() (api.MinipoolCloseDetailsData, error) {
 	responseBytes, err := c.callAPI("minipool get-minipool-close-details-for-node")
 	if err != nil {
-		return api.MinipoolCloseDetailsResponse{}, fmt.Errorf("Could not get get-minipool-close-details-for-node status: %w", err)
+		return api.MinipoolCloseDetailsData{}, fmt.Errorf("Could not get get-minipool-close-details-for-node status: %w", err)
 	}
-	var response api.MinipoolCloseDetailsResponse
+	var response api.MinipoolCloseDetailsData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.MinipoolCloseDetailsResponse{}, fmt.Errorf("Could not decode get-minipool-close-details-for-node response: %w", err)
+		return api.MinipoolCloseDetailsData{}, fmt.Errorf("Could not decode get-minipool-close-details-for-node response: %w", err)
 	}
 	if response.Error != "" {
-		return api.MinipoolCloseDetailsResponse{}, fmt.Errorf("Could not get get-minipool-close-details-for-node status: %s", response.Error)
+		return api.MinipoolCloseDetailsData{}, fmt.Errorf("Could not get get-minipool-close-details-for-node status: %s", response.Error)
 	}
 	return response, nil
 }
@@ -345,17 +345,17 @@ func (c *Client) SetUseLatestDelegateMinipool(address common.Address, setting bo
 }
 
 // Get the artifacts necessary for vanity address searching
-func (c *Client) GetVanityArtifacts(depositAmount *big.Int, nodeAddress string) (api.VanityArtifactsResponse, error) {
+func (c *Client) GetVanityArtifacts(depositAmount *big.Int, nodeAddress string) (api.MinipoolVanityArtifactsData, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("minipool get-vanity-artifacts %s %s", depositAmount.String(), nodeAddress))
 	if err != nil {
-		return api.VanityArtifactsResponse{}, fmt.Errorf("Could not get vanity artifacts: %w", err)
+		return api.MinipoolVanityArtifactsData{}, fmt.Errorf("Could not get vanity artifacts: %w", err)
 	}
-	var response api.VanityArtifactsResponse
+	var response api.MinipoolVanityArtifactsData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.VanityArtifactsResponse{}, fmt.Errorf("Could not decode get vanity artifacts response: %w", err)
+		return api.MinipoolVanityArtifactsData{}, fmt.Errorf("Could not decode get vanity artifacts response: %w", err)
 	}
 	if response.Error != "" {
-		return api.VanityArtifactsResponse{}, fmt.Errorf("Could not get vanity artifacts: %s", response.Error)
+		return api.MinipoolVanityArtifactsData{}, fmt.Errorf("Could not get vanity artifacts: %s", response.Error)
 	}
 	return response, nil
 }
@@ -425,17 +425,17 @@ func (c *Client) ReduceBondAmount(address common.Address) (api.ReduceBondAmountR
 }
 
 // Get the balance distribution details for all of the node's minipools
-func (c *Client) GetDistributeBalanceDetails() (api.MinipoolDistributeDetailsResponse, error) {
+func (c *Client) GetDistributeBalanceDetails() (api.MinipoolDistributeDetailsData, error) {
 	responseBytes, err := c.callAPI("minipool get-distribute-balance-details")
 	if err != nil {
-		return api.MinipoolDistributeDetailsResponse{}, fmt.Errorf("Could not get distribute balance details: %w", err)
+		return api.MinipoolDistributeDetailsData{}, fmt.Errorf("Could not get distribute balance details: %w", err)
 	}
-	var response api.MinipoolDistributeDetailsResponse
+	var response api.MinipoolDistributeDetailsData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.MinipoolDistributeDetailsResponse{}, fmt.Errorf("Could not decode get distribute balance details response: %w", err)
+		return api.MinipoolDistributeDetailsData{}, fmt.Errorf("Could not decode get distribute balance details response: %w", err)
 	}
 	if response.Error != "" {
-		return api.MinipoolDistributeDetailsResponse{}, fmt.Errorf("Could not get distribute balance details: %s", response.Error)
+		return api.MinipoolDistributeDetailsData{}, fmt.Errorf("Could not get distribute balance details: %s", response.Error)
 	}
 	return response, nil
 }
@@ -473,17 +473,17 @@ func (c *Client) ImportKey(address common.Address, mnemonic string) (api.ChangeW
 }
 
 // Check whether a solo validator's withdrawal creds can be migrated to a minipool address
-func (c *Client) CanChangeWithdrawalCredentials(address common.Address, mnemonic string) (api.CanChangeWithdrawalCredentialsResponse, error) {
+func (c *Client) CanChangeWithdrawalCredentials(address common.Address, mnemonic string) (api.MinipoolCanChangeWithdrawalCredentialsData, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-change-withdrawal-creds %s", address.Hex()), mnemonic)
 	if err != nil {
-		return api.CanChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not get can-change-withdrawal-creds status: %w", err)
+		return api.MinipoolCanChangeWithdrawalCredentialsData{}, fmt.Errorf("Could not get can-change-withdrawal-creds status: %w", err)
 	}
-	var response api.CanChangeWithdrawalCredentialsResponse
+	var response api.MinipoolCanChangeWithdrawalCredentialsData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not decode can-change-withdrawal-creds response: %w", err)
+		return api.MinipoolCanChangeWithdrawalCredentialsData{}, fmt.Errorf("Could not decode can-change-withdrawal-creds response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanChangeWithdrawalCredentialsResponse{}, fmt.Errorf("Could not get can-change-withdrawal-creds status: %s", response.Error)
+		return api.MinipoolCanChangeWithdrawalCredentialsData{}, fmt.Errorf("Could not get can-change-withdrawal-creds status: %s", response.Error)
 	}
 	return response, nil
 }
@@ -505,17 +505,17 @@ func (c *Client) ChangeWithdrawalCredentials(address common.Address, mnemonic st
 }
 
 // Check all of the node's minipools for rescue eligibility, and return the details of the rescuable ones
-func (c *Client) GetMinipoolRescueDissolvedDetailsForNode() (api.MinipoolRescueDissolvedDetailsResponse, error) {
+func (c *Client) GetMinipoolRescueDissolvedDetailsForNode() (api.MinipoolRescueDissolvedDetailsData, error) {
 	responseBytes, err := c.callAPI("minipool get-rescue-dissolved-details-for-node")
 	if err != nil {
-		return api.MinipoolRescueDissolvedDetailsResponse{}, fmt.Errorf("Could not get get-minipool-rescue-dissolved-details-for-node status: %w", err)
+		return api.MinipoolRescueDissolvedDetailsData{}, fmt.Errorf("Could not get get-minipool-rescue-dissolved-details-for-node status: %w", err)
 	}
-	var response api.MinipoolRescueDissolvedDetailsResponse
+	var response api.MinipoolRescueDissolvedDetailsData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.MinipoolRescueDissolvedDetailsResponse{}, fmt.Errorf("Could not decode get-minipool-rescue-dissolved-details-for-node response: %w", err)
+		return api.MinipoolRescueDissolvedDetailsData{}, fmt.Errorf("Could not decode get-minipool-rescue-dissolved-details-for-node response: %w", err)
 	}
 	if response.Error != "" {
-		return api.MinipoolRescueDissolvedDetailsResponse{}, fmt.Errorf("Could not get get-minipool-rescue-dissolved-details-for-node status: %s", response.Error)
+		return api.MinipoolRescueDissolvedDetailsData{}, fmt.Errorf("Could not get get-minipool-rescue-dissolved-details-for-node status: %s", response.Error)
 	}
 	return response, nil
 }

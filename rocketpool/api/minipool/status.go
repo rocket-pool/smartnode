@@ -70,7 +70,7 @@ func (m *minipoolStatusManager) GetState(node *node.Node, mc *batch.MultiCaller)
 	m.oSettings.GetPromotionScrubPeriod(mc)
 }
 
-func (m *minipoolStatusManager) CheckState(node *node.Node, response *api.MinipoolStatusResponse) bool {
+func (m *minipoolStatusManager) CheckState(node *node.Node, response *api.MinipoolStatusData) bool {
 	// Provision the token balance counts
 	minipoolCount := node.Details.MinipoolCount.Formatted()
 	m.rethBalances = make([]*big.Int, minipoolCount)
@@ -87,7 +87,7 @@ func (m *minipoolStatusManager) GetMinipoolDetails(mc *batch.MultiCaller, mp min
 	m.fsrpl.GetBalance(mc, &m.fsrplBalances[index], address)
 }
 
-func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolStatusResponse) error {
+func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolStatusData) error {
 	// Data
 	var wg1 errgroup.Group
 	var eth2Config beacon.Eth2Config

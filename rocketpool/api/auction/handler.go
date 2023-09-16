@@ -10,12 +10,12 @@ import (
 
 type AuctionHandler struct {
 	serviceProvider *services.ServiceProvider
-	bidFactory      server.ISingleStageContextFactory[*auctionBidContext, api.BidOnLotData]
-	claimFactory    server.ISingleStageContextFactory[*auctionClaimContext, api.ClaimFromLotData]
-	createFactory   server.ISingleStageContextFactory[*auctionCreateContext, api.CreateLotData]
-	lotsFactory     server.ISingleStageContextFactory[*auctionLotContext, api.AuctionLotsData]
-	recoverFactory  server.ISingleStageContextFactory[*auctionRecoverContext, api.RecoverRplFromLotData]
-	statusFactory   server.ISingleStageContextFactory[*auctionStatusContext, api.AuctionStatusData]
+	bidFactory      server.ISingleStageCallContextFactory[*auctionBidContext, api.BidOnLotData]
+	claimFactory    server.ISingleStageCallContextFactory[*auctionClaimContext, api.ClaimFromLotData]
+	createFactory   server.ISingleStageCallContextFactory[*auctionCreateContext, api.CreateLotData]
+	lotsFactory     server.ISingleStageCallContextFactory[*auctionLotContext, api.AuctionLotsData]
+	recoverFactory  server.ISingleStageCallContextFactory[*auctionRecoverContext, api.RecoverRplFromLotData]
+	statusFactory   server.ISingleStageCallContextFactory[*auctionStatusContext, api.AuctionStatusData]
 }
 
 func NewAuctionHandler(serviceProvider *services.ServiceProvider) *AuctionHandler {

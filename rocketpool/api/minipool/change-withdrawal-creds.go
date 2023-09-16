@@ -22,7 +22,7 @@ const (
 	validatorLimit uint = 2000
 )
 
-func canChangeWithdrawalCreds(c *cli.Context, minipoolAddress common.Address, mnemonic string) (*api.CanChangeWithdrawalCredentialsResponse, error) {
+func canChangeWithdrawalCreds(c *cli.Context, minipoolAddress common.Address, mnemonic string) (*api.MinipoolCanChangeWithdrawalCredentialsData, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -54,7 +54,7 @@ func canChangeWithdrawalCreds(c *cli.Context, minipoolAddress common.Address, mn
 	}
 
 	// Response
-	response := api.CanChangeWithdrawalCredentialsResponse{}
+	response := api.MinipoolCanChangeWithdrawalCredentialsData{}
 
 	// Create minipool
 	mp, err := minipool.CreateMinipoolFromAddress(rp, minipoolAddress, false, nil)

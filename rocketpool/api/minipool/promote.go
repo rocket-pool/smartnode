@@ -36,7 +36,7 @@ func (m *minipoolPromoteManager) GetState(node *node.Node, mc *batch.MultiCaller
 	m.oSettings.GetPromotionScrubPeriod(mc)
 }
 
-func (m *minipoolPromoteManager) CheckState(node *node.Node, response *api.MinipoolPromoteDetailsResponse) bool {
+func (m *minipoolPromoteManager) CheckState(node *node.Node, response *api.MinipoolPromoteDetailsData) bool {
 	return true
 }
 
@@ -49,7 +49,7 @@ func (m *minipoolPromoteManager) GetMinipoolDetails(mc *batch.MultiCaller, mp mi
 	}
 }
 
-func (m *minipoolPromoteManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolPromoteDetailsResponse) error {
+func (m *minipoolPromoteManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolPromoteDetailsData) error {
 	// Get the time of the latest block
 	latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
