@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/smartnode/shared/config"
 	wtypes "github.com/rocket-pool/smartnode/shared/types/wallet"
 )
 
@@ -36,22 +35,20 @@ var (
 	beaconClientSyncLock sync.Mutex
 )
 
-//
-// Service requirements
-//
+// ====================
+// === Requirements ===
+// ====================
 
-func RequireNodeAddress() error {
-	w := GetServiceProvider().GetWallet()
-	status := w.GetStatus()
+func (sp *ServiceProvider) RequireNodeAddress() error {
+	status := sp.nodeWallet.GetStatus()
 	if status == wtypes.WalletStatus_NoAddress {
 		return errors.New("The node currently does not have an address set. Please run 'rocketpool wallet init' and try again.")
 	}
 	return nil
 }
 
-func RequireWalletReady() error {
-	w := GetServiceProvider().GetWallet()
-	status := w.GetStatus()
+func (sp *ServiceProvider) RequireWalletReady() error {
+	status := sp.nodeWallet.GetStatus()
 	switch status {
 	case wtypes.WalletStatus_NoAddress:
 		return errors.New("The node currently does not have an address set. Please run 'rocketpool wallet init' and try again.")
@@ -68,8 +65,8 @@ func RequireWalletReady() error {
 	}
 }
 
-func RequireEthClientSynced() error {
-	ethClientSynced, err := waitEthClientSynced(false, EthClientSyncTimeout)
+func (sp *ServiceProvider) RequireEthClientSynced() error {
+	ethClientSynced, err := sp.waitEthClientSynced(false, EthClientSyncTimeout)
 	if err != nil {
 		return err
 	}
@@ -79,8 +76,8 @@ func RequireEthClientSynced() error {
 	return nil
 }
 
-func RequireBeaconClientSynced() error {
-	beaconClientSynced, err := waitBeaconClientSynced(false, BeaconClientSyncTimeout)
+func (sp *ServiceProvider) RequireBeaconClientSynced() error {
+	beaconClientSynced, err := sp.waitBeaconClientSynced(false, BeaconClientSyncTimeout)
 	if err != nil {
 		return err
 	}
@@ -90,14 +87,14 @@ func RequireBeaconClientSynced() error {
 	return nil
 }
 
-func RequireNodeRegistered() error {
-	if err := RequireNodeAddress(); err != nil {
+func (sp *ServiceProvider) RequireNodeRegistered() error {
+	if err := sp.RequireNodeAddress(); err != nil {
 		return err
 	}
-	if err := RequireEthClientSynced(); err != nil {
+	if err := sp.RequireEthClientSynced(); err != nil {
 		return err
 	}
-	nodeRegistered, err := getNodeRegistered()
+	nodeRegistered, err := sp.getNodeRegistered()
 	if err != nil {
 		return err
 	}
@@ -107,14 +104,14 @@ func RequireNodeRegistered() error {
 	return nil
 }
 
-func RequireNodeTrusted() error {
-	if err := RequireNodeAddress(); err != nil {
+func (sp *ServiceProvider) RequireNodeTrusted() error {
+	if err := sp.RequireNodeAddress(); err != nil {
 		return err
 	}
-	if err := RequireEthClientSynced(); err != nil {
+	if err := sp.RequireEthClientSynced(); err != nil {
 		return err
 	}
-	nodeTrusted, err := isMemberOfOracleDao()
+	nodeTrusted, err := sp.isMemberOfOracleDao()
 	if err != nil {
 		return err
 	}
@@ -124,14 +121,13 @@ func RequireNodeTrusted() error {
 	return nil
 }
 
-//
-// Service synchronization
-//
+// ===============================
+// === Service Synchronization ===
+// ===============================
 
-func WaitWalletReady(verbose bool) error {
-	w := GetServiceProvider().GetWallet()
+func (sp *ServiceProvider) WaitWalletReady(verbose bool) error {
 	for {
-		status := w.GetStatus()
+		status := sp.nodeWallet.GetStatus()
 		var message string
 		switch status {
 		case wtypes.WalletStatus_NoAddress:
@@ -157,25 +153,28 @@ func WaitWalletReady(verbose bool) error {
 	}
 }
 
-func WaitEthClientSynced(verbose bool) error {
-	_, err := waitEthClientSynced(verbose, 0)
+// Wait for the Executon client to sync; timeout of 0 indicates no timeout
+func (sp *ServiceProvider) WaitEthClientSynced(verbose bool) error {
+	_, err := sp.waitEthClientSynced(verbose, 0)
 	return err
 }
 
-func WaitBeaconClientSynced(verbose bool) error {
-	_, err := waitBeaconClientSynced(verbose, 0)
+// Wait for the Beacon client to sync; timeout of 0 indicates no timeout
+func (sp *ServiceProvider) WaitBeaconClientSynced(verbose bool) error {
+	_, err := sp.waitBeaconClientSynced(verbose, 0)
 	return err
 }
 
-func WaitNodeRegistered(verbose bool) error {
-	if err := WaitWalletReady(verbose); err != nil {
+// Wait until the node has been registered with the Rocket Pool network
+func (sp *ServiceProvider) WaitNodeRegistered(verbose bool) error {
+	if err := sp.WaitWalletReady(verbose); err != nil {
 		return err
 	}
-	if err := WaitEthClientSynced(verbose); err != nil {
+	if err := sp.WaitEthClientSynced(verbose); err != nil {
 		return err
 	}
 	for {
-		nodeRegistered, err := getNodeRegistered()
+		nodeRegistered, err := sp.getNodeRegistered()
 		if err != nil {
 			return err
 		}
@@ -189,16 +188,14 @@ func WaitNodeRegistered(verbose bool) error {
 	}
 }
 
-//
-// Helpers
-//
+// ===============
+// === Helpers ===
+// ===============
 
 // Check if the node is registered
-func getNodeRegistered() (bool, error) {
-	sp := GetServiceProvider()
-	w := sp.GetWallet()
-	rp := sp.GetRocketPool()
-	address, _ := w.GetAddress()
+func (sp *ServiceProvider) getNodeRegistered() (bool, error) {
+	rp := sp.rocketPool
+	address, _ := sp.nodeWallet.GetAddress()
 
 	// Create a node binding
 	node, err := node.NewNode(rp, address)
@@ -218,11 +215,9 @@ func getNodeRegistered() (bool, error) {
 }
 
 // Check if the node is a member of the oracle DAO
-func isMemberOfOracleDao() (bool, error) {
-	sp := GetServiceProvider()
-	w := sp.GetWallet()
-	rp := sp.GetRocketPool()
-	address, _ := w.GetAddress()
+func (sp *ServiceProvider) isMemberOfOracleDao() (bool, error) {
+	rp := sp.rocketPool
+	address, _ := sp.nodeWallet.GetAddress()
 
 	// Create the bindings
 	odaoMember, err := trustednode.NewOracleDaoMember(rp, address)
@@ -241,12 +236,11 @@ func isMemberOfOracleDao() (bool, error) {
 	return odaoMember.Details.Exists, nil
 }
 
-// Wait for the eth client to sync
-// timeout of 0 indicates no timeout
-
-func checkExecutionClientStatus(ecMgr *ExecutionClientManager, cfg *config.RocketPoolConfig) (bool, core.ExecutionClient, error) {
-
+// Check if the primary and fallback Execution clients are synced
+func (sp *ServiceProvider) checkExecutionClientStatus() (bool, core.ExecutionClient, error) {
 	// Check the EC status
+	ecMgr := sp.ecManager
+	cfg := sp.cfg
 	mgrStatus := ecMgr.CheckStatus(cfg)
 	if ecMgr.primaryReady {
 		return true, nil, nil
@@ -284,9 +278,10 @@ func checkExecutionClientStatus(ecMgr *ExecutionClientManager, cfg *config.Rocke
 	return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and no fallback execution client is configured.", mgrStatus.PrimaryClientStatus.Error)
 }
 
-func checkBeaconClientStatus(bcMgr *BeaconClientManager) (bool, error) {
-
+// Check if the primary and fallback Beacon clients are synced
+func (sp *ServiceProvider) checkBeaconClientStatus() (bool, error) {
 	// Check the BC status
+	bcMgr := sp.bcManager
 	mgrStatus := bcMgr.CheckStatus()
 	if bcMgr.primaryReady {
 		return true, nil
@@ -324,17 +319,13 @@ func checkBeaconClientStatus(bcMgr *BeaconClientManager) (bool, error) {
 	return false, fmt.Errorf("Primary consensus client is unavailable (%s) and no fallback consensus client is configured.", mgrStatus.PrimaryClientStatus.Error)
 }
 
-func waitEthClientSynced(verbose bool, timeout int64) (bool, error) {
+// Wait for the primary or fallback Execution client to be synced
+func (sp *ServiceProvider) waitEthClientSynced(verbose bool, timeout int64) (bool, error) {
 	// Prevent multiple waiting goroutines from requesting sync progress
 	ethClientSyncLock.Lock()
 	defer ethClientSyncLock.Unlock()
 
-	// Get params
-	sp := GetServiceProvider()
-	ecMgr := sp.GetEthClient()
-	cfg := sp.GetConfig()
-
-	synced, clientToCheck, err := checkExecutionClientStatus(ecMgr, cfg)
+	synced, clientToCheck, err := sp.checkExecutionClientStatus()
 	if err != nil {
 		return false, err
 	}
@@ -359,7 +350,7 @@ func waitEthClientSynced(verbose bool, timeout int64) (bool, error) {
 		if time.Since(ecRefreshTime) > ethClientStatusRefreshInterval {
 			log.Println("Refreshing primary / fallback execution client status...")
 			ecRefreshTime = time.Now()
-			synced, clientToCheck, err = checkExecutionClientStatus(ecMgr, cfg)
+			synced, clientToCheck, err = sp.checkExecutionClientStatus()
 			if err != nil {
 				return false, err
 			}
@@ -402,18 +393,13 @@ func waitEthClientSynced(verbose bool, timeout int64) (bool, error) {
 	}
 }
 
-// Wait for the beacon client to sync
-// timeout of 0 indicates no timeout
-func waitBeaconClientSynced(verbose bool, timeout int64) (bool, error) {
+// Wait for the primary or fallback Beacon client to be synced
+func (sp *ServiceProvider) waitBeaconClientSynced(verbose bool, timeout int64) (bool, error) {
 	// Prevent multiple waiting goroutines from requesting sync progress
 	beaconClientSyncLock.Lock()
 	defer beaconClientSyncLock.Unlock()
 
-	// Get params
-	sp := GetServiceProvider()
-	bcMgr := sp.GetBeaconClient()
-
-	synced, err := checkBeaconClientStatus(bcMgr)
+	synced, err := sp.checkBeaconClientStatus()
 	if err != nil {
 		return false, err
 	}
@@ -438,7 +424,7 @@ func waitBeaconClientSynced(verbose bool, timeout int64) (bool, error) {
 		if time.Since(bcRefreshTime) > ethClientStatusRefreshInterval {
 			log.Println("Refreshing primary / fallback consensus client status...")
 			bcRefreshTime = time.Now()
-			synced, err = checkBeaconClientStatus(bcMgr)
+			synced, err = sp.checkBeaconClientStatus()
 			if err != nil {
 				return false, err
 			}
@@ -448,7 +434,7 @@ func waitBeaconClientSynced(verbose bool, timeout int64) (bool, error) {
 		}
 
 		// Get sync status
-		syncStatus, err := bcMgr.GetSyncStatus()
+		syncStatus, err := sp.bcManager.GetSyncStatus()
 		if err != nil {
 			return false, err
 		}
@@ -465,18 +451,4 @@ func waitBeaconClientSynced(verbose bool, timeout int64) (bool, error) {
 		// Pause before next poll
 		time.Sleep(beaconClientSyncPollInterval)
 	}
-}
-
-// Confirm the EC's latest block is within the threshold of the current system clock
-func IsSyncWithinThreshold(ec core.ExecutionClient) (bool, time.Time, error) {
-	// Get latest block
-	header, err := ec.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return false, time.Time{}, err
-	}
-
-	// Return true if the latest block is under the threshold
-	blockTime := time.Unix(int64(header.Time), 0)
-	isWithinThreshold := time.Since(blockTime) < ethClientRecentBlockThreshold
-	return isWithinThreshold, blockTime, nil
 }

@@ -33,17 +33,6 @@ type ServiceProvider struct {
 	docker             *client.Client
 }
 
-// Service provider singleton
-var serviceProvider *ServiceProvider
-
-// Get the Service Provider singleton
-func GetServiceProvider() *ServiceProvider {
-	if serviceProvider == nil {
-		panic("attempted to get the service provider before it was initialized")
-	}
-	return serviceProvider
-}
-
 // Creates a new ServiceProvider instance
 func NewServiceProvider(c *cli.Context) (*ServiceProvider, error) {
 	// Config
