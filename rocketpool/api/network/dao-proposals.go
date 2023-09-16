@@ -12,20 +12,20 @@ import (
 type networkProposalHandler struct {
 }
 
-func NewAuctionBidHandler(vars map[string]string) (*networkProposalHandler, error) {
+func NewNetworkProposalHandler(vars map[string]string) (*networkProposalHandler, error) {
 	h := &networkProposalHandler{}
 	return h, nil
 }
 
-func (h *networkProposalHandler) CreateBindings(ctx *callContext) error {
+func (h *networkProposalHandler) CreateBindings(ctx *commonContext) error {
 	return nil
 }
 
-func (h *networkProposalHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
+func (h *networkProposalHandler) GetState(ctx *commonContext, mc *batch.MultiCaller) {
 }
 
 // NOTE: the snapshot binding isn't built for multicall yet so this uses the old-school method of single getters
-func (h *networkProposalHandler) PrepareData(ctx *callContext, data *api.NetworkDAOProposalsResponse) error {
+func (h *networkProposalHandler) PrepareData(ctx *commonContext, data *api.NetworkDAOProposalsResponse) error {
 	nodeAddress := ctx.nodeAddress
 	cfg := ctx.cfg
 	data.AccountAddress = nodeAddress

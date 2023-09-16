@@ -22,12 +22,12 @@ import (
 
 type AuctionHandler struct {
 	serviceProvider *services.ServiceProvider
-	bidFactory      server.IContextFactory[*auctionBidContext, api.BidOnLotData, callContext]
-	claimFactory    server.IContextFactory[*auctionClaimContext, api.ClaimFromLotData, callContext]
-	createFactory   server.IContextFactory[*auctionCreateContext, api.CreateLotData, callContext]
-	lotsFactory     server.IContextFactory[*auctionLotContext, api.AuctionLotsData, callContext]
-	recoverFactory  server.IContextFactory[*auctionRecoverContext, api.RecoverRplFromLotData, callContext]
-	statusFactory   server.IContextFactory[*auctionStatusContext, api.AuctionStatusData, callContext]
+	bidFactory      server.IContextFactory[*auctionBidContext, api.BidOnLotData, commonContext]
+	claimFactory    server.IContextFactory[*auctionClaimContext, api.ClaimFromLotData, commonContext]
+	createFactory   server.IContextFactory[*auctionCreateContext, api.CreateLotData, commonContext]
+	lotsFactory     server.IContextFactory[*auctionLotContext, api.AuctionLotsData, commonContext]
+	recoverFactory  server.IContextFactory[*auctionRecoverContext, api.RecoverRplFromLotData, commonContext]
+	statusFactory   server.IContextFactory[*auctionStatusContext, api.AuctionStatusData, commonContext]
 }
 
 func NewAuctionHandler(serviceProvider *services.ServiceProvider) *AuctionHandler {
@@ -57,7 +57,7 @@ func (h *AuctionHandler) RegisterRoutes(router *mux.Router) {
 // ==============
 
 // Context with services and common bindings for calls
-type callContext struct {
+type commonContext struct {
 	w           *wallet.LocalWallet
 	rp          *rocketpool.RocketPool
 	opts        *bind.TransactOpts
@@ -65,7 +65,7 @@ type callContext struct {
 }
 
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable
-func runAuctionCall[dataType any](h server.ISingleStageCallContext[dataType, callContext]) (*api.ApiResponse[dataType], error) {
+func runAuctionCall[dataType any](h server.ISingleStageCallContext[dataType, commonContext]) (*api.ApiResponse[dataType], error) {
 	// Get services
 	if err := services.RequireNodeRegistered(); err != nil {
 		return nil, fmt.Errorf("error checking if node is registered: %w", err)
@@ -94,7 +94,7 @@ func runAuctionCall[dataType any](h server.ISingleStageCallContext[dataType, cal
 	}
 
 	// Create the context
-	context := &callContext{
+	context := &commonContext{
 		w:           w,
 		rp:          rp,
 		opts:        opts,

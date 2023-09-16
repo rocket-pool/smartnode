@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -39,18 +37,16 @@ func (f *auctionCreateContextFactory) Run(c *auctionCreateContext) (*api.ApiResp
 // ===============
 
 type auctionCreateContext struct {
-	h    *AuctionHandler
-	rp   *rocketpool.RocketPool
-	opts *bind.TransactOpts
-
+	h             *AuctionHandler
 	auctionMgr    *auction.AuctionManager
 	pSettings     *settings.ProtocolDaoSettings
 	networkPrices *network.NetworkPrices
+	*commonContext
 }
 
-func (c *auctionCreateContext) CreateBindings(ctx *callContext) error {
+func (c *auctionCreateContext) CreateBindings(ctx *commonContext) error {
 	var err error
-	c.rp = ctx.rp
+	c.commonContext = ctx
 
 	c.auctionMgr, err = auction.NewAuctionManager(c.rp)
 	if err != nil {

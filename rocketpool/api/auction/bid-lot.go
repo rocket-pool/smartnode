@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -45,20 +43,17 @@ func (f *auctionBidContextFactory) Run(c *auctionBidContext) (*api.ApiResponse[a
 // ===============
 
 type auctionBidContext struct {
-	h    *AuctionHandler
-	rp   *rocketpool.RocketPool
-	opts *bind.TransactOpts
-
+	h         *AuctionHandler
 	lotIndex  uint64
 	amountWei *big.Int
 	lot       *auction.AuctionLot
 	pSettings *settings.ProtocolDaoSettings
+	*commonContext
 }
 
-func (c *auctionBidContext) CreateBindings(ctx *callContext) error {
+func (c *auctionBidContext) CreateBindings(ctx *commonContext) error {
 	var err error
-	c.rp = ctx.rp
-	c.opts = ctx.opts
+	c.commonContext = ctx
 
 	c.lot, err = auction.NewAuctionLot(c.rp, c.lotIndex)
 	if err != nil {

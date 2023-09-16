@@ -5,11 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -37,19 +33,13 @@ func (f *faucetWithdrawContextFactory) Run(c *faucetWithdrawContext) (*api.ApiRe
 // ===============
 
 type faucetWithdrawContext struct {
-	h           *FaucetHandler
-	rp          *rocketpool.RocketPool
-	f           *contracts.RplFaucet
-	nodeAddress common.Address
-	opts        *bind.TransactOpts
-	allowance   *big.Int
+	h         *FaucetHandler
+	allowance *big.Int
+	*commonContext
 }
 
 func (c *faucetWithdrawContext) CreateBindings(ctx *commonContext) error {
-	c.rp = ctx.rp
-	c.f = ctx.f
-	c.nodeAddress = ctx.nodeAddress
-	c.opts = ctx.opts
+	c.commonContext = ctx
 	return nil
 }
 

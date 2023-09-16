@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -47,24 +45,16 @@ type lotCountDetails struct {
 }
 
 type auctionStatusContext struct {
-	h           *AuctionHandler
-	rp          *rocketpool.RocketPool
-	nodeAddress common.Address
-
+	h             *AuctionHandler
 	auctionMgr    *auction.AuctionManager
 	pSettings     *settings.ProtocolDaoSettings
 	networkPrices *network.NetworkPrices
+	*commonContext
 }
 
-func NewAuctionStatusHandler(vars map[string]string) (*auctionStatusContext, error) {
-	h := &auctionStatusContext{}
-	return h, nil
-}
-
-func (c *auctionStatusContext) CreateBindings(ctx *callContext) error {
+func (c *auctionStatusContext) CreateBindings(ctx *commonContext) error {
 	var err error
-	c.rp = ctx.rp
-	c.nodeAddress = ctx.nodeAddress
+	c.commonContext = ctx
 
 	c.auctionMgr, err = auction.NewAuctionManager(c.rp)
 	if err != nil {

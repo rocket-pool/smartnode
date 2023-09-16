@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -37,17 +34,13 @@ func (f *faucetStatusContextFactory) Run(c *faucetStatusContext) (*api.ApiRespon
 // ===============
 
 type faucetStatusContext struct {
-	h           *FaucetHandler
-	rp          *rocketpool.RocketPool
-	f           *contracts.RplFaucet
-	nodeAddress common.Address
-	allowance   *big.Int
+	h         *FaucetHandler
+	allowance *big.Int
+	*commonContext
 }
 
 func (c *faucetStatusContext) CreateBindings(ctx *commonContext) error {
-	c.rp = ctx.rp
-	c.f = ctx.f
-	c.nodeAddress = ctx.nodeAddress
+	c.commonContext = ctx
 	return nil
 }
 

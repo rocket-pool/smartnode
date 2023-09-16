@@ -20,8 +20,12 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
+// ===============
+// === Handler ===
+// ===============
+
 // Context with services and common bindings for calls
-type callContext struct {
+type commonContext struct {
 	w           *wallet.LocalWallet
 	rp          *rocketpool.RocketPool
 	cfg         *config.RocketPoolConfig
@@ -298,7 +302,7 @@ func runNetworkCall[dataType any](h handlers.ISingleStageCallContext[dataType, c
 	}
 
 	// Create the context
-	context := &callContext{
+	context := &commonContext{
 		w:           w,
 		rp:          rp,
 		cfg:         cfg,
