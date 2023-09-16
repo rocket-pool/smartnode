@@ -88,17 +88,17 @@ func (c *Client) TimezoneMap() (api.NetworkTimezonesData, error) {
 }
 
 // Check if the rewards tree for the provided interval can be generated
-func (c *Client) CanGenerateRewardsTree(index uint64) (api.CanNetworkGenerateRewardsTreeData, error) {
+func (c *Client) CanGenerateRewardsTree(index uint64) (api.NetworkRewardsFileData, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("network can-generate-rewards-tree %d", index))
 	if err != nil {
-		return api.CanNetworkGenerateRewardsTreeData{}, fmt.Errorf("Could not check rewards tree generation status: %w", err)
+		return api.NetworkRewardsFileData{}, fmt.Errorf("Could not check rewards tree generation status: %w", err)
 	}
-	var response api.CanNetworkGenerateRewardsTreeData
+	var response api.NetworkRewardsFileData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNetworkGenerateRewardsTreeData{}, fmt.Errorf("Could not decode rewards tree generation status response: %w", err)
+		return api.NetworkRewardsFileData{}, fmt.Errorf("Could not decode rewards tree generation status response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanNetworkGenerateRewardsTreeData{}, fmt.Errorf("Could not check rewards tree generation status: %s", response.Error)
+		return api.NetworkRewardsFileData{}, fmt.Errorf("Could not check rewards tree generation status: %s", response.Error)
 	}
 	return response, nil
 }

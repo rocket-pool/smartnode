@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -24,24 +25,28 @@ func (f *networkDelegateContextFactory) Create(vars map[string]string) (*network
 	return c, nil
 }
 
-func (f *networkDelegateContextFactory) Run(c *networkDelegateContext) (*api.ApiResponse[api.NetworkLatestDelegateData], error) {
-	return runNetworkCall[api.NetworkLatestDelegateData](c)
-}
-
 // ===============
 // === Context ===
 // ===============
 
 type networkDelegateContext struct {
-	handler          *NetworkHandler
+	handler *NetworkHandler
+	rp      *rocketpool.RocketPool
+
 	delegateContract *core.Contract
-	*commonContext
 }
 
-func (c *networkDelegateContext) CreateBindings(ctx *commonContext) error {
-	var err error
-	c.commonContext = ctx
+func (c *networkDelegateContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
 
+	// Requirements
+	err := sp.RequireEthClientSynced()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
 	c.delegateContract, err = c.rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
 	if err != nil {
 		return fmt.Errorf("error getting minipool delegate contract: %w", err)
@@ -52,7 +57,7 @@ func (c *networkDelegateContext) CreateBindings(ctx *commonContext) error {
 func (c *networkDelegateContext) GetState(mc *batch.MultiCaller) {
 }
 
-func (c *networkDelegateContext) PrepareData(data *api.NetworkLatestDelegateData) error {
+func (c *networkDelegateContext) PrepareData(data *api.NetworkLatestDelegateData, opts *bind.TransactOpts) error {
 	data.Address = *c.delegateContract.Address
 	return nil
 }

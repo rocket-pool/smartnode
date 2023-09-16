@@ -5,11 +5,16 @@
 package network
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/node"
-	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -28,35 +33,37 @@ func (f *networkProposalContextFactory) Create(vars map[string]string) (*network
 	return c, nil
 }
 
-func (f *networkProposalContextFactory) Run(c *networkProposalContext) (*api.ApiResponse[api.NetworkDaoProposalsData], error) {
-	return runNetworkCall[api.NetworkDaoProposalsData](c)
-}
-
 // ===============
 // === Context ===
 // ===============
 
 type networkProposalContext struct {
-	handler *NetworkHandler
-	*commonContext
+	handler     *NetworkHandler
+	rp          *rocketpool.RocketPool
+	cfg         *config.RocketPoolConfig
+	nodeAddress common.Address
+	snapshot    *contracts.SnapshotDelegation
 }
 
-func (c *networkProposalContext) CreateBindings(ctx *commonContext) error {
-	c.commonContext = ctx
-	return nil
+func (c *networkProposalContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.cfg = sp.GetConfig()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+	c.snapshot = sp.GetSnapshotDelegation()
+
+	// Requirements
+	return errors.Join(
+		sp.RequireNodeRegistered(),
+		sp.RequireSnapshot(),
+	)
 }
 
 func (c *networkProposalContext) GetState(mc *batch.MultiCaller) {
 }
 
-func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData) error {
+func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, opts *bind.TransactOpts) error {
 	data.AccountAddress = c.nodeAddress
-
-	sp := services.GetServiceProvider()
-	s := sp.GetSnapshotDelegation()
-	if s == nil {
-		return fmt.Errorf("snapshot voting is not available on this network")
-	}
 
 	// Get snapshot proposals
 	snapshotResponse, err := node.GetSnapshotProposals(c.cfg.Smartnode.GetSnapshotApiDomain(), c.cfg.Smartnode.GetSnapshotID(), "active")
@@ -66,7 +73,7 @@ func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData) 
 
 	// Get delegate address
 	idHash := c.cfg.Smartnode.GetVotingSnapshotID()
-	data.VotingDelegate, err = s.Delegation(nil, c.nodeAddress, idHash)
+	data.VotingDelegate, err = c.snapshot.Delegation(nil, c.nodeAddress, idHash)
 	if err != nil {
 		return fmt.Errorf("error getting voting delegate info: %w", err)
 	}

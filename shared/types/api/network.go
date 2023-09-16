@@ -50,7 +50,7 @@ type NetworkTimezonesData struct {
 	NodeTotal      uint64            `json:"nodeTotal"`
 }
 
-type CanNetworkGenerateRewardsTreeData struct {
+type NetworkRewardsFileData struct {
 	CurrentIndex   uint64 `json:"currentIndex"`
 	TreeFileExists bool   `json:"treeFileExists"`
 }

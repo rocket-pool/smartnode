@@ -8,10 +8,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-// ===============
-// === Handler ===
-// ===============
-
 type AuctionHandler struct {
 	serviceProvider *services.ServiceProvider
 	bidFactory      server.ISingleStageContextFactory[*auctionBidContext, api.BidOnLotData]

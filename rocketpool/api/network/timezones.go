@@ -4,59 +4,79 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getTimezones(c *cli.Context) (*api.NetworkTimezonesData, error) {
-	// Get services
-	if err := services.RequireEthClientSynced(c); err != nil {
-		return nil, err
+// ===============
+// === Factory ===
+// ===============
+
+type networkTimezoneContextFactory struct {
+	handler *NetworkHandler
+}
+
+func (f *networkTimezoneContextFactory) Create(vars map[string]string) (*networkTimezoneContext, error) {
+	c := &networkTimezoneContext{
+		handler: f.handler,
 	}
-	rp, err := services.GetRocketPool(c)
+	return c, nil
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type networkTimezoneContext struct {
+	handler *NetworkHandler
+	rp      *rocketpool.RocketPool
+
+	nodeMgr *node.NodeManager
+}
+
+func (c *networkTimezoneContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+
+	// Requirements
+	err := sp.RequireEthClientSynced()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.NetworkTimezonesData{}
-	response.TimezoneCounts = map[string]uint64{}
-
-	// Create bindings
-	nodeMgr, err := node.NewNodeManager(rp)
+	// Bindings
+	c.nodeMgr, err = node.NewNodeManager(c.rp)
 	if err != nil {
-		return nil, fmt.Errorf("error getting node manager binding: %w", err)
+		return fmt.Errorf("error getting node manager binding: %w", err)
 	}
+	return nil
+}
 
-	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		nodeMgr.GetNodeCount(mc)
-		return nil
-	}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting contract state: %w", err)
-	}
+func (c *networkTimezoneContext) GetState(mc *batch.MultiCaller) {
+	c.nodeMgr.GetNodeCount(mc)
+}
 
-	timezoneCounts, err := nodeMgr.GetNodeCountPerTimezone(nodeMgr.Details.NodeCount.Formatted(), nil)
+func (c *networkTimezoneContext) PrepareData(data *api.NetworkTimezonesData, opts *bind.TransactOpts) error {
+	data.TimezoneCounts = map[string]uint64{}
+	timezoneCounts, err := c.nodeMgr.GetNodeCountPerTimezone(c.nodeMgr.Details.NodeCount.Formatted(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting node counts per timezone: %w", err)
+		return fmt.Errorf("error getting node counts per timezone: %w", err)
 	}
 
 	for timezone, count := range timezoneCounts {
 		location, err := time.LoadLocation(timezone)
 		if err != nil {
-			response.TimezoneCounts["Other"] += count
+			data.TimezoneCounts["Other"] += count
 		} else {
-			response.TimezoneCounts[location.String()] = count
+			data.TimezoneCounts[location.String()] = count
 		}
-		response.TimezoneTotal++
-		response.NodeTotal += count
+		data.TimezoneTotal++
+		data.NodeTotal += count
 	}
 
-	// Return response
-	return &response, nil
+	return nil
 }

@@ -5,151 +5,179 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getStats(c *cli.Context) (*api.NetworkStatsData, error) {
-	// Get services
-	if err := services.RequireEthClientSynced(c); err != nil {
-		return nil, err
+// ===============
+// === Factory ===
+// ===============
+
+type networkStatsContextFactory struct {
+	handler *NetworkHandler
+}
+
+func (f *networkStatsContextFactory) Create(vars map[string]string) (*networkStatsContext, error) {
+	c := &networkStatsContext{
+		handler: f.handler,
 	}
-	rp, err := services.GetRocketPool(c)
+	return c, nil
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type networkStatsContext struct {
+	handler *NetworkHandler
+	rp      *rocketpool.RocketPool
+
+	depositPool     *deposit.DepositPool
+	mpQueue         *minipool.MinipoolQueue
+	networkBalances *network.NetworkBalances
+	networkPrices   *network.NetworkPrices
+	networkFees     *network.NetworkFees
+	nodeMgr         *node.NodeManager
+	nodeStaking     *node.NodeStaking
+	mpMgr           *minipool.MinipoolManager
+	reth            *tokens.TokenReth
+	smoothingPool   *core.Contract
+}
+
+func (c *networkStatsContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+
+	// Requirements
+	err := sp.RequireEthClientSynced()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.NetworkStatsData{}
+	// Bindings
+	c.depositPool, err = deposit.NewDepositPool(c.rp)
+	if err != nil {
+		return fmt.Errorf("error getting deposit pool binding: %w", err)
+	}
+	c.mpQueue, err = minipool.NewMinipoolQueue(c.rp)
+	if err != nil {
+		return fmt.Errorf("error getting minipool queue binding: %w", err)
+	}
+	c.networkBalances, err = network.NewNetworkBalances(c.rp)
+	if err != nil {
+		return fmt.Errorf("error getting network balances binding: %w", err)
+	}
+	c.networkPrices, err = network.NewNetworkPrices(c.rp)
+	if err != nil {
+		return fmt.Errorf("error getting network prices binding: %w", err)
+	}
+	c.networkFees, err = network.NewNetworkFees(c.rp)
+	if err != nil {
+		return fmt.Errorf("error getting network fees binding: %w", err)
+	}
+	c.nodeMgr, err = node.NewNodeManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error getting node manager binding: %w", err)
+	}
+	c.nodeStaking, err = node.NewNodeStaking(c.rp)
+	if err != nil {
+		return fmt.Errorf("error getting node staking binding: %w", err)
+	}
+	c.mpMgr, err = minipool.NewMinipoolManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error getting minipool manager binding: %w", err)
+	}
+	c.reth, err = tokens.NewTokenReth(c.rp)
+	if err != nil {
+		return fmt.Errorf("error getting rETH token binding: %w", err)
+	}
+	c.smoothingPool, err = c.rp.GetContract(rocketpool.ContractName_RocketSmoothingPool)
+	if err != nil {
+		return fmt.Errorf("error getting rETH token binding: %w", err)
+	}
+	return nil
+}
 
-	// Create bindings
-	depositPool, err := deposit.NewDepositPool(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting deposit pool binding: %w", err)
-	}
-	mpQueue, err := minipool.NewMinipoolQueue(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting minipool queue binding: %w", err)
-	}
-	networkBalances, err := network.NewNetworkBalances(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting network balances binding: %w", err)
-	}
-	networkPrices, err := network.NewNetworkPrices(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting network prices binding: %w", err)
-	}
-	networkFees, err := network.NewNetworkFees(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting network fees binding: %w", err)
-	}
-	nodeMgr, err := node.NewNodeManager(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting node manager binding: %w", err)
-	}
-	nodeStaking, err := node.NewNodeStaking(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting node staking binding: %w", err)
-	}
-	mpMgr, err := minipool.NewMinipoolManager(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting minipool manager binding: %w", err)
-	}
-	reth, err := tokens.NewTokenReth(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting rETH token binding: %w", err)
-	}
-	sp, err := rp.GetContract(rocketpool.ContractName_RocketSmoothingPool)
-	if err != nil {
-		return nil, fmt.Errorf("error getting rETH token binding: %w", err)
-	}
+func (c *networkStatsContext) GetState(mc *batch.MultiCaller) {
+	c.depositPool.GetBalance(mc)
+	c.mpQueue.GetTotalCapacity(mc)
+	c.networkBalances.GetEthUtilizationRate(mc)
+	c.networkFees.GetNodeFee(mc)
+	c.nodeMgr.GetNodeCount(mc)
+	c.mpMgr.GetMinipoolCount(mc)
+	c.mpMgr.GetFinalisedMinipoolCount(mc)
+	c.networkPrices.GetRplPrice(mc)
+	c.nodeStaking.GetTotalRPLStake(mc)
+	c.reth.GetExchangeRate(mc)
+}
 
-	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		depositPool.GetBalance(mc)
-		mpQueue.GetTotalCapacity(mc)
-		networkBalances.GetEthUtilizationRate(mc)
-		networkFees.GetNodeFee(mc)
-		nodeMgr.GetNodeCount(mc)
-		mpMgr.GetMinipoolCount(mc)
-		mpMgr.GetFinalisedMinipoolCount(mc)
-		networkPrices.GetRplPrice(mc)
-		nodeStaking.GetTotalRPLStake(mc)
-		reth.GetExchangeRate(mc)
-		return nil
-	}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting contract state: %w", err)
-	}
-
+func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind.TransactOpts) error {
 	// Handle the details
-	response.DepositPoolBalance = depositPool.Details.Balance
-	response.MinipoolCapacity = mpQueue.Details.TotalCapacity
-	response.StakerUtilization = networkBalances.Details.EthUtilizationRate.RawValue
-	response.NodeFee = networkFees.Details.NodeFee.RawValue
-	response.NodeCount = nodeMgr.Details.NodeCount.Formatted()
-	response.RplPrice = networkPrices.Details.RplPrice.RawValue
-	response.TotalRplStaked = nodeStaking.Details.TotalRplStake
-	response.RethPrice = reth.Details.ExchangeRate.RawValue
+	data.DepositPoolBalance = c.depositPool.Details.Balance
+	data.MinipoolCapacity = c.mpQueue.Details.TotalCapacity
+	data.StakerUtilization = c.networkBalances.Details.EthUtilizationRate.RawValue
+	data.NodeFee = c.networkFees.Details.NodeFee.RawValue
+	data.NodeCount = c.nodeMgr.Details.NodeCount.Formatted()
+	data.RplPrice = c.networkPrices.Details.RplPrice.RawValue
+	data.TotalRplStaked = c.nodeStaking.Details.TotalRplStake
+	data.RethPrice = c.reth.Details.ExchangeRate.RawValue
 
 	// Get the total effective RPL stake
-	effectiveRplStaked, err := nodeMgr.GetTotalEffectiveRplStake(rp, nodeMgr.Details.NodeCount.Formatted(), nil)
+	effectiveRplStaked, err := c.nodeMgr.GetTotalEffectiveRplStake(c.rp, c.nodeMgr.Details.NodeCount.Formatted(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting total effective RPL stake: %w", err)
+		return fmt.Errorf("error getting total effective RPL stake: %w", err)
 	}
-	response.EffectiveRplStaked = effectiveRplStaked
+	data.EffectiveRplStaked = effectiveRplStaked
 
 	// Get the minipool counts by status
-	response.FinalizedMinipoolCount = mpMgr.Details.FinalisedMinipoolCount.Formatted()
-	minipoolCounts, err := mpMgr.GetMinipoolCountPerStatus(mpMgr.Details.MinipoolCount.Formatted(), nil)
+	data.FinalizedMinipoolCount = c.mpMgr.Details.FinalisedMinipoolCount.Formatted()
+	minipoolCounts, err := c.mpMgr.GetMinipoolCountPerStatus(c.mpMgr.Details.MinipoolCount.Formatted(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting minipool counts per status: %w", err)
+		return fmt.Errorf("error getting minipool counts per status: %w", err)
 	}
-	response.InitializedMinipoolCount = minipoolCounts.Initialized.Uint64()
-	response.PrelaunchMinipoolCount = minipoolCounts.Prelaunch.Uint64()
-	response.StakingMinipoolCount = minipoolCounts.Staking.Uint64()
-	response.WithdrawableMinipoolCount = minipoolCounts.Withdrawable.Uint64()
-	response.DissolvedMinipoolCount = minipoolCounts.Dissolved.Uint64()
+	data.InitializedMinipoolCount = minipoolCounts.Initialized.Uint64()
+	data.PrelaunchMinipoolCount = minipoolCounts.Prelaunch.Uint64()
+	data.StakingMinipoolCount = minipoolCounts.Staking.Uint64()
+	data.WithdrawableMinipoolCount = minipoolCounts.Withdrawable.Uint64()
+	data.DissolvedMinipoolCount = minipoolCounts.Dissolved.Uint64()
 
 	// Get the number of nodes opted into the smoothing pool
-	spCount, err := nodeMgr.GetSmoothingPoolRegisteredNodeCount(nodeMgr.Details.NodeCount.Formatted(), nil)
+	spCount, err := c.nodeMgr.GetSmoothingPoolRegisteredNodeCount(c.nodeMgr.Details.NodeCount.Formatted(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting smoothing pool opt-in count: %w", err)
+		return fmt.Errorf("error getting smoothing pool opt-in count: %w", err)
 	}
-	response.SmoothingPoolNodes = spCount
+	data.SmoothingPoolNodes = spCount
 
 	// Get the smoothing pool balance
-	response.SmoothingPoolAddress = *sp.Address
-	smoothingPoolBalance, err := rp.Client.BalanceAt(context.Background(), *sp.Address, nil)
+	data.SmoothingPoolAddress = *c.smoothingPool.Address
+	smoothingPoolBalance, err := c.rp.Client.BalanceAt(context.Background(), *c.smoothingPool.Address, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting smoothing pool balance: %w", err)
+		return fmt.Errorf("error getting smoothing pool balance: %w", err)
 	}
-	response.SmoothingPoolBalance = smoothingPoolBalance
+	data.SmoothingPoolBalance = smoothingPoolBalance
 
 	// Get the TVL
-	activeMinipools := response.InitializedMinipoolCount +
-		response.PrelaunchMinipoolCount +
-		response.StakingMinipoolCount +
-		response.WithdrawableMinipoolCount +
-		response.DissolvedMinipoolCount
+	activeMinipools := data.InitializedMinipoolCount +
+		data.PrelaunchMinipoolCount +
+		data.StakingMinipoolCount +
+		data.WithdrawableMinipoolCount +
+		data.DissolvedMinipoolCount
 	tvl := big.NewInt(int64(activeMinipools))
 	tvl.Mul(tvl, big.NewInt(32))
-	tvl.Add(tvl, response.DepositPoolBalance)
-	tvl.Add(tvl, response.MinipoolCapacity)
-	rplWorth := big.NewInt(0).Mul(response.TotalRplStaked, response.RplPrice)
+	tvl.Add(tvl, data.DepositPoolBalance)
+	tvl.Add(tvl, data.MinipoolCapacity)
+	rplWorth := big.NewInt(0).Mul(data.TotalRplStaked, data.RplPrice)
 	tvl.Add(tvl, rplWorth)
-	response.TotalValueLocked = tvl
+	data.TotalValueLocked = tvl
 
-	// Return response
-	return &response, nil
-
+	return nil
 }

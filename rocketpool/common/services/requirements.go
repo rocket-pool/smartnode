@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	wtypes "github.com/rocket-pool/smartnode/shared/types/wallet"
 )
 
@@ -100,6 +101,22 @@ func (sp *ServiceProvider) RequireNodeRegistered() error {
 	}
 	if !nodeRegistered {
 		return errors.New("The node is not registered with Rocket Pool. Please run 'rocketpool node register' and try again.")
+	}
+	return nil
+}
+
+func (sp *ServiceProvider) RequireRplFaucet() error {
+	if sp.rplFaucet == nil {
+		network := string(sp.cfg.Smartnode.Network.Value.(cfgtypes.Network))
+		return fmt.Errorf("The RPL faucet is not available on the %s network.", network)
+	}
+	return nil
+}
+
+func (sp *ServiceProvider) RequireSnapshot() error {
+	if sp.snapshotDelegation == nil {
+		network := string(sp.cfg.Smartnode.Network.Value.(cfgtypes.Network))
+		return fmt.Errorf("Snapshot voting is not available on the %s network.", network)
 	}
 	return nil
 }

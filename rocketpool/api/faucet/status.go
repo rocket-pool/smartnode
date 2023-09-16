@@ -2,11 +2,16 @@ package faucet
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -25,23 +30,30 @@ func (f *faucetStatusContextFactory) Create(vars map[string]string) (*faucetStat
 	return c, nil
 }
 
-func (f *faucetStatusContextFactory) Run(c *faucetStatusContext) (*api.ApiResponse[api.FaucetStatusData], error) {
-	return runFaucetCall[api.FaucetStatusData](c)
-}
-
 // ===============
 // === Context ===
 // ===============
 
 type faucetStatusContext struct {
-	handler   *FaucetHandler
+	handler     *FaucetHandler
+	rp          *rocketpool.RocketPool
+	f           *contracts.RplFaucet
+	nodeAddress common.Address
+
 	allowance *big.Int
-	*commonContext
 }
 
-func (c *faucetStatusContext) CreateBindings(ctx *commonContext) error {
-	c.commonContext = ctx
-	return nil
+func (c *faucetStatusContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.f = sp.GetRplFaucet()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	return errors.Join(
+		sp.RequireNodeRegistered(),
+		sp.RequireRplFaucet(),
+	)
 }
 
 func (c *faucetStatusContext) GetState(mc *batch.MultiCaller) {
@@ -52,7 +64,7 @@ func (c *faucetStatusContext) GetState(mc *batch.MultiCaller) {
 	c.f.GetWithdrawalPeriod(mc)
 }
 
-func (c *faucetStatusContext) PrepareData(data *api.FaucetStatusData) error {
+func (c *faucetStatusContext) PrepareData(data *api.FaucetStatusData, opts *bind.TransactOpts) error {
 	// Get the current block
 	currentBlock, err := c.rp.Client.BlockNumber(context.Background())
 	if err != nil {

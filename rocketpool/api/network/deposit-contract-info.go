@@ -3,9 +3,12 @@ package network
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	rputils "github.com/rocket-pool/smartnode/rocketpool/utils/rp"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -24,30 +27,31 @@ func (f *networkDepositInfoContextFactory) Create(vars map[string]string) (*netw
 	return c, nil
 }
 
-func (f *networkDepositInfoContextFactory) Run(c *networkDepositInfoContext) (*api.ApiResponse[api.NetworkDepositContractInfoData], error) {
-	return runNetworkCall[api.NetworkDepositContractInfoData](c)
-}
-
 // ===============
 // === Context ===
 // ===============
 
 type networkDepositInfoContext struct {
 	handler *NetworkHandler
+	rp      *rocketpool.RocketPool
+	cfg     *config.RocketPoolConfig
 	bc      beacon.Client
-	*commonContext
 }
 
-func (c *networkDepositInfoContext) CreateBindings(ctx *commonContext) error {
-	c.commonContext = ctx
+func (c *networkDepositInfoContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.cfg = sp.GetConfig()
 	c.bc = c.handler.serviceProvider.GetBeaconClient()
-	return nil
+
+	// Requirements
+	return sp.RequireEthClientSynced()
 }
 
 func (c *networkDepositInfoContext) GetState(mc *batch.MultiCaller) {
 }
 
-func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContractInfoData) error {
+func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContractInfoData, opts *bind.TransactOpts) error {
 	// Get the deposit contract info
 	info, err := rputils.GetDepositContractInfo(c.rp, c.cfg, c.bc)
 	if err != nil {

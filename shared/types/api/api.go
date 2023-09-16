@@ -11,6 +11,10 @@ type ApiResponse[Data any] struct {
 	Data         *Data               `json:"data"`
 }
 
+type SuccessData struct {
+	Success bool `json:"success"`
+}
+
 type TxInfoData struct {
 	TxInfo *core.TransactionInfo `json:"txInfo"`
 }
