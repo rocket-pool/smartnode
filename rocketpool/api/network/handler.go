@@ -10,7 +10,6 @@ import (
 
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool/api/handlers"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
@@ -24,20 +23,29 @@ import (
 // === Handler ===
 // ===============
 
-// Context with services and common bindings for calls
-type commonContext struct {
-	w           *wallet.LocalWallet
-	rp          *rocketpool.RocketPool
-	cfg         *config.RocketPoolConfig
-	opts        *bind.TransactOpts
-	nodeAddress common.Address
+type NetworkHandler struct {
+	serviceProvider  *services.ServiceProvider
+	proposalsFactory server.IContextFactory[*networkProposalContext, api.NetworkDaoProposalsData, commonContext]
+	delegateFactory  server.IContextFactory[*networkDelegateContext, api.GetLatestDelegateData, commonContext]
 }
 
-// Register routes
-func RegisterRoutes(router *mux.Router, name string) {
-	server.RegisterSingleStageRoute(router, "dao-proposals", NewNetworkProposalHandler, runNetworkCall[api.NetworkDAOProposalsResponse])
-	//server.RegisterSingleStageHandler(router, "withdraw-rpl", NewFaucetWithdrawHandler, runFaucetCall[api.FaucetWithdrawRplData])
+func NewNetworkHandler(serviceProvider *services.ServiceProvider) *NetworkHandler {
+	h := &NetworkHandler{
+		serviceProvider: serviceProvider,
+	}
+	h.proposalsFactory = &networkProposalContextFactory{h}
+	h.delegateFactory = &networkDelegateContextFactory{h}
+	return h
 }
+
+func (h *NetworkHandler) RegisterRoutes(router *mux.Router) {
+	server.RegisterSingleStageRoute(router, "dao-proposals", h.proposalsFactory)
+	server.RegisterSingleStageRoute(router, "latest-delegate", h.delegateFactory)
+}
+
+// ==============
+// === Common ===
+// ==============
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
@@ -189,25 +197,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "dao-proposals",
-				Aliases:   []string{"d"},
-				Usage:     "Get the currently active DAO proposals",
-				UsageText: "rocketpool api network dao-proposals",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getActiveDAOProposals(c))
-					return nil
-
-				},
-			},
-
-			{
 				Name:      "download-rewards-file",
 				Aliases:   []string{"drf"},
 				Usage:     "Download a rewards info file from IPFS for the given interval",
@@ -230,49 +219,21 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
-
-			{
-				Name:      "is-atlas-deployed",
-				Aliases:   []string{"iad"},
-				Usage:     "Checks if Atlas has been deployed yet.",
-				UsageText: "rocketpool api network is-atlas-deployed",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(isAtlasDeployed(c))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "latest-delegate",
-				Usage:     "Get the address of the latest minipool delegate contract.",
-				UsageText: "rocketpool api network latest-delegate",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getLatestDelegate(c))
-					return nil
-
-				},
-			},
 		},
 	})
 }
 
+// Context with services and common bindings for calls
+type commonContext struct {
+	w           *wallet.LocalWallet
+	rp          *rocketpool.RocketPool
+	cfg         *config.RocketPoolConfig
+	opts        *bind.TransactOpts
+	nodeAddress common.Address
+}
+
 // Create a scaffolded generic call handler, with caller-specific functionality where applicable
-func runNetworkCall[dataType any](h handlers.ISingleStageCallContext[dataType, callContext]) (*api.ApiResponse[dataType], error) {
+func runNetworkCall[dataType any](h server.ISingleStageCallContext[dataType, commonContext]) (*api.ApiResponse[dataType], error) {
 	// Get services
 	if err := services.RequireNodeRegistered(); err != nil {
 		return nil, fmt.Errorf("error checking if node is registered: %w", err)
@@ -318,7 +279,7 @@ func runNetworkCall[dataType any](h handlers.ISingleStageCallContext[dataType, c
 
 	// Get contract state
 	err = rp.Query(func(mc *batch.MultiCaller) error {
-		h.GetState(context, mc)
+		h.GetState(mc)
 		return nil
 	}, nil)
 	if err != nil {
@@ -326,7 +287,7 @@ func runNetworkCall[dataType any](h handlers.ISingleStageCallContext[dataType, c
 	}
 
 	// Supplemental function-specific response construction
-	err = h.PrepareData(context, data)
+	err = h.PrepareData(data)
 	if err != nil {
 		return nil, err
 	}

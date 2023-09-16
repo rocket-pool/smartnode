@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getTimezones(c *cli.Context) (*api.NetworkTimezonesResponse, error) {
+func getTimezones(c *cli.Context) (*api.NetworkTimezonesData, error) {
 	// Get services
 	if err := services.RequireEthClientSynced(c); err != nil {
 		return nil, err
@@ -23,7 +23,7 @@ func getTimezones(c *cli.Context) (*api.NetworkTimezonesResponse, error) {
 	}
 
 	// Response
-	response := api.NetworkTimezonesResponse{}
+	response := api.NetworkTimezonesData{}
 	response.TimezoneCounts = map[string]uint64{}
 
 	// Create bindings

@@ -1,33 +1,58 @@
 package network
 
 import (
+	"fmt"
+
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
 )
 
-// Get the latest delegate contract address
-func getLatestDelegate(c *cli.Context) (*api.GetLatestDelegateResponse, error) {
-	// Get services
-	if err := services.RequireEthClientSynced(c); err != nil {
-		return nil, err
+// ===============
+// === Factory ===
+// ===============
+
+type networkDelegateContextFactory struct {
+	h *NetworkHandler
+}
+
+func (f *networkDelegateContextFactory) Create(vars map[string]string) (*networkDelegateContext, error) {
+	c := &networkDelegateContext{
+		h: f.h,
 	}
-	rp, err := services.GetRocketPool(c)
+	return c, nil
+}
+
+func (f *networkDelegateContextFactory) Run(c *networkDelegateContext) (*api.ApiResponse[api.GetLatestDelegateData], error) {
+	return runNetworkCall[api.GetLatestDelegateData](c)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type networkDelegateContext struct {
+	h                *NetworkHandler
+	delegateContract *core.Contract
+	*commonContext
+}
+
+func (c *networkDelegateContext) CreateBindings(ctx *commonContext) error {
+	var err error
+	c.commonContext = ctx
+
+	c.delegateContract, err = c.rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting minipool delegate contract: %w", err)
 	}
+	return nil
+}
 
-	// Response
-	response := api.GetLatestDelegateResponse{}
+func (c *networkDelegateContext) GetState(mc *batch.MultiCaller) {
+}
 
-	// Get latest delegate address
-	delegateContract, err := rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
-	if err != nil {
-		return nil, err
-	}
-	response.Address = *delegateContract.Address
-
-	// Return response
-	return &response, nil
+func (c *networkDelegateContext) PrepareData(Data *api.GetLatestDelegateData) error {
+	Data.Address = *c.delegateContract.Address
+	return nil
 }

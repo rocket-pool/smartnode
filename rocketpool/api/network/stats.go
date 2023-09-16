@@ -18,7 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
+func getStats(c *cli.Context) (*api.NetworkStatsData, error) {
 	// Get services
 	if err := services.RequireEthClientSynced(c); err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 	}
 
 	// Response
-	response := api.NetworkStatsResponse{}
+	response := api.NetworkStatsData{}
 
 	// Create bindings
 	depositPool, err := deposit.NewDepositPool(rp)

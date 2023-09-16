@@ -1,3 +1,7 @@
+// ================
+// NOTE: the snapshot binding isn't built for multicall yet so this uses the old-school method of single getters
+// ================
+
 package network
 
 import (
@@ -9,26 +13,44 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-type networkProposalHandler struct {
+// ===============
+// === Factory ===
+// ===============
+
+type networkProposalContextFactory struct {
+	h *NetworkHandler
 }
 
-func NewNetworkProposalHandler(vars map[string]string) (*networkProposalHandler, error) {
-	h := &networkProposalHandler{}
-	return h, nil
+func (f *networkProposalContextFactory) Create(vars map[string]string) (*networkProposalContext, error) {
+	c := &networkProposalContext{
+		h: f.h,
+	}
+	return c, nil
 }
 
-func (h *networkProposalHandler) CreateBindings(ctx *commonContext) error {
+func (f *networkProposalContextFactory) Run(c *networkProposalContext) (*api.ApiResponse[api.NetworkDaoProposalsData], error) {
+	return runNetworkCall[api.NetworkDaoProposalsData](c)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type networkProposalContext struct {
+	h *NetworkHandler
+	*commonContext
+}
+
+func (c *networkProposalContext) CreateBindings(ctx *commonContext) error {
+	c.commonContext = ctx
 	return nil
 }
 
-func (h *networkProposalHandler) GetState(ctx *commonContext, mc *batch.MultiCaller) {
+func (c *networkProposalContext) GetState(mc *batch.MultiCaller) {
 }
 
-// NOTE: the snapshot binding isn't built for multicall yet so this uses the old-school method of single getters
-func (h *networkProposalHandler) PrepareData(ctx *commonContext, data *api.NetworkDAOProposalsResponse) error {
-	nodeAddress := ctx.nodeAddress
-	cfg := ctx.cfg
-	data.AccountAddress = nodeAddress
+func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData) error {
+	data.AccountAddress = c.nodeAddress
 
 	sp := services.GetServiceProvider()
 	s := sp.GetSnapshotDelegation()
@@ -37,20 +59,20 @@ func (h *networkProposalHandler) PrepareData(ctx *commonContext, data *api.Netwo
 	}
 
 	// Get snapshot proposals
-	snapshotResponse, err := node.GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
+	snapshotResponse, err := node.GetSnapshotProposals(c.cfg.Smartnode.GetSnapshotApiDomain(), c.cfg.Smartnode.GetSnapshotID(), "active")
 	if err != nil {
 		return fmt.Errorf("error getting snapshot proposals: %w", err)
 	}
 
 	// Get delegate address
-	idHash := cfg.Smartnode.GetVotingSnapshotID()
-	data.VotingDelegate, err = s.Delegation(nil, nodeAddress, idHash)
+	idHash := c.cfg.Smartnode.GetVotingSnapshotID()
+	data.VotingDelegate, err = s.Delegation(nil, c.nodeAddress, idHash)
 	if err != nil {
 		return fmt.Errorf("error getting voting delegate info: %w", err)
 	}
 
 	// Get voted proposals
-	votedProposals, err := node.GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAddress, data.VotingDelegate)
+	votedProposals, err := node.GetSnapshotVotedProposals(c.cfg.Smartnode.GetSnapshotApiDomain(), c.cfg.Smartnode.GetSnapshotID(), c.nodeAddress, data.VotingDelegate)
 	if err != nil {
 		return fmt.Errorf("error getting proposal votes: %w", err)
 	}

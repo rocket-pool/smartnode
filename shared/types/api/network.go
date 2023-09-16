@@ -6,18 +6,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type NodeFeeResponse struct {
-	Status        string  `json:"status"`
-	Error         string  `json:"error"`
+type NodeFeeData struct {
 	NodeFee       float64 `json:"nodeFee"`
 	MinNodeFee    float64 `json:"minNodeFee"`
 	TargetNodeFee float64 `json:"targetNodeFee"`
 	MaxNodeFee    float64 `json:"maxNodeFee"`
 }
 
-type RplPriceResponse struct {
-	Status                      string   `json:"status"`
-	Error                       string   `json:"error"`
+type RplPriceData struct {
 	RplPrice                    *big.Int `json:"rplPrice"`
 	RplPriceBlock               uint64   `json:"rplPriceBlock"`
 	MinPer8EthMinipoolRplStake  *big.Int `json:"minPer8EthMinipoolRplStake"`
@@ -26,9 +22,7 @@ type RplPriceResponse struct {
 	MaxPer16EthMinipoolRplStake *big.Int `json:"maxPer16EthMinipoolRplStake"`
 }
 
-type NetworkStatsResponse struct {
-	Status                    string         `json:"status"`
-	Error                     string         `json:"error"`
+type NetworkStatsData struct {
 	TotalValueLocked          *big.Int       `json:"totalValueLocked"`
 	DepositPoolBalance        *big.Int       `json:"depositPoolBalance"`
 	MinipoolCapacity          *big.Int       `json:"minipoolCapacity"`
@@ -50,48 +44,24 @@ type NetworkStatsResponse struct {
 	SmoothingPoolBalance      *big.Int       `json:"smoothingPoolBalance"`
 }
 
-type NetworkTimezonesResponse struct {
-	Status         string            `json:"status"`
-	Error          string            `json:"error"`
+type NetworkTimezonesData struct {
 	TimezoneCounts map[string]uint64 `json:"timezoneCounts"`
 	TimezoneTotal  uint64            `json:"timezoneTotal"`
 	NodeTotal      uint64            `json:"nodeTotal"`
 }
 
-type CanNetworkGenerateRewardsTreeResponse struct {
-	Status         string `json:"status"`
-	Error          string `json:"error"`
+type CanNetworkGenerateRewardsTreeData struct {
 	CurrentIndex   uint64 `json:"currentIndex"`
 	TreeFileExists bool   `json:"treeFileExists"`
 }
 
-type NetworkGenerateRewardsTreeResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
-}
-
-type NetworkDAOProposalsResponse struct {
-	Status                  string                 `json:"status"`
-	Error                   string                 `json:"error"`
+type NetworkDaoProposalsData struct {
 	AccountAddress          common.Address         `json:"accountAddress"`
 	VotingDelegate          common.Address         `json:"votingDelegate"`
 	ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 }
 
-type DownloadRewardsFileResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
-}
-
-type IsAtlasDeployedResponse struct {
-	Status          string `json:"status"`
-	Error           string `json:"error"`
-	IsAtlasDeployed bool   `json:"isAtlasDeployed"`
-}
-
-type GetLatestDelegateResponse struct {
-	Status  string         `json:"status"`
-	Error   string         `json:"error"`
+type GetLatestDelegateData struct {
 	Address common.Address `json:"address"`
 }

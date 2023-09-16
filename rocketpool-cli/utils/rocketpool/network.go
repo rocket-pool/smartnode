@@ -9,33 +9,33 @@ import (
 )
 
 // Get network node fee
-func (c *Client) NodeFee() (api.NodeFeeResponse, error) {
+func (c *Client) NodeFee() (api.NodeFeeData, error) {
 	responseBytes, err := c.callAPI("network node-fee")
 	if err != nil {
-		return api.NodeFeeResponse{}, fmt.Errorf("Could not get network node fee: %w", err)
+		return api.NodeFeeData{}, fmt.Errorf("Could not get network node fee: %w", err)
 	}
-	var response api.NodeFeeResponse
+	var response api.NodeFeeData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeFeeResponse{}, fmt.Errorf("Could not decode network node fee response: %w", err)
+		return api.NodeFeeData{}, fmt.Errorf("Could not decode network node fee response: %w", err)
 	}
 	if response.Error != "" {
-		return api.NodeFeeResponse{}, fmt.Errorf("Could not get network node fee: %s", response.Error)
+		return api.NodeFeeData{}, fmt.Errorf("Could not get network node fee: %s", response.Error)
 	}
 	return response, nil
 }
 
 // Get network RPL price
-func (c *Client) RplPrice() (api.RplPriceResponse, error) {
+func (c *Client) RplPrice() (api.RplPriceData, error) {
 	responseBytes, err := c.callAPI("network rpl-price")
 	if err != nil {
-		return api.RplPriceResponse{}, fmt.Errorf("Could not get network RPL price: %w", err)
+		return api.RplPriceData{}, fmt.Errorf("Could not get network RPL price: %w", err)
 	}
-	var response api.RplPriceResponse
+	var response api.RplPriceData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RplPriceResponse{}, fmt.Errorf("Could not decode network RPL price response: %w", err)
+		return api.RplPriceData{}, fmt.Errorf("Could not decode network RPL price response: %w", err)
 	}
 	if response.Error != "" {
-		return api.RplPriceResponse{}, fmt.Errorf("Could not get network RPL price: %s", response.Error)
+		return api.RplPriceData{}, fmt.Errorf("Could not get network RPL price: %s", response.Error)
 	}
 	if response.RplPrice == nil {
 		response.RplPrice = big.NewInt(0)
@@ -56,49 +56,49 @@ func (c *Client) RplPrice() (api.RplPriceResponse, error) {
 }
 
 // Get network stats
-func (c *Client) NetworkStats() (api.NetworkStatsResponse, error) {
+func (c *Client) NetworkStats() (api.NetworkStatsData, error) {
 	responseBytes, err := c.callAPI("network stats")
 	if err != nil {
-		return api.NetworkStatsResponse{}, fmt.Errorf("Could not get network stats: %w", err)
+		return api.NetworkStatsData{}, fmt.Errorf("Could not get network stats: %w", err)
 	}
-	var response api.NetworkStatsResponse
+	var response api.NetworkStatsData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkStatsResponse{}, fmt.Errorf("Could not decode network stats response: %w", err)
+		return api.NetworkStatsData{}, fmt.Errorf("Could not decode network stats response: %w", err)
 	}
 	if response.Error != "" {
-		return api.NetworkStatsResponse{}, fmt.Errorf("Could not get network stats: %s", response.Error)
+		return api.NetworkStatsData{}, fmt.Errorf("Could not get network stats: %s", response.Error)
 	}
 	return response, nil
 }
 
 // Get the timezone map
-func (c *Client) TimezoneMap() (api.NetworkTimezonesResponse, error) {
+func (c *Client) TimezoneMap() (api.NetworkTimezonesData, error) {
 	responseBytes, err := c.callAPI("network timezone-map")
 	if err != nil {
-		return api.NetworkTimezonesResponse{}, fmt.Errorf("Could not get network timezone map: %w", err)
+		return api.NetworkTimezonesData{}, fmt.Errorf("Could not get network timezone map: %w", err)
 	}
-	var response api.NetworkTimezonesResponse
+	var response api.NetworkTimezonesData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkTimezonesResponse{}, fmt.Errorf("Could not decode network timezone map response: %w", err)
+		return api.NetworkTimezonesData{}, fmt.Errorf("Could not decode network timezone map response: %w", err)
 	}
 	if response.Error != "" {
-		return api.NetworkTimezonesResponse{}, fmt.Errorf("Could not get network timezone map: %s", response.Error)
+		return api.NetworkTimezonesData{}, fmt.Errorf("Could not get network timezone map: %s", response.Error)
 	}
 	return response, nil
 }
 
 // Check if the rewards tree for the provided interval can be generated
-func (c *Client) CanGenerateRewardsTree(index uint64) (api.CanNetworkGenerateRewardsTreeResponse, error) {
+func (c *Client) CanGenerateRewardsTree(index uint64) (api.CanNetworkGenerateRewardsTreeData, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("network can-generate-rewards-tree %d", index))
 	if err != nil {
-		return api.CanNetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not check rewards tree generation status: %w", err)
+		return api.CanNetworkGenerateRewardsTreeData{}, fmt.Errorf("Could not check rewards tree generation status: %w", err)
 	}
-	var response api.CanNetworkGenerateRewardsTreeResponse
+	var response api.CanNetworkGenerateRewardsTreeData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not decode rewards tree generation status response: %w", err)
+		return api.CanNetworkGenerateRewardsTreeData{}, fmt.Errorf("Could not decode rewards tree generation status response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanNetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not check rewards tree generation status: %s", response.Error)
+		return api.CanNetworkGenerateRewardsTreeData{}, fmt.Errorf("Could not check rewards tree generation status: %s", response.Error)
 	}
 	return response, nil
 }
@@ -120,17 +120,17 @@ func (c *Client) GenerateRewardsTree(index uint64) (api.NetworkGenerateRewardsTr
 }
 
 // GetActiveDAOProposals fetches information about active DAO proposals
-func (c *Client) GetActiveDAOProposals() (api.NetworkDAOProposalsResponse, error) {
+func (c *Client) GetActiveDAOProposals() (api.NetworkDaoProposalsData, error) {
 	responseBytes, err := c.callAPI("network dao-proposals")
 	if err != nil {
-		return api.NetworkDAOProposalsResponse{}, fmt.Errorf("could not request active DAO proposals: %w", err)
+		return api.NetworkDaoProposalsData{}, fmt.Errorf("could not request active DAO proposals: %w", err)
 	}
-	var response api.NetworkDAOProposalsResponse
+	var response api.NetworkDaoProposalsData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkDAOProposalsResponse{}, fmt.Errorf("could not decode dao proposals response: %w", err)
+		return api.NetworkDaoProposalsData{}, fmt.Errorf("could not decode dao proposals response: %w", err)
 	}
 	if response.Error != "" {
-		return api.NetworkDAOProposalsResponse{}, fmt.Errorf("error after requesting dao proposals: %s", response.Error)
+		return api.NetworkDaoProposalsData{}, fmt.Errorf("error after requesting dao proposals: %s", response.Error)
 	}
 	return response, nil
 }
@@ -168,17 +168,17 @@ func (c *Client) IsAtlasDeployed() (api.IsAtlasDeployedResponse, error) {
 }
 
 // Get the address of the latest minipool delegate contract
-func (c *Client) GetLatestDelegate() (api.GetLatestDelegateResponse, error) {
+func (c *Client) GetLatestDelegate() (api.GetLatestDelegateData, error) {
 	responseBytes, err := c.callAPI("network latest-delegate")
 	if err != nil {
-		return api.GetLatestDelegateResponse{}, fmt.Errorf("could not get latest delegate: %w", err)
+		return api.GetLatestDelegateData{}, fmt.Errorf("could not get latest delegate: %w", err)
 	}
-	var response api.GetLatestDelegateResponse
+	var response api.GetLatestDelegateData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetLatestDelegateResponse{}, fmt.Errorf("could not decode get-latest-delegate response: %w", err)
+		return api.GetLatestDelegateData{}, fmt.Errorf("could not decode get-latest-delegate response: %w", err)
 	}
 	if response.Error != "" {
-		return api.GetLatestDelegateResponse{}, fmt.Errorf("could not get latest delegate: %s", response.Error)
+		return api.GetLatestDelegateData{}, fmt.Errorf("could not get latest delegate: %s", response.Error)
 	}
 	return response, nil
 }

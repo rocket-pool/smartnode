@@ -17,7 +17,7 @@ const (
 	ErrorColor   = color.FgRed
 )
 
-func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenerateRewardsTreeResponse, error) {
+func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenerateRewardsTreeData, error) {
 	// Get services
 	if err := services.RequireEthClientSynced(c); err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenera
 	}
 
 	// Response
-	response := api.CanNetworkGenerateRewardsTreeResponse{}
+	response := api.CanNetworkGenerateRewardsTreeData{}
 
 	// Get the current interval
 	rewards, err := rewards.NewRewardsPool(rp)
