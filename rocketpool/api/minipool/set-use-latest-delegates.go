@@ -16,16 +16,17 @@ import (
 // === Factory ===
 // ===============
 
-type minipoolDissolveContextFactory struct {
+type minipoolSetUseLatestDelegatesContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolDissolveContextFactory) Create(vars map[string]string) (*minipoolDissolveContext, error) {
-	c := &minipoolDissolveContext{
+func (f *minipoolSetUseLatestDelegatesContextFactory) Create(vars map[string]string) (*minipoolSetUseLatestDelegatesContext, error) {
+	c := &minipoolSetUseLatestDelegatesContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
 		server.ValidateArg("addresses", vars, cliutils.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArg("setting", vars, cliutils.ValidateBool, &c.setting),
 	}
 	return c, errors.Join(inputErrs...)
 }
@@ -34,16 +35,17 @@ func (f *minipoolDissolveContextFactory) Create(vars map[string]string) (*minipo
 // === Context ===
 // ===============
 
-type minipoolDissolveContext struct {
+type minipoolSetUseLatestDelegatesContext struct {
 	handler           *MinipoolHandler
+	setting           bool
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolDissolveContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "dissolve")
+func (c *minipoolSetUseLatestDelegatesContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
+	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "set-use-latest-delegate")
 }
 
-func (c *minipoolDissolveContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *minipoolSetUseLatestDelegatesContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	mpCommon := mp.GetMinipoolCommon()
-	return mpCommon.Dissolve(opts)
+	return mpCommon.SetUseLatestDelegate(c.setting, opts)
 }

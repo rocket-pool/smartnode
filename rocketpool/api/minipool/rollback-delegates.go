@@ -16,12 +16,12 @@ import (
 // === Factory ===
 // ===============
 
-type minipoolDissolveContextFactory struct {
+type minipoolRollbackDelegatesContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolDissolveContextFactory) Create(vars map[string]string) (*minipoolDissolveContext, error) {
-	c := &minipoolDissolveContext{
+func (f *minipoolRollbackDelegatesContextFactory) Create(vars map[string]string) (*minipoolRollbackDelegatesContext, error) {
+	c := &minipoolRollbackDelegatesContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
@@ -34,16 +34,16 @@ func (f *minipoolDissolveContextFactory) Create(vars map[string]string) (*minipo
 // === Context ===
 // ===============
 
-type minipoolDissolveContext struct {
+type minipoolRollbackDelegatesContext struct {
 	handler           *MinipoolHandler
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolDissolveContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "dissolve")
+func (c *minipoolRollbackDelegatesContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
+	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "rollback-delegate")
 }
 
-func (c *minipoolDissolveContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *minipoolRollbackDelegatesContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	mpCommon := mp.GetMinipoolCommon()
-	return mpCommon.Dissolve(opts)
+	return mpCommon.DelegateRollback(opts)
 }

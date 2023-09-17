@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -45,7 +46,11 @@ func (c *minipoolCloseDetailsContext) Initialize() error {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
-	return nil
+
+	// Requirements
+	return errors.Join(
+		sp.RequireNodeRegistered(),
+	)
 }
 
 func (c *minipoolCloseDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -67,7 +72,7 @@ func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, 
 	mpCommon.GetPubkey(mc)
 }
 
-func (c *minipoolCloseDetailsContext) PrepareResponse(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolCloseDetailsData) error {
+func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolCloseDetailsData) error {
 	// Get the current ETH balances of each minipool
 	balances, err := c.rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {

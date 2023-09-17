@@ -2,6 +2,7 @@ package minipool
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -52,7 +53,14 @@ func (c *minipoolBeginReduceBondDetailsContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 
-	var err error
+	// Requirements
+	err := errors.Join(
+		sp.RequireNodeRegistered(),
+	)
+	if err != nil {
+		return err
+	}
+
 	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating pDAO settings binding: %w", err)
@@ -86,7 +94,7 @@ func (c *minipoolBeginReduceBondDetailsContext) GetMinipoolDetails(mc *batch.Mul
 	}
 }
 
-func (c *minipoolBeginReduceBondDetailsContext) PrepareResponse(addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolBeginReduceBondDetailsData) error {
+func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolBeginReduceBondDetailsData) error {
 	// Get the latest block header
 	header, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {

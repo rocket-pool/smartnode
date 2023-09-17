@@ -40,7 +40,7 @@ type IMinipoolCallContext[DataType any] interface {
 	GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int)
 
 	// Prepare the response data using all of the provided artifacts
-	PrepareResponse(addresses []common.Address, mps []minipool.Minipool, data *DataType) error
+	PrepareData(addresses []common.Address, mps []minipool.Minipool, data *DataType) error
 }
 
 // Interface for minipool call context factories - these will be invoked during route handling to create the
@@ -152,7 +152,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	}
 
 	// Supplemental function-specific response construction
-	err = ctx.PrepareResponse(addresses, mps, data)
+	err = ctx.PrepareData(addresses, mps, data)
 	if err != nil {
 		return nil, err
 	}

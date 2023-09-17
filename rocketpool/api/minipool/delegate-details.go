@@ -1,9 +1,9 @@
 package minipool
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
@@ -11,33 +11,63 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-type minipoolDelegateManager struct {
+// ===============
+// === Factory ===
+// ===============
+
+type minipoolDelegateDetailsContextFactory struct {
+	handler *MinipoolHandler
+}
+
+func (f *minipoolDelegateDetailsContextFactory) Create(vars map[string]string) (*minipoolDelegateDetailsContext, error) {
+	c := &minipoolDelegateDetailsContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type minipoolDelegateDetailsContext struct {
+	handler  *MinipoolHandler
+	rp       *rocketpool.RocketPool
 	delegate *core.Contract
 }
 
-func (m *minipoolDelegateManager) CreateBindings(rp *rocketpool.RocketPool) error {
-	var err error
-	m.delegate, err = rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
+func (c *minipoolDelegateDetailsContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+
+	// Requirements
+	err := errors.Join(
+		sp.RequireNodeRegistered(),
+	)
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	c.delegate, err = c.rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
 	if err != nil {
 		return fmt.Errorf("error getting minipool delegate binding: %w", err)
 	}
 	return nil
 }
 
-func (m *minipoolDelegateManager) GetState(node *node.Node, mc *batch.MultiCaller) {
+func (c *minipoolDelegateDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
 }
 
-func (m *minipoolDelegateManager) CheckState(node *node.Node, response *api.MinipoolDelegateDetailsData) bool {
+func (c *minipoolDelegateDetailsContext) CheckState(node *node.Node, response *api.MinipoolDelegateDetailsData) bool {
 	return true
 }
 
-func (m *minipoolDelegateManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+func (c *minipoolDelegateDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 	mpCommon := mp.GetMinipoolCommon()
 	mpCommon.GetDelegate(mc)
 	mpCommon.GetEffectiveDelegate(mc)
@@ -45,7 +75,7 @@ func (m *minipoolDelegateManager) GetMinipoolDetails(mc *batch.MultiCaller, mp m
 	mpCommon.GetUseLatestDelegate(mc)
 }
 
-func (m *minipoolDelegateManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolDelegateDetailsData) error {
+func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolDelegateDetailsData) error {
 	// Get all of the unique delegate addresses used by this node
 	delegateAddresses := []common.Address{}
 	delegateAddressMap := map[common.Address]bool{}
@@ -62,7 +92,7 @@ func (m *minipoolDelegateManager) PrepareResponse(rp *rocketpool.RocketPool, bc 
 	// Get the versions of each one
 	versions := make([]uint8, len(delegateAddresses))
 	delegateVersionMap := map[common.Address]uint8{}
-	err := rp.Query(func(mc *batch.MultiCaller) error {
+	err := c.rp.Query(func(mc *batch.MultiCaller) error {
 		for i, address := range delegateAddresses {
 			err := rocketpool.GetContractVersion(mc, &versions[i], address)
 			if err != nil {
@@ -97,25 +127,7 @@ func (m *minipoolDelegateManager) PrepareResponse(rp *rocketpool.RocketPool, bc 
 		}
 	}
 
-	response.LatestDelegate = *m.delegate.Address
-	response.Details = details
+	data.LatestDelegate = *c.delegate.Address
+	data.Details = details
 	return nil
-}
-
-func upgradeDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoData, error) {
-	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-		return mpCommon.DelegateUpgrade(opts)
-	}, "upgrade-delegate")
-}
-
-func rollbackDelegates(c *cli.Context, minipoolAddresses []common.Address) (*api.BatchTxInfoData, error) {
-	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-		return mpCommon.DelegateRollback(opts)
-	}, "rollback-delegate")
-}
-
-func setUseLatestDelegates(c *cli.Context, minipoolAddresses []common.Address, setting bool) (*api.BatchTxInfoData, error) {
-	return createBatchTxResponseForCommon(c, minipoolAddresses, func(mpCommon *minipool.MinipoolCommon, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-		return mpCommon.SetUseLatestDelegate(setting, opts)
-	}, "set-use-latest-delegate")
 }

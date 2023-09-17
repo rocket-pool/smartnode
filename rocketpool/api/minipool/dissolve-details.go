@@ -1,0 +1,75 @@
+package minipool
+
+import (
+	"errors"
+
+	"github.com/ethereum/go-ethereum/common"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/types"
+
+	"github.com/rocket-pool/smartnode/shared/types/api"
+)
+
+// ===============
+// === Factory ===
+// ===============
+
+type minipoolDissolveDetailsContextFactory struct {
+	handler *MinipoolHandler
+}
+
+func (f *minipoolDissolveDetailsContextFactory) Create(vars map[string]string) (*minipoolDissolveDetailsContext, error) {
+	c := &minipoolDissolveDetailsContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type minipoolDissolveDetailsContext struct {
+	handler *MinipoolHandler
+}
+
+func (c *minipoolDissolveDetailsContext) Initialize() error {
+	sp := c.handler.serviceProvider
+
+	// Requirements
+	return errors.Join(
+		sp.RequireNodeRegistered(),
+	)
+}
+
+func (c *minipoolDissolveDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
+}
+
+func (c *minipoolDissolveDetailsContext) CheckState(node *node.Node, response *api.MinipoolDissolveDetailsData) bool {
+	return true
+}
+
+func (c *minipoolDissolveDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+	mpCommon := mp.GetMinipoolCommon()
+	mpCommon.GetNodeAddress(mc)
+	mpCommon.GetStatus(mc)
+}
+
+func (c *minipoolDissolveDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolDissolveDetailsData) error {
+	details := make([]api.MinipoolDissolveDetails, len(mps))
+	for i, mp := range mps {
+		mpCommonDetails := mp.GetMinipoolCommon().Details
+		status := mpCommonDetails.Status.Formatted()
+		mpDetails := api.MinipoolDissolveDetails{
+			Address:       mpCommonDetails.Address,
+			InvalidStatus: !(status == types.Initialized || status == types.Prelaunch),
+		}
+		mpDetails.CanDissolve = !mpDetails.InvalidStatus
+		details[i] = mpDetails
+	}
+
+	data.Details = details
+	return nil
+}

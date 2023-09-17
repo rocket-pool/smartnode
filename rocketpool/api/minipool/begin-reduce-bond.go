@@ -2,6 +2,7 @@ package minipool
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -43,10 +44,14 @@ type minipoolBeginReduceBondContext struct {
 }
 
 func (c *minipoolBeginReduceBondContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
-	createBatchTxResponseForV3(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "begin-bond-reduce")
-	return nil
+	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "begin-bond-reduce")
 }
 
-func (c *minipoolBeginReduceBondContext) CreateTx(mpv3 *minipool.MinipoolV3, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *minipoolBeginReduceBondContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+	mpv3, success := minipool.GetMinipoolAsV3(mp)
+	if !success {
+		mpCommon := mp.GetMinipoolCommon()
+		return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", mpCommon.Details.Address.Hex(), mpCommon.Details.Version)
+	}
 	return mpv3.BeginReduceBondAmount(c.newBondAmountWei, opts)
 }

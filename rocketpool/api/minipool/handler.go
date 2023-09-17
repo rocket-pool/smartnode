@@ -17,6 +17,19 @@ type MinipoolHandler struct {
 	canChangeCredsFactory         server.ISingleStageCallContextFactory[*minipoolCanChangeCredsContext, api.MinipoolCanChangeWithdrawalCredentialsData]
 	changeCredsFactory            server.ISingleStageCallContextFactory[*minipoolChangeCredsContext, api.SuccessData]
 	closeDetailsFactory           server.IMinipoolCallContextFactory[*minipoolCloseDetailsContext, api.MinipoolCloseDetailsData]
+	closeFactory                  server.IMinipoolCallContextFactory[*minipoolCloseContext, api.BatchTxInfoData]
+	delegateDetailsFactory        server.IMinipoolCallContextFactory[*minipoolDelegateDetailsContext, api.MinipoolDelegateDetailsData]
+	upgradeDelegatesFactory       server.IQuerylessCallContextFactory[*minipoolUpgradeDelegatesContext, api.BatchTxInfoData]
+	rollbackDelegatesFactory      server.IQuerylessCallContextFactory[*minipoolRollbackDelegatesContext, api.BatchTxInfoData]
+	dissolveDetailsFactory        server.IMinipoolCallContextFactory[*minipoolDissolveDetailsContext, api.MinipoolDissolveDetailsData]
+	dissolveFactory               server.IQuerylessCallContextFactory[*minipoolDissolveContext, api.BatchTxInfoData]
+	distributeDetailsFactory      server.IMinipoolCallContextFactory[*minipoolDistributeDetailsContext, api.MinipoolDistributeDetailsData]
+	distributeFactory             server.IQuerylessCallContextFactory[*minipoolDistributeContext, api.BatchTxInfoData]
+	exitDetailsFactory            server.IMinipoolCallContextFactory[*minipoolExitDetailsContext, api.MinipoolExitDetailsData]
+	exitFactory                   server.IMinipoolCallContextFactory[*minipoolExitContext, api.SuccessData]
+	importFactory                 server.ISingleStageCallContextFactory[*minipoolImportKeyContext, api.SuccessData]
+	promoteDetailsFactory         server.IMinipoolCallContextFactory[*minipoolPromoteDetailsContext, api.MinipoolPromoteDetailsData]
+	promoteFactory                server.IQuerylessCallContextFactory[*minipoolPromoteContext, api.BatchTxInfoData]
 }
 
 func NewMinipoolHandler(serviceProvider *services.ServiceProvider) *MinipoolHandler {
@@ -28,6 +41,19 @@ func NewMinipoolHandler(serviceProvider *services.ServiceProvider) *MinipoolHand
 	h.canChangeCredsFactory = &minipoolCanChangeCredsContextFactory{h}
 	h.changeCredsFactory = &minipoolChangeCredsContextFactory{h}
 	h.closeDetailsFactory = &minipoolCloseDetailsContextFactory{h}
+	h.closeFactory = &minipoolCloseContextFactory{h}
+	h.delegateDetailsFactory = &minipoolDelegateDetailsContextFactory{h}
+	h.upgradeDelegatesFactory = &minipoolUpgradeDelegatesContextFactory{h}
+	h.rollbackDelegatesFactory = &minipoolRollbackDelegatesContextFactory{h}
+	h.dissolveDetailsFactory = &minipoolDissolveDetailsContextFactory{h}
+	h.dissolveFactory = &minipoolDissolveContextFactory{h}
+	h.distributeDetailsFactory = &minipoolDistributeDetailsContextFactory{h}
+	h.distributeFactory = &minipoolDistributeContextFactory{h}
+	h.exitDetailsFactory = &minipoolExitDetailsContextFactory{h}
+	h.exitFactory = &minipoolExitContextFactory{h}
+	h.importFactory = &minipoolImportKeyContextFactory{h}
+	h.promoteDetailsFactory = &minipoolPromoteDetailsContextFactory{h}
+	h.promoteFactory = &minipoolPromoteContextFactory{h}
 	return h
 }
 
@@ -37,6 +63,19 @@ func (h *MinipoolHandler) RegisterRoutes(router *mux.Router) {
 	server.RegisterSingleStageRoute(router, "change-withdrawal-creds/verify", h.canChangeCredsFactory, h.serviceProvider)
 	server.RegisterSingleStageRoute(router, "change-withdrawal-creds", h.changeCredsFactory, h.serviceProvider)
 	server.RegisterMinipoolRoute(router, "close/details", h.closeDetailsFactory, h.serviceProvider)
+	server.RegisterMinipoolRoute(router, "close", h.closeFactory, h.serviceProvider)
+	server.RegisterMinipoolRoute(router, "delegate/details", h.delegateDetailsFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "delegate/upgrade", h.upgradeDelegatesFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "delegate/rollback", h.rollbackDelegatesFactory, h.serviceProvider)
+	server.RegisterMinipoolRoute(router, "dissolve/details", h.dissolveDetailsFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "dissolve", h.dissolveFactory, h.serviceProvider)
+	server.RegisterMinipoolRoute(router, "distribute/details", h.distributeDetailsFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "distribute", h.distributeFactory, h.serviceProvider)
+	server.RegisterMinipoolRoute(router, "exit/details", h.exitDetailsFactory, h.serviceProvider)
+	server.RegisterMinipoolRoute(router, "exit", h.exitFactory, h.serviceProvider)
+	server.RegisterSingleStageRoute(router, "import-key", h.importFactory, h.serviceProvider)
+	server.RegisterMinipoolRoute(router, "promote/details", h.promoteDetailsFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "promote", h.promoteFactory, h.serviceProvider)
 }
 
 // Register subcommands
@@ -46,310 +85,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage the node's minipools",
 		Subcommands: []cli.Command{
-
-			// Close
-			{
-				Name:      "close",
-				Aliases:   []string{"c"},
-				Usage:     "Withdraw the balance from the specified dissolved minipools and close them",
-				UsageText: "rocketpool api minipool close minipool-addresses",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddresses, err := cliutils.ValidateAddresses("minipool addresses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(closeMinipools(c, minipoolAddresses))
-					return nil
-
-				},
-			},
-
-			// Delegate
-			{
-				Name:      "get-minipool-delegate-details",
-				Usage:     "Get delegate information for all minipools belonging to the node",
-				UsageText: "rocketpool api minipool get-minipool-delegate-details",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					response, err := runMinipoolQuery[types.MinipoolDelegateDetailsData](c, &minipoolDelegateManager{})
-					api.PrintResponse(response, err)
-					return nil
-
-				},
-			},
-			{
-				Name:      "upgrade-delegates",
-				Usage:     "Upgrade the specified minipools to the latest network delegate contract",
-				UsageText: "rocketpool api minipool upgrade-delegates minipool-addresses",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddresses, err := cliutils.ValidateAddresses("minipool addresses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(upgradeDelegates(c, minipoolAddresses))
-					return nil
-
-				},
-			},
-			{
-				Name:      "rollback-delegates",
-				Usage:     "Rollback the specified minipools to their previous delegate contracts",
-				UsageText: "rocketpool api minipool rollback-delegates minipool-addresses",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddresses, err := cliutils.ValidateAddresses("minipool addresses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(rollbackDelegates(c, minipoolAddresses))
-					return nil
-
-				},
-			},
-			{
-				Name:      "set-use-latest-delegates",
-				Usage:     "Set whether or not to ignore the specified minipools's current delegate and always use the latest delegate instead",
-				UsageText: "rocketpool api minipool set-use-latest-delegates minipool-addresses setting",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					minipoolAddresses, err := cliutils.ValidateAddresses("minipool addresses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					setting, err := cliutils.ValidateBool("setting", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(setUseLatestDelegates(c, minipoolAddresses, setting))
-					return nil
-
-				},
-			},
-
-			//  Dissolve
-			{
-				Name:      "get-minipool-dissolve-details",
-				Usage:     "Get all of the details for dissolve eligibility of each node's minipools",
-				UsageText: "rocketpool api minipool get-minipool-dissolve-details",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					response, err := runMinipoolQuery[types.MinipoolDissolveDetailsData](c, &minipoolDissolveManager{})
-					api.PrintResponse(response, err)
-					return nil
-
-				},
-			},
-			{
-				Name:      "dissolve",
-				Aliases:   []string{"d"},
-				Usage:     "Dissolve the specified initialized or prelaunch minipools",
-				UsageText: "rocketpool api minipool dissolve minipool-addresses",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddresses, err := cliutils.ValidateAddresses("minipool addresses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(dissolveMinipools(c, minipoolAddresses))
-					return nil
-
-				},
-			},
-
-			// Distribute
-			{
-				Name:      "get-distribute-balance-details",
-				Usage:     "Get the balance distribution details for all of the node's minipools",
-				UsageText: "rocketpool api minipool get-distribute-balance-details",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					response, err := runMinipoolQuery[types.MinipoolDistributeDetailsData](c, &minipoolDistributeManager{})
-					api.PrintResponse(response, err)
-					return nil
-
-				},
-			},
-			{
-				Name:      "distribute-balances",
-				Usage:     "Distribute the specified minipools's ETH balances",
-				UsageText: "rocketpool api minipool distribute-balance minipool-addresses",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddresses, err := cliutils.ValidateAddresses("minipool addresseses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(distributeBalances(c, minipoolAddresses))
-					return nil
-
-				},
-			},
-
-			// Exit
-			{
-				Name:      "get-exit-details",
-				Usage:     "Check whether any of the node's minipools can exit the Beacon chain",
-				UsageText: "rocketpool api minipool get-exit-details",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					response, err := runMinipoolQuery[types.MinipoolExitDetailsData](c, &minipoolExitManager{})
-					api.PrintResponse(response, err)
-					return nil
-
-				},
-			},
-			{
-				Name:      "exit",
-				Aliases:   []string{"e"},
-				Usage:     "Exit the specified staking minipools from the Beacon chain",
-				UsageText: "rocketpool api minipool exit minipool-addresses",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddresses, err := cliutils.ValidateAddresses("minipool addresses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(exitMinipools(c, minipoolAddresses))
-					return nil
-
-				},
-			},
-
-			// Import key
-			{
-				Name:      "import-key",
-				Usage:     "Import a validator private key for a vacant minipool",
-				UsageText: "rocketpool api minipool import-key minipool-address mnemonic",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(importKey(c, minipoolAddress, mnemonic))
-					return nil
-
-				},
-			},
-
-			// Promote
-			{
-				Name:      "get-promote-details",
-				Usage:     "Check if any of the node's minipools are ready to be promoted and get their details",
-				UsageText: "rocketpool api minipool get-promote-details",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					response, err := runMinipoolQuery[types.MinipoolPromoteDetailsData](c, &minipoolPromoteManager{})
-					api.PrintResponse(response, err)
-					return nil
-
-				},
-			},
-			{
-				Name:      "promote",
-				Usage:     "Promote the specified vacant minipools",
-				UsageText: "rocketpool api minipool promote minipool-addresses",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					minipoolAddresses, err := cliutils.ValidateAddresses("minipool addresses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(promoteMinipools(c, minipoolAddresses))
-					return nil
-
-				},
-			},
 
 			// Reduce Bond
 			{
