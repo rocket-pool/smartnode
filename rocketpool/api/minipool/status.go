@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/gorilla/mux"
 	"golang.org/x/sync/errgroup"
 
 	batch "github.com/rocket-pool/batch-query"
@@ -21,6 +22,7 @@ import (
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -37,6 +39,12 @@ func (f *minipoolStatusContextFactory) Create(vars map[string]string) (*minipool
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *minipoolStatusContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterMinipoolRoute[*minipoolStatusContext, api.MinipoolStatusData](
+		router, "status", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

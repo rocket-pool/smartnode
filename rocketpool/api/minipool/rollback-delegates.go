@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -28,6 +29,12 @@ func (f *minipoolRollbackDelegatesContextFactory) Create(vars map[string]string)
 		server.ValidateArg("addresses", vars, cliutils.ValidateAddresses, &c.minipoolAddresses),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *minipoolRollbackDelegatesContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*minipoolRollbackDelegatesContext, api.BatchTxInfoData](
+		router, "delegate/rollback", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

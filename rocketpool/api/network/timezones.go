@@ -5,10 +5,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -25,6 +27,12 @@ func (f *networkTimezoneContextFactory) Create(vars map[string]string) (*network
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *networkTimezoneContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*networkTimezoneContext, api.NetworkTimezonesData](
+		router, "timezone-map", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

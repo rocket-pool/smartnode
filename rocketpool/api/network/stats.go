@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/deposit"
@@ -15,6 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -31,6 +33,12 @@ func (f *networkStatsContextFactory) Create(vars map[string]string) (*networkSta
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *networkStatsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*networkStatsContext, api.NetworkStatsData](
+		router, "stats", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

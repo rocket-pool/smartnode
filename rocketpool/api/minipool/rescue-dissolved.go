@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/beacon"
 	"github.com/rocket-pool/rocketpool-go/core"
@@ -38,6 +39,12 @@ func (f *minipoolRescueDissolvedContextFactory) Create(vars map[string]string) (
 		server.ValidateArg("depositAmounts", vars, cliutils.ValidateBigInts, &c.depositAmounts),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *minipoolRescueDissolvedContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*minipoolRescueDissolvedContext, api.BatchTxInfoData](
+		router, "rescue-dissolved", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

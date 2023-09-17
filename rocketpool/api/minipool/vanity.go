@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -35,6 +36,12 @@ func (f *minipoolVanityContextFactory) Create(vars map[string]string) (*minipool
 		server.GetStringFromVars("nodeAddress", vars, &c.nodeAddressStr),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *minipoolVanityContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*minipoolVanityContext, api.MinipoolVanityArtifactsData](
+		router, "vanity-artifacts", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

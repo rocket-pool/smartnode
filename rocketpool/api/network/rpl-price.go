@@ -5,12 +5,14 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -27,6 +29,12 @@ func (f *networkPriceContextFactory) Create(vars map[string]string) (*networkPri
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *networkPriceContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*networkPriceContext, api.NetworkRplPriceData](
+		router, "rpl-price", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

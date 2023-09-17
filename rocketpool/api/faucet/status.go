@@ -8,10 +8,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -28,6 +30,12 @@ func (f *faucetStatusContextFactory) Create(vars map[string]string) (*faucetStat
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *faucetStatusContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*faucetStatusContext, api.FaucetStatusData](
+		router, "status", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

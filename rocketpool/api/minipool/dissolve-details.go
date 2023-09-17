@@ -4,11 +4,13 @@ import (
 	"errors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/types"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -25,6 +27,12 @@ func (f *minipoolDissolveDetailsContextFactory) Create(vars map[string]string) (
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *minipoolDissolveDetailsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterMinipoolRoute[*minipoolDissolveDetailsContext, api.MinipoolDissolveDetailsData](
+		router, "dissolve/details", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

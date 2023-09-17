@@ -4,11 +4,13 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -25,6 +27,12 @@ func (f *networkFeeContextFactory) Create(vars map[string]string) (*networkFeeCo
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *networkFeeContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*networkFeeContext, api.NetworkNodeFeeData](
+		router, "node-fee", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

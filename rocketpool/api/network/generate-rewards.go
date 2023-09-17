@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -27,6 +28,12 @@ func (f *networkGenerateRewardsContextFactory) Create(vars map[string]string) (*
 		server.ValidateArg("index", vars, cliutils.ValidateUint, &c.index),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *networkGenerateRewardsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*networkGenerateRewardsContext, api.SuccessData](
+		router, "generate-rewards-tree", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

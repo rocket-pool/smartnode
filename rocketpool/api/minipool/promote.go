@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -29,6 +30,12 @@ func (f *minipoolPromoteContextFactory) Create(vars map[string]string) (*minipoo
 		server.ValidateArg("addresses", vars, cliutils.ValidateAddresses, &c.minipoolAddresses),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *minipoolPromoteContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*minipoolPromoteContext, api.BatchTxInfoData](
+		router, "promote", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

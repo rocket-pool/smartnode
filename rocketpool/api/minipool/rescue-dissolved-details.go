@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -13,6 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -30,6 +32,12 @@ func (f *minipoolRescueDissolvedDetailsContextFactory) Create(vars map[string]st
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *minipoolRescueDissolvedDetailsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterMinipoolRoute[*minipoolRescueDissolvedDetailsContext, api.MinipoolRescueDissolvedDetailsData](
+		router, "rescue-dissolved/details", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

@@ -7,6 +7,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -34,6 +35,12 @@ func (f *auctionBidContextFactory) Create(vars map[string]string) (*auctionBidCo
 		server.ValidateArg("amount", vars, cliutils.ValidatePositiveWeiAmount, &c.amountWei),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *auctionBidContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*auctionBidContext, api.BidOnLotData](
+		router, "bid-lot", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

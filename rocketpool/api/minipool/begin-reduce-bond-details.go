@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -15,6 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -32,6 +34,12 @@ func (f *minipoolBeginReduceBondDetailsContextFactory) Create(vars map[string]st
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *minipoolBeginReduceBondDetailsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterMinipoolRoute[*minipoolBeginReduceBondDetailsContext, api.MinipoolBeginReduceBondDetailsData](
+		router, "begin-reduce-bond/details", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

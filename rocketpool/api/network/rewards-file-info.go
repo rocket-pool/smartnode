@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -31,6 +32,12 @@ func (f *networkRewardsFileContextFactory) Create(vars map[string]string) (*netw
 		server.ValidateArg("index", vars, cliutils.ValidateUint, &c.index),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *networkRewardsFileContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*networkRewardsFileContext, api.NetworkRewardsFileData](
+		router, "rewards-file-info", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

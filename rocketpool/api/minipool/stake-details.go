@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -14,6 +15,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/types"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -30,6 +32,12 @@ func (f *minipoolStakeDetailsContextFactory) Create(vars map[string]string) (*mi
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *minipoolStakeDetailsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterMinipoolRoute[*minipoolStakeDetailsContext, api.MinipoolStakeDetailsData](
+		router, "stake/details", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

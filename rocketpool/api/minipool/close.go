@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -33,6 +34,12 @@ func (f *minipoolCloseContextFactory) Create(vars map[string]string) (*minipoolC
 		server.ValidateArg("addresses", vars, cliutils.ValidateAddresses, &c.minipoolAddresses),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *minipoolCloseContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterMinipoolRoute[*minipoolCloseContext, api.BatchTxInfoData](
+		router, "close", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

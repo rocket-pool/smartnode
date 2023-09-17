@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -12,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -28,6 +30,12 @@ func (f *auctionCreateContextFactory) Create(vars map[string]string) (*auctionCr
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *auctionCreateContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*auctionCreateContext, api.CreateLotData](
+		router, "create-lot", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

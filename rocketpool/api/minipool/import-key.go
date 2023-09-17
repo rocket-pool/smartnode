@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -37,6 +38,12 @@ func (f *minipoolImportKeyContextFactory) Create(vars map[string]string) (*minip
 		server.ValidateArg("mnemonic", vars, cliutils.ValidateWalletMnemonic, &c.mnemonic),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *minipoolImportKeyContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*minipoolImportKeyContext, api.SuccessData](
+		router, "import-key", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

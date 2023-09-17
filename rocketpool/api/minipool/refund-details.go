@@ -5,10 +5,12 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -25,6 +27,12 @@ func (f *minipoolRefundDetailsContextFactory) Create(vars map[string]string) (*m
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *minipoolRefundDetailsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterMinipoolRoute[*minipoolRefundDetailsContext, api.MinipoolRefundDetailsData](
+		router, "refund/details", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

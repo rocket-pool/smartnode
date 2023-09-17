@@ -6,9 +6,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -25,6 +27,12 @@ func (f *auctionLotContextFactory) Create(vars map[string]string) (*auctionLotCo
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *auctionLotContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*auctionLotContext, api.AuctionLotsData](
+		router, "lots", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	"github.com/rocket-pool/smartnode/rocketpool/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -27,6 +28,12 @@ func (f *networkDownloadRewardsContextFactory) Create(vars map[string]string) (*
 		server.ValidateArg("interval", vars, cliutils.ValidateUint, &c.interval),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *networkDownloadRewardsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*networkDownloadRewardsContext, api.SuccessData](
+		router, "download-rewards-file", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

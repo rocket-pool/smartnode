@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	rputils "github.com/rocket-pool/smartnode/rocketpool/utils/rp"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -21,6 +23,12 @@ func (f *networkDepositInfoContextFactory) Create(vars map[string]string) (*netw
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *networkDepositInfoContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*networkDepositInfoContext, api.NetworkDepositContractInfoData](
+		router, "deposit-contract-info", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

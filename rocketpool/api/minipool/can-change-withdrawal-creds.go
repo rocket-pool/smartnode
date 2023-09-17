@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -38,6 +39,12 @@ func (f *minipoolCanChangeCredsContextFactory) Create(vars map[string]string) (*
 		server.ValidateArg("mnemonic", vars, cliutils.ValidateWalletMnemonic, &c.mnemonic),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *minipoolCanChangeCredsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*minipoolCanChangeCredsContext, api.MinipoolCanChangeWithdrawalCredentialsData](
+		router, "change-withdrawal-creds/verify", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

@@ -7,6 +7,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -33,6 +34,12 @@ func (f *auctionRecoverContextFactory) Create(vars map[string]string) (*auctionR
 		server.ValidateArg("index", vars, cliutils.ValidateUint, &c.lotIndex),
 	}
 	return c, errors.Join(inputErrs...)
+}
+
+func (f *auctionRecoverContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*auctionRecoverContext, api.RecoverRplFromLotData](
+		router, "recover-lot", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

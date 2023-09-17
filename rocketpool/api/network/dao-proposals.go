@@ -10,9 +10,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/node"
 	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -30,6 +32,12 @@ func (f *networkProposalContextFactory) Create(vars map[string]string) (*network
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *networkProposalContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*networkProposalContext, api.NetworkDaoProposalsData](
+		router, "dao-proposals", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============

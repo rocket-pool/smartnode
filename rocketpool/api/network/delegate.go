@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -21,6 +23,12 @@ func (f *networkDelegateContextFactory) Create(vars map[string]string) (*network
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *networkDelegateContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*networkDelegateContext, api.NetworkLatestDelegateData](
+		router, "latest-delegate", f, f.handler.serviceProvider,
+	)
 }
 
 // ===============
