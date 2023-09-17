@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -10,138 +11,79 @@ import (
 	"github.com/rocket-pool/rocketpool-go/beacon"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
-
-	"github.com/rocket-pool/smartnode/shared/services"
-	rpbeacon "github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	rpbeacon "github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
-type minipoolRescueDissolvedManager struct {
+// ===============
+// === Factory ===
+// ===============
+
+type minipoolRescueDissolvedContextFactory struct {
+	handler *MinipoolHandler
 }
 
-func (m *minipoolRescueDissolvedManager) CreateBindings(rp *rocketpool.RocketPool) error {
-	return nil
+func (f *minipoolRescueDissolvedContextFactory) Create(vars map[string]string) (*minipoolRescueDissolvedContext, error) {
+	c := &minipoolRescueDissolvedContext{
+		handler: f.handler,
+	}
+	inputErrs := []error{
+		server.ValidateArg("addresses", vars, cliutils.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArg("depositAmounts", vars, cliutils.ValidateBigInts, &c.depositAmounts),
+	}
+	return c, errors.Join(inputErrs...)
 }
 
-func (m *minipoolRescueDissolvedManager) GetState(node *node.Node, mc *batch.MultiCaller) {
+// ===============
+// === Context ===
+// ===============
+
+type minipoolRescueDissolvedContext struct {
+	handler           *MinipoolHandler
+	minipoolAddresses []common.Address
+	depositAmounts    []*big.Int
 }
 
-func (m *minipoolRescueDissolvedManager) CheckState(node *node.Node, response *api.MinipoolRescueDissolvedDetailsData) bool {
-	return true
-}
-
-func (m *minipoolRescueDissolvedManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-	mpCommon := mp.GetMinipoolCommon()
-	mpCommon.GetFinalised(mc)
-	mpCommon.GetStatus(mc)
-	mpCommon.GetPubkey(mc)
-}
-
-func (m *minipoolRescueDissolvedManager) PrepareResponse(rp *rocketpool.RocketPool, bc rpbeacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolRescueDissolvedDetailsData) error {
-	// Get the rescue details
-	pubkeys := []types.ValidatorPubkey{}
-	detailsMap := map[types.ValidatorPubkey]int{}
-	details := make([]api.MinipoolRescueDissolvedDetails, len(addresses))
-	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
-		mpDetails := api.MinipoolRescueDissolvedDetails{
-			Address:       mpCommon.Details.Address,
-			MinipoolState: mpCommon.Details.Status.Formatted(),
-			IsFinalized:   mpCommon.Details.IsFinalised,
-		}
-
-		if mpDetails.MinipoolState != types.Dissolved || mpDetails.IsFinalized {
-			mpDetails.InvalidElState = true
-		} else {
-			pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
-			detailsMap[mpCommon.Details.Pubkey] = i
-		}
-
-		details[i] = mpDetails
-	}
-
-	// Get the statuses on Beacon
-	beaconStatuses, err := bc.GetValidatorStatuses(pubkeys, nil)
-	if err != nil {
-		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
-	}
-
-	// Do a complete viability check
-	for pubkey, beaconStatus := range beaconStatuses {
-		i := detailsMap[pubkey]
-		mpDetails := &details[i]
-		mpDetails.BeaconState = beaconStatus.Status
-		mpDetails.InvalidBeaconState = beaconStatus.Status != rpbeacon.ValidatorState_PendingInitialized
-
-		if !mpDetails.InvalidBeaconState {
-			beaconBalanceGwei := big.NewInt(0).SetUint64(beaconStatus.Balance)
-			mpDetails.BeaconBalance = big.NewInt(0).Mul(beaconBalanceGwei, big.NewInt(1e9))
-
-			// Make sure it doesn't already have 32 ETH in it
-			requiredBalance := eth.EthToWei(32)
-			if mpDetails.BeaconBalance.Cmp(requiredBalance) >= 0 {
-				mpDetails.HasFullBalance = true
-			}
-		}
-
-		mpDetails.CanRescue = !(mpDetails.IsFinalized || mpDetails.InvalidElState || mpDetails.InvalidBeaconState || mpDetails.HasFullBalance)
-	}
-
-	response.Details = details
-	return nil
-}
-
-func rescueDissolvedMinipools(c *cli.Context, minipoolAddresses []common.Address, amounts []*big.Int) (*api.BatchTxInfoData, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, fmt.Errorf("error getting Beacon Node binding: %w", err)
-	}
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.BatchTxInfoData{}
-
+func (c *minipoolRescueDissolvedContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
 	// Sanity check
-	if len(minipoolAddresses) != len(amounts) {
-		return nil, fmt.Errorf("addresses and amounts must have the same length (%d vs. %d)", len(minipoolAddresses), len(amounts))
+	if len(c.minipoolAddresses) != len(c.depositAmounts) {
+		return fmt.Errorf("addresses and deposit amounts must have the same length (%d vs. %d)", len(c.minipoolAddresses), len(c.depositAmounts))
+	}
+
+	sp := c.handler.serviceProvider
+	rp := sp.GetRocketPool()
+	w := sp.GetWallet()
+	bc := sp.GetBeaconClient()
+
+	// Requirements
+	err := errors.Join(
+		sp.RequireNodeRegistered(),
+		sp.RequireBeaconClientSynced(),
+	)
+	if err != nil {
+		return err
 	}
 
 	// Get the TXs
-	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
-	for i, address := range minipoolAddresses {
-		amount := amounts[i]
+	txInfos := make([]*core.TransactionInfo, len(c.minipoolAddresses))
+	for i, address := range c.minipoolAddresses {
+		amount := c.depositAmounts[i]
 		opts.Value = amount
 		txInfo, err := getDepositTx(rp, w, bc, address, amount, opts)
 		if err != nil {
-			return nil, fmt.Errorf("error simulating deposit transaction for minipool %s: %w", address.Hex(), err)
+			return fmt.Errorf("error simulating deposit transaction for minipool %s: %w", address.Hex(), err)
 		}
 		txInfos[i] = txInfo
 	}
 
-	response.TxInfos = txInfos
-	return &response, nil
+	data.TxInfos = txInfos
+	return nil
 }
 
 // Create a transaction for submitting a rescue deposit, optionally simulating it only for gas estimation

@@ -2,6 +2,7 @@ package minipool
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -19,11 +20,34 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-type minipoolStatusManager struct {
+// ===============
+// === Factory ===
+// ===============
+
+type minipoolStatusContextFactory struct {
+	handler *MinipoolHandler
+}
+
+func (f *minipoolStatusContextFactory) Create(vars map[string]string) (*minipoolStatusContext, error) {
+	c := &minipoolStatusContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type minipoolStatusContext struct {
+	handler *MinipoolHandler
+	rp      *rocketpool.RocketPool
+	bc      beacon.Client
+
 	delegate      *core.Contract
 	pSettings     *settings.ProtocolDaoSettings
 	oSettings     *settings.OracleDaoSettings
@@ -35,59 +59,72 @@ type minipoolStatusManager struct {
 	fsrplBalances []*big.Int
 }
 
-func (m *minipoolStatusManager) CreateBindings(rp *rocketpool.RocketPool) error {
-	var err error
-	m.delegate, err = rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
+func (c *minipoolStatusContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.bc = sp.GetBeaconClient()
+
+	// Requirements
+	err := errors.Join(
+		sp.RequireNodeRegistered(),
+		sp.RequireBeaconClientSynced(),
+	)
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	c.delegate, err = c.rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
 	if err != nil {
 		return fmt.Errorf("error getting minipool delegate binding: %w", err)
 	}
-	m.pSettings, err = settings.NewProtocolDaoSettings(rp)
+	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating pDAO settings binding: %w", err)
 	}
-	m.oSettings, err = settings.NewOracleDaoSettings(rp)
+	c.oSettings, err = settings.NewOracleDaoSettings(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating oDAO settings binding: %w", err)
 	}
-	m.reth, err = tokens.NewTokenReth(rp)
+	c.reth, err = tokens.NewTokenReth(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating rETH token binding: %w", err)
 	}
-	m.rpl, err = tokens.NewTokenRpl(rp)
+	c.rpl, err = tokens.NewTokenRpl(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating RPL token binding: %w", err)
 	}
-	m.fsrpl, err = tokens.NewTokenRplFixedSupply(rp)
+	c.fsrpl, err = tokens.NewTokenRplFixedSupply(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating legacy RPL token binding: %w", err)
 	}
 	return nil
 }
 
-func (m *minipoolStatusManager) GetState(node *node.Node, mc *batch.MultiCaller) {
-	m.pSettings.GetMinipoolLaunchTimeout(mc)
-	m.oSettings.GetScrubPeriod(mc)
-	m.oSettings.GetPromotionScrubPeriod(mc)
+func (c *minipoolStatusContext) GetState(node *node.Node, mc *batch.MultiCaller) {
+	c.pSettings.GetMinipoolLaunchTimeout(mc)
+	c.oSettings.GetScrubPeriod(mc)
+	c.oSettings.GetPromotionScrubPeriod(mc)
 }
 
-func (m *minipoolStatusManager) CheckState(node *node.Node, response *api.MinipoolStatusData) bool {
+func (c *minipoolStatusContext) CheckState(node *node.Node, response *api.MinipoolStatusData) bool {
 	// Provision the token balance counts
 	minipoolCount := node.Details.MinipoolCount.Formatted()
-	m.rethBalances = make([]*big.Int, minipoolCount)
-	m.rplBalances = make([]*big.Int, minipoolCount)
-	m.fsrplBalances = make([]*big.Int, minipoolCount)
+	c.rethBalances = make([]*big.Int, minipoolCount)
+	c.rplBalances = make([]*big.Int, minipoolCount)
+	c.fsrplBalances = make([]*big.Int, minipoolCount)
 	return true
 }
 
-func (m *minipoolStatusManager) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
 	address := mp.GetMinipoolCommon().Details.Address
 	mp.QueryAllDetails(mc)
-	m.reth.GetBalance(mc, &m.rethBalances[index], address)
-	m.rpl.GetBalance(mc, &m.rplBalances[index], address)
-	m.fsrpl.GetBalance(mc, &m.fsrplBalances[index], address)
+	c.reth.GetBalance(mc, &c.rethBalances[index], address)
+	c.rpl.GetBalance(mc, &c.rplBalances[index], address)
+	c.fsrpl.GetBalance(mc, &c.fsrplBalances[index], address)
 }
 
-func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolStatusData) error {
+func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolStatusData) error {
 	// Data
 	var wg1 errgroup.Group
 	var eth2Config beacon.Eth2Config
@@ -97,7 +134,7 @@ func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc be
 	// Get the current ETH balances of each minipool
 	wg1.Go(func() error {
 		var err error
-		balances, err = rp.BalanceBatcher.GetEthBalances(addresses, nil)
+		balances, err = c.rp.BalanceBatcher.GetEthBalances(addresses, nil)
 		if err != nil {
 			return fmt.Errorf("error getting minipool balances: %w", err)
 		}
@@ -107,7 +144,7 @@ func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc be
 	// Get eth2 config
 	wg1.Go(func() error {
 		var err error
-		eth2Config, err = bc.GetEth2Config()
+		eth2Config, err = c.bc.GetEth2Config()
 		if err != nil {
 			return fmt.Errorf("error getting Beacon config: %w", err)
 		}
@@ -117,7 +154,7 @@ func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc be
 	// Get current block header
 	wg1.Go(func() error {
 		var err error
-		currentHeader, err = rp.Client.HeaderByNumber(context.Background(), nil)
+		currentHeader, err = c.rp.Client.HeaderByNumber(context.Background(), nil)
 		if err != nil {
 			return fmt.Errorf("error getting latest block header: %w", err)
 		}
@@ -136,9 +173,9 @@ func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc be
 	currentEpoch := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerEpoch
 
 	// Get some protocol settings
-	launchTimeout := m.pSettings.Details.Minipool.LaunchTimeout.Formatted()
-	scrubPeriod := m.oSettings.Details.Minipools.ScrubPeriod.Formatted()
-	promotionScrubPeriod := m.oSettings.Details.Minipools.PromotionScrubPeriod.Formatted()
+	launchTimeout := c.pSettings.Details.Minipool.LaunchTimeout.Formatted()
+	scrubPeriod := c.oSettings.Details.Minipools.ScrubPeriod.Formatted()
+	promotionScrubPeriod := c.oSettings.Details.Minipools.PromotionScrubPeriod.Formatted()
 
 	// Get the statuses on Beacon
 	pubkeys := make([]rptypes.ValidatorPubkey, 0, len(addresses))
@@ -149,7 +186,7 @@ func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc be
 			pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
 		}
 	}
-	beaconStatuses, err := bc.GetValidatorStatuses(pubkeys, nil)
+	beaconStatuses, err := c.bc.GetValidatorStatuses(pubkeys, nil)
 	if err != nil {
 		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}
@@ -179,9 +216,9 @@ func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc be
 		mpDetails.User.DepositAssignedTime = mpCommonDetails.UserDepositAssignedTime.Formatted()
 		mpDetails.User.DepositBalance = mpCommonDetails.UserDepositBalance
 		mpDetails.Balances.Eth = balances[i]
-		mpDetails.Balances.Reth = m.rethBalances[i]
-		mpDetails.Balances.Rpl = m.rplBalances[i]
-		mpDetails.Balances.FixedSupplyRpl = m.fsrplBalances[i]
+		mpDetails.Balances.Reth = c.rethBalances[i]
+		mpDetails.Balances.Rpl = c.rplBalances[i]
+		mpDetails.Balances.FixedSupplyRpl = c.fsrplBalances[i]
 		mpDetails.UseLatestDelegate = mpCommonDetails.IsUseLatestDelegateEnabled
 		mpDetails.Delegate = mpCommonDetails.DelegateAddress
 		mpDetails.PreviousDelegate = mpCommonDetails.PreviousDelegateAddress
@@ -242,7 +279,7 @@ func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc be
 	}
 
 	// Calculate the node share of each minipool balance
-	err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
+	err = c.rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
 		mpCommon := mps[i].GetMinipoolCommon()
 		mpDetails := &details[i]
 
@@ -265,6 +302,6 @@ func (m *minipoolStatusManager) PrepareResponse(rp *rocketpool.RocketPool, bc be
 		return nil
 	}, nil)
 
-	response.LatestDelegate = *m.delegate.Address
+	data.LatestDelegate = *c.delegate.Address
 	return nil
 }

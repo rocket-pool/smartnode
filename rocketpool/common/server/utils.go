@@ -29,6 +29,19 @@ func ValidateArg[ArgType any](name string, args map[string]string, impl ArgValid
 	return nil
 }
 
+// Gets a string argument, ensuring that it exists in the provided vars list
+func GetStringFromVars(name string, args map[string]string, result_Out *string) error {
+	// Make sure it exists
+	arg, exists := args[name]
+	if !exists {
+		return fmt.Errorf("missing argument '%s'", name)
+	}
+
+	// Set the result
+	*result_Out = arg
+	return nil
+}
+
 // Handles an error related to parsing the input parameters of a request
 func handleInputError(w http.ResponseWriter, err error) {
 	// Write out any errors

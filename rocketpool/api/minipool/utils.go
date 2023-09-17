@@ -37,7 +37,7 @@ func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses 
 	// Create minipools
 	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
 	if err != nil {
-		return fmt.Errorf("error creating node transactor: %w", err)
+		return fmt.Errorf("error creating minipool bindings: %w", err)
 	}
 
 	// Get the TXs
