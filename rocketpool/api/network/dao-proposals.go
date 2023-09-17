@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/node"
 	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
@@ -45,7 +44,7 @@ type networkProposalContext struct {
 	snapshot    *contracts.SnapshotDelegation
 }
 
-func (c *networkProposalContext) Initialize() error {
+func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
@@ -53,16 +52,14 @@ func (c *networkProposalContext) Initialize() error {
 	c.snapshot = sp.GetSnapshotDelegation()
 
 	// Requirements
-	return errors.Join(
+	err := errors.Join(
 		sp.RequireNodeRegistered(),
 		sp.RequireSnapshot(),
 	)
-}
+	if err != nil {
+		return err
+	}
 
-func (c *networkProposalContext) GetState(mc *batch.MultiCaller) {
-}
-
-func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, opts *bind.TransactOpts) error {
 	data.AccountAddress = c.nodeAddress
 
 	// Get snapshot proposals

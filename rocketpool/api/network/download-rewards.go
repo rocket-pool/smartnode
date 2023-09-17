@@ -5,12 +5,8 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
-	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -38,36 +34,31 @@ func (f *networkDownloadRewardsContextFactory) Create(vars map[string]string) (*
 // ===============
 
 type networkDownloadRewardsContext struct {
-	handler     *NetworkHandler
-	rp          *rocketpool.RocketPool
-	cfg         *config.RocketPoolConfig
-	nodeAddress common.Address
+	handler *NetworkHandler
 
 	interval uint64
 }
 
-func (c *networkDownloadRewardsContext) Initialize() error {
+func (c *networkDownloadRewardsContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	c.rp = sp.GetRocketPool()
-	c.cfg = sp.GetConfig()
-	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+	rp := sp.GetRocketPool()
+	cfg := sp.GetConfig()
+	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	return sp.RequireNodeRegistered()
-}
+	err := sp.RequireNodeRegistered()
+	if err != nil {
+		return err
+	}
 
-func (c *networkDownloadRewardsContext) GetState(mc *batch.MultiCaller) {
-}
-
-func (c *networkDownloadRewardsContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
 	// Get the event info for the interval
-	intervalInfo, err := rewards.GetIntervalInfo(c.rp, c.cfg, c.nodeAddress, c.interval, nil)
+	intervalInfo, err := rewards.GetIntervalInfo(rp, cfg, nodeAddress, c.interval, nil)
 	if err != nil {
 		return fmt.Errorf("error getting interval %d info: %w", c.interval, err)
 	}
 
 	// Download the rewards file
-	err = rewards.DownloadRewardsFile(c.cfg, c.interval, intervalInfo.CID, true)
+	err = rewards.DownloadRewardsFile(cfg, c.interval, intervalInfo.CID, true)
 	if err != nil {
 		return fmt.Errorf("error downloading interval %d rewards file: %w", c.interval, err)
 	}

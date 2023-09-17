@@ -13,6 +13,10 @@ import (
 type MinipoolHandler struct {
 	serviceProvider               *services.ServiceProvider
 	beginReduceBondDetailsFactory server.IMinipoolCallContextFactory[*minipoolBeginReduceBondDetailsContext, api.MinipoolBeginReduceBondDetailsData]
+	beginReduceBondFactory        server.IQuerylessCallContextFactory[*minipoolBeginReduceBondContext, api.BatchTxInfoData]
+	canChangeCredsFactory         server.ISingleStageCallContextFactory[*minipoolCanChangeCredsContext, api.MinipoolCanChangeWithdrawalCredentialsData]
+	changeCredsFactory            server.ISingleStageCallContextFactory[*minipoolChangeCredsContext, api.SuccessData]
+	closeDetailsFactory           server.IMinipoolCallContextFactory[*minipoolCloseDetailsContext, api.MinipoolCloseDetailsData]
 }
 
 func NewMinipoolHandler(serviceProvider *services.ServiceProvider) *MinipoolHandler {
@@ -20,11 +24,19 @@ func NewMinipoolHandler(serviceProvider *services.ServiceProvider) *MinipoolHand
 		serviceProvider: serviceProvider,
 	}
 	h.beginReduceBondDetailsFactory = &minipoolBeginReduceBondDetailsContextFactory{h}
+	h.beginReduceBondFactory = &minipoolBeginReduceBondContextFactory{h}
+	h.canChangeCredsFactory = &minipoolCanChangeCredsContextFactory{h}
+	h.changeCredsFactory = &minipoolChangeCredsContextFactory{h}
+	h.closeDetailsFactory = &minipoolCloseDetailsContextFactory{h}
 	return h
 }
 
 func (h *MinipoolHandler) RegisterRoutes(router *mux.Router) {
 	server.RegisterMinipoolRoute(router, "begin-reduce-bond/details", h.beginReduceBondDetailsFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "begin-reduce-bond", h.beginReduceBondFactory, h.serviceProvider)
+	server.RegisterSingleStageRoute(router, "change-withdrawal-creds/verify", h.canChangeCredsFactory, h.serviceProvider)
+	server.RegisterSingleStageRoute(router, "change-withdrawal-creds", h.changeCredsFactory, h.serviceProvider)
+	server.RegisterMinipoolRoute(router, "close/details", h.closeDetailsFactory, h.serviceProvider)
 }
 
 // Register subcommands
@@ -35,128 +47,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Usage:   "Manage the node's minipools",
 		Subcommands: []cli.Command{
 
-			// Begin reduce bond
-			{
-				Name:      "get-minipool-begin-reduce-bond-details",
-				Usage:     "Check whether any of the minipools belonging to the node can begin the bond reduction process",
-				UsageText: "rocketpool api minipool get-minipool-begin-reduce-bond-details new-bond-amount-wei",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					newBondAmountWei, err := cliutils.ValidateWeiAmount("new bond amount", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					response, err := runMinipoolQuery[types.MinipoolBeginReduceBondDetailsData](c, &minipoolBeginReduceBondManager{
-						newBondAmountWei: newBondAmountWei,
-					})
-					api.PrintResponse(response, err)
-					return nil
-
-				},
-			},
-			{
-				Name:      "begin-reduce-bond-amount",
-				Usage:     "Begin the bond reduction process for all provided minipools",
-				UsageText: "rocketpool api minipool begin-reduce-bond-amount minipool-addresses new-bond-amount-wei",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					minipoolAddresses, err := cliutils.ValidateAddresses("minipool addresses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					newBondAmountWei, err := cliutils.ValidateWeiAmount("new bond amount", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(beginReduceBondAmounts(c, minipoolAddresses, newBondAmountWei))
-					return nil
-
-				},
-			},
-
-			// Change withdrawal creds
-			{
-				Name:      "can-change-withdrawal-creds",
-				Usage:     "Check whether a solo validator's withdrawal credentials can be changed to a minipool address",
-				UsageText: "rocketpool api minipool can-change-withdrawal-creds minipool-address mnemonic",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canChangeWithdrawalCreds(c, minipoolAddress, mnemonic))
-					return nil
-
-				},
-			},
-			{
-				Name:      "change-withdrawal-creds",
-				Usage:     "Change a solo validator's withdrawal credentials to a minipool address",
-				UsageText: "rocketpool api minipool change-withdrawal-creds minipool-address mnemonic",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(changeWithdrawalCreds(c, minipoolAddress, mnemonic))
-					return nil
-
-				},
-			},
-
 			// Close
-			{
-				Name:      "get-minipool-close-details",
-				Usage:     "Check all of the node's minipools for closure eligibility, and return the details of the closeable ones",
-				UsageText: "rocketpool api minipool get-minipool-close-details",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					response, err := runMinipoolQuery[types.MinipoolCloseDetailsData](c, &minipoolCloseManager{})
-					api.PrintResponse(response, err)
-					return nil
-
-				},
-			},
 			{
 				Name:      "close",
 				Aliases:   []string{"c"},

@@ -3,8 +3,9 @@ package minipool
 import "math/big"
 
 const (
-	minipoolBatchSize              int = 100
-	minipoolCompleteShareBatchSize int = 500
+	minipoolBatchSize              int  = 100
+	minipoolCompleteShareBatchSize int  = 500
+	validatorKeyRetrievalLimit     uint = 2000
 )
 
 var zeroVar *big.Int

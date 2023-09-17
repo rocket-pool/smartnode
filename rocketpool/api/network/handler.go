@@ -10,12 +10,12 @@ import (
 
 type NetworkHandler struct {
 	serviceProvider        *services.ServiceProvider
-	proposalsFactory       server.ISingleStageCallContextFactory[*networkProposalContext, api.NetworkDaoProposalsData]
-	delegateFactory        server.ISingleStageCallContextFactory[*networkDelegateContext, api.NetworkLatestDelegateData]
-	depositInfoFactory     server.ISingleStageCallContextFactory[*networkDepositInfoContext, api.NetworkDepositContractInfoData]
-	downloadRewardsFactory server.ISingleStageCallContextFactory[*networkDownloadRewardsContext, api.SuccessData]
+	proposalsFactory       server.IQuerylessCallContextFactory[*networkProposalContext, api.NetworkDaoProposalsData]
+	delegateFactory        server.IQuerylessCallContextFactory[*networkDelegateContext, api.NetworkLatestDelegateData]
+	depositInfoFactory     server.IQuerylessCallContextFactory[*networkDepositInfoContext, api.NetworkDepositContractInfoData]
+	downloadRewardsFactory server.IQuerylessCallContextFactory[*networkDownloadRewardsContext, api.SuccessData]
 	rewardsFileFactory     server.ISingleStageCallContextFactory[*networkRewardsFileContext, api.NetworkRewardsFileData]
-	generateRewardsFactory server.ISingleStageCallContextFactory[*networkGenerateRewardsContext, api.SuccessData]
+	generateRewardsFactory server.IQuerylessCallContextFactory[*networkGenerateRewardsContext, api.SuccessData]
 	feeFactory             server.ISingleStageCallContextFactory[*networkFeeContext, api.NetworkNodeFeeData]
 	priceFactory           server.ISingleStageCallContextFactory[*networkPriceContext, api.NetworkRplPriceData]
 	statsFactory           server.ISingleStageCallContextFactory[*networkStatsContext, api.NetworkStatsData]
@@ -40,12 +40,12 @@ func NewNetworkHandler(serviceProvider *services.ServiceProvider) *NetworkHandle
 }
 
 func (h *NetworkHandler) RegisterRoutes(router *mux.Router) {
-	server.RegisterSingleStageRoute(router, "dao-proposals", h.proposalsFactory, h.serviceProvider)
-	server.RegisterSingleStageRoute(router, "latest-delegate", h.delegateFactory, h.serviceProvider)
-	server.RegisterSingleStageRoute(router, "deposit-contract-info", h.depositInfoFactory, h.serviceProvider)
-	server.RegisterSingleStageRoute(router, "download-rewards-file", h.downloadRewardsFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "dao-proposals", h.proposalsFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "latest-delegate", h.delegateFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "deposit-contract-info", h.depositInfoFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "download-rewards-file", h.downloadRewardsFactory, h.serviceProvider)
 	server.RegisterSingleStageRoute(router, "get-rewards-file-info", h.rewardsFileFactory, h.serviceProvider)
-	server.RegisterSingleStageRoute(router, "generate-rewards-tree", h.generateRewardsFactory, h.serviceProvider)
+	server.RegisterQuerylessRoute(router, "generate-rewards-tree", h.generateRewardsFactory, h.serviceProvider)
 	server.RegisterSingleStageRoute(router, "node-fee", h.feeFactory, h.serviceProvider)
 	server.RegisterSingleStageRoute(router, "rpl-price", h.priceFactory, h.serviceProvider)
 	server.RegisterSingleStageRoute(router, "stats", h.statsFactory, h.serviceProvider)

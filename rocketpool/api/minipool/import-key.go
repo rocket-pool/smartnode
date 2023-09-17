@@ -73,7 +73,7 @@ func importKey(c *cli.Context, minipoolAddress common.Address, mnemonic string) 
 	index := uint(0)
 	validatorKeyPath := validator.ValidatorKeyPath
 	var validatorKey *eth2types.BLSPrivateKey
-	for index < validatorLimit {
+	for index < validatorKeyRetrievalLimit {
 		key, err := validator.GetPrivateKey(mnemonic, index, validatorKeyPath)
 		if err != nil {
 			return nil, fmt.Errorf("error deriving key for index %d: %w", index, err)
@@ -86,7 +86,7 @@ func importKey(c *cli.Context, minipoolAddress common.Address, mnemonic string) 
 		index++
 	}
 	if validatorKey == nil {
-		return nil, fmt.Errorf("couldn't find the validator key for this mnemonic after %d tries", validatorLimit)
+		return nil, fmt.Errorf("couldn't find the validator key for this mnemonic after %d tries", validatorKeyRetrievalLimit)
 	}
 
 	// Save the keystore to disk

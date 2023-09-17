@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -18,53 +20,57 @@ const (
 	minipoolBatchSize int = 100
 )
 
-// Run a route registered with the common single-stage querying pattern
-func runSingleStageRoute[DataType any](ctx ISingleStageCallContext[DataType], serviceProvider *services.ServiceProvider) (*api.ApiResponse[DataType], error) {
-	// Get the services
-	w := serviceProvider.GetWallet()
-	rp := serviceProvider.GetRocketPool()
-
+// Wrapper for callbacks used by functions that will query all of the node's minipools - they follow this pattern:
+// Create bindings, query the chain, return prematurely if some state isn't correct, query all of the minipools, and process them to
+// populate a response.
+// Structs implementing this will handle the caller-specific functionality.
+type IMinipoolCallContext[DataType any] interface {
 	// Initialize the context with any bootstrapping, requirements checks, or bindings it needs to set up
-	err := ctx.Initialize()
-	if err != nil {
-		return nil, err
-	}
+	Initialize() error
 
-	// Get the context-specific contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		ctx.GetState(mc)
-		return nil
-	}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting contract state: %w", err)
-	}
+	// Used to get any supplemental state required during initialization - anything in here will be fed into an rp.Query() multicall
+	GetState(node *node.Node, mc *batch.MultiCaller)
 
-	// Get the transact opts if this node is ready for transaction
-	var opts *bind.TransactOpts
-	walletStatus := w.GetStatus()
-	if walletStatus == sharedtypes.WalletStatus_Ready {
-		var err error
-		opts, err = w.GetTransactor()
+	// Check the initialized state after being queried to see if the response needs to be updated and the query can be ended prematurely
+	// Return true if the function should continue, or false if it needs to end and just return the response as-is
+	CheckState(node *node.Node, data *DataType) bool
+
+	// Get whatever details of the given minipool are necessary; this will be passed into an rp.BatchQuery call, one run per minipool
+	// belonging to the node
+	GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int)
+
+	// Prepare the response data using all of the provided artifacts
+	PrepareResponse(addresses []common.Address, mps []minipool.Minipool, data *DataType) error
+}
+
+// Interface for minipool call context factories - these will be invoked during route handling to create the
+// unique context for the route
+type IMinipoolCallContextFactory[ContextType IMinipoolCallContext[DataType], DataType any] interface {
+	// Create the context for the route
+	Create(vars map[string]string) (ContextType, error)
+}
+
+// Registers a new route with the router, which will invoke the provided factory to create and execute the context
+// for the route when it's called; use this for complex calls that will iterate over and query each minipool in the node
+func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType any](
+	router *mux.Router,
+	functionName string,
+	factory IMinipoolCallContextFactory[ContextType, DataType],
+	serviceProvider *services.ServiceProvider,
+) {
+	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
+		// Create the handler and deal with any input validation errors
+		vars := mux.Vars(r)
+		context, err := factory.Create(vars)
 		if err != nil {
-			return nil, fmt.Errorf("error getting node account transactor: %w", err)
+			handleInputError(w, err)
+			return
 		}
-	}
 
-	// Create the response and data
-	data := new(DataType)
-	response := &api.ApiResponse[DataType]{
-		WalletStatus: walletStatus,
-		Data:         data,
-	}
-
-	// Prep the data with the context-specific behavior
-	err = ctx.PrepareData(data, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return
-	return response, nil
+		// Run the context's processing routine
+		response, err := runMinipoolRoute[DataType](context, serviceProvider)
+		handleResponse(w, response, err)
+	})
 }
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
@@ -145,18 +151,8 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 		return nil, fmt.Errorf("error getting minipool details: %w", err)
 	}
 
-	// Get the transact opts if this node is ready for transaction
-	var txOpts *bind.TransactOpts
-	if walletStatus == sharedtypes.WalletStatus_Ready {
-		var err error
-		txOpts, err = w.GetTransactor()
-		if err != nil {
-			return nil, fmt.Errorf("error getting node account transactor: %w", err)
-		}
-	}
-
 	// Supplemental function-specific response construction
-	err = ctx.PrepareResponse(addresses, mps, data, txOpts)
+	err = ctx.PrepareResponse(addresses, mps, data)
 	if err != nil {
 		return nil, err
 	}

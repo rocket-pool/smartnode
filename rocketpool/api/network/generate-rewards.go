@@ -6,9 +6,7 @@ import (
 	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
-	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -37,23 +35,16 @@ func (f *networkGenerateRewardsContextFactory) Create(vars map[string]string) (*
 
 type networkGenerateRewardsContext struct {
 	handler *NetworkHandler
-	cfg     *config.RocketPoolConfig
 
 	index uint64
 }
 
-func (c *networkGenerateRewardsContext) Initialize() error {
-	sp := c.handler.serviceProvider
-	c.cfg = sp.GetConfig()
-	return nil
-}
-
-func (c *networkGenerateRewardsContext) GetState(mc *batch.MultiCaller) {
-}
-
 func (c *networkGenerateRewardsContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	cfg := sp.GetConfig()
+
 	// Create the generation request
-	requestPath := c.cfg.Smartnode.GetRegenerateRewardsTreeRequestPath(c.index, true)
+	requestPath := cfg.Smartnode.GetRegenerateRewardsTreeRequestPath(c.index, true)
 	requestFile, err := os.Create(requestPath)
 	if requestFile != nil {
 		requestFile.Close()

@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -9,6 +10,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -57,22 +59,21 @@ func createBatchTxResponseForCommon(c *cli.Context, minipoolAddresses []common.A
 }
 
 // Get transaction info for an operation on all of the provided minipools, using the v3 minipool API (for Atlas-specific functions)
-func createBatchTxResponseForV3(c *cli.Context, minipoolAddresses []common.Address, txCreator func(mpv3 *minipool.MinipoolV3, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) (*api.BatchTxInfoData, error) {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+func createBatchTxResponseForV3(sp *services.ServiceProvider, minipoolAddresses []common.Address, data *api.BatchTxInfoData, txCreator func(mpv3 *minipool.MinipoolV3, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) error {
+	// Requirements
+	err := errors.Join(
+		sp.RequireNodeRegistered(),
+		sp.RequireWalletReady(),
+	)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rp, err := services.GetRocketPool(c)
+
+	// TX opts
+	rp := sp.GetRocketPool()
+	opts, err := sp.GetWallet().GetTransactor()
 	if err != nil {
-		return nil, err
-	}
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating node transactor: %w", err)
 	}
 
 	// Response
@@ -81,7 +82,7 @@ func createBatchTxResponseForV3(c *cli.Context, minipoolAddresses []common.Addre
 	// Create minipools
 	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating minipool bindings from provided addresses: %w", err)
 	}
 
 	// Get the TXs
@@ -91,15 +92,15 @@ func createBatchTxResponseForV3(c *cli.Context, minipoolAddresses []common.Addre
 		minipoolAddress := mpCommon.Details.Address
 		mpv3, success := minipool.GetMinipoolAsV3(mp)
 		if !success {
-			return nil, fmt.Errorf("minipool %s is too old (current version: %d); please upgrade the delegate for it first", minipoolAddress.Hex(), mpCommon.Details.Version)
+			return fmt.Errorf("minipool %s is too old (current version: %d); please upgrade the delegate for it first", minipoolAddress.Hex(), mpCommon.Details.Version)
 		}
 		txInfo, err := txCreator(mpv3, opts)
 		if err != nil {
-			return nil, fmt.Errorf("error simulating %s transaction for minipool %s: %w", txName, minipoolAddress.Hex(), err)
+			return fmt.Errorf("error simulating %s transaction for minipool %s: %w", txName, minipoolAddress.Hex(), err)
 		}
 		txInfos[i] = txInfo
 	}
 
 	response.TxInfos = txInfos
-	return &response, nil
+	return nil
 }
