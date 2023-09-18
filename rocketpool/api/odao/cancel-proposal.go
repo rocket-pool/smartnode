@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
@@ -53,9 +53,8 @@ type oracleDaoCancelProposalContext struct {
 
 	id         uint64
 	odaoMember *oracle.OracleDaoMember
-	dpm        *dao.DaoProposalManager
-	op         *oracle.OracleDaoProposals
-	prop       *dao.Proposal
+	dpm        *proposals.DaoProposalManager
+	prop       *proposals.OracleDaoProposal
 }
 
 func (c *oracleDaoCancelProposalContext) Initialize() error {
@@ -74,17 +73,18 @@ func (c *oracleDaoCancelProposalContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
-	c.dpm, err = dao.NewDaoProposalManager(c.rp)
+	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager binding: %w", err)
 	}
-	c.op, err = oracle.NewOracleDaoProposals(c.rp)
-	if err != nil {
-		return fmt.Errorf("error creating oDAO proposals binding: %w", err)
-	}
-	c.prop, err = dao.NewProposal(c.rp, c.id)
+	prop, err := c.dpm.CreateProposalFromID(c.id, nil)
 	if err != nil {
 		return fmt.Errorf("error creating proposal binding: %w", err)
+	}
+	var success bool
+	c.prop, success = proposals.GetProposalAsOracle(prop)
+	if !success {
+		return fmt.Errorf("proposal %d is not an Oracle DAO proposal", c.id)
 	}
 	return nil
 }
@@ -111,7 +111,7 @@ func (c *oracleDaoCancelProposalContext) PrepareData(data *api.OracleDaoCancelPr
 
 	// Get the tx
 	if data.CanCancel && opts != nil {
-		txInfo, err := c.op.CancelProposal(c.id, opts)
+		txInfo, err := c.prop.Cancel(opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for CancelProposal: %w", err)
 		}

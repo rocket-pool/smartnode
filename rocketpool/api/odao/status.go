@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -50,7 +49,7 @@ type oracleDaoStatusContext struct {
 	nodeAddress common.Address
 
 	odaoMember *oracle.OracleDaoMember
-	oSettings  *settings.OracleDaoSettings
+	oSettings  *oracle.OracleDaoSettings
 	odaoMgr    *oracle.OracleDaoManager
 	dpm        *dao.DaoProposalManager
 }
@@ -71,14 +70,11 @@ func (c *oracleDaoStatusContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
-	c.oSettings, err = settings.NewOracleDaoSettings(c.rp)
-	if err != nil {
-		return fmt.Errorf("error creating oracle DAO settings binding: %w", err)
-	}
 	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
+	c.oSettings = c.odaoMgr.Settings
 	c.dpm, err = dao.NewDaoProposalManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager binding: %w", err)
