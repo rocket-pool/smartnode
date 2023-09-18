@@ -10,7 +10,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -26,8 +26,8 @@ func (f *minipoolSetUseLatestDelegatesContextFactory) Create(vars map[string]str
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", vars, cliutils.ValidateAddresses, &c.minipoolAddresses),
-		server.ValidateArg("setting", vars, cliutils.ValidateBool, &c.setting),
+		server.ValidateArg("addresses", vars, input.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArg("setting", vars, input.ValidateBool, &c.setting),
 	}
 	return c, errors.Join(inputErrs...)
 }

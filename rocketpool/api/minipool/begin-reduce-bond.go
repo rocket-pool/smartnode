@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -28,8 +28,8 @@ func (f *minipoolBeginReduceBondContextFactory) Create(vars map[string]string) (
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("newBondAmount", vars, cliutils.ValidateBigInt, &c.newBondAmountWei),
-		server.ValidateArg("addresses", vars, cliutils.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArg("newBondAmount", vars, input.ValidateBigInt, &c.newBondAmountWei),
+		server.ValidateArg("addresses", vars, input.ValidateAddresses, &c.minipoolAddresses),
 	}
 	return c, errors.Join(inputErrs...)
 }

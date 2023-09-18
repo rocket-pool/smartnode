@@ -385,7 +385,7 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 
 	// Handle Oracle DAO rewards
-	oDaoPercent := r.networkState.NetworkDetails.TrustedNodeOperatorRewardsPercent
+	oDaoPercent := r.networkState.NetworkDetails.OracleDaoRewardsPercent
 	totalODaoRewards := big.NewInt(0)
 	totalODaoRewards.Mul(pendingRewards, oDaoPercent)
 	totalODaoRewards.Div(totalODaoRewards, eth.EthToWei(1))

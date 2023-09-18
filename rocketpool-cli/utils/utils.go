@@ -1,4 +1,4 @@
-package cli
+package utils
 
 import (
 	"fmt"
@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -32,7 +33,7 @@ func PrintMultiTransactionNonceWarning() {
 	fmt.Printf("%sNOTE: You have specified the `nonce` flag to indicate a custom nonce for this transaction.\n"+
 		"However, this operation requires multiple transactions.\n"+
 		"Rocket Pool will use your custom value as a basis, and increment it for each additional transaction.\n"+
-		"If you have multiple pending transactions, this MAY OVERRIDE more than the one that you specified.%s\n\n", colorYellow, colorReset)
+		"If you have multiple pending transactions, this MAY OVERRIDE more than the one that you specified.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 
 }
 
@@ -107,7 +108,7 @@ func PrettyPrintError(err error) {
 
 // Prints an error message when the Beacon client is not using the deposit contract address that Rocket Pool expects
 func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress, beaconDepositAddress common.Address) {
-	fmt.Printf("%s***ALERT***\n", colorRed)
+	fmt.Printf("%s***ALERT***\n", terminal.ColorRed)
 	fmt.Println("YOUR ETH2 CLIENT IS NOT CONNECTED TO THE SAME NETWORK THAT ROCKET POOL IS USING!")
 	fmt.Println("This is likely because your ETH2 client is using the wrong configuration.")
 	fmt.Println("For the safety of your funds, Rocket Pool will not let you deposit your ETH until this is resolved.")
@@ -119,7 +120,7 @@ func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress
 	fmt.Println()
 	fmt.Println("Details:")
 	fmt.Printf("\tRocket Pool expects deposit contract %s on chain %d.\n", rpDepositAddress.Hex(), rpNetwork)
-	fmt.Printf("\tYour Beacon client is using deposit contract %s on chain %d.%s\n", beaconDepositAddress.Hex(), beaconNetwork, colorReset)
+	fmt.Printf("\tYour Beacon client is using deposit contract %s on chain %d.%s\n", beaconDepositAddress.Hex(), beaconNetwork, terminal.ColorReset)
 }
 
 // Prints what network you're currently on
@@ -135,15 +136,15 @@ func PrintNetwork(rp *rocketpool.Client) error {
 	currentNetwork := cfg.Smartnode.Network.Value.(cfgtypes.Network)
 	switch currentNetwork {
 	case cfgtypes.Network_Mainnet:
-		fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", colorGreen, colorReset)
+		fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", terminal.ColorGreen, terminal.ColorReset)
 	case cfgtypes.Network_Prater:
-		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", colorLightBlue, colorReset)
+		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", terminal.ColorBlue, terminal.ColorReset)
 	case cfgtypes.Network_Devnet:
-		fmt.Printf("Your Smartnode is currently using the %sPrater Development Network.%s\n\n", colorYellow, colorReset)
+		fmt.Printf("Your Smartnode is currently using the %sPrater Development Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 	case cfgtypes.Network_Holesky:
-		fmt.Printf("Your Smartnode is currently using the %sHolesky Test Network.%s\n\n", colorYellow, colorReset)
+		fmt.Printf("Your Smartnode is currently using the %sHolesky Test Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 	default:
-		fmt.Printf("%sYou are on an unexpected network [%v].%s\n\n", colorYellow, currentNetwork, colorReset)
+		fmt.Printf("%sYou are on an unexpected network [%v].%s\n\n", terminal.ColorYellow, currentNetwork, terminal.ColorReset)
 	}
 
 	return nil

@@ -1,23 +1,21 @@
 package odao
 
 import (
+	"context"
 	"fmt"
-	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/dao"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -51,10 +49,10 @@ type oracleDaoStatusContext struct {
 	rp          *rocketpool.RocketPool
 	nodeAddress common.Address
 
-	odaoMember *trustednode.OracleDaoMember
+	odaoMember *oracle.OracleDaoMember
 	oSettings  *settings.OracleDaoSettings
-	dnt        *trustednode.DaoNodeTrusted
-	dp         *dao.DaoProposal
+	odaoMgr    *oracle.OracleDaoManager
+	dpm        *dao.DaoProposalManager
 }
 
 func (c *oracleDaoStatusContext) Initialize() error {
@@ -69,7 +67,7 @@ func (c *oracleDaoStatusContext) Initialize() error {
 	}
 
 	// Bindings
-	c.odaoMember, err = trustednode.NewOracleDaoMember(c.rp, c.nodeAddress)
+	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
 	if err != nil {
 		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
@@ -77,13 +75,13 @@ func (c *oracleDaoStatusContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating oracle DAO settings binding: %w", err)
 	}
-	c.dnt, err = trustednode.NewDaoNodeTrusted(c.rp)
+	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating DNT binding: %w", err)
+		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
-	c.dp, err = dao.NewDaoProposal(c.rp)
+	c.dpm, err = dao.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating DP binding: %w", err)
+		return fmt.Errorf("error creating proposal manager binding: %w", err)
 	}
 	return nil
 }
@@ -93,141 +91,58 @@ func (c *oracleDaoStatusContext) GetState(mc *batch.MultiCaller) {
 	c.odaoMember.GetInvitedTime(mc)
 	c.odaoMember.GetReplacedTime(mc)
 	c.odaoMember.GetLeftTime(mc)
-	c.dnt.GetMemberCount(mc)
-	c.dp.GetProposalCount(mc)
+	c.odaoMgr.GetMemberCount(mc)
+	c.dpm.GetProposalCount(mc)
+	c.oSettings.GetProposalActionTime(mc)
 }
 
-func (c *oracleDaoStatusContext) PrepareData(data *api.AuctionClaimFromLotData, opts *bind.TransactOpts) error {
-	// Check for validity
-	data.DoesNotExist = !c.lot.Details.Exists
-	data.NoBidFromAddress = (c.addressBidAmount.Cmp(big.NewInt(0)) == 0)
-	data.NotCleared = !c.lot.Details.IsCleared
-	data.CanClaim = !(data.DoesNotExist || data.NoBidFromAddress || data.NotCleared)
+func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts *bind.TransactOpts) error {
+	// Get the timestamp of the latest block
+	latestHeader, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return fmt.Errorf("error getting latest block header: %w", err)
+	}
+	currentTime := time.Unix(int64(latestHeader.Time), 0)
+	actionWindow := c.oSettings.Details.Proposals.ActionTime.Formatted()
 
-	// Get tx info
-	if data.CanClaim && opts != nil {
-		txInfo, err := c.lot.ClaimBid(opts)
-		if err != nil {
-			return fmt.Errorf("error getting TX info for PlaceBid: %w", err)
+	// Check action windows for the current member
+	exists := c.odaoMember.Details.Exists
+	data.IsMember = exists
+	if exists {
+		data.CanLeave = isProposalActionable(actionWindow, c.odaoMember.Details.LeftTime.Formatted(), currentTime)
+		data.CanReplace = isProposalActionable(actionWindow, c.odaoMember.Details.ReplacedTime.Formatted(), currentTime)
+	} else {
+		data.CanJoin = isProposalActionable(actionWindow, c.odaoMember.Details.InvitedTime.Formatted(), currentTime)
+	}
+
+	// Total member count
+	data.TotalMembers = c.odaoMgr.Details.MemberCount.Formatted()
+
+	// Get the proposals
+	_, props, err := c.dpm.GetProposals(c.rp, c.dpm.Details.ProposalCount.Formatted(), false, nil)
+	if err != nil {
+		return fmt.Errorf("error getting Oracle DAO proposals: %w", err)
+	}
+
+	// Proposal info
+	data.ProposalCounts.Total = len(props)
+	for _, prop := range props {
+		switch prop.Details.State.Formatted() {
+		case rptypes.Pending:
+			data.ProposalCounts.Pending++
+		case rptypes.Active:
+			data.ProposalCounts.Active++
+		case rptypes.Cancelled:
+			data.ProposalCounts.Cancelled++
+		case rptypes.Defeated:
+			data.ProposalCounts.Defeated++
+		case rptypes.Succeeded:
+			data.ProposalCounts.Succeeded++
+		case rptypes.Expired:
+			data.ProposalCounts.Expired++
+		case rptypes.Executed:
+			data.ProposalCounts.Executed++
 		}
-		data.TxInfo = txInfo
 	}
 	return nil
-}
-
-func getStatus(c *cli.Context) (*api.OracleDaoStatusData, error) {
-
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.OracleDaoStatusData{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get membership status
-	isMember, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
-	}
-	response.IsMember = isMember
-
-	// Sync
-	var wg errgroup.Group
-
-	// Get pending executed proposal statuses
-	if isMember {
-
-		// Check if node can leave
-		wg.Go(func() error {
-			leaveActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "leave")
-			if err == nil {
-				response.CanLeave = leaveActionable
-			}
-			return err
-		})
-
-		// Check if node can replace position
-		wg.Go(func() error {
-			replaceActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "replace")
-			if err == nil {
-				response.CanReplace = replaceActionable
-			}
-			return err
-		})
-
-	} else {
-
-		// Check if node can join
-		wg.Go(func() error {
-			joinActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "invited")
-			if err == nil {
-				response.CanJoin = joinActionable
-			}
-			return err
-		})
-
-	}
-
-	// Get total DAO members
-	wg.Go(func() error {
-		memberCount, err := trustednode.GetMemberCount(rp, nil)
-		if err == nil {
-			response.TotalMembers = memberCount
-		}
-		return err
-	})
-
-	// Get proposal counts
-	wg.Go(func() error {
-		proposalStates, err := getProposalStates(rp)
-		if err == nil {
-			response.ProposalCounts.Total = len(proposalStates)
-			for _, state := range proposalStates {
-				switch state {
-				case rptypes.Pending:
-					response.ProposalCounts.Pending++
-				case rptypes.Active:
-					response.ProposalCounts.Active++
-				case rptypes.Cancelled:
-					response.ProposalCounts.Cancelled++
-				case rptypes.Defeated:
-					response.ProposalCounts.Defeated++
-				case rptypes.Succeeded:
-					response.ProposalCounts.Succeeded++
-				case rptypes.Expired:
-					response.ProposalCounts.Expired++
-				case rptypes.Executed:
-					response.ProposalCounts.Executed++
-				}
-			}
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Return response
-	return &response, nil
-
 }

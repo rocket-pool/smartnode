@@ -7,10 +7,11 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services/gas/etherchain"
-	"github.com/rocket-pool/smartnode/shared/services/gas/etherscan"
-	rpsvc "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/gas/etherchain"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/gas/etherscan"
+	rpsvc "github.com/rocket-pool/smartnode/rocketpool-cli/utils/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -39,7 +40,7 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 	if maxPriorityFeeGwei == 0 {
 		maxPriorityFee := eth.GweiToWei(cfg.Smartnode.PriorityFee.Value.(float64))
 		if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
-			fmt.Printf("%sNOTE: max priority fee not set or set to 0, defaulting to 2 gwei%s\n", colorYellow, colorReset)
+			fmt.Printf("%sNOTE: max priority fee not set or set to 0, defaulting to 2 gwei%s\n", terminal.ColorYellow, terminal.ColorReset)
 			maxPriorityFeeGwei = 2
 		} else {
 			maxPriorityFeeGwei = eth.WeiToGwei(maxPriorityFee)
@@ -48,7 +49,7 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 
 	// Use the requested max fee and priority fee if provided
 	if maxFeeGwei != 0 {
-		fmt.Printf("%sUsing the requested max fee of %.2f gwei (including a max priority fee of %.2f gwei).\n", colorYellow, maxFeeGwei, maxPriorityFeeGwei)
+		fmt.Printf("%sUsing the requested max fee of %.2f gwei (including a max priority fee of %.2f gwei).\n", terminal.ColorYellow, maxFeeGwei, maxPriorityFeeGwei)
 
 		var lowLimit float64
 		var highLimit float64
@@ -59,7 +60,7 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 			lowLimit = maxFeeGwei / eth.WeiPerGwei * float64(gasLimit)
 			highLimit = lowLimit
 		}
-		fmt.Printf("Total cost: %.4f to %.4f ETH%s\n", lowLimit, highLimit, colorReset)
+		fmt.Printf("Total cost: %.4f to %.4f ETH%s\n", lowLimit, highLimit, terminal.ColorReset)
 
 	} else {
 		if headless {
@@ -77,7 +78,7 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 
 			} else {
 				// Fallback to Etherscan
-				fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
+				fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 				etherscanData, err := etherscan.GetGasPrices()
 				if err == nil {
 					// Print the Etherscan data and ask for an amount
@@ -87,12 +88,12 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 				}
 			}
 		}
-		fmt.Printf("%sUsing a max fee of %.2f gwei and a priority fee of %.2f gwei.\n%s", colorBlue, maxFeeGwei, maxPriorityFeeGwei, colorReset)
+		fmt.Printf("%sUsing a max fee of %.2f gwei and a priority fee of %.2f gwei.\n%s", terminal.ColorBlue, maxFeeGwei, maxPriorityFeeGwei, terminal.ColorReset)
 	}
 
 	// Use the requested gas limit if provided
 	if gasLimit != 0 {
-		fmt.Printf("Using the requested gas limit of %d units.\n%sNOTE: if you set this too low, your transaction may fail but you will still have to pay the gas fee!%s\n", gasLimit, colorYellow, colorReset)
+		fmt.Printf("Using the requested gas limit of %d units.\n%sNOTE: if you set this too low, your transaction may fail but you will still have to pay the gas fee!%s\n", gasLimit, terminal.ColorYellow, terminal.ColorReset)
 	}
 
 	if maxPriorityFeeGwei > maxFeeGwei {
@@ -109,7 +110,7 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 	}
 	response, err := rp.GetEthBalance()
 	if err != nil {
-		fmt.Printf("%sWARNING: couldn't check the ETH balance of the node (%s)\nPlease ensure your node wallet has enough ETH to pay for this transaction.%s\n\n", colorYellow, err.Error(), colorReset)
+		fmt.Printf("%sWARNING: couldn't check the ETH balance of the node (%s)\nPlease ensure your node wallet has enough ETH to pay for this transaction.%s\n\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 	} else if response.Balance.Cmp(ethRequired) < 0 {
 		return fmt.Errorf("Your node has %.6f ETH in its wallet, which is not enough to pay for this transaction with a max fee of %.4f gwei; you require at least %.6f more ETH.", eth.WeiToEth(response.Balance), maxFeeGwei, eth.WeiToEth(big.NewInt(0).Sub(ethRequired, response.Balance)))
 	}
@@ -126,7 +127,7 @@ func GetHeadlessMaxFeeWei() (*big.Int, error) {
 		return etherchainData.RapidWei, nil
 	}
 
-	fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
+	fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 	etherscanData, err := etherscan.GetGasPrices()
 	if err == nil {
 		return eth.GweiToWei(etherscanData.FastGwei), nil
@@ -189,7 +190,7 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
 		slowHighLimit = slowLowLimit
 	}
 
-	fmt.Printf("%s+============== Suggested Gas Prices ==============+\n", colorBlue)
+	fmt.Printf("%s+============== Suggested Gas Prices ==============+\n", terminal.ColorBlue)
 	fmt.Println("| Avg Wait Time |  Max Fee  |    Total Gas Cost    |")
 	fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n",
 		gasSuggestion.RapidTime, fmt.Sprintf("%d gwei", int(rapidGwei)), rapidLowLimit, rapidHighLimit)
@@ -199,12 +200,12 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
 		gasSuggestion.StandardTime, fmt.Sprintf("%d gwei", int(standardGwei)), standardLowLimit, standardHighLimit)
 	fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n",
 		gasSuggestion.SlowTime, fmt.Sprintf("%d gwei", int(slowGwei)), slowLowLimit, slowHighLimit)
-	fmt.Printf("+==================================================+\n\n%s", colorReset)
+	fmt.Printf("+==================================================+\n\n%s", terminal.ColorReset)
 
 	fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
 
 	for {
-		desiredPrice := cliutils.Prompt(
+		desiredPrice := utils.Prompt(
 			fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %d gwei:", int(fastGwei)),
 			"^(?:[1-9]\\d*|0)?(?:\\.\\d+)?$",
 			"Not a valid gas price, try again:")
@@ -269,7 +270,7 @@ func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo 
 		slowHighLimit = slowLowLimit
 	}
 
-	fmt.Printf("%s+============ Suggested Gas Prices ============+\n", colorBlue)
+	fmt.Printf("%s+============ Suggested Gas Prices ============+\n", terminal.ColorBlue)
 	fmt.Println("|   Speed   |  Max Fee  |    Total Gas Cost    |")
 	fmt.Printf("| Fast      | %-9s | %.4f to %.4f ETH |\n",
 		fmt.Sprintf("%d gwei", int(fastGwei)), fastLowLimit, fastHighLimit)
@@ -277,12 +278,12 @@ func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo 
 		fmt.Sprintf("%d gwei", int(standardGwei)), standardLowLimit, standardHighLimit)
 	fmt.Printf("| Slow      | %-9s | %.4f to %.4f ETH |\n",
 		fmt.Sprintf("%d gwei", int(slowGwei)), slowLowLimit, slowHighLimit)
-	fmt.Printf("+==============================================+\n\n%s", colorReset)
+	fmt.Printf("+==============================================+\n\n%s", terminal.ColorReset)
 
 	fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
 
 	for {
-		desiredPrice := cliutils.Prompt(
+		desiredPrice := utils.Prompt(
 			fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %d gwei:", int(fastGwei)),
 			"^(?:[1-9]\\d*|0)?(?:\\.\\d+)?$",
 			"Not a valid gas price, try again:")

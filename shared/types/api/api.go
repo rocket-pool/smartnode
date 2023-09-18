@@ -3,12 +3,12 @@ package api
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/smartnode/shared/types/wallet"
+	"github.com/rocket-pool/smartnode/shared/types"
 )
 
 type ApiResponse[Data any] struct {
-	WalletStatus wallet.WalletStatus `json:"walletStatus"`
-	Data         *Data               `json:"data"`
+	WalletStatus types.WalletStatus `json:"walletStatus"`
+	Data         *Data              `json:"data"`
 }
 
 type SuccessData struct {

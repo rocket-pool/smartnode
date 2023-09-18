@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
@@ -100,19 +99,8 @@ type MinipoolCanChangeWithdrawalCredentialsData struct {
 	CanChange bool `json:"canChange"`
 }
 
-type MinipoolCanProcessWithdrawalData struct {
-	CanWithdraw   bool               `json:"canWithdraw"`
-	InvalidStatus bool               `json:"invalidStatus"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
-}
 type MinipoolProcessWithdrawalData struct {
 	TxHash common.Hash `json:"txHash"`
-}
-
-type MinipoolCanProcessWithdrawalAndFinaliseData struct {
-	CanWithdraw   bool               `json:"canWithdraw"`
-	InvalidStatus bool               `json:"invalidStatus"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
 }
 
 type MinipoolDelegateDetails struct {
@@ -163,13 +151,6 @@ type MinipoolDistributeDetailsData struct {
 	Details []MinipoolDistributeDetails `json:"details"`
 }
 
-type MinipoolCanFinaliseData struct {
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
-}
-type MinipoolFinaliseData struct {
-	TxHash common.Hash `json:"txHash"`
-}
-
 type MinipoolStakeDetails struct {
 	Address            common.Address       `json:"address"`
 	State              types.MinipoolStatus `json:"state"`
@@ -188,22 +169,6 @@ type MinipoolPromoteDetails struct {
 }
 type MinipoolPromoteDetailsData struct {
 	Details []MinipoolPromoteDetails `json:"details"`
-}
-
-type MinipoolGetUseLatestDelegateData struct {
-	Setting bool `json:"setting"`
-}
-
-type MinipoolDelegateData struct {
-	Address common.Address `json:"address"`
-}
-
-type MinipoolPreviousDelegateData struct {
-	Address common.Address `json:"address"`
-}
-
-type MinipoolEffectiveDelegateData struct {
-	Address common.Address `json:"address"`
 }
 
 type MinipoolVanityArtifactsData struct {

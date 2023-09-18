@@ -10,7 +10,7 @@ import (
 
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/node"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
@@ -121,7 +121,7 @@ func (sp *ServiceProvider) RequireSnapshot() error {
 	return nil
 }
 
-func (sp *ServiceProvider) RequireNodeTrusted() error {
+func (sp *ServiceProvider) RequireOnOracleDao() error {
 	if err := sp.RequireNodeAddress(); err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (sp *ServiceProvider) isMemberOfOracleDao() (bool, error) {
 	address, _ := sp.nodeWallet.GetAddress()
 
 	// Create the bindings
-	odaoMember, err := trustednode.NewOracleDaoMember(rp, address)
+	odaoMember, err := oracle.NewOracleDaoMember(rp, address)
 	if err != nil {
 		return false, fmt.Errorf("error creating oDAO member binding: %w", err)
 	}

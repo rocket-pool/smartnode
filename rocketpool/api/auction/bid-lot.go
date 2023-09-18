@@ -15,7 +15,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -31,8 +31,8 @@ func (f *auctionBidContextFactory) Create(vars map[string]string) (*auctionBidCo
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("index", vars, cliutils.ValidateUint, &c.lotIndex),
-		server.ValidateArg("amount", vars, cliutils.ValidatePositiveWeiAmount, &c.amountWei),
+		server.ValidateArg("index", vars, input.ValidateUint, &c.lotIndex),
+		server.ValidateArg("amount", vars, input.ValidatePositiveWeiAmount, &c.amountWei),
 	}
 	return c, errors.Join(inputErrs...)
 }

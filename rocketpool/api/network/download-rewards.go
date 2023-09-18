@@ -9,7 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -25,7 +25,7 @@ func (f *networkDownloadRewardsContextFactory) Create(vars map[string]string) (*
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("interval", vars, cliutils.ValidateUint, &c.interval),
+		server.ValidateArg("interval", vars, input.ValidateUint, &c.interval),
 	}
 	return c, errors.Join(inputErrs...)
 }

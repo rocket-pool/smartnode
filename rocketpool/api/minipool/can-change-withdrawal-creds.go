@@ -16,7 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	util "github.com/wealdtech/go-eth2-util"
@@ -35,8 +35,8 @@ func (f *minipoolCanChangeCredsContextFactory) Create(vars map[string]string) (*
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("address", vars, cliutils.ValidateAddress, &c.minipoolAddress),
-		server.ValidateArg("mnemonic", vars, cliutils.ValidateWalletMnemonic, &c.mnemonic),
+		server.ValidateArg("address", vars, input.ValidateAddress, &c.minipoolAddress),
+		server.ValidateArg("mnemonic", vars, input.ValidateWalletMnemonic, &c.mnemonic),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -29,7 +29,7 @@ func (f *networkRewardsFileContextFactory) Create(vars map[string]string) (*netw
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("index", vars, cliutils.ValidateUint, &c.index),
+		server.ValidateArg("index", vars, input.ValidateUint, &c.index),
 	}
 	return c, errors.Join(inputErrs...)
 }

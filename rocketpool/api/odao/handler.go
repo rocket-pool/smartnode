@@ -20,8 +20,7 @@ func NewOracleDaoHandler(serviceProvider *services.ServiceProvider) *OracleDaoHa
 		serviceProvider: serviceProvider,
 	}
 	h.factories = []server.IContextFactory{
-		&queueProcessContextFactory{h},
-		&queueStatusContextFactory{h},
+		&oracleDaoStatusContextFactory{h},
 	}
 	return h
 }

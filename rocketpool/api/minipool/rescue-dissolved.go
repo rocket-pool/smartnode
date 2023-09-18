@@ -18,7 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
@@ -35,8 +35,8 @@ func (f *minipoolRescueDissolvedContextFactory) Create(vars map[string]string) (
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", vars, cliutils.ValidateAddresses, &c.minipoolAddresses),
-		server.ValidateArg("depositAmounts", vars, cliutils.ValidateBigInts, &c.depositAmounts),
+		server.ValidateArg("addresses", vars, input.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArg("depositAmounts", vars, input.ValidateBigInts, &c.depositAmounts),
 	}
 	return c, errors.Join(inputErrs...)
 }

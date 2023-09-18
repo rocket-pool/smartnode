@@ -1,4 +1,4 @@
-package cli
+package input
 
 import (
 	"encoding/hex"
@@ -13,13 +13,13 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Config
 const (
-	MinDAOMemberIDLength = 3
+	MinDaoMemberIDLength int = 3
+	MinPasswordLength    int = 12
 )
 
 //
@@ -238,8 +238,8 @@ func ValidateBurnableTokenType(name, value string) (string, error) {
 
 // Validate a node password
 func ValidateNodePassword(name, value string) (string, error) {
-	if len(value) < passwords.MinPasswordLength {
-		return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, passwords.MinPasswordLength)
+	if len(value) < MinPasswordLength {
+		return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, MinPasswordLength)
 	}
 	return value, nil
 }
@@ -263,8 +263,8 @@ func ValidateTimezoneLocation(name, value string) (string, error) {
 // Validate a DAO member ID
 func ValidateDAOMemberID(name, value string) (string, error) {
 	val := strings.TrimSpace(value)
-	if len(val) < MinDAOMemberIDLength {
-		return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, val, MinDAOMemberIDLength)
+	if len(val) < MinDaoMemberIDLength {
+		return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, val, MinDaoMemberIDLength)
 	}
 	return val, nil
 }

@@ -1,4 +1,4 @@
-package cli
+package utils
 
 import (
 	"bufio"
@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 )
 
 // Prompt for user input
@@ -71,7 +73,7 @@ func Select(initialPrompt string, options []string) (int, string) {
 
 // Prompts the user to verify that there is nobody looking over their shoulder before printing sensitive information.
 func ConfirmSecureSession(warning string) bool {
-	if !Confirm(fmt.Sprintf("%s%s%s\nAre you sure you want to continue?", colorYellow, warning, colorReset)) {
+	if !Confirm(fmt.Sprintf("%s%s%s\nAre you sure you want to continue?", terminal.ColorYellow, warning, terminal.ColorReset)) {
 		fmt.Println("Cancelled.")
 		return false
 	}

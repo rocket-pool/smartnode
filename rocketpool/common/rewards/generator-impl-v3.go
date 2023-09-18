@@ -16,7 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -513,14 +513,14 @@ func (r *treeGeneratorImpl_v3) calculateRplRewards() error {
 	r.log.Printlnf("%s Total Oracle DAO RPL rewards: %s (%.3f)", r.logPrefix, totalODaoRewards.String(), eth.WeiToEth(totalODaoRewards))
 
 	// Create the bindings
-	dnt, err := trustednode.NewDaoNodeTrusted(r.rp)
+	odaoMgr, err := oracle.NewOracleDaoManager(r.rp)
 	if err != nil {
 		return fmt.Errorf("error getting DNT binding: %w", err)
 	}
 
 	// Get the contract state
 	err = r.rp.Query(func(mc *batch.MultiCaller) error {
-		dnt.GetMemberCount(mc)
+		odaoMgr.GetMemberCount(mc)
 		return nil
 	}, r.opts)
 	if err != nil {
@@ -528,7 +528,7 @@ func (r *treeGeneratorImpl_v3) calculateRplRewards() error {
 	}
 
 	// Get the oDAO member addresses
-	oDaoAddresses, err := dnt.GetMemberAddresses(dnt.Details.MemberCount.Formatted(), r.opts)
+	oDaoAddresses, err := odaoMgr.GetMemberAddresses(odaoMgr.Details.MemberCount.Formatted(), r.opts)
 	if err != nil {
 		return err
 	}

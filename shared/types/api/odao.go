@@ -5,7 +5,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao"
-	tn "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	tn "github.com/rocket-pool/rocketpool-go/dao/oracle"
 )
 
 type OracleDaoStatusData struct {

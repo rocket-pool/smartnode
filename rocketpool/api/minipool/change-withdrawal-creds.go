@@ -17,7 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
@@ -34,8 +34,8 @@ func (f *minipoolChangeCredsContextFactory) Create(vars map[string]string) (*min
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("address", vars, cliutils.ValidateAddress, &c.minipoolAddress),
-		server.ValidateArg("mnemonic", vars, cliutils.ValidateWalletMnemonic, &c.mnemonic),
+		server.ValidateArg("address", vars, input.ValidateAddress, &c.minipoolAddress),
+		server.ValidateArg("mnemonic", vars, input.ValidateWalletMnemonic, &c.mnemonic),
 	}
 	return c, errors.Join(inputErrs...)
 }
