@@ -10,17 +10,17 @@ import (
 )
 
 // Get queue status
-func (c *Client) QueueStatus() (api.QueueStatusResponse, error) {
+func (c *Client) QueueStatus() (api.QueueStatusData, error) {
 	responseBytes, err := c.callAPI("queue status")
 	if err != nil {
-		return api.QueueStatusResponse{}, fmt.Errorf("Could not get queue status: %w", err)
+		return api.QueueStatusData{}, fmt.Errorf("Could not get queue status: %w", err)
 	}
-	var response api.QueueStatusResponse
+	var response api.QueueStatusData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.QueueStatusResponse{}, fmt.Errorf("Could not decode queue status response: %w", err)
+		return api.QueueStatusData{}, fmt.Errorf("Could not decode queue status response: %w", err)
 	}
 	if response.Error != "" {
-		return api.QueueStatusResponse{}, fmt.Errorf("Could not get queue status: %s", response.Error)
+		return api.QueueStatusData{}, fmt.Errorf("Could not get queue status: %s", response.Error)
 	}
 	if response.DepositPoolBalance == nil {
 		response.DepositPoolBalance = big.NewInt(0)
