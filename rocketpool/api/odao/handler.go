@@ -21,6 +21,7 @@ func NewOracleDaoHandler(serviceProvider *services.ServiceProvider) *OracleDaoHa
 	}
 	h.factories = []server.IContextFactory{
 		&oracleDaoStatusContextFactory{h},
+		&oracleDaoCancelProposalContextFactory{h},
 	}
 	return h
 }
@@ -38,25 +39,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage the Rocket Pool oracle DAO",
 		Subcommands: []cli.Command{
-
-			{
-				Name:      "status",
-				Aliases:   []string{"s"},
-				Usage:     "Get oracle DAO status",
-				UsageText: "rocketpool api odao status",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getStatus(c))
-					return nil
-
-				},
-			},
 
 			{
 				Name:      "members",

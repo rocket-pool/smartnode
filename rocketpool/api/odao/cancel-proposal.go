@@ -1,134 +1,121 @@
 package odao
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/dao"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canCancelProposal(c *cli.Context, proposalId uint64) (*api.OracleDaoProposalCancelData, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.OracleDaoProposalCancelData{}
-
-	// Sync
-	var wg errgroup.Group
-
-	// Check proposal exists
-	wg.Go(func() error {
-		proposalCount, err := dao.GetProposalCount(rp, nil)
-		if err == nil {
-			response.DoesNotExist = (proposalId > proposalCount)
-		}
-		return err
-	})
-
-	// Check proposal state
-	wg.Go(func() error {
-		proposalState, err := dao.GetProposalState(rp, proposalId, nil)
-		if err == nil {
-			response.InvalidState = !(proposalState == rptypes.Pending || proposalState == rptypes.Active)
-		}
-		return err
-	})
-
-	// Check proposer address
-	wg.Go(func() error {
-		nodeAccount, err := w.GetNodeAccount()
-		if err != nil {
-			return err
-		}
-		proposerAddress, err := dao.GetProposalProposerAddress(rp, proposalId, nil)
-		if err == nil {
-			response.InvalidProposer = !bytes.Equal(proposerAddress.Bytes(), nodeAccount.Address.Bytes())
-		}
-		return err
-	})
-
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		gasInfo, err := trustednode.EstimateCancelProposalGas(rp, proposalId, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.CanCancel = !(response.DoesNotExist || response.InvalidState || response.InvalidProposer)
-	return &response, nil
-
+type oracleDaoCancelProposalContextFactory struct {
+	handler *OracleDaoHandler
 }
 
-func cancelProposal(c *cli.Context, proposalId uint64) (*api.CancelTNDAOProposalResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
+func (f *oracleDaoCancelProposalContextFactory) Create(vars map[string]string) (*oracleDaoCancelProposalContext, error) {
+	c := &oracleDaoCancelProposalContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	inputErrs := []error{
+		server.ValidateArg("id", vars, input.ValidatePositiveUint, &c.id),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *oracleDaoCancelProposalContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoCancelProposalContext, api.OracleDaoCancelProposalData](
+		router, "cancel-proposal", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type oracleDaoCancelProposalContext struct {
+	handler     *OracleDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	id         uint64
+	odaoMember *oracle.OracleDaoMember
+	dpm        *dao.DaoProposalManager
+	op         *oracle.OracleDaoProposals
+	prop       *dao.Proposal
+}
+
+func (c *oracleDaoCancelProposalContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rp, err := services.GetRocketPool(c)
+
+	// Bindings
+	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
-
-	// Response
-	response := api.CancelTNDAOProposalResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	c.dpm, err = dao.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating proposal manager binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.op, err = oracle.NewOracleDaoProposals(c.rp)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating oDAO proposals binding: %w", err)
 	}
-
-	// Cancel proposal
-	hash, err := trustednode.CancelProposal(rp, proposalId, opts)
+	c.prop, err = dao.NewProposal(c.rp, c.id)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating proposal binding: %w", err)
 	}
-	response.TxHash = hash
+	return nil
+}
 
-	// Return response
-	return &response, nil
+func (c *oracleDaoCancelProposalContext) GetState(mc *batch.MultiCaller) {
+	c.dpm.GetProposalCount(mc)
+	c.odaoMember.GetExists(mc)
+	c.prop.GetState(mc)
+	c.prop.GetProposerAddress(mc)
+}
 
+func (c *oracleDaoCancelProposalContext) PrepareData(data *api.OracleDaoCancelProposalData, opts *bind.TransactOpts) error {
+	// Verify oDAO status
+	if !c.odaoMember.Details.Exists {
+		return errors.New("The node is not a member of the oracle DAO.")
+	}
+
+	// Check proposal details
+	state := c.prop.Details.State.Formatted()
+	data.DoesNotExist = (c.id > c.dpm.Details.ProposalCount.Formatted())
+	data.InvalidState = !(state == rptypes.Pending || state == rptypes.Active)
+	data.InvalidProposer = !(c.nodeAddress == c.prop.Details.ProposerAddress)
+	data.CanCancel = !(data.DoesNotExist || data.InvalidState || data.InvalidProposer)
+
+	// Get the tx
+	if data.CanCancel && opts != nil {
+		txInfo, err := c.op.CancelProposal(c.id, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for CancelProposal: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
 }

@@ -209,17 +209,17 @@ func (c *Client) ProposeKickFromTNDAO(memberAddress common.Address, fineAmountWe
 }
 
 // Check whether the node can cancel a proposal
-func (c *Client) CanCancelTNDAOProposal(proposalId uint64) (api.OracleDaoProposalCancelData, error) {
+func (c *Client) CanCancelTNDAOProposal(proposalId uint64) (api.OracleDaoCancelProposalData, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("odao can-cancel-proposal %d", proposalId))
 	if err != nil {
-		return api.OracleDaoProposalCancelData{}, fmt.Errorf("Could not get can cancel oracle DAO proposal status: %w", err)
+		return api.OracleDaoCancelProposalData{}, fmt.Errorf("Could not get can cancel oracle DAO proposal status: %w", err)
 	}
-	var response api.OracleDaoProposalCancelData
+	var response api.OracleDaoCancelProposalData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.OracleDaoProposalCancelData{}, fmt.Errorf("Could not decode can cancel oracle DAO proposal response: %w", err)
+		return api.OracleDaoCancelProposalData{}, fmt.Errorf("Could not decode can cancel oracle DAO proposal response: %w", err)
 	}
 	if response.Error != "" {
-		return api.OracleDaoProposalCancelData{}, fmt.Errorf("Could not get can cancel oracle DAO proposal status: %s", response.Error)
+		return api.OracleDaoCancelProposalData{}, fmt.Errorf("Could not get can cancel oracle DAO proposal status: %s", response.Error)
 	}
 	return response, nil
 }
