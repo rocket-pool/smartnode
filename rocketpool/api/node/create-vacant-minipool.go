@@ -23,7 +23,7 @@ type nodeCreateVacantHandler struct {
 	pubkey     rptypes.ValidatorPubkey
 	pSettings  *settings.ProtocolDaoSettings
 	oSettings  *settings.OracleDaoSettings
-	mpMgr      *minipool.MinipoolManager
+	mpMgr      *minipool.IMinipoolManager
 }
 
 func (h *nodeCreateVacantHandler) CreateBindings(ctx *callContext) error {
@@ -61,12 +61,12 @@ func (h *nodeCreateVacantHandler) PrepareResponse(ctx *callContext, response *ap
 	opts := ctx.opts
 
 	// Initial population
-	response.DepositDisabled = !h.pSettings.Details.Node.AreVacantMinipoolsEnabled
-	response.ScrubPeriod = h.oSettings.Details.Minipools.ScrubPeriod.Formatted()
+	response.DepositDisabled = !h.pSettings.Node.AreVacantMinipoolsEnabled
+	response.ScrubPeriod = h.oSettings.Minipools.ScrubPeriod.Formatted()
 
 	// Adjust the salt
 	if h.salt.Cmp(big.NewInt(0)) == 0 {
-		nonce, err := rp.Client.NonceAt(context.Background(), node.Details.Address, nil)
+		nonce, err := rp.Client.NonceAt(context.Background(), node.Address, nil)
 		if err != nil {
 			return fmt.Errorf("error getting node's latest nonce: %w", err)
 		}
@@ -94,7 +94,7 @@ func (h *nodeCreateVacantHandler) PrepareResponse(ctx *callContext, response *ap
 	// Check data
 	validatorEthWei := eth.EthToWei(ValidatorEth)
 	matchRequest := big.NewInt(0).Sub(validatorEthWei, h.amountWei)
-	availableToMatch := big.NewInt(0).Sub(node.Details.EthMatchedLimit, node.Details.EthMatched)
+	availableToMatch := big.NewInt(0).Sub(node.EthMatchedLimit, node.EthMatched)
 	response.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
 
 	// Update response

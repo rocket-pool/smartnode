@@ -29,8 +29,8 @@ func (h *nodeFeeDistributorInitHandler) PrepareResponse(ctx *callContext, respon
 	node := ctx.node
 	opts := ctx.opts
 
-	response.Distributor = node.Details.DistributorAddress
-	response.IsInitialized = node.Details.IsFeeDistributorInitialized
+	response.Distributor = node.DistributorAddress
+	response.IsInitialized = node.IsFeeDistributorInitialized
 	if response.IsInitialized {
 		return nil
 	}
@@ -65,14 +65,14 @@ func (h *nodeDistributeHandler) PrepareResponse(ctx *callContext, response *api.
 	opts := ctx.opts
 
 	// Make sure it's initialized before proceeding
-	response.IsInitialized = nodeBinding.Details.IsFeeDistributorInitialized
+	response.IsInitialized = nodeBinding.IsFeeDistributorInitialized
 	if !response.IsInitialized {
 		return nil
 	}
 
 	// Create the distributor
-	distributorAddress := nodeBinding.Details.DistributorAddress
-	distributor, err := node.NewNodeDistributor(rp, nodeBinding.Details.Address, distributorAddress)
+	distributorAddress := nodeBinding.DistributorAddress
+	distributor, err := node.NewNodeDistributor(rp, nodeBinding.Address, distributorAddress)
 	if err != nil {
 		return fmt.Errorf("error creating node distributor binding: %w", err)
 	}
@@ -91,7 +91,7 @@ func (h *nodeDistributeHandler) PrepareResponse(ctx *callContext, response *api.
 	if err != nil {
 		return fmt.Errorf("error getting node share for distributor %s: %w", distributorAddress.Hex(), err)
 	}
-	response.NodeShare = distributor.Details.NodeShare
+	response.NodeShare = distributor.NodeShare
 
 	// Get tx info
 	txInfo, err := distributor.Distribute(opts)

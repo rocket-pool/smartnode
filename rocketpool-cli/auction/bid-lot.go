@@ -57,7 +57,7 @@ func bidOnLot(c *cli.Context) error {
 		// Get matching lot
 		found := false
 		for _, lot := range openLots {
-			if lot.Details.Index == selectedIndex {
+			if lot.Index == selectedIndex {
 				selectedLot = lot
 				found = true
 				break
@@ -72,7 +72,7 @@ func bidOnLot(c *cli.Context) error {
 		// Prompt for lot selection
 		options := make([]string, len(openLots))
 		for li, lot := range openLots {
-			options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
+			options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)", lot.Index, math.RoundDown(eth.WeiToEth(lot.RemainingRPLAmount), 6), math.RoundDown(eth.WeiToEth(lot.CurrentPrice), 6))
 		}
 		selected, _ := cliutils.Select("Please select a lot to bid on:", options)
 		selectedLot = openLots[selected]
@@ -86,7 +86,7 @@ func bidOnLot(c *cli.Context) error {
 		// Set bid amount to maximum
 		var tmp big.Int
 		var maxAmount big.Int
-		tmp.Mul(selectedLot.Details.RemainingRPLAmount, selectedLot.Details.CurrentPrice)
+		tmp.Mul(selectedLot.RemainingRPLAmount, selectedLot.CurrentPrice)
 		maxAmount.Quo(&tmp, eth.EthToWei(1))
 		amountWei = &maxAmount
 
@@ -104,7 +104,7 @@ func bidOnLot(c *cli.Context) error {
 		// Calculate maximum bid amount
 		var tmp big.Int
 		var maxAmount big.Int
-		tmp.Mul(selectedLot.Details.RemainingRPLAmount, selectedLot.Details.CurrentPrice)
+		tmp.Mul(selectedLot.RemainingRPLAmount, selectedLot.CurrentPrice)
 		maxAmount.Quo(&tmp, eth.EthToWei(1))
 
 		// Prompt for maximum amount
@@ -125,9 +125,9 @@ func bidOnLot(c *cli.Context) error {
 	}
 
 	// Check lot can be bid on
-	canBid, err := rp.CanBidOnLot(selectedLot.Details.Index, amountWei)
+	canBid, err := rp.CanBidOnLot(selectedLot.Index, amountWei)
 	if err != nil {
-		return fmt.Errorf("Error checking if bidding on lot %d is possible: %w", selectedLot.Details.Index, err)
+		return fmt.Errorf("Error checking if bidding on lot %d is possible: %w", selectedLot.Index, err)
 	}
 	if !canBid.CanBid {
 		fmt.Println("Cannot bid on lot:")
@@ -144,13 +144,13 @@ func bidOnLot(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Details.Index))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Index))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Bid on lot
-	response, err := rp.BidOnLot(selectedLot.Details.Index, amountWei)
+	response, err := rp.BidOnLot(selectedLot.Index, amountWei)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func bidOnLot(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully bid %.6f ETH on lot %d.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Details.Index)
+	fmt.Printf("Successfully bid %.6f ETH on lot %d.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Index)
 	return nil
 
 }

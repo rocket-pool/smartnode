@@ -43,8 +43,8 @@ type queueStatusContext struct {
 	handler *QueueHandler
 	rp      *rocketpool.RocketPool
 
-	depositPool *deposit.DepositPool
-	queue       *minipool.MinipoolQueue
+	depositPool *deposit.DepositPoolManager
+	mpMgr       *minipool.MinipoolManager
 }
 
 func (c *queueStatusContext) Initialize() error {
@@ -58,11 +58,11 @@ func (c *queueStatusContext) Initialize() error {
 	}
 
 	// Bindings
-	c.depositPool, err = deposit.NewDepositPool(c.rp)
+	c.depositPool, err = deposit.NewDepositPoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating deposit pool binding: %w", err)
+		return fmt.Errorf("error creating deposit pool manager binding: %w", err)
 	}
-	c.queue, err = minipool.NewMinipoolQueue(c.rp)
+	c.mpMgr, err = minipool.NewMinipoolManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating minipool queue binding: %w", err)
 	}
@@ -71,13 +71,13 @@ func (c *queueStatusContext) Initialize() error {
 
 func (c *queueStatusContext) GetState(mc *batch.MultiCaller) {
 	c.depositPool.GetBalance(mc)
-	c.queue.GetTotalCapacity(mc)
-	c.queue.GetTotalLength(mc)
+	c.mpMgr.GetTotalQueueCapacity(mc)
+	c.mpMgr.GetTotalQueueLength(mc)
 }
 
 func (c *queueStatusContext) PrepareData(data *api.QueueStatusData, opts *bind.TransactOpts) error {
-	data.DepositPoolBalance = c.depositPool.Details.Balance
-	data.MinipoolQueueCapacity = c.queue.Details.TotalCapacity
-	data.MinipoolQueueLength = c.queue.Details.TotalLength.Formatted()
+	data.DepositPoolBalance = c.depositPool.Balance
+	data.MinipoolQueueCapacity = c.mpMgr.TotalQueueCapacity
+	data.MinipoolQueueLength = c.mpMgr.TotalQueueLength.Formatted()
 	return nil
 }

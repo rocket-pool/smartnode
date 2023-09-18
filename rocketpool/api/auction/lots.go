@@ -72,7 +72,7 @@ func (c *auctionLotContext) GetState(mc *batch.MultiCaller) {
 
 func (c *auctionLotContext) PrepareData(data *api.AuctionLotsData, opts *bind.TransactOpts) error {
 	// Get lot details
-	lotCount := c.auctionMgr.Details.LotCount.Formatted()
+	lotCount := c.auctionMgr.LotCount.Formatted()
 	lots := make([]*auction.AuctionLot, lotCount)
 	details := make([]api.AuctionLotDetails, lotCount)
 
@@ -94,7 +94,7 @@ func (c *auctionLotContext) PrepareData(data *api.AuctionLotsData, opts *bind.Tr
 	// Process details
 	for i := 0; i < int(lotCount); i++ {
 		fullDetails := &details[i]
-		fullDetails.Details = lots[i].Details
+		fullDetails.Details = *lots[i].AuctionLotDetails
 
 		// Check lot conditions
 		addressHasBid := (fullDetails.NodeBidAmount.Cmp(big.NewInt(0)) > 0)

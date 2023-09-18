@@ -50,7 +50,6 @@ func (c *minipoolRefundContext) PrepareData(data *api.BatchTxInfoData, opts *bin
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "refund")
 }
 
-func (c *minipoolRefundContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	mpCommon := mp.GetMinipoolCommon()
-	return mpCommon.Refund(opts)
+func (c *minipoolRefundContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+	return mp.Refund(opts)
 }

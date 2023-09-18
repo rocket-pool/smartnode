@@ -72,17 +72,21 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 	}
 
 	// Create minipools
-	mps, err := minipool.CreateMinipoolsFromAddresses(rp, c.minipoolAddresses, false, nil)
+	mpMgr, err := minipool.NewMinipoolManager(rp)
+	if err != nil {
+		return fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+	mps, err := mpMgr.CreateMinipoolsFromAddresses(c.minipoolAddresses, false, nil)
 	if err != nil {
 		return fmt.Errorf("error creating minipool bindings: %w", err)
 	}
 
 	// Get the relevant details
 	err = rp.BatchQuery(len(c.minipoolAddresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
-		mpCommon := mps[i].GetMinipoolCommon()
-		mpCommon.GetWithdrawalCredentials(mc)
-		mpCommon.GetPubkey(mc)
-		mpCommon.GetDepositType(mc)
+		mp := mps[i]
+		mp.GetWithdrawalCredentials(mc)
+		mp.GetPubkey(mc)
+		mp.GetDepositType(mc)
 		return nil
 	}, nil)
 	if err != nil {
@@ -92,15 +96,15 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 	// Get the TXs
 	txInfos := make([]*core.TransactionInfo, len(c.minipoolAddresses))
 	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
-		pubkey := mpCommon.Details.Pubkey
+		mpCommon := mp.GetCommonDetails()
+		pubkey := mpCommon.Pubkey
 
-		withdrawalCredentials := mpCommon.Details.WithdrawalCredentials
+		withdrawalCredentials := mpCommon.WithdrawalCredentials
 		validatorKey, err := w.GetValidatorKeyByPubkey(pubkey)
 		if err != nil {
-			return fmt.Errorf("error getting validator %s (minipool %s) key: %w", pubkey.Hex(), mpCommon.Details.Address.Hex(), err)
+			return fmt.Errorf("error getting validator %s (minipool %s) key: %w", pubkey.Hex(), mpCommon.Address.Hex(), err)
 		}
-		depositType := mpCommon.Details.DepositType.Formatted()
+		depositType := mpCommon.DepositType.Formatted()
 
 		var depositAmount uint64
 		switch depositType {
@@ -109,7 +113,7 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 		case types.Variable:
 			depositAmount = uint64(31e9) // 31 ETH in gwei
 		default:
-			return fmt.Errorf("error staking minipool %s: unknown deposit type %d", mpCommon.Details.Address.Hex(), depositType)
+			return fmt.Errorf("error staking minipool %s: unknown deposit type %d", mpCommon.Address.Hex(), depositType)
 		}
 
 		// Get validator deposit data
@@ -119,9 +123,9 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 		}
 		signature := types.BytesToValidatorSignature(depositData.Signature)
 
-		txInfo, err := mpCommon.Stake(signature, depositDataRoot, opts)
+		txInfo, err := mp.Stake(signature, depositDataRoot, opts)
 		if err != nil {
-			return fmt.Errorf("error simulating stake transaction for minipool %s: %w", mpCommon.Details.Address.Hex(), err)
+			return fmt.Errorf("error simulating stake transaction for minipool %s: %w", mpCommon.Address.Hex(), err)
 		}
 		txInfos[i] = txInfo
 	}

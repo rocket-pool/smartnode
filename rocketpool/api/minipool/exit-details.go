@@ -63,17 +63,16 @@ func (c *minipoolExitDetailsContext) CheckState(node *node.Node, response *api.M
 	return true
 }
 
-func (c *minipoolExitDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-	mpCommon := mp.GetMinipoolCommon()
-	mpCommon.GetNodeAddress(mc)
-	mpCommon.GetStatus(mc)
+func (c *minipoolExitDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+	mp.GetNodeAddress(mc)
+	mp.GetStatus(mc)
 }
 
-func (c *minipoolExitDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolExitDetailsData) error {
+func (c *minipoolExitDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, response *api.MinipoolExitDetailsData) error {
 	// Get the exit details
 	details := make([]api.MinipoolExitDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommonDetails := mp.GetMinipoolCommon().Details
+		mpCommonDetails := mp.GetCommonDetails()
 		status := mpCommonDetails.Status.Formatted()
 		mpDetails := api.MinipoolExitDetails{
 			Address:       mpCommonDetails.Address,

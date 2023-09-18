@@ -68,7 +68,7 @@ type iterationData struct {
 	safetyScrubs          int
 
 	// Minipool info
-	minipools map[minipool.Minipool]*minipoolDetails
+	minipools map[minipool.IMinipool]*minipoolDetails
 
 	// ETH1 search artifacts
 	startBlock       *big.Int
@@ -175,7 +175,7 @@ func (t *submitScrubMinipools) run(state *state.NetworkState) error {
 			return
 		}
 
-		t.it.minipools = make(map[minipool.Minipool]*minipoolDetails, t.it.totalMinipools)
+		t.it.minipools = make(map[minipool.IMinipool]*minipoolDetails, t.it.totalMinipools)
 
 		// Get the correct withdrawal credentials and validator pubkeys for each minipool
 		opts := &bind.CallOpts{
@@ -284,7 +284,7 @@ func (t *submitScrubMinipools) initializeMinipoolDetails(minipools []rpstate.Nat
 
 // Step 1: Verify the Beacon Chain credentials for a minipool if they're present
 func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(state *state.NetworkState) error {
-	minipoolsToScrub := []minipool.Minipool{}
+	minipoolsToScrub := []minipool.IMinipool{}
 
 	// Get the withdrawal credentials on Beacon for each validator if they exist
 	for minipool, details := range t.it.minipools {
@@ -368,7 +368,7 @@ func (t *submitScrubMinipools) getEth1SearchArtifacts(state *state.NetworkState)
 // Step 2: Verify the MinipoolPrestaked event of each minipool
 func (t *submitScrubMinipools) verifyPrestakeEvents() {
 
-	minipoolsToScrub := []minipool.Minipool{}
+	minipoolsToScrub := []minipool.IMinipool{}
 
 	weiPerGwei := big.NewInt(int64(eth.WeiPerGwei))
 	for minipool := range t.it.minipools {
@@ -421,7 +421,7 @@ func (t *submitScrubMinipools) verifyPrestakeEvents() {
 // Step 3: Verify minipools by their deposits
 func (t *submitScrubMinipools) verifyDeposits() error {
 
-	minipoolsToScrub := []minipool.Minipool{}
+	minipoolsToScrub := []minipool.IMinipool{}
 
 	// Create a "hashset" of the remaining pubkeys
 	pubkeys := make(map[types.ValidatorPubkey]bool, len(t.it.minipools))
@@ -502,7 +502,7 @@ func (t *submitScrubMinipools) verifyDeposits() error {
 // This should never be used, it's simply here as a redundant check
 func (t *submitScrubMinipools) checkSafetyScrub(state *state.NetworkState) error {
 
-	minipoolsToScrub := []minipool.Minipool{}
+	minipoolsToScrub := []minipool.IMinipool{}
 
 	// Warn if there are any remaining minipools - this should never happen
 	remainingMinipools := len(t.it.minipools)
@@ -559,7 +559,7 @@ func (t *submitScrubMinipools) checkSafetyScrub(state *state.NetworkState) error
 }
 
 // Submit minipool scrub status
-func (t *submitScrubMinipools) submitVoteScrubMinipool(mp minipool.Minipool) error {
+func (t *submitScrubMinipools) submitVoteScrubMinipool(mp minipool.IMinipool) error {
 
 	// Log
 	t.log.Printlnf("Voting to scrub minipool %s...", mp.GetAddress().Hex())

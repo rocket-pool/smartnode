@@ -82,9 +82,9 @@ func (c *auctionClaimContext) GetState(mc *batch.MultiCaller) {
 
 func (c *auctionClaimContext) PrepareData(data *api.AuctionClaimFromLotData, opts *bind.TransactOpts) error {
 	// Check for validity
-	data.DoesNotExist = !c.lot.Details.Exists
+	data.DoesNotExist = !c.lot.Exists
 	data.NoBidFromAddress = (c.addressBidAmount.Cmp(big.NewInt(0)) == 0)
-	data.NotCleared = !c.lot.Details.IsCleared
+	data.NotCleared = !c.lot.IsCleared
 	data.CanClaim = !(data.DoesNotExist || data.NoBidFromAddress || data.NotCleared)
 
 	// Get tx info

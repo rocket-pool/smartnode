@@ -41,7 +41,7 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 	}
 
 	// Get the validating addresses
-	addresses, err := node.GetValidatingMinipoolAddresses(node.Details.ValidatingMinipoolCount.Formatted(), opts)
+	addresses, err := node.GetValidatingMinipoolAddresses(node.ValidatingMinipoolCount.Formatted(), opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting validating minipool addresses: %w", err)
 	}
@@ -55,7 +55,7 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 	// Get the list of pubkeys
 	pubkeys := make([]types.ValidatorPubkey, len(addresses))
 	err = rp.BatchQuery(len(addresses), minipoolPubkeyBatchSize, func(mc *batch.MultiCaller, i int) error {
-		minipools[i].GetMinipoolCommon().GetPubkey(mc)
+		minipools[i].GetCommonDetails().GetPubkey(mc)
 		return nil
 	}, opts)
 	if err != nil {
@@ -64,7 +64,7 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 
 	// Populate the slice of pubkeys
 	for i, mp := range minipools {
-		pubkeys[i] = mp.GetMinipoolCommon().Details.Pubkey
+		pubkeys[i] = mp.GetCommonDetails().Pubkey
 	}
 
 	// Remove zero pubkeys
@@ -142,12 +142,12 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 		return nil, fmt.Errorf("error getting contract state: %w", err)
 	}
 
-	reductionWindowStart := oSettings.Details.Minipools.BondReductionWindowStart.Formatted()
-	reductionWindowLength := oSettings.Details.Minipools.BondReductionWindowLength.Formatted()
+	reductionWindowStart := oSettings.Minipools.BondReductionWindowStart.Formatted()
+	reductionWindowLength := oSettings.Minipools.BondReductionWindowLength.Formatted()
 	reductionWindowEnd := reductionWindowStart + reductionWindowLength
 
 	// Get the minipool addresses
-	addresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), opts)
+	addresses, err := node.GetMinipoolAddresses(node.MinipoolCount.Formatted(), opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
@@ -181,9 +181,9 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 		if !isMpv3 {
 			continue
 		}
-		mpCommon := mp.GetMinipoolCommon()
-		reduceBondTime := mpv3.Details.ReduceBondTime.Formatted()
-		reduceBondCancelled := mpv3.Details.IsBondReduceCancelled
+		mpCommon := mp.GetCommonDetails()
+		reduceBondTime := mpv3.ReduceBondTime.Formatted()
+		reduceBondCancelled := mpv3.IsBondReduceCancelled
 
 		// Ignore minipools that don't have a bond reduction pending
 		timeSinceReductionStart := blockTime.Sub(reduceBondTime)
@@ -194,15 +194,15 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 		}
 
 		// Calculate the bond delta from the pending reduction
-		oldBond := mpCommon.Details.NodeDepositBalance
-		newBond := mpv3.Details.ReduceBondValue
+		oldBond := mpCommon.NodeDepositBalance
+		newBond := mpv3.ReduceBondValue
 		mpDelta := big.NewInt(0).Sub(oldBond, newBond)
 		totalDelta.Add(totalDelta, mpDelta)
 	}
 
 	return &CollateralAmounts{
-		EthMatched:         node.Details.EthMatched,
-		EthMatchedLimit:    node.Details.EthMatchedLimit,
+		EthMatched:         node.EthMatched,
+		EthMatchedLimit:    node.EthMatchedLimit,
 		PendingMatchAmount: totalDelta,
 	}, nil
 }

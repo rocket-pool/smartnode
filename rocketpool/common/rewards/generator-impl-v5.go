@@ -15,7 +15,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
@@ -416,7 +415,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 	}
 
 	// Get the oDAO member addresses
-	oDaoAddresses, err := odaoMgr.GetMemberAddresses(odaoMgr.Details.MemberCount.Formatted(), r.opts)
+	oDaoAddresses, err := odaoMgr.GetMemberAddresses(odaoMgr.MemberCount.Formatted(), r.opts)
 	if err != nil {
 		return err
 	}
@@ -1109,10 +1108,11 @@ func (r *treeGeneratorImpl_v5) validateNetwork(network uint64) (bool, error) {
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
 		// Make the oDAO settings binding
-		oSettings, err := settings.NewOracleDaoSettings(r.rp)
+		oMgr, err := oracle.NewOracleDaoManager(r.rp)
 		if err != nil {
-			return false, fmt.Errorf("error creating Oracle DAO settings binding: %w", err)
+			return false, fmt.Errorf("error creating oDAO manager binding: %w", err)
 		}
+		oSettings := oMgr.Settings
 
 		// Get the contract state
 		err = r.rp.Query(func(mc *batch.MultiCaller) error {

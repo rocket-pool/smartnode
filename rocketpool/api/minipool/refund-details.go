@@ -63,17 +63,16 @@ func (c *minipoolRefundDetailsContext) CheckState(node *node.Node, response *api
 	return true
 }
 
-func (c *minipoolRefundDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-	mpCommon := mp.GetMinipoolCommon()
-	mpCommon.GetNodeAddress(mc)
-	mpCommon.GetNodeRefundBalance(mc)
+func (c *minipoolRefundDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+	mp.GetNodeAddress(mc)
+	mp.GetNodeRefundBalance(mc)
 }
 
-func (c *minipoolRefundDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolRefundDetailsData) error {
+func (c *minipoolRefundDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRefundDetailsData) error {
 	// Get the refund details
 	details := make([]api.MinipoolRefundDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommonDetails := mp.GetMinipoolCommon().Details
+		mpCommonDetails := mp.GetCommonDetails()
 		mpDetails := api.MinipoolRefundDetails{
 			Address:                   mpCommonDetails.Address,
 			InsufficientRefundBalance: (mpCommonDetails.NodeRefundBalance.Cmp(big.NewInt(0)) == 0),

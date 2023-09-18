@@ -98,15 +98,15 @@ func (c *oracleDaoCancelProposalContext) GetState(mc *batch.MultiCaller) {
 
 func (c *oracleDaoCancelProposalContext) PrepareData(data *api.OracleDaoCancelProposalData, opts *bind.TransactOpts) error {
 	// Verify oDAO status
-	if !c.odaoMember.Details.Exists {
+	if !c.odaoMember.Exists {
 		return errors.New("The node is not a member of the oracle DAO.")
 	}
 
 	// Check proposal details
-	state := c.prop.Details.State.Formatted()
-	data.DoesNotExist = (c.id > c.dpm.Details.ProposalCount.Formatted())
+	state := c.prop.State.Formatted()
+	data.DoesNotExist = (c.id > c.dpm.ProposalCount.Formatted())
 	data.InvalidState = !(state == rptypes.Pending || state == rptypes.Active)
-	data.InvalidProposer = !(c.nodeAddress == c.prop.Details.ProposerAddress)
+	data.InvalidProposer = !(c.nodeAddress == c.prop.ProposerAddress)
 	data.CanCancel = !(data.DoesNotExist || data.InvalidState || data.InvalidProposer)
 
 	// Get the tx

@@ -10,10 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -52,8 +53,8 @@ type minipoolBeginReduceBondDetailsContext struct {
 	bc      beacon.Client
 
 	newBondAmountWei *big.Int
-	pSettings        *settings.ProtocolDaoSettings
-	oSettings        *settings.OracleDaoSettings
+	pSettings        *protocol.ProtocolDaoSettings
+	oSettings        *oracle.OracleDaoSettings
 }
 
 func (c *minipoolBeginReduceBondDetailsContext) Initialize() error {
@@ -69,14 +70,17 @@ func (c *minipoolBeginReduceBondDetailsContext) Initialize() error {
 		return err
 	}
 
-	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
+	// Bindings
+	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO settings binding: %w", err)
+		return fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
-	c.oSettings, err = settings.NewOracleDaoSettings(c.rp)
+	c.pSettings = pMgr.Settings
+	oMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating oDAO settings binding: %w", err)
+		return fmt.Errorf("error creating oDAO manager binding: %w", err)
 	}
+	c.oSettings = oMgr.Settings
 	return nil
 }
 
@@ -87,11 +91,11 @@ func (c *minipoolBeginReduceBondDetailsContext) GetState(node *node.Node, mc *ba
 }
 
 func (c *minipoolBeginReduceBondDetailsContext) CheckState(node *node.Node, response *api.MinipoolBeginReduceBondDetailsData) bool {
-	response.BondReductionDisabled = !c.pSettings.Details.Minipool.IsBondReductionEnabled
+	response.BondReductionDisabled = !c.pSettings.Minipool.IsBondReductionEnabled
 	return !response.BondReductionDisabled
 }
 
-func (c *minipoolBeginReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+func (c *minipoolBeginReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
 		mpv3.GetNodeDepositBalance(mc)
@@ -102,7 +106,7 @@ func (c *minipoolBeginReduceBondDetailsContext) GetMinipoolDetails(mc *batch.Mul
 	}
 }
 
-func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, response *api.MinipoolBeginReduceBondDetailsData) error {
+func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, response *api.MinipoolBeginReduceBondDetailsData) error {
 	// Get the latest block header
 	header, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
@@ -115,28 +119,28 @@ func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.A
 	detailsMap := map[types.ValidatorPubkey]int{}
 	details := make([]api.MinipoolBeginReduceBondDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
+		mpCommon := mp.GetCommonDetails()
 		mpDetails := api.MinipoolBeginReduceBondDetails{
-			Address: mpCommon.Details.Address,
+			Address: mpCommon.Address,
 		}
 
 		mpv3, success := minipool.GetMinipoolAsV3(mp)
 		if !success {
 			mpDetails.MinipoolVersionTooLow = true
-		} else if mpCommon.Details.Status.Formatted() != types.Staking || mpCommon.Details.IsFinalised {
+		} else if mpCommon.Status.Formatted() != types.Staking || mpCommon.IsFinalised {
 			mpDetails.InvalidElState = true
 		} else {
-			reductionStart := mpv3.Details.ReduceBondTime.Formatted()
+			reductionStart := mpv3.ReduceBondTime.Formatted()
 			timeSinceBondReductionStart := currentTime.Sub(reductionStart)
-			windowStart := c.oSettings.Details.Minipools.BondReductionWindowStart.Formatted()
-			windowEnd := windowStart + c.oSettings.Details.Minipools.BondReductionWindowLength.Formatted()
+			windowStart := c.oSettings.Minipools.BondReductionWindowStart.Formatted()
+			windowEnd := windowStart + c.oSettings.Minipools.BondReductionWindowLength.Formatted()
 
 			if timeSinceBondReductionStart < windowEnd {
 				mpDetails.AlreadyInWindow = true
 			} else {
-				mpDetails.MatchRequest = big.NewInt(0).Sub(mpCommon.Details.NodeDepositBalance, c.newBondAmountWei)
-				pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
-				detailsMap[mpCommon.Details.Pubkey] = i
+				mpDetails.MatchRequest = big.NewInt(0).Sub(mpCommon.NodeDepositBalance, c.newBondAmountWei)
+				pubkeys = append(pubkeys, mpCommon.Pubkey)
+				detailsMap[mpCommon.Pubkey] = i
 			}
 		}
 

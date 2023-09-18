@@ -49,16 +49,12 @@ type networkStatsContext struct {
 	handler *NetworkHandler
 	rp      *rocketpool.RocketPool
 
-	depositPool     *deposit.DepositPool
-	mpQueue         *minipool.MinipoolQueue
-	networkBalances *network.NetworkBalances
-	networkPrices   *network.NetworkPrices
-	networkFees     *network.NetworkFees
-	nodeMgr         *node.NodeManager
-	nodeStaking     *node.NodeStaking
-	mpMgr           *minipool.MinipoolManager
-	reth            *tokens.TokenReth
-	smoothingPool   *core.Contract
+	depositPool   *deposit.DepositPoolManager
+	nodeMgr       *node.NodeManager
+	mpMgr         *minipool.MinipoolManager
+	networkMgr    *network.NetworkManager
+	reth          *tokens.TokenReth
+	smoothingPool *core.Contract
 }
 
 func (c *networkStatsContext) Initialize() error {
@@ -72,33 +68,13 @@ func (c *networkStatsContext) Initialize() error {
 	}
 
 	// Bindings
-	c.depositPool, err = deposit.NewDepositPool(c.rp)
+	c.depositPool, err = deposit.NewDepositPoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting deposit pool binding: %w", err)
-	}
-	c.mpQueue, err = minipool.NewMinipoolQueue(c.rp)
-	if err != nil {
-		return fmt.Errorf("error getting minipool queue binding: %w", err)
-	}
-	c.networkBalances, err = network.NewNetworkBalances(c.rp)
-	if err != nil {
-		return fmt.Errorf("error getting network balances binding: %w", err)
-	}
-	c.networkPrices, err = network.NewNetworkPrices(c.rp)
-	if err != nil {
-		return fmt.Errorf("error getting network prices binding: %w", err)
-	}
-	c.networkFees, err = network.NewNetworkFees(c.rp)
-	if err != nil {
-		return fmt.Errorf("error getting network fees binding: %w", err)
+		return fmt.Errorf("error getting deposit pool manager binding: %w", err)
 	}
 	c.nodeMgr, err = node.NewNodeManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error getting node manager binding: %w", err)
-	}
-	c.nodeStaking, err = node.NewNodeStaking(c.rp)
-	if err != nil {
-		return fmt.Errorf("error getting node staking binding: %w", err)
 	}
 	c.mpMgr, err = minipool.NewMinipoolManager(c.rp)
 	if err != nil {
@@ -112,43 +88,47 @@ func (c *networkStatsContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error getting rETH token binding: %w", err)
 	}
+	c.networkMgr, err = network.NewNetworkManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating network prices binding: %w", err)
+	}
 	return nil
 }
 
 func (c *networkStatsContext) GetState(mc *batch.MultiCaller) {
 	c.depositPool.GetBalance(mc)
-	c.mpQueue.GetTotalCapacity(mc)
-	c.networkBalances.GetEthUtilizationRate(mc)
-	c.networkFees.GetNodeFee(mc)
+	c.mpMgr.GetTotalQueueCapacity(mc)
+	c.networkMgr.GetEthUtilizationRate(mc)
+	c.networkMgr.GetNodeFee(mc)
 	c.nodeMgr.GetNodeCount(mc)
 	c.mpMgr.GetMinipoolCount(mc)
 	c.mpMgr.GetFinalisedMinipoolCount(mc)
-	c.networkPrices.GetRplPrice(mc)
-	c.nodeStaking.GetTotalRPLStake(mc)
+	c.networkMgr.GetRplPrice(mc)
+	c.nodeMgr.GetTotalRplStake(mc)
 	c.reth.GetExchangeRate(mc)
 }
 
 func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind.TransactOpts) error {
 	// Handle the details
-	data.DepositPoolBalance = c.depositPool.Details.Balance
-	data.MinipoolCapacity = c.mpQueue.Details.TotalCapacity
-	data.StakerUtilization = c.networkBalances.Details.EthUtilizationRate.RawValue
-	data.NodeFee = c.networkFees.Details.NodeFee.RawValue
-	data.NodeCount = c.nodeMgr.Details.NodeCount.Formatted()
-	data.RplPrice = c.networkPrices.Details.RplPrice.RawValue
-	data.TotalRplStaked = c.nodeStaking.Details.TotalRplStake
-	data.RethPrice = c.reth.Details.ExchangeRate.RawValue
+	data.DepositPoolBalance = c.depositPool.Balance
+	data.MinipoolCapacity = c.mpMgr.TotalQueueCapacity
+	data.StakerUtilization = c.networkMgr.EthUtilizationRate.RawValue
+	data.NodeFee = c.networkMgr.NodeFee.RawValue
+	data.NodeCount = c.nodeMgr.NodeCount.Formatted()
+	data.RplPrice = c.networkMgr.RplPrice.RawValue
+	data.TotalRplStaked = c.nodeMgr.TotalRplStake
+	data.RethPrice = c.reth.ExchangeRate.RawValue
 
 	// Get the total effective RPL stake
-	effectiveRplStaked, err := c.nodeMgr.GetTotalEffectiveRplStake(c.rp, c.nodeMgr.Details.NodeCount.Formatted(), nil)
+	effectiveRplStaked, err := c.nodeMgr.GetTotalEffectiveRplStake(c.nodeMgr.NodeCount.Formatted(), nil)
 	if err != nil {
 		return fmt.Errorf("error getting total effective RPL stake: %w", err)
 	}
 	data.EffectiveRplStaked = effectiveRplStaked
 
 	// Get the minipool counts by status
-	data.FinalizedMinipoolCount = c.mpMgr.Details.FinalisedMinipoolCount.Formatted()
-	minipoolCounts, err := c.mpMgr.GetMinipoolCountPerStatus(c.mpMgr.Details.MinipoolCount.Formatted(), nil)
+	data.FinalizedMinipoolCount = c.mpMgr.FinalisedMinipoolCount.Formatted()
+	minipoolCounts, err := c.mpMgr.GetMinipoolCountPerStatus(c.mpMgr.MinipoolCount.Formatted(), nil)
 	if err != nil {
 		return fmt.Errorf("error getting minipool counts per status: %w", err)
 	}
@@ -159,7 +139,7 @@ func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind
 	data.DissolvedMinipoolCount = minipoolCounts.Dissolved.Uint64()
 
 	// Get the number of nodes opted into the smoothing pool
-	spCount, err := c.nodeMgr.GetSmoothingPoolRegisteredNodeCount(c.nodeMgr.Details.NodeCount.Formatted(), nil)
+	spCount, err := c.nodeMgr.GetSmoothingPoolRegisteredNodeCount(c.nodeMgr.NodeCount.Formatted(), nil)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool opt-in count: %w", err)
 	}

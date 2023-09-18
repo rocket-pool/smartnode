@@ -59,14 +59,14 @@ func (h *nodeRewardsInfoHandler) PrepareResponse(ctx *callContext, response *api
 	cfg := ctx.cfg
 
 	// Basic details
-	response.RplPrice = h.networkPrices.Details.RplPrice.RawValue
-	response.RplStake = node.Details.RplStake
-	response.MinimumRplStake = node.Details.MinimumRplStake
-	response.MaximumRplStake = node.Details.MaximumRplStake
-	response.EffectiveRplStake = node.Details.EffectiveRplStake
+	response.RplPrice = h.networkPrices.RplPrice.RawValue
+	response.RplStake = node.RplStake
+	response.MinimumRplStake = node.MinimumRplStake
+	response.MaximumRplStake = node.MaximumRplStake
+	response.EffectiveRplStake = node.EffectiveRplStake
 
 	// Get the claimed and unclaimed intervals
-	claimStatus, err := rprewards.GetClaimStatus(rp, node.Details.Address, h.rewardsPool.Details.RewardIndex.Formatted())
+	claimStatus, err := rprewards.GetClaimStatus(rp, node.Address, h.rewardsPool.RewardIndex.Formatted())
 	if err != nil {
 		return fmt.Errorf("error getting rewards claim status: %w", err)
 	}
@@ -74,7 +74,7 @@ func (h *nodeRewardsInfoHandler) PrepareResponse(ctx *callContext, response *api
 
 	// Get the info for each unclaimed interval
 	for _, unclaimedInterval := range claimStatus.Unclaimed {
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, node.Details.Address, unclaimedInterval, nil)
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, node.Address, unclaimedInterval, nil)
 		if err != nil {
 			return fmt.Errorf("error getting interval %d info: %w", unclaimedInterval, err)
 		}
@@ -88,9 +88,9 @@ func (h *nodeRewardsInfoHandler) PrepareResponse(ctx *callContext, response *api
 	}
 
 	// Get the number of active (non-finalized) minipools
-	response.ActiveMinipools = node.Details.ActiveMinipoolCount.Formatted()
+	response.ActiveMinipools = node.ActiveMinipoolCount.Formatted()
 	if response.ActiveMinipools > 0 {
-		collateral, err := rputils.CheckCollateral(rp, node.Details.Address, nil)
+		collateral, err := rputils.CheckCollateral(rp, node.Address, nil)
 		if err != nil {
 			return fmt.Errorf("error getting node collateral: %w", err)
 		}
@@ -99,8 +99,8 @@ func (h *nodeRewardsInfoHandler) PrepareResponse(ctx *callContext, response *api
 		response.PendingMatchAmount = collateral.PendingMatchAmount
 
 		// Calculate the *real* minimum, including the pending bond reductions
-		minStakeFraction := h.pSettings.Details.Node.MinimumPerMinipoolStake.RawValue
-		maxStakeFraction := h.pSettings.Details.Node.MaximumPerMinipoolStake.RawValue
+		minStakeFraction := h.pSettings.Node.MinimumPerMinipoolStake.RawValue
+		maxStakeFraction := h.pSettings.Node.MaximumPerMinipoolStake.RawValue
 		trueMinimumStake := big.NewInt(0).Add(response.EthMatched, response.PendingMatchAmount)
 		trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
 		trueMinimumStake.Div(trueMinimumStake, response.RplPrice)

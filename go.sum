@@ -1496,6 +1496,16 @@ github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918092313-949ad9598b64 h1:wj
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918092313-949ad9598b64/go.mod h1:FTnbsaQRxyzYSrWjThgtf7HWp182MxayRzQbvgjXNWM=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918092649-b6641b3ac64d h1:obW9PUgHlUNLuCXW8xPxwHqvIozVUKUkfTMR6RQxCJ0=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918092649-b6641b3ac64d/go.mod h1:FTnbsaQRxyzYSrWjThgtf7HWp182MxayRzQbvgjXNWM=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918213348-1aa48d7d5e7c h1:de75WSBRXRVBlJUe5Fc5elikfFRhbqWLt8qpNhRobYg=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918213348-1aa48d7d5e7c/go.mod h1:FTnbsaQRxyzYSrWjThgtf7HWp182MxayRzQbvgjXNWM=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918213820-a5d98b4b60cc h1:eY7OW7/W+hSHVTMTYoTX0CAcowkgbHWb9+6yhIqVBuk=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918213820-a5d98b4b60cc/go.mod h1:FTnbsaQRxyzYSrWjThgtf7HWp182MxayRzQbvgjXNWM=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918215733-a1393959b8b2 h1:QytPD6o+qAZfwL5/bb6oVSoyUSSZLHlUhvTcSnCIlBE=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918215733-a1393959b8b2/go.mod h1:FTnbsaQRxyzYSrWjThgtf7HWp182MxayRzQbvgjXNWM=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918230912-87651313444d h1:kpxBq75iDWCuSi01YfTO/FwjMhB4IH9kvf/4xK2YG5E=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918230912-87651313444d/go.mod h1:FTnbsaQRxyzYSrWjThgtf7HWp182MxayRzQbvgjXNWM=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918231123-d095f2af25a0 h1:+fIAIefTg+JIdXKCWKQoLPyrSXPoTpAL3Q7/WKoliyw=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20230918231123-d095f2af25a0/go.mod h1:FTnbsaQRxyzYSrWjThgtf7HWp182MxayRzQbvgjXNWM=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=

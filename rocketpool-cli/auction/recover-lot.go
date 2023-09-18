@@ -62,7 +62,7 @@ func recoverRplFromLot(c *cli.Context) error {
 		// Get matching lot
 		found := false
 		for _, lot := range recoverableLots {
-			if lot.Details.Index == selectedIndex {
+			if lot.Index == selectedIndex {
 				selectedLots = []api.LotDetails{lot}
 				found = true
 				break
@@ -78,7 +78,7 @@ func recoverRplFromLot(c *cli.Context) error {
 		options := make([]string, len(recoverableLots)+1)
 		options[0] = "All available lots"
 		for li, lot := range recoverableLots {
-			options[li+1] = fmt.Sprintf("lot %d (%.6f RPL unclaimed)", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6))
+			options[li+1] = fmt.Sprintf("lot %d (%.6f RPL unclaimed)", lot.Index, math.RoundDown(eth.WeiToEth(lot.RemainingRPLAmount), 6))
 		}
 		selected, _ := cliutils.Select("Please select a lot to recover unclaimed RPL from:", options)
 
@@ -96,9 +96,9 @@ func recoverRplFromLot(c *cli.Context) error {
 	var totalSafeGas uint64 = 0
 	var gasInfo rocketpoolapi.GasInfo
 	for _, lot := range selectedLots {
-		canResponse, err := rp.CanRecoverUnclaimedRPLFromLot(lot.Details.Index)
+		canResponse, err := rp.CanRecoverUnclaimedRPLFromLot(lot.Index)
 		if err != nil {
-			return fmt.Errorf("Error checking if recovering lot %d is possible: %w", lot.Details.Index, err)
+			return fmt.Errorf("Error checking if recovering lot %d is possible: %w", lot.Index, err)
 		}
 		gasInfo = canResponse.GasInfo
 		totalGas += canResponse.GasInfo.EstGasLimit
@@ -121,18 +121,18 @@ func recoverRplFromLot(c *cli.Context) error {
 
 	// Claim RPL from lots
 	for _, lot := range selectedLots {
-		response, err := rp.RecoverUnclaimedRPLFromLot(lot.Details.Index)
+		response, err := rp.RecoverUnclaimedRPLFromLot(lot.Index)
 		if err != nil {
-			fmt.Printf("Could not recover unclaimed RPL from lot %d: %s.\n", lot.Details.Index, err)
+			fmt.Printf("Could not recover unclaimed RPL from lot %d: %s.\n", lot.Index, err)
 			continue
 		}
 
-		fmt.Printf("Recovering lot %d...\n", lot.Details.Index)
+		fmt.Printf("Recovering lot %d...\n", lot.Index)
 		cliutils.PrintTransactionHash(rp, response.TxHash)
 		if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-			fmt.Printf("Could not recover unclaimed RPL from lot %d: %s.\n", lot.Details.Index, err)
+			fmt.Printf("Could not recover unclaimed RPL from lot %d: %s.\n", lot.Index, err)
 		} else {
-			fmt.Printf("Successfully recovered unclaimed RPL from lot %d.\n", lot.Details.Index)
+			fmt.Printf("Successfully recovered unclaimed RPL from lot %d.\n", lot.Index)
 		}
 	}
 

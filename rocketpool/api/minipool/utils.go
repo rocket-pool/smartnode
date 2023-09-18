@@ -14,7 +14,7 @@ import (
 )
 
 // Get transaction info for an operation on all of the provided minipools, using the common minipool API (for version-agnostic functions)
-func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses []common.Address, data *api.BatchTxInfoData, txCreator func(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) error {
+func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses []common.Address, data *api.BatchTxInfoData, txCreator func(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) error {
 	// Requirements
 	err := errors.Join(
 		sp.RequireNodeRegistered(),
@@ -35,7 +35,11 @@ func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses 
 	response := api.BatchTxInfoData{}
 
 	// Create minipools
-	mps, err := minipool.CreateMinipoolsFromAddresses(rp, minipoolAddresses, false, nil)
+	mpMgr, err := minipool.NewMinipoolManager(rp)
+	if err != nil {
+		return fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+	mps, err := mpMgr.CreateMinipoolsFromAddresses(minipoolAddresses, false, nil)
 	if err != nil {
 		return fmt.Errorf("error creating minipool bindings: %w", err)
 	}
@@ -45,7 +49,7 @@ func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses 
 	for i, mp := range mps {
 		txInfo, err := txCreator(mp, opts)
 		if err != nil {
-			return fmt.Errorf("error simulating %s transaction for minipool %s: %w", txName, mp.GetMinipoolCommon().Details.Address.Hex(), err)
+			return fmt.Errorf("error simulating %s transaction for minipool %s: %w", txName, mp.GetCommonDetails().Address.Hex(), err)
 		}
 		txInfos[i] = txInfo
 	}

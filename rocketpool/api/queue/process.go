@@ -6,9 +6,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
@@ -45,8 +45,8 @@ type queueProcessContext struct {
 	rp      *rocketpool.RocketPool
 	w       *wallet.LocalWallet
 
-	pSettings   *settings.ProtocolDaoSettings
-	depositPool *deposit.DepositPool
+	pSettings   *protocol.ProtocolDaoSettings
+	depositPool *deposit.DepositPoolManager
 }
 
 func (c *queueProcessContext) Initialize() error {
@@ -61,11 +61,12 @@ func (c *queueProcessContext) Initialize() error {
 	}
 
 	// Bindings
-	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
+	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO settings binding: %w", err)
+		return fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
-	c.depositPool, err = deposit.NewDepositPool(c.rp)
+	c.pSettings = pMgr.Settings
+	c.depositPool, err = deposit.NewDepositPoolManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating deposit pool binding: %w", err)
 	}
@@ -77,7 +78,7 @@ func (c *queueProcessContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *queueProcessContext) PrepareData(data *api.QueueProcessData, opts *bind.TransactOpts) error {
-	data.AssignDepositsDisabled = !c.pSettings.Details.Deposit.AreDepositAssignmentsEnabled
+	data.AssignDepositsDisabled = !c.pSettings.Deposit.AreDepositAssignmentsEnabled
 	data.CanProcess = !data.AssignDepositsDisabled
 
 	if data.CanProcess && opts != nil {

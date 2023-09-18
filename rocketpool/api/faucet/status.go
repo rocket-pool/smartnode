@@ -80,11 +80,11 @@ func (c *faucetStatusContext) PrepareData(data *api.FaucetStatusData, opts *bind
 	}
 
 	// Populate the response
-	data.Balance = c.f.Details.Balance
-	data.Allowance = c.f.Details.Allowance
-	data.WithdrawalFee = c.f.Details.WithdrawalFee
-	currentPeriodStartBlock := c.f.Details.WithdrawalPeriodStart.Formatted()
-	withdrawalPeriodBlocks := c.f.Details.WithdrawalPeriod.Formatted()
+	data.Balance = c.f.Balance
+	data.Allowance = c.f.Allowance
+	data.WithdrawalFee = c.f.WithdrawalFee
+	currentPeriodStartBlock := c.f.WithdrawalPeriodStart.Formatted()
+	withdrawalPeriodBlocks := c.f.WithdrawalPeriod.Formatted()
 
 	// Get withdrawable amount
 	if data.Balance.Cmp(data.Allowance) > 0 {

@@ -96,13 +96,13 @@ func GetFeeRecipientInfoWithoutState(rp *rocketpool.RocketPool, bc beacon.Client
 
 	// Handle the details
 	info.SmoothingPoolAddress = *sp.Address
-	info.FeeDistributorAddress = node.Details.DistributorAddress
-	info.IsInSmoothingPool = node.Details.SmoothingPoolRegistrationState
+	info.FeeDistributorAddress = node.DistributorAddress
+	info.IsInSmoothingPool = node.SmoothingPoolRegistrationState
 
 	// Calculate the safe opt-out epoch if applicable
 	if !info.IsInSmoothingPool {
 		// Get the opt out time
-		optOutTime := node.Details.SmoothingPoolRegistrationChanged.Formatted()
+		optOutTime := node.SmoothingPoolRegistrationChanged.Formatted()
 
 		// Get the Beacon info
 		beaconConfig, err := bc.GetEth2Config()

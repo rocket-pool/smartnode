@@ -59,6 +59,7 @@ type minipoolCanChangeCredsContext struct {
 
 	mnemonic        string
 	minipoolAddress common.Address
+	mpMgr           *minipool.MinipoolManager
 	mpv3            *minipool.MinipoolV3
 }
 
@@ -78,7 +79,11 @@ func (c *minipoolCanChangeCredsContext) Initialize() error {
 	}
 
 	// Bindings
-	mp, err := minipool.CreateMinipoolFromAddress(c.rp, c.minipoolAddress, false, nil)
+	mpMgr, err := minipool.NewMinipoolManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+	mp, err := mpMgr.CreateMinipoolFromAddress(c.minipoolAddress, false, nil)
 	if err != nil {
 		return fmt.Errorf("error creating minipool binding from address: %w", err)
 	}
@@ -104,7 +109,7 @@ func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeW
 	}
 
 	// Check minipool status
-	if !c.mpv3.Details.IsVacant {
+	if !c.mpv3.IsVacant {
 		return fmt.Errorf("minipool %s is not vacant", c.minipoolAddress.Hex())
 	}
 	if c.mpv3.GetCommonDetails().Status.Formatted() != types.Prelaunch {

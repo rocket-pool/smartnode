@@ -102,13 +102,13 @@ func (t *dissolveTimedOutMinipools) run(state *state.NetworkState) error {
 }
 
 // Get timed out minipools
-func (t *dissolveTimedOutMinipools) getTimedOutMinipools(state *state.NetworkState) ([]minipool.Minipool, error) {
+func (t *dissolveTimedOutMinipools) getTimedOutMinipools(state *state.NetworkState) ([]minipool.IMinipool, error) {
 
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
 	}
 
-	timedOutMinipools := []minipool.Minipool{}
+	timedOutMinipools := []minipool.IMinipool{}
 	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
 	secondsSinceGenesis := time.Duration(state.BeaconSlotNumber*state.BeaconConfig.SecondsPerSlot) * time.Second
 	blockTime := genesisTime.Add(secondsSinceGenesis)
@@ -133,7 +133,7 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools(state *state.NetworkSta
 }
 
 // Dissolve a minipool
-func (t *dissolveTimedOutMinipools) dissolveMinipool(mp minipool.Minipool) error {
+func (t *dissolveTimedOutMinipools) dissolveMinipool(mp minipool.IMinipool) error {
 
 	// Log
 	t.log.Printlnf("Dissolving minipool %s...", mp.GetAddress().Hex())

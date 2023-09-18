@@ -10,8 +10,8 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -52,7 +52,7 @@ type auctionRecoverContext struct {
 
 	lotIndex  uint64
 	lot       *auction.AuctionLot
-	pSettings *settings.ProtocolDaoSettings
+	pSettings *protocol.ProtocolDaoSettings
 }
 
 func (c *auctionRecoverContext) Initialize() error {
@@ -70,10 +70,11 @@ func (c *auctionRecoverContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating lot %d binding: %w", c.lotIndex, err)
 	}
-	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
+	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO settings binding: %w", err)
+		return fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
+	c.pSettings = pMgr.Settings
 	return nil
 }
 
@@ -93,10 +94,10 @@ func (c *auctionRecoverContext) PrepareData(data *api.AuctionRecoverRplFromLotDa
 	}
 
 	// Check for validity
-	data.DoesNotExist = !c.lot.Details.Exists
-	data.BiddingNotEnded = !(currentBlock >= c.lot.Details.EndBlock.Formatted())
-	data.NoUnclaimedRpl = (c.lot.Details.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
-	data.RplAlreadyRecovered = c.lot.Details.RplRecovered
+	data.DoesNotExist = !c.lot.Exists
+	data.BiddingNotEnded = !(currentBlock >= c.lot.EndBlock.Formatted())
+	data.NoUnclaimedRpl = (c.lot.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
+	data.RplAlreadyRecovered = c.lot.RplRecovered
 	data.CanRecover = !(data.DoesNotExist || data.BiddingNotEnded || data.NoUnclaimedRpl || data.RplAlreadyRecovered)
 
 	// Get tx info

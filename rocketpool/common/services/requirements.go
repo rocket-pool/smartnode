@@ -228,7 +228,7 @@ func (sp *ServiceProvider) getNodeRegistered() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("error getting node registration status: %w", err)
 	}
-	return node.Details.Exists, nil
+	return node.Exists, nil
 }
 
 // Check if the node is a member of the oracle DAO
@@ -250,7 +250,7 @@ func (sp *ServiceProvider) isMemberOfOracleDao() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("error getting oDAO member contract status: %w", err)
 	}
-	return odaoMember.Details.Exists, nil
+	return odaoMember.Exists, nil
 }
 
 // Check if the primary and fallback Execution clients are synced

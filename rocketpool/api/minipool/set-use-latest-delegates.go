@@ -52,7 +52,6 @@ func (c *minipoolSetUseLatestDelegatesContext) PrepareData(data *api.BatchTxInfo
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "set-use-latest-delegate")
 }
 
-func (c *minipoolSetUseLatestDelegatesContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	mpCommon := mp.GetMinipoolCommon()
-	return mpCommon.SetUseLatestDelegate(c.setting, opts)
+func (c *minipoolSetUseLatestDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+	return mp.SetUseLatestDelegate(c.setting, opts)
 }

@@ -62,7 +62,7 @@ func claimFromLot(c *cli.Context) error {
 		// Get matching lot
 		found := false
 		for _, lot := range claimableLots {
-			if lot.Details.Index == selectedIndex {
+			if lot.Index == selectedIndex {
 				selectedLots = []api.LotDetails{lot}
 				found = true
 				break
@@ -78,7 +78,7 @@ func claimFromLot(c *cli.Context) error {
 		options := make([]string, len(claimableLots)+1)
 		options[0] = "All available lots"
 		for li, lot := range claimableLots {
-			options[li+1] = fmt.Sprintf("lot %d (%.6f ETH bid @ %.6f ETH per RPL)", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.AddressBidAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
+			options[li+1] = fmt.Sprintf("lot %d (%.6f ETH bid @ %.6f ETH per RPL)", lot.Index, math.RoundDown(eth.WeiToEth(lot.AddressBidAmount), 6), math.RoundDown(eth.WeiToEth(lot.CurrentPrice), 6))
 		}
 		selected, _ := cliutils.Select("Please select a lot to claim RPL from:", options)
 
@@ -96,9 +96,9 @@ func claimFromLot(c *cli.Context) error {
 	var totalSafeGas uint64 = 0
 	var gasInfo rocketpoolapi.GasInfo
 	for _, lot := range selectedLots {
-		canResponse, err := rp.CanClaimFromLot(lot.Details.Index)
+		canResponse, err := rp.CanClaimFromLot(lot.Index)
 		if err != nil {
-			return fmt.Errorf("Error checking if claiming lot %d is possible: %w", lot.Details.Index, err)
+			return fmt.Errorf("Error checking if claiming lot %d is possible: %w", lot.Index, err)
 		}
 		gasInfo = canResponse.GasInfo
 		totalGas += canResponse.GasInfo.EstGasLimit
@@ -121,18 +121,18 @@ func claimFromLot(c *cli.Context) error {
 
 	// Claim RPL from lots
 	for _, lot := range selectedLots {
-		response, err := rp.ClaimFromLot(lot.Details.Index)
+		response, err := rp.ClaimFromLot(lot.Index)
 		if err != nil {
-			fmt.Printf("Could not claim RPL from lot %d: %s.\n", lot.Details.Index, err)
+			fmt.Printf("Could not claim RPL from lot %d: %s.\n", lot.Index, err)
 			continue
 		}
 
-		fmt.Printf("Claiming from lot %d...\n", lot.Details.Index)
+		fmt.Printf("Claiming from lot %d...\n", lot.Index)
 		cliutils.PrintTransactionHash(rp, response.TxHash)
 		if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-			fmt.Printf("Could not claim RPL from lot %d: %s.\n", lot.Details.Index, err)
+			fmt.Printf("Could not claim RPL from lot %d: %s.\n", lot.Index, err)
 		} else {
-			fmt.Printf("Successfully claimed RPL from lot %d.\n", lot.Details.Index)
+			fmt.Printf("Successfully claimed RPL from lot %d.\n", lot.Index)
 		}
 	}
 

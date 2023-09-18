@@ -50,7 +50,6 @@ func (c *minipoolDissolveContext) PrepareData(data *api.BatchTxInfoData, opts *b
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "dissolve")
 }
 
-func (c *minipoolDissolveContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	mpCommon := mp.GetMinipoolCommon()
-	return mpCommon.Dissolve(opts)
+func (c *minipoolDissolveContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+	return mp.Dissolve(opts)
 }

@@ -99,23 +99,23 @@ func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	actionWindow := c.oSettings.Details.Proposals.ActionTime.Formatted()
+	actionWindow := c.oSettings.Proposals.ActionTime.Formatted()
 
 	// Check action windows for the current member
-	exists := c.odaoMember.Details.Exists
+	exists := c.odaoMember.Exists
 	data.IsMember = exists
 	if exists {
-		data.CanLeave = isProposalActionable(actionWindow, c.odaoMember.Details.LeftTime.Formatted(), currentTime)
-		data.CanReplace = isProposalActionable(actionWindow, c.odaoMember.Details.ReplacedTime.Formatted(), currentTime)
+		data.CanLeave = isProposalActionable(actionWindow, c.odaoMember.LeftTime.Formatted(), currentTime)
+		data.CanReplace = isProposalActionable(actionWindow, c.odaoMember.ReplacedTime.Formatted(), currentTime)
 	} else {
-		data.CanJoin = isProposalActionable(actionWindow, c.odaoMember.Details.InvitedTime.Formatted(), currentTime)
+		data.CanJoin = isProposalActionable(actionWindow, c.odaoMember.InvitedTime.Formatted(), currentTime)
 	}
 
 	// Total member count
-	data.TotalMembers = c.odaoMgr.Details.MemberCount.Formatted()
+	data.TotalMembers = c.odaoMgr.MemberCount.Formatted()
 
 	// Get the proposals
-	_, props, err := c.dpm.GetProposals(c.rp, c.dpm.Details.ProposalCount.Formatted(), false, nil)
+	_, props, err := c.dpm.GetProposals(c.rp, c.dpm.ProposalCount.Formatted(), false, nil)
 	if err != nil {
 		return fmt.Errorf("error getting Oracle DAO proposals: %w", err)
 	}
@@ -123,7 +123,7 @@ func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts
 	// Proposal info
 	data.ProposalCounts.Total = len(props)
 	for _, prop := range props {
-		switch prop.Details.State.Formatted() {
+		switch prop.State.Formatted() {
 		case rptypes.Pending:
 			data.ProposalCounts.Pending++
 		case rptypes.Active:

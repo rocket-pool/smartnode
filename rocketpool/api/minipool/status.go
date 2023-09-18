@@ -14,10 +14,11 @@ import (
 
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -57,8 +58,8 @@ type minipoolStatusContext struct {
 	bc      beacon.Client
 
 	delegate      *core.Contract
-	pSettings     *settings.ProtocolDaoSettings
-	oSettings     *settings.OracleDaoSettings
+	pSettings     *protocol.ProtocolDaoSettings
+	oSettings     *oracle.OracleDaoSettings
 	reth          *tokens.TokenReth
 	rpl           *tokens.TokenRpl
 	fsrpl         *tokens.TokenRplFixedSupply
@@ -86,14 +87,16 @@ func (c *minipoolStatusContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error getting minipool delegate binding: %w", err)
 	}
-	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
+	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO settings binding: %w", err)
+		return fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
-	c.oSettings, err = settings.NewOracleDaoSettings(c.rp)
+	c.pSettings = pMgr.Settings
+	oMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating oDAO settings binding: %w", err)
+		return fmt.Errorf("error creating oDAO manager binding: %w", err)
 	}
+	c.oSettings = oMgr.Settings
 	c.reth, err = tokens.NewTokenReth(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating rETH token binding: %w", err)
@@ -117,22 +120,22 @@ func (c *minipoolStatusContext) GetState(node *node.Node, mc *batch.MultiCaller)
 
 func (c *minipoolStatusContext) CheckState(node *node.Node, response *api.MinipoolStatusData) bool {
 	// Provision the token balance counts
-	minipoolCount := node.Details.MinipoolCount.Formatted()
+	minipoolCount := node.MinipoolCount.Formatted()
 	c.rethBalances = make([]*big.Int, minipoolCount)
 	c.rplBalances = make([]*big.Int, minipoolCount)
 	c.fsrplBalances = make([]*big.Int, minipoolCount)
 	return true
 }
 
-func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-	address := mp.GetMinipoolCommon().Details.Address
+func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+	address := mp.GetCommonDetails().Address
 	mp.QueryAllDetails(mc)
 	c.reth.GetBalance(mc, &c.rethBalances[index], address)
 	c.rpl.GetBalance(mc, &c.rplBalances[index], address)
 	c.fsrpl.GetBalance(mc, &c.fsrplBalances[index], address)
 }
 
-func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolStatusData) error {
+func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolStatusData) error {
 	// Data
 	var wg1 errgroup.Group
 	var eth2Config beacon.Eth2Config
@@ -181,17 +184,17 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	currentEpoch := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerEpoch
 
 	// Get some protocol settings
-	launchTimeout := c.pSettings.Details.Minipool.LaunchTimeout.Formatted()
-	scrubPeriod := c.oSettings.Details.Minipools.ScrubPeriod.Formatted()
-	promotionScrubPeriod := c.oSettings.Details.Minipools.PromotionScrubPeriod.Formatted()
+	launchTimeout := c.pSettings.Minipool.LaunchTimeout.Formatted()
+	scrubPeriod := c.oSettings.Minipools.ScrubPeriod.Formatted()
+	promotionScrubPeriod := c.oSettings.Minipools.PromotionScrubPeriod.Formatted()
 
 	// Get the statuses on Beacon
 	pubkeys := make([]rptypes.ValidatorPubkey, 0, len(addresses))
 	for _, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
-		status := mpCommon.Details.Status.Formatted()
-		if status == rptypes.Staking || (status == rptypes.Dissolved && !mpCommon.Details.IsFinalised) {
-			pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
+		mpCommon := mp.GetCommonDetails()
+		status := mpCommon.Status.Formatted()
+		if status == rptypes.Staking || (status == rptypes.Dissolved && !mpCommon.IsFinalised) {
+			pubkeys = append(pubkeys, mpCommon.Pubkey)
 		}
 	}
 	beaconStatuses, err := c.bc.GetValidatorStatuses(pubkeys, nil)
@@ -202,7 +205,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	// Assign the details
 	details := make([]api.MinipoolDetails, len(mps))
 	for i, mp := range mps {
-		mpCommonDetails := mp.GetMinipoolCommon().Details
+		mpCommonDetails := mp.GetCommonDetails()
 		pubkey := mpCommonDetails.Pubkey
 		mpv3, isv3 := minipool.GetMinipoolAsV3(mp)
 
@@ -251,8 +254,8 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 
 		// Atlas info
 		if isv3 {
-			mpDetails.Status.IsVacant = mpv3.Details.IsVacant
-			mpDetails.ReduceBondTime = mpv3.Details.ReduceBondTime.Formatted()
+			mpDetails.Status.IsVacant = mpv3.IsVacant
+			mpDetails.ReduceBondTime = mpv3.ReduceBondTime.Formatted()
 
 			// Check the promotion status of each minipool
 			if mpDetails.Status.IsVacant {
@@ -288,7 +291,8 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 
 	// Calculate the node share of each minipool balance
 	err = c.rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
-		mpCommon := mps[i].GetMinipoolCommon()
+		mp := mps[i]
+		mpCommon := mp.GetCommonDetails()
 		mpDetails := &details[i]
 
 		// Get the node share of the ETH balance
@@ -296,15 +300,15 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 			mpDetails.NodeShareOfEthBalance = big.NewInt(0)
 		} else {
 			effectiveBalance := big.NewInt(0).Sub(mpDetails.Balances.Eth, mpDetails.Node.RefundBalance)
-			mpCommon.CalculateNodeShare(mc, &mpDetails.NodeShareOfEthBalance, effectiveBalance)
+			mp.CalculateNodeShare(mc, &mpDetails.NodeShareOfEthBalance, effectiveBalance)
 		}
 
 		// Get the node share of the Beacon balance
-		pubkey := mpCommon.Details.Pubkey
+		pubkey := mpCommon.Pubkey
 		beaconStatus, existsOnBeacon := beaconStatuses[pubkey]
 		validatorActivated := (beaconStatus.ActivationEpoch < currentEpoch)
 		if validatorActivated && existsOnBeacon {
-			mpCommon.CalculateNodeShare(mc, &mpDetails.Validator.NodeBalance, mpDetails.Validator.Balance)
+			mp.CalculateNodeShare(mc, &mpDetails.Validator.NodeBalance, mpDetails.Validator.Balance)
 		}
 
 		return nil

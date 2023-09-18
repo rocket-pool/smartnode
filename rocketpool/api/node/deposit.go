@@ -32,7 +32,7 @@ type nodeDepositHandler struct {
 	depositPool *deposit.DepositPool
 	pSettings   *settings.ProtocolDaoSettings
 	oSettings   *settings.OracleDaoSettings
-	mpMgr       *minipool.MinipoolManager
+	mpMgr       *minipool.IMinipoolManager
 }
 
 func (h *nodeDepositHandler) CreateBindings(ctx *callContext) error {
@@ -75,10 +75,10 @@ func (h *nodeDepositHandler) PrepareResponse(ctx *callContext, response *api.Nod
 	w := ctx.w
 
 	// Initial population
-	response.CreditBalance = node.Details.Credit
-	response.DepositDisabled = !h.pSettings.Details.Node.IsDepositingEnabled
-	response.DepositBalance = h.depositPool.Details.Balance
-	response.ScrubPeriod = h.oSettings.Details.Minipools.ScrubPeriod.Formatted()
+	response.CreditBalance = node.Credit
+	response.DepositDisabled = !h.pSettings.Node.IsDepositingEnabled
+	response.DepositBalance = h.depositPool.Balance
+	response.ScrubPeriod = h.oSettings.Minipools.ScrubPeriod.Formatted()
 
 	// Get Beacon config
 	eth2Config, err := bc.GetEth2Config()
@@ -88,7 +88,7 @@ func (h *nodeDepositHandler) PrepareResponse(ctx *callContext, response *api.Nod
 
 	// Adjust the salt
 	if h.salt.Cmp(big.NewInt(0)) == 0 {
-		nonce, err := rp.Client.NonceAt(context.Background(), node.Details.Address, nil)
+		nonce, err := rp.Client.NonceAt(context.Background(), node.Address, nil)
 		if err != nil {
 			return fmt.Errorf("error getting node's latest nonce: %w", err)
 		}
@@ -96,13 +96,13 @@ func (h *nodeDepositHandler) PrepareResponse(ctx *callContext, response *api.Nod
 	}
 
 	// Check node balance
-	response.NodeBalance, err = rp.Client.BalanceAt(context.Background(), node.Details.Address, nil)
+	response.NodeBalance, err = rp.Client.BalanceAt(context.Background(), node.Address, nil)
 	if err != nil {
 		return fmt.Errorf("error getting node's ETH balance: %w", err)
 	}
 
 	// Check the node's collateral
-	collateral, err := rputils.CheckCollateral(rp, node.Details.Address, nil)
+	collateral, err := rputils.CheckCollateral(rp, node.Address, nil)
 	if err != nil {
 		return fmt.Errorf("error checking node collateral: %w", err)
 	}

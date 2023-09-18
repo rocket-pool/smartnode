@@ -37,10 +37,10 @@ type IMinipoolCallContext[DataType any] interface {
 
 	// Get whatever details of the given minipool are necessary; this will be passed into an rp.BatchQuery call, one run per minipool
 	// belonging to the node
-	GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int)
+	GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int)
 
 	// Prepare the response data using all of the provided artifacts
-	PrepareData(addresses []common.Address, mps []minipool.Minipool, data *DataType) error
+	PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *DataType) error
 }
 
 // Interface for minipool call context factories - these will be invoked during route handling to create the
@@ -131,13 +131,17 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	}
 
 	// Get the minipool addresses for this node
-	addresses, err := node.GetMinipoolAddresses(node.Details.MinipoolCount.Formatted(), opts)
+	addresses, err := node.GetMinipoolAddresses(node.MinipoolCount.Formatted(), opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
 
 	// Create each minipool binding
-	mps, err := minipool.CreateMinipoolsFromAddresses(rp, addresses, false, opts)
+	mpMgr, err := minipool.NewMinipoolManager(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+	mps, err := mpMgr.CreateMinipoolsFromAddresses(addresses, false, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating minipool bindings: %w", err)
 	}

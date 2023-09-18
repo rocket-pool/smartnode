@@ -58,7 +58,7 @@ type minipoolChangeCredsContext struct {
 
 	mnemonic        string
 	minipoolAddress common.Address
-	mp              minipool.Minipool
+	mp              minipool.IMinipool
 }
 
 func (c *minipoolChangeCredsContext) Initialize() error {
@@ -77,7 +77,11 @@ func (c *minipoolChangeCredsContext) Initialize() error {
 	}
 
 	// Bindings
-	c.mp, err = minipool.CreateMinipoolFromAddress(c.rp, c.minipoolAddress, false, nil)
+	mpMgr, err := minipool.NewMinipoolManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+	c.mp, err = mpMgr.CreateMinipoolFromAddress(c.minipoolAddress, false, nil)
 	if err != nil {
 		return fmt.Errorf("error creating minipool binding from address: %w", err)
 	}
@@ -85,12 +89,12 @@ func (c *minipoolChangeCredsContext) Initialize() error {
 }
 
 func (c *minipoolChangeCredsContext) GetState(mc *batch.MultiCaller) {
-	c.mp.GetMinipoolCommon().GetPubkey(mc)
+	c.mp.GetPubkey(mc)
 }
 
 func (c *minipoolChangeCredsContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
 	// Get minipool validator pubkey
-	pubkey := c.mp.GetMinipoolCommon().Details.Pubkey
+	pubkey := c.mp.GetCommonDetails().Pubkey
 
 	// Get the index for this validator based on the mnemonic
 	index := uint(0)

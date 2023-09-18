@@ -70,7 +70,7 @@ func (c *networkTimezoneContext) GetState(mc *batch.MultiCaller) {
 
 func (c *networkTimezoneContext) PrepareData(data *api.NetworkTimezonesData, opts *bind.TransactOpts) error {
 	data.TimezoneCounts = map[string]uint64{}
-	timezoneCounts, err := c.nodeMgr.GetNodeCountPerTimezone(c.nodeMgr.Details.NodeCount.Formatted(), nil)
+	timezoneCounts, err := c.nodeMgr.GetNodeCountPerTimezone(c.nodeMgr.NodeCount.Formatted(), nil)
 	if err != nil {
 		return fmt.Errorf("error getting node counts per timezone: %w", err)
 	}

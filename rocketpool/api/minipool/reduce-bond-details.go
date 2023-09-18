@@ -9,10 +9,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -50,8 +51,8 @@ type minipoolReduceBondDetailsContext struct {
 	rp      *rocketpool.RocketPool
 	bc      beacon.Client
 
-	pSettings *settings.ProtocolDaoSettings
-	oSettings *settings.OracleDaoSettings
+	pSettings *protocol.ProtocolDaoSettings
+	oSettings *oracle.OracleDaoSettings
 }
 
 func (c *minipoolReduceBondDetailsContext) Initialize() error {
@@ -69,14 +70,16 @@ func (c *minipoolReduceBondDetailsContext) Initialize() error {
 	}
 
 	// Bindings
-	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
+	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO settings binding: %w", err)
+		return fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
-	c.oSettings, err = settings.NewOracleDaoSettings(c.rp)
+	c.pSettings = pMgr.Settings
+	oMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating oDAO settings binding: %w", err)
+		return fmt.Errorf("error creating oDAO manager binding: %w", err)
 	}
+	c.oSettings = oMgr.Settings
 	return nil
 }
 
@@ -87,11 +90,11 @@ func (c *minipoolReduceBondDetailsContext) GetState(node *node.Node, mc *batch.M
 }
 
 func (c *minipoolReduceBondDetailsContext) CheckState(node *node.Node, response *api.MinipoolReduceBondDetailsData) bool {
-	response.BondReductionDisabled = !c.pSettings.Details.Minipool.IsBondReductionEnabled
+	response.BondReductionDisabled = !c.pSettings.Minipool.IsBondReductionEnabled
 	return !response.BondReductionDisabled
 }
 
-func (c *minipoolReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+func (c *minipoolReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
 		mpv3.GetFinalised(mc)
@@ -101,7 +104,7 @@ func (c *minipoolReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCal
 	}
 }
 
-func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolReduceBondDetailsData) error {
+func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolReduceBondDetailsData) error {
 	// Get the latest block header
 	header, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
@@ -114,27 +117,27 @@ func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Addres
 	detailsMap := map[types.ValidatorPubkey]int{}
 	details := make([]api.MinipoolReduceBondDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
+		mpCommon := mp.GetCommonDetails()
 		mpDetails := api.MinipoolReduceBondDetails{
-			Address: mpCommon.Details.Address,
+			Address: mpCommon.Address,
 		}
 
 		mpv3, success := minipool.GetMinipoolAsV3(mp)
 		if !success {
 			mpDetails.MinipoolVersionTooLow = true
-		} else if mpCommon.Details.Status.Formatted() != types.Staking || mpCommon.Details.IsFinalised {
+		} else if mpCommon.Status.Formatted() != types.Staking || mpCommon.IsFinalised {
 			mpDetails.InvalidElState = true
 		} else {
-			reductionStart := mpv3.Details.ReduceBondTime.Formatted()
+			reductionStart := mpv3.ReduceBondTime.Formatted()
 			timeSinceBondReductionStart := currentTime.Sub(reductionStart)
-			windowStart := c.oSettings.Details.Minipools.BondReductionWindowStart.Formatted()
-			windowEnd := windowStart + c.oSettings.Details.Minipools.BondReductionWindowLength.Formatted()
+			windowStart := c.oSettings.Minipools.BondReductionWindowStart.Formatted()
+			windowEnd := windowStart + c.oSettings.Minipools.BondReductionWindowLength.Formatted()
 
 			if timeSinceBondReductionStart < windowStart || timeSinceBondReductionStart > windowEnd {
 				mpDetails.OutOfWindow = true
 			} else {
-				pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
-				detailsMap[mpCommon.Details.Pubkey] = i
+				pubkeys = append(pubkeys, mpCommon.Pubkey)
+				detailsMap[mpCommon.Pubkey] = i
 			}
 		}
 

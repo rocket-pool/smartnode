@@ -59,16 +59,15 @@ func (c *minipoolDissolveDetailsContext) CheckState(node *node.Node, response *a
 	return true
 }
 
-func (c *minipoolDissolveDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-	mpCommon := mp.GetMinipoolCommon()
-	mpCommon.GetNodeAddress(mc)
-	mpCommon.GetStatus(mc)
+func (c *minipoolDissolveDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+	mp.GetNodeAddress(mc)
+	mp.GetStatus(mc)
 }
 
-func (c *minipoolDissolveDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolDissolveDetailsData) error {
+func (c *minipoolDissolveDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolDissolveDetailsData) error {
 	details := make([]api.MinipoolDissolveDetails, len(mps))
 	for i, mp := range mps {
-		mpCommonDetails := mp.GetMinipoolCommon().Details
+		mpCommonDetails := mp.GetCommonDetails()
 		status := mpCommonDetails.Status.Formatted()
 		mpDetails := api.MinipoolDissolveDetails{
 			Address:       mpCommonDetails.Address,

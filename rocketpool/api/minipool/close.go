@@ -69,28 +69,27 @@ func (c *minipoolCloseContext) CheckState(node *node.Node, response *api.BatchTx
 	return true
 }
 
-func (c *minipoolCloseContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-	mpCommon := mp.GetMinipoolCommon()
-	mpCommon.GetStatus(mc)
+func (c *minipoolCloseContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+	mp.GetStatus(mc)
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
 		mpv3.GetUserDistributed(mc)
 	}
 }
 
-func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.BatchTxInfoData) error {
+func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.BatchTxInfoData) error {
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, addresses, data, c.CreateTx, "close")
 }
 
-func (c *minipoolCloseContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	mpCommon := mp.GetMinipoolCommon()
-	minipoolAddress := mpCommon.Details.Address
+func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+	mpCommon := mp.GetCommonDetails()
+	minipoolAddress := mpCommon.Address
 	mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)
 
 	// If it's dissolved, just close it
-	if mpCommon.Details.Status.Formatted() == types.Dissolved {
+	if mpCommon.Status.Formatted() == types.Dissolved {
 		// Get gas estimate
-		txInfo, err := mp.GetMinipoolCommon().Close(opts)
+		txInfo, err := mp.Close(opts)
 		if err != nil {
 			return nil, fmt.Errorf("error simulating close for minipool %s: %w", minipoolAddress.Hex(), err)
 		}
@@ -99,7 +98,7 @@ func (c *minipoolCloseContext) CreateTx(mp minipool.Minipool, opts *bind.Transac
 
 	// Check if it's an upgraded Atlas-era minipool
 	if isMpv3 {
-		if mpv3.Details.HasUserDistributed {
+		if mpv3.HasUserDistributed {
 			// It's already been distributed so just finalize it
 			txInfo, err := mpv3.Finalise(opts)
 			if err != nil {
@@ -117,5 +116,5 @@ func (c *minipoolCloseContext) CreateTx(mp minipool.Minipool, opts *bind.Transac
 	}
 
 	// Handle old minipools
-	return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mpCommon.Details.Version)
+	return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mpCommon.Version)
 }

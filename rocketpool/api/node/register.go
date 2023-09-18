@@ -35,8 +35,8 @@ func (h *nodeRegisterHandler) PrepareResponse(ctx *callContext, response *api.No
 	node := ctx.node
 	opts := ctx.opts
 
-	response.AlreadyRegistered = node.Details.Exists
-	response.RegistrationDisabled = !h.pSettings.Details.Node.IsRegistrationEnabled
+	response.AlreadyRegistered = node.Exists
+	response.RegistrationDisabled = !h.pSettings.Node.IsRegistrationEnabled
 	response.CanRegister = !(response.AlreadyRegistered || response.RegistrationDisabled)
 	if !response.CanRegister {
 		return nil

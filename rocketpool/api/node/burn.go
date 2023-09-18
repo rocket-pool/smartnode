@@ -29,7 +29,7 @@ func (h *nodeBurnHandler) CreateBindings(ctx *callContext) error {
 
 func (h *nodeBurnHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
 	node := ctx.node
-	h.reth.GetBalance(mc, &h.balance, node.Details.Address)
+	h.reth.GetBalance(mc, &h.balance, node.Address)
 	h.reth.GetTotalCollateral(mc)
 }
 
@@ -38,7 +38,7 @@ func (h *nodeBurnHandler) PrepareResponse(ctx *callContext, response *api.NodeBu
 
 	// Check for validity
 	response.InsufficientBalance = (h.amountWei.Cmp(h.balance) > 0)
-	response.InsufficientCollateral = (h.amountWei.Cmp(h.reth.Details.TotalCollateral) > 0)
+	response.InsufficientCollateral = (h.amountWei.Cmp(h.reth.TotalCollateral) > 0)
 	response.CanBurn = !(response.InsufficientBalance || response.InsufficientCollateral)
 
 	// Get tx info

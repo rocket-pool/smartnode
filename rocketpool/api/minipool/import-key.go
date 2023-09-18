@@ -55,7 +55,7 @@ type minipoolImportKeyContext struct {
 	rp          *rocketpool.RocketPool
 	w           *wallet.LocalWallet
 	nodeAddress common.Address
-	mp          minipool.Minipool
+	mp          minipool.IMinipool
 
 	minipoolAddress common.Address
 	mnemonic        string
@@ -77,7 +77,11 @@ func (c *minipoolImportKeyContext) Initialize() error {
 	}
 
 	// Bindings
-	c.mp, err = minipool.CreateMinipoolFromAddress(c.rp, c.minipoolAddress, false, nil)
+	mpMgr, err := minipool.NewMinipoolManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+	c.mp, err = mpMgr.CreateMinipoolFromAddress(c.minipoolAddress, false, nil)
 	if err != nil {
 		return fmt.Errorf("error creating minipool binding: %w", err)
 	}
@@ -85,20 +89,19 @@ func (c *minipoolImportKeyContext) Initialize() error {
 }
 
 func (c *minipoolImportKeyContext) GetState(mc *batch.MultiCaller) {
-	mpCommon := c.mp.GetMinipoolCommon()
-	mpCommon.GetNodeAddress(mc)
-	mpCommon.GetPubkey(mc)
+	c.mp.GetNodeAddress(mc)
+	c.mp.GetPubkey(mc)
 }
 
 func (c *minipoolImportKeyContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
 	// Validate minipool owner
-	mpCommon := c.mp.GetMinipoolCommon()
-	if mpCommon.Details.NodeAddress != c.nodeAddress {
+	mpCommon := c.mp.GetCommonDetails()
+	if mpCommon.NodeAddress != c.nodeAddress {
 		return fmt.Errorf("minipool %s does not belong to the node", c.minipoolAddress.Hex())
 	}
 
 	// Get minipool validator pubkey
-	pubkey := mpCommon.Details.Pubkey
+	pubkey := mpCommon.Pubkey
 	emptyPubkey := types.ValidatorPubkey{}
 	if pubkey == emptyPubkey {
 		return fmt.Errorf("minipool %s does not have a validator pubkey associated with it", c.minipoolAddress.Hex())

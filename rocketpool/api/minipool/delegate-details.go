@@ -75,20 +75,19 @@ func (c *minipoolDelegateDetailsContext) CheckState(node *node.Node, response *a
 	return true
 }
 
-func (c *minipoolDelegateDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-	mpCommon := mp.GetMinipoolCommon()
-	mpCommon.GetDelegate(mc)
-	mpCommon.GetEffectiveDelegate(mc)
-	mpCommon.GetPreviousDelegate(mc)
-	mpCommon.GetUseLatestDelegate(mc)
+func (c *minipoolDelegateDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+	mp.GetDelegate(mc)
+	mp.GetEffectiveDelegate(mc)
+	mp.GetPreviousDelegate(mc)
+	mp.GetUseLatestDelegate(mc)
 }
 
-func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolDelegateDetailsData) error {
+func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolDelegateDetailsData) error {
 	// Get all of the unique delegate addresses used by this node
 	delegateAddresses := []common.Address{}
 	delegateAddressMap := map[common.Address]bool{}
 	for _, mp := range mps {
-		mpCommonDetails := mp.GetMinipoolCommon().Details
+		mpCommonDetails := mp.GetCommonDetails()
 		delegateAddressMap[mpCommonDetails.DelegateAddress] = true
 		delegateAddressMap[mpCommonDetails.EffectiveDelegateAddress] = true
 		delegateAddressMap[mpCommonDetails.PreviousDelegateAddress] = true
@@ -119,7 +118,7 @@ func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address,
 	// Assign the details
 	details := make([]api.MinipoolDelegateDetails, len(mps))
 	for i, mp := range mps {
-		mpCommonDetails := mp.GetMinipoolCommon().Details
+		mpCommonDetails := mp.GetCommonDetails()
 		details[i] = api.MinipoolDelegateDetails{
 			Address:           mpCommonDetails.Address,
 			Delegate:          mpCommonDetails.DelegateAddress,

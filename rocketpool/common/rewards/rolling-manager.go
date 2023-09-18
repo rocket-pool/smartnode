@@ -622,7 +622,7 @@ func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error 
 	if err != nil {
 		return fmt.Errorf("error getting rewards index: %w", err)
 	}
-	currentIndex := rewardsPool.Details.RewardIndex.Formatted()
+	currentIndex := rewardsPool.RewardIndex.Formatted()
 
 	// Get the previous RocketRewardsPool addresses
 	prevAddresses := r.cfg.Smartnode.GetPreviousRewardsPoolAddresses()

@@ -28,7 +28,7 @@ var faucetOnce sync.Once
 
 // Binding for RPL Faucet
 type RplFaucet struct {
-	Details  RplFaucetDetails
+	*RplFaucetDetails
 	contract *core.Contract
 }
 
@@ -75,7 +75,8 @@ func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFauc
 	}
 
 	return &RplFaucet{
-		contract: contract,
+		RplFaucetDetails: &RplFaucetDetails{},
+		contract:         contract,
 	}, nil
 }
 
@@ -85,32 +86,32 @@ func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFauc
 
 // Get the max amount of RPL that can be withdrawn (in total) per withdrawal period
 func (c *RplFaucet) GetMaxWithdrawalPerPeriod(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.Details.MaxWithdrawalPerPeriod, "maxWithdrawalPerPeriod")
+	core.AddCall(mc, c.contract, &c.MaxWithdrawalPerPeriod, "maxWithdrawalPerPeriod")
 }
 
 // Get the withdrawal fee, in ETH, for pulling RPL out of the faucet
 func (c *RplFaucet) GetWithdrawalFee(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.Details.WithdrawalFee, "withdrawalFee")
+	core.AddCall(mc, c.contract, &c.WithdrawalFee, "withdrawalFee")
 }
 
 // Get the owner of the faucet that can perform administrative duties
 func (c *RplFaucet) GetOwner(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.Details.Owner, "owner")
+	core.AddCall(mc, c.contract, &c.Owner, "owner")
 }
 
 // Get the length of a withdrawal period before it resets, in blocks
 func (c *RplFaucet) GetWithdrawalPeriod(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.Details.WithdrawalPeriod.RawValue, "withdrawalPeriod")
+	core.AddCall(mc, c.contract, &c.WithdrawalPeriod.RawValue, "withdrawalPeriod")
 }
 
 // Get the remaining RPL balance of the faucet
 func (c *RplFaucet) GetBalance(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.Details.Balance, "getBalance")
+	core.AddCall(mc, c.contract, &c.Balance, "getBalance")
 }
 
 // Get the amount of RPL that can be withdrawn per address in each withdrawal period
 func (c *RplFaucet) GetAllowance(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.Details.Allowance, "getAllowance")
+	core.AddCall(mc, c.contract, &c.Allowance, "getAllowance")
 }
 
 // Get the amount of RPL that can be withdrawn by the given address in the current withdrawal period
@@ -120,7 +121,7 @@ func (c *RplFaucet) GetAllowanceFor(mc *batch.MultiCaller, allowance **big.Int, 
 
 // Get the block number the current withdrawal period started
 func (c *RplFaucet) GetWithdrawalPeriodStart(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.Details.WithdrawalPeriodStart.RawValue, "getWithdrawalPeriodStart")
+	core.AddCall(mc, c.contract, &c.WithdrawalPeriodStart.RawValue, "getWithdrawalPeriodStart")
 }
 
 // Get all basic details

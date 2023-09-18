@@ -12,8 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	batchquery "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
@@ -661,10 +661,11 @@ func (r *treeGeneratorImpl_v6_rolling) validateNetwork(network uint64) (bool, er
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
 		// Make the oDAO settings binding
-		oSettings, err := settings.NewOracleDaoSettings(r.rp)
+		oMgr, err := oracle.NewOracleDaoManager(r.rp)
 		if err != nil {
-			return false, fmt.Errorf("error creating Oracle DAO settings binding: %w", err)
+			return false, fmt.Errorf("error creating oDAO manager binding: %w", err)
 		}
+		oSettings := oMgr.Settings
 
 		// Get the contract state
 		err = r.rp.Query(func(mc *batchquery.MultiCaller) error {

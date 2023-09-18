@@ -82,12 +82,11 @@ func (c *minipoolExitContext) CheckState(node *node.Node, response *api.SuccessD
 	return true
 }
 
-func (c *minipoolExitContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-	mpCommon := mp.GetMinipoolCommon()
-	mpCommon.GetPubkey(mc)
+func (c *minipoolExitContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+	mp.GetPubkey(mc)
 }
 
-func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.SuccessData) error {
+func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.SuccessData) error {
 	// Get beacon head
 	head, err := c.bc.GetBeaconHead()
 	if err != nil {
@@ -101,9 +100,9 @@ func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []mini
 	}
 
 	for _, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
-		minipoolAddress := mpCommon.Details.Address
-		validatorPubkey := mpCommon.Details.Pubkey
+		mpCommon := mp.GetCommonDetails()
+		minipoolAddress := mpCommon.Address
+		validatorPubkey := mpCommon.Pubkey
 
 		// Get validator private key
 		validatorKey, err := c.w.GetValidatorKeyByPubkey(validatorPubkey)

@@ -24,7 +24,7 @@ func (h *nodeCollateralHandler) PrepareResponse(ctx *callContext, response *api.
 	node := ctx.node
 
 	// Check collateral
-	collateral, err := rputils.CheckCollateral(rp, node.Details.Address, nil)
+	collateral, err := rputils.CheckCollateral(rp, node.Address, nil)
 	if err != nil {
 		return fmt.Errorf("error checking node collateral: %w", err)
 	}

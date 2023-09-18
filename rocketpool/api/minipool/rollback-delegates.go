@@ -50,7 +50,6 @@ func (c *minipoolRollbackDelegatesContext) PrepareData(data *api.BatchTxInfoData
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "rollback-delegate")
 }
 
-func (c *minipoolRollbackDelegatesContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	mpCommon := mp.GetMinipoolCommon()
-	return mpCommon.DelegateRollback(opts)
+func (c *minipoolRollbackDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+	return mp.DelegateRollback(opts)
 }

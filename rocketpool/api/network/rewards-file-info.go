@@ -77,7 +77,7 @@ func (c *networkRewardsFileContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *networkRewardsFileContext) PrepareData(data *api.NetworkRewardsFileData, opts *bind.TransactOpts) error {
-	data.CurrentIndex = c.rewardsPool.Details.RewardIndex.Formatted()
+	data.CurrentIndex = c.rewardsPool.RewardIndex.Formatted()
 
 	// Get the path of the file to save
 	filePath := c.cfg.Smartnode.GetRewardsTreePath(c.index, true)

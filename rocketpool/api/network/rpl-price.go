@@ -7,9 +7,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -45,8 +45,8 @@ type networkPriceContext struct {
 	handler *NetworkHandler
 	rp      *rocketpool.RocketPool
 
-	networkPrices *network.NetworkPrices
-	pSettings     *settings.ProtocolDaoSettings
+	pSettings  *protocol.ProtocolDaoSettings
+	networkMgr *network.NetworkManager
 }
 
 func (c *networkPriceContext) Initialize() error {
@@ -60,20 +60,21 @@ func (c *networkPriceContext) Initialize() error {
 	}
 
 	// Bindings
-	c.networkPrices, err = network.NewNetworkPrices(c.rp)
+	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting network prices binding: %w", err)
+		return fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
-	c.pSettings, err = settings.NewProtocolDaoSettings(c.rp)
+	c.pSettings = pMgr.Settings
+	c.networkMgr, err = network.NewNetworkManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting protocol DAO settings binding: %w", err)
+		return fmt.Errorf("error creating network prices binding: %w", err)
 	}
 	return nil
 }
 
 func (c *networkPriceContext) GetState(mc *batch.MultiCaller) {
-	c.networkPrices.GetPricesBlock(mc)
-	c.networkPrices.GetRplPrice(mc)
+	c.networkMgr.GetPricesBlock(mc)
+	c.networkMgr.GetRplPrice(mc)
 	c.pSettings.GetMinimumPerMinipoolStake(mc)
 	c.pSettings.GetMaximumPerMinipoolStake(mc)
 }
@@ -86,10 +87,10 @@ func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *b
 	var minPerMinipoolStake *big.Int
 	var maxPerMinipoolStake *big.Int
 
-	data.RplPriceBlock = c.networkPrices.Details.PricesBlock.Formatted()
-	rplPrice = c.networkPrices.Details.RplPrice.RawValue
-	minPerMinipoolStake = c.pSettings.Details.Node.MinimumPerMinipoolStake.RawValue
-	maxPerMinipoolStake = c.pSettings.Details.Node.MaximumPerMinipoolStake.RawValue
+	data.RplPriceBlock = c.networkMgr.PricesBlock.Formatted()
+	rplPrice = c.networkMgr.RplPrice.RawValue
+	minPerMinipoolStake = c.pSettings.Node.MinimumPerMinipoolStake.RawValue
+	maxPerMinipoolStake = c.pSettings.Node.MaximumPerMinipoolStake.RawValue
 
 	// Min for LEB8s
 	minPer8EthMinipoolRplStake := big.NewInt(0)

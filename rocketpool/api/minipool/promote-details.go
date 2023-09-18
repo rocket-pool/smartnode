@@ -9,10 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -47,7 +47,7 @@ type minipoolPromoteDetailsContext struct {
 	handler *MinipoolHandler
 	rp      *rocketpool.RocketPool
 
-	oSettings *settings.OracleDaoSettings
+	oSettings *oracle.OracleDaoSettings
 }
 
 func (c *minipoolPromoteDetailsContext) Initialize() error {
@@ -63,7 +63,11 @@ func (c *minipoolPromoteDetailsContext) Initialize() error {
 	}
 
 	// Bindings
-	c.oSettings, err = settings.NewOracleDaoSettings(c.rp)
+	oMgr, err := oracle.NewOracleDaoManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating oDAO manager binding: %w", err)
+	}
+	c.oSettings = oMgr.Settings
 	if err != nil {
 		return fmt.Errorf("error creating oDAO settings binding: %w", err)
 	}
@@ -78,7 +82,7 @@ func (c *minipoolPromoteDetailsContext) CheckState(node *node.Node, response *ap
 	return true
 }
 
-func (c *minipoolPromoteDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
+func (c *minipoolPromoteDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
 		mpv3.GetNodeAddress(mc)
@@ -87,7 +91,7 @@ func (c *minipoolPromoteDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller
 	}
 }
 
-func (c *minipoolPromoteDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolPromoteDetailsData) error {
+func (c *minipoolPromoteDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolPromoteDetailsData) error {
 	// Get the time of the latest block
 	latestEth1Block, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
@@ -98,17 +102,17 @@ func (c *minipoolPromoteDetailsContext) PrepareData(addresses []common.Address, 
 	// Get the promotion details
 	details := make([]api.MinipoolPromoteDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
+		mpCommon := mp.GetCommonDetails()
 		mpDetails := api.MinipoolPromoteDetails{
-			Address:    mpCommon.Details.Address,
+			Address:    mpCommon.Address,
 			CanPromote: false,
 		}
 
 		// Check its eligibility
 		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
-		if success && mpv3.Details.IsVacant {
-			creationTime := mpCommon.Details.StatusTime.Formatted()
-			remainingTime := creationTime.Add(c.oSettings.Details.Minipools.ScrubPeriod.Formatted()).Sub(latestBlockTime)
+		if success && mpv3.IsVacant {
+			creationTime := mpCommon.StatusTime.Formatted()
+			remainingTime := creationTime.Add(c.oSettings.Minipools.ScrubPeriod.Formatted()).Sub(latestBlockTime)
 			if remainingTime < 0 {
 				mpDetails.CanPromote = true
 			}

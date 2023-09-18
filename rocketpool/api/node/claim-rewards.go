@@ -46,7 +46,7 @@ func (h *nodeClaimAndStakeHandler) PrepareResponse(ctx *callContext, response *a
 
 	// Populate the interval info for each one
 	for _, index := range h.indices {
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, node.Details.Address, index.Uint64(), nil)
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, node.Address, index.Uint64(), nil)
 		if err != nil {
 			return fmt.Errorf("error getting interval info for interval %d: %w", index, err)
 		}
@@ -79,10 +79,10 @@ func (h *nodeClaimAndStakeHandler) PrepareResponse(ctx *callContext, response *a
 	var funcName string
 	var err error
 	if h.stakeAmount == nil {
-		txInfo, err = h.distMainnet.Claim(node.Details.Address, h.indices, rplAmount, ethAmount, merkleProofs, opts)
+		txInfo, err = h.distMainnet.Claim(node.Address, h.indices, rplAmount, ethAmount, merkleProofs, opts)
 		funcName = "Claim"
 	} else {
-		txInfo, err = h.distMainnet.ClaimAndStake(node.Details.Address, h.indices, rplAmount, ethAmount, merkleProofs, h.stakeAmount, opts)
+		txInfo, err = h.distMainnet.ClaimAndStake(node.Address, h.indices, rplAmount, ethAmount, merkleProofs, h.stakeAmount, opts)
 		funcName = "ClaimAndStake"
 	}
 	if err != nil {

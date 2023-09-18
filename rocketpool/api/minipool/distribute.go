@@ -51,11 +51,11 @@ func (c *minipoolDistributeContext) PrepareData(data *api.BatchTxInfoData, opts 
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "distribute-balance")
 }
 
-func (c *minipoolDistributeContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *minipoolDistributeContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
-		mpCommon := mp.GetMinipoolCommon()
-		return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", mpCommon.Details.Address.Hex(), mpCommon.Details.Version)
+		mpCommon := mp.GetCommonDetails()
+		return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", mpCommon.Address.Hex(), mpCommon.Version)
 	}
 	return mpv3.DistributeBalance(opts, true)
 }

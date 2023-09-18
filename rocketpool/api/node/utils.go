@@ -159,7 +159,7 @@ type minipoolCountDetails struct {
 // Get all node minipool count details
 func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, node *node.Node) ([]minipoolCountDetails, error) {
 
-	node.GetMinipoolAddresses(node.Details.mini)
+	node.GetMinipoolAddresses(node.mini)
 
 	// Data
 	var wg1 errgroup.Group

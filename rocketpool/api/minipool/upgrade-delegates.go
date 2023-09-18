@@ -50,7 +50,6 @@ func (c *minipoolUpgradeDelegatesContext) PrepareData(data *api.BatchTxInfoData,
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "upgrade-delegate")
 }
 
-func (c *minipoolUpgradeDelegatesContext) CreateTx(mp minipool.Minipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	mpCommon := mp.GetMinipoolCommon()
-	return mpCommon.DelegateUpgrade(opts)
+func (c *minipoolUpgradeDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+	return mp.DelegateUpgrade(opts)
 }

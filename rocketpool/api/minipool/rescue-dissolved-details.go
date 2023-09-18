@@ -71,31 +71,30 @@ func (c *minipoolRescueDissolvedDetailsContext) CheckState(node *node.Node, resp
 	return true
 }
 
-func (c *minipoolRescueDissolvedDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-	mpCommon := mp.GetMinipoolCommon()
-	mpCommon.GetFinalised(mc)
-	mpCommon.GetStatus(mc)
-	mpCommon.GetPubkey(mc)
+func (c *minipoolRescueDissolvedDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+	mp.GetFinalised(mc)
+	mp.GetStatus(mc)
+	mp.GetPubkey(mc)
 }
 
-func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolRescueDissolvedDetailsData) error {
+func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRescueDissolvedDetailsData) error {
 	// Get the rescue details
 	pubkeys := []types.ValidatorPubkey{}
 	detailsMap := map[types.ValidatorPubkey]int{}
 	details := make([]api.MinipoolRescueDissolvedDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommon := mp.GetMinipoolCommon()
+		mpCommon := mp.GetCommonDetails()
 		mpDetails := api.MinipoolRescueDissolvedDetails{
-			Address:       mpCommon.Details.Address,
-			MinipoolState: mpCommon.Details.Status.Formatted(),
-			IsFinalized:   mpCommon.Details.IsFinalised,
+			Address:       mpCommon.Address,
+			MinipoolState: mpCommon.Status.Formatted(),
+			IsFinalized:   mpCommon.IsFinalised,
 		}
 
 		if mpDetails.MinipoolState != types.Dissolved || mpDetails.IsFinalized {
 			mpDetails.InvalidElState = true
 		} else {
-			pubkeys = append(pubkeys, mpCommon.Details.Pubkey)
-			detailsMap[mpCommon.Details.Pubkey] = i
+			pubkeys = append(pubkeys, mpCommon.Pubkey)
+			detailsMap[mpCommon.Pubkey] = i
 		}
 
 		details[i] = mpDetails

@@ -77,17 +77,17 @@ func (c *faucetWithdrawContext) PrepareData(data *api.FaucetWithdrawRplData, opt
 	}
 
 	// Populate the response
-	data.InsufficientFaucetBalance = (c.f.Details.Balance.Cmp(big.NewInt(0)) == 0)
+	data.InsufficientFaucetBalance = (c.f.Balance.Cmp(big.NewInt(0)) == 0)
 	data.InsufficientAllowance = (c.allowance.Cmp(big.NewInt(0)) == 0)
-	data.InsufficientNodeBalance = (nodeAccountBalance.Cmp(c.f.Details.WithdrawalFee) < 0)
+	data.InsufficientNodeBalance = (nodeAccountBalance.Cmp(c.f.WithdrawalFee) < 0)
 	data.CanWithdraw = !(data.InsufficientFaucetBalance || data.InsufficientAllowance || data.InsufficientNodeBalance)
 
 	if data.CanWithdraw && opts != nil {
-		opts.Value = c.f.Details.WithdrawalFee
+		opts.Value = c.f.WithdrawalFee
 
 		// Get withdrawal amount
 		var amount *big.Int
-		balance := c.f.Details.Balance
+		balance := c.f.Balance
 		if balance.Cmp(c.allowance) > 0 {
 			amount = c.allowance
 		} else {

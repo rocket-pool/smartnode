@@ -66,21 +66,20 @@ func (c *minipoolCloseDetailsContext) GetState(node *node.Node, mc *batch.MultiC
 }
 
 func (c *minipoolCloseDetailsContext) CheckState(node *node.Node, response *api.MinipoolCloseDetailsData) bool {
-	response.IsFeeDistributorInitialized = node.Details.IsFeeDistributorInitialized
+	response.IsFeeDistributorInitialized = node.IsFeeDistributorInitialized
 	return response.IsFeeDistributorInitialized
 }
 
-func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.Minipool, index int) {
-	mpCommon := mp.GetMinipoolCommon()
-	mpCommon.GetNodeAddress(mc)
-	mpCommon.GetNodeRefundBalance(mc)
-	mpCommon.GetFinalised(mc)
-	mpCommon.GetStatus(mc)
-	mpCommon.GetUserDepositBalance(mc)
-	mpCommon.GetPubkey(mc)
+func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+	mp.GetNodeAddress(mc)
+	mp.GetNodeRefundBalance(mc)
+	mp.GetFinalised(mc)
+	mp.GetStatus(mc)
+	mp.GetUserDepositBalance(mc)
+	mp.GetPubkey(mc)
 }
 
-func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.Minipool, data *api.MinipoolCloseDetailsData) error {
+func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) error {
 	// Get the current ETH balances of each minipool
 	balances, err := c.rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {
@@ -92,7 +91,7 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 	for i, mp := range mps {
 		mpDetails, err := getMinipoolCloseDetails(c.rp, mp, balances[i])
 		if err != nil {
-			return fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetMinipoolCommon().Details.Address.Hex(), err)
+			return fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetCommonDetails().Address.Hex(), err)
 		}
 		details[i] = mpDetails
 	}
@@ -101,7 +100,7 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 	err = c.rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
 		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
 		if success {
-			details[i].Distributed = mpv3.Details.HasUserDistributed
+			details[i].Distributed = mpv3.HasUserDistributed
 			mpv3.CalculateNodeShare(mc, &details[i].NodeShareOfEffectiveBalance, details[i].EffectiveBalance)
 		}
 		return nil
@@ -118,7 +117,7 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 			// Ignore dissolved minipools
 			continue
 		}
-		pubkey := mps[i].GetMinipoolCommon().Details.Pubkey
+		pubkey := mps[i].GetCommonDetails().Pubkey
 		pubkeyMap[mp.Address] = pubkey
 		pubkeys = append(pubkeys, pubkey)
 	}
@@ -143,8 +142,8 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 	return nil
 }
 
-func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.Minipool, balance *big.Int) (api.MinipoolCloseDetails, error) {
-	mpCommonDetails := mp.GetMinipoolCommon().Details
+func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.IMinipool, balance *big.Int) (api.MinipoolCloseDetails, error) {
+	mpCommonDetails := mp.GetCommonDetails()
 
 	// Create the details with the balance / share info and status details
 	var details api.MinipoolCloseDetails
