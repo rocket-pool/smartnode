@@ -8,7 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getMembers(c *cli.Context) (*api.TNDAOMembersResponse, error) {
+func getMembers(c *cli.Context) (*api.OracleDaoMembersData, error) {
 
 	// Get services
 	if err := services.RequireRocketStorage(c); err != nil {
@@ -20,7 +20,7 @@ func getMembers(c *cli.Context) (*api.TNDAOMembersResponse, error) {
 	}
 
 	// Response
-	response := api.TNDAOMembersResponse{}
+	response := api.OracleDaoMembersData{}
 
 	// Get members
 	members, err := trustednode.GetMembers(rp, nil)

@@ -1,16 +1,121 @@
 package odao
 
 import (
+	"fmt"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getStatus(c *cli.Context) (*api.TNDAOStatusResponse, error) {
+// ===============
+// === Factory ===
+// ===============
+
+type oracleDaoStatusContextFactory struct {
+	handler *OracleDaoHandler
+}
+
+func (f *oracleDaoStatusContextFactory) Create(vars map[string]string) (*oracleDaoStatusContext, error) {
+	c := &oracleDaoStatusContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
+
+func (f *oracleDaoStatusContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoStatusContext, api.OracleDaoStatusData](
+		router, "status", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type oracleDaoStatusContext struct {
+	handler     *OracleDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	odaoMember *trustednode.OracleDaoMember
+	oSettings  *settings.OracleDaoSettings
+	dnt        *trustednode.DaoNodeTrusted
+	dp         *dao.DaoProposal
+}
+
+func (c *oracleDaoStatusContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	c.odaoMember, err = trustednode.NewOracleDaoMember(c.rp, c.nodeAddress)
+	if err != nil {
+		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
+	}
+	c.oSettings, err = settings.NewOracleDaoSettings(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating oracle DAO settings binding: %w", err)
+	}
+	c.dnt, err = trustednode.NewDaoNodeTrusted(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating DNT binding: %w", err)
+	}
+	c.dp, err = dao.NewDaoProposal(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating DP binding: %w", err)
+	}
+	return nil
+}
+
+func (c *oracleDaoStatusContext) GetState(mc *batch.MultiCaller) {
+	c.odaoMember.GetExists(mc)
+	c.odaoMember.GetInvitedTime(mc)
+	c.odaoMember.GetReplacedTime(mc)
+	c.odaoMember.GetLeftTime(mc)
+	c.dnt.GetMemberCount(mc)
+	c.dp.GetProposalCount(mc)
+}
+
+func (c *oracleDaoStatusContext) PrepareData(data *api.AuctionClaimFromLotData, opts *bind.TransactOpts) error {
+	// Check for validity
+	data.DoesNotExist = !c.lot.Details.Exists
+	data.NoBidFromAddress = (c.addressBidAmount.Cmp(big.NewInt(0)) == 0)
+	data.NotCleared = !c.lot.Details.IsCleared
+	data.CanClaim = !(data.DoesNotExist || data.NoBidFromAddress || data.NotCleared)
+
+	// Get tx info
+	if data.CanClaim && opts != nil {
+		txInfo, err := c.lot.ClaimBid(opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for PlaceBid: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
+}
+
+func getStatus(c *cli.Context) (*api.OracleDaoStatusData, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -29,7 +134,7 @@ func getStatus(c *cli.Context) (*api.TNDAOStatusResponse, error) {
 	}
 
 	// Response
-	response := api.TNDAOStatusResponse{}
+	response := api.OracleDaoStatusData{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()

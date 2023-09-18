@@ -33,7 +33,7 @@ func (f *auctionCreateContextFactory) Create(vars map[string]string) (*auctionCr
 }
 
 func (f *auctionCreateContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*auctionCreateContext, api.CreateLotData](
+	server.RegisterSingleStageRoute[*auctionCreateContext, api.AuctionCreateLotData](
 		router, "create-lot", f, f.handler.serviceProvider,
 	)
 }
@@ -84,7 +84,7 @@ func (c *auctionCreateContext) GetState(mc *batch.MultiCaller) {
 	c.pSettings.GetCreateAuctionLotEnabled(mc)
 }
 
-func (c *auctionCreateContext) PrepareData(data *api.CreateLotData, opts *bind.TransactOpts) error {
+func (c *auctionCreateContext) PrepareData(data *api.AuctionCreateLotData, opts *bind.TransactOpts) error {
 	// Check the balance requirement
 	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Details.Auction.LotMinimumEthValue, eth.EthToWei(1))
 	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkPrices.Details.RplPrice.RawValue)

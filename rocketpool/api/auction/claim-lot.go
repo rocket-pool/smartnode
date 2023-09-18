@@ -36,7 +36,7 @@ func (f *auctionClaimContextFactory) Create(vars map[string]string) (*auctionCla
 }
 
 func (f *auctionClaimContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*auctionClaimContext, api.ClaimFromLotData](
+	server.RegisterSingleStageRoute[*auctionClaimContext, api.AuctionClaimFromLotData](
 		router, "claim-lot", f, f.handler.serviceProvider,
 	)
 }
@@ -80,7 +80,7 @@ func (c *auctionClaimContext) GetState(mc *batch.MultiCaller) {
 	c.lot.GetLotIsCleared(mc)
 }
 
-func (c *auctionClaimContext) PrepareData(data *api.ClaimFromLotData, opts *bind.TransactOpts) error {
+func (c *auctionClaimContext) PrepareData(data *api.AuctionClaimFromLotData, opts *bind.TransactOpts) error {
 	// Check for validity
 	data.DoesNotExist = !c.lot.Details.Exists
 	data.NoBidFromAddress = (c.addressBidAmount.Cmp(big.NewInt(0)) == 0)

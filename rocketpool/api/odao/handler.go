@@ -1,11 +1,36 @@
 package odao
 
 import (
+	"github.com/gorilla/mux"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
+
+type OracleDaoHandler struct {
+	serviceProvider *services.ServiceProvider
+	factories       []server.IContextFactory
+}
+
+func NewOracleDaoHandler(serviceProvider *services.ServiceProvider) *OracleDaoHandler {
+	h := &OracleDaoHandler{
+		serviceProvider: serviceProvider,
+	}
+	h.factories = []server.IContextFactory{
+		&queueProcessContextFactory{h},
+		&queueStatusContextFactory{h},
+	}
+	return h
+}
+
+func (h *OracleDaoHandler) RegisterRoutes(router *mux.Router) {
+	for _, factory := range h.factories {
+		factory.RegisterRoute(router)
+	}
+}
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {

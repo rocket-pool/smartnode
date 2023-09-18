@@ -37,7 +37,7 @@ func (f *auctionRecoverContextFactory) Create(vars map[string]string) (*auctionR
 }
 
 func (f *auctionRecoverContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*auctionRecoverContext, api.RecoverRplFromLotData](
+	server.RegisterSingleStageRoute[*auctionRecoverContext, api.AuctionRecoverRplFromLotData](
 		router, "recover-lot", f, f.handler.serviceProvider,
 	)
 }
@@ -85,7 +85,7 @@ func (c *auctionRecoverContext) GetState(mc *batch.MultiCaller) {
 	c.pSettings.GetBidOnAuctionLotEnabled(mc)
 }
 
-func (c *auctionRecoverContext) PrepareData(data *api.RecoverRplFromLotData, opts *bind.TransactOpts) error {
+func (c *auctionRecoverContext) PrepareData(data *api.AuctionRecoverRplFromLotData, opts *bind.TransactOpts) error {
 	// Get the current block
 	currentBlock, err := c.rp.Client.BlockNumber(context.Background())
 	if err != nil {

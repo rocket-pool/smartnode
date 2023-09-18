@@ -8,7 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
+func getProposals(c *cli.Context) (*api.OracleDaoProposalsData, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -27,7 +27,7 @@ func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
 	}
 
 	// Response
-	response := api.TNDAOProposalsResponse{}
+	response := api.OracleDaoProposalsData{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -48,7 +48,7 @@ func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
 
 }
 
-func getProposal(c *cli.Context, id uint64) (*api.TNDAOProposalResponse, error) {
+func getProposal(c *cli.Context, id uint64) (*api.OracleDaoProposalData, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -67,7 +67,7 @@ func getProposal(c *cli.Context, id uint64) (*api.TNDAOProposalResponse, error) 
 	}
 
 	// Response
-	response := api.TNDAOProposalResponse{}
+	response := api.OracleDaoProposalData{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -81,7 +81,7 @@ func getProposal(c *cli.Context, id uint64) (*api.TNDAOProposalResponse, error) 
 		return nil, err
 	}
 
-	response.Proposals = proposal
+	response.Proposal = proposal
 
 	// Return response
 	return &response, nil

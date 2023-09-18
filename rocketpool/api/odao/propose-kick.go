@@ -16,7 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func canProposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *big.Int) (*api.CanProposeTNDAOKickResponse, error) {
+func canProposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *big.Int) (*api.OracleDaoProposeKickData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -32,7 +32,7 @@ func canProposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei 
 	}
 
 	// Response
-	response := api.CanProposeTNDAOKickResponse{}
+	response := api.OracleDaoProposeKickData{}
 
 	// Sync
 	var wg errgroup.Group

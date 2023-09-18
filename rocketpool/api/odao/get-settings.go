@@ -10,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getMemberSettings(c *cli.Context) (*api.GetTNDAOMemberSettingsResponse, error) {
+func getMemberSettings(c *cli.Context) (*api.OracleDaoMemberSettingsData, error) {
 
 	// Get services
 	rp, err := services.GetRocketPool(c)
@@ -19,7 +19,7 @@ func getMemberSettings(c *cli.Context) (*api.GetTNDAOMemberSettingsResponse, err
 	}
 
 	// Response
-	response := api.GetTNDAOMemberSettingsResponse{}
+	response := api.OracleDaoMemberSettingsData{}
 
 	quorum, err := trustednode.GetQuorum(rp, nil)
 	if err != nil {
@@ -62,7 +62,7 @@ func getMemberSettings(c *cli.Context) (*api.GetTNDAOMemberSettingsResponse, err
 	return &response, nil
 }
 
-func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse, error) {
+func getProposalSettings(c *cli.Context) (*api.OracleDaoProposalSettingsData, error) {
 
 	// Get services
 	rp, err := services.GetRocketPool(c)
@@ -71,7 +71,7 @@ func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse,
 	}
 
 	// Response
-	response := api.GetTNDAOProposalSettingsResponse{}
+	response := api.OracleDaoProposalSettingsData{}
 
 	cooldown, err := trustednode.GetProposalCooldownTime(rp, nil)
 	if err != nil {
@@ -108,7 +108,7 @@ func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse,
 	return &response, nil
 }
 
-func getMinipoolSettings(c *cli.Context) (*api.GetTNDAOMinipoolSettingsResponse, error) {
+func getMinipoolSettings(c *cli.Context) (*api.OracleDaoMinipoolSettingsData, error) {
 
 	// Get services
 	rp, err := services.GetRocketPool(c)
@@ -117,7 +117,7 @@ func getMinipoolSettings(c *cli.Context) (*api.GetTNDAOMinipoolSettingsResponse,
 	}
 
 	// Response
-	response := api.GetTNDAOMinipoolSettingsResponse{}
+	response := api.OracleDaoMinipoolSettingsData{}
 
 	scrubPeriod, err := trustednode.GetScrubPeriod(rp, nil)
 	if err != nil {

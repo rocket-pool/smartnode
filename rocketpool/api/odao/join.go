@@ -17,7 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
+func canJoin(c *cli.Context) (*api.OracleDaoJoinData, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -33,7 +33,7 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
 	}
 
 	// Response
-	response := api.CanJoinTNDAOResponse{}
+	response := api.OracleDaoJoinData{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()

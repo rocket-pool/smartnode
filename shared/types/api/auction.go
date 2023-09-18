@@ -30,14 +30,14 @@ type AuctionLotsData struct {
 	Lots []AuctionLotDetails `json:"lots"`
 }
 
-type CreateLotData struct {
+type AuctionCreateLotData struct {
 	CanCreate           bool                  `json:"canCreate"`
 	InsufficientBalance bool                  `json:"insufficientBalance"`
 	CreateLotDisabled   bool                  `json:"createLotDisabled"`
 	TxInfo              *core.TransactionInfo `json:"txInfo"`
 }
 
-type BidOnLotData struct {
+type AuctionBidOnLotData struct {
 	CanBid           bool                  `json:"canBid"`
 	DoesNotExist     bool                  `json:"doesNotExist"`
 	BiddingEnded     bool                  `json:"biddingEnded"`
@@ -46,7 +46,7 @@ type BidOnLotData struct {
 	TxInfo           *core.TransactionInfo `json:"txInfo"`
 }
 
-type ClaimFromLotData struct {
+type AuctionClaimFromLotData struct {
 	CanClaim         bool                  `json:"canClaim"`
 	DoesNotExist     bool                  `json:"doesNotExist"`
 	NoBidFromAddress bool                  `json:"noBidFromAddress"`
@@ -54,7 +54,7 @@ type ClaimFromLotData struct {
 	TxInfo           *core.TransactionInfo `json:"txInfo"`
 }
 
-type RecoverRplFromLotData struct {
+type AuctionRecoverRplFromLotData struct {
 	CanRecover          bool                  `json:"canRecover"`
 	DoesNotExist        bool                  `json:"doesNotExist"`
 	BiddingNotEnded     bool                  `json:"biddingNotEnded"`

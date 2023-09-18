@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOProposalResponse, error) {
+func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.OracleDaoProposalVoteData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -30,7 +30,7 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOPr
 	}
 
 	// Response
-	response := api.CanVoteOnTNDAOProposalResponse{}
+	response := api.OracleDaoProposalVoteData{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()

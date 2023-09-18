@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOProposalResponse, error) {
+func canCancelProposal(c *cli.Context, proposalId uint64) (*api.OracleDaoProposalCancelData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -31,7 +31,7 @@ func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOPr
 	}
 
 	// Response
-	response := api.CanCancelTNDAOProposalResponse{}
+	response := api.OracleDaoProposalCancelData{}
 
 	// Sync
 	var wg errgroup.Group

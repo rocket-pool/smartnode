@@ -12,6 +12,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// Check if we are currently within a proposal's actionability window
+func isProposalActionable(actionWindow time.Duration, executedTime time.Time, currentTime time.Time) bool {
+	return currentTime.Sub(executedTime.Add(actionWindow)) <= 0
+}
+
+// =======================================================
+
 // Settings
 const ProposalStatesBatchSize = 50
 

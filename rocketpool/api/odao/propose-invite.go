@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberUrl string) (*api.CanProposeTNDAOInviteResponse, error) {
+func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberUrl string) (*api.OracleDaoProposeInviteData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -29,7 +29,7 @@ func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, me
 	}
 
 	// Response
-	response := api.CanProposeTNDAOInviteResponse{}
+	response := api.OracleDaoProposeInviteData{}
 
 	// Sync
 	var wg errgroup.Group

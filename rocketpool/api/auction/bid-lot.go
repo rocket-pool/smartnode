@@ -38,7 +38,7 @@ func (f *auctionBidContextFactory) Create(vars map[string]string) (*auctionBidCo
 }
 
 func (f *auctionBidContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*auctionBidContext, api.BidOnLotData](
+	server.RegisterSingleStageRoute[*auctionBidContext, api.AuctionBidOnLotData](
 		router, "bid-lot", f, f.handler.serviceProvider,
 	)
 }
@@ -86,7 +86,7 @@ func (c *auctionBidContext) GetState(mc *batch.MultiCaller) {
 	c.pSettings.GetBidOnAuctionLotEnabled(mc)
 }
 
-func (c *auctionBidContext) PrepareData(data *api.BidOnLotData, opts *bind.TransactOpts) error {
+func (c *auctionBidContext) PrepareData(data *api.AuctionBidOnLotData, opts *bind.TransactOpts) error {
 	// Get the current block
 	currentBlock, err := c.rp.Client.BlockNumber(context.Background())
 	if err != nil {

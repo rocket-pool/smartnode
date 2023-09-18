@@ -14,10 +14,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProposeSetting(c *cli.Context, w *wallet.LocalWallet, rp *rocketpool.RocketPool) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSetting(c *cli.Context, w *wallet.LocalWallet, rp *rocketpool.RocketPool) (*api.OracleDaoProposeSettingData, error) {
 
 	// Response
-	response := api.CanProposeTNDAOSettingResponse{}
+	response := api.OracleDaoProposeSettingData{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -38,7 +38,7 @@ func canProposeSetting(c *cli.Context, w *wallet.LocalWallet, rp *rocketpool.Roc
 
 }
 
-func canProposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -116,7 +116,7 @@ func proposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.ProposeTN
 
 }
 
-func canProposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -194,7 +194,7 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.
 
 }
 
-func canProposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -272,7 +272,7 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
 
 }
 
-func canProposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan uint64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -350,7 +350,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan uin
 
 }
 
-func canProposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan uint64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -428,7 +428,7 @@ func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan uin
 
 }
 
-func canProposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimespan uint64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -506,7 +506,7 @@ func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimesp
 
 }
 
-func canProposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimespan uint64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -584,7 +584,7 @@ func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimesp
 
 }
 
-func canProposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan uint64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -662,7 +662,7 @@ func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan
 
 }
 
-func canProposeSettingScrubPeriod(c *cli.Context, scrubPeriod uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingScrubPeriod(c *cli.Context, scrubPeriod uint64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -740,7 +740,7 @@ func proposeSettingScrubPeriod(c *cli.Context, scrubPeriod uint64) (*api.Propose
 
 }
 
-func canProposeSettingPromotionScrubPeriod(c *cli.Context, promotionScrubPeriod uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingPromotionScrubPeriod(c *cli.Context, promotionScrubPeriod uint64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -818,7 +818,7 @@ func proposeSettingPromotionScrubPeriod(c *cli.Context, promotionScrubPeriod uin
 
 }
 
-func canProposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -896,7 +896,7 @@ func proposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) (*api.Propo
 
 }
 
-func canProposeSettingBondReductionWindowStart(c *cli.Context, bondReductionWindowStart uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingBondReductionWindowStart(c *cli.Context, bondReductionWindowStart uint64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -974,7 +974,7 @@ func proposeSettingBondReductionWindowStart(c *cli.Context, bondReductionWindowS
 
 }
 
-func canProposeSettingBondReductionWindowLength(c *cli.Context, bondReductionWindowLength uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingBondReductionWindowLength(c *cli.Context, bondReductionWindowLength uint64) (*api.OracleDaoProposeSettingData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {

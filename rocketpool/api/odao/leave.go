@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canLeave(c *cli.Context) (*api.CanLeaveTNDAOResponse, error) {
+func canLeave(c *cli.Context) (*api.OracleDaoLeaveData, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -29,7 +29,7 @@ func canLeave(c *cli.Context) (*api.CanLeaveTNDAOResponse, error) {
 	}
 
 	// Response
-	response := api.CanLeaveTNDAOResponse{}
+	response := api.OracleDaoLeaveData{}
 
 	// Sync
 	var wg errgroup.Group
