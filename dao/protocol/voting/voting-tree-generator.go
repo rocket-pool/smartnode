@@ -1,4 +1,4 @@
-package protocol
+package voting
 
 import (
 	"fmt"
@@ -26,8 +26,8 @@ type NodeVotingInfo struct {
 }
 
 type VotingTreeNode struct {
-	Hash common.Hash
-	Sum  *big.Int
+	Sum  *big.Int    `abi:"sum" json:"sum"`
+	Hash common.Hash `abi:"hash" json:"hash"`
 }
 
 type VotingTreeGenerator struct {
@@ -89,7 +89,7 @@ func (g *VotingTreeGenerator) getDelegatedVotingPower(blockNumber uint32, opts *
 
 	// Load node voting details in batches
 	votingInfos := make([]NodeVotingInfo, nodeCount)
-	delegateIndices := map[common.Address]uint64{}
+	//delegateIndices := map[common.Address]uint64{}
 	for bsi := uint64(0); bsi < nodeCount; bsi += NodeVotingDetailsBatchSize {
 
 		// Get batch start & end index
@@ -118,7 +118,7 @@ func (g *VotingTreeGenerator) getDelegatedVotingPower(blockNumber uint32, opts *
 					VotingPower: votingPower,
 					Delegate:    delegate,
 				}
-				delegateIndices[nodeAddress] = ni
+				//delegateIndices[nodeAddress] = ni
 				return nil
 			})
 		}
@@ -189,11 +189,7 @@ func (g *VotingTreeGenerator) constructLeaves(votingPowers [][]*big.Int) []Votin
 // For new proposals use index = 1.
 // For challenges, the index is the index of the node being challenged.
 // Returns the aggregated proof, and the list of nodes in the pollard row.
-func (g *VotingTreeGenerator) generatePollard(originalLeafNodes []VotingTreeNode, index uint64) ([]VotingTreeNode, []VotingTreeNode) {
-	// Create a copy of leafNodes, since it will be modified during execution
-	leafNodes := make([]VotingTreeNode, len(originalLeafNodes))
-	copy(leafNodes, originalLeafNodes)
-
+func (g *VotingTreeGenerator) generatePollard(leafNodes []VotingTreeNode, index uint64) ([]VotingTreeNode, []VotingTreeNode) {
 	order := DepthPerRound
 	offset := uint64(math.Floor(math.Log2(float64(index)))) // Depth of the node being challenged, if not building a proposal
 	depth := uint64(math.Log2(float64(len(leafNodes))))     // Total depth of the tree
@@ -212,7 +208,9 @@ func (g *VotingTreeGenerator) generatePollard(originalLeafNodes []VotingTreeNode
 	var nodes []VotingTreeNode
 	if depth == pollardDepth {
 		// The pollard row is the last one so just grab the final row from the leaf nodes
-		nodes = leafNodes[pollardOffset : pollardOffset+pollardSize]
+		nodes = make([]VotingTreeNode, pollardSize)
+		copy(nodes, leafNodes[pollardOffset:pollardOffset+pollardSize])
+		//nodes = leafNodes[pollardOffset : pollardOffset+pollardSize]
 	}
 	// The pollard row is above the last one, so crawl up the tree calculating the values of each node until getting to it
 	for level := depth; level > offset; level-- {
@@ -227,7 +225,9 @@ func (g *VotingTreeGenerator) generatePollard(originalLeafNodes []VotingTreeNode
 
 		// Slice out the nodes for the pollard once we've reached the right level
 		if level-1 == offset+order {
-			nodes = leafNodes[pollardOffset : pollardOffset+pollardSize]
+			nodes = make([]VotingTreeNode, pollardSize)
+			copy(nodes, leafNodes[pollardOffset:pollardOffset+pollardSize])
+			//nodes = leafNodes[pollardOffset : pollardOffset+pollardSize]
 		}
 	}
 
@@ -249,7 +249,7 @@ func (g *VotingTreeGenerator) generatePollard(originalLeafNodes []VotingTreeNode
 			leafNodes[i] = getParentNodeFromChildren(leafNodes[a], leafNodes[b])
 		}
 
-		index = uint64(math.Floor(float64(index / 2)))
+		index = index / 2
 	}
 
 	return proof, nodes
