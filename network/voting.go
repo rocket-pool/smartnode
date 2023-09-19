@@ -45,8 +45,8 @@ func InitializeVoting(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (commo
 	return tx.Hash(), nil
 }
 
-// Get the number of nodes with voting power registered in the provided block
-func GetNodeCount(rp *rocketpool.RocketPool, blockNumber uint32, opts *bind.CallOpts) (*big.Int, error) {
+// Get the number of nodes that were present in the network at the provided block
+func GetVotingNodeCount(rp *rocketpool.RocketPool, blockNumber uint32, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func GetVotingPower(rp *rocketpool.RocketPool, address common.Address, blockNumb
 }
 
 // Get the address that the provided node has delegated voting power to on the given block
-func GetDelegate(rp *rocketpool.RocketPool, address common.Address, blockNumber uint32, opts *bind.CallOpts) (common.Address, error) {
+func GetVotingDelegate(rp *rocketpool.RocketPool, address common.Address, blockNumber uint32, opts *bind.CallOpts) (common.Address, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
 		return common.Address{}, err
@@ -85,7 +85,7 @@ func GetDelegate(rp *rocketpool.RocketPool, address common.Address, blockNumber 
 }
 
 // Get the address that the provided node has currently delegated voting power to
-func GetCurrentDelegate(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (common.Address, error) {
+func GetCurrentVotingDelegate(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (common.Address, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
 		return common.Address{}, err
@@ -97,8 +97,8 @@ func GetCurrentDelegate(rp *rocketpool.RocketPool, address common.Address, opts 
 	return *value, nil
 }
 
-// Estimate the gas of SetDelegate
-func EstimateSetDelegateGas(rp *rocketpool.RocketPool, newDelegate common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+// Estimate the gas of SetVotingDelegate
+func EstimateSetVotingDelegateGas(rp *rocketpool.RocketPool, newDelegate common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -107,7 +107,7 @@ func EstimateSetDelegateGas(rp *rocketpool.RocketPool, newDelegate common.Addres
 }
 
 // Set the voting delegate for the node
-func SetDelegate(rp *rocketpool.RocketPool, newDelegate common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+func SetVotingDelegate(rp *rocketpool.RocketPool, newDelegate common.Address, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
