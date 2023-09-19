@@ -22,6 +22,11 @@ func NewOracleDaoHandler(serviceProvider *services.ServiceProvider) *OracleDaoHa
 	h.factories = []server.IContextFactory{
 		&oracleDaoStatusContextFactory{h},
 		&oracleDaoCancelProposalContextFactory{h},
+		&oracleDaoExecuteProposalContextFactory{h},
+		&oracleDaoSettingsContextFactory{h},
+		&oracleDaoJoinContextFactory{h},
+		&oracleDaoLeaveContextFactory{h},
+		&oracleDaoMembersContextFactory{h},
 	}
 	return h
 }

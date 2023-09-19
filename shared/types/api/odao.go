@@ -2,10 +2,11 @@ package api
 
 import (
 	"math/big"
+	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/dao"
-	tn "github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/types"
 )
 
 type OracleDaoStatusData struct {
@@ -26,16 +27,41 @@ type OracleDaoStatusData struct {
 	} `json:"proposalCounts"`
 }
 
+type OracleDaoMemberDetails struct {
+	Address                common.Address `json:"address"`
+	Exists                 bool           `json:"exists"`
+	ID                     string         `json:"id"`
+	Url                    string         `json:"url"`
+	JoinedTime             time.Time      `json:"joinedTime"`
+	LastProposalTime       time.Time      `json:"lastProposalTime"`
+	RplBondAmount          *big.Int       `json:"rplBondAmount"`
+	UnbondedValidatorCount uint64         `json:"unbondedValidatorCount"`
+}
 type OracleDaoMembersData struct {
-	Members []tn.MemberDetails `json:"members"`
+	Members []OracleDaoMemberDetails `json:"members"`
 }
 
+type OracleDaoProposalDetails struct {
+	ID              uint64              `json:"id"`
+	ProposerAddress common.Address      `json:"proposerAddress"`
+	Message         string              `json:"message"`
+	CreatedTime     uint64              `json:"createdTime"`
+	StartTime       uint64              `json:"startTime"`
+	EndTime         uint64              `json:"endTime"`
+	ExpiryTime      uint64              `json:"expiryTime"`
+	VotesRequired   float64             `json:"votesRequired"`
+	VotesFor        float64             `json:"votesFor"`
+	VotesAgainst    float64             `json:"votesAgainst"`
+	MemberVoted     bool                `json:"memberVoted"`
+	MemberSupported bool                `json:"memberSupported"`
+	IsCancelled     bool                `json:"isCancelled"`
+	IsExecuted      bool                `json:"isExecuted"`
+	Payload         []byte              `json:"payload"`
+	PayloadStr      string              `json:"payloadStr"`
+	State           types.ProposalState `json:"state"`
+}
 type OracleDaoProposalsData struct {
-	Proposals []dao.ProposalDetails `json:"proposals"`
-}
-
-type OracleDaoProposalData struct {
-	Proposal dao.ProposalDetails `json:"proposal"`
+	Proposals []OracleDaoProposalDetails `json:"proposals"`
 }
 
 type OracleDaoProposeInviteData struct {
@@ -76,7 +102,7 @@ type OracleDaoCancelProposalData struct {
 	TxInfo          *core.TransactionInfo `json:"txInfo"`
 }
 
-type OracleDaoProposalVoteData struct {
+type OracleDaoVoteOnProposalData struct {
 	CanVote            bool                  `json:"canVote"`
 	DoesNotExist       bool                  `json:"doesNotExist"`
 	InvalidState       bool                  `json:"invalidState"`
@@ -85,7 +111,7 @@ type OracleDaoProposalVoteData struct {
 	TxInfo             *core.TransactionInfo `json:"txInfo"`
 }
 
-type OracleDaoProposalExecuteData struct {
+type OracleDaoExecuteProposalData struct {
 	CanExecute   bool                  `json:"canExecute"`
 	DoesNotExist bool                  `json:"doesNotExist"`
 	InvalidState bool                  `json:"invalidState"`
@@ -121,27 +147,29 @@ type OracleDaoProposeSettingData struct {
 	TxInfo                 *core.TransactionInfo `json:"txInfo"`
 }
 
-type OracleDaoMemberSettingsData struct {
-	Quorum              float64  `json:"quorum"`
-	RPLBond             *big.Int `json:"rplBond"`
-	MinipoolUnbondedMax uint64   `json:"minipoolUnbondedMax"`
-	ChallengeCooldown   uint64   `json:"challengeCooldown"`
-	ChallengeWindow     uint64   `json:"challengeWindow"`
-	ChallengeCost       *big.Int `json:"challengeCost"`
-}
+type OracleDaoSettingsData struct {
+	Members struct {
+		Quorum              float64       `json:"quorum"`
+		RplBond             *big.Int      `json:"rplBond"`
+		MinipoolUnbondedMax uint64        `json:"minipoolUnbondedMax"`
+		ChallengeCooldown   time.Duration `json:"challengeCooldown"`
+		ChallengeWindow     time.Duration `json:"challengeWindow"`
+		ChallengeCost       *big.Int      `json:"challengeCost"`
+	} `json:"members"`
 
-type OracleDaoProposalSettingsData struct {
-	Cooldown      uint64 `json:"cooldown"`
-	VoteTime      uint64 `json:"voteTime"`
-	VoteDelayTime uint64 `json:"voteDelayTime"`
-	ExecuteTime   uint64 `json:"executeTime"`
-	ActionTime    uint64 `json:"actionTime"`
-}
+	Minipools struct {
+		ScrubPeriod               time.Duration `json:"scrubPeriod"`
+		PromotionScrubPeriod      time.Duration `json:"promotionScrubPeriod"`
+		ScrubPenaltyEnabled       bool          `json:"scrubPenaltyEnabled"`
+		BondReductionWindowStart  time.Duration `json:"bondReductionWindowStart"`
+		BondReductionWindowLength time.Duration `json:"bondReductionWindowLength"`
+	} `json:"minipools"`
 
-type OracleDaoMinipoolSettingsData struct {
-	ScrubPeriod               uint64 `json:"scrubPeriod"`
-	PromotionScrubPeriod      uint64 `json:"promotionScrubPeriod"`
-	ScrubPenaltyEnabled       bool   `json:"scrubPenaltyEnabled"`
-	BondReductionWindowStart  uint64 `json:"bondReductionWindowStart"`
-	BondReductionWindowLength uint64 `json:"bondReductionWindowLength"`
+	Proposals struct {
+		Cooldown      time.Duration `json:"cooldown"`
+		VoteTime      time.Duration `json:"voteTime"`
+		VoteDelayTime time.Duration `json:"voteDelayTime"`
+		ExecuteTime   time.Duration `json:"executeTime"`
+		ActionTime    time.Duration `json:"actionTime"`
+	} `json:"proposals"`
 }

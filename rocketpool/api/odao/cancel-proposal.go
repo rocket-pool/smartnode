@@ -113,7 +113,7 @@ func (c *oracleDaoCancelProposalContext) PrepareData(data *api.OracleDaoCancelPr
 	if data.CanCancel && opts != nil {
 		txInfo, err := c.prop.Cancel(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for CancelProposal: %w", err)
+			return fmt.Errorf("error getting TX info for Cancel: %w", err)
 		}
 		data.TxInfo = txInfo
 	}

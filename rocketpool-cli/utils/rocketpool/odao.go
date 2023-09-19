@@ -41,8 +41,8 @@ func (c *Client) TNDAOMembers() (api.OracleDaoMembersData, error) {
 	}
 	for i := 0; i < len(response.Members); i++ {
 		member := &response.Members[i]
-		if member.RPLBondAmount == nil {
-			member.RPLBondAmount = big.NewInt(0)
+		if member.RplBondAmount == nil {
+			member.RplBondAmount = big.NewInt(0)
 		}
 	}
 	return response, nil
@@ -241,17 +241,17 @@ func (c *Client) CancelTNDAOProposal(proposalId uint64) (api.CancelTNDAOProposal
 }
 
 // Check whether the node can vote on a proposal
-func (c *Client) CanVoteOnTNDAOProposal(proposalId uint64) (api.OracleDaoProposalVoteData, error) {
+func (c *Client) CanVoteOnTNDAOProposal(proposalId uint64) (api.OracleDaoVoteOnProposalData, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("odao can-vote-proposal %d", proposalId))
 	if err != nil {
-		return api.OracleDaoProposalVoteData{}, fmt.Errorf("Could not get can vote on oracle DAO proposal status: %w", err)
+		return api.OracleDaoVoteOnProposalData{}, fmt.Errorf("Could not get can vote on oracle DAO proposal status: %w", err)
 	}
-	var response api.OracleDaoProposalVoteData
+	var response api.OracleDaoVoteOnProposalData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.OracleDaoProposalVoteData{}, fmt.Errorf("Could not decode can vote on oracle DAO proposal response: %w", err)
+		return api.OracleDaoVoteOnProposalData{}, fmt.Errorf("Could not decode can vote on oracle DAO proposal response: %w", err)
 	}
 	if response.Error != "" {
-		return api.OracleDaoProposalVoteData{}, fmt.Errorf("Could not get can vote on oracle DAO proposal status: %s", response.Error)
+		return api.OracleDaoVoteOnProposalData{}, fmt.Errorf("Could not get can vote on oracle DAO proposal status: %s", response.Error)
 	}
 	return response, nil
 }
@@ -273,17 +273,17 @@ func (c *Client) VoteOnTNDAOProposal(proposalId uint64, support bool) (api.VoteO
 }
 
 // Check whether the node can execute a proposal
-func (c *Client) CanExecuteTNDAOProposal(proposalId uint64) (api.OracleDaoProposalExecuteData, error) {
+func (c *Client) CanExecuteTNDAOProposal(proposalId uint64) (api.OracleDaoExecuteProposalData, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("odao can-execute-proposal %d", proposalId))
 	if err != nil {
-		return api.OracleDaoProposalExecuteData{}, fmt.Errorf("Could not get can execute oracle DAO proposal status: %w", err)
+		return api.OracleDaoExecuteProposalData{}, fmt.Errorf("Could not get can execute oracle DAO proposal status: %w", err)
 	}
-	var response api.OracleDaoProposalExecuteData
+	var response api.OracleDaoExecuteProposalData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.OracleDaoProposalExecuteData{}, fmt.Errorf("Could not decode can execute oracle DAO proposal response: %w", err)
+		return api.OracleDaoExecuteProposalData{}, fmt.Errorf("Could not decode can execute oracle DAO proposal response: %w", err)
 	}
 	if response.Error != "" {
-		return api.OracleDaoProposalExecuteData{}, fmt.Errorf("Could not get can execute oracle DAO proposal status: %s", response.Error)
+		return api.OracleDaoExecuteProposalData{}, fmt.Errorf("Could not get can execute oracle DAO proposal status: %s", response.Error)
 	}
 	return response, nil
 }

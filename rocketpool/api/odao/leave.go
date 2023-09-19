@@ -1,123 +1,116 @@
 package odao
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canLeave(c *cli.Context) (*api.OracleDaoLeaveData, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.OracleDaoLeaveData{}
-
-	// Sync
-	var wg errgroup.Group
-
-	// Check proposal actionable status
-	wg.Go(func() error {
-		nodeAccount, err := w.GetNodeAccount()
-		if err != nil {
-			return err
-		}
-		proposalActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "leave")
-		if err == nil {
-			response.ProposalExpired = !proposalActionable
-		}
-		return err
-	})
-
-	// Check if members can leave the oracle DAO
-	wg.Go(func() error {
-		membersCanLeave, err := getMembersCanLeave(rp)
-		if err == nil {
-			response.InsufficientMembers = !membersCanLeave
-		}
-		return err
-	})
-
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		gasInfo, err := trustednode.EstimateLeaveGas(rp, opts.From, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.CanLeave = !(response.ProposalExpired || response.InsufficientMembers)
-	return &response, nil
-
+type oracleDaoLeaveContextFactory struct {
+	handler *OracleDaoHandler
 }
 
-func leave(c *cli.Context, bondRefundAddress common.Address) (*api.LeaveTNDAOResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
+func (f *oracleDaoLeaveContextFactory) Create(vars map[string]string) (*oracleDaoLeaveContext, error) {
+	c := &oracleDaoLeaveContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	inputErrs := []error{
+		server.ValidateArg("bondRefundAddress", vars, input.ValidateAddress, &c.bondRefundAddress),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *oracleDaoLeaveContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoLeaveContext, api.OracleDaoLeaveData](
+		router, "leave", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type oracleDaoLeaveContext struct {
+	handler     *OracleDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	bondRefundAddress common.Address
+	odaoMember        *oracle.OracleDaoMember
+	odaoMgr           *oracle.OracleDaoManager
+	oSettings         *oracle.OracleDaoSettings
+}
+
+func (c *oracleDaoLeaveContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rp, err := services.GetRocketPool(c)
+
+	// Bindings
+	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
-
-	// Response
-	response := api.LeaveTNDAOResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
+	c.oSettings = c.odaoMgr.Settings
+	return nil
+}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+func (c *oracleDaoLeaveContext) GetState(mc *batch.MultiCaller) {
+	c.odaoMember.GetLeftTime(mc)
+	c.oSettings.GetProposalActionTime(mc)
+	c.odaoMgr.GetMemberCount(mc)
+	c.odaoMgr.GetMinimumMemberCount(mc)
+}
+
+func (c *oracleDaoLeaveContext) PrepareData(data *api.OracleDaoLeaveData, opts *bind.TransactOpts) error {
+
+	// Get the timestamp of the latest block
+	latestHeader, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error getting latest block header: %w", err)
 	}
+	currentTime := time.Unix(int64(latestHeader.Time), 0)
+	actionWindow := c.oSettings.Proposals.ActionTime.Formatted()
 
-	// Leave
-	hash, err := trustednode.Leave(rp, bondRefundAddress, opts)
-	if err != nil {
-		return nil, err
+	// Check proposal details
+	membersCanLeave := (c.odaoMgr.MemberCount.Formatted() > c.odaoMgr.MinimumMemberCount.Formatted())
+	data.InsufficientMembers = !membersCanLeave
+	data.ProposalExpired = !isProposalActionable(actionWindow, c.odaoMember.InvitedTime.Formatted(), currentTime)
+	data.CanLeave = !(data.ProposalExpired || data.InsufficientMembers)
+
+	// Get the tx
+	if data.CanLeave && opts != nil {
+		txInfo, err := c.odaoMgr.Leave(c.bondRefundAddress, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for Leave: %w", err)
+		}
+		data.TxInfo = txInfo
 	}
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
-
+	return nil
 }

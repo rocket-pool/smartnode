@@ -1,227 +1,130 @@
 package odao
 
 import (
+	"context"
 	"fmt"
 	"math/big"
+	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/rocket-pool/rocketpool-go/utils"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canJoin(c *cli.Context) (*api.OracleDaoJoinData, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.OracleDaoJoinData{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Data
-	var wg errgroup.Group
-	var nodeRplBalance *big.Int
-	var rplBondAmount *big.Int
-
-	// Check proposal actionable status
-	wg.Go(func() error {
-		proposalActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "invited")
-		if err == nil {
-			response.ProposalExpired = !proposalActionable
-		}
-		return err
-	})
-
-	// Check if already a member
-	wg.Go(func() error {
-		isMember, err := tndao.GetMemberExists(rp, nodeAccount.Address, nil)
-		if err == nil {
-			response.AlreadyMember = isMember
-		}
-		return err
-	})
-
-	// Get node RPL balance
-	wg.Go(func() error {
-		var err error
-		nodeRplBalance, err = tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
-		return err
-	})
-
-	// Get RPL bond amount
-	wg.Go(func() error {
-		var err error
-		rplBondAmount, err = tnsettings.GetRPLBond(rp, nil)
-		return err
-	})
-
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		rocketDAONodeTrustedActionsAddress, err := rp.GetAddress("rocketDAONodeTrustedActions", nil)
-		if err != nil {
-			return err
-		}
-		rplBondAmount, err := tnsettings.GetRPLBond(rp, nil)
-		if err != nil {
-			return err
-		}
-		approveGasInfo, err := tokens.EstimateApproveRPLGas(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts)
-		if err != nil {
-			return err
-		}
-		//joinGasInfo, err := tndao.EstimateJoinGas(rp, opts)
-		if err == nil {
-			response.GasInfo = approveGasInfo
-			//response.GasInfo.EstGasLimit += joinGasInfo.EstGasLimit
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Check data
-	response.InsufficientRplBalance = (nodeRplBalance.Cmp(rplBondAmount) < 0)
-
-	// Update & return response
-	response.CanJoin = !(response.ProposalExpired || response.AlreadyMember || response.InsufficientRplBalance)
-	return &response, nil
-
+type oracleDaoJoinContextFactory struct {
+	handler *OracleDaoHandler
 }
 
-func approveRpl(c *cli.Context) (*api.JoinTNDAOApproveResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
+func (f *oracleDaoJoinContextFactory) Create(vars map[string]string) (*oracleDaoJoinContext, error) {
+	c := &oracleDaoJoinContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.JoinTNDAOApproveResponse{}
-
-	// Data
-	var wg errgroup.Group
-	var rocketDAONodeTrustedActionsAddress *common.Address
-	var rplBondAmount *big.Int
-
-	// Get oracle node actions contract address
-	wg.Go(func() error {
-		var err error
-		rocketDAONodeTrustedActionsAddress, err = rp.GetAddress("rocketDAONodeTrustedActions", nil)
-		return err
-	})
-
-	// Get RPL bond amount
-	wg.Go(func() error {
-		var err error
-		rplBondAmount, err = tnsettings.GetRPLBond(rp, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Approve RPL allowance
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-	hash, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	response.ApproveTxHash = hash
-
-	// Return response
-	return &response, nil
-
+	return c, nil
 }
 
-func waitForApprovalAndJoin(c *cli.Context, hash common.Hash) (*api.JoinTNDAOJoinResponse, error) {
+func (f *oracleDaoJoinContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoJoinContext, api.OracleDaoJoinData](
+		router, "join", f, f.handler.serviceProvider,
+	)
+}
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+// ===============
+// === Context ===
+// ===============
+
+type oracleDaoJoinContext struct {
+	handler     *OracleDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	odaoMember *oracle.OracleDaoMember
+	odaoMgr    *oracle.OracleDaoManager
+	oSettings  *oracle.OracleDaoSettings
+	rpl        *tokens.TokenRpl
+	rplBalance *big.Int
+}
+
+func (c *oracleDaoJoinContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rp, err := services.GetRocketPool(c)
+
+	// Bindings
+	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
-
-	// Wait for the RPL approval TX to successfully get included in a block
-	_, err = utils.WaitForTransaction(rp.Client, hash)
+	c.rpl, err = tokens.NewTokenRpl(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating RPL token binding: %w", err)
 	}
-
-	// Response
-	response := api.JoinTNDAOJoinResponse{}
-
-	// Join
-	opts, err := w.GetNodeAccountTransactor()
+	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.oSettings = c.odaoMgr.Settings
+	return nil
+}
+
+func (c *oracleDaoJoinContext) GetState(mc *batch.MultiCaller) {
+	c.odaoMember.GetInvitedTime(mc)
+	c.oSettings.GetProposalActionTime(mc)
+	c.odaoMember.GetExists(mc)
+	c.rpl.GetBalance(mc, &c.rplBalance, c.nodeAddress)
+	c.oSettings.GetRplBond(mc)
+}
+
+func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bind.TransactOpts) error {
+	// Get the timestamp of the latest block
+	latestHeader, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error getting latest block header: %w", err)
 	}
-	joinHash, err := tndao.Join(rp, opts)
-	if err != nil {
-		return nil, err
+	currentTime := time.Unix(int64(latestHeader.Time), 0)
+	actionWindow := c.oSettings.Proposals.ActionTime.Formatted()
+	rplBond := c.oSettings.Members.RplBond
+
+	// Check proposal details
+	data.ProposalExpired = !isProposalActionable(actionWindow, c.odaoMember.InvitedTime.Formatted(), currentTime)
+	data.AlreadyMember = c.odaoMember.Exists
+	data.InsufficientRplBalance = (c.rplBalance.Cmp(rplBond) < 0)
+	data.CanJoin = !(data.ProposalExpired || data.AlreadyMember || data.InsufficientRplBalance)
+
+	// Get the tx
+	if data.CanJoin && opts != nil {
+		dnta, err := c.rp.GetContract(rocketpool.ContractName_RocketDAONodeTrustedActions)
+		if err != nil {
+			return fmt.Errorf("error getting RPL token contract: %w", err)
+		}
+
+		approveTxInfo, err := c.rpl.Approve(*dnta.Address, rplBond, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for RPL approval: %w", err)
+		}
+		data.ApproveTxInfo = approveTxInfo
+
+		joinTxInfo, err := c.odaoMgr.Join(opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for Join: %w", err)
+		}
+		data.JoinTxInfo = joinTxInfo
 	}
-
-	response.JoinTxHash = joinHash
-
-	// Return response
-	return &response, nil
-
+	return nil
 }
