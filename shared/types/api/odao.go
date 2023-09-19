@@ -45,10 +45,10 @@ type OracleDaoProposalDetails struct {
 	ID              uint64              `json:"id"`
 	ProposerAddress common.Address      `json:"proposerAddress"`
 	Message         string              `json:"message"`
-	CreatedTime     uint64              `json:"createdTime"`
-	StartTime       uint64              `json:"startTime"`
-	EndTime         uint64              `json:"endTime"`
-	ExpiryTime      uint64              `json:"expiryTime"`
+	CreatedTime     time.Time           `json:"createdTime"`
+	StartTime       time.Time           `json:"startTime"`
+	EndTime         time.Time           `json:"endTime"`
+	ExpiryTime      time.Time           `json:"expiryTime"`
 	VotesRequired   float64             `json:"votesRequired"`
 	VotesFor        float64             `json:"votesFor"`
 	VotesAgainst    float64             `json:"votesAgainst"`
