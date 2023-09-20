@@ -7,15 +7,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+)
+
+const (
+	proposalBatchSize int = 100
 )
 
 // ===============
@@ -34,7 +35,7 @@ func (f *oracleDaoProposalsContextFactory) Create(vars map[string]string) (*orac
 }
 
 func (f *oracleDaoProposalsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*oracleDaoProposalsContext, api.OracleDaoMembersData](
+	server.RegisterSingleStageRoute[*oracleDaoProposalsContext, api.OracleDaoProposalsData](
 		router, "proposals", f, f.handler.serviceProvider,
 	)
 }
@@ -86,6 +87,7 @@ func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData
 		return fmt.Errorf("error getting proposals: %w", err)
 	}
 
+	// Get the basic details
 	for _, odaoProp := range odaoProps {
 		prop := api.OracleDaoProposalDetails{
 			ID:              odaoProp.ID.Formatted(),
@@ -101,93 +103,22 @@ func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData
 			IsCancelled:     odaoProp.IsCancelled,
 			IsExecuted:      odaoProp.IsExecuted,
 			Payload:         odaoProp.Payload,
-			PayloadStr:      c.dpm.GetPayloadAsString(),
 		}
-
-		if c.hasAddress {
-			prop.MemberVoted
+		prop.PayloadStr, err = odaoProp.GetPayloadAsString()
+		if err != nil {
+			prop.PayloadStr = fmt.Sprintf("<error decoding payload: %s>", err.Error())
 		}
+		data.Proposals = append(data.Proposals, prop)
 	}
 
+	// Get the node-specific details
+	if c.hasAddress {
+		err = c.rp.BatchQuery(len(data.Proposals), proposalBatchSize, func(mc *batch.MultiCaller, i int) error {
+			odaoProp := odaoProps[i]
+			odaoProp.GetMemberHasVoted(mc, &data.Proposals[i].MemberVoted, c.nodeAddress)
+			odaoProp.GetMemberSupported(mc, &data.Proposals[i].MemberSupported, c.nodeAddress)
+			return nil
+		}, nil)
+	}
 	return nil
-}
-
-func getProposals(c *cli.Context) (*api.OracleDaoProposalsData, error) {
-
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.OracleDaoProposalsData{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get proposals
-	proposals, err := dao.GetDAOProposalsWithMember(rp, "rocketDAONodeTrustedProposals", nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	response.Proposals = proposals
-
-	// Return response
-	return &response, nil
-
-}
-
-func getProposal(c *cli.Context, id uint64) (*api.OracleDaoProposalData, error) {
-
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.OracleDaoProposalData{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get proposals
-	proposal, err := dao.GetProposalDetailsWithMember(rp, id, nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	response.Proposal = proposal
-
-	// Return response
-	return &response, nil
-
 }

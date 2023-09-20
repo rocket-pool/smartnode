@@ -102,7 +102,7 @@ type OracleDaoCancelProposalData struct {
 	TxInfo          *core.TransactionInfo `json:"txInfo"`
 }
 
-type OracleDaoVoteOnProposalData struct {
+type OracleDaoVoteData struct {
 	CanVote            bool                  `json:"canVote"`
 	DoesNotExist       bool                  `json:"doesNotExist"`
 	InvalidState       bool                  `json:"invalidState"`

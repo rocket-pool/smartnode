@@ -241,17 +241,17 @@ func (c *Client) CancelTNDAOProposal(proposalId uint64) (api.CancelTNDAOProposal
 }
 
 // Check whether the node can vote on a proposal
-func (c *Client) CanVoteOnTNDAOProposal(proposalId uint64) (api.OracleDaoVoteOnProposalData, error) {
+func (c *Client) CanVoteOnTNDAOProposal(proposalId uint64) (api.OracleDaoVoteData, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("odao can-vote-proposal %d", proposalId))
 	if err != nil {
-		return api.OracleDaoVoteOnProposalData{}, fmt.Errorf("Could not get can vote on oracle DAO proposal status: %w", err)
+		return api.OracleDaoVoteData{}, fmt.Errorf("Could not get can vote on oracle DAO proposal status: %w", err)
 	}
-	var response api.OracleDaoVoteOnProposalData
+	var response api.OracleDaoVoteData
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.OracleDaoVoteOnProposalData{}, fmt.Errorf("Could not decode can vote on oracle DAO proposal response: %w", err)
+		return api.OracleDaoVoteData{}, fmt.Errorf("Could not decode can vote on oracle DAO proposal response: %w", err)
 	}
 	if response.Error != "" {
-		return api.OracleDaoVoteOnProposalData{}, fmt.Errorf("Could not get can vote on oracle DAO proposal status: %s", response.Error)
+		return api.OracleDaoVoteData{}, fmt.Errorf("Could not get can vote on oracle DAO proposal status: %s", response.Error)
 	}
 	return response, nil
 }

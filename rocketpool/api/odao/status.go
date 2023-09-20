@@ -9,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
@@ -51,7 +51,7 @@ type oracleDaoStatusContext struct {
 	odaoMember *oracle.OracleDaoMember
 	oSettings  *oracle.OracleDaoSettings
 	odaoMgr    *oracle.OracleDaoManager
-	dpm        *dao.DaoProposalManager
+	dpm        *proposals.DaoProposalManager
 }
 
 func (c *oracleDaoStatusContext) Initialize() error {
@@ -75,7 +75,7 @@ func (c *oracleDaoStatusContext) Initialize() error {
 		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
 	c.oSettings = c.odaoMgr.Settings
-	c.dpm, err = dao.NewDaoProposalManager(c.rp)
+	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager binding: %w", err)
 	}
@@ -115,7 +115,7 @@ func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts
 	data.TotalMembers = c.odaoMgr.MemberCount.Formatted()
 
 	// Get the proposals
-	_, props, err := c.dpm.GetProposals(c.rp, c.dpm.ProposalCount.Formatted(), false, nil)
+	_, props, err := c.dpm.GetProposals(c.dpm.ProposalCount.Formatted(), false, nil)
 	if err != nil {
 		return fmt.Errorf("error getting Oracle DAO proposals: %w", err)
 	}
@@ -124,19 +124,19 @@ func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts
 	data.ProposalCounts.Total = len(props)
 	for _, prop := range props {
 		switch prop.State.Formatted() {
-		case rptypes.Pending:
+		case rptypes.ProposalState_Pending:
 			data.ProposalCounts.Pending++
-		case rptypes.Active:
+		case rptypes.ProposalState_Active:
 			data.ProposalCounts.Active++
-		case rptypes.Cancelled:
+		case rptypes.ProposalState_Cancelled:
 			data.ProposalCounts.Cancelled++
-		case rptypes.Defeated:
+		case rptypes.ProposalState_Defeated:
 			data.ProposalCounts.Defeated++
-		case rptypes.Succeeded:
+		case rptypes.ProposalState_Succeeded:
 			data.ProposalCounts.Succeeded++
-		case rptypes.Expired:
+		case rptypes.ProposalState_Expired:
 			data.ProposalCounts.Expired++
-		case rptypes.Executed:
+		case rptypes.ProposalState_Executed:
 			data.ProposalCounts.Executed++
 		}
 	}

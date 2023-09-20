@@ -22,23 +22,24 @@ import (
 // === Factory ===
 // ===============
 
-type oracleDaoCancelProposalContextFactory struct {
+type oracleDaoVoteContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoCancelProposalContextFactory) Create(vars map[string]string) (*oracleDaoCancelProposalContext, error) {
-	c := &oracleDaoCancelProposalContext{
+func (f *oracleDaoVoteContextFactory) Create(vars map[string]string) (*oracleDaoVoteContext, error) {
+	c := &oracleDaoVoteContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("id", vars, input.ValidatePositiveUint, &c.id),
+		server.ValidateArg("id", vars, input.ValidateUint, &c.id),
+		server.ValidateArg("support", vars, input.ValidateBool, &c.support),
 	}
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *oracleDaoCancelProposalContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*oracleDaoCancelProposalContext, api.OracleDaoCancelProposalData](
-		router, "cancel-proposal", f, f.handler.serviceProvider,
+func (f *oracleDaoVoteContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoVoteContext, api.OracleDaoVoteData](
+		router, "vote", f, f.handler.serviceProvider,
 	)
 }
 
@@ -46,24 +47,26 @@ func (f *oracleDaoCancelProposalContextFactory) RegisterRoute(router *mux.Router
 // === Context ===
 // ===============
 
-type oracleDaoCancelProposalContext struct {
+type oracleDaoVoteContext struct {
 	handler     *OracleDaoHandler
 	rp          *rocketpool.RocketPool
 	nodeAddress common.Address
 
 	id         uint64
+	support    bool
 	odaoMember *oracle.OracleDaoMember
 	dpm        *proposals.DaoProposalManager
 	prop       *proposals.OracleDaoProposal
+	hasVoted   bool
 }
 
-func (c *oracleDaoCancelProposalContext) Initialize() error {
+func (c *oracleDaoVoteContext) Initialize() error {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireOnOracleDao()
 	if err != nil {
 		return err
 	}
@@ -89,31 +92,26 @@ func (c *oracleDaoCancelProposalContext) Initialize() error {
 	return nil
 }
 
-func (c *oracleDaoCancelProposalContext) GetState(mc *batch.MultiCaller) {
+func (c *oracleDaoVoteContext) GetState(mc *batch.MultiCaller) {
 	c.dpm.GetProposalCount(mc)
-	c.odaoMember.GetExists(mc)
 	c.prop.GetState(mc)
-	c.prop.GetProposerAddress(mc)
+	c.prop.GetMemberHasVoted(mc, &c.hasVoted, c.nodeAddress)
+	c.odaoMember.GetJoinedTime(mc)
+	c.prop.GetCreatedTime(mc)
 }
 
-func (c *oracleDaoCancelProposalContext) PrepareData(data *api.OracleDaoCancelProposalData, opts *bind.TransactOpts) error {
-	// Verify oDAO status
-	if !c.odaoMember.Exists {
-		return errors.New("The node is not a member of the oracle DAO.")
-	}
-
-	// Check proposal details
-	state := c.prop.State.Formatted()
-	data.DoesNotExist = (c.id > c.dpm.ProposalCount.Formatted())
-	data.InvalidState = !(state == rptypes.ProposalState_Pending || state == rptypes.ProposalState_Active)
-	data.InvalidProposer = !(c.nodeAddress == c.prop.ProposerAddress)
-	data.CanCancel = !(data.DoesNotExist || data.InvalidState || data.InvalidProposer)
+func (c *oracleDaoVoteContext) PrepareData(data *api.OracleDaoVoteData, opts *bind.TransactOpts) error {
+	data.DoesNotExist = (c.prop.ID.Formatted() > c.dpm.ProposalCount.Formatted())
+	data.InvalidState = (c.prop.State.Formatted() != rptypes.ProposalState_Active)
+	data.AlreadyVoted = c.hasVoted
+	data.JoinedAfterCreated = (c.odaoMember.JoinedTime.Formatted().Sub(c.prop.CreatedTime.Formatted()) >= 0)
+	data.CanVote = !(data.DoesNotExist || data.InvalidState || data.JoinedAfterCreated || data.AlreadyVoted)
 
 	// Get the tx
-	if data.CanCancel && opts != nil {
-		txInfo, err := c.prop.Cancel(opts)
+	if data.CanVote && opts != nil {
+		txInfo, err := c.prop.VoteOn(c.support, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for Cancel: %w", err)
+			return fmt.Errorf("error getting TX info for VoteOn: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
