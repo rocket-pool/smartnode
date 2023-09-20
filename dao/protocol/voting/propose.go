@@ -14,17 +14,17 @@ import (
 )
 
 // Estimate the gas of a proposal submission
-func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketDAOProtocolProposals.GetTransactionGasInfo(opts, "propose", message, payload)
+	return rocketDAOProtocolProposals.GetTransactionGasInfo(opts, "propose", message, payload, blockNumber, treeNodes)
 }
 
 // Submit a trusted node DAO proposal
 // Returns the ID of the new proposal
-func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -33,7 +33,7 @@ func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, o
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
-	tx, err := rocketDAOProtocolProposals.Transact(opts, "propose", message, payload)
+	tx, err := rocketDAOProtocolProposals.Transact(opts, "propose", message, payload, blockNumber, treeNodes)
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error submitting Protocol DAO proposal: %w", err)
 	}
@@ -41,7 +41,7 @@ func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, o
 }
 
 // Estimate the gas of ProposeSetMulti
-func EstimateProposeSetMultiGas(rp *rocketpool.RocketPool, message string, contractNames []string, settingPaths []string, settingTypes []types.ProposalSettingType, values []any, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetMultiGas(rp *rocketpool.RocketPool, message string, contractNames []string, settingPaths []string, settingTypes []types.ProposalSettingType, values []any, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -54,11 +54,11 @@ func EstimateProposeSetMultiGas(rp *rocketpool.RocketPool, message string, contr
 	if err != nil {
 		return rocketpool.GasInfo{}, fmt.Errorf("error setting multi-set proposal payload: %w", err)
 	}
-	return EstimateProposalGas(rp, message, payload, opts)
+	return EstimateProposalGas(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Submit a proposal to update multiple Protocol DAO settings at once
-func ProposeSetMulti(rp *rocketpool.RocketPool, message string, contractNames []string, settingPaths []string, settingTypes []types.ProposalSettingType, values []any, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetMulti(rp *rocketpool.RocketPool, message string, contractNames []string, settingPaths []string, settingTypes []types.ProposalSettingType, values []any, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -71,11 +71,11 @@ func ProposeSetMulti(rp *rocketpool.RocketPool, message string, contractNames []
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error setting multi-set proposal payload: %w", err)
 	}
-	return SubmitProposal(rp, message, payload, opts)
+	return SubmitProposal(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Estimate the gas of ProposeSetBool
-func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -84,11 +84,11 @@ func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName,
 	if err != nil {
 		return rocketpool.GasInfo{}, fmt.Errorf("error setting bool setting proposal payload: %w", err)
 	}
-	return EstimateProposalGas(rp, message, payload, opts)
+	return EstimateProposalGas(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Submit a proposal to update a bool Protocol DAO setting
-func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -97,11 +97,11 @@ func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPat
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error setting bool setting proposal payload: %w", err)
 	}
-	return SubmitProposal(rp, message, payload, opts)
+	return SubmitProposal(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Estimate the gas of ProposeSetUint
-func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -110,11 +110,11 @@ func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName,
 	if err != nil {
 		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set uint setting proposal payload: %w", err)
 	}
-	return EstimateProposalGas(rp, message, payload, opts)
+	return EstimateProposalGas(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Submit a proposal to update a uint Protocol DAO setting
-func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -123,11 +123,11 @@ func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPat
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error encoding set uint setting proposal payload: %w", err)
 	}
-	return SubmitProposal(rp, message, payload, opts)
+	return SubmitProposal(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Estimate the gas of ProposeSetAddress
-func EstimateProposeSetAddressGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetAddressGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value common.Address, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -136,11 +136,11 @@ func EstimateProposeSetAddressGas(rp *rocketpool.RocketPool, message, contractNa
 	if err != nil {
 		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set address setting proposal payload: %w", err)
 	}
-	return EstimateProposalGas(rp, message, payload, opts)
+	return EstimateProposalGas(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Submit a proposal to update an address Protocol DAO setting
-func ProposeSetAddress(rp *rocketpool.RocketPool, message, contractName, settingPath string, value common.Address, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetAddress(rp *rocketpool.RocketPool, message, contractName, settingPath string, value common.Address, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -149,11 +149,11 @@ func ProposeSetAddress(rp *rocketpool.RocketPool, message, contractName, setting
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error encoding set address setting proposal payload: %w", err)
 	}
-	return SubmitProposal(rp, message, payload, opts)
+	return SubmitProposal(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Estimate the gas of ProposeSetAddress
-func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, percentage *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, percentage *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -162,11 +162,11 @@ func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message, 
 	if err != nil {
 		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set rewards-claimer percent proposal payload: %w", err)
 	}
-	return EstimateProposalGas(rp, message, payload, opts)
+	return EstimateProposalGas(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Submit a proposal to update one of percentage allocations of RPL rewards
-func ProposeSetRewardsPercentage(rp *rocketpool.RocketPool, message, contractName string, percentage *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetRewardsPercentage(rp *rocketpool.RocketPool, message, contractName string, percentage *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -175,11 +175,11 @@ func ProposeSetRewardsPercentage(rp *rocketpool.RocketPool, message, contractNam
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error encoding set rewards-claimer percent proposal payload: %w", err)
 	}
-	return SubmitProposal(rp, message, payload, opts)
+	return SubmitProposal(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Estimate the gas of ProposeSpendTreasury
-func EstimateProposeSpendTreasuryGas(rp *rocketpool.RocketPool, message, invoiceID string, recipient common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSpendTreasuryGas(rp *rocketpool.RocketPool, message, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -188,11 +188,11 @@ func EstimateProposeSpendTreasuryGas(rp *rocketpool.RocketPool, message, invoice
 	if err != nil {
 		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set spend-treasury percent proposal payload: %w", err)
 	}
-	return EstimateProposalGas(rp, message, payload, opts)
+	return EstimateProposalGas(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Submit a proposal to spend a portion of the Rocket Pool treasury
-func ProposeSpendTreasury(rp *rocketpool.RocketPool, message, invoiceID string, recipient common.Address, amount *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSpendTreasury(rp *rocketpool.RocketPool, message, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -201,7 +201,7 @@ func ProposeSpendTreasury(rp *rocketpool.RocketPool, message, invoiceID string, 
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error encoding set spend-treasury percent proposal payload: %w", err)
 	}
-	return SubmitProposal(rp, message, payload, opts)
+	return SubmitProposal(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
 // Estimate the gas of CancelProposal
@@ -321,10 +321,10 @@ func abiEncodeMultiValues(settingTypes []types.ProposalSettingType, values []any
 }
 
 // Get contracts
-var rocketDAOProtocolProposals sync.Mutex
+var rocketDAOProtocolProposalsLock sync.Mutex
 
 func getRocketDAOProtocolProposals(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	rocketDAOProtocolProposals.Lock()
-	defer rocketDAOProtocolProposals.Unlock()
+	rocketDAOProtocolProposalsLock.Lock()
+	defer rocketDAOProtocolProposalsLock.Unlock()
 	return rp.GetContract("rocketDAOProtocolProposals", opts)
 }

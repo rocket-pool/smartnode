@@ -304,9 +304,6 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	}
 
 	// Get the decoded data
-	eventIntervalStartTime := snapshot.IntervalStartTime
-	eventIntervalEndTime := snapshot.IntervalEndTime
-	submissionTime := snapshot.Time
 	submission := snapshot.Submission
 	eventData := RewardsEvent{
 		Index:             indexBig,
@@ -318,11 +315,11 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 		NodeRPL:           submission.NodeRPL,
 		NodeETH:           submission.NodeETH,
 		UserETH:           submission.UserETH,
-		MerkleRoot:        common.BytesToHash(submission.MerkleRoot[:]),
+		MerkleRoot:        submission.MerkleRoot,
 		MerkleTreeCID:     submission.MerkleTreeCID,
-		IntervalStartTime: time.Unix(eventIntervalStartTime.Int64(), 0),
-		IntervalEndTime:   time.Unix(eventIntervalEndTime.Int64(), 0),
-		SubmissionTime:    time.Unix(submissionTime.Int64(), 0),
+		IntervalStartTime: time.Unix(snapshot.IntervalStartTime.Int64(), 0),
+		IntervalEndTime:   time.Unix(snapshot.IntervalEndTime.Int64(), 0),
+		SubmissionTime:    time.Unix(snapshot.Time.Int64(), 0),
 	}
 
 	// Convert v1.1.0-rc1 events to modern ones
