@@ -1,126 +1,123 @@
 package odao
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberUrl string) (*api.OracleDaoProposeInviteData, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.OracleDaoProposeInviteData{}
-
-	// Sync
-	var wg errgroup.Group
-
-	// Check if proposal cooldown is active
-	wg.Go(func() error {
-		nodeAccount, err := w.GetNodeAccount()
-		if err != nil {
-			return err
-		}
-		proposalCooldownActive, err := getProposalCooldownActive(rp, nodeAccount.Address)
-		if err == nil {
-			response.ProposalCooldownActive = proposalCooldownActive
-		}
-		return err
-	})
-
-	// Check if member exists
-	wg.Go(func() error {
-		memberExists, err := trustednode.GetMemberExists(rp, memberAddress, nil)
-		if err == nil {
-			response.MemberAlreadyExists = memberExists
-		}
-		return err
-	})
-
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		message := fmt.Sprintf("invite %s (%s)", memberId, memberUrl)
-		gasInfo, err := trustednode.EstimateProposeInviteMemberGas(rp, message, memberAddress, memberId, memberUrl, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.CanPropose = !(response.ProposalCooldownActive || response.MemberAlreadyExists)
-	return &response, nil
-
+type oracleDaoProposeInviteContextFactory struct {
+	handler *OracleDaoHandler
 }
 
-func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberUrl string) (*api.ProposeTNDAOInviteResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
+func (f *oracleDaoProposeInviteContextFactory) Create(vars map[string]string) (*oracleDaoProposeInviteContext, error) {
+	c := &oracleDaoProposeInviteContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	inputErrs := []error{
+		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
+		server.ValidateArg("id", vars, input.ValidateDAOMemberID, &c.id),
+		server.GetStringFromVars("url", vars, &c.url),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *oracleDaoProposeInviteContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoProposeInviteContext, api.OracleDaoProposeInviteData](
+		router, "propose-invite", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type oracleDaoProposeInviteContext struct {
+	handler     *OracleDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	address    common.Address
+	id         string
+	url        string
+	odaoMember *oracle.OracleDaoMember
+	candidate  *oracle.OracleDaoMember
+	oSettings  *oracle.OracleDaoSettings
+	odaoMgr    *oracle.OracleDaoManager
+}
+
+func (c *oracleDaoProposeInviteContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireOnOracleDao()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rp, err := services.GetRocketPool(c)
+
+	// Bindings
+	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
-
-	// Response
-	response := api.ProposeTNDAOInviteResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	c.candidate, err = oracle.NewOracleDaoMember(c.rp, c.address)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating candidate oracle DAO member binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
+	c.oSettings = c.odaoMgr.Settings
+	return nil
+}
 
-	// Submit proposal
-	message := fmt.Sprintf("invite %s (%s)", memberId, memberUrl)
-	proposalId, hash, err := trustednode.ProposeInviteMember(rp, message, memberAddress, memberId, memberUrl, opts)
+func (c *oracleDaoProposeInviteContext) GetState(mc *batch.MultiCaller) {
+	c.odaoMember.GetLastProposalTime(mc)
+	c.oSettings.GetProposalCooldownTime(mc)
+	c.candidate.GetExists(mc)
+}
+
+func (c *oracleDaoProposeInviteContext) PrepareData(data *api.OracleDaoProposeInviteData, opts *bind.TransactOpts) error {
+	// Get the timestamp of the latest block
+	latestHeader, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting latest block header: %w", err)
 	}
-	response.ProposalId = proposalId
-	response.TxHash = hash
+	currentTime := time.Unix(int64(latestHeader.Time), 0)
+	cooldownTime := c.oSettings.Proposals.CooldownTime.Formatted()
 
-	// Return response
-	return &response, nil
+	// Check proposal details
+	data.ProposalCooldownActive = isProposalCooldownActive(cooldownTime, c.odaoMember.LastProposalTime.Formatted(), currentTime)
+	data.MemberAlreadyExists = c.candidate.Exists
+	data.CanPropose = !(data.ProposalCooldownActive || data.MemberAlreadyExists)
 
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		message := fmt.Sprintf("invite %s (%s)", c.id, c.url)
+		txInfo, err := c.odaoMgr.ProposeInviteMember(message, c.address, c.id, c.url, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for ProposeInviteMember: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
 }
