@@ -21,6 +21,15 @@ const (
 
 var ProposalStates = []string{"Pending", "Active", "Cancelled", "Defeated", "Succeeded", "Expired", "Executed"}
 
+// DAO setting types
+type ProposalSettingType uint8
+
+const (
+	ProposalSettingType_Uint256 ProposalSettingType = iota
+	ProposalSettingType_Bool
+	ProposalSettingType_Address
+)
+
 // String conversion
 func (s ProposalState) String() string {
 	if int(s) >= len(ProposalStates) {
