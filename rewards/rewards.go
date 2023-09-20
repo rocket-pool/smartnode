@@ -3,7 +3,6 @@ package rewards
 import (
 	"fmt"
 	"math/big"
-	"reflect"
 	"sync"
 	"time"
 
@@ -51,6 +50,15 @@ type RewardSubmission struct {
 	NodeRPL         []*big.Int `json:"nodeRPL"`
 	NodeETH         []*big.Int `json:"nodeETH"`
 	UserETH         *big.Int   `json:"userETH"`
+}
+
+// Internal struct - this is the structure of what gets returned by the RewardSnapshot event
+type rewardSnapshot struct {
+	RewardIndex       *big.Int         `json:"rewardIndex"`
+	Submission        RewardSubmission `json:"submission"`
+	IntervalStartTime *big.Int         `json:"intervalStartTime"`
+	IntervalEndTime   *big.Int         `json:"intervalEndTime"`
+	Time              *big.Int         `json:"time"`
 }
 
 // Get the index of the active rewards period
@@ -267,34 +275,39 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	}
 
 	// Construct a filter query for relevant logs
+	rewardsSnapshotEvent := rocketRewardsPool.ABI.Events["RewardSnapshot"]
 	indexBytes := [32]byte{}
 	indexBig.FillBytes(indexBytes[:])
 	addressFilter := rocketRewardsPoolAddresses
-	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {indexBytes}}
+	topicFilter := [][]common.Hash{{rewardsSnapshotEvent.ID}, {indexBytes}}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), block, block, nil)
 	if err != nil {
 		return false, RewardsEvent{}, err
 	}
-
-	// Get the log info
-	values := make(map[string]interface{})
 	if len(logs) == 0 {
 		return false, RewardsEvent{}, nil
 	}
-	err = rocketRewardsPool.ABI.Events["RewardSnapshot"].Inputs.UnpackIntoMap(values, logs[0].Data)
+
+	// Get the log info values
+	values, err := rewardsSnapshotEvent.Inputs.Unpack(logs[0].Data)
 	if err != nil {
-		return false, RewardsEvent{}, err
+		return false, RewardsEvent{}, fmt.Errorf("error unpacking rewards snapshot event data: %w", err)
+	}
+
+	// Convert to a native struct
+	var snapshot rewardSnapshot
+	err = rewardsSnapshotEvent.Inputs.Copy(&snapshot, values)
+	if err != nil {
+		return false, RewardsEvent{}, fmt.Errorf("error converting rewards snapshot event data to struct: %w", err)
 	}
 
 	// Get the decoded data
-	submissionPrototype := RewardSubmission{}
-	submissionType := reflect.TypeOf(submissionPrototype)
-	submission := reflect.ValueOf(values["submission"]).Convert(submissionType).Interface().(RewardSubmission)
-	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
-	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
-	submissionTime := values["time"].(*big.Int)
+	eventIntervalStartTime := snapshot.IntervalStartTime
+	eventIntervalEndTime := snapshot.IntervalEndTime
+	submissionTime := snapshot.Time
+	submission := snapshot.Submission
 	eventData := RewardsEvent{
 		Index:             indexBig,
 		ExecutionBlock:    submission.ExecutionBlock,
