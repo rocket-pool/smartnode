@@ -12,7 +12,9 @@ import (
 )
 
 // Config
-const InflationSettingsContractName = "rocketDAOProtocolSettingsInflation"
+const (
+	InflationSettingsContractName string = "rocketDAOProtocolSettingsInflation"
+)
 
 // RPL inflation rate per interval
 func GetInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
