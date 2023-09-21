@@ -203,7 +203,7 @@ func GetNodeCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error
 	}
 	nodeCount := new(*big.Int)
 	if err := rocketNodeManager.Call(opts, nodeCount, "getNodeCount"); err != nil {
-		return 0, fmt.Errorf("Could not get node count: %w", err)
+		return 0, fmt.Errorf("error getting node count: %w", err)
 	}
 	return (*nodeCount).Uint64(), nil
 }
@@ -216,7 +216,7 @@ func GetNodeCountPerTimezone(rp *rocketpool.RocketPool, offset, limit *big.Int, 
 	}
 	timezoneCounts := new([]TimezoneCount)
 	if err := rocketNodeManager.Call(opts, timezoneCounts, "getNodeCountPerTimezone", offset, limit); err != nil {
-		return []TimezoneCount{}, fmt.Errorf("Could not get node count: %w", err)
+		return []TimezoneCount{}, fmt.Errorf("error getting node count: %w", err)
 	}
 	return *timezoneCounts, nil
 }
@@ -229,7 +229,7 @@ func GetNodeAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (co
 	}
 	nodeAddress := new(common.Address)
 	if err := rocketNodeManager.Call(opts, nodeAddress, "getNodeAt", big.NewInt(int64(index))); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get node %d address: %w", index, err)
+		return common.Address{}, fmt.Errorf("error getting node %d address: %w", index, err)
 	}
 	return *nodeAddress, nil
 }
@@ -242,7 +242,7 @@ func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *
 	}
 	exists := new(bool)
 	if err := rocketNodeManager.Call(opts, exists, "getNodeExists", nodeAddress); err != nil {
-		return false, fmt.Errorf("Could not get node %s exists status: %w", nodeAddress.Hex(), err)
+		return false, fmt.Errorf("error getting node %s exists status: %w", nodeAddress.Hex(), err)
 	}
 	return *exists, nil
 }
@@ -255,7 +255,7 @@ func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Addre
 	}
 	timezoneLocation := new(string)
 	if err := rocketNodeManager.Call(opts, timezoneLocation, "getNodeTimezoneLocation", nodeAddress); err != nil {
-		return "", fmt.Errorf("Could not get node %s timezone location: %w", nodeAddress.Hex(), err)
+		return "", fmt.Errorf("error getting node %s timezone location: %w", nodeAddress.Hex(), err)
 	}
 	return strings.Sanitize(*timezoneLocation), nil
 }
@@ -268,7 +268,7 @@ func EstimateRegisterNodeGas(rp *rocketpool.RocketPool, timezoneLocation string,
 	}
 	_, err = time.LoadLocation(timezoneLocation)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("Could not verify timezone [%s]: %w", timezoneLocation, err)
+		return rocketpool.GasInfo{}, fmt.Errorf("error verifying timezone [%s]: %w", timezoneLocation, err)
 	}
 	return rocketNodeManager.GetTransactionGasInfo(opts, "registerNode", timezoneLocation)
 }
@@ -281,11 +281,11 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
 	}
 	_, err = time.LoadLocation(timezoneLocation)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not verify timezone [%s]: %w", timezoneLocation, err)
+		return common.Hash{}, fmt.Errorf("error verifying timezone [%s]: %w", timezoneLocation, err)
 	}
 	tx, err := rocketNodeManager.Transact(opts, "registerNode", timezoneLocation)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not register node: %w", err)
+		return common.Hash{}, fmt.Errorf("error registering node: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -298,7 +298,7 @@ func EstimateSetTimezoneLocationGas(rp *rocketpool.RocketPool, timezoneLocation 
 	}
 	_, err = time.LoadLocation(timezoneLocation)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("Could not verify timezone [%s]: %w", timezoneLocation, err)
+		return rocketpool.GasInfo{}, fmt.Errorf("error verifying timezone [%s]: %w", timezoneLocation, err)
 	}
 	return rocketNodeManager.GetTransactionGasInfo(opts, "setTimezoneLocation", timezoneLocation)
 }
@@ -311,11 +311,11 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
 	}
 	_, err = time.LoadLocation(timezoneLocation)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not verify timezone [%s]: %w", timezoneLocation, err)
+		return common.Hash{}, fmt.Errorf("error verifying timezone [%s]: %w", timezoneLocation, err)
 	}
 	tx, err := rocketNodeManager.Transact(opts, "setTimezoneLocation", timezoneLocation)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not set node timezone location: %w", err)
+		return common.Hash{}, fmt.Errorf("error setting node timezone location: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -328,7 +328,7 @@ func GetRewardNetwork(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 	}
 	rewardNetwork := new(*big.Int)
 	if err := rocketNodeManager.Call(opts, rewardNetwork, "getRewardNetwork", nodeAddress); err != nil {
-		return 0, fmt.Errorf("Could not get node %s reward network: %w", nodeAddress.Hex(), err)
+		return 0, fmt.Errorf("error getting node %s reward network: %w", nodeAddress.Hex(), err)
 	}
 	return (*rewardNetwork).Uint64(), nil
 }
@@ -341,7 +341,7 @@ func GetRewardNetworkRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, 
 	}
 	rewardNetwork := new(*big.Int)
 	if err := rocketNodeManager.Call(opts, rewardNetwork, "getRewardNetwork", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get node %s reward network: %w", nodeAddress.Hex(), err)
+		return nil, fmt.Errorf("error getting node %s reward network: %w", nodeAddress.Hex(), err)
 	}
 	return *rewardNetwork, nil
 }
@@ -354,7 +354,7 @@ func GetFeeDistributorInitialized(rp *rocketpool.RocketPool, nodeAddress common.
 	}
 	isInitialized := new(bool)
 	if err := rocketNodeManager.Call(opts, isInitialized, "getFeeDistributorInitialised", nodeAddress); err != nil {
-		return false, fmt.Errorf("Could not check if node %s's fee distributor is initialized: %w", nodeAddress.Hex(), err)
+		return false, fmt.Errorf("error checking if node %s's fee distributor is initialized: %w", nodeAddress.Hex(), err)
 	}
 	return *isInitialized, nil
 }
@@ -376,7 +376,7 @@ func InitializeFeeDistributor(rp *rocketpool.RocketPool, opts *bind.TransactOpts
 	}
 	tx, err := rocketNodeManager.Transact(opts, "initialiseFeeDistributor")
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not initialize fee distributor: %w", err)
+		return common.Hash{}, fmt.Errorf("error initializing fee distributor: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -389,7 +389,7 @@ func GetNodeAverageFee(rp *rocketpool.RocketPool, nodeAddress common.Address, op
 	}
 	avgFee := new(*big.Int)
 	if err := rocketNodeManager.Call(opts, avgFee, "getAverageNodeFee", nodeAddress); err != nil {
-		return 0, fmt.Errorf("Could not get node %s average fee: %w", nodeAddress.Hex(), err)
+		return 0, fmt.Errorf("error getting node %s average fee: %w", nodeAddress.Hex(), err)
 	}
 	return eth.WeiToEth(*avgFee), nil
 }
@@ -402,7 +402,7 @@ func GetNodeAverageFeeRaw(rp *rocketpool.RocketPool, nodeAddress common.Address,
 	}
 	avgFee := new(*big.Int)
 	if err := rocketNodeManager.Call(opts, avgFee, "getAverageNodeFee", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get node %s average fee: %w", nodeAddress.Hex(), err)
+		return nil, fmt.Errorf("error getting node %s average fee: %w", nodeAddress.Hex(), err)
 	}
 	return *avgFee, nil
 }
@@ -415,7 +415,7 @@ func GetNodeRegistrationTime(rp *rocketpool.RocketPool, address common.Address, 
 	}
 	registrationTime := new(*big.Int)
 	if err := rocketNodeManager.Call(opts, registrationTime, "getNodeRegistrationTime", address); err != nil {
-		return time.Time{}, fmt.Errorf("Could not get registration time for %s: %w", address.Hex(), err)
+		return time.Time{}, fmt.Errorf("error getting registration time for %s: %w", address.Hex(), err)
 	}
 	return time.Unix((*registrationTime).Int64(), 0), nil
 }
@@ -428,7 +428,7 @@ func GetNodeRegistrationTimeRaw(rp *rocketpool.RocketPool, address common.Addres
 	}
 	registrationTime := new(*big.Int)
 	if err := rocketNodeManager.Call(opts, registrationTime, "getNodeRegistrationTime", address); err != nil {
-		return nil, fmt.Errorf("Could not get registration time for %s: %w", address.Hex(), err)
+		return nil, fmt.Errorf("error getting registration time for %s: %w", address.Hex(), err)
 	}
 	return *registrationTime, nil
 }
@@ -441,7 +441,7 @@ func GetSmoothingPoolRegistrationState(rp *rocketpool.RocketPool, nodeAddress co
 	}
 	state := new(bool)
 	if err := rocketNodeManager.Call(opts, state, "getSmoothingPoolRegistrationState", nodeAddress); err != nil {
-		return false, fmt.Errorf("Could not get node %s smoothing pool registration status: %w", nodeAddress.Hex(), err)
+		return false, fmt.Errorf("error getting node %s smoothing pool registration status: %w", nodeAddress.Hex(), err)
 	}
 	return *state, nil
 }
@@ -454,7 +454,7 @@ func GetSmoothingPoolRegistrationChanged(rp *rocketpool.RocketPool, nodeAddress 
 	}
 	timestamp := new(*big.Int)
 	if err := rocketNodeManager.Call(opts, timestamp, "getSmoothingPoolRegistrationChanged", nodeAddress); err != nil {
-		return time.Time{}, fmt.Errorf("Could not get node %s's last smoothing pool registration change time: %w", nodeAddress.Hex(), err)
+		return time.Time{}, fmt.Errorf("error getting node %s's last smoothing pool registration change time: %w", nodeAddress.Hex(), err)
 	}
 	return time.Unix((*timestamp).Int64(), 0), nil
 }
@@ -467,7 +467,7 @@ func GetSmoothingPoolRegistrationChangedRaw(rp *rocketpool.RocketPool, nodeAddre
 	}
 	timestamp := new(*big.Int)
 	if err := rocketNodeManager.Call(opts, timestamp, "getSmoothingPoolRegistrationChanged", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get node %s's last smoothing pool registration change time: %w", nodeAddress.Hex(), err)
+		return nil, fmt.Errorf("error getting node %s's last smoothing pool registration change time: %w", nodeAddress.Hex(), err)
 	}
 	return *timestamp, nil
 }
@@ -489,7 +489,7 @@ func SetSmoothingPoolRegistrationState(rp *rocketpool.RocketPool, optIn bool, op
 	}
 	tx, err := rocketNodeManager.Transact(opts, "setSmoothingPoolRegistrationState", optIn)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not set smoothing pool registration state: %w", err)
+		return common.Hash{}, fmt.Errorf("error setting smoothing pool registration state: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -523,7 +523,7 @@ func GetSmoothingPoolRegisteredNodeCount(rp *rocketpool.RocketPool, opts *bind.C
 			count := new(*big.Int)
 			err := rocketNodeManager.Call(opts, count, "getSmoothingPoolRegisteredNodeCount", big.NewInt(int64(offset)), big.NewInt(int64(limit)))
 			if err != nil {
-				return fmt.Errorf("Could not get smoothing pool opt-in count for batch starting at %d: %w", offset, err)
+				return fmt.Errorf("error getting smoothing pool opt-in count for batch starting at %d: %w", offset, err)
 			}
 
 			iterationCounts[i] = *count

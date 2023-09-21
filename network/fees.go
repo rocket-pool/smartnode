@@ -19,7 +19,7 @@ func GetNodeDemand(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, er
 	}
 	nodeDemand := new(*big.Int)
 	if err := rocketNetworkFees.Call(opts, nodeDemand, "getNodeDemand"); err != nil {
-		return nil, fmt.Errorf("Could not get network node demand: %w", err)
+		return nil, fmt.Errorf("error getting network node demand: %w", err)
 	}
 	return *nodeDemand, nil
 }
@@ -32,7 +32,7 @@ func GetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error)
 	}
 	nodeFee := new(*big.Int)
 	if err := rocketNetworkFees.Call(opts, nodeFee, "getNodeFee"); err != nil {
-		return 0, fmt.Errorf("Could not get network node fee: %w", err)
+		return 0, fmt.Errorf("error getting network node fee: %w", err)
 	}
 	return eth.WeiToEth(*nodeFee), nil
 }
@@ -45,7 +45,7 @@ func GetNodeFeeByDemand(rp *rocketpool.RocketPool, nodeDemand *big.Int, opts *bi
 	}
 	nodeFee := new(*big.Int)
 	if err := rocketNetworkFees.Call(opts, nodeFee, "getNodeFeeByDemand", nodeDemand); err != nil {
-		return 0, fmt.Errorf("Could not get node fee by node demand: %w", err)
+		return 0, fmt.Errorf("error getting node fee by node demand: %w", err)
 	}
 	return eth.WeiToEth(*nodeFee), nil
 }

@@ -22,7 +22,7 @@ func GetInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	}
 	value := new(*big.Int)
 	if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalRate"); err != nil {
-		return 0, fmt.Errorf("Could not get inflation rate: %w", err)
+		return 0, fmt.Errorf("error getting inflation rate: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -35,7 +35,7 @@ func GetInflationStartTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 	}
 	value := new(*big.Int)
 	if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalStartTime"); err != nil {
-		return 0, fmt.Errorf("Could not get inflation start time: %w", err)
+		return 0, fmt.Errorf("error getting inflation start time: %w", err)
 	}
 	return (*value).Uint64(), nil
 }

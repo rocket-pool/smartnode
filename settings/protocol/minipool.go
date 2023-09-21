@@ -22,7 +22,7 @@ func GetMinipoolLaunchBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getLaunchBalance"); err != nil {
-		return nil, fmt.Errorf("Could not get minipool launch balance: %w", err)
+		return nil, fmt.Errorf("error getting minipool launch balance: %w", err)
 	}
 	return *value, nil
 }
@@ -35,7 +35,7 @@ func GetMinipoolFullDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.Call
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getFullDepositNodeAmount"); err != nil {
-		return nil, fmt.Errorf("Could not get full minipool deposit node amount: %w", err)
+		return nil, fmt.Errorf("error getting full minipool deposit node amount: %w", err)
 	}
 	return *value, nil
 }
@@ -46,7 +46,7 @@ func GetMinipoolHalfDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.Call
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getHalfDepositNodeAmount"); err != nil {
-		return nil, fmt.Errorf("Could not get half minipool deposit node amount: %w", err)
+		return nil, fmt.Errorf("error getting half minipool deposit node amount: %w", err)
 	}
 	return *value, nil
 }
@@ -57,7 +57,7 @@ func GetMinipoolEmptyDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.Cal
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getEmptyDepositNodeAmount"); err != nil {
-		return nil, fmt.Errorf("Could not get empty minipool deposit node amount: %w", err)
+		return nil, fmt.Errorf("error getting empty minipool deposit node amount: %w", err)
 	}
 	return *value, nil
 }
@@ -70,7 +70,7 @@ func GetMinipoolFullDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.Call
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getFullDepositUserAmount"); err != nil {
-		return nil, fmt.Errorf("Could not get full minipool deposit user amount: %w", err)
+		return nil, fmt.Errorf("error getting full minipool deposit user amount: %w", err)
 	}
 	return *value, nil
 }
@@ -81,7 +81,7 @@ func GetMinipoolHalfDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.Call
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getHalfDepositUserAmount"); err != nil {
-		return nil, fmt.Errorf("Could not get half minipool deposit user amount: %w", err)
+		return nil, fmt.Errorf("error getting half minipool deposit user amount: %w", err)
 	}
 	return *value, nil
 }
@@ -92,7 +92,7 @@ func GetMinipoolEmptyDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.Cal
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getEmptyDepositUserAmount"); err != nil {
-		return nil, fmt.Errorf("Could not get empty minipool deposit user amount: %w", err)
+		return nil, fmt.Errorf("error getting empty minipool deposit user amount: %w", err)
 	}
 	return *value, nil
 }
@@ -105,7 +105,7 @@ func GetMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, opts *bind.
 	}
 	value := new(bool)
 	if err := minipoolSettingsContract.Call(opts, value, "getSubmitWithdrawableEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get minipool withdrawable submissions enabled status: %w", err)
+		return false, fmt.Errorf("error getting minipool withdrawable submissions enabled status: %w", err)
 	}
 	return *value, nil
 }
@@ -118,7 +118,7 @@ func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (t
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getLaunchTimeout"); err != nil {
-		return 0, fmt.Errorf("Could not get minipool launch timeout: %w", err)
+		return 0, fmt.Errorf("error getting minipool launch timeout: %w", err)
 	}
 	seconds := time.Duration((*value).Int64()) * time.Second
 	return seconds, nil
@@ -132,7 +132,7 @@ func GetMinipoolLaunchTimeoutRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getLaunchTimeout"); err != nil {
-		return nil, fmt.Errorf("Could not get minipool launch timeout: %w", err)
+		return nil, fmt.Errorf("error getting minipool launch timeout: %w", err)
 	}
 	return *value, nil
 }
@@ -145,7 +145,7 @@ func GetBondReductionEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bo
 	}
 	value := new(bool)
 	if err := minipoolSettingsContract.Call(opts, value, "getBondReductionEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get bond reduction enabled status: %w", err)
+		return false, fmt.Errorf("error getting bond reduction enabled status: %w", err)
 	}
 	return *value, nil
 }

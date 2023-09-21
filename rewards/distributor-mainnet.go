@@ -18,7 +18,7 @@ func IsClaimed(rp *rocketpool.RocketPool, index *big.Int, claimerAddress common.
 	}
 	isClaimed := new(bool)
 	if err := rocketDistributorMainnet.Call(opts, isClaimed, "isClaimed", index, claimerAddress); err != nil {
-		return false, fmt.Errorf("Could not get rewards claim status for interval %s, node %s: %w", index.String(), claimerAddress.Hex(), err)
+		return false, fmt.Errorf("error getting rewards claim status for interval %s, node %s: %w", index.String(), claimerAddress.Hex(), err)
 	}
 	return *isClaimed, nil
 }
@@ -31,7 +31,7 @@ func MerkleRoots(rp *rocketpool.RocketPool, interval *big.Int, opts *bind.CallOp
 	}
 	bytes := new([32]byte)
 	if err := rocketDistributorMainnet.Call(opts, bytes, "merkleRoots", interval); err != nil {
-		return nil, fmt.Errorf("Could not get Merkle root for interval %s: %w", interval.String(), err)
+		return nil, fmt.Errorf("error getting Merkle root for interval %s: %w", interval.String(), err)
 	}
 	return (*bytes)[:], nil
 }
@@ -53,7 +53,7 @@ func Claim(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int
 	}
 	tx, err := rocketDistributorMainnet.Transact(opts, "claim", address, indices, amountRPL, amountETH, merkleProofs)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not claim rewards: %w", err)
+		return common.Hash{}, fmt.Errorf("error claiming rewards: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -75,7 +75,7 @@ func ClaimAndStake(rp *rocketpool.RocketPool, address common.Address, indices []
 	}
 	tx, err := rocketDistributorMainnet.Transact(opts, "claimAndStake", address, indices, amountRPL, amountETH, merkleProofs, stakeAmount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not claim rewards: %w", err)
+		return common.Hash{}, fmt.Errorf("error claiming rewards: %w", err)
 	}
 	return tx.Hash(), nil
 }

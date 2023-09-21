@@ -26,19 +26,19 @@ func GetProposalPayloadString(rp *rocketpool.RocketPool, daoName string, payload
 	// Get proposal DAO contract ABI
 	daoContractAbi, err := rp.GetABI(daoName, opts)
 	if err != nil {
-		return "", fmt.Errorf("Could not get '%s' DAO contract ABI: %w", daoName, err)
+		return "", fmt.Errorf("error getting '%s' DAO contract ABI: %w", daoName, err)
 	}
 
 	// Get proposal payload method
 	method, err := daoContractAbi.MethodById(payload)
 	if err != nil {
-		return "", fmt.Errorf("Could not get proposal payload method: %w", err)
+		return "", fmt.Errorf("error getting proposal payload method: %w", err)
 	}
 
 	// Get proposal payload argument values
 	args, err := method.Inputs.UnpackValues(payload[4:])
 	if err != nil {
-		return "", fmt.Errorf("Could not get proposal payload arguments: %w", err)
+		return "", fmt.Errorf("error getting proposal payload arguments: %w", err)
 	}
 
 	// Format argument values as strings

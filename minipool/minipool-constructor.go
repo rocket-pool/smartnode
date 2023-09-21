@@ -55,7 +55,7 @@ func createMinipoolContractFromEncodedAbi(rp *rocketpool.RocketPool, address com
 	// Decode ABI
 	abi, err := rocketpool.DecodeAbi(encodedAbi)
 	if err != nil {
-		return nil, fmt.Errorf("Could not decode minipool %s ABI: %w", address, err)
+		return nil, fmt.Errorf("error decoding minipool %s ABI: %w", address, err)
 	}
 
 	// Create and return

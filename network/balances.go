@@ -26,7 +26,7 @@ func GetBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
 	}
 	balancesBlock := new(*big.Int)
 	if err := rocketNetworkBalances.Call(opts, balancesBlock, "getBalancesBlock"); err != nil {
-		return 0, fmt.Errorf("Could not get network balances block: %w", err)
+		return 0, fmt.Errorf("error getting network balances block: %w", err)
 	}
 	return (*balancesBlock).Uint64(), nil
 }
@@ -39,7 +39,7 @@ func GetBalancesBlockRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.I
 	}
 	balancesBlock := new(*big.Int)
 	if err := rocketNetworkBalances.Call(opts, balancesBlock, "getBalancesBlock"); err != nil {
-		return nil, fmt.Errorf("Could not get network balances block: %w", err)
+		return nil, fmt.Errorf("error getting network balances block: %w", err)
 	}
 	return *balancesBlock, nil
 }
@@ -52,7 +52,7 @@ func GetTotalETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.In
 	}
 	totalEthBalance := new(*big.Int)
 	if err := rocketNetworkBalances.Call(opts, totalEthBalance, "getTotalETHBalance"); err != nil {
-		return nil, fmt.Errorf("Could not get network total ETH balance: %w", err)
+		return nil, fmt.Errorf("error getting network total ETH balance: %w", err)
 	}
 	return *totalEthBalance, nil
 }
@@ -65,7 +65,7 @@ func GetStakingETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 	}
 	stakingEthBalance := new(*big.Int)
 	if err := rocketNetworkBalances.Call(opts, stakingEthBalance, "getStakingETHBalance"); err != nil {
-		return nil, fmt.Errorf("Could not get network staking ETH balance: %w", err)
+		return nil, fmt.Errorf("error getting network staking ETH balance: %w", err)
 	}
 	return *stakingEthBalance, nil
 }
@@ -78,7 +78,7 @@ func GetTotalRETHSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.In
 	}
 	totalRethSupply := new(*big.Int)
 	if err := rocketNetworkBalances.Call(opts, totalRethSupply, "getTotalRETHSupply"); err != nil {
-		return nil, fmt.Errorf("Could not get network total rETH supply: %w", err)
+		return nil, fmt.Errorf("error getting network total rETH supply: %w", err)
 	}
 	return *totalRethSupply, nil
 }
@@ -91,7 +91,7 @@ func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 	}
 	ethUtilizationRate := new(*big.Int)
 	if err := rocketNetworkBalances.Call(opts, ethUtilizationRate, "getETHUtilizationRate"); err != nil {
-		return 0, fmt.Errorf("Could not get network ETH utilization rate: %w", err)
+		return 0, fmt.Errorf("error getting network ETH utilization rate: %w", err)
 	}
 	return eth.WeiToEth(*ethUtilizationRate), nil
 }
@@ -113,7 +113,7 @@ func SubmitBalances(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEt
 	}
 	tx, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), totalEth, stakingEth, rethSupply)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not submit network balances: %w", err)
+		return common.Hash{}, fmt.Errorf("error submitting network balances: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -126,7 +126,7 @@ func GetLatestReportableBalancesBlock(rp *rocketpool.RocketPool, opts *bind.Call
 	}
 	latestReportableBlock := new(*big.Int)
 	if err := rocketNetworkBalances.Call(opts, latestReportableBlock, "getLatestReportableBlock"); err != nil {
-		return nil, fmt.Errorf("Could not get latest reportable block: %w", err)
+		return nil, fmt.Errorf("error getting latest reportable block: %w", err)
 	}
 	return *latestReportableBlock, nil
 }

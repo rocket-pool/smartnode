@@ -22,7 +22,7 @@ func GetNodeRegistrationEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	value := new(bool)
 	if err := nodeSettingsContract.Call(opts, value, "getRegistrationEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get node registrations enabled status: %w", err)
+		return false, fmt.Errorf("error getting node registrations enabled status: %w", err)
 	}
 	return *value, nil
 }
@@ -35,7 +35,7 @@ func GetNodeDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool
 	}
 	value := new(bool)
 	if err := nodeSettingsContract.Call(opts, value, "getDepositEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get node deposits enabled status: %w", err)
+		return false, fmt.Errorf("error getting node deposits enabled status: %w", err)
 	}
 	return *value, nil
 }
@@ -48,7 +48,7 @@ func GetVacantMinipoolsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	}
 	value := new(bool)
 	if err := nodeSettingsContract.Call(opts, value, "getVacantMinipoolsEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get vacant minipools enabled status: %w", err)
+		return false, fmt.Errorf("error getting vacant minipools enabled status: %w", err)
 	}
 	return *value, nil
 }
@@ -61,7 +61,7 @@ func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	value := new(*big.Int)
 	if err := nodeSettingsContract.Call(opts, value, "getMinimumPerMinipoolStake"); err != nil {
-		return 0, fmt.Errorf("Could not get minimum RPL stake per minipool: %w", err)
+		return 0, fmt.Errorf("error getting minimum RPL stake per minipool: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -74,7 +74,7 @@ func GetMinimumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpt
 	}
 	value := new(*big.Int)
 	if err := nodeSettingsContract.Call(opts, value, "getMinimumPerMinipoolStake"); err != nil {
-		return nil, fmt.Errorf("Could not get minimum RPL stake per minipool: %w", err)
+		return nil, fmt.Errorf("error getting minimum RPL stake per minipool: %w", err)
 	}
 	return *value, nil
 }
@@ -87,7 +87,7 @@ func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	value := new(*big.Int)
 	if err := nodeSettingsContract.Call(opts, value, "getMaximumPerMinipoolStake"); err != nil {
-		return 0, fmt.Errorf("Could not get maximum RPL stake per minipool: %w", err)
+		return 0, fmt.Errorf("error getting maximum RPL stake per minipool: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -100,7 +100,7 @@ func GetMaximumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpt
 	}
 	value := new(*big.Int)
 	if err := nodeSettingsContract.Call(opts, value, "getMaximumPerMinipoolStake"); err != nil {
-		return nil, fmt.Errorf("Could not get maximum RPL stake per minipool: %w", err)
+		return nil, fmt.Errorf("error getting maximum RPL stake per minipool: %w", err)
 	}
 	return *value, nil
 }

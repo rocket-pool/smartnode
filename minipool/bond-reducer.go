@@ -28,7 +28,7 @@ func VoteCancelReduction(rp *rocketpool.RocketPool, minipoolAddress common.Addre
 	}
 	tx, err := rocketMinipoolBondReducer.Transact(opts, "voteCancelReduction", minipoolAddress)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not vote to cancel bond reduction for minipool %s: %w", minipoolAddress.Hex(), err)
+		return common.Hash{}, fmt.Errorf("error voting to cancel bond reduction for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return tx.Hash(), nil
 }
@@ -41,7 +41,7 @@ func GetReduceBondCancelled(rp *rocketpool.RocketPool, minipoolAddress common.Ad
 	}
 	isCancelled := new(bool)
 	if err := rocketMinipoolBondReducer.Call(opts, isCancelled, "getReduceBondCancelled", minipoolAddress); err != nil {
-		return false, fmt.Errorf("Could not get reduce bond cancelled status for minipool %s: %w", minipoolAddress.Hex(), err)
+		return false, fmt.Errorf("error getting reduce bond cancelled status for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return *isCancelled, nil
 }
@@ -54,7 +54,7 @@ func GetReduceBondTime(rp *rocketpool.RocketPool, minipoolAddress common.Address
 	}
 	reduceBondTime := new(*big.Int)
 	if err := rocketMinipoolBondReducer.Call(opts, reduceBondTime, "getReduceBondTime", minipoolAddress); err != nil {
-		return time.Time{}, fmt.Errorf("Could not get reduce bond time for minipool %s: %w", minipoolAddress.Hex(), err)
+		return time.Time{}, fmt.Errorf("error getting reduce bond time for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return time.Unix((*reduceBondTime).Int64(), 0), nil
 }
@@ -67,7 +67,7 @@ func GetReduceBondValue(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	}
 	reduceBondValue := new(*big.Int)
 	if err := rocketMinipoolBondReducer.Call(opts, reduceBondValue, "getReduceBondValue", minipoolAddress); err != nil {
-		return nil, fmt.Errorf("Could not get reduce bond value for minipool %s: %w", minipoolAddress.Hex(), err)
+		return nil, fmt.Errorf("error getting reduce bond value for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return *reduceBondValue, nil
 }
@@ -80,7 +80,7 @@ func GetLastBondReductionTime(rp *rocketpool.RocketPool, minipoolAddress common.
 	}
 	lastBondReductionTime := new(*big.Int)
 	if err := rocketMinipoolBondReducer.Call(opts, lastBondReductionTime, "getLastBondReductionTime", minipoolAddress); err != nil {
-		return time.Time{}, fmt.Errorf("Could not get last bond reduction time for minipool %s: %w", minipoolAddress.Hex(), err)
+		return time.Time{}, fmt.Errorf("error getting last bond reduction time for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return time.Unix((*lastBondReductionTime).Int64(), 0), nil
 }
@@ -93,7 +93,7 @@ func GetLastBondReductionPrevValue(rp *rocketpool.RocketPool, minipoolAddress co
 	}
 	lastBondReductionPrevValue := new(*big.Int)
 	if err := rocketMinipoolBondReducer.Call(opts, lastBondReductionPrevValue, "getLastBondReductionPrevValue", minipoolAddress); err != nil {
-		return nil, fmt.Errorf("Could not get last bond reduction previous value for minipool %s: %w", minipoolAddress.Hex(), err)
+		return nil, fmt.Errorf("error getting last bond reduction previous value for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return *lastBondReductionPrevValue, nil
 }
@@ -106,7 +106,7 @@ func GetLastBondReductionPrevNodeFee(rp *rocketpool.RocketPool, minipoolAddress 
 	}
 	lastBondReductionPrevNodeFee := new(*big.Int)
 	if err := rocketMinipoolBondReducer.Call(opts, lastBondReductionPrevNodeFee, "getLastBondReductionPrevNodeFee", minipoolAddress); err != nil {
-		return nil, fmt.Errorf("Could not get last bond reduction previous node fee for minipool %s: %w", minipoolAddress.Hex(), err)
+		return nil, fmt.Errorf("error getting last bond reduction previous node fee for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return *lastBondReductionPrevNodeFee, nil
 }
@@ -128,7 +128,7 @@ func BeginReduceBondAmount(rp *rocketpool.RocketPool, minipoolAddress common.Add
 	}
 	tx, err := rocketMinipoolBondReducer.Transact(opts, "beginReduceBondAmount", minipoolAddress, newBondAmount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not begin bond reduction for minipool %s: %w", minipoolAddress.Hex(), err)
+		return common.Hash{}, fmt.Errorf("error beginning bond reduction for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return tx.Hash(), nil
 }

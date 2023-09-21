@@ -69,7 +69,7 @@ func GetRewardIndex(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, e
 	}
 	index := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, index, "getRewardIndex"); err != nil {
-		return nil, fmt.Errorf("Could not get current reward index: %w", err)
+		return nil, fmt.Errorf("error getting current reward index: %w", err)
 	}
 	return *index, nil
 }
@@ -82,7 +82,7 @@ func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	}
 	unixTime := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, unixTime, "getClaimIntervalTimeStart"); err != nil {
-		return time.Time{}, fmt.Errorf("Could not get claim interval time start: %w", err)
+		return time.Time{}, fmt.Errorf("error getting claim interval time start: %w", err)
 	}
 	return time.Unix((*unixTime).Int64(), 0), nil
 }
@@ -95,7 +95,7 @@ func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.
 	}
 	unixTime := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, unixTime, "getClaimIntervalTime"); err != nil {
-		return 0, fmt.Errorf("Could not get claim interval time: %w", err)
+		return 0, fmt.Errorf("error getting claim interval time: %w", err)
 	}
 	return time.Duration((*unixTime).Int64()) * time.Second, nil
 }
@@ -108,7 +108,7 @@ func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpt
 	}
 	perc := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimNode"); err != nil {
-		return nil, fmt.Errorf("Could not get node operator rewards percent: %w", err)
+		return nil, fmt.Errorf("error getting node operator rewards percent: %w", err)
 	}
 	return *perc, nil
 }
@@ -121,7 +121,7 @@ func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.
 	}
 	perc := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimTrustedNode"); err != nil {
-		return nil, fmt.Errorf("Could not get trusted node operator rewards percent: %w", err)
+		return nil, fmt.Errorf("error getting trusted node operator rewards percent: %w", err)
 	}
 	return *perc, nil
 }
@@ -134,7 +134,7 @@ func GetProtocolDaoRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts
 	}
 	perc := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimDAO"); err != nil {
-		return nil, fmt.Errorf("Could not get protocol DAO rewards percent: %w", err)
+		return nil, fmt.Errorf("error getting protocol DAO rewards percent: %w", err)
 	}
 	return *perc, nil
 }
@@ -147,7 +147,7 @@ func GetPendingRPLRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 	}
 	rewards := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, rewards, "getPendingRPLRewards"); err != nil {
-		return nil, fmt.Errorf("Could not get pending RPL rewards: %w", err)
+		return nil, fmt.Errorf("error getting pending RPL rewards: %w", err)
 	}
 	return *rewards, nil
 }
@@ -160,7 +160,7 @@ func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 	}
 	rewards := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, rewards, "getPendingETHRewards"); err != nil {
-		return nil, fmt.Errorf("Could not get pending ETH rewards: %w", err)
+		return nil, fmt.Errorf("error getting pending ETH rewards: %w", err)
 	}
 	return *rewards, nil
 }
@@ -175,7 +175,7 @@ func GetTrustedNodeSubmitted(rp *rocketpool.RocketPool, nodeAddress common.Addre
 	indexBig := big.NewInt(0).SetUint64(rewardsIndex)
 	hasSubmitted := new(bool)
 	if err := rocketRewardsPool.Call(opts, hasSubmitted, "getTrustedNodeSubmitted", nodeAddress, indexBig); err != nil {
-		return false, fmt.Errorf("Could not get trusted node submission status: %w", err)
+		return false, fmt.Errorf("error getting trusted node submission status: %w", err)
 	}
 	return *hasSubmitted, nil
 }
@@ -236,7 +236,7 @@ func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission
 	}
 	tx, err := rocketRewardsPool.Transact(opts, "submitRewardSnapshot", submission)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not submit rewards snapshot: %w", err)
+		return common.Hash{}, fmt.Errorf("error submitting rewards snapshot: %w", err)
 	}
 	return tx.Hash(), nil
 }

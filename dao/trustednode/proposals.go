@@ -22,7 +22,7 @@ func EstimateProposeInviteMemberGas(rp *rocketpool.RocketPool, message string, n
 	newMemberUrl = strings.Sanitize(newMemberUrl)
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalInvite", newMemberId, newMemberUrl, newMemberAddress)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("Could not encode invite member proposal payload: %w", err)
+		return rocketpool.GasInfo{}, fmt.Errorf("error encoding invite member proposal payload: %w", err)
 	}
 	return EstimateProposalGas(rp, message, payload, opts)
 }
@@ -36,7 +36,7 @@ func ProposeInviteMember(rp *rocketpool.RocketPool, message string, newMemberAdd
 	newMemberUrl = strings.Sanitize(newMemberUrl)
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalInvite", newMemberId, newMemberUrl, newMemberAddress)
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Could not encode invite member proposal payload: %w", err)
+		return 0, common.Hash{}, fmt.Errorf("error encoding invite member proposal payload: %w", err)
 	}
 	return SubmitProposal(rp, message, payload, opts)
 }
@@ -49,7 +49,7 @@ func EstimateProposeMemberLeaveGas(rp *rocketpool.RocketPool, message string, me
 	}
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalLeave", memberAddress)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("Could not encode member leave proposal payload: %w", err)
+		return rocketpool.GasInfo{}, fmt.Errorf("error encoding member leave proposal payload: %w", err)
 	}
 	return EstimateProposalGas(rp, message, payload, opts)
 }
@@ -62,7 +62,7 @@ func ProposeMemberLeave(rp *rocketpool.RocketPool, message string, memberAddress
 	}
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalLeave", memberAddress)
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Could not encode member leave proposal payload: %w", err)
+		return 0, common.Hash{}, fmt.Errorf("error encoding member leave proposal payload: %w", err)
 	}
 	return SubmitProposal(rp, message, payload, opts)
 }
@@ -76,7 +76,7 @@ func EstimateProposeReplaceMemberGas(rp *rocketpool.RocketPool, message string, 
 	newMemberUrl = strings.Sanitize(newMemberUrl)
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalReplace", memberAddress, newMemberId, newMemberUrl, newMemberAddress)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("Could not encode replace member proposal payload: %w", err)
+		return rocketpool.GasInfo{}, fmt.Errorf("error encoding replace member proposal payload: %w", err)
 	}
 	return EstimateProposalGas(rp, message, payload, opts)
 }
@@ -90,7 +90,7 @@ func ProposeReplaceMember(rp *rocketpool.RocketPool, message string, memberAddre
 	newMemberUrl = strings.Sanitize(newMemberUrl)
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalReplace", memberAddress, newMemberId, newMemberUrl, newMemberAddress)
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Could not encode replace member proposal payload: %w", err)
+		return 0, common.Hash{}, fmt.Errorf("error encoding replace member proposal payload: %w", err)
 	}
 	return SubmitProposal(rp, message, payload, opts)
 }
@@ -103,7 +103,7 @@ func EstimateProposeKickMemberGas(rp *rocketpool.RocketPool, message string, mem
 	}
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalKick", memberAddress, rplFineAmount)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("Could not encode kick member proposal payload: %w", err)
+		return rocketpool.GasInfo{}, fmt.Errorf("error encoding kick member proposal payload: %w", err)
 	}
 	return EstimateProposalGas(rp, message, payload, opts)
 }
@@ -116,7 +116,7 @@ func ProposeKickMember(rp *rocketpool.RocketPool, message string, memberAddress 
 	}
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalKick", memberAddress, rplFineAmount)
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Could not encode kick member proposal payload: %w", err)
+		return 0, common.Hash{}, fmt.Errorf("error encoding kick member proposal payload: %w", err)
 	}
 	return SubmitProposal(rp, message, payload, opts)
 }
@@ -129,7 +129,7 @@ func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName,
 	}
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalSettingBool", contractName, settingPath, value)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("Could not encode set bool setting proposal payload: %w", err)
+		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set bool setting proposal payload: %w", err)
 	}
 	return EstimateProposalGas(rp, message, payload, opts)
 }
@@ -142,7 +142,7 @@ func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPat
 	}
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalSettingBool", contractName, settingPath, value)
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Could not encode set bool setting proposal payload: %w", err)
+		return 0, common.Hash{}, fmt.Errorf("error encoding set bool setting proposal payload: %w", err)
 	}
 	return SubmitProposal(rp, message, payload, opts)
 }
@@ -155,7 +155,7 @@ func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName,
 	}
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalSettingUint", contractName, settingPath, value)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("Could not encode set uint setting proposal payload: %w", err)
+		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set uint setting proposal payload: %w", err)
 	}
 	return EstimateProposalGas(rp, message, payload, opts)
 }
@@ -168,7 +168,7 @@ func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPat
 	}
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalSettingUint", contractName, settingPath, value)
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Could not encode set uint setting proposal payload: %w", err)
+		return 0, common.Hash{}, fmt.Errorf("error encoding set uint setting proposal payload: %w", err)
 	}
 	return SubmitProposal(rp, message, payload, opts)
 }
@@ -185,7 +185,7 @@ func EstimateProposeUpgradeContractGas(rp *rocketpool.RocketPool, message, upgra
 	}
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
 	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("Could not encode upgrade contract proposal payload: %w", err)
+		return rocketpool.GasInfo{}, fmt.Errorf("error encoding upgrade contract proposal payload: %w", err)
 	}
 	return EstimateProposalGas(rp, message, payload, opts)
 }
@@ -202,7 +202,7 @@ func ProposeUpgradeContract(rp *rocketpool.RocketPool, message, upgradeType, con
 	}
 	payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Could not encode upgrade contract proposal payload: %w", err)
+		return 0, common.Hash{}, fmt.Errorf("error encoding upgrade contract proposal payload: %w", err)
 	}
 	return SubmitProposal(rp, message, payload, opts)
 }
@@ -229,7 +229,7 @@ func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, o
 	}
 	tx, err := rocketDAONodeTrustedProposals.Transact(opts, "propose", message, payload)
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Could not submit trusted node DAO proposal: %w", err)
+		return 0, common.Hash{}, fmt.Errorf("error submitting trusted node DAO proposal: %w", err)
 	}
 	return proposalCount + 1, tx.Hash(), nil
 }
@@ -251,7 +251,7 @@ func CancelProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Tra
 	}
 	tx, err := rocketDAONodeTrustedProposals.Transact(opts, "cancel", big.NewInt(int64(proposalId)))
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not cancel trusted node DAO proposal %d: %w", proposalId, err)
+		return common.Hash{}, fmt.Errorf("error cancelling trusted node DAO proposal %d: %w", proposalId, err)
 	}
 	return tx.Hash(), nil
 }
@@ -273,7 +273,7 @@ func VoteOnProposal(rp *rocketpool.RocketPool, proposalId uint64, support bool, 
 	}
 	tx, err := rocketDAONodeTrustedProposals.Transact(opts, "vote", big.NewInt(int64(proposalId)), support)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not vote on trusted node DAO proposal %d: %w", proposalId, err)
+		return common.Hash{}, fmt.Errorf("error voting on trusted node DAO proposal %d: %w", proposalId, err)
 	}
 	return tx.Hash(), nil
 }
@@ -295,7 +295,7 @@ func ExecuteProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Tr
 	}
 	tx, err := rocketDAONodeTrustedProposals.Transact(opts, "execute", big.NewInt(int64(proposalId)))
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not execute trusted node DAO proposal %d: %w", proposalId, err)
+		return common.Hash{}, fmt.Errorf("error executing trusted node DAO proposal %d: %w", proposalId, err)
 	}
 	return tx.Hash(), nil
 }

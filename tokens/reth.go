@@ -118,7 +118,7 @@ func GetETHValueOfRETH(rp *rocketpool.RocketPool, rethAmount *big.Int, opts *bin
 	}
 	ethValue := new(*big.Int)
 	if err := rocketTokenRETH.Call(opts, ethValue, "getEthValue", rethAmount); err != nil {
-		return nil, fmt.Errorf("Could not get ETH value of rETH amount: %w", err)
+		return nil, fmt.Errorf("error getting ETH value of rETH amount: %w", err)
 	}
 	return *ethValue, nil
 }
@@ -131,7 +131,7 @@ func GetRETHValueOfETH(rp *rocketpool.RocketPool, ethAmount *big.Int, opts *bind
 	}
 	rethValue := new(*big.Int)
 	if err := rocketTokenRETH.Call(opts, rethValue, "getRethValue", ethAmount); err != nil {
-		return nil, fmt.Errorf("Could not get rETH value of ETH amount: %w", err)
+		return nil, fmt.Errorf("error getting rETH value of ETH amount: %w", err)
 	}
 	return *rethValue, nil
 }
@@ -144,7 +144,7 @@ func GetRETHExchangeRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float6
 	}
 	exchangeRate := new(*big.Int)
 	if err := rocketTokenRETH.Call(opts, exchangeRate, "getExchangeRate"); err != nil {
-		return 0, fmt.Errorf("Could not get rETH exchange rate: %w", err)
+		return 0, fmt.Errorf("error getting rETH exchange rate: %w", err)
 	}
 	return eth.WeiToEth(*exchangeRate), nil
 }
@@ -157,7 +157,7 @@ func GetRETHTotalCollateral(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*bi
 	}
 	totalCollateral := new(*big.Int)
 	if err := rocketTokenRETH.Call(opts, totalCollateral, "getTotalCollateral"); err != nil {
-		return nil, fmt.Errorf("Could not get rETH total collateral: %w", err)
+		return nil, fmt.Errorf("error getting rETH total collateral: %w", err)
 	}
 	return *totalCollateral, nil
 }
@@ -170,7 +170,7 @@ func GetRETHCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 	}
 	collateralRate := new(*big.Int)
 	if err := rocketTokenRETH.Call(opts, collateralRate, "getCollateralRate"); err != nil {
-		return 0, fmt.Errorf("Could not get rETH collateral rate: %w", err)
+		return 0, fmt.Errorf("error getting rETH collateral rate: %w", err)
 	}
 	return eth.WeiToEth(*collateralRate), nil
 }
@@ -192,7 +192,7 @@ func BurnRETH(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpt
 	}
 	tx, err := rocketTokenRETH.Transact(opts, "burn", amount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not burn rETH: %w", err)
+		return common.Hash{}, fmt.Errorf("error burning rETH: %w", err)
 	}
 	return tx.Hash(), nil
 }

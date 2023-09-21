@@ -41,7 +41,7 @@ func CreateMinipool(t *testing.T, rp *rocketpool.RocketPool, ownerAccount, nodeA
 	// Do the node deposit to generate the minipool
 	expectedMinipoolAddress, txReceipt, err := nodeutils.Deposit(t, rp, nodeAccount, depositAmount, pubkey)
 	if err != nil {
-		return nil, fmt.Errorf("Could not do node deposit: %w", err)
+		return nil, fmt.Errorf("error doing node deposit: %w", err)
 	}
 
 	// Get minipool manager contract
@@ -53,7 +53,7 @@ func CreateMinipool(t *testing.T, rp *rocketpool.RocketPool, ownerAccount, nodeA
 	// Get created minipool address
 	minipoolCreatedEvents, err := rocketMinipoolManager.GetTransactionEvents(txReceipt, "MinipoolCreated", minipoolCreated{})
 	if err != nil || len(minipoolCreatedEvents) == 0 {
-		return nil, errors.New("Could not get minipool created event")
+		return nil, errors.New("error getting minipool created event")
 	}
 	minipoolAddress := minipoolCreatedEvents[0].(minipoolCreated).Minipool
 

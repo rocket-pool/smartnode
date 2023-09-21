@@ -75,7 +75,7 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
 	if opts.GasLimit == 0 {
 		input, err := c.ABI.Pack(method, params...)
 		if err != nil {
-			return nil, fmt.Errorf("Could not encode input data: %w", err)
+			return nil, fmt.Errorf("error encoding input data: %w", err)
 		}
 		_, safeGasLimit, err := c.estimateGasLimit(opts, input)
 		if err != nil {
@@ -145,7 +145,7 @@ func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint
 	})
 
 	if err != nil {
-		return 0, 0, fmt.Errorf("Could not estimate gas needed: %w", c.normalizeErrorMessage(err))
+		return 0, 0, fmt.Errorf("error estimating gas needed: %w", c.normalizeErrorMessage(err))
 	}
 
 	// Pad and return gas limit
@@ -213,7 +213,7 @@ func (c *Contract) GetTransactionEvents(txReceipt *types.Receipt, eventName stri
 		// Unpack event
 		event := reflect.New(eventType)
 		if err := c.Contract.UnpackLog(event.Interface(), eventName, *log); err != nil {
-			return nil, fmt.Errorf("Could not unpack event data: %w", err)
+			return nil, fmt.Errorf("error unpacking event data: %w", err)
 		}
 		events = append(events, reflect.Indirect(event).Interface())
 

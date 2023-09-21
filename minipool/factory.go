@@ -19,7 +19,7 @@ func GetExpectedAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, s
 	}
 	address := new(common.Address)
 	if err := rocketMinipoolFactory.Call(opts, address, "getExpectedAddress", nodeAddress, salt); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get minipool expected address: %w", err)
+		return common.Address{}, fmt.Errorf("error getting minipool expected address: %w", err)
 	}
 	return *address, nil
 }

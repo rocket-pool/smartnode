@@ -22,7 +22,7 @@ func GetCreateLotEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, 
 	}
 	value := new(bool)
 	if err := auctionSettingsContract.Call(opts, value, "getCreateLotEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get lot creation enabled status: %w", err)
+		return false, fmt.Errorf("error getting lot creation enabled status: %w", err)
 	}
 	return *value, nil
 }
@@ -35,7 +35,7 @@ func GetBidOnLotEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, e
 	}
 	value := new(bool)
 	if err := auctionSettingsContract.Call(opts, value, "getBidOnLotEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get lot bidding enabled status: %w", err)
+		return false, fmt.Errorf("error getting lot bidding enabled status: %w", err)
 	}
 	return *value, nil
 }
@@ -48,7 +48,7 @@ func GetLotMinimumEthValue(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
 	}
 	value := new(*big.Int)
 	if err := auctionSettingsContract.Call(opts, value, "getLotMinimumEthValue"); err != nil {
-		return nil, fmt.Errorf("Could not get lot minimum ETH value: %w", err)
+		return nil, fmt.Errorf("error getting lot minimum ETH value: %w", err)
 	}
 	return *value, nil
 }
@@ -61,7 +61,7 @@ func GetLotMaximumEthValue(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
 	}
 	value := new(*big.Int)
 	if err := auctionSettingsContract.Call(opts, value, "getLotMaximumEthValue"); err != nil {
-		return nil, fmt.Errorf("Could not get lot maximum ETH value: %w", err)
+		return nil, fmt.Errorf("error getting lot maximum ETH value: %w", err)
 	}
 	return *value, nil
 }
@@ -74,7 +74,7 @@ func GetLotDuration(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 	}
 	value := new(*big.Int)
 	if err := auctionSettingsContract.Call(opts, value, "getLotDuration"); err != nil {
-		return 0, fmt.Errorf("Could not get lot duration: %w", err)
+		return 0, fmt.Errorf("error getting lot duration: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -87,7 +87,7 @@ func GetLotStartingPriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	}
 	value := new(*big.Int)
 	if err := auctionSettingsContract.Call(opts, value, "getStartingPriceRatio"); err != nil {
-		return 0, fmt.Errorf("Could not get lot starting price ratio: %w", err)
+		return 0, fmt.Errorf("error getting lot starting price ratio: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -100,7 +100,7 @@ func GetLotReservePriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (fl
 	}
 	value := new(*big.Int)
 	if err := auctionSettingsContract.Call(opts, value, "getReservePriceRatio"); err != nil {
-		return 0, fmt.Errorf("Could not get lot reserve price ratio: %w", err)
+		return 0, fmt.Errorf("error getting lot reserve price ratio: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }

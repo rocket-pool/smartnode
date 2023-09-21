@@ -31,7 +31,7 @@ func Deposit(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee floa
 	}
 	tx, err := rocketNodeDeposit.Transact(opts, "deposit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 	if err != nil {
-		return nil, fmt.Errorf("Could not make node deposit: %w", err)
+		return nil, fmt.Errorf("error making node deposit: %w", err)
 	}
 	return tx, nil
 }
@@ -53,7 +53,7 @@ func DepositWithCredit(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNo
 	}
 	tx, err := rocketNodeDeposit.Transact(opts, "depositWithCredit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 	if err != nil {
-		return nil, fmt.Errorf("Could not make node deposit with credit: %w", err)
+		return nil, fmt.Errorf("error making node deposit with credit: %w", err)
 	}
 	return tx, nil
 }
@@ -75,7 +75,7 @@ func CreateVacantMinipool(rp *rocketpool.RocketPool, bondAmount *big.Int, minimu
 	}
 	tx, err := rocketNodeDeposit.Transact(opts, "createVacantMinipool", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create vacant minipool: %w", err)
+		return nil, fmt.Errorf("error creating vacant minipool: %w", err)
 	}
 	return tx, nil
 }
@@ -89,7 +89,7 @@ func GetNodeDepositCredit(rp *rocketpool.RocketPool, nodeAddress common.Address,
 
 	creditBalance := new(*big.Int)
 	if err := rocketNodeDeposit.Call(opts, creditBalance, "getNodeDepositCredit", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get node deposit credit: %w", err)
+		return nil, fmt.Errorf("error getting node deposit credit: %w", err)
 	}
 	return *creditBalance, nil
 }

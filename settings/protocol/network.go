@@ -22,7 +22,7 @@ func GetNodeConsensusThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	}
 	value := new(*big.Int)
 	if err := networkSettingsContract.Call(opts, value, "getNodeConsensusThreshold"); err != nil {
-		return 0, fmt.Errorf("Could not get trusted node consensus threshold: %w", err)
+		return 0, fmt.Errorf("error getting trusted node consensus threshold: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -35,7 +35,7 @@ func GetSubmitBalancesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (b
 	}
 	value := new(bool)
 	if err := networkSettingsContract.Call(opts, value, "getSubmitBalancesEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get network balance submissions enabled status: %w", err)
+		return false, fmt.Errorf("error getting network balance submissions enabled status: %w", err)
 	}
 	return *value, nil
 }
@@ -48,7 +48,7 @@ func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	value := new(*big.Int)
 	if err := networkSettingsContract.Call(opts, value, "getSubmitBalancesFrequency"); err != nil {
-		return 0, fmt.Errorf("Could not get network balance submission frequency: %w", err)
+		return 0, fmt.Errorf("error getting network balance submission frequency: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -61,7 +61,7 @@ func GetSubmitPricesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (boo
 	}
 	value := new(bool)
 	if err := networkSettingsContract.Call(opts, value, "getSubmitPricesEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get network price submissions enabled status: %w", err)
+		return false, fmt.Errorf("error getting network price submissions enabled status: %w", err)
 	}
 	return *value, nil
 }
@@ -74,7 +74,7 @@ func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
 	}
 	value := new(*big.Int)
 	if err := networkSettingsContract.Call(opts, value, "getSubmitPricesFrequency"); err != nil {
-		return 0, fmt.Errorf("Could not get network price submission frequency: %w", err)
+		return 0, fmt.Errorf("error getting network price submission frequency: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -87,7 +87,7 @@ func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 	}
 	value := new(*big.Int)
 	if err := networkSettingsContract.Call(opts, value, "getMinimumNodeFee"); err != nil {
-		return 0, fmt.Errorf("Could not get minimum node fee: %w", err)
+		return 0, fmt.Errorf("error getting minimum node fee: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -100,7 +100,7 @@ func GetTargetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, 
 	}
 	value := new(*big.Int)
 	if err := networkSettingsContract.Call(opts, value, "getTargetNodeFee"); err != nil {
-		return 0, fmt.Errorf("Could not get target node fee: %w", err)
+		return 0, fmt.Errorf("error getting target node fee: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -113,7 +113,7 @@ func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 	}
 	value := new(*big.Int)
 	if err := networkSettingsContract.Call(opts, value, "getMaximumNodeFee"); err != nil {
-		return 0, fmt.Errorf("Could not get maximum node fee: %w", err)
+		return 0, fmt.Errorf("error getting maximum node fee: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -126,7 +126,7 @@ func GetNodeFeeDemandRange(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
 	}
 	value := new(*big.Int)
 	if err := networkSettingsContract.Call(opts, value, "getNodeFeeDemandRange"); err != nil {
-		return nil, fmt.Errorf("Could not get node fee demand range: %w", err)
+		return nil, fmt.Errorf("error getting node fee demand range: %w", err)
 	}
 	return *value, nil
 }
@@ -139,7 +139,7 @@ func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	value := new(*big.Int)
 	if err := networkSettingsContract.Call(opts, value, "getTargetRethCollateralRate"); err != nil {
-		return 0, fmt.Errorf("Could not get target rETH contract collateralization rate: %w", err)
+		return 0, fmt.Errorf("error getting target rETH contract collateralization rate: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }

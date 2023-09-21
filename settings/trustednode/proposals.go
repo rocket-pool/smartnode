@@ -30,7 +30,7 @@ func GetProposalCooldownTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (ui
 	}
 	value := new(*big.Int)
 	if err := proposalsSettingsContract.Call(opts, value, "getCooldownTime"); err != nil {
-		return 0, fmt.Errorf("Could not get proposal cooldown period: %w", err)
+		return 0, fmt.Errorf("error getting proposal cooldown period: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -49,7 +49,7 @@ func GetProposalVoteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64
 	}
 	value := new(*big.Int)
 	if err := proposalsSettingsContract.Call(opts, value, "getVoteTime"); err != nil {
-		return 0, fmt.Errorf("Could not get proposal voting period: %w", err)
+		return 0, fmt.Errorf("error getting proposal voting period: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -68,7 +68,7 @@ func GetProposalVoteDelayTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
 	}
 	value := new(*big.Int)
 	if err := proposalsSettingsContract.Call(opts, value, "getVoteDelayTime"); err != nil {
-		return 0, fmt.Errorf("Could not get proposal voting delay: %w", err)
+		return 0, fmt.Errorf("error getting proposal voting delay: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -87,7 +87,7 @@ func GetProposalExecuteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
 	}
 	value := new(*big.Int)
 	if err := proposalsSettingsContract.Call(opts, value, "getExecuteTime"); err != nil {
-		return 0, fmt.Errorf("Could not get proposal execution period: %w", err)
+		return 0, fmt.Errorf("error getting proposal execution period: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -106,7 +106,7 @@ func GetProposalActionTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 	}
 	value := new(*big.Int)
 	if err := proposalsSettingsContract.Call(opts, value, "getActionTime"); err != nil {
-		return 0, fmt.Errorf("Could not get proposal action period: %w", err)
+		return 0, fmt.Errorf("error getting proposal action period: %w", err)
 	}
 	return (*value).Uint64(), nil
 }

@@ -117,7 +117,7 @@ func MintInflationRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (commo
 	}
 	tx, err := rocketTokenRPL.Transact(opts, "inflationMintTokens")
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not mint RPL tokens from inflation: %w", err)
+		return common.Hash{}, fmt.Errorf("error minting RPL tokens from inflation: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -139,7 +139,7 @@ func SwapFixedSupplyRPLForRPL(rp *rocketpool.RocketPool, amount *big.Int, opts *
 	}
 	tx, err := rocketTokenRPL.Transact(opts, "swapTokens", amount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not swap fixed-supply RPL for new RPL: %w", err)
+		return common.Hash{}, fmt.Errorf("error swapping fixed-supply RPL for new RPL: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -152,7 +152,7 @@ func GetRPLInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	rate := new(*big.Int)
 	if err := rocketTokenRPL.Call(opts, rate, "getInflationIntervalRate"); err != nil {
-		return nil, fmt.Errorf("Could not get RPL inflation interval rate: %w", err)
+		return nil, fmt.Errorf("error getting RPL inflation interval rate: %w", err)
 	}
 	return *rate, nil
 }

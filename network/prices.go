@@ -26,7 +26,7 @@ func GetPricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 	}
 	pricesBlock := new(*big.Int)
 	if err := rocketNetworkPrices.Call(opts, pricesBlock, "getPricesBlock"); err != nil {
-		return 0, fmt.Errorf("Could not get network prices block: %w", err)
+		return 0, fmt.Errorf("error getting network prices block: %w", err)
 	}
 	return (*pricesBlock).Uint64(), nil
 }
@@ -39,7 +39,7 @@ func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, erro
 	}
 	rplPrice := new(*big.Int)
 	if err := rocketNetworkPrices.Call(opts, rplPrice, "getRPLPrice"); err != nil {
-		return nil, fmt.Errorf("Could not get network RPL price: %w", err)
+		return nil, fmt.Errorf("error getting network RPL price: %w", err)
 	}
 	return *rplPrice, nil
 }
@@ -61,7 +61,7 @@ func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, op
 	}
 	tx, err := rocketNetworkPrices.Transact(opts, "submitPrices", big.NewInt(int64(block)), rplPrice)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not submit network prices: %w", err)
+		return common.Hash{}, fmt.Errorf("error submitting network prices: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -74,7 +74,7 @@ func GetLatestReportablePricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOp
 	}
 	latestReportableBlock := new(*big.Int)
 	if err := rocketNetworkPrices.Call(opts, latestReportableBlock, "getLatestReportableBlock"); err != nil {
-		return nil, fmt.Errorf("Could not get latest reportable block: %w", err)
+		return nil, fmt.Errorf("error getting latest reportable block: %w", err)
 	}
 	return *latestReportableBlock, nil
 }

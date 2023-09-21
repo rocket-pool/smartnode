@@ -30,7 +30,7 @@ func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, erro
 	}
 	tx, err := rocketDAONodeTrustedActions.Transact(opts, "actionJoin")
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not join the trusted node DAO: %w", err)
+		return common.Hash{}, fmt.Errorf("error joining the trusted node DAO: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -53,7 +53,7 @@ func Leave(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts 
 	}
 	tx, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave", rplBondRefundAddress)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not leave the trusted node DAO: %w", err)
+		return common.Hash{}, fmt.Errorf("error leaving the trusted node DAO: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -75,7 +75,7 @@ func MakeChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts
 	}
 	tx, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeMake", memberAddress)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not challenge trusted node DAO member %s: %w", memberAddress.Hex(), err)
+		return common.Hash{}, fmt.Errorf("error challenging trusted node DAO member %s: %w", memberAddress.Hex(), err)
 	}
 	return tx.Hash(), nil
 }
@@ -97,7 +97,7 @@ func DecideChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, op
 	}
 	tx, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeDecide", memberAddress)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not decide the challenge against trusted node DAO member %s: %w", memberAddress.Hex(), err)
+		return common.Hash{}, fmt.Errorf("error deciding the challenge against trusted node DAO member %s: %w", memberAddress.Hex(), err)
 	}
 	return tx.Hash(), nil
 }

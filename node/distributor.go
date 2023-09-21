@@ -43,7 +43,7 @@ func GetDistributorAddress(rp *rocketpool.RocketPool, nodeAddress common.Address
 	}
 	var address common.Address
 	if err := rocketNodeDistributorFactory.Call(opts, &address, "getProxyAddress", nodeAddress); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get distributor address: %w", err)
+		return common.Address{}, fmt.Errorf("error getting distributor address: %w", err)
 	}
 	return address, nil
 }
@@ -57,7 +57,7 @@ func (d *Distributor) EstimateDistributeGas(opts *bind.TransactOpts) (rocketpool
 func (d *Distributor) Distribute(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := d.Contract.Transact(opts, "distribute")
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not distribute fee distributor balance: %w", err)
+		return common.Hash{}, fmt.Errorf("error distributing fee distributor balance: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -66,7 +66,7 @@ func (d *Distributor) Distribute(opts *bind.TransactOpts) (common.Hash, error) {
 func (d *Distributor) GetNodeShare(opts *bind.CallOpts) (*big.Int, error) {
 	nodeShare := new(*big.Int)
 	if err := d.Contract.Call(opts, nodeShare, "getNodeShare"); err != nil {
-		return nil, fmt.Errorf("Could not get distributor %s node share: %w", d.Address.Hex(), err)
+		return nil, fmt.Errorf("error getting distributor %s node share: %w", d.Address.Hex(), err)
 	}
 	return *nodeShare, nil
 }
@@ -75,7 +75,7 @@ func (d *Distributor) GetNodeShare(opts *bind.CallOpts) (*big.Int, error) {
 func (d *Distributor) GetUserShare(opts *bind.CallOpts) (*big.Int, error) {
 	userShare := new(*big.Int)
 	if err := d.Contract.Call(opts, userShare, "getUserShare"); err != nil {
-		return nil, fmt.Errorf("Could not get distributor %s user share: %w", d.Address.Hex(), err)
+		return nil, fmt.Errorf("error getting distributor %s user share: %w", d.Address.Hex(), err)
 	}
 	return *userShare, nil
 }

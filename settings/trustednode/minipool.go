@@ -30,7 +30,7 @@ func GetScrubPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getScrubPeriod"); err != nil {
-		return 0, fmt.Errorf("Could not get scrub period: %w", err)
+		return 0, fmt.Errorf("error getting scrub period: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -49,7 +49,7 @@ func GetPromotionScrubPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (ui
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getPromotionScrubPeriod"); err != nil {
-		return 0, fmt.Errorf("Could not get promotion scrub period: %w", err)
+		return 0, fmt.Errorf("error getting promotion scrub period: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -68,7 +68,7 @@ func GetScrubPenaltyEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (boo
 	}
 	value := new(bool)
 	if err := minipoolSettingsContract.Call(opts, value, "getScrubPenaltyEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get scrub penalty setting: %w", err)
+		return false, fmt.Errorf("error getting scrub penalty setting: %w", err)
 	}
 	return (*value), nil
 }
@@ -87,7 +87,7 @@ func GetBondReductionWindowStart(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getBondReductionWindowStart"); err != nil {
-		return 0, fmt.Errorf("Could not get bond reduction window start: %w", err)
+		return 0, fmt.Errorf("error getting bond reduction window start: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -106,7 +106,7 @@ func GetBondReductionWindowLength(rp *rocketpool.RocketPool, opts *bind.CallOpts
 	}
 	value := new(*big.Int)
 	if err := minipoolSettingsContract.Call(opts, value, "getBondReductionWindowLength"); err != nil {
-		return 0, fmt.Errorf("Could not get bond reduction window length: %w", err)
+		return 0, fmt.Errorf("error getting bond reduction window length: %w", err)
 	}
 	return (*value).Uint64(), nil
 }

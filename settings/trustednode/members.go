@@ -33,7 +33,7 @@ func GetQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) 
 	}
 	value := new(*big.Int)
 	if err := membersSettingsContract.Call(opts, value, "getQuorum"); err != nil {
-		return 0, fmt.Errorf("Could not get member quorum threshold: %w", err)
+		return 0, fmt.Errorf("error getting member quorum threshold: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -52,7 +52,7 @@ func GetRPLBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error
 	}
 	value := new(*big.Int)
 	if err := membersSettingsContract.Call(opts, value, "getRPLBond"); err != nil {
-		return nil, fmt.Errorf("Could not get member RPL bond amount: %w", err)
+		return nil, fmt.Errorf("error getting member RPL bond amount: %w", err)
 	}
 	return *value, nil
 }
@@ -71,7 +71,7 @@ func GetMinipoolUnbondedMax(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
 	}
 	value := new(*big.Int)
 	if err := membersSettingsContract.Call(opts, value, "getMinipoolUnbondedMax"); err != nil {
-		return 0, fmt.Errorf("Could not get member unbonded minipool limit: %w", err)
+		return 0, fmt.Errorf("error getting member unbonded minipool limit: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -90,7 +90,7 @@ func GetMinipoolUnbondedMinFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	}
 	value := new(*big.Int)
 	if err := membersSettingsContract.Call(opts, value, "getMinipoolUnbondedMinFee"); err != nil {
-		return 0, fmt.Errorf("Could not get member unbonded minipool minimum fee: %w", err)
+		return 0, fmt.Errorf("error getting member unbonded minipool minimum fee: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -109,7 +109,7 @@ func GetChallengeCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint6
 	}
 	value := new(*big.Int)
 	if err := membersSettingsContract.Call(opts, value, "getChallengeCooldown"); err != nil {
-		return 0, fmt.Errorf("Could not get member challenge cooldown period: %w", err)
+		return 0, fmt.Errorf("error getting member challenge cooldown period: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -128,7 +128,7 @@ func GetChallengeWindow(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64,
 	}
 	value := new(*big.Int)
 	if err := membersSettingsContract.Call(opts, value, "getChallengeWindow"); err != nil {
-		return 0, fmt.Errorf("Could not get member challenge window period: %w", err)
+		return 0, fmt.Errorf("error getting member challenge window period: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -147,7 +147,7 @@ func GetChallengeCost(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 	}
 	value := new(*big.Int)
 	if err := membersSettingsContract.Call(opts, value, "getChallengeCost"); err != nil {
-		return nil, fmt.Errorf("Could not get member challenge cost: %w", err)
+		return nil, fmt.Errorf("error getting member challenge cost: %w", err)
 	}
 	return *value, nil
 }

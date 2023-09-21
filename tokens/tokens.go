@@ -86,7 +86,7 @@ func contractETHBalance(rp *rocketpool.RocketPool, tokenContract *rocketpool.Con
 func totalSupply(tokenContract *rocketpool.Contract, tokenName string, opts *bind.CallOpts) (*big.Int, error) {
 	totalSupply := new(*big.Int)
 	if err := tokenContract.Call(opts, totalSupply, "totalSupply"); err != nil {
-		return nil, fmt.Errorf("Could not get %s total supply: %w", tokenName, err)
+		return nil, fmt.Errorf("error getting %s total supply: %w", tokenName, err)
 	}
 	return *totalSupply, nil
 }
@@ -95,7 +95,7 @@ func totalSupply(tokenContract *rocketpool.Contract, tokenName string, opts *bin
 func balanceOf(tokenContract *rocketpool.Contract, tokenName string, address common.Address, opts *bind.CallOpts) (*big.Int, error) {
 	balance := new(*big.Int)
 	if err := tokenContract.Call(opts, balance, "balanceOf", address); err != nil {
-		return nil, fmt.Errorf("Could not get %s balance of %s: %w", tokenName, address.Hex(), err)
+		return nil, fmt.Errorf("error getting %s balance of %s: %w", tokenName, address.Hex(), err)
 	}
 	return *balance, nil
 }
@@ -104,7 +104,7 @@ func balanceOf(tokenContract *rocketpool.Contract, tokenName string, address com
 func allowance(tokenContract *rocketpool.Contract, tokenName string, owner, spender common.Address, opts *bind.CallOpts) (*big.Int, error) {
 	allowance := new(*big.Int)
 	if err := tokenContract.Call(opts, allowance, "allowance", owner, spender); err != nil {
-		return nil, fmt.Errorf("Could not get %s allowance of %s for %s: %w", tokenName, spender.Hex(), owner.Hex(), err)
+		return nil, fmt.Errorf("error getting %s allowance of %s for %s: %w", tokenName, spender.Hex(), owner.Hex(), err)
 	}
 	return *allowance, nil
 }
@@ -118,7 +118,7 @@ func estimateTransferGas(tokenContract *rocketpool.Contract, tokenName string, t
 func transfer(tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := tokenContract.Transact(opts, "transfer", to, amount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not transfer %s to %s: %w", tokenName, to.Hex(), err)
+		return common.Hash{}, fmt.Errorf("error transferring %s to %s: %w", tokenName, to.Hex(), err)
 	}
 	return tx.Hash(), nil
 }
@@ -132,7 +132,7 @@ func estimateApproveGas(tokenContract *rocketpool.Contract, tokenName string, sp
 func approve(tokenContract *rocketpool.Contract, tokenName string, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := tokenContract.Transact(opts, "approve", spender, amount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not approve %s allowance for %s: %w", tokenName, spender.Hex(), err)
+		return common.Hash{}, fmt.Errorf("error approving %s allowance for %s: %w", tokenName, spender.Hex(), err)
 	}
 	return tx.Hash(), nil
 }
@@ -146,7 +146,7 @@ func estimateTransferFromGas(tokenContract *rocketpool.Contract, tokenName strin
 func transferFrom(tokenContract *rocketpool.Contract, tokenName string, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := tokenContract.Transact(opts, "transferFrom", from, to, amount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not transfer %s from %s to %s: %w", tokenName, from.Hex(), to.Hex(), err)
+		return common.Hash{}, fmt.Errorf("error transferring %s from %s to %s: %w", tokenName, from.Hex(), to.Hex(), err)
 	}
 	return tx.Hash(), nil
 }

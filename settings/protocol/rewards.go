@@ -22,7 +22,7 @@ func GetRewardsClaimerPerc(rp *rocketpool.RocketPool, contractName string, opts 
 	}
 	value := new(*big.Int)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimerPerc", contractName); err != nil {
-		return 0, fmt.Errorf("Could not get rewards claimer percent: %w", err)
+		return 0, fmt.Errorf("error getting rewards claimer percent: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -35,7 +35,7 @@ func GetRewardsClaimerPercTimeUpdated(rp *rocketpool.RocketPool, contractName st
 	}
 	value := new(*big.Int)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimerPercTimeUpdated", contractName); err != nil {
-		return 0, fmt.Errorf("Could not get rewards claimer updated time: %w", err)
+		return 0, fmt.Errorf("error getting rewards claimer updated time: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -48,7 +48,7 @@ func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	value := new(*big.Int)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersPercTotal"); err != nil {
-		return 0, fmt.Errorf("Could not get rewards claimers total percent: %w", err)
+		return 0, fmt.Errorf("error getting rewards claimers total percent: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
@@ -61,7 +61,7 @@ func GetRewardsClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	value := new(*big.Int)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimIntervalTime"); err != nil {
-		return 0, fmt.Errorf("Could not get rewards claim interval: %w", err)
+		return 0, fmt.Errorf("error getting rewards claim interval: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
