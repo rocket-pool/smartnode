@@ -34,9 +34,6 @@ func GetScrubPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 	}
 	return (*value).Uint64(), nil
 }
-func BootstrapScrubPeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MinipoolSettingsContractName, ScrubPeriodPath, big.NewInt(int64(value)), opts)
-}
 func ProposeScrubPeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ScrubPeriodPath), MinipoolSettingsContractName, ScrubPeriodPath, big.NewInt(int64(value)), opts)
 }
@@ -55,9 +52,6 @@ func GetPromotionScrubPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (ui
 		return 0, fmt.Errorf("Could not get promotion scrub period: %w", err)
 	}
 	return (*value).Uint64(), nil
-}
-func BootstrapPromotionScrubPeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MinipoolSettingsContractName, PromotionScrubPeriodPath, big.NewInt(int64(value)), opts)
 }
 func ProposePromotionScrubPeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", PromotionScrubPeriodPath), MinipoolSettingsContractName, PromotionScrubPeriodPath, big.NewInt(int64(value)), opts)
@@ -78,9 +72,6 @@ func GetScrubPenaltyEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (boo
 	}
 	return (*value), nil
 }
-func BootstrapScrubPenaltyEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapBool(rp, MinipoolSettingsContractName, ScrubPenaltyEnabledPath, value, opts)
-}
 func ProposeScrubPenaltyEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetBool(rp, fmt.Sprintf("set %s", ScrubPenaltyEnabledPath), MinipoolSettingsContractName, ScrubPenaltyEnabledPath, value, opts)
 }
@@ -100,9 +91,6 @@ func GetBondReductionWindowStart(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	return (*value).Uint64(), nil
 }
-func BootstrapBondReductionWindowStart(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MinipoolSettingsContractName, BondReductionWindowStartPath, big.NewInt(int64(value)), opts)
-}
 func ProposeBondReductionWindowStart(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", BondReductionWindowStartPath), MinipoolSettingsContractName, BondReductionWindowStartPath, big.NewInt(int64(value)), opts)
 }
@@ -121,9 +109,6 @@ func GetBondReductionWindowLength(rp *rocketpool.RocketPool, opts *bind.CallOpts
 		return 0, fmt.Errorf("Could not get bond reduction window length: %w", err)
 	}
 	return (*value).Uint64(), nil
-}
-func BootstrapBondReductionWindowLength(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MinipoolSettingsContractName, BondReductionWindowLengthPath, big.NewInt(int64(value)), opts)
 }
 func ProposeBondReductionWindowLength(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", BondReductionWindowLengthPath), MinipoolSettingsContractName, BondReductionWindowLengthPath, big.NewInt(int64(value)), opts)

@@ -7,9 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 
-	protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
@@ -111,9 +109,6 @@ func GetMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, opts *bind.
 	}
 	return *value, nil
 }
-func BootstrapMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapBool(rp, MinipoolSettingsContractName, "minipool.submit.withdrawable.enabled", value, opts)
-}
 
 // Timeout period in seconds for prelaunch minipools to launch
 func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
@@ -141,9 +136,6 @@ func GetMinipoolLaunchTimeoutRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	return *value, nil
 }
-func BootstrapMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value time.Duration, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, MinipoolSettingsContractName, "minipool.launch.timeout", big.NewInt(int64(value.Seconds())), opts)
-}
 
 // Minipool bond reductions currently enabled
 func GetBondReductionEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
@@ -156,9 +148,6 @@ func GetBondReductionEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bo
 		return false, fmt.Errorf("Could not get bond reduction enabled status: %w", err)
 	}
 	return *value, nil
-}
-func BootstrapBondReductionEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapBool(rp, MinipoolSettingsContractName, "minipool.bond.reduction.enabled", value, opts)
 }
 
 // Get contracts

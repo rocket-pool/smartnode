@@ -6,9 +6,7 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 
-	protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -28,9 +26,6 @@ func GetNodeConsensusThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	}
 	return eth.WeiToEth(*value), nil
 }
-func BootstrapNodeConsensusThreshold(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, NetworkSettingsContractName, "network.consensus.threshold", eth.EthToWei(value), opts)
-}
 
 // Network balance submissions currently enabled
 func GetSubmitBalancesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
@@ -43,9 +38,6 @@ func GetSubmitBalancesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (b
 		return false, fmt.Errorf("Could not get network balance submissions enabled status: %w", err)
 	}
 	return *value, nil
-}
-func BootstrapSubmitBalancesEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapBool(rp, NetworkSettingsContractName, "network.submit.balances.enabled", value, opts)
 }
 
 // The frequency in blocks at which network balances should be submitted by trusted nodes
@@ -60,9 +52,6 @@ func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	return (*value).Uint64(), nil
 }
-func BootstrapSubmitBalancesFrequency(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, NetworkSettingsContractName, "network.submit.balances.frequency", big.NewInt(int64(value)), opts)
-}
 
 // Network price submissions currently enabled
 func GetSubmitPricesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
@@ -75,9 +64,6 @@ func GetSubmitPricesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (boo
 		return false, fmt.Errorf("Could not get network price submissions enabled status: %w", err)
 	}
 	return *value, nil
-}
-func BootstrapSubmitPricesEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapBool(rp, NetworkSettingsContractName, "network.submit.prices.enabled", value, opts)
 }
 
 // The frequency in blocks at which network prices should be submitted by trusted nodes
@@ -92,9 +78,6 @@ func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
 	}
 	return (*value).Uint64(), nil
 }
-func BootstrapSubmitPricesFrequency(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, NetworkSettingsContractName, "network.submit.prices.frequency", big.NewInt(int64(value)), opts)
-}
 
 // Minimum node commission rate
 func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
@@ -107,9 +90,6 @@ func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 		return 0, fmt.Errorf("Could not get minimum node fee: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
-}
-func BootstrapMinimumNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.minimum", eth.EthToWei(value), opts)
 }
 
 // Target node commission rate
@@ -124,9 +104,6 @@ func GetTargetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, 
 	}
 	return eth.WeiToEth(*value), nil
 }
-func BootstrapTargetNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.target", eth.EthToWei(value), opts)
-}
 
 // Maximum node commission rate
 func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
@@ -139,9 +116,6 @@ func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 		return 0, fmt.Errorf("Could not get maximum node fee: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
-}
-func BootstrapMaximumNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.maximum", eth.EthToWei(value), opts)
 }
 
 // The range of node demand values to base fee calculations on
@@ -156,9 +130,6 @@ func GetNodeFeeDemandRange(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
 	}
 	return *value, nil
 }
-func BootstrapNodeFeeDemandRange(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.demand.range", value, opts)
-}
 
 // The target collateralization rate for the rETH contract as a fraction
 func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
@@ -171,9 +142,6 @@ func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 		return 0, fmt.Errorf("Could not get target rETH contract collateralization rate: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
-}
-func BootstrapTargetRethCollateralRate(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, NetworkSettingsContractName, "network.reth.collateral.target", eth.EthToWei(value), opts)
 }
 
 // Get contracts

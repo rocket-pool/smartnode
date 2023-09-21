@@ -1,4 +1,4 @@
-package voting
+package protocol
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 )
 
 // Estimate the gas of a proposal submission
-func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -24,7 +24,7 @@ func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []by
 
 // Submit a trusted node DAO proposal
 // Returns the ID of the new proposal
-func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -41,7 +41,7 @@ func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, b
 }
 
 // Estimate the gas of ProposeSetMulti
-func EstimateProposeSetMultiGas(rp *rocketpool.RocketPool, message string, contractNames []string, settingPaths []string, settingTypes []types.ProposalSettingType, values []any, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetMultiGas(rp *rocketpool.RocketPool, message string, contractNames []string, settingPaths []string, settingTypes []types.ProposalSettingType, values []any, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -58,7 +58,7 @@ func EstimateProposeSetMultiGas(rp *rocketpool.RocketPool, message string, contr
 }
 
 // Submit a proposal to update multiple Protocol DAO settings at once
-func ProposeSetMulti(rp *rocketpool.RocketPool, message string, contractNames []string, settingPaths []string, settingTypes []types.ProposalSettingType, values []any, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetMulti(rp *rocketpool.RocketPool, message string, contractNames []string, settingPaths []string, settingTypes []types.ProposalSettingType, values []any, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -75,7 +75,7 @@ func ProposeSetMulti(rp *rocketpool.RocketPool, message string, contractNames []
 }
 
 // Estimate the gas of ProposeSetBool
-func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -88,7 +88,7 @@ func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName,
 }
 
 // Submit a proposal to update a bool Protocol DAO setting
-func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -101,7 +101,7 @@ func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPat
 }
 
 // Estimate the gas of ProposeSetUint
-func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -114,7 +114,7 @@ func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName,
 }
 
 // Submit a proposal to update a uint Protocol DAO setting
-func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -127,7 +127,7 @@ func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPat
 }
 
 // Estimate the gas of ProposeSetAddress
-func EstimateProposeSetAddressGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value common.Address, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetAddressGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value common.Address, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -140,7 +140,7 @@ func EstimateProposeSetAddressGas(rp *rocketpool.RocketPool, message, contractNa
 }
 
 // Submit a proposal to update an address Protocol DAO setting
-func ProposeSetAddress(rp *rocketpool.RocketPool, message, contractName, settingPath string, value common.Address, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetAddress(rp *rocketpool.RocketPool, message, contractName, settingPath string, value common.Address, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -153,7 +153,7 @@ func ProposeSetAddress(rp *rocketpool.RocketPool, message, contractName, setting
 }
 
 // Estimate the gas of ProposeSetAddress
-func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, percentage *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, percentage *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -166,7 +166,7 @@ func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message, 
 }
 
 // Submit a proposal to update one of percentage allocations of RPL rewards
-func ProposeSetRewardsPercentage(rp *rocketpool.RocketPool, message, contractName string, percentage *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSetRewardsPercentage(rp *rocketpool.RocketPool, message, contractName string, percentage *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
@@ -179,7 +179,7 @@ func ProposeSetRewardsPercentage(rp *rocketpool.RocketPool, message, contractNam
 }
 
 // Estimate the gas of ProposeSpendTreasury
-func EstimateProposeSpendTreasuryGas(rp *rocketpool.RocketPool, message, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSpendTreasuryGas(rp *rocketpool.RocketPool, message, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -192,7 +192,7 @@ func EstimateProposeSpendTreasuryGas(rp *rocketpool.RocketPool, message, invoice
 }
 
 // Submit a proposal to spend a portion of the Rocket Pool treasury
-func ProposeSpendTreasury(rp *rocketpool.RocketPool, message, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSpendTreasury(rp *rocketpool.RocketPool, message, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err

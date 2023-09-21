@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -25,11 +26,6 @@ type NodeVotingInfo struct {
 	Delegate    common.Address
 }
 
-type VotingTreeNode struct {
-	Sum  *big.Int    `abi:"sum" json:"sum"`
-	Hash common.Hash `abi:"hash" json:"hash"`
-}
-
 type VotingTreeGenerator struct {
 	rp *rocketpool.RocketPool
 }
@@ -42,7 +38,7 @@ func NewVotingTreeGenerator(rp *rocketpool.RocketPool) (*VotingTreeGenerator, er
 }
 
 // Gets a complete Pollard row for a new proposal based on the target block number.
-func (g *VotingTreeGenerator) CreatePollardRowForProposal(blockNumber uint32, opts *bind.CallOpts) ([]VotingTreeNode, error) {
+func (g *VotingTreeGenerator) CreatePollardRowForProposal(blockNumber uint32, opts *bind.CallOpts) ([]types.VotingTreeNode, error) {
 	// Get an nxn array of each node's voting power and delegating status
 	votingPowers, err := g.getDelegatedVotingPower(blockNumber, opts)
 	if err != nil {
@@ -58,7 +54,7 @@ func (g *VotingTreeGenerator) CreatePollardRowForProposal(blockNumber uint32, op
 }
 
 // Gets a complete proof and corresponding Pollard row to challenge an existing proposal.
-func (g *VotingTreeGenerator) CreatePollardForChallenge(blockNumber uint32, targetIndex uint64, opts *bind.CallOpts) ([]VotingTreeNode, []VotingTreeNode, error) {
+func (g *VotingTreeGenerator) CreatePollardForChallenge(blockNumber uint32, targetIndex uint64, opts *bind.CallOpts) ([]types.VotingTreeNode, []types.VotingTreeNode, error) {
 	// Get an nxn array of each node's voting power and delegating status
 	votingPowers, err := g.getDelegatedVotingPower(blockNumber, opts)
 	if err != nil {
@@ -150,10 +146,10 @@ func (g *VotingTreeGenerator) getDelegatedVotingPower(blockNumber uint32, opts *
 }
 
 // Create the complete set of subtree leaf nodes
-func (g *VotingTreeGenerator) constructLeaves(votingPowers [][]*big.Int) []VotingTreeNode {
+func (g *VotingTreeGenerator) constructLeaves(votingPowers [][]*big.Int) []types.VotingTreeNode {
 	nodeCount := uint64(len(votingPowers))
 	if nodeCount == 0 {
-		return []VotingTreeNode{}
+		return []types.VotingTreeNode{}
 	}
 
 	// Create the slice of leaf nodes for the subtree
@@ -162,7 +158,7 @@ func (g *VotingTreeGenerator) constructLeaves(votingPowers [][]*big.Int) []Votin
 	totalSubTreeLeafNodes := subTreeLeafCountPerMainTreeNode * subTreeLeafCountPerMainTreeNode
 
 	// Create the leaf nodes
-	leafNodes := make([]VotingTreeNode, totalSubTreeLeafNodes)
+	leafNodes := make([]types.VotingTreeNode, totalSubTreeLeafNodes)
 	for i := uint64(0); i < subTreeLeafCountPerMainTreeNode; i++ {
 		for j := uint64(0); j < subTreeLeafCountPerMainTreeNode; j++ {
 			index := i*subTreeLeafCountPerMainTreeNode + j
@@ -175,7 +171,7 @@ func (g *VotingTreeGenerator) constructLeaves(votingPowers [][]*big.Int) []Votin
 				balance = big.NewInt(0)
 			}
 
-			leafNode := VotingTreeNode{
+			leafNode := types.VotingTreeNode{
 				Sum:  balance,
 				Hash: getHashForBalance(balance),
 			}
@@ -189,7 +185,7 @@ func (g *VotingTreeGenerator) constructLeaves(votingPowers [][]*big.Int) []Votin
 // For new proposals use index = 1.
 // For challenges, the index is the index of the node being challenged.
 // Returns the aggregated proof, and the list of nodes in the pollard row.
-func (g *VotingTreeGenerator) generatePollard(leafNodes []VotingTreeNode, index uint64) ([]VotingTreeNode, []VotingTreeNode) {
+func (g *VotingTreeGenerator) generatePollard(leafNodes []types.VotingTreeNode, index uint64) ([]types.VotingTreeNode, []types.VotingTreeNode) {
 	order := DepthPerRound
 	offset := uint64(math.Floor(math.Log2(float64(index)))) // Depth of the node being challenged, if not building a proposal
 	depth := uint64(math.Log2(float64(len(leafNodes))))     // Total depth of the tree
@@ -205,10 +201,10 @@ func (g *VotingTreeGenerator) generatePollard(leafNodes []VotingTreeNode, index 
 	pollardOffset := index*uint64(math.Pow(2, float64(order))) - uint64(math.Pow(2, float64(order+offset)))
 
 	// Get the list of nodes corresponding to the pollard row
-	var nodes []VotingTreeNode
+	var nodes []types.VotingTreeNode
 	if depth == pollardDepth {
 		// The pollard row is the last one so just grab the final row from the leaf nodes
-		nodes = make([]VotingTreeNode, pollardSize)
+		nodes = make([]types.VotingTreeNode, pollardSize)
 		copy(nodes, leafNodes[pollardOffset:pollardOffset+pollardSize])
 		//nodes = leafNodes[pollardOffset : pollardOffset+pollardSize]
 	}
@@ -225,14 +221,14 @@ func (g *VotingTreeGenerator) generatePollard(leafNodes []VotingTreeNode, index 
 
 		// Slice out the nodes for the pollard once we've reached the right level
 		if level-1 == offset+order {
-			nodes = make([]VotingTreeNode, pollardSize)
+			nodes = make([]types.VotingTreeNode, pollardSize)
 			copy(nodes, leafNodes[pollardOffset:pollardOffset+pollardSize])
 			//nodes = leafNodes[pollardOffset : pollardOffset+pollardSize]
 		}
 	}
 
 	// Build a proof from the offset up to the root node
-	proof := []VotingTreeNode{}
+	proof := []types.VotingTreeNode{}
 	for level := offset; level > 0; level-- {
 		indexOffset := uint64(math.Pow(2, float64(level)))
 
@@ -256,7 +252,7 @@ func (g *VotingTreeGenerator) generatePollard(leafNodes []VotingTreeNode, index 
 }
 
 // Get the keccak hash of a parent node with two children
-func getParentNodeFromChildren(leftChild VotingTreeNode, rightChild VotingTreeNode) VotingTreeNode {
+func getParentNodeFromChildren(leftChild types.VotingTreeNode, rightChild types.VotingTreeNode) types.VotingTreeNode {
 	leftBuffer := [32]byte{}
 	rightBuffer := [32]byte{}
 	leftChild.Sum.FillBytes(leftBuffer[:])
@@ -264,7 +260,7 @@ func getParentNodeFromChildren(leftChild VotingTreeNode, rightChild VotingTreeNo
 	hash := crypto.Keccak256Hash(leftChild.Hash[:], leftBuffer[:], rightChild.Hash[:], rightBuffer[:])
 
 	sum := big.NewInt(0).Add(leftChild.Sum, rightChild.Sum)
-	return VotingTreeNode{
+	return types.VotingTreeNode{
 		Hash: hash,
 		Sum:  sum,
 	}

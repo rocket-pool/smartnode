@@ -6,9 +6,7 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 
-	protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -66,9 +64,6 @@ func GetRewardsClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 		return 0, fmt.Errorf("Could not get rewards claim interval: %w", err)
 	}
 	return (*value).Uint64(), nil
-}
-func BootstrapRewardsClaimIntervalTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, RewardsSettingsContractName, "rpl.rewards.claim.period.time", big.NewInt(int64(value)), opts)
 }
 
 // Get contracts

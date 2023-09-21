@@ -37,9 +37,6 @@ func GetQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) 
 	}
 	return eth.WeiToEth(*value), nil
 }
-func BootstrapQuorum(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, QuorumSettingPath, eth.EthToWei(value), opts)
-}
 func ProposeQuorum(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, eth.EthToWei(value), opts)
 }
@@ -58,9 +55,6 @@ func GetRPLBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error
 		return nil, fmt.Errorf("Could not get member RPL bond amount: %w", err)
 	}
 	return *value, nil
-}
-func BootstrapRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, RPLBondSettingPath, value, opts)
 }
 func ProposeRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", RPLBondSettingPath), MembersSettingsContractName, RPLBondSettingPath, value, opts)
@@ -81,9 +75,6 @@ func GetMinipoolUnbondedMax(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
 	}
 	return (*value).Uint64(), nil
 }
-func BootstrapMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, MinipoolUnbondedMaxSettingPath, big.NewInt(int64(value)), opts)
-}
 func ProposeMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolUnbondedMaxSettingPath), MembersSettingsContractName, MinipoolUnbondedMaxSettingPath, big.NewInt(int64(value)), opts)
 }
@@ -102,9 +93,6 @@ func GetMinipoolUnbondedMinFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 		return 0, fmt.Errorf("Could not get member unbonded minipool minimum fee: %w", err)
 	}
 	return (*value).Uint64(), nil
-}
-func BootstrapMinipoolUnbondedMinFee(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, MinipoolUnbondedMinFeeSettingPath, big.NewInt(int64(value)), opts)
 }
 func ProposeMinipoolUnbondedMinFee(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolUnbondedMinFeeSettingPath), MembersSettingsContractName, MinipoolUnbondedMinFeeSettingPath, big.NewInt(int64(value)), opts)
@@ -125,9 +113,6 @@ func GetChallengeCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint6
 	}
 	return (*value).Uint64(), nil
 }
-func BootstrapChallengeCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, ChallengeCooldownSettingPath, big.NewInt(int64(value)), opts)
-}
 func ProposeChallengeCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeCooldownSettingPath), MembersSettingsContractName, ChallengeCooldownSettingPath, big.NewInt(int64(value)), opts)
 }
@@ -147,9 +132,6 @@ func GetChallengeWindow(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64,
 	}
 	return (*value).Uint64(), nil
 }
-func BootstrapChallengeWindow(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, ChallengeWindowSettingPath, big.NewInt(int64(value)), opts)
-}
 func ProposeChallengeWindow(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeWindowSettingPath), MembersSettingsContractName, ChallengeWindowSettingPath, big.NewInt(int64(value)), opts)
 }
@@ -168,9 +150,6 @@ func GetChallengeCost(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 		return nil, fmt.Errorf("Could not get member challenge cost: %w", err)
 	}
 	return *value, nil
-}
-func BootstrapChallengeCost(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, ChallengeCostSettingPath, value, opts)
 }
 func ProposeChallengeCost(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeCostSettingPath), MembersSettingsContractName, ChallengeCostSettingPath, value, opts)

@@ -9,31 +9,32 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 // Structure of the RootSubmitted event
 type RootSubmitted struct {
-	ProposalID  *big.Int         `json:"proposalId"`
-	Proposer    common.Address   `json:"proposer"`
-	BlockNumber uint32           `json:"blockNumber"`
-	Index       *big.Int         `json:"index"`
-	RootHash    common.Hash      `json:"rootHash"`
-	Sum         *big.Int         `json:"sum"`
-	TreeNodes   []VotingTreeNode `json:"treeNodes"`
-	Timestamp   time.Time        `json:"timestamp"`
+	ProposalID  *big.Int               `json:"proposalId"`
+	Proposer    common.Address         `json:"proposer"`
+	BlockNumber uint32                 `json:"blockNumber"`
+	Index       *big.Int               `json:"index"`
+	RootHash    common.Hash            `json:"rootHash"`
+	Sum         *big.Int               `json:"sum"`
+	TreeNodes   []types.VotingTreeNode `json:"treeNodes"`
+	Timestamp   time.Time              `json:"timestamp"`
 }
 
 // Internal struct - returned by the RootSubmitted event
 type rootSubmittedRaw struct {
-	ProposalID  *big.Int         `json:"proposalId"`
-	Proposer    common.Address   `json:"proposer"`
-	BlockNumber uint32           `json:"blockNumber"`
-	Index       *big.Int         `json:"index"`
-	RootHash    common.Hash      `json:"rootHash"`
-	Sum         *big.Int         `json:"sum"`
-	TreeNodes   []VotingTreeNode `json:"treeNodes"`
-	Timestamp   *big.Int         `json:"timestamp"`
+	ProposalID  *big.Int               `json:"proposalId"`
+	Proposer    common.Address         `json:"proposer"`
+	BlockNumber uint32                 `json:"blockNumber"`
+	Index       *big.Int               `json:"index"`
+	RootHash    common.Hash            `json:"rootHash"`
+	Sum         *big.Int               `json:"sum"`
+	TreeNodes   []types.VotingTreeNode `json:"treeNodes"`
+	Timestamp   *big.Int               `json:"timestamp"`
 }
 
 // Structure of the ChallengeSubmitted event
@@ -75,7 +76,7 @@ func CreateChallenge(rp *rocketpool.RocketPool, proposalId uint64, index uint64,
 }
 
 // Estimate the gas of SubmitRoot
-func EstimateSubmitRootGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, witness []VotingTreeNode, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitRootGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, witness []types.VotingTreeNode, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -84,7 +85,7 @@ func EstimateSubmitRootGas(rp *rocketpool.RocketPool, proposalId uint64, index u
 }
 
 // Submit the Merkle root for a proposal at the specific index in response to a challenge
-func SubmitRoot(rp *rocketpool.RocketPool, proposalId uint64, index uint64, witness []VotingTreeNode, treeNodes []VotingTreeNode, opts *bind.TransactOpts) (common.Hash, error) {
+func SubmitRoot(rp *rocketpool.RocketPool, proposalId uint64, index uint64, witness []types.VotingTreeNode, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
 		return common.Hash{}, err

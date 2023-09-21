@@ -6,9 +6,7 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 
-	protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -28,9 +26,6 @@ func GetNodeRegistrationEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	return *value, nil
 }
-func BootstrapNodeRegistrationEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapBool(rp, NodeSettingsContractName, "node.registration.enabled", value, opts)
-}
 
 // Node deposits currently enabled
 func GetNodeDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
@@ -44,9 +39,6 @@ func GetNodeDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool
 	}
 	return *value, nil
 }
-func BootstrapNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapBool(rp, NodeSettingsContractName, "node.deposit.enabled", value, opts)
-}
 
 // Vacant minipools currently enabled
 func GetVacantMinipoolsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
@@ -59,9 +51,6 @@ func GetVacantMinipoolsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 		return false, fmt.Errorf("Could not get vacant minipools enabled status: %w", err)
 	}
 	return *value, nil
-}
-func BootstrapVacantMinipoolsEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapBool(rp, NodeSettingsContractName, "node.vacant.minipools.enabled", value, opts)
 }
 
 // The minimum RPL stake per minipool as a fraction of assigned user ETH
@@ -89,9 +78,6 @@ func GetMinimumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpt
 	}
 	return *value, nil
 }
-func BootstrapMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, NodeSettingsContractName, "node.per.minipool.stake.minimum", eth.EthToWei(value), opts)
-}
 
 // The maximum RPL stake per minipool as a fraction of assigned user ETH
 func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
@@ -117,9 +103,6 @@ func GetMaximumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpt
 		return nil, fmt.Errorf("Could not get maximum RPL stake per minipool: %w", err)
 	}
 	return *value, nil
-}
-func BootstrapMaximumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, NodeSettingsContractName, "node.per.minipool.stake.maximum", eth.EthToWei(value), opts)
 }
 
 // Get contracts

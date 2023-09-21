@@ -34,9 +34,6 @@ func GetProposalCooldownTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (ui
 	}
 	return (*value).Uint64(), nil
 }
-func BootstrapProposalCooldownTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, CooldownTimeSettingPath, big.NewInt(int64(value)), opts)
-}
 func ProposeProposalCooldownTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", CooldownTimeSettingPath), ProposalsSettingsContractName, CooldownTimeSettingPath, big.NewInt(int64(value)), opts)
 }
@@ -55,9 +52,6 @@ func GetProposalVoteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64
 		return 0, fmt.Errorf("Could not get proposal voting period: %w", err)
 	}
 	return (*value).Uint64(), nil
-}
-func BootstrapProposalVoteTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, VoteTimeSettingPath, big.NewInt(int64(value)), opts)
 }
 func ProposeProposalVoteTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteTimeSettingPath), ProposalsSettingsContractName, VoteTimeSettingPath, big.NewInt(int64(value)), opts)
@@ -78,9 +72,6 @@ func GetProposalVoteDelayTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
 	}
 	return (*value).Uint64(), nil
 }
-func BootstrapProposalVoteDelayTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, VoteDelayTimeSettingPath, big.NewInt(int64(value)), opts)
-}
 func ProposeProposalVoteDelayTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteDelayTimeSettingPath), ProposalsSettingsContractName, VoteDelayTimeSettingPath, big.NewInt(int64(value)), opts)
 }
@@ -100,9 +91,6 @@ func GetProposalExecuteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
 	}
 	return (*value).Uint64(), nil
 }
-func BootstrapProposalExecuteTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, ExecuteTimeSettingPath, big.NewInt(int64(value)), opts)
-}
 func ProposeProposalExecuteTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ExecuteTimeSettingPath), ProposalsSettingsContractName, ExecuteTimeSettingPath, big.NewInt(int64(value)), opts)
 }
@@ -121,9 +109,6 @@ func GetProposalActionTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 		return 0, fmt.Errorf("Could not get proposal action period: %w", err)
 	}
 	return (*value).Uint64(), nil
-}
-func BootstrapProposalActionTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, ActionTimeSettingPath, big.NewInt(int64(value)), opts)
 }
 func ProposeProposalActionTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ActionTimeSettingPath), ProposalsSettingsContractName, ActionTimeSettingPath, big.NewInt(int64(value)), opts)
