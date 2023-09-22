@@ -20,7 +20,7 @@ const (
 	CreateLotEnabledSettingPath      string = "auction.lot.create.enabled"
 	BidOnLotEnabledSettingPath       string = "auction.lot.bidding.enabled"
 	LotMinimumEthValueSettingPath    string = "auction.lot.value.minimum"
-	LotMaximumEthValueSettingPath    string = "auction.lot.value.maximu"
+	LotMaximumEthValueSettingPath    string = "auction.lot.value.maximum"
 	LotDurationSettingPath           string = "auction.lot.duration"
 	LotStartingPriceRatioSettingPath string = "auction.price.start"
 	LotReservePriceRatioSettingPath  string = "auction.price.reserve"
