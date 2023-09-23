@@ -89,6 +89,7 @@ type OracleDaoProposeKickData struct {
 	Status                 string                `json:"status"`
 	Error                  string                `json:"error"`
 	CanPropose             bool                  `json:"canPropose"`
+	MemberDoesNotExist     bool                  `json:"memberDoesNotExist"`
 	ProposalCooldownActive bool                  `json:"proposalCooldownActive"`
 	InsufficientRplBond    bool                  `json:"insufficientRplBond"`
 	TxInfo                 *core.TransactionInfo `json:"txInfo"`

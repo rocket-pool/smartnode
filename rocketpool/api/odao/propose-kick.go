@@ -1,159 +1,128 @@
 package odao
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"math/big"
+	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func canProposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *big.Int) (*api.OracleDaoProposeKickData, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.OracleDaoProposeKickData{}
-
-	// Sync
-	var wg errgroup.Group
-
-	// Check if proposal cooldown is active
-	wg.Go(func() error {
-		nodeAccount, err := w.GetNodeAccount()
-		if err != nil {
-			return err
-		}
-		proposalCooldownActive, err := getProposalCooldownActive(rp, nodeAccount.Address)
-		if err == nil {
-			response.ProposalCooldownActive = proposalCooldownActive
-		}
-		return err
-	})
-
-	// Check member's RPL bond amount
-	wg.Go(func() error {
-		rplBondAmount, err := trustednode.GetMemberRPLBondAmount(rp, memberAddress, nil)
-		if err == nil {
-			response.InsufficientRplBond = (fineAmountWei.Cmp(rplBondAmount) > 0)
-		}
-		return err
-	})
-
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		memberId, err := trustednode.GetMemberID(rp, memberAddress, nil)
-		if err != nil {
-			return err
-		}
-		memberUrl, err := trustednode.GetMemberUrl(rp, memberAddress, nil)
-		if err != nil {
-			return err
-		}
-		message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberUrl, math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
-		gasInfo, err := trustednode.EstimateProposeKickMemberGas(rp, message, memberAddress, fineAmountWei, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientRplBond)
-	return &response, nil
-
+type oracleDaoProposeKickContextFactory struct {
+	handler *OracleDaoHandler
 }
 
-func proposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *big.Int) (*api.ProposeTNDAOKickResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
+func (f *oracleDaoProposeKickContextFactory) Create(vars map[string]string) (*oracleDaoProposeKickContext, error) {
+	c := &oracleDaoProposeKickContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	inputErrs := []error{
+		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
+		server.ValidateArg("fineAmount", vars, input.ValidateBigInt, &c.fineAmount),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *oracleDaoProposeKickContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoProposeKickContext, api.OracleDaoProposeKickData](
+		router, "propose-kick", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type oracleDaoProposeKickContext struct {
+	handler     *OracleDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	address    common.Address
+	fineAmount *big.Int
+	odaoMember *oracle.OracleDaoMember
+	candidate  *oracle.OracleDaoMember
+	oSettings  *oracle.OracleDaoSettings
+	odaoMgr    *oracle.OracleDaoManager
+}
+
+func (c *oracleDaoProposeKickContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireOnOracleDao()
 	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.ProposeTNDAOKickResponse{}
-
-	// Data
-	var wg errgroup.Group
-	var memberId string
-	var memberUrl string
-
-	// Get member details
-	wg.Go(func() error {
-		var err error
-		memberId, err = trustednode.GetMemberID(rp, memberAddress, nil)
 		return err
-	})
-	wg.Go(func() error {
-		var err error
-		memberUrl, err = trustednode.GetMemberUrl(rp, memberAddress, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
 	}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	// Bindings
+	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.candidate, err = oracle.NewOracleDaoMember(c.rp, c.address)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating candidate oracle DAO member binding: %w", err)
 	}
-
-	// Submit proposal
-	message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberUrl, math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
-	proposalId, hash, err := trustednode.ProposeKickMember(rp, message, memberAddress, fineAmountWei, opts)
+	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
-	response.ProposalId = proposalId
-	response.TxHash = hash
+	c.oSettings = c.odaoMgr.Settings
+	return nil
+}
 
-	// Return response
-	return &response, nil
+func (c *oracleDaoProposeKickContext) GetState(mc *batch.MultiCaller) {
+	c.odaoMember.GetLastProposalTime(mc)
+	c.oSettings.Proposal.CooldownTime.Get(mc)
+	c.candidate.GetExists(mc)
+	c.candidate.GetRplBondAmount(mc)
+	c.candidate.GetID(mc)
+	c.candidate.GetUrl(mc)
+}
 
+func (c *oracleDaoProposeKickContext) PrepareData(data *api.OracleDaoProposeKickData, opts *bind.TransactOpts) error {
+	// Get the timestamp of the latest block
+	latestHeader, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return fmt.Errorf("error getting latest block header: %w", err)
+	}
+	currentTime := time.Unix(int64(latestHeader.Time), 0)
+	cooldownTime := c.oSettings.Proposal.CooldownTime.Value.Formatted()
+
+	// Check proposal details
+	data.MemberDoesNotExist = !c.candidate.Exists
+	data.ProposalCooldownActive = isProposalCooldownActive(cooldownTime, c.odaoMember.LastProposalTime.Formatted(), currentTime)
+	data.InsufficientRplBond = (c.fineAmount.Cmp(c.candidate.RplBondAmount) > 0)
+	data.CanPropose = !(data.MemberDoesNotExist || data.ProposalCooldownActive || data.InsufficientRplBond)
+
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", c.candidate.ID, c.candidate.Url, math.RoundDown(eth.WeiToEth(c.fineAmount), 6))
+		txInfo, err := c.odaoMgr.ProposeKickMember(message, c.address, c.fineAmount, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for ProposeKickMember: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
 }

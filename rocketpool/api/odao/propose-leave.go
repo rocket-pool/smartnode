@@ -1,165 +1,111 @@
 package odao
 
 import (
+	"context"
 	"fmt"
+	"time"
 
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProposeLeave(c *cli.Context) (*api.OracleDaoProposeLeaveData, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.OracleDaoProposeLeaveData{}
-
-	// Sync
-	var wg errgroup.Group
-
-	// Check if proposal cooldown is active
-	wg.Go(func() error {
-		nodeAccount, err := w.GetNodeAccount()
-		if err != nil {
-			return err
-		}
-		proposalCooldownActive, err := getProposalCooldownActive(rp, nodeAccount.Address)
-		if err == nil {
-			response.ProposalCooldownActive = proposalCooldownActive
-		}
-		return err
-	})
-
-	// Check if members can leave the oracle DAO
-	wg.Go(func() error {
-		membersCanLeave, err := getMembersCanLeave(rp)
-		if err == nil {
-			response.InsufficientMembers = !membersCanLeave
-		}
-		return err
-	})
-
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		nodeAccount, err := w.GetNodeAccount()
-		if err != nil {
-			return err
-		}
-		nodeMemberId, err := trustednode.GetMemberID(rp, nodeAccount.Address, nil)
-		if err != nil {
-			return err
-		}
-		nodeMemberUrl, err := trustednode.GetMemberUrl(rp, nodeAccount.Address, nil)
-		if err != nil {
-			return err
-		}
-		message := fmt.Sprintf("%s (%s) leaves", nodeMemberId, nodeMemberUrl)
-		gasInfo, err := trustednode.EstimateProposeMemberLeaveGas(rp, message, nodeAccount.Address, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientMembers)
-	return &response, nil
-
+type oracleDaoProposeLeaveContextFactory struct {
+	handler *OracleDaoHandler
 }
 
-func proposeLeave(c *cli.Context) (*api.ProposeTNDAOLeaveResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
+func (f *oracleDaoProposeLeaveContextFactory) Create(vars map[string]string) (*oracleDaoProposeLeaveContext, error) {
+	c := &oracleDaoProposeLeaveContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	return c, nil
+}
+
+func (f *oracleDaoProposeLeaveContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoProposeLeaveContext, api.OracleDaoProposeLeaveData](
+		router, "propose-leave", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type oracleDaoProposeLeaveContext struct {
+	handler     *OracleDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	odaoMember *oracle.OracleDaoMember
+	oSettings  *oracle.OracleDaoSettings
+	odaoMgr    *oracle.OracleDaoManager
+}
+
+func (c *oracleDaoProposeLeaveContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireOnOracleDao()
 	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.ProposeTNDAOLeaveResponse{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Data
-	var wg errgroup.Group
-	var nodeMemberId string
-	var nodeMemberUrl string
-
-	// Get node member details
-	wg.Go(func() error {
-		var err error
-		nodeMemberId, err = trustednode.GetMemberID(rp, nodeAccount.Address, nil)
 		return err
-	})
-	wg.Go(func() error {
-		var err error
-		nodeMemberUrl, err = trustednode.GetMemberUrl(rp, nodeAccount.Address, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
 	}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	// Bindings
+	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
+	c.oSettings = c.odaoMgr.Settings
+	return nil
+}
 
-	// Submit proposal
-	message := fmt.Sprintf("%s (%s) leaves", nodeMemberId, nodeMemberUrl)
-	proposalId, hash, err := trustednode.ProposeMemberLeave(rp, message, nodeAccount.Address, opts)
+func (c *oracleDaoProposeLeaveContext) GetState(mc *batch.MultiCaller) {
+	c.odaoMember.GetLastProposalTime(mc)
+	c.odaoMember.GetID(mc)
+	c.odaoMember.GetUrl(mc)
+	c.oSettings.Proposal.CooldownTime.Get(mc)
+	c.odaoMgr.GetMemberCount(mc)
+	c.odaoMgr.GetMinimumMemberCount(mc)
+}
+
+func (c *oracleDaoProposeLeaveContext) PrepareData(data *api.OracleDaoProposeLeaveData, opts *bind.TransactOpts) error {
+	// Get the timestamp of the latest block
+	latestHeader, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting latest block header: %w", err)
 	}
-	response.ProposalId = proposalId
-	response.TxHash = hash
+	currentTime := time.Unix(int64(latestHeader.Time), 0)
+	cooldownTime := c.oSettings.Proposal.CooldownTime.Value.Formatted()
 
-	// Return response
-	return &response, nil
+	// Check proposal details
+	data.ProposalCooldownActive = isProposalCooldownActive(cooldownTime, c.odaoMember.LastProposalTime.Formatted(), currentTime)
+	data.InsufficientMembers = c.odaoMgr.MemberCount.Formatted() <= c.odaoMgr.MinimumMemberCount.Formatted()
+	data.CanPropose = !(data.ProposalCooldownActive || data.InsufficientMembers)
 
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		message := fmt.Sprintf("%s (%s) leaves", c.odaoMember.ID, c.odaoMember.Url)
+		txInfo, err := c.odaoMgr.ProposeMemberLeave(message, c.nodeAddress, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for ProposeMemberLeave: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
 }

@@ -30,6 +30,8 @@ func NewOracleDaoHandler(serviceProvider *services.ServiceProvider) *OracleDaoHa
 		&oracleDaoProposalsContextFactory{h},
 		&oracleDaoVoteContextFactory{h},
 		&oracleDaoProposeInviteContextFactory{h},
+		&oracleDaoProposeKickContextFactory{h},
+		&oracleDaoProposeLeaveContextFactory{h},
 	}
 	return h
 }
