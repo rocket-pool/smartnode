@@ -75,7 +75,7 @@ func (c *minipoolPromoteDetailsContext) Initialize() error {
 }
 
 func (c *minipoolPromoteDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
-	c.oSettings.GetPromotionScrubPeriod(mc)
+	c.oSettings.Minipool.PromotionScrubPeriod.Get(mc)
 }
 
 func (c *minipoolPromoteDetailsContext) CheckState(node *node.Node, response *api.MinipoolPromoteDetailsData) bool {
@@ -112,7 +112,7 @@ func (c *minipoolPromoteDetailsContext) PrepareData(addresses []common.Address, 
 		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
 		if success && mpv3.IsVacant {
 			creationTime := mpCommon.StatusTime.Formatted()
-			remainingTime := creationTime.Add(c.oSettings.Minipools.ScrubPeriod.Formatted()).Sub(latestBlockTime)
+			remainingTime := creationTime.Add(c.oSettings.Minipool.ScrubPeriod.Value.Formatted()).Sub(latestBlockTime)
 			if remainingTime < 0 {
 				mpDetails.CanPromote = true
 			}

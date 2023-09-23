@@ -94,14 +94,14 @@ func (c *auctionStatusContext) GetState(mc *batch.MultiCaller) {
 	c.auctionMgr.GetAllottedRPLBalance(mc)
 	c.auctionMgr.GetRemainingRPLBalance(mc)
 	c.auctionMgr.GetLotCount(mc)
-	c.pSettings.GetAuctionLotMinimumEthValue(mc)
+	c.pSettings.Auction.LotMinimumEthValue.Get(mc)
 	c.networkMgr.GetRplPrice(mc)
-	c.pSettings.GetCreateAuctionLotEnabled(mc)
+	c.pSettings.Auction.IsCreateLotEnabled.Get(mc)
 }
 
 func (c *auctionStatusContext) PrepareData(data *api.AuctionStatusData, opts *bind.TransactOpts) error {
 	// Check the balance requirement
-	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Auction.LotMinimumEthValue, eth.EthToWei(1))
+	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Auction.LotMinimumEthValue.Value, eth.EthToWei(1))
 	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkMgr.RplPrice.RawValue)
 	sufficientRemainingRplForLot := (c.auctionMgr.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
 

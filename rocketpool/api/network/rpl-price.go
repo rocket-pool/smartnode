@@ -75,8 +75,8 @@ func (c *networkPriceContext) Initialize() error {
 func (c *networkPriceContext) GetState(mc *batch.MultiCaller) {
 	c.networkMgr.GetPricesBlock(mc)
 	c.networkMgr.GetRplPrice(mc)
-	c.pSettings.GetMinimumPerMinipoolStake(mc)
-	c.pSettings.GetMaximumPerMinipoolStake(mc)
+	c.pSettings.Node.MinimumPerMinipoolStake.Get(mc)
+	c.pSettings.Node.MaximumPerMinipoolStake.Get(mc)
 }
 
 func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *bind.TransactOpts) error {
@@ -89,8 +89,8 @@ func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *b
 
 	data.RplPriceBlock = c.networkMgr.PricesBlock.Formatted()
 	rplPrice = c.networkMgr.RplPrice.RawValue
-	minPerMinipoolStake = c.pSettings.Node.MinimumPerMinipoolStake.RawValue
-	maxPerMinipoolStake = c.pSettings.Node.MaximumPerMinipoolStake.RawValue
+	minPerMinipoolStake = c.pSettings.Node.MinimumPerMinipoolStake.Value.RawValue
+	maxPerMinipoolStake = c.pSettings.Node.MaximumPerMinipoolStake.Value.RawValue
 
 	// Min for LEB8s
 	minPer8EthMinipoolRplStake := big.NewInt(0)

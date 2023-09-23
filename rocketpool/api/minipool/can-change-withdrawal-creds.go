@@ -112,7 +112,7 @@ func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeW
 	if !c.mpv3.IsVacant {
 		return fmt.Errorf("minipool %s is not vacant", c.minipoolAddress.Hex())
 	}
-	if c.mpv3.GetCommonDetails().Status.Formatted() != types.Prelaunch {
+	if c.mpv3.GetCommonDetails().Status.Formatted() != types.MinipoolStatus_Prelaunch {
 		return fmt.Errorf("minipool %s is not in prelaunch state", c.minipoolAddress.Hex())
 	}
 

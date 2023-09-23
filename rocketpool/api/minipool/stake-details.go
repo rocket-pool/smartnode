@@ -76,7 +76,7 @@ func (c *minipoolStakeDetailsContext) Initialize() error {
 }
 
 func (c *minipoolStakeDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
-	c.oSettings.GetScrubPeriod(mc)
+	c.oSettings.Minipool.ScrubPeriod.Get(mc)
 }
 
 func (c *minipoolStakeDetailsContext) CheckState(node *node.Node, response *api.MinipoolStakeDetailsData) bool {
@@ -89,7 +89,7 @@ func (c *minipoolStakeDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, 
 }
 
 func (c *minipoolStakeDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolStakeDetailsData) error {
-	scrubPeriod := c.oSettings.Minipools.ScrubPeriod.Formatted()
+	scrubPeriod := c.oSettings.Minipool.ScrubPeriod.Value.Formatted()
 
 	// Get the time of the latest block
 	latestEth1Block, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
@@ -107,7 +107,7 @@ func (c *minipoolStakeDetailsContext) PrepareData(addresses []common.Address, mp
 		}
 
 		mpDetails.State = mpCommonDetails.Status.Formatted()
-		if mpDetails.State != types.Prelaunch {
+		if mpDetails.State != types.MinipoolStatus_Prelaunch {
 			mpDetails.InvalidState = true
 		} else {
 			creationTime := mpCommonDetails.StatusTime.Formatted()

@@ -85,13 +85,13 @@ func (c *minipoolBeginReduceBondDetailsContext) Initialize() error {
 }
 
 func (c *minipoolBeginReduceBondDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
-	c.pSettings.GetBondReductionEnabled(mc)
-	c.oSettings.GetBondReductionWindowStart(mc)
-	c.oSettings.GetBondReductionWindowLength(mc)
+	c.pSettings.Minipool.IsBondReductionEnabled.Get(mc)
+	c.oSettings.Minipool.BondReductionWindowStart.Get(mc)
+	c.oSettings.Minipool.BondReductionWindowLength.Get(mc)
 }
 
 func (c *minipoolBeginReduceBondDetailsContext) CheckState(node *node.Node, response *api.MinipoolBeginReduceBondDetailsData) bool {
-	response.BondReductionDisabled = !c.pSettings.Minipool.IsBondReductionEnabled
+	response.BondReductionDisabled = !c.pSettings.Minipool.IsBondReductionEnabled.Value
 	return !response.BondReductionDisabled
 }
 
@@ -127,13 +127,13 @@ func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.A
 		mpv3, success := minipool.GetMinipoolAsV3(mp)
 		if !success {
 			mpDetails.MinipoolVersionTooLow = true
-		} else if mpCommon.Status.Formatted() != types.Staking || mpCommon.IsFinalised {
+		} else if mpCommon.Status.Formatted() != types.MinipoolStatus_Staking || mpCommon.IsFinalised {
 			mpDetails.InvalidElState = true
 		} else {
 			reductionStart := mpv3.ReduceBondTime.Formatted()
 			timeSinceBondReductionStart := currentTime.Sub(reductionStart)
-			windowStart := c.oSettings.Minipools.BondReductionWindowStart.Formatted()
-			windowEnd := windowStart + c.oSettings.Minipools.BondReductionWindowLength.Formatted()
+			windowStart := c.oSettings.Minipool.BondReductionWindowStart.Value.Formatted()
+			windowEnd := windowStart + c.oSettings.Minipool.BondReductionWindowLength.Value.Formatted()
 
 			if timeSinceBondReductionStart < windowEnd {
 				mpDetails.AlreadyInWindow = true

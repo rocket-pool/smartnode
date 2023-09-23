@@ -76,7 +76,7 @@ func (c *minipoolExitDetailsContext) PrepareData(addresses []common.Address, mps
 		status := mpCommonDetails.Status.Formatted()
 		mpDetails := api.MinipoolExitDetails{
 			Address:       mpCommonDetails.Address,
-			InvalidStatus: (status != types.Staking),
+			InvalidStatus: (status != types.MinipoolStatus_Staking),
 		}
 		mpDetails.CanExit = !mpDetails.InvalidStatus
 		details[i] = mpDetails

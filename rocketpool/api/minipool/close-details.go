@@ -113,7 +113,7 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 	pubkeys := []types.ValidatorPubkey{}
 	pubkeyMap := map[common.Address]types.ValidatorPubkey{}
 	for i, mp := range details {
-		if mp.Status == types.Dissolved {
+		if mp.Status == types.MinipoolStatus_Dissolved {
 			// Ignore dissolved minipools
 			continue
 		}
@@ -130,7 +130,7 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 	for i, mp := range details {
 		pubkey := pubkeyMap[mp.Address]
 		validator := statusMap[pubkey]
-		if mp.Status != types.Dissolved {
+		if mp.Status != types.MinipoolStatus_Dissolved {
 			details[i].BeaconState = validator.Status
 			if validator.Status != sharedtypes.ValidatorState_WithdrawalDone {
 				details[i].CanClose = false
@@ -171,10 +171,10 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.IMinipool, b
 	// Make sure it's in a closeable state
 	details.EffectiveBalance = big.NewInt(0).Sub(details.Balance, details.Refund)
 	switch details.Status {
-	case types.Dissolved:
+	case types.MinipoolStatus_Dissolved:
 		details.CanClose = true
 
-	case types.Staking, types.Withdrawable:
+	case types.MinipoolStatus_Staking, types.MinipoolStatus_Withdrawable:
 		// Ignore minipools with a balance lower than the refund
 		if details.Balance.Cmp(details.Refund) == -1 {
 			details.CanClose = false
@@ -190,7 +190,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.IMinipool, b
 
 		details.CanClose = true
 
-	case types.Initialized, types.Prelaunch:
+	case types.MinipoolStatus_Initialized, types.MinipoolStatus_Prelaunch:
 		details.CanClose = false
 		return details, nil
 	}

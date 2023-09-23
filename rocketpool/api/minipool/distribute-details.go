@@ -94,7 +94,7 @@ func (c *minipoolDistributeDetailsContext) PrepareData(addresses []common.Addres
 	err = c.rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
 		mpDetails := details[i]
 		status := mpDetails.Status
-		if status == types.Staking && mpDetails.CanDistribute {
+		if status == types.MinipoolStatus_Staking && mpDetails.CanDistribute {
 			mps[i].CalculateNodeShare(mc, &details[i].NodeShareOfDistributableBalance, details[i].DistributableBalance)
 		}
 		return nil
@@ -141,7 +141,7 @@ func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.IMinipo
 
 	// Make sure it's in a distributable state
 	switch details.Status {
-	case types.Staking:
+	case types.MinipoolStatus_Staking:
 		// Ignore minipools with a balance lower than the refund
 		if details.Balance.Cmp(details.Refund) == -1 {
 			details.CanDistribute = false
@@ -155,7 +155,7 @@ func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.IMinipo
 			details.CanDistribute = false
 			return details, nil
 		}
-	case types.Dissolved:
+	case types.MinipoolStatus_Dissolved:
 		// Dissolved but non-finalized / non-closed minipools can just have the whole balance sent back to the NO
 		details.NodeShareOfDistributableBalance = details.Balance
 	default:

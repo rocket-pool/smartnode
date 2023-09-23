@@ -87,7 +87,7 @@ func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.Transa
 	mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)
 
 	// If it's dissolved, just close it
-	if mpCommon.Status.Formatted() == types.Dissolved {
+	if mpCommon.Status.Formatted() == types.MinipoolStatus_Dissolved {
 		// Get gas estimate
 		txInfo, err := mp.Close(opts)
 		if err != nil {

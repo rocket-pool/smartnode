@@ -84,7 +84,7 @@ func (c *auctionBidContext) GetState(mc *batch.MultiCaller) {
 	c.lot.GetLotExists(mc)
 	c.lot.GetLotEndBlock(mc)
 	c.lot.GetLotRemainingRplAmount(mc)
-	c.pSettings.GetBidOnAuctionLotEnabled(mc)
+	c.pSettings.Auction.IsBidOnLotEnabled.Get(mc)
 }
 
 func (c *auctionBidContext) PrepareData(data *api.AuctionBidOnLotData, opts *bind.TransactOpts) error {
@@ -98,7 +98,7 @@ func (c *auctionBidContext) PrepareData(data *api.AuctionBidOnLotData, opts *bin
 	data.DoesNotExist = !c.lot.Exists
 	data.BiddingEnded = (currentBlock >= c.lot.EndBlock.Formatted())
 	data.RplExhausted = (c.lot.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
-	data.BidOnLotDisabled = !c.pSettings.Auction.IsBidOnLotEnabled
+	data.BidOnLotDisabled = !c.pSettings.Auction.IsBidOnLotEnabled.Value
 	data.CanBid = !(data.DoesNotExist || data.BiddingEnded || data.RplExhausted || data.BidOnLotDisabled)
 
 	// Get tx info

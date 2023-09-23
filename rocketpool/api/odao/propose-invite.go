@@ -92,7 +92,7 @@ func (c *oracleDaoProposeInviteContext) Initialize() error {
 
 func (c *oracleDaoProposeInviteContext) GetState(mc *batch.MultiCaller) {
 	c.odaoMember.GetLastProposalTime(mc)
-	c.oSettings.GetProposalCooldownTime(mc)
+	c.oSettings.Proposal.CooldownTime.Get(mc)
 	c.candidate.GetExists(mc)
 }
 
@@ -103,7 +103,7 @@ func (c *oracleDaoProposeInviteContext) PrepareData(data *api.OracleDaoProposeIn
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	cooldownTime := c.oSettings.Proposals.CooldownTime.Formatted()
+	cooldownTime := c.oSettings.Proposal.CooldownTime.Value.Formatted()
 
 	// Check proposal details
 	data.ProposalCooldownActive = isProposalCooldownActive(cooldownTime, c.odaoMember.LastProposalTime.Formatted(), currentTime)

@@ -89,7 +89,7 @@ func (c *oracleDaoStatusContext) GetState(mc *batch.MultiCaller) {
 	c.odaoMember.GetLeftTime(mc)
 	c.odaoMgr.GetMemberCount(mc)
 	c.dpm.GetProposalCount(mc)
-	c.oSettings.GetProposalActionTime(mc)
+	c.oSettings.Proposal.ActionTime.Get(mc)
 }
 
 func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts *bind.TransactOpts) error {
@@ -99,7 +99,7 @@ func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	actionWindow := c.oSettings.Proposals.ActionTime.Formatted()
+	actionWindow := c.oSettings.Proposal.ActionTime.Value.Formatted()
 
 	// Check action windows for the current member
 	exists := c.odaoMember.Exists

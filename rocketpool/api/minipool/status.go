@@ -113,9 +113,9 @@ func (c *minipoolStatusContext) Initialize() error {
 }
 
 func (c *minipoolStatusContext) GetState(node *node.Node, mc *batch.MultiCaller) {
-	c.pSettings.GetMinipoolLaunchTimeout(mc)
-	c.oSettings.GetScrubPeriod(mc)
-	c.oSettings.GetPromotionScrubPeriod(mc)
+	c.pSettings.Minipool.LaunchTimeout.Get(mc)
+	c.oSettings.Minipool.ScrubPeriod.Get(mc)
+	c.oSettings.Minipool.PromotionScrubPeriod.Get(mc)
 }
 
 func (c *minipoolStatusContext) CheckState(node *node.Node, response *api.MinipoolStatusData) bool {
@@ -184,16 +184,16 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	currentEpoch := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerEpoch
 
 	// Get some protocol settings
-	launchTimeout := c.pSettings.Minipool.LaunchTimeout.Formatted()
-	scrubPeriod := c.oSettings.Minipools.ScrubPeriod.Formatted()
-	promotionScrubPeriod := c.oSettings.Minipools.PromotionScrubPeriod.Formatted()
+	launchTimeout := c.pSettings.Minipool.LaunchTimeout.Value.Formatted()
+	scrubPeriod := c.oSettings.Minipool.ScrubPeriod.Value.Formatted()
+	promotionScrubPeriod := c.oSettings.Minipool.PromotionScrubPeriod.Value.Formatted()
 
 	// Get the statuses on Beacon
 	pubkeys := make([]rptypes.ValidatorPubkey, 0, len(addresses))
 	for _, mp := range mps {
 		mpCommon := mp.GetCommonDetails()
 		status := mpCommon.Status.Formatted()
-		if status == rptypes.Staking || (status == rptypes.Dissolved && !mpCommon.IsFinalised) {
+		if status == rptypes.MinipoolStatus_Staking || (status == rptypes.MinipoolStatus_Dissolved && !mpCommon.IsFinalised) {
 			pubkeys = append(pubkeys, mpCommon.Pubkey)
 		}
 	}
@@ -238,11 +238,11 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 		mpDetails.Penalties = mpCommonDetails.PenaltyCount.Formatted()
 		mpDetails.Queue.Position = mpCommonDetails.QueuePosition.Formatted() + 1 // Queue pos is -1 indexed so make it 0
 		mpDetails.RefundAvailable = (mpDetails.Node.RefundBalance.Cmp(zero()) > 0) && (mpDetails.Balances.Eth.Cmp(mpDetails.Node.RefundBalance) >= 0)
-		mpDetails.CloseAvailable = (mpDetails.Status.Status == rptypes.Dissolved)
-		mpDetails.WithdrawalAvailable = (mpDetails.Status.Status == rptypes.Withdrawable)
+		mpDetails.CloseAvailable = (mpDetails.Status.Status == rptypes.MinipoolStatus_Dissolved)
+		mpDetails.WithdrawalAvailable = (mpDetails.Status.Status == rptypes.MinipoolStatus_Withdrawable)
 
 		// Check the stake status of each minipool
-		if mpDetails.Status.Status == rptypes.Prelaunch {
+		if mpDetails.Status.Status == rptypes.MinipoolStatus_Prelaunch {
 			creationTime := mpDetails.Status.StatusTime
 			dissolveTime := creationTime.Add(launchTimeout)
 			remainingTime := creationTime.Add(scrubPeriod).Sub(currentTime)

@@ -10,7 +10,6 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -50,9 +49,8 @@ type auctionRecoverContext struct {
 	handler *AuctionHandler
 	rp      *rocketpool.RocketPool
 
-	lotIndex  uint64
-	lot       *auction.AuctionLot
-	pSettings *protocol.ProtocolDaoSettings
+	lotIndex uint64
+	lot      *auction.AuctionLot
 }
 
 func (c *auctionRecoverContext) Initialize() error {
@@ -70,11 +68,6 @@ func (c *auctionRecoverContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating lot %d binding: %w", c.lotIndex, err)
 	}
-	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
-	if err != nil {
-		return fmt.Errorf("error creating pDAO manager binding: %w", err)
-	}
-	c.pSettings = pMgr.Settings
 	return nil
 }
 
@@ -83,7 +76,6 @@ func (c *auctionRecoverContext) GetState(mc *batch.MultiCaller) {
 	c.lot.GetLotEndBlock(mc)
 	c.lot.GetLotRemainingRplAmount(mc)
 	c.lot.GetLotRplRecovered(mc)
-	c.pSettings.GetBidOnAuctionLotEnabled(mc)
 }
 
 func (c *auctionRecoverContext) PrepareData(data *api.AuctionRecoverRplFromLotData, opts *bind.TransactOpts) error {

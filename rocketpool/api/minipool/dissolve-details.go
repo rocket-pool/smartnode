@@ -71,7 +71,7 @@ func (c *minipoolDissolveDetailsContext) PrepareData(addresses []common.Address,
 		status := mpCommonDetails.Status.Formatted()
 		mpDetails := api.MinipoolDissolveDetails{
 			Address:       mpCommonDetails.Address,
-			InvalidStatus: !(status == types.Initialized || status == types.Prelaunch),
+			InvalidStatus: !(status == types.MinipoolStatus_Initialized || status == types.MinipoolStatus_Prelaunch),
 		}
 		mpDetails.CanDissolve = !mpDetails.InvalidStatus
 		details[i] = mpDetails

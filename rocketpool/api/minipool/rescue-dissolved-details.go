@@ -90,7 +90,7 @@ func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.A
 			IsFinalized:   mpCommon.IsFinalised,
 		}
 
-		if mpDetails.MinipoolState != types.Dissolved || mpDetails.IsFinalized {
+		if mpDetails.MinipoolState != types.MinipoolStatus_Dissolved || mpDetails.IsFinalized {
 			mpDetails.InvalidElState = true
 		} else {
 			pubkeys = append(pubkeys, mpCommon.Pubkey)

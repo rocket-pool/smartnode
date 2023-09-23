@@ -83,7 +83,7 @@ func (c *oracleDaoLeaveContext) Initialize() error {
 
 func (c *oracleDaoLeaveContext) GetState(mc *batch.MultiCaller) {
 	c.odaoMember.GetLeftTime(mc)
-	c.oSettings.GetProposalActionTime(mc)
+	c.oSettings.Proposal.ActionTime.Get(mc)
 	c.odaoMgr.GetMemberCount(mc)
 	c.odaoMgr.GetMinimumMemberCount(mc)
 }
@@ -96,7 +96,7 @@ func (c *oracleDaoLeaveContext) PrepareData(data *api.OracleDaoLeaveData, opts *
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	actionWindow := c.oSettings.Proposals.ActionTime.Formatted()
+	actionWindow := c.oSettings.Proposal.ActionTime.Value.Formatted()
 
 	// Check proposal details
 	membersCanLeave := (c.odaoMgr.MemberCount.Formatted() > c.odaoMgr.MinimumMemberCount.Formatted())

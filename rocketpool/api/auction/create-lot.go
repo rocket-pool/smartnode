@@ -80,20 +80,20 @@ func (c *auctionCreateContext) Initialize() error {
 
 func (c *auctionCreateContext) GetState(mc *batch.MultiCaller) {
 	c.auctionMgr.GetRemainingRPLBalance(mc)
-	c.pSettings.GetAuctionLotMinimumEthValue(mc)
+	c.pSettings.Auction.LotMinimumEthValue.Get(mc)
 	c.networkMgr.GetRplPrice(mc)
-	c.pSettings.GetCreateAuctionLotEnabled(mc)
+	c.pSettings.Auction.IsCreateLotEnabled.Get(mc)
 }
 
 func (c *auctionCreateContext) PrepareData(data *api.AuctionCreateLotData, opts *bind.TransactOpts) error {
 	// Check the balance requirement
-	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Auction.LotMinimumEthValue, eth.EthToWei(1))
+	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Auction.LotMinimumEthValue.Value, eth.EthToWei(1))
 	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkMgr.RplPrice.RawValue)
 	sufficientRemainingRplForLot := (c.auctionMgr.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
 
 	// Check for validity
 	data.InsufficientBalance = !sufficientRemainingRplForLot
-	data.CreateLotDisabled = !c.pSettings.Auction.IsCreateLotEnabled
+	data.CreateLotDisabled = !c.pSettings.Auction.IsCreateLotEnabled.Value
 	data.CanCreate = !(data.InsufficientBalance || data.CreateLotDisabled)
 
 	// Get tx info

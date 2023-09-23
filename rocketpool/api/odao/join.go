@@ -85,10 +85,10 @@ func (c *oracleDaoJoinContext) Initialize() error {
 
 func (c *oracleDaoJoinContext) GetState(mc *batch.MultiCaller) {
 	c.odaoMember.GetInvitedTime(mc)
-	c.oSettings.GetProposalActionTime(mc)
+	c.oSettings.Proposal.ActionTime.Get(mc)
 	c.odaoMember.GetExists(mc)
 	c.rpl.GetBalance(mc, &c.rplBalance, c.nodeAddress)
-	c.oSettings.GetRplBond(mc)
+	c.oSettings.Member.RplBond.Get(mc)
 }
 
 func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bind.TransactOpts) error {
@@ -98,8 +98,8 @@ func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bi
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	actionWindow := c.oSettings.Proposals.ActionTime.Formatted()
-	rplBond := c.oSettings.Members.RplBond
+	actionWindow := c.oSettings.Proposal.ActionTime.Value.Formatted()
+	rplBond := c.oSettings.Member.RplBond.Value
 
 	// Check proposal details
 	data.ProposalExpired = !isProposalActionable(actionWindow, c.odaoMember.InvitedTime.Formatted(), currentTime)
