@@ -66,7 +66,7 @@ func (c *oracleDaoMembersContext) Initialize() error {
 }
 
 func (c *oracleDaoMembersContext) GetState(mc *batch.MultiCaller) {
-	c.odaoMgr.GetMemberCount(mc)
+	c.odaoMgr.MemberCount.AddToQuery(mc)
 }
 
 func (c *oracleDaoMembersContext) PrepareData(data *api.OracleDaoMembersData, opts *bind.TransactOpts) error {
@@ -84,14 +84,13 @@ func (c *oracleDaoMembersContext) PrepareData(data *api.OracleDaoMembersData, op
 
 	for _, member := range members {
 		memberDetails := api.OracleDaoMemberDetails{
-			Address:                member.Address,
-			Exists:                 member.Exists,
-			ID:                     member.ID,
-			Url:                    member.Url,
-			JoinedTime:             member.JoinedTime.Formatted(),
-			LastProposalTime:       member.LastProposalTime.Formatted(),
-			RplBondAmount:          member.RplBondAmount,
-			UnbondedValidatorCount: member.UnbondedValidatorCount.Formatted(),
+			Address:          member.Address,
+			Exists:           member.Exists.Get(),
+			ID:               member.ID.Get(),
+			Url:              member.Url.Get(),
+			JoinedTime:       member.JoinedTime.Formatted(),
+			LastProposalTime: member.LastProposalTime.Formatted(),
+			RplBondAmount:    member.RplBondAmount.Get(),
 		}
 		data.Members = append(data.Members, memberDetails)
 	}

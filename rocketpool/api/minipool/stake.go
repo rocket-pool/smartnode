@@ -83,10 +83,12 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 
 	// Get the relevant details
 	err = rp.BatchQuery(len(c.minipoolAddresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
-		mp := mps[i]
-		mp.GetWithdrawalCredentials(mc)
-		mp.GetPubkey(mc)
-		mp.GetDepositType(mc)
+		mpCommon := mps[i].Common()
+		core.AddQueryablesToMulticall(mc,
+			mpCommon.WithdrawalCredentials,
+			mpCommon.Pubkey,
+			mpCommon.DepositType,
+		)
 		return nil
 	}, nil)
 	if err != nil {
@@ -96,10 +98,10 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 	// Get the TXs
 	txInfos := make([]*core.TransactionInfo, len(c.minipoolAddresses))
 	for i, mp := range mps {
-		mpCommon := mp.GetCommonDetails()
-		pubkey := mpCommon.Pubkey
+		mpCommon := mp.Common()
+		pubkey := mpCommon.Pubkey.Get()
 
-		withdrawalCredentials := mpCommon.WithdrawalCredentials
+		withdrawalCredentials := mpCommon.WithdrawalCredentials.Get()
 		validatorKey, err := w.GetValidatorKeyByPubkey(pubkey)
 		if err != nil {
 			return fmt.Errorf("error getting validator %s (minipool %s) key: %w", pubkey.Hex(), mpCommon.Address.Hex(), err)
@@ -123,7 +125,7 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 		}
 		signature := types.BytesToValidatorSignature(depositData.Signature)
 
-		txInfo, err := mp.Stake(signature, depositDataRoot, opts)
+		txInfo, err := mpCommon.Stake(signature, depositDataRoot, opts)
 		if err != nil {
 			return fmt.Errorf("error simulating stake transaction for minipool %s: %w", mpCommon.Address.Hex(), err)
 		}

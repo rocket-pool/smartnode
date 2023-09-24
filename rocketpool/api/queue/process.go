@@ -74,11 +74,11 @@ func (c *queueProcessContext) Initialize() error {
 }
 
 func (c *queueProcessContext) GetState(mc *batch.MultiCaller) {
-	c.pSettings.Deposit.AreDepositAssignmentsEnabled.Get(mc)
+	c.pSettings.Deposit.AreDepositAssignmentsEnabled.AddToQuery(mc)
 }
 
 func (c *queueProcessContext) PrepareData(data *api.QueueProcessData, opts *bind.TransactOpts) error {
-	data.AssignDepositsDisabled = !c.pSettings.Deposit.AreDepositAssignmentsEnabled.Value
+	data.AssignDepositsDisabled = !c.pSettings.Deposit.AreDepositAssignmentsEnabled.Get()
 	data.CanProcess = !data.AssignDepositsDisabled
 
 	if data.CanProcess && opts != nil {

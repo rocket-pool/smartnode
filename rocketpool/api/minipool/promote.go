@@ -54,7 +54,7 @@ func (c *minipoolPromoteContext) PrepareData(data *api.BatchTxInfoData, opts *bi
 func (c *minipoolPromoteContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
-		mpCommon := mp.GetCommonDetails()
+		mpCommon := mp.Common()
 		return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", mpCommon.Address.Hex(), mpCommon.Version)
 	}
 	return mpv3.Promote(opts)

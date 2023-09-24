@@ -51,5 +51,5 @@ func (c *minipoolRefundContext) PrepareData(data *api.BatchTxInfoData, opts *bin
 }
 
 func (c *minipoolRefundContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	return mp.Refund(opts)
+	return mp.Common().Refund(opts)
 }

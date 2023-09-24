@@ -49,7 +49,7 @@ func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses 
 	for i, mp := range mps {
 		txInfo, err := txCreator(mp, opts)
 		if err != nil {
-			return fmt.Errorf("error simulating %s transaction for minipool %s: %w", txName, mp.GetCommonDetails().Address.Hex(), err)
+			return fmt.Errorf("error simulating %s transaction for minipool %s: %w", txName, mp.Common().Address.Hex(), err)
 		}
 		txInfos[i] = txInfo
 	}

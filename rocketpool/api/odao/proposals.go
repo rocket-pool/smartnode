@@ -78,7 +78,7 @@ func (c *oracleDaoProposalsContext) Initialize() error {
 }
 
 func (c *oracleDaoProposalsContext) GetState(mc *batch.MultiCaller) {
-	c.dpm.GetProposalCount(mc)
+	c.dpm.ProposalCount.AddToQuery(mc)
 }
 
 func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData, opts *bind.TransactOpts) error {
@@ -90,9 +90,9 @@ func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData
 	// Get the basic details
 	for _, odaoProp := range odaoProps {
 		prop := api.OracleDaoProposalDetails{
-			ID:              odaoProp.ID.Formatted(),
-			ProposerAddress: odaoProp.ProposerAddress,
-			Message:         odaoProp.Message,
+			ID:              odaoProp.ID,
+			ProposerAddress: odaoProp.ProposerAddress.Get(),
+			Message:         odaoProp.Message.Get(),
 			CreatedTime:     odaoProp.CreatedTime.Formatted(),
 			StartTime:       odaoProp.StartTime.Formatted(),
 			EndTime:         odaoProp.EndTime.Formatted(),
@@ -100,9 +100,9 @@ func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData
 			VotesRequired:   odaoProp.VotesRequired.Formatted(),
 			VotesFor:        odaoProp.VotesFor.Formatted(),
 			VotesAgainst:    odaoProp.VotesAgainst.Formatted(),
-			IsCancelled:     odaoProp.IsCancelled,
-			IsExecuted:      odaoProp.IsExecuted,
-			Payload:         odaoProp.Payload,
+			IsCancelled:     odaoProp.IsCancelled.Get(),
+			IsExecuted:      odaoProp.IsExecuted.Get(),
+			Payload:         odaoProp.Payload.Get(),
 		}
 		prop.PayloadStr, err = odaoProp.GetPayloadAsString()
 		if err != nil {

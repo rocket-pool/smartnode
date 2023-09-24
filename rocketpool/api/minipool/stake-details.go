@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -76,7 +77,7 @@ func (c *minipoolStakeDetailsContext) Initialize() error {
 }
 
 func (c *minipoolStakeDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
-	c.oSettings.Minipool.ScrubPeriod.Get(mc)
+	c.oSettings.Minipool.ScrubPeriod.AddToQuery(mc)
 }
 
 func (c *minipoolStakeDetailsContext) CheckState(node *node.Node, response *api.MinipoolStakeDetailsData) bool {
@@ -84,12 +85,15 @@ func (c *minipoolStakeDetailsContext) CheckState(node *node.Node, response *api.
 }
 
 func (c *minipoolStakeDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
-	mp.GetStatus(mc)
-	mp.GetStatusTime(mc)
+	mpCommon := mp.Common()
+	core.AddQueryablesToMulticall(mc,
+		mpCommon.Status,
+		mpCommon.StatusTime,
+	)
 }
 
 func (c *minipoolStakeDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolStakeDetailsData) error {
-	scrubPeriod := c.oSettings.Minipool.ScrubPeriod.Value.Formatted()
+	scrubPeriod := c.oSettings.Minipool.ScrubPeriod.Formatted()
 
 	// Get the time of the latest block
 	latestEth1Block, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
@@ -101,7 +105,7 @@ func (c *minipoolStakeDetailsContext) PrepareData(addresses []common.Address, mp
 	// Get the stake details
 	details := make([]api.MinipoolStakeDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommonDetails := mp.GetCommonDetails()
+		mpCommonDetails := mp.Common()
 		mpDetails := api.MinipoolStakeDetails{
 			Address: mpCommonDetails.Address,
 		}

@@ -51,5 +51,5 @@ func (c *minipoolRollbackDelegatesContext) PrepareData(data *api.BatchTxInfoData
 }
 
 func (c *minipoolRollbackDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	return mp.DelegateRollback(opts)
+	return mp.Common().DelegateRollback(opts)
 }

@@ -73,7 +73,7 @@ func (c *networkRewardsFileContext) Initialize() error {
 }
 
 func (c *networkRewardsFileContext) GetState(mc *batch.MultiCaller) {
-	c.rewardsPool.GetRewardIndex(mc)
+	c.rewardsPool.RewardIndex.AddToQuery(mc)
 }
 
 func (c *networkRewardsFileContext) PrepareData(data *api.NetworkRewardsFileData, opts *bind.TransactOpts) error {

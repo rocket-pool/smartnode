@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -72,9 +73,12 @@ func (c *minipoolRescueDissolvedDetailsContext) CheckState(node *node.Node, resp
 }
 
 func (c *minipoolRescueDissolvedDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
-	mp.GetFinalised(mc)
-	mp.GetStatus(mc)
-	mp.GetPubkey(mc)
+	mpCommon := mp.Common()
+	core.AddQueryablesToMulticall(mc,
+		mpCommon.IsFinalised,
+		mpCommon.Status,
+		mpCommon.Pubkey,
+	)
 }
 
 func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRescueDissolvedDetailsData) error {
@@ -83,18 +87,19 @@ func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.A
 	detailsMap := map[types.ValidatorPubkey]int{}
 	details := make([]api.MinipoolRescueDissolvedDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommon := mp.GetCommonDetails()
+		mpCommon := mp.Common()
 		mpDetails := api.MinipoolRescueDissolvedDetails{
 			Address:       mpCommon.Address,
 			MinipoolState: mpCommon.Status.Formatted(),
-			IsFinalized:   mpCommon.IsFinalised,
+			IsFinalized:   mpCommon.IsFinalised.Get(),
 		}
 
 		if mpDetails.MinipoolState != types.MinipoolStatus_Dissolved || mpDetails.IsFinalized {
 			mpDetails.InvalidElState = true
 		} else {
-			pubkeys = append(pubkeys, mpCommon.Pubkey)
-			detailsMap[mpCommon.Pubkey] = i
+			pubkey := mpCommon.Pubkey.Get()
+			pubkeys = append(pubkeys, pubkey)
+			detailsMap[pubkey] = i
 		}
 
 		details[i] = mpDetails

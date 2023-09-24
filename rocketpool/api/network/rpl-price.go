@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -73,10 +74,12 @@ func (c *networkPriceContext) Initialize() error {
 }
 
 func (c *networkPriceContext) GetState(mc *batch.MultiCaller) {
-	c.networkMgr.GetPricesBlock(mc)
-	c.networkMgr.GetRplPrice(mc)
-	c.pSettings.Node.MinimumPerMinipoolStake.Get(mc)
-	c.pSettings.Node.MaximumPerMinipoolStake.Get(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.networkMgr.PricesBlock,
+		c.networkMgr.RplPrice,
+		c.pSettings.Node.MinimumPerMinipoolStake,
+		c.pSettings.Node.MaximumPerMinipoolStake,
+	)
 }
 
 func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *bind.TransactOpts) error {
@@ -88,9 +91,9 @@ func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *b
 	var maxPerMinipoolStake *big.Int
 
 	data.RplPriceBlock = c.networkMgr.PricesBlock.Formatted()
-	rplPrice = c.networkMgr.RplPrice.RawValue
-	minPerMinipoolStake = c.pSettings.Node.MinimumPerMinipoolStake.Value.RawValue
-	maxPerMinipoolStake = c.pSettings.Node.MaximumPerMinipoolStake.Value.RawValue
+	rplPrice = c.networkMgr.RplPrice.Raw()
+	minPerMinipoolStake = c.pSettings.Node.MinimumPerMinipoolStake.Raw()
+	maxPerMinipoolStake = c.pSettings.Node.MaximumPerMinipoolStake.Raw()
 
 	// Min for LEB8s
 	minPer8EthMinipoolRplStake := big.NewInt(0)

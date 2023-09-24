@@ -65,7 +65,7 @@ func (c *networkTimezoneContext) Initialize() error {
 }
 
 func (c *networkTimezoneContext) GetState(mc *batch.MultiCaller) {
-	c.nodeMgr.GetNodeCount(mc)
+	c.nodeMgr.NodeCount.AddToQuery(mc)
 }
 
 func (c *networkTimezoneContext) PrepareData(data *api.NetworkTimezonesData, opts *bind.TransactOpts) error {

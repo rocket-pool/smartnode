@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -70,14 +71,16 @@ func (c *queueStatusContext) Initialize() error {
 }
 
 func (c *queueStatusContext) GetState(mc *batch.MultiCaller) {
-	c.depositPool.GetBalance(mc)
-	c.mpMgr.GetTotalQueueCapacity(mc)
-	c.mpMgr.GetTotalQueueLength(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.depositPool.Balance,
+		c.mpMgr.TotalQueueCapacity,
+		c.mpMgr.TotalQueueLength,
+	)
 }
 
 func (c *queueStatusContext) PrepareData(data *api.QueueStatusData, opts *bind.TransactOpts) error {
-	data.DepositPoolBalance = c.depositPool.Balance
-	data.MinipoolQueueCapacity = c.mpMgr.TotalQueueCapacity
+	data.DepositPoolBalance = c.depositPool.Balance.Get()
+	data.MinipoolQueueCapacity = c.mpMgr.TotalQueueCapacity.Get()
 	data.MinipoolQueueLength = c.mpMgr.TotalQueueLength.Formatted()
 	return nil
 }

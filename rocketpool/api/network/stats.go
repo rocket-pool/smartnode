@@ -96,28 +96,30 @@ func (c *networkStatsContext) Initialize() error {
 }
 
 func (c *networkStatsContext) GetState(mc *batch.MultiCaller) {
-	c.depositPool.GetBalance(mc)
-	c.mpMgr.GetTotalQueueCapacity(mc)
-	c.networkMgr.GetEthUtilizationRate(mc)
-	c.networkMgr.GetNodeFee(mc)
-	c.nodeMgr.GetNodeCount(mc)
-	c.mpMgr.GetMinipoolCount(mc)
-	c.mpMgr.GetFinalisedMinipoolCount(mc)
-	c.networkMgr.GetRplPrice(mc)
-	c.nodeMgr.GetTotalRplStake(mc)
-	c.reth.GetExchangeRate(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.depositPool.Balance,
+		c.mpMgr.TotalQueueCapacity,
+		c.networkMgr.EthUtilizationRate,
+		c.networkMgr.NodeFee,
+		c.nodeMgr.NodeCount,
+		c.mpMgr.MinipoolCount,
+		c.mpMgr.FinalisedMinipoolCount,
+		c.networkMgr.RplPrice,
+		c.nodeMgr.TotalRplStake,
+		c.reth.ExchangeRate,
+	)
 }
 
 func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind.TransactOpts) error {
 	// Handle the details
-	data.DepositPoolBalance = c.depositPool.Balance
-	data.MinipoolCapacity = c.mpMgr.TotalQueueCapacity
-	data.StakerUtilization = c.networkMgr.EthUtilizationRate.RawValue
-	data.NodeFee = c.networkMgr.NodeFee.RawValue
+	data.DepositPoolBalance = c.depositPool.Balance.Get()
+	data.MinipoolCapacity = c.mpMgr.TotalQueueCapacity.Get()
+	data.StakerUtilization = c.networkMgr.EthUtilizationRate.Raw()
+	data.NodeFee = c.networkMgr.NodeFee.Raw()
 	data.NodeCount = c.nodeMgr.NodeCount.Formatted()
-	data.RplPrice = c.networkMgr.RplPrice.RawValue
-	data.TotalRplStaked = c.nodeMgr.TotalRplStake
-	data.RethPrice = c.reth.ExchangeRate.RawValue
+	data.RplPrice = c.networkMgr.RplPrice.Raw()
+	data.TotalRplStaked = c.nodeMgr.TotalRplStake.Get()
+	data.RethPrice = c.reth.ExchangeRate.Raw()
 
 	// Get the total effective RPL stake
 	effectiveRplStaked, err := c.nodeMgr.GetTotalEffectiveRplStake(c.nodeMgr.NodeCount.Formatted(), nil)

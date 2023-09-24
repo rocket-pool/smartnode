@@ -53,5 +53,5 @@ func (c *minipoolSetUseLatestDelegatesContext) PrepareData(data *api.BatchTxInfo
 }
 
 func (c *minipoolSetUseLatestDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	return mp.SetUseLatestDelegate(c.setting, opts)
+	return mp.Common().SetUseLatestDelegate(c.setting, opts)
 }

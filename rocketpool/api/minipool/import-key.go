@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -90,19 +91,21 @@ func (c *minipoolImportKeyContext) Initialize() error {
 
 func (c *minipoolImportKeyContext) GetState(mc *batch.MultiCaller) {
 	mpCommon := c.mp.Common()
-	c.mp.GetNodeAddress(mc)
-	c.mp.GetPubkey(mc)
+	core.AddQueryablesToMulticall(mc,
+		mpCommon.NodeAddress,
+		mpCommon.Pubkey,
+	)
 }
 
 func (c *minipoolImportKeyContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
 	// Validate minipool owner
-	mpCommon := c.mp.GetCommonDetails()
-	if mpCommon.NodeAddress != c.nodeAddress {
+	mpCommon := c.mp.Common()
+	if mpCommon.NodeAddress.Get() != c.nodeAddress {
 		return fmt.Errorf("minipool %s does not belong to the node", c.minipoolAddress.Hex())
 	}
 
 	// Get minipool validator pubkey
-	pubkey := mpCommon.Pubkey
+	pubkey := mpCommon.Pubkey.Get()
 	emptyPubkey := types.ValidatorPubkey{}
 	if pubkey == emptyPubkey {
 		return fmt.Errorf("minipool %s does not have a validator pubkey associated with it", c.minipoolAddress.Hex())

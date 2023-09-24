@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -75,7 +76,7 @@ func (c *minipoolPromoteDetailsContext) Initialize() error {
 }
 
 func (c *minipoolPromoteDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
-	c.oSettings.Minipool.PromotionScrubPeriod.Get(mc)
+	c.oSettings.Minipool.PromotionScrubPeriod.AddToQuery(mc)
 }
 
 func (c *minipoolPromoteDetailsContext) CheckState(node *node.Node, response *api.MinipoolPromoteDetailsData) bool {
@@ -85,9 +86,11 @@ func (c *minipoolPromoteDetailsContext) CheckState(node *node.Node, response *ap
 func (c *minipoolPromoteDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
-		mpv3.GetNodeAddress(mc)
-		mpv3.GetStatusTime(mc)
-		mpv3.GetVacant(mc)
+		core.AddQueryablesToMulticall(mc,
+			mpv3.NodeAddress,
+			mpv3.StatusTime,
+			mpv3.IsVacant,
+		)
 	}
 }
 
@@ -102,7 +105,7 @@ func (c *minipoolPromoteDetailsContext) PrepareData(addresses []common.Address, 
 	// Get the promotion details
 	details := make([]api.MinipoolPromoteDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommon := mp.GetCommonDetails()
+		mpCommon := mp.Common()
 		mpDetails := api.MinipoolPromoteDetails{
 			Address:    mpCommon.Address,
 			CanPromote: false,
@@ -110,9 +113,9 @@ func (c *minipoolPromoteDetailsContext) PrepareData(addresses []common.Address, 
 
 		// Check its eligibility
 		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
-		if success && mpv3.IsVacant {
+		if success && mpv3.IsVacant.Get() {
 			creationTime := mpCommon.StatusTime.Formatted()
-			remainingTime := creationTime.Add(c.oSettings.Minipool.ScrubPeriod.Value.Formatted()).Sub(latestBlockTime)
+			remainingTime := creationTime.Add(c.oSettings.Minipool.ScrubPeriod.Formatted()).Sub(latestBlockTime)
 			if remainingTime < 0 {
 				mpDetails.CanPromote = true
 			}

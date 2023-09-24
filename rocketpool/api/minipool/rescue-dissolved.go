@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
-	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/beacon"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -116,7 +115,7 @@ func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Add
 	if err != nil {
 		return nil, err
 	}
-	mpCommon := mp.GetCommonDetails()
+	mpCommon := mp.Common()
 
 	// Get eth2 config
 	eth2Config, err := c.bc.GetEth2Config()
@@ -125,18 +124,14 @@ func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Add
 	}
 
 	// Get the contract state
-	err = c.rp.Query(func(mc *batch.MultiCaller) error {
-		mp.GetWithdrawalCredentials(mc)
-		mp.GetPubkey(mc)
-		return nil
-	}, nil)
+	err = c.rp.Query(nil, nil, mpCommon.WithdrawalCredentials, mpCommon.Pubkey)
 	if err != nil {
 		return nil, fmt.Errorf("error getting contract state: %w", err)
 	}
 
 	// Get minipool withdrawal credentials and keys
-	withdrawalCredentials := mpCommon.WithdrawalCredentials
-	validatorPubkey := mpCommon.Pubkey
+	withdrawalCredentials := mpCommon.WithdrawalCredentials.Get()
+	validatorPubkey := mpCommon.Pubkey.Get()
 	validatorKey, err := c.w.GetValidatorKeyByPubkey(validatorPubkey)
 	if err != nil {
 		return nil, fmt.Errorf("error getting validator private key for pubkey %s: %w", validatorPubkey.Hex(), err)

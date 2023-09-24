@@ -113,9 +113,11 @@ func (c *minipoolStatusContext) Initialize() error {
 }
 
 func (c *minipoolStatusContext) GetState(node *node.Node, mc *batch.MultiCaller) {
-	c.pSettings.Minipool.LaunchTimeout.Get(mc)
-	c.oSettings.Minipool.ScrubPeriod.Get(mc)
-	c.oSettings.Minipool.PromotionScrubPeriod.Get(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.pSettings.Minipool.LaunchTimeout,
+		c.oSettings.Minipool.ScrubPeriod,
+		c.oSettings.Minipool.PromotionScrubPeriod,
+	)
 }
 
 func (c *minipoolStatusContext) CheckState(node *node.Node, response *api.MinipoolStatusData) bool {
@@ -128,8 +130,8 @@ func (c *minipoolStatusContext) CheckState(node *node.Node, response *api.Minipo
 }
 
 func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
-	address := mp.GetCommonDetails().Address
-	mp.QueryAllDetails(mc)
+	address := mp.Common().Address
+	core.QueryAllFields(mp, mc)
 	c.reth.GetBalance(mc, &c.rethBalances[index], address)
 	c.rpl.GetBalance(mc, &c.rplBalances[index], address)
 	c.fsrpl.GetBalance(mc, &c.fsrplBalances[index], address)
@@ -184,17 +186,17 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	currentEpoch := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerEpoch
 
 	// Get some protocol settings
-	launchTimeout := c.pSettings.Minipool.LaunchTimeout.Value.Formatted()
-	scrubPeriod := c.oSettings.Minipool.ScrubPeriod.Value.Formatted()
-	promotionScrubPeriod := c.oSettings.Minipool.PromotionScrubPeriod.Value.Formatted()
+	launchTimeout := c.pSettings.Minipool.LaunchTimeout.Formatted()
+	scrubPeriod := c.oSettings.Minipool.ScrubPeriod.Formatted()
+	promotionScrubPeriod := c.oSettings.Minipool.PromotionScrubPeriod.Formatted()
 
 	// Get the statuses on Beacon
 	pubkeys := make([]rptypes.ValidatorPubkey, 0, len(addresses))
 	for _, mp := range mps {
-		mpCommon := mp.GetCommonDetails()
+		mpCommon := mp.Common()
 		status := mpCommon.Status.Formatted()
-		if status == rptypes.MinipoolStatus_Staking || (status == rptypes.MinipoolStatus_Dissolved && !mpCommon.IsFinalised) {
-			pubkeys = append(pubkeys, mpCommon.Pubkey)
+		if status == rptypes.MinipoolStatus_Staking || (status == rptypes.MinipoolStatus_Dissolved && !mpCommon.IsFinalised.Get()) {
+			pubkeys = append(pubkeys, mpCommon.Pubkey.Get())
 		}
 	}
 	beaconStatuses, err := c.bc.GetValidatorStatuses(pubkeys, nil)
@@ -205,8 +207,8 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	// Assign the details
 	details := make([]api.MinipoolDetails, len(mps))
 	for i, mp := range mps {
-		mpCommonDetails := mp.GetCommonDetails()
-		pubkey := mpCommonDetails.Pubkey
+		mpCommonDetails := mp.Common()
+		pubkey := mpCommonDetails.Pubkey.Get()
 		mpv3, isv3 := minipool.GetMinipoolAsV3(mp)
 
 		// Basic info
@@ -218,23 +220,23 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 		mpDetails.Status.StatusBlock = mpCommonDetails.StatusBlock.Formatted()
 		mpDetails.Status.StatusTime = mpCommonDetails.StatusTime.Formatted()
 		mpDetails.DepositType = mpCommonDetails.DepositType.Formatted()
-		mpDetails.Node.Address = mpCommonDetails.NodeAddress
-		mpDetails.Node.DepositAssigned = mpCommonDetails.NodeDepositAssigned
-		mpDetails.Node.DepositBalance = mpCommonDetails.NodeDepositBalance
+		mpDetails.Node.Address = mpCommonDetails.NodeAddress.Get()
+		mpDetails.Node.DepositAssigned = mpCommonDetails.NodeDepositAssigned.Get()
+		mpDetails.Node.DepositBalance = mpCommonDetails.NodeDepositBalance.Get()
 		mpDetails.Node.Fee = mpCommonDetails.NodeFee.Formatted()
-		mpDetails.Node.RefundBalance = mpCommonDetails.NodeRefundBalance
-		mpDetails.User.DepositAssigned = mpCommonDetails.UserDepositAssigned
+		mpDetails.Node.RefundBalance = mpCommonDetails.NodeRefundBalance.Get()
+		mpDetails.User.DepositAssigned = mpCommonDetails.UserDepositAssigned.Get()
 		mpDetails.User.DepositAssignedTime = mpCommonDetails.UserDepositAssignedTime.Formatted()
-		mpDetails.User.DepositBalance = mpCommonDetails.UserDepositBalance
+		mpDetails.User.DepositBalance = mpCommonDetails.UserDepositBalance.Get()
 		mpDetails.Balances.Eth = balances[i]
 		mpDetails.Balances.Reth = c.rethBalances[i]
 		mpDetails.Balances.Rpl = c.rplBalances[i]
 		mpDetails.Balances.FixedSupplyRpl = c.fsrplBalances[i]
-		mpDetails.UseLatestDelegate = mpCommonDetails.IsUseLatestDelegateEnabled
-		mpDetails.Delegate = mpCommonDetails.DelegateAddress
-		mpDetails.PreviousDelegate = mpCommonDetails.PreviousDelegateAddress
-		mpDetails.EffectiveDelegate = mpCommonDetails.EffectiveDelegateAddress
-		mpDetails.Finalised = mpCommonDetails.IsFinalised
+		mpDetails.UseLatestDelegate = mpCommonDetails.IsUseLatestDelegateEnabled.Get()
+		mpDetails.Delegate = mpCommonDetails.DelegateAddress.Get()
+		mpDetails.PreviousDelegate = mpCommonDetails.PreviousDelegateAddress.Get()
+		mpDetails.EffectiveDelegate = mpCommonDetails.EffectiveDelegateAddress.Get()
+		mpDetails.Finalised = mpCommonDetails.IsFinalised.Get()
 		mpDetails.Penalties = mpCommonDetails.PenaltyCount.Formatted()
 		mpDetails.Queue.Position = mpCommonDetails.QueuePosition.Formatted() + 1 // Queue pos is -1 indexed so make it 0
 		mpDetails.RefundAvailable = (mpDetails.Node.RefundBalance.Cmp(zero()) > 0) && (mpDetails.Balances.Eth.Cmp(mpDetails.Node.RefundBalance) >= 0)
@@ -254,7 +256,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 
 		// Atlas info
 		if isv3 {
-			mpDetails.Status.IsVacant = mpv3.IsVacant
+			mpDetails.Status.IsVacant = mpv3.IsVacant.Get()
 			mpDetails.ReduceBondTime = mpv3.ReduceBondTime.Formatted()
 
 			// Check the promotion status of each minipool
@@ -292,7 +294,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	// Calculate the node share of each minipool balance
 	err = c.rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
 		mp := mps[i]
-		mpCommon := mp.GetCommonDetails()
+		mpCommon := mp.Common()
 		mpDetails := &details[i]
 
 		// Get the node share of the ETH balance
@@ -300,15 +302,15 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 			mpDetails.NodeShareOfEthBalance = big.NewInt(0)
 		} else {
 			effectiveBalance := big.NewInt(0).Sub(mpDetails.Balances.Eth, mpDetails.Node.RefundBalance)
-			mp.CalculateNodeShare(mc, &mpDetails.NodeShareOfEthBalance, effectiveBalance)
+			mpCommon.CalculateNodeShare(mc, &mpDetails.NodeShareOfEthBalance, effectiveBalance)
 		}
 
 		// Get the node share of the Beacon balance
-		pubkey := mpCommon.Pubkey
+		pubkey := mpCommon.Pubkey.Get()
 		beaconStatus, existsOnBeacon := beaconStatuses[pubkey]
 		validatorActivated := (beaconStatus.ActivationEpoch < currentEpoch)
 		if validatorActivated && existsOnBeacon {
-			mp.CalculateNodeShare(mc, &mpDetails.Validator.NodeBalance, mpDetails.Validator.Balance)
+			mpCommon.CalculateNodeShare(mc, &mpDetails.Validator.NodeBalance, mpDetails.Validator.Balance)
 		}
 
 		return nil

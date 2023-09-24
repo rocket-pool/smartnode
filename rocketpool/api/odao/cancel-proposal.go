@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -90,15 +91,17 @@ func (c *oracleDaoCancelProposalContext) Initialize() error {
 }
 
 func (c *oracleDaoCancelProposalContext) GetState(mc *batch.MultiCaller) {
-	c.dpm.GetProposalCount(mc)
-	c.odaoMember.GetExists(mc)
-	c.prop.GetState(mc)
-	c.prop.GetProposerAddress(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.dpm.ProposalCount,
+		c.odaoMember.Exists,
+		c.prop.State,
+		c.prop.ProposerAddress,
+	)
 }
 
 func (c *oracleDaoCancelProposalContext) PrepareData(data *api.OracleDaoCancelProposalData, opts *bind.TransactOpts) error {
 	// Verify oDAO status
-	if !c.odaoMember.Exists {
+	if !c.odaoMember.Exists.Get() {
 		return errors.New("The node is not a member of the oracle DAO.")
 	}
 
@@ -106,7 +109,7 @@ func (c *oracleDaoCancelProposalContext) PrepareData(data *api.OracleDaoCancelPr
 	state := c.prop.State.Formatted()
 	data.DoesNotExist = (c.id > c.dpm.ProposalCount.Formatted())
 	data.InvalidState = !(state == rptypes.ProposalState_Pending || state == rptypes.ProposalState_Active)
-	data.InvalidProposer = !(c.nodeAddress == c.prop.ProposerAddress)
+	data.InvalidProposer = !(c.nodeAddress == c.prop.ProposerAddress.Get())
 	data.CanCancel = !(data.DoesNotExist || data.InvalidState || data.InvalidProposer)
 
 	// Get the tx

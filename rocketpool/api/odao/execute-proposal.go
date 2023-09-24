@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -90,14 +91,16 @@ func (c *oracleDaoExecuteProposalContext) Initialize() error {
 }
 
 func (c *oracleDaoExecuteProposalContext) GetState(mc *batch.MultiCaller) {
-	c.dpm.GetProposalCount(mc)
-	c.odaoMember.GetExists(mc)
-	c.prop.GetState(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.dpm.ProposalCount,
+		c.odaoMember.Exists,
+		c.prop.State,
+	)
 }
 
 func (c *oracleDaoExecuteProposalContext) PrepareData(data *api.OracleDaoExecuteProposalData, opts *bind.TransactOpts) error {
 	// Verify oDAO status
-	if !c.odaoMember.Exists {
+	if !c.odaoMember.Exists.Get() {
 		return errors.New("The node is not a member of the oracle DAO.")
 	}
 

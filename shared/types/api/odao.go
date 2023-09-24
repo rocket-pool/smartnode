@@ -28,14 +28,13 @@ type OracleDaoStatusData struct {
 }
 
 type OracleDaoMemberDetails struct {
-	Address                common.Address `json:"address"`
-	Exists                 bool           `json:"exists"`
-	ID                     string         `json:"id"`
-	Url                    string         `json:"url"`
-	JoinedTime             time.Time      `json:"joinedTime"`
-	LastProposalTime       time.Time      `json:"lastProposalTime"`
-	RplBondAmount          *big.Int       `json:"rplBondAmount"`
-	UnbondedValidatorCount uint64         `json:"unbondedValidatorCount"`
+	Address          common.Address `json:"address"`
+	Exists           bool           `json:"exists"`
+	ID               string         `json:"id"`
+	Url              string         `json:"url"`
+	JoinedTime       time.Time      `json:"joinedTime"`
+	LastProposalTime time.Time      `json:"lastProposalTime"`
+	RplBondAmount    *big.Int       `json:"rplBondAmount"`
 }
 type OracleDaoMembersData struct {
 	Members []OracleDaoMemberDetails `json:"members"`

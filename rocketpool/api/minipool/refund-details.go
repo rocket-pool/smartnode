@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 
@@ -64,18 +65,21 @@ func (c *minipoolRefundDetailsContext) CheckState(node *node.Node, response *api
 }
 
 func (c *minipoolRefundDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
-	mp.GetNodeAddress(mc)
-	mp.GetNodeRefundBalance(mc)
+	mpCommon := mp.Common()
+	core.AddQueryablesToMulticall(mc,
+		mpCommon.NodeAddress,
+		mpCommon.NodeRefundBalance,
+	)
 }
 
 func (c *minipoolRefundDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRefundDetailsData) error {
 	// Get the refund details
 	details := make([]api.MinipoolRefundDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommonDetails := mp.GetCommonDetails()
+		mpCommonDetails := mp.Common()
 		mpDetails := api.MinipoolRefundDetails{
 			Address:                   mpCommonDetails.Address,
-			InsufficientRefundBalance: (mpCommonDetails.NodeRefundBalance.Cmp(big.NewInt(0)) == 0),
+			InsufficientRefundBalance: (mpCommonDetails.NodeRefundBalance.Get().Cmp(big.NewInt(0)) == 0),
 		}
 		mpDetails.CanRefund = !mpDetails.InsufficientRefundBalance
 		details[i] = mpDetails

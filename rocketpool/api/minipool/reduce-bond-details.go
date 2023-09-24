@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -84,23 +85,27 @@ func (c *minipoolReduceBondDetailsContext) Initialize() error {
 }
 
 func (c *minipoolReduceBondDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
-	c.pSettings.Minipool.IsBondReductionEnabled.Get(mc)
-	c.oSettings.Minipool.BondReductionWindowStart.Get(mc)
-	c.oSettings.Minipool.BondReductionWindowLength.Get(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.pSettings.Minipool.IsBondReductionEnabled,
+		c.oSettings.Minipool.BondReductionWindowStart,
+		c.oSettings.Minipool.BondReductionWindowLength,
+	)
 }
 
 func (c *minipoolReduceBondDetailsContext) CheckState(node *node.Node, response *api.MinipoolReduceBondDetailsData) bool {
-	response.BondReductionDisabled = !c.pSettings.Minipool.IsBondReductionEnabled.Value
+	response.BondReductionDisabled = !c.pSettings.Minipool.IsBondReductionEnabled.Get()
 	return !response.BondReductionDisabled
 }
 
 func (c *minipoolReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
-		mpv3.GetFinalised(mc)
-		mpv3.GetStatus(mc)
-		mpv3.GetPubkey(mc)
-		mpv3.GetReduceBondTime(mc)
+		core.AddQueryablesToMulticall(mc,
+			mpv3.IsFinalised,
+			mpv3.Status,
+			mpv3.Pubkey,
+			mpv3.ReduceBondTime,
+		)
 	}
 }
 
@@ -117,7 +122,7 @@ func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Addres
 	detailsMap := map[types.ValidatorPubkey]int{}
 	details := make([]api.MinipoolReduceBondDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommon := mp.GetCommonDetails()
+		mpCommon := mp.Common()
 		mpDetails := api.MinipoolReduceBondDetails{
 			Address: mpCommon.Address,
 		}
@@ -125,19 +130,20 @@ func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Addres
 		mpv3, success := minipool.GetMinipoolAsV3(mp)
 		if !success {
 			mpDetails.MinipoolVersionTooLow = true
-		} else if mpCommon.Status.Formatted() != types.MinipoolStatus_Staking || mpCommon.IsFinalised {
+		} else if mpCommon.Status.Formatted() != types.MinipoolStatus_Staking || mpCommon.IsFinalised.Get() {
 			mpDetails.InvalidElState = true
 		} else {
 			reductionStart := mpv3.ReduceBondTime.Formatted()
 			timeSinceBondReductionStart := currentTime.Sub(reductionStart)
-			windowStart := c.oSettings.Minipool.BondReductionWindowStart.Value.Formatted()
-			windowEnd := windowStart + c.oSettings.Minipool.BondReductionWindowLength.Value.Formatted()
+			windowStart := c.oSettings.Minipool.BondReductionWindowStart.Formatted()
+			windowEnd := windowStart + c.oSettings.Minipool.BondReductionWindowLength.Formatted()
 
 			if timeSinceBondReductionStart < windowStart || timeSinceBondReductionStart > windowEnd {
 				mpDetails.OutOfWindow = true
 			} else {
-				pubkeys = append(pubkeys, mpCommon.Pubkey)
-				detailsMap[mpCommon.Pubkey] = i
+				pubkey := mpCommon.Pubkey.Get()
+				pubkeys = append(pubkeys, pubkey)
+				detailsMap[pubkey] = i
 			}
 		}
 

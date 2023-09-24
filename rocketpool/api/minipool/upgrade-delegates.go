@@ -51,5 +51,5 @@ func (c *minipoolUpgradeDelegatesContext) PrepareData(data *api.BatchTxInfoData,
 }
 
 func (c *minipoolUpgradeDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	return mp.DelegateUpgrade(opts)
+	return mp.Common().DelegateUpgrade(opts)
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -84,11 +85,13 @@ func (c *oracleDaoJoinContext) Initialize() error {
 }
 
 func (c *oracleDaoJoinContext) GetState(mc *batch.MultiCaller) {
-	c.odaoMember.GetInvitedTime(mc)
-	c.oSettings.Proposal.ActionTime.Get(mc)
-	c.odaoMember.GetExists(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.odaoMember.InvitedTime,
+		c.oSettings.Proposal.ActionTime,
+		c.odaoMember.Exists,
+		c.oSettings.Member.RplBond,
+	)
 	c.rpl.GetBalance(mc, &c.rplBalance, c.nodeAddress)
-	c.oSettings.Member.RplBond.Get(mc)
 }
 
 func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bind.TransactOpts) error {
@@ -98,12 +101,12 @@ func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bi
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	actionWindow := c.oSettings.Proposal.ActionTime.Value.Formatted()
-	rplBond := c.oSettings.Member.RplBond.Value
+	actionWindow := c.oSettings.Proposal.ActionTime.Formatted()
+	rplBond := c.oSettings.Member.RplBond.Get()
 
 	// Check proposal details
 	data.ProposalExpired = !isProposalActionable(actionWindow, c.odaoMember.InvitedTime.Formatted(), currentTime)
-	data.AlreadyMember = c.odaoMember.Exists
+	data.AlreadyMember = c.odaoMember.Exists.Get()
 	data.InsufficientRplBalance = (c.rplBalance.Cmp(rplBond) < 0)
 	data.CanJoin = !(data.ProposalExpired || data.AlreadyMember || data.InsufficientRplBalance)
 

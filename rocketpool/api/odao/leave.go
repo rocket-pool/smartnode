@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
@@ -82,10 +83,12 @@ func (c *oracleDaoLeaveContext) Initialize() error {
 }
 
 func (c *oracleDaoLeaveContext) GetState(mc *batch.MultiCaller) {
-	c.odaoMember.GetLeftTime(mc)
-	c.oSettings.Proposal.ActionTime.Get(mc)
-	c.odaoMgr.GetMemberCount(mc)
-	c.odaoMgr.GetMinimumMemberCount(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.odaoMember.LeftTime,
+		c.oSettings.Proposal.ActionTime,
+		c.odaoMgr.MemberCount,
+		c.odaoMgr.MinimumMemberCount,
+	)
 }
 
 func (c *oracleDaoLeaveContext) PrepareData(data *api.OracleDaoLeaveData, opts *bind.TransactOpts) error {
@@ -96,7 +99,7 @@ func (c *oracleDaoLeaveContext) PrepareData(data *api.OracleDaoLeaveData, opts *
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	actionWindow := c.oSettings.Proposal.ActionTime.Value.Formatted()
+	actionWindow := c.oSettings.Proposal.ActionTime.Formatted()
 
 	// Check proposal details
 	membersCanLeave := (c.odaoMgr.MemberCount.Formatted() > c.odaoMgr.MinimumMemberCount.Formatted())
