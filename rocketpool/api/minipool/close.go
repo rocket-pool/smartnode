@@ -70,10 +70,10 @@ func (c *minipoolCloseContext) CheckState(node *node.Node, response *api.BatchTx
 }
 
 func (c *minipoolCloseContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
-	mp.GetStatus(mc)
+	mp.Common().Status.AddToQuery(mc)
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
-		mpv3.GetUserDistributed(mc)
+		mpv3.HasUserDistributed.AddToQuery(mc)
 	}
 }
 
@@ -82,14 +82,14 @@ func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []min
 }
 
 func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	mpCommon := mp.GetCommonDetails()
+	mpCommon := mp.Common()
 	minipoolAddress := mpCommon.Address
 	mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)
 
 	// If it's dissolved, just close it
 	if mpCommon.Status.Formatted() == types.MinipoolStatus_Dissolved {
 		// Get gas estimate
-		txInfo, err := mp.Close(opts)
+		txInfo, err := mpCommon.Close(opts)
 		if err != nil {
 			return nil, fmt.Errorf("error simulating close for minipool %s: %w", minipoolAddress.Hex(), err)
 		}
@@ -98,7 +98,7 @@ func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.Transa
 
 	// Check if it's an upgraded Atlas-era minipool
 	if isMpv3 {
-		if mpv3.HasUserDistributed {
+		if mpv3.HasUserDistributed.Get() {
 			// It's already been distributed so just finalize it
 			txInfo, err := mpv3.Finalise(opts)
 			if err != nil {

@@ -89,12 +89,12 @@ func (c *minipoolChangeCredsContext) Initialize() error {
 }
 
 func (c *minipoolChangeCredsContext) GetState(mc *batch.MultiCaller) {
-	c.mp.GetPubkey(mc)
+	c.mp.Common().Pubkey.AddToQuery(mc)
 }
 
 func (c *minipoolChangeCredsContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
 	// Get minipool validator pubkey
-	pubkey := c.mp.GetCommonDetails().Pubkey
+	pubkey := c.mp.Common().Pubkey.Get()
 
 	// Get the index for this validator based on the mnemonic
 	index := uint(0)

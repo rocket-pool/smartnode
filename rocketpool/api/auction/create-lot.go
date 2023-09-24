@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -79,21 +80,23 @@ func (c *auctionCreateContext) Initialize() error {
 }
 
 func (c *auctionCreateContext) GetState(mc *batch.MultiCaller) {
-	c.auctionMgr.GetRemainingRPLBalance(mc)
-	c.pSettings.Auction.LotMinimumEthValue.Get(mc)
-	c.networkMgr.GetRplPrice(mc)
-	c.pSettings.Auction.IsCreateLotEnabled.Get(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.auctionMgr.RemainingRplBalance,
+		c.networkMgr.RplPrice,
+		c.pSettings.Auction.LotMinimumEthValue,
+		c.pSettings.Auction.IsCreateLotEnabled,
+	)
 }
 
 func (c *auctionCreateContext) PrepareData(data *api.AuctionCreateLotData, opts *bind.TransactOpts) error {
 	// Check the balance requirement
-	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Auction.LotMinimumEthValue.Value, eth.EthToWei(1))
-	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkMgr.RplPrice.RawValue)
-	sufficientRemainingRplForLot := (c.auctionMgr.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
+	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Auction.LotMinimumEthValue.Get(), eth.EthToWei(1))
+	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkMgr.RplPrice.Raw())
+	sufficientRemainingRplForLot := (c.auctionMgr.RemainingRplBalance.Get().Cmp(lotMinimumRplAmount) >= 0)
 
 	// Check for validity
 	data.InsufficientBalance = !sufficientRemainingRplForLot
-	data.CreateLotDisabled = !c.pSettings.Auction.IsCreateLotEnabled.Value
+	data.CreateLotDisabled = !c.pSettings.Auction.IsCreateLotEnabled.Get()
 	data.CanCreate = !(data.InsufficientBalance || data.CreateLotDisabled)
 
 	// Get tx info

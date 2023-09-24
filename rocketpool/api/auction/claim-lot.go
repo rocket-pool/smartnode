@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -75,16 +76,18 @@ func (c *auctionClaimContext) Initialize() error {
 }
 
 func (c *auctionClaimContext) GetState(mc *batch.MultiCaller) {
-	c.lot.GetLotExists(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.lot.Exists,
+		c.lot.IsCleared,
+	)
 	c.lot.GetLotAddressBidAmount(mc, &c.addressBidAmount, c.nodeAddress)
-	c.lot.GetLotIsCleared(mc)
 }
 
 func (c *auctionClaimContext) PrepareData(data *api.AuctionClaimFromLotData, opts *bind.TransactOpts) error {
 	// Check for validity
-	data.DoesNotExist = !c.lot.Exists
+	data.DoesNotExist = !c.lot.Exists.Get()
 	data.NoBidFromAddress = (c.addressBidAmount.Cmp(big.NewInt(0)) == 0)
-	data.NotCleared = !c.lot.IsCleared
+	data.NotCleared = !c.lot.IsCleared.Get()
 	data.CanClaim = !(data.DoesNotExist || data.NoBidFromAddress || data.NotCleared)
 
 	// Get tx info

@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -90,20 +91,22 @@ func (c *auctionStatusContext) Initialize() error {
 }
 
 func (c *auctionStatusContext) GetState(mc *batch.MultiCaller) {
-	c.auctionMgr.GetTotalRPLBalance(mc)
-	c.auctionMgr.GetAllottedRPLBalance(mc)
-	c.auctionMgr.GetRemainingRPLBalance(mc)
-	c.auctionMgr.GetLotCount(mc)
-	c.pSettings.Auction.LotMinimumEthValue.Get(mc)
-	c.networkMgr.GetRplPrice(mc)
-	c.pSettings.Auction.IsCreateLotEnabled.Get(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.auctionMgr.TotalRplBalance,
+		c.auctionMgr.AllottedRplBalance,
+		c.auctionMgr.RemainingRplBalance,
+		c.auctionMgr.LotCount,
+		c.pSettings.Auction.LotMinimumEthValue,
+		c.networkMgr.RplPrice,
+		c.pSettings.Auction.IsCreateLotEnabled,
+	)
 }
 
 func (c *auctionStatusContext) PrepareData(data *api.AuctionStatusData, opts *bind.TransactOpts) error {
 	// Check the balance requirement
-	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Auction.LotMinimumEthValue.Value, eth.EthToWei(1))
-	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkMgr.RplPrice.RawValue)
-	sufficientRemainingRplForLot := (c.auctionMgr.RemainingRplBalance.Cmp(lotMinimumRplAmount) >= 0)
+	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Auction.LotMinimumEthValue.Get(), eth.EthToWei(1))
+	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkMgr.RplPrice.Raw())
+	sufficientRemainingRplForLot := (c.auctionMgr.RemainingRplBalance.Get().Cmp(lotMinimumRplAmount) >= 0)
 
 	// Get lot counts
 	lotCountDetails, err := c.getAllLotCountDetails(c.auctionMgr.LotCount.Formatted())
@@ -123,9 +126,9 @@ func (c *auctionStatusContext) PrepareData(data *api.AuctionStatusData, opts *bi
 	}
 
 	// Set response details
-	data.TotalRplBalance = c.auctionMgr.TotalRplBalance
-	data.AllottedRplBalance = c.auctionMgr.AllottedRplBalance
-	data.RemainingRplBalance = c.auctionMgr.RemainingRplBalance
+	data.TotalRplBalance = c.auctionMgr.TotalRplBalance.Get()
+	data.AllottedRplBalance = c.auctionMgr.AllottedRplBalance.Get()
+	data.RemainingRplBalance = c.auctionMgr.RemainingRplBalance.Get()
 	data.CanCreateLot = sufficientRemainingRplForLot
 	return nil
 }
@@ -145,9 +148,11 @@ func (c *auctionStatusContext) getAllLotCountDetails(lotCount uint64) ([]lotCoun
 		lots[i] = lot
 
 		lot.GetLotAddressBidAmount(mc, &addressBids[i], c.nodeAddress)
-		lot.GetLotIsCleared(mc)
-		lot.GetLotRemainingRplAmount(mc)
-		lot.GetLotRplRecovered(mc)
+		core.AddQueryablesToMulticall(mc,
+			lot.IsCleared,
+			lot.RemainingRplAmount,
+			lot.RplRecovered,
+		)
 		return nil
 	}, nil)
 	if err != nil {
@@ -156,9 +161,9 @@ func (c *auctionStatusContext) getAllLotCountDetails(lotCount uint64) ([]lotCoun
 
 	for i := 0; i < int(lotCount); i++ {
 		details[i].AddressHasBid = (addressBids[i].Cmp(big.NewInt(0)) > 0)
-		details[i].Cleared = lots[i].IsCleared
-		details[i].HasRemainingRpl = (lots[i].RemainingRplAmount.Cmp(big.NewInt(0)) > 0)
-		details[i].RplRecovered = lots[i].RplRecovered
+		details[i].Cleared = lots[i].IsCleared.Get()
+		details[i].HasRemainingRpl = (lots[i].RemainingRplAmount.Get().Cmp(big.NewInt(0)) > 0)
+		details[i].RplRecovered = lots[i].RplRecovered.Get()
 	}
 
 	// Return

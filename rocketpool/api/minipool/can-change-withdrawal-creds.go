@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -96,28 +97,30 @@ func (c *minipoolCanChangeCredsContext) Initialize() error {
 }
 
 func (c *minipoolCanChangeCredsContext) GetState(mc *batch.MultiCaller) {
-	c.mpv3.GetVacant(mc)
-	c.mpv3.GetStatus(mc)
-	c.mpv3.GetNodeAddress(mc)
-	c.mpv3.GetPubkey(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.mpv3.IsVacant,
+		c.mpv3.Status,
+		c.mpv3.NodeAddress,
+		c.mpv3.Pubkey,
+	)
 }
 
 func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeWithdrawalCredentialsData, opts *bind.TransactOpts) error {
 	// Validate minipool owner
-	if c.mpv3.GetCommonDetails().NodeAddress != c.nodeAddress {
+	if c.mpv3.Common().NodeAddress.Get() != c.nodeAddress {
 		return fmt.Errorf("minipool %s does not belong to the node", c.minipoolAddress.Hex())
 	}
 
 	// Check minipool status
-	if !c.mpv3.IsVacant {
+	if !c.mpv3.IsVacant.Get() {
 		return fmt.Errorf("minipool %s is not vacant", c.minipoolAddress.Hex())
 	}
-	if c.mpv3.GetCommonDetails().Status.Formatted() != types.MinipoolStatus_Prelaunch {
+	if c.mpv3.Common().Status.Formatted() != types.MinipoolStatus_Prelaunch {
 		return fmt.Errorf("minipool %s is not in prelaunch state", c.minipoolAddress.Hex())
 	}
 
 	// Check the validator's status and current creds
-	pubkey := c.mpv3.GetCommonDetails().Pubkey
+	pubkey := c.mpv3.Common().Pubkey.Get()
 	beaconStatus, err := c.bc.GetValidatorStatus(pubkey, nil)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon status for minipool %s (pubkey %s): %w", c.minipoolAddress.Hex(), pubkey.Hex(), err)

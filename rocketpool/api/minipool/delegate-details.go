@@ -76,10 +76,13 @@ func (c *minipoolDelegateDetailsContext) CheckState(node *node.Node, response *a
 }
 
 func (c *minipoolDelegateDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
-	mp.GetDelegate(mc)
-	mp.GetEffectiveDelegate(mc)
-	mp.GetPreviousDelegate(mc)
-	mp.GetUseLatestDelegate(mc)
+	mpCommon := mp.Common()
+	core.AddQueryablesToMulticall(mc,
+		mpCommon.DelegateAddress,
+		mpCommon.EffectiveDelegateAddress,
+		mpCommon.PreviousDelegateAddress,
+		mpCommon.IsUseLatestDelegateEnabled,
+	)
 }
 
 func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolDelegateDetailsData) error {
@@ -87,10 +90,10 @@ func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address,
 	delegateAddresses := []common.Address{}
 	delegateAddressMap := map[common.Address]bool{}
 	for _, mp := range mps {
-		mpCommonDetails := mp.GetCommonDetails()
-		delegateAddressMap[mpCommonDetails.DelegateAddress] = true
-		delegateAddressMap[mpCommonDetails.EffectiveDelegateAddress] = true
-		delegateAddressMap[mpCommonDetails.PreviousDelegateAddress] = true
+		mpCommonDetails := mp.Common()
+		delegateAddressMap[mpCommonDetails.DelegateAddress.Get()] = true
+		delegateAddressMap[mpCommonDetails.EffectiveDelegateAddress.Get()] = true
+		delegateAddressMap[mpCommonDetails.PreviousDelegateAddress.Get()] = true
 	}
 	for delegateAddress := range delegateAddressMap {
 		delegateAddresses = append(delegateAddresses, delegateAddress)
@@ -118,19 +121,19 @@ func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address,
 	// Assign the details
 	details := make([]api.MinipoolDelegateDetails, len(mps))
 	for i, mp := range mps {
-		mpCommonDetails := mp.GetCommonDetails()
+		mpCommonDetails := mp.Common()
 		details[i] = api.MinipoolDelegateDetails{
 			Address:           mpCommonDetails.Address,
-			Delegate:          mpCommonDetails.DelegateAddress,
-			EffectiveDelegate: mpCommonDetails.EffectiveDelegateAddress,
-			PreviousDelegate:  mpCommonDetails.PreviousDelegateAddress,
-			UseLatestDelegate: mpCommonDetails.IsUseLatestDelegateEnabled,
+			Delegate:          mpCommonDetails.DelegateAddress.Get(),
+			EffectiveDelegate: mpCommonDetails.EffectiveDelegateAddress.Get(),
+			PreviousDelegate:  mpCommonDetails.PreviousDelegateAddress.Get(),
+			UseLatestDelegate: mpCommonDetails.IsUseLatestDelegateEnabled.Get(),
 			RollbackVersionTooLow: (mpCommonDetails.DepositType.Formatted() == rptypes.Variable &&
 				mpCommonDetails.Version >= 3 &&
-				delegateVersionMap[mpCommonDetails.PreviousDelegateAddress] < 3),
+				delegateVersionMap[mpCommonDetails.PreviousDelegateAddress.Get()] < 3),
 			VersionTooLowToDisableUseLatest: (mpCommonDetails.DepositType.Formatted() == rptypes.Variable &&
 				mpCommonDetails.Version >= 3 &&
-				delegateVersionMap[mpCommonDetails.DelegateAddress] < 3),
+				delegateVersionMap[mpCommonDetails.DelegateAddress.Get()] < 3),
 		}
 	}
 

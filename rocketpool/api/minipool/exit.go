@@ -83,7 +83,7 @@ func (c *minipoolExitContext) CheckState(node *node.Node, response *api.SuccessD
 }
 
 func (c *minipoolExitContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
-	mp.GetPubkey(mc)
+	mp.Common().Pubkey.AddToQuery(mc)
 }
 
 func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.SuccessData) error {
@@ -100,9 +100,9 @@ func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []mini
 	}
 
 	for _, mp := range mps {
-		mpCommon := mp.GetCommonDetails()
+		mpCommon := mp.Common()
 		minipoolAddress := mpCommon.Address
-		validatorPubkey := mpCommon.Pubkey
+		validatorPubkey := mpCommon.Pubkey.Get()
 
 		// Get validator private key
 		validatorKey, err := c.w.GetValidatorKeyByPubkey(validatorPubkey)

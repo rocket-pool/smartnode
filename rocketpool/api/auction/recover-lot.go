@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -72,10 +73,12 @@ func (c *auctionRecoverContext) Initialize() error {
 }
 
 func (c *auctionRecoverContext) GetState(mc *batch.MultiCaller) {
-	c.lot.GetLotExists(mc)
-	c.lot.GetLotEndBlock(mc)
-	c.lot.GetLotRemainingRplAmount(mc)
-	c.lot.GetLotRplRecovered(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.lot.Exists,
+		c.lot.EndBlock,
+		c.lot.RemainingRplAmount,
+		c.lot.RplRecovered,
+	)
 }
 
 func (c *auctionRecoverContext) PrepareData(data *api.AuctionRecoverRplFromLotData, opts *bind.TransactOpts) error {
@@ -86,10 +89,10 @@ func (c *auctionRecoverContext) PrepareData(data *api.AuctionRecoverRplFromLotDa
 	}
 
 	// Check for validity
-	data.DoesNotExist = !c.lot.Exists
+	data.DoesNotExist = !c.lot.Exists.Get()
 	data.BiddingNotEnded = !(currentBlock >= c.lot.EndBlock.Formatted())
-	data.NoUnclaimedRpl = (c.lot.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
-	data.RplAlreadyRecovered = c.lot.RplRecovered
+	data.NoUnclaimedRpl = (c.lot.RemainingRplAmount.Get().Cmp(big.NewInt(0)) == 0)
+	data.RplAlreadyRecovered = c.lot.RplRecovered.Get()
 	data.CanRecover = !(data.DoesNotExist || data.BiddingNotEnded || data.NoUnclaimedRpl || data.RplAlreadyRecovered)
 
 	// Get tx info

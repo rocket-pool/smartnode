@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -66,11 +67,14 @@ func (c *minipoolDistributeDetailsContext) CheckState(node *node.Node, response 
 }
 
 func (c *minipoolDistributeDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
-	mp.GetNodeAddress(mc)
-	mp.GetNodeRefundBalance(mc)
-	mp.GetFinalised(mc)
-	mp.GetStatus(mc)
-	mp.GetUserDepositBalance(mc)
+	mpCommon := mp.Common()
+	core.AddQueryablesToMulticall(mc,
+		mpCommon.NodeAddress,
+		mpCommon.NodeRefundBalance,
+		mpCommon.IsFinalised,
+		mpCommon.Status,
+		mpCommon.UserDepositBalance,
+	)
 }
 
 func (c *minipoolDistributeDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolDistributeDetailsData) error {
@@ -85,7 +89,7 @@ func (c *minipoolDistributeDetailsContext) PrepareData(addresses []common.Addres
 	for i, mp := range mps {
 		mpDetails, err := getMinipoolDistributeDetails(c.rp, mp, balances[i])
 		if err != nil {
-			return fmt.Errorf("error checking closure details for minipool %s: %w", mp.GetCommonDetails().Address.Hex(), err)
+			return fmt.Errorf("error checking closure details for minipool %s: %w", mp.Common().Address.Hex(), err)
 		}
 		details[i] = mpDetails
 	}
@@ -95,7 +99,7 @@ func (c *minipoolDistributeDetailsContext) PrepareData(addresses []common.Addres
 		mpDetails := details[i]
 		status := mpDetails.Status
 		if status == types.MinipoolStatus_Staking && mpDetails.CanDistribute {
-			mps[i].CalculateNodeShare(mc, &details[i].NodeShareOfDistributableBalance, details[i].DistributableBalance)
+			mps[i].Common().CalculateNodeShare(mc, &details[i].NodeShareOfDistributableBalance, details[i].DistributableBalance)
 		}
 		return nil
 	}, nil)
@@ -109,15 +113,15 @@ func (c *minipoolDistributeDetailsContext) PrepareData(addresses []common.Addres
 }
 
 func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.IMinipool, balance *big.Int) (api.MinipoolDistributeDetails, error) {
-	mpCommonDetails := mp.GetCommonDetails()
+	mpCommonDetails := mp.Common()
 
 	// Create the details with the balance / share info and status details
 	var details api.MinipoolDistributeDetails
 	details.Address = mpCommonDetails.Address
 	details.Version = mpCommonDetails.Version
 	details.Balance = balance
-	details.Refund = mpCommonDetails.NodeRefundBalance
-	details.IsFinalized = mpCommonDetails.IsFinalised
+	details.Refund = mpCommonDetails.NodeRefundBalance.Get()
+	details.IsFinalized = mpCommonDetails.IsFinalised.Get()
 	details.Status = mpCommonDetails.Status.Formatted()
 	details.NodeShareOfDistributableBalance = big.NewInt(0)
 

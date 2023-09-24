@@ -3,7 +3,6 @@ package api
 import (
 	"math/big"
 
-	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/core"
 )
 
@@ -20,11 +19,25 @@ type AuctionStatusData struct {
 }
 
 type AuctionLotDetails struct {
-	Details              auction.AuctionLotDetails `json:"details"`
-	ClaimAvailable       bool                      `json:"claimAvailable"`
-	BiddingAvailable     bool                      `json:"biddingAvailable"`
-	RplRecoveryAvailable bool                      `json:"rplRecoveryAvailable"`
-	NodeBidAmount        *big.Int                  `json:"nodeBidAmount"`
+	Index                uint64   `json:"index"`
+	Exists               bool     `json:"exists"`
+	StartBlock           uint64   `json:"startBlock"`
+	EndBlock             uint64   `json:"endBlock"`
+	StartPrice           float64  `json:"startPrice"`
+	ReservePrice         float64  `json:"reservePrice"`
+	PriceAtCurrentBlock  float64  `json:"priceAtCurrentBlock"`
+	PriceByTotalBids     float64  `json:"priceByTotalBids"`
+	CurrentPrice         float64  `json:"currentPrice"`
+	TotalRplAmount       *big.Int `json:"totalRplAmount"`
+	ClaimedRplAmount     *big.Int `json:"claimedRplAmount"`
+	RemainingRplAmount   *big.Int `json:"remainingRplAmount"`
+	TotalBidAmount       *big.Int `json:"totalBidAmount"`
+	IsCleared            bool     `json:"isCleared"`
+	RplRecovered         bool     `json:"rplRecovered"`
+	ClaimAvailable       bool     `json:"claimAvailable"`
+	BiddingAvailable     bool     `json:"biddingAvailable"`
+	RplRecoveryAvailable bool     `json:"rplRecoveryAvailable"`
+	NodeBidAmount        *big.Int `json:"nodeBidAmount"`
 }
 type AuctionLotsData struct {
 	Lots []AuctionLotDetails `json:"lots"`

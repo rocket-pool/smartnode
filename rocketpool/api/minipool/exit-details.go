@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -64,15 +65,18 @@ func (c *minipoolExitDetailsContext) CheckState(node *node.Node, response *api.M
 }
 
 func (c *minipoolExitDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
-	mp.GetNodeAddress(mc)
-	mp.GetStatus(mc)
+	mpCommon := mp.Common()
+	core.AddQueryablesToMulticall(mc,
+		mpCommon.NodeAddress,
+		mpCommon.Status,
+	)
 }
 
 func (c *minipoolExitDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, response *api.MinipoolExitDetailsData) error {
 	// Get the exit details
 	details := make([]api.MinipoolExitDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommonDetails := mp.GetCommonDetails()
+		mpCommonDetails := mp.Common()
 		status := mpCommonDetails.Status.Formatted()
 		mpDetails := api.MinipoolExitDetails{
 			Address:       mpCommonDetails.Address,

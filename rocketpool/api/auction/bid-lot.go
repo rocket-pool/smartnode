@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
@@ -81,10 +82,12 @@ func (c *auctionBidContext) Initialize() error {
 }
 
 func (c *auctionBidContext) GetState(mc *batch.MultiCaller) {
-	c.lot.GetLotExists(mc)
-	c.lot.GetLotEndBlock(mc)
-	c.lot.GetLotRemainingRplAmount(mc)
-	c.pSettings.Auction.IsBidOnLotEnabled.Get(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.lot.Exists,
+		c.lot.EndBlock,
+		c.lot.RemainingRplAmount,
+		c.pSettings.Auction.IsBidOnLotEnabled,
+	)
 }
 
 func (c *auctionBidContext) PrepareData(data *api.AuctionBidOnLotData, opts *bind.TransactOpts) error {
@@ -95,10 +98,10 @@ func (c *auctionBidContext) PrepareData(data *api.AuctionBidOnLotData, opts *bin
 	}
 
 	// Check for validity
-	data.DoesNotExist = !c.lot.Exists
+	data.DoesNotExist = !c.lot.Exists.Get()
 	data.BiddingEnded = (currentBlock >= c.lot.EndBlock.Formatted())
-	data.RplExhausted = (c.lot.RemainingRplAmount.Cmp(big.NewInt(0)) == 0)
-	data.BidOnLotDisabled = !c.pSettings.Auction.IsBidOnLotEnabled.Value
+	data.RplExhausted = (c.lot.RemainingRplAmount.Get().Cmp(big.NewInt(0)) == 0)
+	data.BidOnLotDisabled = !c.pSettings.Auction.IsBidOnLotEnabled.Get()
 	data.CanBid = !(data.DoesNotExist || data.BiddingEnded || data.RplExhausted || data.BidOnLotDisabled)
 
 	// Get tx info

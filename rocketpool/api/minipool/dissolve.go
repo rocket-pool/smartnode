@@ -51,5 +51,5 @@ func (c *minipoolDissolveContext) PrepareData(data *api.BatchTxInfoData, opts *b
 }
 
 func (c *minipoolDissolveContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
-	return mp.Dissolve(opts)
+	return mp.Common().Dissolve(opts)
 }

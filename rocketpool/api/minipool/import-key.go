@@ -89,6 +89,7 @@ func (c *minipoolImportKeyContext) Initialize() error {
 }
 
 func (c *minipoolImportKeyContext) GetState(mc *batch.MultiCaller) {
+	mpCommon := c.mp.Common()
 	c.mp.GetNodeAddress(mc)
 	c.mp.GetPubkey(mc)
 }
