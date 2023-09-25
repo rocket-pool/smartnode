@@ -75,16 +75,17 @@ func (c *oracleDaoSettingsContext) GetState(mc *batch.MultiCaller) {
 func (c *oracleDaoSettingsContext) PrepareData(data *api.OracleDaoSettingsData, opts *bind.TransactOpts) error {
 	data.Member.Quorum = c.oSettings.Member.Quorum.Formatted()
 	data.Member.RplBond = c.oSettings.Member.RplBond.Get()
-	data.Member.MinipoolUnbondedMax = c.oSettings.Member.UnbondedMinipoolMax.Formatted()
 	data.Member.ChallengeCooldown = c.oSettings.Member.ChallengeCooldown.Formatted()
 	data.Member.ChallengeWindow = c.oSettings.Member.ChallengeWindow.Formatted()
 	data.Member.ChallengeCost = c.oSettings.Member.ChallengeCost.Get()
 
 	data.Minipool.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Formatted()
+	data.Minipool.ScrubQuorum = c.oSettings.Minipool.ScrubQuorum.Formatted()
 	data.Minipool.PromotionScrubPeriod = c.oSettings.Minipool.PromotionScrubPeriod.Formatted()
-	data.Minipool.ScrubPenaltyEnabled = c.oSettings.Minipool.IsScrubPenaltyEnabled.Get()
+	data.Minipool.IsScrubPenaltyEnabled = c.oSettings.Minipool.IsScrubPenaltyEnabled.Get()
 	data.Minipool.BondReductionWindowStart = c.oSettings.Minipool.BondReductionWindowStart.Formatted()
 	data.Minipool.BondReductionWindowLength = c.oSettings.Minipool.BondReductionWindowLength.Formatted()
+	data.Minipool.BondReductionCancellationQuorum = c.oSettings.Minipool.BondReductionCancellationQuorum.Formatted()
 
 	data.Proposal.Cooldown = c.oSettings.Proposal.CooldownTime.Formatted()
 	data.Proposal.VoteTime = c.oSettings.Proposal.VoteTime.Formatted()
