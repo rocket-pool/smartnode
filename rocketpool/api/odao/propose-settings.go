@@ -1,18 +1,156 @@
 package odao
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"math/big"
+	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
+
+// ===============
+// === Factory ===
+// ===============
+
+type oracleDaoProposeSettingContextFactory struct {
+	handler *OracleDaoHandler
+}
+
+func (f *oracleDaoProposeSettingContextFactory) Create(vars map[string]string) (*oracleDaoProposeSettingContext, error) {
+	c := &oracleDaoProposeSettingContext{
+		handler: f.handler,
+	}
+	inputErrs := []error{
+		server.GetStringFromVars("setting", vars, &c.setting),
+		server.GetStringFromVars("value", vars, &c.value),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *oracleDaoProposeSettingContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoProposeSettingContext, api.OracleDaoProposeSettingData](
+		router, "propose-setting", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type oracleDaoProposeSettingContext struct {
+	handler     *OracleDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	setting     string
+	valueString string
+	odaoMember  *oracle.OracleDaoMember
+	candidate   *oracle.OracleDaoMember
+	oSettings   *oracle.OracleDaoSettings
+	odaoMgr     *oracle.OracleDaoManager
+}
+
+func (c *oracleDaoProposeSettingContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireOnOracleDao()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
+	if err != nil {
+		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
+	}
+	c.candidate, err = oracle.NewOracleDaoMember(c.rp, c.address)
+	if err != nil {
+		return fmt.Errorf("error creating candidate oracle DAO member binding: %w", err)
+	}
+	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
+	}
+	c.oSettings = c.odaoMgr.Settings
+	return nil
+}
+
+func (c *oracleDaoProposeSettingContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.odaoMember.LastProposalTime,
+		c.oSettings.Proposal.CooldownTime,
+		c.candidate.Exists,
+	)
+}
+
+func (c *oracleDaoProposeSettingContext) PrepareData(data *api.OracleDaoProposeSettingData, opts *bind.TransactOpts) error {
+	// Get the timestamp of the latest block
+	latestHeader, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return fmt.Errorf("error getting latest block header: %w", err)
+	}
+	currentTime := time.Unix(int64(latestHeader.Time), 0)
+	cooldownTime := c.oSettings.Proposal.CooldownTime.Formatted()
+
+	// Check proposal details
+	data.ProposalCooldownActive = isProposalCooldownActive(cooldownTime, c.odaoMember.LastProposalTime.Formatted(), currentTime)
+	data.CanPropose = !(data.ProposalCooldownActive)
+
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		txInfo, err := c.createProposalTx(opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for proposal: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
+}
+
+func (c *oracleDaoProposeSettingContext) createProposalTx(opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+	settingNames := api.GetOracleDaoSettingsNames()
+	valueName := "value"
+
+	// Prepare the TX based on the setting
+	switch c.setting {
+	case settingNames.Member.Quorum:
+		value, err := input.ValidateBigInt(valueName, c.valueString)
+		if err != nil {
+			return nil, err
+		}
+		return c.odaoMgr.Settings.Member.Quorum.ProposeSet(value, opts)
+
+	case settingNames.Member.RplBond:
+		value, err := input.ValidateBigInt(valueName, c.valueString)
+		if err != nil {
+			return nil, err
+		}
+		return c.odaoMgr.Settings.Member.RplBond.ProposeSet(value, opts)
+
+	default:
+		return nil, fmt.Errorf("[%s] is not a valid Oracle DAO setting", c.setting)
+	}
+}
 
 func canProposeSetting(c *cli.Context, w *wallet.LocalWallet, rp *rocketpool.RocketPool) (*api.OracleDaoProposeSettingData, error) {
 

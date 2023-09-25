@@ -73,23 +73,23 @@ func (c *oracleDaoSettingsContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *oracleDaoSettingsContext) PrepareData(data *api.OracleDaoSettingsData, opts *bind.TransactOpts) error {
-	data.Members.Quorum = c.oSettings.Member.Quorum.Formatted()
-	data.Members.RplBond = c.oSettings.Member.RplBond.Get()
-	data.Members.MinipoolUnbondedMax = c.oSettings.Member.UnbondedMinipoolMax.Formatted()
-	data.Members.ChallengeCooldown = c.oSettings.Member.ChallengeCooldown.Formatted()
-	data.Members.ChallengeWindow = c.oSettings.Member.ChallengeWindow.Formatted()
-	data.Members.ChallengeCost = c.oSettings.Member.ChallengeCost.Get()
+	data.Member.Quorum = c.oSettings.Member.Quorum.Formatted()
+	data.Member.RplBond = c.oSettings.Member.RplBond.Get()
+	data.Member.MinipoolUnbondedMax = c.oSettings.Member.UnbondedMinipoolMax.Formatted()
+	data.Member.ChallengeCooldown = c.oSettings.Member.ChallengeCooldown.Formatted()
+	data.Member.ChallengeWindow = c.oSettings.Member.ChallengeWindow.Formatted()
+	data.Member.ChallengeCost = c.oSettings.Member.ChallengeCost.Get()
 
-	data.Minipools.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Formatted()
-	data.Minipools.PromotionScrubPeriod = c.oSettings.Minipool.PromotionScrubPeriod.Formatted()
-	data.Minipools.ScrubPenaltyEnabled = c.oSettings.Minipool.IsScrubPenaltyEnabled.Get()
-	data.Minipools.BondReductionWindowStart = c.oSettings.Minipool.BondReductionWindowStart.Formatted()
-	data.Minipools.BondReductionWindowLength = c.oSettings.Minipool.BondReductionWindowLength.Formatted()
+	data.Minipool.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Formatted()
+	data.Minipool.PromotionScrubPeriod = c.oSettings.Minipool.PromotionScrubPeriod.Formatted()
+	data.Minipool.ScrubPenaltyEnabled = c.oSettings.Minipool.IsScrubPenaltyEnabled.Get()
+	data.Minipool.BondReductionWindowStart = c.oSettings.Minipool.BondReductionWindowStart.Formatted()
+	data.Minipool.BondReductionWindowLength = c.oSettings.Minipool.BondReductionWindowLength.Formatted()
 
-	data.Proposals.Cooldown = c.oSettings.Proposal.CooldownTime.Formatted()
-	data.Proposals.VoteTime = c.oSettings.Proposal.VoteTime.Formatted()
-	data.Proposals.VoteDelayTime = c.oSettings.Proposal.VoteDelayTime.Formatted()
-	data.Proposals.ExecuteTime = c.oSettings.Proposal.ExecuteTime.Formatted()
-	data.Proposals.ActionTime = c.oSettings.Proposal.ActionTime.Formatted()
+	data.Proposal.Cooldown = c.oSettings.Proposal.CooldownTime.Formatted()
+	data.Proposal.VoteTime = c.oSettings.Proposal.VoteTime.Formatted()
+	data.Proposal.VoteDelayTime = c.oSettings.Proposal.VoteDelayTime.Formatted()
+	data.Proposal.ExecuteTime = c.oSettings.Proposal.ExecuteTime.Formatted()
+	data.Proposal.ActionTime = c.oSettings.Proposal.ActionTime.Formatted()
 	return nil
 }
