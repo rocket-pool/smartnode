@@ -17,7 +17,6 @@ import (
 // Config
 const (
 	ProposalsSettingsContractName  string = "rocketDAOProtocolSettingsProposals"
-	CooldownTimeSettingPath        string = "proposal.cooldown.time"
 	VoteTimeSettingPath            string = "proposal.vote.time"
 	VoteDelayTimeSettingPath       string = "proposal.vote.delay.time"
 	ExecuteTimeSettingPath         string = "proposal.execute.time"
@@ -28,25 +27,6 @@ const (
 	ProposalVetoQuorumSettingPath  string = "proposal.veto.quorum"
 	ProposalMaxBlockAgeSettingPath string = "proposal.max.block.age"
 )
-
-// The cooldown time between submitting new proposals
-func GetCooldownTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
-	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
-	if err != nil {
-		return 0, err
-	}
-	value := new(*big.Int)
-	if err := proposalsSettingsContract.Call(opts, value, "getCooldownTime"); err != nil {
-		return 0, fmt.Errorf("error getting cooldown time: %w", err)
-	}
-	return time.Duration((*value).Uint64()) * time.Second, nil
-}
-func ProposeCooldownTime(rp *rocketpool.RocketPool, value time.Duration, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", CooldownTimeSettingPath), ProposalsSettingsContractName, CooldownTimeSettingPath, big.NewInt(0).SetUint64(uint64(value.Seconds())), blockNumber, treeNodes, opts)
-}
-func EstimateProposeCooldownTimeGas(rp *rocketpool.RocketPool, value time.Duration, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", CooldownTimeSettingPath), ProposalsSettingsContractName, CooldownTimeSettingPath, big.NewInt(0).SetUint64(uint64(value.Seconds())), blockNumber, treeNodes, opts)
-}
 
 // How long a proposal can be voted on before expiring
 func GetVoteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
