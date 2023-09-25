@@ -3,14 +3,13 @@ package config
 import (
 	"runtime"
 
-	"github.com/pbnjay/memory"
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Constants
 const (
-	gethTagProd          string = "ethereum/client-go:v1.12.2"
-	gethTagTest          string = "rocketpool/client-go:5cf53f5"
+	gethTagProd          string = "ethereum/client-go:v1.13.1"
+	gethTagTest          string = "ethereum/client-go:v1.13.1"
 	gethEventLogInterval int    = 1000
 	gethStopSignal       string = "SIGTERM"
 )
@@ -28,8 +27,8 @@ type GethConfig struct {
 	// The max number of events to query in a single event log query
 	EventLogInterval int `yaml:"-"`
 
-	// Size of Geth's Cache
-	CacheSize config.Parameter `yaml:"cacheSize,omitempty"`
+	// The flag for enabling PBSS
+	EnablePbss config.Parameter `yaml:"enablePbss,omitempty"`
 
 	// Max number of P2P peers to connect to
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
@@ -58,14 +57,14 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 
 		EventLogInterval: gethEventLogInterval,
 
-		CacheSize: config.Parameter{
-			ID:                   "cache",
-			Name:                 "Cache Size",
-			Description:          "The amount of RAM (in MB) you want Geth's cache to use. Larger values mean your disk space usage will increase slower, and you will have to prune less frequently. The default is based on how much total RAM your system has but you can adjust it manually.",
-			Type:                 config.ParameterType_Uint,
-			Default:              map[config.Network]interface{}{config.Network_All: calculateGethCache()},
+		EnablePbss: config.Parameter{
+			ID:                   "enablePbss",
+			Name:                 "Enable PBSS",
+			Description:          "Enable Geth's new path-based state scheme, which dramatically lowers Geth's database growth over time and reduces the need to prune.\n\n[orange]NOTE:\nEnabling this will require you to remove and resync your Geth DB using `rocketpool service resync-eth1`.\nYou will need a synced fallback node configured before doing this, or you will no longer be able to attest until it has finished resyncing!",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
-			EnvironmentVariables: []string{"EC_CACHE_SIZE"},
+			EnvironmentVariables: []string{"GETH_ENABLE_PBSS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -113,27 +112,6 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 	}
 }
 
-// Calculate the recommended size for Geth's cache based on the amount of system RAM
-func calculateGethCache() uint64 {
-	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
-
-	if totalMemoryGB == 0 {
-		return 0
-	} else if totalMemoryGB < 9 {
-		return 256
-	} else if totalMemoryGB < 13 {
-		return 2048
-	} else if totalMemoryGB < 17 {
-		return 4096
-	} else if totalMemoryGB < 25 {
-		return 8192
-	} else if totalMemoryGB < 33 {
-		return 12288
-	} else {
-		return 16384
-	}
-}
-
 // Calculate the default number of Geth peers
 func calculateGethPeers() uint16 {
 	if runtime.GOARCH == "arm64" {
@@ -145,7 +123,7 @@ func calculateGethPeers() uint16 {
 // Get the config.Parameters for this config
 func (cfg *GethConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
-		&cfg.CacheSize,
+		&cfg.EnablePbss,
 		&cfg.MaxPeers,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,
