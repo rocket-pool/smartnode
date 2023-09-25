@@ -13,6 +13,19 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
+// Get the block that was used for voting power calculation in a proposal
+func GetProposalBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getProposalBlock", proposalId); err != nil {
+		return 0, fmt.Errorf("error getting propsal block for proposal %d: %w", proposalId, err)
+	}
+	return (*value).Uint64(), nil
+}
+
 // Estimate the gas of a proposal submission
 func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
