@@ -14,7 +14,7 @@ import (
 )
 
 // Get the block that was used for voting power calculation in a proposal
-func GetProposalBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+func GetProposalBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint32, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return 0, err
@@ -23,7 +23,7 @@ func GetProposalBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.C
 	if err := rocketDAOProtocolProposals.Call(opts, value, "getProposalBlock", proposalId); err != nil {
 		return 0, fmt.Errorf("error getting propsal block for proposal %d: %w", proposalId, err)
 	}
-	return (*value).Uint64(), nil
+	return uint32((*value).Uint64()), nil
 }
 
 // Estimate the gas of a proposal submission
