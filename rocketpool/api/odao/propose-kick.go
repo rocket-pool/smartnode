@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -92,12 +93,14 @@ func (c *oracleDaoProposeKickContext) Initialize() error {
 }
 
 func (c *oracleDaoProposeKickContext) GetState(mc *batch.MultiCaller) {
-	c.odaoMember.GetLastProposalTime(mc)
-	c.oSettings.Proposal.CooldownTime.Get(mc)
-	c.candidate.GetExists(mc)
-	c.candidate.GetRplBondAmount(mc)
-	c.candidate.GetID(mc)
-	c.candidate.GetUrl(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.odaoMember.LastProposalTime,
+		c.candidate.Exists,
+		c.candidate.RplBondAmount,
+		c.candidate.ID,
+		c.candidate.Url,
+	)
+	c.oSettings.Proposal.CooldownTime.AddToQuery(mc)
 }
 
 func (c *oracleDaoProposeKickContext) PrepareData(data *api.OracleDaoProposeKickData, opts *bind.TransactOpts) error {
@@ -107,12 +110,12 @@ func (c *oracleDaoProposeKickContext) PrepareData(data *api.OracleDaoProposeKick
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	cooldownTime := c.oSettings.Proposal.CooldownTime.Value.Formatted()
+	cooldownTime := c.oSettings.Proposal.CooldownTime.Formatted()
 
 	// Check proposal details
-	data.MemberDoesNotExist = !c.candidate.Exists
+	data.MemberDoesNotExist = !c.candidate.Exists.Get()
 	data.ProposalCooldownActive = isProposalCooldownActive(cooldownTime, c.odaoMember.LastProposalTime.Formatted(), currentTime)
-	data.InsufficientRplBond = (c.fineAmount.Cmp(c.candidate.RplBondAmount) > 0)
+	data.InsufficientRplBond = (c.fineAmount.Cmp(c.candidate.RplBondAmount.Get()) > 0)
 	data.CanPropose = !(data.MemberDoesNotExist || data.ProposalCooldownActive || data.InsufficientRplBond)
 
 	// Get the tx

@@ -28,23 +28,33 @@ var faucetOnce sync.Once
 
 // Binding for RPL Faucet
 type RplFaucet struct {
-	*RplFaucetDetails
+	// The max amount of RPL that can be withdrawn (in total) per withdrawal period
+	MaxWithdrawalPerPeriod *core.SimpleField[*big.Int]
+
+	// The withdrawal fee, in ETH, for pulling RPL out of the faucet
+	WithdrawalFee *core.SimpleField[*big.Int]
+
+	// The owner of the faucet that can perform administrative duties
+	Owner *core.SimpleField[common.Address]
+
+	// The length of a withdrawal period before it resets, in blocks
+	WithdrawalPeriod *core.FormattedUint256Field[uint64]
+
+	// The remaining RPL balance of the faucet
+	Balance *core.SimpleField[*big.Int]
+
+	// The amount of RPL that can be withdrawn per address in each withdrawal period
+	Allowance *core.SimpleField[*big.Int]
+
+	// The block number the current withdrawal period started
+	WithdrawalPeriodStart *core.FormattedUint256Field[uint64]
+
+	// === Internal fields ===
 	contract *core.Contract
 }
 
 // Details for RPL Faucet
 type RplFaucetDetails struct {
-	MaxWithdrawalPerPeriod *big.Int               `json:"maxWithdrawalPerPeriod"`
-	WithdrawalFee          *big.Int               `json:"withdrawalFee"`
-	Owner                  common.Address         `json:"owner"`
-	WithdrawalPeriod       core.Parameter[uint64] `json:"withdrawalPeriod"`
-	Balance                *big.Int               `json:"balance"`
-	Allowance              *big.Int               `json:"allowance"`
-	WithdrawalPeriodStart  core.Parameter[uint64] `json:"getWithdrawalPeriodStart"`
-
-	AllottedRplBalance  *big.Int               `json:"allottedRplBalance"`
-	RemainingRplBalance *big.Int               `json:"remainingRplBalance"`
-	LotCount            core.Parameter[uint64] `json:"lotCount"`
 }
 
 // ====================
@@ -75,8 +85,15 @@ func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFauc
 	}
 
 	return &RplFaucet{
-		RplFaucetDetails: &RplFaucetDetails{},
-		contract:         contract,
+		MaxWithdrawalPerPeriod: core.NewSimpleField[*big.Int](contract, "maxWithdrawalPerPeriod"),
+		WithdrawalFee:          core.NewSimpleField[*big.Int](contract, "withdrawalFee"),
+		Owner:                  core.NewSimpleField[common.Address](contract, "owner"),
+		WithdrawalPeriod:       core.NewFormattedUint256Field[uint64](contract, "withdrawalPeriod"),
+		Balance:                core.NewSimpleField[*big.Int](contract, "getBalance"),
+		Allowance:              core.NewSimpleField[*big.Int](contract, "getAllowance"),
+		WithdrawalPeriodStart:  core.NewFormattedUint256Field[uint64](contract, "getWithdrawalPeriodStart"),
+
+		contract: contract,
 	}, nil
 }
 
@@ -84,55 +101,9 @@ func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFauc
 // === Calls ===
 // =============
 
-// Get the max amount of RPL that can be withdrawn (in total) per withdrawal period
-func (c *RplFaucet) GetMaxWithdrawalPerPeriod(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.MaxWithdrawalPerPeriod, "maxWithdrawalPerPeriod")
-}
-
-// Get the withdrawal fee, in ETH, for pulling RPL out of the faucet
-func (c *RplFaucet) GetWithdrawalFee(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.WithdrawalFee, "withdrawalFee")
-}
-
-// Get the owner of the faucet that can perform administrative duties
-func (c *RplFaucet) GetOwner(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.Owner, "owner")
-}
-
-// Get the length of a withdrawal period before it resets, in blocks
-func (c *RplFaucet) GetWithdrawalPeriod(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.WithdrawalPeriod.RawValue, "withdrawalPeriod")
-}
-
-// Get the remaining RPL balance of the faucet
-func (c *RplFaucet) GetBalance(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.Balance, "getBalance")
-}
-
-// Get the amount of RPL that can be withdrawn per address in each withdrawal period
-func (c *RplFaucet) GetAllowance(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.Allowance, "getAllowance")
-}
-
 // Get the amount of RPL that can be withdrawn by the given address in the current withdrawal period
 func (c *RplFaucet) GetAllowanceFor(mc *batch.MultiCaller, allowance **big.Int, address common.Address) {
 	core.AddCall(mc, c.contract, allowance, "getAllowanceFor", address)
-}
-
-// Get the block number the current withdrawal period started
-func (c *RplFaucet) GetWithdrawalPeriodStart(mc *batch.MultiCaller) {
-	core.AddCall(mc, c.contract, &c.WithdrawalPeriodStart.RawValue, "getWithdrawalPeriodStart")
-}
-
-// Get all basic details
-func (c *RplFaucet) GetAllDetails(mc *batch.MultiCaller) {
-	c.GetMaxWithdrawalPerPeriod(mc)
-	c.GetWithdrawalFee(mc)
-	c.GetOwner(mc)
-	c.GetWithdrawalPeriod(mc)
-	c.GetBalance(mc)
-	c.GetAllowance(mc)
-	c.GetWithdrawalPeriodStart(mc)
 }
 
 // ====================
@@ -150,8 +121,8 @@ func (c *RplFaucet) WithdrawTo(opts *bind.TransactOpts, to common.Address, amoun
 }
 
 // Set the withdrawal period, in blocks
-func (c *RplFaucet) SetWithdrawalPeriod(opts *bind.TransactOpts, period core.Parameter[uint64]) (*core.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "setWithdrawalPeriod", opts, period.RawValue)
+func (c *RplFaucet) SetWithdrawalPeriod(opts *bind.TransactOpts, period *big.Int) (*core.TransactionInfo, error) {
+	return core.NewTransactionInfo(c.contract, "setWithdrawalPeriod", opts, period)
 }
 
 // Set the max total withdrawal amount per period

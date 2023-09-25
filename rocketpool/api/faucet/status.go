@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
@@ -65,11 +66,13 @@ func (c *faucetStatusContext) Initialize() error {
 }
 
 func (c *faucetStatusContext) GetState(mc *batch.MultiCaller) {
-	c.f.GetBalance(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.f.Balance,
+		c.f.WithdrawalFee,
+		c.f.WithdrawalPeriodStart,
+		c.f.WithdrawalPeriod,
+	)
 	c.f.GetAllowanceFor(mc, &c.allowance, c.nodeAddress)
-	c.f.GetWithdrawalFee(mc)
-	c.f.GetWithdrawalPeriodStart(mc)
-	c.f.GetWithdrawalPeriod(mc)
 }
 
 func (c *faucetStatusContext) PrepareData(data *api.FaucetStatusData, opts *bind.TransactOpts) error {
@@ -80,9 +83,9 @@ func (c *faucetStatusContext) PrepareData(data *api.FaucetStatusData, opts *bind
 	}
 
 	// Populate the response
-	data.Balance = c.f.Balance
-	data.Allowance = c.f.Allowance
-	data.WithdrawalFee = c.f.WithdrawalFee
+	data.Balance = c.f.Balance.Get()
+	data.Allowance = c.f.Allowance.Get()
+	data.WithdrawalFee = c.f.WithdrawalFee.Get()
 	currentPeriodStartBlock := c.f.WithdrawalPeriodStart.Formatted()
 	withdrawalPeriodBlocks := c.f.WithdrawalPeriod.Formatted()
 

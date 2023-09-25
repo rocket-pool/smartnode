@@ -255,7 +255,7 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, endSlot uint64, state *s
 			// Check if this minipool was in the `staking` state during this time
 			mpd := state.MinipoolDetailsByAddress[mpInfo.Address]
 			statusChangeTime := time.Unix(mpd.StatusTime.Int64(), 0)
-			if mpd.Status != types.Staking || blockTime.Sub(statusChangeTime) < 0 {
+			if mpd.Status != types.MinipoolStatus_Staking || blockTime.Sub(statusChangeTime) < 0 {
 				continue
 			}
 

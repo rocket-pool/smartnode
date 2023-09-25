@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -83,13 +84,15 @@ func (c *oracleDaoStatusContext) Initialize() error {
 }
 
 func (c *oracleDaoStatusContext) GetState(mc *batch.MultiCaller) {
-	c.odaoMember.GetExists(mc)
-	c.odaoMember.GetInvitedTime(mc)
-	c.odaoMember.GetReplacedTime(mc)
-	c.odaoMember.GetLeftTime(mc)
-	c.odaoMgr.GetMemberCount(mc)
-	c.dpm.GetProposalCount(mc)
-	c.oSettings.Proposal.ActionTime.Get(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.odaoMember.Exists,
+		c.odaoMember.InvitedTime,
+		c.odaoMember.ReplacedTime,
+		c.odaoMember.LeftTime,
+		c.odaoMgr.MemberCount,
+		c.dpm.ProposalCount,
+	)
+	c.oSettings.Proposal.ActionTime.AddToQuery(mc)
 }
 
 func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts *bind.TransactOpts) error {
@@ -99,10 +102,10 @@ func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	actionWindow := c.oSettings.Proposal.ActionTime.Value.Formatted()
+	actionWindow := c.oSettings.Proposal.ActionTime.Formatted()
 
 	// Check action windows for the current member
-	exists := c.odaoMember.Exists
+	exists := c.odaoMember.Exists.Get()
 	data.IsMember = exists
 	if exists {
 		data.CanLeave = isProposalActionable(actionWindow, c.odaoMember.LeftTime.Formatted(), currentTime)

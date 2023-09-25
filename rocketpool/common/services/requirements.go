@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -221,14 +220,11 @@ func (sp *ServiceProvider) getNodeRegistered() (bool, error) {
 	}
 
 	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		node.GetExists(mc)
-		return nil
-	}, nil)
+	err = rp.Query(nil, nil, node.Exists)
 	if err != nil {
 		return false, fmt.Errorf("error getting node registration status: %w", err)
 	}
-	return node.Exists, nil
+	return node.Exists.Get(), nil
 }
 
 // Check if the node is a member of the oracle DAO
@@ -243,14 +239,11 @@ func (sp *ServiceProvider) isMemberOfOracleDao() (bool, error) {
 	}
 
 	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		odaoMember.GetExists(mc)
-		return nil
-	}, nil)
+	err = rp.Query(nil, nil, odaoMember.Exists)
 	if err != nil {
 		return false, fmt.Errorf("error getting oDAO member contract status: %w", err)
 	}
-	return odaoMember.Exists, nil
+	return odaoMember.Exists.Get(), nil
 }
 
 // Check if the primary and fallback Execution clients are synced

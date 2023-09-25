@@ -15,7 +15,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/klauspost/compress/zstd"
-	batchquery "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
@@ -615,10 +614,7 @@ func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error 
 	if err != nil {
 		return fmt.Errorf("error getting rewards pool binding: %w", err)
 	}
-	err = r.rp.Query(func(mc *batchquery.MultiCaller) error {
-		rewardsPool.GetRewardIndex(mc)
-		return nil
-	}, nil)
+	err = r.rp.Query(nil, nil, rewardsPool.RewardIndex)
 	if err != nil {
 		return fmt.Errorf("error getting rewards index: %w", err)
 	}

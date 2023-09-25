@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
@@ -76,12 +77,14 @@ func (c *oracleDaoProposeLeaveContext) Initialize() error {
 }
 
 func (c *oracleDaoProposeLeaveContext) GetState(mc *batch.MultiCaller) {
-	c.odaoMember.GetLastProposalTime(mc)
-	c.odaoMember.GetID(mc)
-	c.odaoMember.GetUrl(mc)
-	c.oSettings.Proposal.CooldownTime.Get(mc)
-	c.odaoMgr.GetMemberCount(mc)
-	c.odaoMgr.GetMinimumMemberCount(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.odaoMember.LastProposalTime,
+		c.odaoMember.ID,
+		c.odaoMember.Url,
+		c.odaoMgr.MemberCount,
+		c.odaoMgr.MinimumMemberCount,
+	)
+	c.oSettings.Proposal.CooldownTime.AddToQuery(mc)
 }
 
 func (c *oracleDaoProposeLeaveContext) PrepareData(data *api.OracleDaoProposeLeaveData, opts *bind.TransactOpts) error {
@@ -91,7 +94,7 @@ func (c *oracleDaoProposeLeaveContext) PrepareData(data *api.OracleDaoProposeLea
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	cooldownTime := c.oSettings.Proposal.CooldownTime.Value.Formatted()
+	cooldownTime := c.oSettings.Proposal.CooldownTime.Formatted()
 
 	// Check proposal details
 	data.ProposalCooldownActive = isProposalCooldownActive(cooldownTime, c.odaoMember.LastProposalTime.Formatted(), currentTime)

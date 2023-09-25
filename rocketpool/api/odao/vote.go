@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -93,15 +94,17 @@ func (c *oracleDaoVoteContext) Initialize() error {
 }
 
 func (c *oracleDaoVoteContext) GetState(mc *batch.MultiCaller) {
-	c.dpm.GetProposalCount(mc)
-	c.prop.GetState(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.dpm.ProposalCount,
+		c.prop.State,
+		c.odaoMember.JoinedTime,
+		c.prop.CreatedTime,
+	)
 	c.prop.GetMemberHasVoted(mc, &c.hasVoted, c.nodeAddress)
-	c.odaoMember.GetJoinedTime(mc)
-	c.prop.GetCreatedTime(mc)
 }
 
 func (c *oracleDaoVoteContext) PrepareData(data *api.OracleDaoVoteData, opts *bind.TransactOpts) error {
-	data.DoesNotExist = (c.prop.ID.Formatted() > c.dpm.ProposalCount.Formatted())
+	data.DoesNotExist = (c.prop.ID > c.dpm.ProposalCount.Formatted())
 	data.InvalidState = (c.prop.State.Formatted() != rptypes.ProposalState_Active)
 	data.AlreadyVoted = c.hasVoted
 	data.JoinedAfterCreated = (c.odaoMember.JoinedTime.Formatted().Sub(c.prop.CreatedTime.Formatted()) >= 0)

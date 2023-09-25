@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
@@ -91,9 +92,11 @@ func (c *oracleDaoProposeInviteContext) Initialize() error {
 }
 
 func (c *oracleDaoProposeInviteContext) GetState(mc *batch.MultiCaller) {
-	c.odaoMember.GetLastProposalTime(mc)
-	c.oSettings.Proposal.CooldownTime.Get(mc)
-	c.candidate.GetExists(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.odaoMember.LastProposalTime,
+		c.oSettings.Proposal.CooldownTime,
+		c.candidate.Exists,
+	)
 }
 
 func (c *oracleDaoProposeInviteContext) PrepareData(data *api.OracleDaoProposeInviteData, opts *bind.TransactOpts) error {
@@ -103,11 +106,11 @@ func (c *oracleDaoProposeInviteContext) PrepareData(data *api.OracleDaoProposeIn
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
-	cooldownTime := c.oSettings.Proposal.CooldownTime.Value.Formatted()
+	cooldownTime := c.oSettings.Proposal.CooldownTime.Formatted()
 
 	// Check proposal details
 	data.ProposalCooldownActive = isProposalCooldownActive(cooldownTime, c.odaoMember.LastProposalTime.Formatted(), currentTime)
-	data.MemberAlreadyExists = c.candidate.Exists
+	data.MemberAlreadyExists = c.candidate.Exists.Get()
 	data.CanPropose = !(data.ProposalCooldownActive || data.MemberAlreadyExists)
 
 	// Get the tx

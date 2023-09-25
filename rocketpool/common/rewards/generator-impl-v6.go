@@ -911,7 +911,7 @@ func (r *treeGeneratorImpl_v6) getDutiesForEpoch(committees beacon.Committees) e
 			// Check if this minipool was in the `staking` state during this time
 			mpd := r.networkState.MinipoolDetailsByAddress[minipoolInfo.Address]
 			statusChangeTime := time.Unix(mpd.StatusTime.Int64(), 0)
-			if mpd.Status != rptypes.Staking || blockTime.Sub(statusChangeTime) < 0 {
+			if mpd.Status != rptypes.MinipoolStatus_Staking || blockTime.Sub(statusChangeTime) < 0 {
 				continue
 			}
 
@@ -1041,7 +1041,7 @@ func (r *treeGeneratorImpl_v6) getSmoothingPoolNodeDetails() error {
 
 				// Get the details for each minipool in the node
 				for _, mpd := range r.networkState.MinipoolDetailsByNode[nodeDetails.Address] {
-					if mpd.Exists && mpd.Status == rptypes.Staking {
+					if mpd.Exists && mpd.Status == rptypes.MinipoolStatus_Staking {
 						nativeMinipoolDetails := r.networkState.MinipoolDetailsByAddress[mpd.MinipoolAddress]
 						penaltyCount := nativeMinipoolDetails.PenaltyCount.Uint64()
 						if penaltyCount >= 3 {

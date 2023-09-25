@@ -341,7 +341,7 @@ func (s *NetworkState) CalculateTrueEffectiveStakes(scaleByParticipation bool) (
 			eligibleBondedEth := big.NewInt(0)
 			for _, mpd := range s.MinipoolDetailsByNode[node.NodeAddress] {
 				// It must exist and be staking
-				if mpd.Exists && mpd.Status == types.Staking {
+				if mpd.Exists && mpd.Status == types.MinipoolStatus_Staking {
 					// Doesn't exist on Beacon yet
 					validatorStatus, exists := s.ValidatorDetails[mpd.Pubkey]
 					if !exists {

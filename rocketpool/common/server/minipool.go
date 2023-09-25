@@ -110,7 +110,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 
 	// Get contract state
 	err = rp.Query(func(mc *batch.MultiCaller) error {
-		node.GetMinipoolCount(mc)
+		node.MinipoolCount.AddToQuery(mc)
 		ctx.GetState(node, mc)
 		return nil
 	}, opts)

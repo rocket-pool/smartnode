@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
@@ -68,48 +69,27 @@ func (c *oracleDaoSettingsContext) Initialize() error {
 }
 
 func (c *oracleDaoSettingsContext) GetState(mc *batch.MultiCaller) {
-	// Member
-	c.oSettings.Member.Quorum.Get(mc)
-	c.oSettings.Member.RplBond.Get(mc)
-	c.oSettings.Member.UnbondedMinipoolMax.Get(mc)
-	c.oSettings.Member.ChallengeCooldown.Get(mc)
-	c.oSettings.Member.ChallengeWindow.Get(mc)
-	c.oSettings.Member.ChallengeCost.Get(mc)
-
-	// Minipool
-	c.oSettings.Minipool.ScrubPeriod.Get(mc)
-	c.oSettings.Minipool.PromotionScrubPeriod.Get(mc)
-	c.oSettings.Minipool.IsScrubPenaltyEnabled.Get(mc)
-	c.oSettings.Minipool.BondReductionWindowStart.Get(mc)
-	c.oSettings.Minipool.BondReductionWindowLength.Get(mc)
-
-	// Proposal
-	c.oSettings.Proposal.CooldownTime.Get(mc)
-	c.oSettings.Proposal.VoteTime.Get(mc)
-	c.oSettings.Proposal.VoteDelayTime.Get(mc)
-	c.oSettings.Proposal.ExecuteTime.Get(mc)
-	c.oSettings.Proposal.ActionTime.Get(mc)
-
+	core.QueryAllFields(c.oSettings, mc)
 }
 
 func (c *oracleDaoSettingsContext) PrepareData(data *api.OracleDaoSettingsData, opts *bind.TransactOpts) error {
-	data.Members.Quorum = c.oSettings.Member.Quorum.Value.Formatted()
-	data.Members.RplBond = c.oSettings.Member.RplBond.Value
-	data.Members.MinipoolUnbondedMax = c.oSettings.Member.UnbondedMinipoolMax.Value.Formatted()
-	data.Members.ChallengeCooldown = c.oSettings.Member.ChallengeCooldown.Value.Formatted()
-	data.Members.ChallengeWindow = c.oSettings.Member.ChallengeWindow.Value.Formatted()
-	data.Members.ChallengeCost = c.oSettings.Member.ChallengeCost.Value
+	data.Members.Quorum = c.oSettings.Member.Quorum.Formatted()
+	data.Members.RplBond = c.oSettings.Member.RplBond.Get()
+	data.Members.MinipoolUnbondedMax = c.oSettings.Member.UnbondedMinipoolMax.Formatted()
+	data.Members.ChallengeCooldown = c.oSettings.Member.ChallengeCooldown.Formatted()
+	data.Members.ChallengeWindow = c.oSettings.Member.ChallengeWindow.Formatted()
+	data.Members.ChallengeCost = c.oSettings.Member.ChallengeCost.Get()
 
-	data.Minipools.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Value.Formatted()
-	data.Minipools.PromotionScrubPeriod = c.oSettings.Minipool.PromotionScrubPeriod.Value.Formatted()
-	data.Minipools.ScrubPenaltyEnabled = c.oSettings.Minipool.IsScrubPenaltyEnabled.Value
-	data.Minipools.BondReductionWindowStart = c.oSettings.Minipool.BondReductionWindowStart.Value.Formatted()
-	data.Minipools.BondReductionWindowLength = c.oSettings.Minipool.BondReductionWindowLength.Value.Formatted()
+	data.Minipools.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Formatted()
+	data.Minipools.PromotionScrubPeriod = c.oSettings.Minipool.PromotionScrubPeriod.Formatted()
+	data.Minipools.ScrubPenaltyEnabled = c.oSettings.Minipool.IsScrubPenaltyEnabled.Get()
+	data.Minipools.BondReductionWindowStart = c.oSettings.Minipool.BondReductionWindowStart.Formatted()
+	data.Minipools.BondReductionWindowLength = c.oSettings.Minipool.BondReductionWindowLength.Formatted()
 
-	data.Proposals.Cooldown = c.oSettings.Proposal.CooldownTime.Value.Formatted()
-	data.Proposals.VoteTime = c.oSettings.Proposal.VoteTime.Value.Formatted()
-	data.Proposals.VoteDelayTime = c.oSettings.Proposal.VoteDelayTime.Value.Formatted()
-	data.Proposals.ExecuteTime = c.oSettings.Proposal.ExecuteTime.Value.Formatted()
-	data.Proposals.ActionTime = c.oSettings.Proposal.ActionTime.Value.Formatted()
+	data.Proposals.Cooldown = c.oSettings.Proposal.CooldownTime.Formatted()
+	data.Proposals.VoteTime = c.oSettings.Proposal.VoteTime.Formatted()
+	data.Proposals.VoteDelayTime = c.oSettings.Proposal.VoteDelayTime.Formatted()
+	data.Proposals.ExecuteTime = c.oSettings.Proposal.ExecuteTime.Formatted()
+	data.Proposals.ActionTime = c.oSettings.Proposal.ActionTime.Formatted()
 	return nil
 }

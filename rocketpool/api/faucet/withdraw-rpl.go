@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -64,9 +65,11 @@ func (c *faucetWithdrawContext) Initialize() error {
 }
 
 func (c *faucetWithdrawContext) GetState(mc *batch.MultiCaller) {
-	c.f.GetBalance(mc)
+	core.AddQueryablesToMulticall(mc,
+		c.f.Balance,
+		c.f.WithdrawalFee,
+	)
 	c.f.GetAllowanceFor(mc, &c.allowance, c.nodeAddress)
-	c.f.GetWithdrawalFee(mc)
 }
 
 func (c *faucetWithdrawContext) PrepareData(data *api.FaucetWithdrawRplData, opts *bind.TransactOpts) error {
@@ -77,17 +80,17 @@ func (c *faucetWithdrawContext) PrepareData(data *api.FaucetWithdrawRplData, opt
 	}
 
 	// Populate the response
-	data.InsufficientFaucetBalance = (c.f.Balance.Cmp(big.NewInt(0)) == 0)
+	data.InsufficientFaucetBalance = (c.f.Balance.Get().Cmp(big.NewInt(0)) == 0)
 	data.InsufficientAllowance = (c.allowance.Cmp(big.NewInt(0)) == 0)
-	data.InsufficientNodeBalance = (nodeAccountBalance.Cmp(c.f.WithdrawalFee) < 0)
+	data.InsufficientNodeBalance = (nodeAccountBalance.Cmp(c.f.WithdrawalFee.Get()) < 0)
 	data.CanWithdraw = !(data.InsufficientFaucetBalance || data.InsufficientAllowance || data.InsufficientNodeBalance)
 
 	if data.CanWithdraw && opts != nil {
-		opts.Value = c.f.WithdrawalFee
+		opts.Value = c.f.WithdrawalFee.Get()
 
 		// Get withdrawal amount
 		var amount *big.Int
-		balance := c.f.Balance
+		balance := c.f.Balance.Get()
 		if balance.Cmp(c.allowance) > 0 {
 			amount = c.allowance
 		} else {

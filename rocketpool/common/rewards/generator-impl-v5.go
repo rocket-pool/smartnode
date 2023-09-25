@@ -406,10 +406,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 	}
 
 	// Get the contract state
-	err = r.rp.Query(func(mc *batch.MultiCaller) error {
-		odaoMgr.GetMemberCount(mc)
-		return nil
-	}, r.opts)
+	err = r.rp.Query(nil, r.opts, odaoMgr.MemberCount)
 	if err != nil {
 		return fmt.Errorf("error getting oDAO member count: %w", err)
 	}
@@ -1059,7 +1056,7 @@ func (r *treeGeneratorImpl_v5) getSmoothingPoolNodeDetails() error {
 
 				// Get the details for each minipool in the node
 				for _, mpd := range r.networkState.MinipoolDetailsByNode[nodeDetails.Address] {
-					if mpd.Exists && mpd.Status == rptypes.Staking {
+					if mpd.Exists && mpd.Status == rptypes.MinipoolStatus_Staking {
 						nativeMinipoolDetails := r.networkState.MinipoolDetailsByAddress[mpd.MinipoolAddress]
 						penaltyCount := nativeMinipoolDetails.PenaltyCount.Uint64()
 						if penaltyCount >= 3 {
