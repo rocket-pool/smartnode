@@ -127,7 +127,36 @@ type GetPDAOSettingsResponse struct {
 		MaximumPerMinipoolStake            float64 `json:"maximumPerMinipoolStake"`
 	} `json:"node"`
 
+	Proposals struct {
+		VoteTime        time.Duration `json:"voteTime"`
+		VoteDelayTime   time.Duration `json:"voteDelayTime"`
+		ExecuteTime     time.Duration `json:"executeTime"`
+		ProposalBond    *big.Int      `json:"proposalBond"`
+		ChallengeBond   *big.Int      `json:"challengeBond"`
+		ChallengePeriod time.Duration `json:"challengePeriod"`
+		Quorum          float64       `json:"quorum"`
+		VetoQuorum      float64       `json:"vetoQuorum"`
+		MaxBlockAge     uint64        `json:"maxBlockAge"`
+	} `json:"proposals"`
+
 	Rewards struct {
 		IntervalTime time.Duration `json:"intervalTime"`
 	} `json:"rewards"`
+}
+
+type CanProposePDAOSettingResponse struct {
+	Status          string             `json:"status"`
+	Error           string             `json:"error"`
+	CanPropose      bool               `json:"canPropose"`
+	InsufficientRpl bool               `json:"proposalCooldownActive"`
+	StakedRpl       *big.Int           `json:"stakedRpl"`
+	LockedRpl       *big.Int           `json:"lockedRpl"`
+	ProposalBond    *big.Int           `json:"proposalBond"`
+	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
+}
+type ProposePDAOSettingResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
 }

@@ -25,7 +25,6 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	// Data
 	var wg errgroup.Group
-	wg.SetLimit(6)
 
 	// === Auction ===
 
@@ -286,6 +285,62 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 	wg.Go(func() error {
 		var err error
 		response.Node.MaximumPerMinipoolStake, err = protocol.GetMaximumPerMinipoolStake(rp, nil)
+		return err
+	})
+
+	// === Proposals ===
+
+	wg.Go(func() error {
+		var err error
+		response.Proposals.VoteTime, err = protocol.GetVoteTime(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Proposals.VoteDelayTime, err = protocol.GetVoteDelayTime(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Proposals.ExecuteTime, err = protocol.GetExecuteTime(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Proposals.ProposalBond, err = protocol.GetProposalBond(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Proposals.ChallengeBond, err = protocol.GetChallengeBond(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Proposals.ChallengePeriod, err = protocol.GetChallengePeriod(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Proposals.Quorum, err = protocol.GetProposalQuorum(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Proposals.VetoQuorum, err = protocol.GetProposalVetoQuorum(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Proposals.MaxBlockAge, err = protocol.GetProposalMaxBlockAge(rp, nil)
 		return err
 	})
 

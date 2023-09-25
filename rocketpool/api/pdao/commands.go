@@ -61,7 +61,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-cancel-proposal",
 				Usage:     "Check whether the node can cancel a proposal",
-				UsageText: "rocketpool api odao can-cancel-proposal proposal-id",
+				UsageText: "rocketpool api pdao can-cancel-proposal proposal-id",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -83,7 +83,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "cancel-proposal",
 				Aliases:   []string{"c"},
 				Usage:     "Cancel a proposal made by the node",
-				UsageText: "rocketpool api odao cancel-proposal proposal-id",
+				UsageText: "rocketpool api pdao cancel-proposal proposal-id",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -105,7 +105,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-vote-proposal",
 				Usage:     "Check whether the node can vote on a proposal",
-				UsageText: "rocketpool api odao can-vote-proposal proposal-id",
+				UsageText: "rocketpool api pdao can-vote-proposal proposal-id",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -127,7 +127,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "vote-proposal",
 				Aliases:   []string{"v"},
 				Usage:     "Vote on a proposal",
-				UsageText: "rocketpool api odao vote-proposal proposal-id support",
+				UsageText: "rocketpool api pdao vote-proposal proposal-id support",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -153,7 +153,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-execute-proposal",
 				Usage:     "Check whether the node can execute a proposal",
-				UsageText: "rocketpool api odao can-execute-proposal proposal-id",
+				UsageText: "rocketpool api pdao can-execute-proposal proposal-id",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -175,7 +175,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "execute-proposal",
 				Aliases:   []string{"x"},
 				Usage:     "Execute a proposal",
-				UsageText: "rocketpool api odao execute-proposal proposal-id",
+				UsageText: "rocketpool api pdao execute-proposal proposal-id",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -195,22 +195,33 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-propose-members-quorum",
-				Usage:     "Check whether the node can propose the members.quorum setting",
-				UsageText: "rocketpool api odao can-propose-members-quorum value",
+				Name:      "get-settings",
+				Usage:     "Get the Protocol DAO settings",
+				UsageText: "rocketpool api pdao get-member-settings",
+				Action: func(c *cli.Context) error {
+
+					// Run
+					api.PrintResponse(getSettings(c))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-propose-setting",
+				Usage:     "Check whether the node can propose a PDAO setting",
+				UsageText: "rocketpool api pdao can-propose-setting setting-name value",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					quorum, err := cliutils.ValidateFraction("quorum", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
+					settingName := c.Args().Get(0)
+					value := c.Args().Get(1)
 
 					// Run
-					api.PrintResponse(canProposeSettingMembersQuorum(c, quorum))
+					api.PrintResponse(canProposeSetting(c, settingName, value))
 					return nil
 
 				},
@@ -218,7 +229,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "propose-members-quorum",
 				Usage:     "Propose updating the members.quorum setting",
-				UsageText: "rocketpool api odao propose-members-quorum value",
+				UsageText: "rocketpool api pdao propose-members-quorum value",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -232,19 +243,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(proposeSettingMembersQuorum(c, quorum))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "get-settings",
-				Usage:     "Get the Protocol DAO settings",
-				UsageText: "rocketpool api odao get-member-settings",
-				Action: func(c *cli.Context) error {
-
-					// Run
-					api.PrintResponse(getSettings(c))
 					return nil
 
 				},
