@@ -215,6 +215,19 @@ func CalculateTotalEffectiveRPLStake(rp *rocketpool.RocketPool, offset, limit, r
 	return *totalEffectiveRplStake, nil
 }
 
+// Get the amount of RPL locked as part of active PDAO proposals or challenges
+func GetNodeRplLocked(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rocketNodeStaking.Call(opts, value, "getNodeRPLLocked", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node RPL locked: %w", err)
+	}
+	return *value, nil
+}
+
 // Get contracts
 var rocketNodeStakingLock sync.Mutex
 
