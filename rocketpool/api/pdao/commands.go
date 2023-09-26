@@ -105,20 +105,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-vote-proposal",
 				Usage:     "Check whether the node can vote on a proposal",
-				UsageText: "rocketpool api pdao can-vote-proposal proposal-id",
+				UsageText: "rocketpool api pdao can-vote-proposal proposal-id support",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
 					proposalId, err := cliutils.ValidatePositiveUint("proposal ID", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
+					support, err := cliutils.ValidateBool("support", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
 
 					// Run
-					api.PrintResponse(canVoteOnProposal(c, proposalId))
+					api.PrintResponse(canVoteOnProposal(c, proposalId, support))
 					return nil
 
 				},

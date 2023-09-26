@@ -16,9 +16,9 @@ type PDAOProposalsResponse struct {
 }
 
 type PDAOProposalResponse struct {
-	Status    string              `json:"status"`
-	Error     string              `json:"error"`
-	Proposals dao.ProposalDetails `json:"proposal"`
+	Status   string              `json:"status"`
+	Error    string              `json:"error"`
+	Proposal dao.ProposalDetails `json:"proposal"`
 }
 
 type CanCancelPDAOProposalResponse struct {
@@ -68,6 +68,8 @@ type ExecutePDAOProposalResponse struct {
 }
 
 type GetPDAOSettingsResponse struct {
+	Status  string `json:"status"`
+	Error   string `json:"error"`
 	Auction struct {
 		IsCreateLotEnabled    bool     `json:"isCreateLotEnabled"`
 		IsBidOnLotEnabled     bool     `json:"isBidOnLotEnabled"`

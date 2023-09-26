@@ -80,7 +80,7 @@ func getProposal(c *cli.Context, id uint64) (*api.PDAOProposalResponse, error) {
 		return nil, err
 	}
 
-	response.Proposals = proposal
+	response.Proposal = proposal
 
 	// Return response
 	return &response, nil

@@ -16,7 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnPDAOProposalResponse, error) {
+func canVoteOnProposal(c *cli.Context, proposalId uint64, support bool) (*api.CanVoteOnPDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -84,7 +84,7 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnPDAOPro
 		if err != nil {
 			return err
 		}
-		gasInfo, err := protocol.EstimateVoteOnProposalGas(rp, proposalId, false, opts)
+		gasInfo, err := protocol.EstimateVoteOnProposalGas(rp, proposalId, support, opts)
 		if err == nil {
 			response.GasInfo = gasInfo
 		}
