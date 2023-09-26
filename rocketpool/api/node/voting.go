@@ -198,7 +198,7 @@ func estimateClearSnapshotDelegateGas(c *cli.Context) (*api.EstimateClearSnapsho
 
 }
 
-func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, error) {
+func clearSnapshotDelegate(c *cli.Context) (*api.TxData, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -221,7 +221,7 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 	}
 
 	// Response
-	response := api.ClearSnapshotDelegateResponse{}
+	response := api.TxData{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -292,7 +292,7 @@ func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.A
 	return &votingPower, nil
 }
 
-func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress common.Address, delegate common.Address) (*api.SnapshotVotedProposals, error) {
+func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress common.Address, delegate common.Address) (*api.NodeSnapshotVotedProposalsData, error) {
 	client := getHttpClientWithTimeout()
 	query := fmt.Sprintf(`query Votes{
 		votes(
@@ -324,7 +324,7 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 	if err != nil {
 		return nil, err
 	}
-	var votedProposals api.SnapshotVotedProposals
+	var votedProposals api.NodeSnapshotVotedProposalsData
 	if err := json.Unmarshal(body, &votedProposals); err != nil {
 		return nil, fmt.Errorf("could not decode snapshot response: %w", err)
 
@@ -333,7 +333,7 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 	return &votedProposals, nil
 }
 
-func GetSnapshotProposals(apiDomain string, space string, state string) (*api.SnapshotResponse, error) {
+func GetSnapshotProposals(apiDomain string, space string, state string) (*api.NodeSnapshotData, error) {
 	client := getHttpClientWithTimeout()
 	stateFilter := ""
 	if state != "" {
@@ -373,7 +373,7 @@ func GetSnapshotProposals(apiDomain string, space string, state string) (*api.Sn
 	if err != nil {
 		return nil, err
 	}
-	var snapshotResponse api.SnapshotResponse
+	var snapshotResponse api.NodeSnapshotData
 	if err := json.Unmarshal(body, &snapshotResponse); err != nil {
 		return nil, fmt.Errorf("Could not decode snapshot response: %w", err)
 

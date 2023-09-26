@@ -1,12 +1,35 @@
 package node
 
 import (
+	"github.com/gorilla/mux"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	types "github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
+
+type NodeHandler struct {
+	serviceProvider *services.ServiceProvider
+	factories       []server.IContextFactory
+}
+
+func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
+	h := &NodeHandler{
+		serviceProvider: serviceProvider,
+	}
+	h.factories = []server.IContextFactory{
+		&nodeBalanceContextFactory{h},
+	}
+	return h
+}
+
+func (h *NodeHandler) RegisterRoutes(router *mux.Router) {
+	for _, factory := range h.factories {
+		factory.RegisterRoute(router)
+	}
+}
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {

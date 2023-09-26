@@ -32,6 +32,7 @@ import (
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/shared/config"
+	svctypes "github.com/rocket-pool/smartnode/shared/types"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/web3-storage/go-w3s-client/adder"
 )
@@ -102,7 +103,7 @@ func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address, curre
 }
 
 // Gets the information for an interval including the file status, the validity, and the node's rewards
-func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, interval uint64, opts *bind.CallOpts) (info IntervalInfo, err error) {
+func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, interval uint64, opts *bind.CallOpts) (info svctypes.IntervalInfo, err error) {
 	info.Index = interval
 	var event rewards.RewardsEvent
 

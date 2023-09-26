@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	svctypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/wealdtech/go-merkletree"
 )
 
@@ -35,30 +36,30 @@ type SmoothingPoolMinipoolPerformance struct {
 
 // Node operator rewards
 type NodeRewardsInfo struct {
-	RewardNetwork                uint64        `json:"rewardNetwork"`
-	CollateralRpl                *QuotedBigInt `json:"collateralRpl"`
-	OracleDaoRpl                 *QuotedBigInt `json:"oracleDaoRpl"`
-	SmoothingPoolEth             *QuotedBigInt `json:"smoothingPoolEth"`
-	SmoothingPoolEligibilityRate float64       `json:"smoothingPoolEligibilityRate"`
-	MerkleData                   []byte        `json:"-"`
-	MerkleProof                  []string      `json:"merkleProof"`
+	RewardNetwork                uint64                 `json:"rewardNetwork"`
+	CollateralRpl                *svctypes.QuotedBigInt `json:"collateralRpl"`
+	OracleDaoRpl                 *svctypes.QuotedBigInt `json:"oracleDaoRpl"`
+	SmoothingPoolEth             *svctypes.QuotedBigInt `json:"smoothingPoolEth"`
+	SmoothingPoolEligibilityRate float64                `json:"smoothingPoolEligibilityRate"`
+	MerkleData                   []byte                 `json:"-"`
+	MerkleProof                  []string               `json:"merkleProof"`
 }
 
 // Rewards per network
 type NetworkRewardsInfo struct {
-	CollateralRpl    *QuotedBigInt `json:"collateralRpl"`
-	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl"`
-	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth"`
+	CollateralRpl    *svctypes.QuotedBigInt `json:"collateralRpl"`
+	OracleDaoRpl     *svctypes.QuotedBigInt `json:"oracleDaoRpl"`
+	SmoothingPoolEth *svctypes.QuotedBigInt `json:"smoothingPoolEth"`
 }
 
 // Total cumulative rewards for an interval
 type TotalRewards struct {
-	ProtocolDaoRpl               *QuotedBigInt `json:"protocolDaoRpl"`
-	TotalCollateralRpl           *QuotedBigInt `json:"totalCollateralRpl"`
-	TotalOracleDaoRpl            *QuotedBigInt `json:"totalOracleDaoRpl"`
-	TotalSmoothingPoolEth        *QuotedBigInt `json:"totalSmoothingPoolEth"`
-	PoolStakerSmoothingPoolEth   *QuotedBigInt `json:"poolStakerSmoothingPoolEth"`
-	NodeOperatorSmoothingPoolEth *QuotedBigInt `json:"nodeOperatorSmoothingPoolEth"`
+	ProtocolDaoRpl               *svctypes.QuotedBigInt `json:"protocolDaoRpl"`
+	TotalCollateralRpl           *svctypes.QuotedBigInt `json:"totalCollateralRpl"`
+	TotalOracleDaoRpl            *svctypes.QuotedBigInt `json:"totalOracleDaoRpl"`
+	TotalSmoothingPoolEth        *svctypes.QuotedBigInt `json:"totalSmoothingPoolEth"`
+	PoolStakerSmoothingPoolEth   *svctypes.QuotedBigInt `json:"poolStakerSmoothingPoolEth"`
+	NodeOperatorSmoothingPoolEth *svctypes.QuotedBigInt `json:"nodeOperatorSmoothingPoolEth"`
 }
 
 // JSON struct for a complete rewards file
@@ -85,4 +86,13 @@ type RewardsFile struct {
 	// Non-serialized fields
 	MerkleTree          *merkletree.MerkleTree    `json:"-"`
 	InvalidNetworkNodes map[common.Address]uint64 `json:"-"`
+}
+
+// Get the deserialized Merkle Proof bytes
+func (n *NodeRewardsInfo) GetMerkleProof() ([]common.Hash, error) {
+	proof := []common.Hash{}
+	for _, proofLevel := range n.MerkleProof {
+		proof = append(proof, common.HexToHash(proofLevel))
+	}
+	return proof, nil
 }
