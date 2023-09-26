@@ -44,11 +44,11 @@ func GetNodeConsensusThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	}
 	return eth.WeiToEth(*value), nil
 }
-func ProposeNodeConsensusThreshold(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NodeConsensusThresholdSettingPath), NetworkSettingsContractName, NodeConsensusThresholdSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func ProposeNodeConsensusThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NodeConsensusThresholdSettingPath), NetworkSettingsContractName, NodeConsensusThresholdSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeNodeConsensusThresholdGas(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NodeConsensusThresholdSettingPath), NetworkSettingsContractName, NodeConsensusThresholdSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func EstimateProposeNodeConsensusThresholdGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NodeConsensusThresholdSettingPath), NetworkSettingsContractName, NodeConsensusThresholdSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Network balance submissions currently enabled
@@ -82,11 +82,11 @@ func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	return (*value).Uint64(), nil
 }
-func ProposeSubmitBalancesFrequency(rp *rocketpool.RocketPool, value uint64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SubmitBalancesFrequencySettingPath), NetworkSettingsContractName, SubmitBalancesFrequencySettingPath, big.NewInt(0).SetUint64(value), blockNumber, treeNodes, opts)
+func ProposeSubmitBalancesFrequency(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SubmitBalancesFrequencySettingPath), NetworkSettingsContractName, SubmitBalancesFrequencySettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeSubmitBalancesFrequencyGas(rp *rocketpool.RocketPool, value uint64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SubmitBalancesFrequencySettingPath), NetworkSettingsContractName, SubmitBalancesFrequencySettingPath, big.NewInt(0).SetUint64(value), blockNumber, treeNodes, opts)
+func EstimateProposeSubmitBalancesFrequencyGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SubmitBalancesFrequencySettingPath), NetworkSettingsContractName, SubmitBalancesFrequencySettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Network price submissions currently enabled
@@ -120,11 +120,11 @@ func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
 	}
 	return (*value).Uint64(), nil
 }
-func ProposeSubmitPricesFrequency(rp *rocketpool.RocketPool, value uint64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SubmitPricesFrequencySettingPath), NetworkSettingsContractName, SubmitPricesFrequencySettingPath, big.NewInt(0).SetUint64(value), blockNumber, treeNodes, opts)
+func ProposeSubmitPricesFrequency(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SubmitPricesFrequencySettingPath), NetworkSettingsContractName, SubmitPricesFrequencySettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeSubmitPricesFrequencyGas(rp *rocketpool.RocketPool, value uint64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SubmitPricesFrequencySettingPath), NetworkSettingsContractName, SubmitPricesFrequencySettingPath, big.NewInt(0).SetUint64(value), blockNumber, treeNodes, opts)
+func EstimateProposeSubmitPricesFrequencyGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SubmitPricesFrequencySettingPath), NetworkSettingsContractName, SubmitPricesFrequencySettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Minimum node commission rate
@@ -139,11 +139,11 @@ func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 	}
 	return eth.WeiToEth(*value), nil
 }
-func ProposeMinimumNodeFee(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumNodeFeeSettingPath), NetworkSettingsContractName, MinimumNodeFeeSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func ProposeMinimumNodeFee(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumNodeFeeSettingPath), NetworkSettingsContractName, MinimumNodeFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMinimumNodeFeeGas(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinimumNodeFeeSettingPath), NetworkSettingsContractName, MinimumNodeFeeSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func EstimateProposeMinimumNodeFeeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinimumNodeFeeSettingPath), NetworkSettingsContractName, MinimumNodeFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Target node commission rate
@@ -158,11 +158,11 @@ func GetTargetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, 
 	}
 	return eth.WeiToEth(*value), nil
 }
-func ProposeTargetNodeFee(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", TargetNodeFeeSettingPath), NetworkSettingsContractName, TargetNodeFeeSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func ProposeTargetNodeFee(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", TargetNodeFeeSettingPath), NetworkSettingsContractName, TargetNodeFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeTargetNodeFeeGas(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", TargetNodeFeeSettingPath), NetworkSettingsContractName, TargetNodeFeeSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func EstimateProposeTargetNodeFeeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", TargetNodeFeeSettingPath), NetworkSettingsContractName, TargetNodeFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Maximum node commission rate
@@ -177,11 +177,11 @@ func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 	}
 	return eth.WeiToEth(*value), nil
 }
-func ProposeMaximumNodeFee(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumNodeFeeSettingPath), NetworkSettingsContractName, MaximumNodeFeeSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func ProposeMaximumNodeFee(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumNodeFeeSettingPath), NetworkSettingsContractName, MaximumNodeFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMaximumNodeFeeGas(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumNodeFeeSettingPath), NetworkSettingsContractName, MaximumNodeFeeSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func EstimateProposeMaximumNodeFeeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumNodeFeeSettingPath), NetworkSettingsContractName, MaximumNodeFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // The range of node demand values to base fee calculations on
@@ -215,11 +215,11 @@ func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	return eth.WeiToEth(*value), nil
 }
-func ProposeTargetRethCollateralRate(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", TargetRethCollateralRateSettingPath), NetworkSettingsContractName, TargetRethCollateralRateSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func ProposeTargetRethCollateralRate(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", TargetRethCollateralRateSettingPath), NetworkSettingsContractName, TargetRethCollateralRateSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeTargetRethCollateralRateGas(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", TargetRethCollateralRateSettingPath), NetworkSettingsContractName, TargetRethCollateralRateSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func EstimateProposeTargetRethCollateralRateGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", TargetRethCollateralRateSettingPath), NetworkSettingsContractName, TargetRethCollateralRateSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // The number of oDAO members that have to vote for a penalty expressed as a percentage
@@ -234,11 +234,11 @@ func GetNetworkPenaltyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	return eth.WeiToEth(*value), nil
 }
-func ProposeNetworkPenaltyThreshold(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkPenaltyThreshold), NetworkSettingsContractName, NetworkPenaltyThreshold, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func ProposeNetworkPenaltyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkPenaltyThreshold), NetworkSettingsContractName, NetworkPenaltyThreshold, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeNetworkPenaltyThresholdGas(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkPenaltyThreshold), NetworkSettingsContractName, NetworkPenaltyThreshold, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func EstimateProposeNetworkPenaltyThresholdGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkPenaltyThreshold), NetworkSettingsContractName, NetworkPenaltyThreshold, value, blockNumber, treeNodes, opts)
 }
 
 // The amount a node operator is penalised for each penalty as a percentage
@@ -253,11 +253,11 @@ func GetNetworkPenaltyPerRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	}
 	return eth.WeiToEth(*value), nil
 }
-func ProposeNetworkPenaltyPerRate(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkPenaltyPerRateSettingPath), NetworkSettingsContractName, NetworkPenaltyPerRateSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func ProposeNetworkPenaltyPerRate(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkPenaltyPerRateSettingPath), NetworkSettingsContractName, NetworkPenaltyPerRateSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeNetworkPenaltyPerRateGas(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkPenaltyPerRateSettingPath), NetworkSettingsContractName, NetworkPenaltyPerRateSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func EstimateProposeNetworkPenaltyPerRateGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkPenaltyPerRateSettingPath), NetworkSettingsContractName, NetworkPenaltyPerRateSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Rewards submissions currently enabled

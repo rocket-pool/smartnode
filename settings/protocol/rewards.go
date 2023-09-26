@@ -72,11 +72,11 @@ func GetRewardsClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	return time.Duration((*value).Uint64()) * time.Second, nil
 }
-func ProposeRewardsClaimIntervalTime(rp *rocketpool.RocketPool, value time.Duration, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", RewardsClaimIntervalTimeSettingPath), RewardsSettingsContractName, RewardsClaimIntervalTimeSettingPath, big.NewInt(0).SetUint64(uint64(value.Seconds())), blockNumber, treeNodes, opts)
+func ProposeRewardsClaimIntervalTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", RewardsClaimIntervalTimeSettingPath), RewardsSettingsContractName, RewardsClaimIntervalTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeRewardsClaimIntervalTimeGas(rp *rocketpool.RocketPool, value time.Duration, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", RewardsClaimIntervalTimeSettingPath), RewardsSettingsContractName, RewardsClaimIntervalTimeSettingPath, big.NewInt(0).SetUint64(uint64(value.Seconds())), blockNumber, treeNodes, opts)
+func EstimateProposeRewardsClaimIntervalTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", RewardsClaimIntervalTimeSettingPath), RewardsSettingsContractName, RewardsClaimIntervalTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts

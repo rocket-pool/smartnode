@@ -113,11 +113,11 @@ func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	return eth.WeiToEth(*value), nil
 }
-func ProposeMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumPerMinipoolStakeSettingPath), NodeSettingsContractName, MinimumPerMinipoolStakeSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func ProposeMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumPerMinipoolStakeSettingPath), NodeSettingsContractName, MinimumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMinimumPerMinipoolStakeGas(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinimumPerMinipoolStakeSettingPath), NodeSettingsContractName, MinimumPerMinipoolStakeSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func EstimateProposeMinimumPerMinipoolStakeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinimumPerMinipoolStakeSettingPath), NodeSettingsContractName, MinimumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // The minimum RPL stake per minipool as a fraction of assigned user ETH
@@ -145,11 +145,11 @@ func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	return eth.WeiToEth(*value), nil
 }
-func ProposeMaximumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumPerMinipoolStakeSettingPath), NodeSettingsContractName, MaximumPerMinipoolStakeSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func ProposeMaximumPerMinipoolStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumPerMinipoolStakeSettingPath), NodeSettingsContractName, MaximumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMaximumPerMinipoolStakeGas(rp *rocketpool.RocketPool, value float64, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumPerMinipoolStakeSettingPath), NodeSettingsContractName, MaximumPerMinipoolStakeSettingPath, eth.EthToWei(value), blockNumber, treeNodes, opts)
+func EstimateProposeMaximumPerMinipoolStakeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumPerMinipoolStakeSettingPath), NodeSettingsContractName, MaximumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // The maximum RPL stake per minipool as a fraction of assigned user ETH
