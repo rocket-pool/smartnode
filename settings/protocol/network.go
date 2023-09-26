@@ -27,7 +27,7 @@ const (
 	MaximumNodeFeeSettingPath           string = "network.node.fee.maximum"
 	NodeFeeDemandRangeSettingPath       string = "network.node.fee.demand.range"
 	TargetRethCollateralRateSettingPath string = "network.reth.collateral.target"
-	NetworkPenaltyThreshold             string = "network.penalty.threshold"
+	NetworkPenaltyThresholdSettingPath  string = "network.penalty.threshold"
 	NetworkPenaltyPerRateSettingPath    string = "network.penalty.per.rate"
 	SubmitRewardsEnabledSettingPath     string = "network.submit.rewards.enabled"
 )
@@ -235,10 +235,10 @@ func GetNetworkPenaltyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	return eth.WeiToEth(*value), nil
 }
 func ProposeNetworkPenaltyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkPenaltyThreshold), NetworkSettingsContractName, NetworkPenaltyThreshold, value, blockNumber, treeNodes, opts)
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkPenaltyThresholdSettingPath), NetworkSettingsContractName, NetworkPenaltyThresholdSettingPath, value, blockNumber, treeNodes, opts)
 }
 func EstimateProposeNetworkPenaltyThresholdGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkPenaltyThreshold), NetworkSettingsContractName, NetworkPenaltyThreshold, value, blockNumber, treeNodes, opts)
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkPenaltyThresholdSettingPath), NetworkSettingsContractName, NetworkPenaltyThresholdSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // The amount a node operator is penalised for each penalty as a percentage
