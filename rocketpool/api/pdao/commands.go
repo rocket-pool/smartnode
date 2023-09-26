@@ -242,14 +242,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 					settingName := c.Args().Get(0)
 					value := c.Args().Get(1)
-					blockNumber, err := cliutils.ValidatePositiveUint("block-number", c.Args().Get(2))
+					blockNumber, err := cliutils.ValidatePositiveUint32("block-number", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
 					pollard := c.Args().Get(3)
 
 					// Run
-					api.PrintResponse(proposeSetting(c, settingName, value, uint32(blockNumber), pollard))
+					api.PrintResponse(proposeSetting(c, settingName, value, blockNumber, pollard))
 					return nil
 
 				},

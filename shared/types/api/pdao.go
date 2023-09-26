@@ -154,6 +154,7 @@ type CanProposePDAOSettingResponse struct {
 	StakedRpl       *big.Int           `json:"stakedRpl"`
 	LockedRpl       *big.Int           `json:"lockedRpl"`
 	ProposalBond    *big.Int           `json:"proposalBond"`
+	BlockNumber     uint32             `json:"blockNumber"`
 	Pollard         string             `json:"pollard"`
 	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
 }

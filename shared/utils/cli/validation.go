@@ -64,6 +64,15 @@ func ValidateUint(name, value string) (uint64, error) {
 	return val, nil
 }
 
+// Validate an unsigned integer value
+func ValidateUint32(name, value string) (uint32, error) {
+	val, err := strconv.ParseUint(value, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("Invalid %s '%s'", name, value)
+	}
+	return uint32(val), nil
+}
+
 // Validate an address
 func ValidateAddress(name, value string) (common.Address, error) {
 	if !common.IsHexAddress(value) {
@@ -155,6 +164,18 @@ func ValidateProposalType(name, value string) (string, error) {
 // Validate a positive unsigned integer value
 func ValidatePositiveUint(name, value string) (uint64, error) {
 	val, err := ValidateUint(name, value)
+	if err != nil {
+		return 0, err
+	}
+	if val == 0 {
+		return 0, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
+	}
+	return val, nil
+}
+
+// Validate a positive 32-bit unsigned integer value
+func ValidatePositiveUint32(name, value string) (uint32, error) {
+	val, err := ValidateUint32(name, value)
 	if err != nil {
 		return 0, err
 	}

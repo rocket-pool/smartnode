@@ -114,6 +114,9 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 	freeRpl := big.NewInt(0).Sub(stakedRpl, lockedRpl)
 	response.InsufficientRpl = (freeRpl.Cmp(proposalBond) < 0)
 
+	blockNumber := uint32(block.ExecutionBlockNumber)
+	response.BlockNumber = blockNumber
+
 	// Create the proposal tree
 	gen, err := voting.NewVotingTreeGenerator(rp)
 	if err != nil {
@@ -121,7 +124,6 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 	}
 
 	// Create the voting power pollard for the proposal
-	blockNumber := uint32(block.ExecutionBlockNumber)
 	pollard, err := gen.CreatePollardRowForProposal(blockNumber, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating voting power pollard: %w", err)

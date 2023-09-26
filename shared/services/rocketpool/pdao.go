@@ -169,7 +169,7 @@ func (c *Client) PDAOCanProposeSetting(setting string, value string) (api.CanPro
 }
 
 // Propose updating a PDAO setting (use can-propose-setting to get the pollard)
-func (c *Client) PDAOProposeSetting(setting string, value string, blockNumber uint64, pollard string) (api.ProposePDAOSettingResponse, error) {
+func (c *Client) PDAOProposeSetting(setting string, value string, blockNumber uint32, pollard string) (api.ProposePDAOSettingResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-setting %s %s %d %s", setting, value, blockNumber, pollard))
 	if err != nil {
 		return api.ProposePDAOSettingResponse{}, fmt.Errorf("Could not get protocol DAO propose-setting: %w", err)
