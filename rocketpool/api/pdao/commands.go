@@ -227,22 +227,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "propose-members-quorum",
-				Usage:     "Propose updating the members.quorum setting",
-				UsageText: "rocketpool api pdao propose-members-quorum value",
+				Name:      "propose-setting",
+				Usage:     "Propose updating a PDAO setting (use can-propose-setting to get the pollard)",
+				UsageText: "rocketpool api pdao propose-setting setting-name value pollard",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
-					quorum, err := cliutils.ValidateFraction("quorum", c.Args().Get(0))
+					settingName := c.Args().Get(0)
+					value := c.Args().Get(1)
+					blockNumber, err := cliutils.ValidatePositiveUint("block-number", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
+					pollard := c.Args().Get(3)
 
 					// Run
-					api.PrintResponse(proposeSettingMembersQuorum(c, quorum))
+					api.PrintResponse(proposeSetting(c, settingName, value, uint32(blockNumber), pollard))
 					return nil
 
 				},

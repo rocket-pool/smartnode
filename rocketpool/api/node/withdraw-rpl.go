@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
@@ -49,7 +50,7 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	var minimumRplStake *big.Int
 	var currentTime uint64
 	var rplStakedTime uint64
-	var withdrawalDelay uint64
+	var withdrawalDelay time.Duration
 
 	// Get RPL stake
 	wg.Go(func() error {
@@ -111,7 +112,7 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	remainingRplStake.Sub(rplStake, amountWei)
 	response.InsufficientBalance = (amountWei.Cmp(rplStake) > 0)
 	response.MinipoolsUndercollateralized = (remainingRplStake.Cmp(minimumRplStake) < 0)
-	response.WithdrawalDelayActive = ((currentTime - rplStakedTime) < withdrawalDelay)
+	response.WithdrawalDelayActive = ((currentTime - rplStakedTime) < uint64(withdrawalDelay.Seconds()))
 
 	// Update & return response
 	response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive)

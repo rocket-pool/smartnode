@@ -152,6 +152,7 @@ type CanProposePDAOSettingResponse struct {
 	StakedRpl       *big.Int           `json:"stakedRpl"`
 	LockedRpl       *big.Int           `json:"lockedRpl"`
 	ProposalBond    *big.Int           `json:"proposalBond"`
+	Pollard         string             `json:"pollard"`
 	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
 }
 type ProposePDAOSettingResponse struct {

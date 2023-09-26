@@ -12,7 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -143,7 +143,7 @@ func (collector *TrustedNodeCollector) collectSlowMetrics(memberIds map[common.A
 	// Get the balances participation data
 	wg.Go(func() error {
 		var err error
-		balancesParticipation, err = node.GetTrustedNodeLatestBalancesParticipation(collector.rp, nil, nil)
+		balancesParticipation, err = network.GetTrustedNodeLatestBalancesParticipation(collector.rp, nil, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting trusted node balances participation data: %w", err)
 		}
@@ -153,7 +153,7 @@ func (collector *TrustedNodeCollector) collectSlowMetrics(memberIds map[common.A
 	// Get the prices participation data
 	wg.Go(func() error {
 		var err error
-		pricesParticipation, err = node.GetTrustedNodeLatestPricesParticipation(collector.rp, nil, nil)
+		pricesParticipation, err = network.GetTrustedNodeLatestPricesParticipation(collector.rp, nil, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting trusted node prices participation data: %w", err)
 		}
