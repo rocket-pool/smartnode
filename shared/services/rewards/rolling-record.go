@@ -187,8 +187,8 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 		}
 
 		_, exists = r.ValidatorIndexMap[validator.Index]
-		if !exists {
-			// Validator exists but it hasn't been recorded yet, add it to the map and update the latest index so we don't remap stuff we've already seen
+		if !exists && mpd.Status == types.Staking {
+			// Validator exists and is staking but it hasn't been recorded yet, add it to the map and update the latest index so we don't remap stuff we've already seen
 			minipoolInfo := &MinipoolInfo{
 				Address:                 mpd.MinipoolAddress,
 				ValidatorPubkey:         mpd.Pubkey,
