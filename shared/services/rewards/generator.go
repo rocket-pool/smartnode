@@ -25,6 +25,7 @@ const (
 	MainnetV4Interval uint64 = 6
 	MainnetV5Interval uint64 = 8
 	MainnetV6Interval uint64 = 12
+	MainnetV7Interval uint64 = TestingInterval
 
 	// Prater intervals
 	PraterV2Interval uint64 = 37
@@ -32,6 +33,7 @@ const (
 	PraterV4Interval uint64 = 60
 	PraterV5Interval uint64 = 76
 	PraterV6Interval uint64 = 118
+	PraterV7Interval uint64 = TestingInterval
 )
 
 type TreeGenerator struct {
@@ -72,6 +74,15 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 		intervalsPassed:  intervalsPassed,
 	}
 
+	// v7
+	var v7_generator treeGeneratorImpl
+	if rollingRecord == nil {
+		v7_generator = newTreeGeneratorImpl_v7(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
+	} else {
+		v7_generator = newTreeGeneratorImpl_v7_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+	}
+
+	// v6
 	var v6_generator treeGeneratorImpl
 	if rollingRecord == nil {
 		v6_generator = newTreeGeneratorImpl_v6(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
@@ -82,6 +93,11 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
+			rewardsRulesetVersion: 7,
+			mainnetStartInterval:  MainnetV7Interval,
+			praterStartInterval:   PraterV7Interval,
+			generator:             v7_generator,
+		}, {
 			rewardsRulesetVersion: 6,
 			mainnetStartInterval:  MainnetV6Interval,
 			praterStartInterval:   PraterV6Interval,

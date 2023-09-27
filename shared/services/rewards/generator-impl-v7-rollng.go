@@ -22,8 +22,8 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
-// Implementation for tree generator ruleset v6 with rolling record support
-type treeGeneratorImpl_v6_rolling struct {
+// Implementation for tree generator ruleset v7 with rolling record support
+type treeGeneratorImpl_v7_rolling struct {
 	networkState         *state.NetworkState
 	rewardsFile          *RewardsFile
 	elSnapshotHeader     *types.Header
@@ -49,12 +49,12 @@ type treeGeneratorImpl_v6_rolling struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v6_rolling(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v6_rolling {
-	return &treeGeneratorImpl_v6_rolling{
+func newTreeGeneratorImpl_v7_rolling(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v7_rolling {
+	return &treeGeneratorImpl_v7_rolling{
 		zero: big.NewInt(0),
 		rewardsFile: &RewardsFile{
 			RewardsFileVersion: 1,
-			RulesetVersion:     6,
+			RulesetVersion:     7,
 			Index:              index,
 			StartTime:          startTime.UTC(),
 			EndTime:            endTime.UTC(),
@@ -91,11 +91,11 @@ func newTreeGeneratorImpl_v6_rolling(log *log.ColorLogger, logPrefix string, ind
 }
 
 // Get the version of the ruleset used by this generator
-func (r *treeGeneratorImpl_v6_rolling) getRulesetVersion() uint64 {
+func (r *treeGeneratorImpl_v7_rolling) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v6_rolling) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*RewardsFile, error) {
+func (r *treeGeneratorImpl_v7_rolling) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*RewardsFile, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -160,7 +160,7 @@ func (r *treeGeneratorImpl_v6_rolling) generateTree(rp *rocketpool.RocketPool, c
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v6_rolling) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error) {
+func (r *treeGeneratorImpl_v7_rolling) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
@@ -199,7 +199,7 @@ func (r *treeGeneratorImpl_v6_rolling) approximateStakerShareOfSmoothingPool(rp 
 }
 
 // Generates a merkle tree from the provided rewards map
-func (r *treeGeneratorImpl_v6_rolling) generateMerkleTree() error {
+func (r *treeGeneratorImpl_v7_rolling) generateMerkleTree() error {
 
 	// Generate the leaf data for each node
 	totalData := make([][]byte, 0, len(r.rewardsFile.NodeRewards))
@@ -270,7 +270,7 @@ func (r *treeGeneratorImpl_v6_rolling) generateMerkleTree() error {
 }
 
 // Calculates the per-network distribution amounts and the total reward amounts
-func (r *treeGeneratorImpl_v6_rolling) updateNetworksAndTotals() {
+func (r *treeGeneratorImpl_v7_rolling) updateNetworksAndTotals() {
 
 	// Get the highest network index with valid rewards
 	highestNetworkIndex := uint64(0)
@@ -296,7 +296,7 @@ func (r *treeGeneratorImpl_v6_rolling) updateNetworksAndTotals() {
 }
 
 // Calculates the RPL rewards for the given interval
-func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
+func (r *treeGeneratorImpl_v7_rolling) calculateRplRewards() error {
 
 	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
 	nodeOpPercent := r.networkState.NetworkDetails.NodeOperatorRewardsPercent
@@ -307,7 +307,7 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 	r.log.Printlnf("%s Approx. total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
 
 	// Calculate the effective stake of each node, scaling by their participation in this interval
-	trueNodeEffectiveStakes, totalNodeEffectiveStake, err := r.networkState.CalculateTrueEffectiveStakes(true, false)
+	trueNodeEffectiveStakes, totalNodeEffectiveStake, err := r.networkState.CalculateTrueEffectiveStakes(true, true)
 	if err != nil {
 		return fmt.Errorf("error calculating effective RPL stakes: %w", err)
 	}
@@ -477,7 +477,7 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 }
 
 // Calculates the ETH rewards for the given interval
-func (r *treeGeneratorImpl_v6_rolling) calculateEthRewards(checkBeaconPerformance bool) error {
+func (r *treeGeneratorImpl_v7_rolling) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
 	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
@@ -586,7 +586,7 @@ func (r *treeGeneratorImpl_v6_rolling) calculateEthRewards(checkBeaconPerformanc
 }
 
 // Calculate the distribution of Smoothing Pool ETH to each node
-func (r *treeGeneratorImpl_v6_rolling) calculateNodeRewards() (*big.Int, *big.Int, error) {
+func (r *treeGeneratorImpl_v7_rolling) calculateNodeRewards() (*big.Int, *big.Int, error) {
 
 	// Get the list of cheaters
 	cheaters := r.getCheaters()
@@ -656,7 +656,7 @@ func (r *treeGeneratorImpl_v6_rolling) calculateNodeRewards() (*big.Int, *big.In
 }
 
 // Validates that the provided network is legal
-func (r *treeGeneratorImpl_v6_rolling) validateNetwork(network uint64) (bool, error) {
+func (r *treeGeneratorImpl_v7_rolling) validateNetwork(network uint64) (bool, error) {
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
 		var err error
@@ -671,7 +671,7 @@ func (r *treeGeneratorImpl_v6_rolling) validateNetwork(network uint64) (bool, er
 }
 
 // Gets the EL header for the given interval's start block
-func (r *treeGeneratorImpl_v6_rolling) getStartBlocksForInterval() (*types.Header, error) {
+func (r *treeGeneratorImpl_v7_rolling) getStartBlocksForInterval() (*types.Header, error) {
 	// Get the Beacon block for the start slot of the record
 	r.rewardsFile.ConsensusStartBlock = r.rollingRecord.StartSlot
 	r.rewardsFile.MinipoolPerformanceFile.ConsensusStartBlock = r.rollingRecord.StartSlot
@@ -696,7 +696,7 @@ func (r *treeGeneratorImpl_v6_rolling) getStartBlocksForInterval() (*types.Heade
 }
 
 // Detect and flag any cheaters
-func (r *treeGeneratorImpl_v6_rolling) getCheaters() map[common.Address]bool {
+func (r *treeGeneratorImpl_v7_rolling) getCheaters() map[common.Address]bool {
 	cheatingNodes := map[common.Address]bool{}
 	three := big.NewInt(3)
 
