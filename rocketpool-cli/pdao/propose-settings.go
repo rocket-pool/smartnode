@@ -39,6 +39,17 @@ func proposeSettingLotDuration(c *cli.Context, value time.Duration) error {
 	return proposeSetting(c, protocol.LotDurationSettingPath, trueValue)
 }
 
+func proposeSettingLotStartingPriceRatio(c *cli.Context, value string) error {
+	trueValue, err := parseFloat(c, value)
+	if err != nil {
+		return err
+	}
+	if trueValue == "" {
+		return nil
+	}
+	return proposeSetting(c, protocol.LotStartingPriceRatioSettingPath, trueValue)
+}
+
 // Master general proposal function
 func proposeSetting(c *cli.Context, setting string, value string) error {
 	// Get RP client
@@ -90,4 +101,26 @@ func proposeSetting(c *cli.Context, setting string, value string) error {
 	// Log & return
 	fmt.Printf("Successfully submitted a %s setting update proposal with ID %d.\n", setting, response.ProposalId)
 	return nil
+}
+
+func parseFloat(c *cli.Context, value string) (string, error) {
+	if c.Bool("raw") {
+		val, err := cliutils.ValidateBigInt("value", value)
+		if err != nil {
+			return "", err
+		}
+		return val.String(), nil
+	} else {
+		val, err := cliutils.ValidateFraction("value", value)
+		if err != nil {
+			return "", err
+		}
+
+		trueVal := eth.EthToWei(val)
+		if !cliutils.Confirm("Your value will be multiplied by 10^18 to be stored in the contracts, which results in:\n\n\t[%s]\n\nPlease make sure this is what you want and does not have any rounding errors.\n\nIs this result correct?") {
+			fmt.Println("Cancelled. Please try again with the '-raw' flag and provide an explicit value instead.")
+			return "", nil
+		}
+		return trueVal.String(), nil
+	}
 }
