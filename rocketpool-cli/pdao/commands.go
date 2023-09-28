@@ -135,37 +135,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 
 					{
-						Name:      "cancel",
-						Aliases:   []string{"c"},
-						Usage:     "Cancel a proposal made by the node",
-						UsageText: "rocketpool pdao proposals cancel [options]",
-						Flags: []cli.Flag{
-							cli.StringFlag{
-								Name:  "proposal, p",
-								Usage: "The ID of the proposal to cancel",
-							},
-						},
-						Action: func(c *cli.Context) error {
-
-							// Validate args
-							if err := cliutils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
-
-							// Validate flags
-							if c.String("proposal") != "" {
-								if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
-									return err
-								}
-							}
-
-							// Run
-							return cancelProposal(c)
-
-						},
-					},
-
-					{
 						Name:      "vote",
 						Aliases:   []string{"v"},
 						Usage:     "Vote on a proposal",

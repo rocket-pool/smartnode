@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -16,6 +17,26 @@ import (
 func proposeSettingAuctionIsCreateLotEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
 	return proposeSetting(c, protocol.CreateLotEnabledSettingPath, trueValue)
+}
+
+func proposeSettingAuctionIsBidOnLotEnabled(c *cli.Context, value bool) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.BidOnLotEnabledSettingPath, trueValue)
+}
+
+func proposeSettingLotMinimumEthValue(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.LotMinimumEthValueSettingPath, trueValue)
+}
+
+func proposeSettingLotMaximumEthValue(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.LotMaximumEthValueSettingPath, trueValue)
+}
+
+func proposeSettingLotDuration(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.LotDurationSettingPath, trueValue)
 }
 
 // Master general proposal function

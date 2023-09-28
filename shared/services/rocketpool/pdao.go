@@ -40,38 +40,6 @@ func (c *Client) PDAOProposalDetails(proposalID uint64) (api.PDAOProposalRespons
 	return response, nil
 }
 
-// Check whether the node can cancel a proposal
-func (c *Client) PDAOCanCancelProposal(proposalID uint64) (api.CanCancelPDAOProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-cancel-proposal %d", proposalID))
-	if err != nil {
-		return api.CanCancelPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-cancel-proposal: %w", err)
-	}
-	var response api.CanCancelPDAOProposalResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanCancelPDAOProposalResponse{}, fmt.Errorf("Could not decode protocol DAO can-cancel-proposal response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanCancelPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-cancel-proposal: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Cancel a proposal made by the node
-func (c *Client) PDAOCancelProposal(proposalID uint64) (api.CancelPDAOProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao cancel-proposal %d", proposalID))
-	if err != nil {
-		return api.CancelPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO cancel-proposal: %w", err)
-	}
-	var response api.CancelPDAOProposalResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CancelPDAOProposalResponse{}, fmt.Errorf("Could not decode protocol DAO cancel-proposal response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CancelPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO cancel-proposal: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Check whether the node can vote on a proposal
 func (c *Client) PDAOCanVoteProposal(proposalID uint64, support bool) (api.CanVoteOnPDAOProposalResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-vote-proposal %d %t", proposalID, support))

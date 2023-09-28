@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tyler-smith/go-bip39"
@@ -310,4 +311,13 @@ func ValidateByteArray(name, value string) ([]byte, error) {
 	}
 
 	return bytes, nil
+}
+
+// Validate a duration
+func ValidateDuration(name, value string) (time.Duration, error) {
+	duration, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
+	}
+	return duration, nil
 }
