@@ -1,10 +1,11 @@
 package rewards
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -187,7 +188,7 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 		}
 
 		_, exists = r.ValidatorIndexMap[validator.Index]
-		if !exists {
+		if !exists && mpd.Status == types.Staking {
 			// Validator exists but it hasn't been recorded yet, add it to the map and update the latest index so we don't remap stuff we've already seen
 			minipoolInfo := &MinipoolInfo{
 				Address:                 mpd.MinipoolAddress,
