@@ -5,9 +5,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/goccy/go-json"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared"
@@ -164,8 +163,24 @@ func (r *RollingRecord) GetScores(cheatingNodes map[common.Address]bool) ([]*Min
 
 // Serialize the current record into a byte array
 func (r *RollingRecord) Serialize() ([]byte, error) {
+	// Clone the record
+	clone := &RollingRecord{
+		StartSlot:         r.StartSlot,
+		LastDutiesSlot:    r.LastDutiesSlot,
+		RewardsInterval:   r.RewardsInterval,
+		SmartnodeVersion:  r.SmartnodeVersion,
+		ValidatorIndexMap: map[string]*MinipoolInfo{},
+	}
+
+	// Remove minipool perf records with zero attestations from the serialization
+	for pubkey, mp := range r.ValidatorIndexMap {
+		if mp.AttestationCount > 0 {
+			clone.ValidatorIndexMap[pubkey] = mp
+		}
+	}
+
 	// Serialize as JSON
-	bytes, err := json.Marshal(r)
+	bytes, err := json.Marshal(clone)
 	if err != nil {
 		return nil, fmt.Errorf("error serializing rolling record: %w", err)
 	}
@@ -189,7 +204,7 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 
 		_, exists = r.ValidatorIndexMap[validator.Index]
 		if !exists && mpd.Status == types.Staking {
-			// Validator exists but it hasn't been recorded yet, add it to the map and update the latest index so we don't remap stuff we've already seen
+			// Validator exists and is staking but it hasn't been recorded yet, add it to the map and update the latest index so we don't remap stuff we've already seen
 			minipoolInfo := &MinipoolInfo{
 				Address:                 mpd.MinipoolAddress,
 				ValidatorPubkey:         mpd.Pubkey,

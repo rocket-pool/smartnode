@@ -318,7 +318,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 
 // Calculate the true effective stakes of all nodes in the state, using the validator status
 // on Beacon as a reference for minipool eligibility instead of the EL-based minipool status
-func (s *NetworkState) CalculateTrueEffectiveStakes(scaleByParticipation bool) (map[common.Address]*big.Int, *big.Int, error) {
+func (s *NetworkState) CalculateTrueEffectiveStakes(scaleByParticipation bool, allowRplForUnstartedValidators bool) (map[common.Address]*big.Int, *big.Int, error) {
 	effectiveStakes := make(map[common.Address]*big.Int, len(s.NodeDetails))
 	totalEffectiveStake := big.NewInt(0)
 	intervalDurationBig := big.NewInt(int64(s.NetworkDetails.IntervalDuration.Seconds()))
@@ -348,13 +348,15 @@ func (s *NetworkState) CalculateTrueEffectiveStakes(scaleByParticipation bool) (
 						continue
 					}
 
-					// Starts too late
 					intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
-					if validatorStatus.ActivationEpoch > intervalEndEpoch {
-						//s.logLine("NOTE: Minipool %s starts on epoch %d which is after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ActivationEpoch, intervalEndEpoch)
-						continue
-					}
+					if !allowRplForUnstartedValidators {
+						// Starts too late
+						if validatorStatus.ActivationEpoch > intervalEndEpoch {
+							//s.logLine("NOTE: Minipool %s starts on epoch %d which is after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ActivationEpoch, intervalEndEpoch)
+							continue
+						}
 
+					}
 					// Already exited
 					if validatorStatus.ExitEpoch <= intervalEndEpoch {
 						//s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
