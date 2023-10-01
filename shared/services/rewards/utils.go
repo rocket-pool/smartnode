@@ -142,7 +142,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.MerkleRootValid = true
 
 	// Get the rewards from it
-	rewards, exists := proofWrapper.GetNodeRewardsInfo()[nodeAddress]
+	rewards, exists := proofWrapper.GetNodeRewardsInfo(nodeAddress)
 	info.NodeExists = exists
 	if exists {
 		info.CollateralRplAmount = rewards.GetCollateralRpl()

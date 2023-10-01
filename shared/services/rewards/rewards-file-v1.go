@@ -25,6 +25,11 @@ func (f *MinipoolPerformanceFile_v1) Serialize() ([]byte, error) {
 	return json.Marshal(f)
 }
 
+// Serialize a minipool performance file into bytes designed for human readability
+func (f *MinipoolPerformanceFile_v1) SerializeHuman() ([]byte, error) {
+	return json.MarshalIndent(f, "", "\t")
+}
+
 // Minipool stats
 type SmoothingPoolMinipoolPerformance_v1 struct {
 	Pubkey                  string   `json:"pubkey"`
@@ -66,13 +71,10 @@ func (f *RewardsFile_v1) GetHeader() *RewardsFileHeader {
 	return f.RewardsFileHeader
 }
 
-// Get the rewards file's header
-func (f *RewardsFile_v1) GetNodeRewardsInfo() map[common.Address]INodeRewardsInfo {
-	out := map[common.Address]INodeRewardsInfo{}
-	for address, info := range f.NodeRewards {
-		out[address] = info
-	}
-	return out
+// Get info about a node's rewards
+func (f *RewardsFile_v1) GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool) {
+	rewards, exists := f.NodeRewards[address]
+	return rewards, exists
 }
 
 // Gets the minipool performance file corresponding to this rewards file

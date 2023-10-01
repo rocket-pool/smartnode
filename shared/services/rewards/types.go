@@ -13,16 +13,31 @@ import (
 
 // Interface for version-agnostic minipool performance
 type IMinipoolPerformanceFile interface {
+	// Serialize a minipool performance file into bytes
 	Serialize() ([]byte, error)
+
+	// Serialize a minipool performance file into bytes designed for human readability
+	SerializeHuman() ([]byte, error)
 }
 
 // Interface for version-agnostic rewards files
 type IRewardsFile interface {
+	// Serialize a rewards file into bytes
 	Serialize() ([]byte, error)
+
+	// Deserialize a rewards file from bytes
 	Deserialize([]byte) error
+
+	// Get the rewards file's header
 	GetHeader() *RewardsFileHeader
-	GetNodeRewardsInfo() map[common.Address]INodeRewardsInfo
+
+	// Get info about a node's rewards
+	GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool)
+
+	// Gets the minipool performance file corresponding to this rewards file
 	GetMinipoolPerformanceFile() IMinipoolPerformanceFile
+
+	// Sets the CID of the minipool performance file corresponding to this rewards file
 	SetMinipoolPerformanceFileCID(cid string)
 }
 
