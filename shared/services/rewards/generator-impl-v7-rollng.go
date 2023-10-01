@@ -43,7 +43,6 @@ type treeGeneratorImpl_v7_rolling struct {
 	epsilon              *big.Int
 	intervalSeconds      *big.Int
 	beaconConfig         beacon.Eth2Config
-	zero                 *big.Int
 	rollingRecord        *RollingRecord
 	nodeDetails          map[common.Address]*NodeSmoothingDetails
 }
@@ -51,7 +50,6 @@ type treeGeneratorImpl_v7_rolling struct {
 // Create a new tree generator
 func newTreeGeneratorImpl_v7_rolling(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v7_rolling {
 	return &treeGeneratorImpl_v7_rolling{
-		zero: big.NewInt(0),
 		rewardsFile: &RewardsFile_v2{
 			RewardsFileHeader: &RewardsFileHeader{
 				RewardsFileVersion:  1,
@@ -207,7 +205,7 @@ func (r *treeGeneratorImpl_v7_rolling) generateMerkleTree() error {
 	totalData := make([][]byte, 0, len(r.rewardsFile.NodeRewards))
 	for address, rewardsForNode := range r.rewardsFile.NodeRewards {
 		// Ignore nodes that didn't receive any rewards
-		if rewardsForNode.CollateralRpl.Cmp(r.zero) == 0 && rewardsForNode.OracleDaoRpl.Cmp(r.zero) == 0 && rewardsForNode.SmoothingPoolEth.Cmp(r.zero) == 0 {
+		if rewardsForNode.CollateralRpl.Cmp(common.Big0) == 0 && rewardsForNode.OracleDaoRpl.Cmp(common.Big0) == 0 && rewardsForNode.SmoothingPoolEth.Cmp(common.Big0) == 0 {
 			continue
 		}
 
@@ -299,10 +297,18 @@ func (r *treeGeneratorImpl_v7_rolling) updateNetworksAndTotals() {
 
 // Calculates the RPL rewards for the given interval
 func (r *treeGeneratorImpl_v7_rolling) calculateRplRewards() error {
-
 	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
-	nodeOpPercent := r.networkState.NetworkDetails.NodeOperatorRewardsPercent
 	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
+
+	// Get baseline Protocol DAO rewards
+	pDaoPercent := r.networkState.NetworkDetails.ProtocolDaoRewardsPercent
+	pDaoRewards := NewQuotedBigInt(0)
+	pDaoRewards.Mul(pendingRewards, pDaoPercent)
+	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
+	r.log.Printlnf("%s Expected Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
+
+	// Get node operator rewards
+	nodeOpPercent := r.networkState.NetworkDetails.NodeOperatorRewardsPercent
 	totalNodeRewards := big.NewInt(0)
 	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
 	totalNodeRewards.Div(totalNodeRewards, eth.EthToWei(1))
@@ -314,63 +320,75 @@ func (r *treeGeneratorImpl_v7_rolling) calculateRplRewards() error {
 		return fmt.Errorf("error calculating effective RPL stakes: %w", err)
 	}
 
-	for i, nodeDetails := range r.networkState.NodeDetails {
-		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
-		nodeRplRewards := big.NewInt(0)
-		nodeRplRewards.Mul(trueNodeEffectiveStakes[nodeDetails.NodeAddress], totalNodeRewards)
-		nodeRplRewards.Div(nodeRplRewards, totalNodeEffectiveStake)
-
-		// If there are pending rewards, add it to the map
-		if nodeRplRewards.Cmp(r.zero) == 1 {
-			rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeDetails.NodeAddress]
-			if !exists {
-				// Get the network the rewards should go to
-				network := r.networkState.NodeDetails[i].RewardNetwork.Uint64()
-				validNetwork, err := r.validateNetwork(network)
-				if err != nil {
-					return err
-				}
-				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[nodeDetails.NodeAddress] = network
-					network = 0
-				}
-
-				rewardsForNode = &NodeRewardsInfo{
-					RewardNetwork:    network,
-					CollateralRpl:    NewQuotedBigInt(0),
-					OracleDaoRpl:     NewQuotedBigInt(0),
-					SmoothingPoolEth: NewQuotedBigInt(0),
-				}
-				r.rewardsFile.NodeRewards[nodeDetails.NodeAddress] = rewardsForNode
+	// Operate normally if any node has rewards
+	if totalNodeEffectiveStake.Cmp(common.Big0) > 0 {
+		r.log.Printlnf("%s Calculating individual collateral rewards...", r.logPrefix)
+		for i, nodeDetails := range r.networkState.NodeDetails {
+			// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
+			nodeRplRewards := big.NewInt(0)
+			effectiveStake := trueNodeEffectiveStakes[nodeDetails.NodeAddress]
+			if effectiveStake.Cmp(common.Big0) > 0 {
+				nodeRplRewards.Mul(effectiveStake, totalNodeRewards)
+				nodeRplRewards.Div(nodeRplRewards, totalNodeEffectiveStake)
 			}
-			rewardsForNode.CollateralRpl.Add(&rewardsForNode.CollateralRpl.Int, nodeRplRewards)
 
-			// Add the rewards to the running total for the specified network
-			rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
-			if !exists {
-				rewardsForNetwork = &NetworkRewardsInfo{
-					CollateralRpl:    NewQuotedBigInt(0),
-					OracleDaoRpl:     NewQuotedBigInt(0),
-					SmoothingPoolEth: NewQuotedBigInt(0),
+			// If there are pending rewards, add it to the map
+			if nodeRplRewards.Cmp(common.Big0) == 1 {
+				rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeDetails.NodeAddress]
+				if !exists {
+					// Get the network the rewards should go to
+					network := r.networkState.NodeDetails[i].RewardNetwork.Uint64()
+					validNetwork, err := r.validateNetwork(network)
+					if err != nil {
+						return err
+					}
+					if !validNetwork {
+						r.rewardsFile.InvalidNetworkNodes[nodeDetails.NodeAddress] = network
+						network = 0
+					}
+
+					rewardsForNode = &NodeRewardsInfo{
+						RewardNetwork:    network,
+						CollateralRpl:    NewQuotedBigInt(0),
+						OracleDaoRpl:     NewQuotedBigInt(0),
+						SmoothingPoolEth: NewQuotedBigInt(0),
+					}
+					r.rewardsFile.NodeRewards[nodeDetails.NodeAddress] = rewardsForNode
 				}
-				r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
+				rewardsForNode.CollateralRpl.Add(&rewardsForNode.CollateralRpl.Int, nodeRplRewards)
+
+				// Add the rewards to the running total for the specified network
+				rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
+				if !exists {
+					rewardsForNetwork = &NetworkRewardsInfo{
+						CollateralRpl:    NewQuotedBigInt(0),
+						OracleDaoRpl:     NewQuotedBigInt(0),
+						SmoothingPoolEth: NewQuotedBigInt(0),
+					}
+					r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
+				}
+				rewardsForNetwork.CollateralRpl.Add(&rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 			}
-			rewardsForNetwork.CollateralRpl.Add(&rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 		}
-	}
 
-	// Sanity check to make sure we arrived at the correct total
-	delta := big.NewInt(0)
-	totalCalculatedNodeRewards := big.NewInt(0)
-	for _, networkRewards := range r.rewardsFile.NetworkRewards {
-		totalCalculatedNodeRewards.Add(totalCalculatedNodeRewards, &networkRewards.CollateralRpl.Int)
+		// Sanity check to make sure we arrived at the correct total
+		delta := big.NewInt(0)
+		totalCalculatedNodeRewards := big.NewInt(0)
+		for _, networkRewards := range r.rewardsFile.NetworkRewards {
+			totalCalculatedNodeRewards.Add(totalCalculatedNodeRewards, &networkRewards.CollateralRpl.Int)
+		}
+		delta.Sub(totalNodeRewards, totalCalculatedNodeRewards).Abs(delta)
+		if delta.Cmp(r.epsilon) == 1 {
+			return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
+		}
+		r.rewardsFile.TotalRewards.TotalCollateralRpl.Int = *totalCalculatedNodeRewards
+		r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
+		pDaoRewards.Sub(pendingRewards, totalCalculatedNodeRewards)
+	} else {
+		// In this situation, none of the nodes in the network had eligible rewards so send it all to the pDAO
+		pDaoRewards.Add(&pDaoRewards.Int, totalNodeRewards)
+		r.log.Printlnf("%s None of the nodes were eligible for collateral rewards, sending everything to the pDAO; now at %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
 	}
-	delta.Sub(totalNodeRewards, totalCalculatedNodeRewards).Abs(delta)
-	if delta.Cmp(r.epsilon) == 1 {
-		return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
-	}
-	r.rewardsFile.TotalRewards.TotalCollateralRpl.Int = *totalCalculatedNodeRewards
-	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 
 	// Handle Oracle DAO rewards
 	oDaoPercent := r.networkState.NetworkDetails.TrustedNodeOperatorRewardsPercent
@@ -450,7 +468,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateRplRewards() error {
 
 	// Sanity check to make sure we arrived at the correct total
 	totalCalculatedOdaoRewards := big.NewInt(0)
-	delta = big.NewInt(0)
+	delta := big.NewInt(0)
 	for _, networkRewards := range r.rewardsFile.NetworkRewards {
 		totalCalculatedOdaoRewards.Add(totalCalculatedOdaoRewards, &networkRewards.OracleDaoRpl.Int)
 	}
@@ -461,15 +479,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateRplRewards() error {
 	r.rewardsFile.TotalRewards.TotalOracleDaoRpl.Int = *totalCalculatedOdaoRewards
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
-	// Get expected Protocol DAO rewards
-	pDaoPercent := r.networkState.NetworkDetails.ProtocolDaoRewardsPercent
-	pDaoRewards := NewQuotedBigInt(0)
-	pDaoRewards.Mul(pendingRewards, pDaoPercent)
-	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
-	r.log.Printlnf("%s Expected Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
-
 	// Get actual protocol DAO rewards
-	pDaoRewards.Sub(pendingRewards, totalCalculatedNodeRewards)
 	pDaoRewards.Sub(&pDaoRewards.Int, totalCalculatedOdaoRewards)
 	r.rewardsFile.TotalRewards.ProtocolDaoRpl = pDaoRewards
 	r.log.Printlnf("%s Actual Protocol DAO rewards:   %s to account for truncation", r.logPrefix, pDaoRewards.String())
@@ -486,7 +496,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateEthRewards(checkBeaconPerformanc
 	r.log.Printlnf("%s Smoothing Pool Balance: %s (%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
 
 	// Ignore the ETH calculation if there are no rewards
-	if r.smoothingPoolBalance.Cmp(r.zero) == 0 {
+	if r.smoothingPoolBalance.Cmp(common.Big0) == 0 {
 		return nil
 	}
 
@@ -519,7 +529,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateEthRewards(checkBeaconPerformanc
 
 	// Update the rewards maps
 	for nodeAddress, nodeInfo := range r.nodeDetails {
-		if nodeInfo.SmoothingPoolEth.Cmp(r.zero) > 0 {
+		if nodeInfo.SmoothingPoolEth.Cmp(common.Big0) > 0 {
 			rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeAddress]
 			if !exists {
 				network := nodeInfo.RewardsNetwork
@@ -596,7 +606,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateNodeRewards() (*big.Int, *big.In
 	minipools, totalScore, attestationCount := r.rollingRecord.GetScores(cheaters)
 
 	// If there weren't any successful attestations, everything goes to the pool stakers
-	if totalScore.Cmp(r.zero) == 0 || attestationCount == 0 {
+	if totalScore.Cmp(common.Big0) == 0 || attestationCount == 0 {
 		r.log.Printlnf("WARNING: Total attestation score = %s, successful attestations = %d... sending the whole smoothing pool balance to the pool stakers.", totalScore.String(), attestationCount)
 		return r.smoothingPoolBalance, big.NewInt(0), nil
 	}
