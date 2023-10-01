@@ -25,7 +25,7 @@ import (
 // Implementation for tree generator ruleset v6 with rolling record support
 type treeGeneratorImpl_v6_rolling struct {
 	networkState         *state.NetworkState
-	rewardsFile          *RewardsFile
+	rewardsFile          *RewardsFile_v1
 	elSnapshotHeader     *types.Header
 	log                  *log.ColorLogger
 	logPrefix            string
@@ -52,33 +52,35 @@ type treeGeneratorImpl_v6_rolling struct {
 func newTreeGeneratorImpl_v6_rolling(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v6_rolling {
 	return &treeGeneratorImpl_v6_rolling{
 		zero: big.NewInt(0),
-		rewardsFile: &RewardsFile{
-			RewardsFileVersion: 1,
-			RulesetVersion:     6,
-			Index:              index,
-			StartTime:          startTime.UTC(),
-			EndTime:            endTime.UTC(),
-			ConsensusEndBlock:  consensusBlock,
-			ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
-			IntervalsPassed:    intervalsPassed,
-			TotalRewards: &TotalRewards{
-				ProtocolDaoRpl:               NewQuotedBigInt(0),
-				TotalCollateralRpl:           NewQuotedBigInt(0),
-				TotalOracleDaoRpl:            NewQuotedBigInt(0),
-				TotalSmoothingPoolEth:        NewQuotedBigInt(0),
-				PoolStakerSmoothingPoolEth:   NewQuotedBigInt(0),
-				NodeOperatorSmoothingPoolEth: NewQuotedBigInt(0),
-			},
-			NetworkRewards:      map[uint64]*NetworkRewardsInfo{},
-			NodeRewards:         map[common.Address]*NodeRewardsInfo{},
-			InvalidNetworkNodes: map[common.Address]uint64{},
-			MinipoolPerformanceFile: MinipoolPerformanceFile{
+		rewardsFile: &RewardsFile_v1{
+			RewardsFileHeader: &RewardsFileHeader{
+				RewardsFileVersion:  1,
+				RulesetVersion:      6,
 				Index:               index,
 				StartTime:           startTime.UTC(),
 				EndTime:             endTime.UTC(),
 				ConsensusEndBlock:   consensusBlock,
 				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
-				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance{},
+				IntervalsPassed:     intervalsPassed,
+				InvalidNetworkNodes: map[common.Address]uint64{},
+				TotalRewards: &TotalRewards{
+					ProtocolDaoRpl:               NewQuotedBigInt(0),
+					TotalCollateralRpl:           NewQuotedBigInt(0),
+					TotalOracleDaoRpl:            NewQuotedBigInt(0),
+					TotalSmoothingPoolEth:        NewQuotedBigInt(0),
+					PoolStakerSmoothingPoolEth:   NewQuotedBigInt(0),
+					NodeOperatorSmoothingPoolEth: NewQuotedBigInt(0),
+				},
+				NetworkRewards: map[uint64]*NetworkRewardsInfo{},
+			},
+			NodeRewards: map[common.Address]*NodeRewardsInfo_v1{},
+			MinipoolPerformanceFile: MinipoolPerformanceFile_v1{
+				Index:               index,
+				StartTime:           startTime.UTC(),
+				EndTime:             endTime.UTC(),
+				ConsensusEndBlock:   consensusBlock,
+				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
+				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v1{},
 			},
 		},
 		validatorIndexMap: map[string]*MinipoolInfo{},
@@ -95,7 +97,7 @@ func (r *treeGeneratorImpl_v6_rolling) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v6_rolling) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*RewardsFile, error) {
+func (r *treeGeneratorImpl_v6_rolling) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (IRewardsFile, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -333,11 +335,13 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 					network = 0
 				}
 
-				rewardsForNode = &NodeRewardsInfo{
-					RewardNetwork:    network,
-					CollateralRpl:    NewQuotedBigInt(0),
-					OracleDaoRpl:     NewQuotedBigInt(0),
-					SmoothingPoolEth: NewQuotedBigInt(0),
+				rewardsForNode = &NodeRewardsInfo_v1{
+					NodeRewardsInfo: &NodeRewardsInfo{
+						RewardNetwork:    network,
+						CollateralRpl:    NewQuotedBigInt(0),
+						OracleDaoRpl:     NewQuotedBigInt(0),
+						SmoothingPoolEth: NewQuotedBigInt(0),
+					},
 				}
 				r.rewardsFile.NodeRewards[nodeDetails.NodeAddress] = rewardsForNode
 			}
@@ -422,11 +426,13 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 				network = 0
 			}
 
-			rewardsForNode = &NodeRewardsInfo{
-				RewardNetwork:    network,
-				CollateralRpl:    NewQuotedBigInt(0),
-				OracleDaoRpl:     NewQuotedBigInt(0),
-				SmoothingPoolEth: NewQuotedBigInt(0),
+			rewardsForNode = &NodeRewardsInfo_v1{
+				NodeRewardsInfo: &NodeRewardsInfo{
+					RewardNetwork:    network,
+					CollateralRpl:    NewQuotedBigInt(0),
+					OracleDaoRpl:     NewQuotedBigInt(0),
+					SmoothingPoolEth: NewQuotedBigInt(0),
+				},
 			}
 			r.rewardsFile.NodeRewards[address] = rewardsForNode
 
@@ -530,21 +536,24 @@ func (r *treeGeneratorImpl_v6_rolling) calculateEthRewards(checkBeaconPerformanc
 					network = 0
 				}
 
-				rewardsForNode = &NodeRewardsInfo{
-					RewardNetwork:    network,
-					CollateralRpl:    NewQuotedBigInt(0),
-					OracleDaoRpl:     NewQuotedBigInt(0),
-					SmoothingPoolEth: NewQuotedBigInt(0),
+				rewardsForNode = &NodeRewardsInfo_v1{
+					NodeRewardsInfo: &NodeRewardsInfo{
+						RewardNetwork:    network,
+						CollateralRpl:    NewQuotedBigInt(0),
+						OracleDaoRpl:     NewQuotedBigInt(0),
+						SmoothingPoolEth: NewQuotedBigInt(0),
+					},
 				}
 				r.rewardsFile.NodeRewards[nodeAddress] = rewardsForNode
 			}
 			rewardsForNode.SmoothingPoolEth.Add(&rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
+			rewardsForNode.SmoothingPoolEligibilityRate = float64(nodeInfo.EndSlot-nodeInfo.StartSlot) / float64(r.rewardsFile.ConsensusEndBlock-r.rewardsFile.ConsensusStartBlock)
 
 			// Add minipool rewards to the JSON
 			for _, minipoolInfo := range nodeInfo.Minipools {
 				successfulAttestations := uint64(minipoolInfo.AttestationCount)
 				missingAttestations := uint64(len(minipoolInfo.MissingAttestationSlots))
-				performance := &SmoothingPoolMinipoolPerformance{
+				performance := &SmoothingPoolMinipoolPerformance_v1{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
 					SuccessfulAttestations:  successfulAttestations,
 					MissedAttestations:      missingAttestations,
