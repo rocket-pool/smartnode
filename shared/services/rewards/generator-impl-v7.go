@@ -59,7 +59,7 @@ func newTreeGeneratorImpl_v7(log *log.ColorLogger, logPrefix string, index uint6
 	return &treeGeneratorImpl_v7{
 		rewardsFile: &RewardsFile_v2{
 			RewardsFileHeader: &RewardsFileHeader{
-				RewardsFileVersion:  1,
+				RewardsFileVersion:  2,
 				RulesetVersion:      7,
 				Index:               index,
 				StartTime:           startTime.UTC(),
