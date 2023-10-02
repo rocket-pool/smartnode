@@ -27,7 +27,7 @@ const (
 	recordsFilenameFormat         string = "%d-%d.json.zst"
 	recordsFilenamePattern        string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
 	checksumTableFilename         string = "checksums.sha384"
-	latestCompatibleVersionString string = "1.10.1-dev"
+	latestCompatibleVersionString string = "1.11.0-dev"
 )
 
 // Manager for RollingRecords
