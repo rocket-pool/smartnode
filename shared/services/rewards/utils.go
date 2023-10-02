@@ -398,7 +398,7 @@ func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beac
 
 	// If we've processed all of the blocks up to the chain head and still didn't find it, error out
 	if !found {
-		return 0, fmt.Errorf("scanned up to the chain head (Beacon block %d) but none of the blocks were found.", consensusStartBlock)
+		return 0, fmt.Errorf("scanned up to the chain head (Beacon block %d) but none of the blocks were found", consensusStartBlock)
 	}
 
 	return consensusStartBlock, nil

@@ -631,7 +631,7 @@ func (r *treeGeneratorImpl_v6_rolling) calculateNodeRewards() (*big.Int, *big.In
 
 		// Add the minipool's score to the total node score
 		minipoolEth := big.NewInt(0).Set(totalNodeOpShare)
-		minipoolEth.Mul(minipoolEth, minipool.AttestationScore)
+		minipoolEth.Mul(minipoolEth, &minipool.AttestationScore.Int)
 		minipoolEth.Div(minipoolEth, totalScore)
 		minipool.MinipoolShare = minipoolEth
 		nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, minipoolEth)

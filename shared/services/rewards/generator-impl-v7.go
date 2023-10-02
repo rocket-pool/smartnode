@@ -39,7 +39,6 @@ type treeGeneratorImpl_v7 struct {
 	opts                   *bind.CallOpts
 	nodeDetails            []*NodeSmoothingDetails
 	smoothingPoolBalance   *big.Int
-	smoothingPoolAddress   common.Address
 	intervalDutiesInfo     *IntervalDutiesInfo
 	slotsPerEpoch          uint64
 	validatorIndexMap      map[string]*MinipoolInfo
@@ -139,13 +138,13 @@ func (r *treeGeneratorImpl_v7) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	// Calculate the RPL rewards
 	err := r.calculateRplRewards()
 	if err != nil {
-		return nil, fmt.Errorf("Error calculating RPL rewards: %w", err)
+		return nil, fmt.Errorf("error calculating RPL rewards: %w", err)
 	}
 
 	// Calculate the ETH rewards
 	err = r.calculateEthRewards(true)
 	if err != nil {
-		return nil, fmt.Errorf("Error calculating ETH rewards: %w", err)
+		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
 
 	// Calculate the network reward map and the totals
@@ -154,7 +153,7 @@ func (r *treeGeneratorImpl_v7) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	// Generate the Merkle Tree
 	err = r.generateMerkleTree()
 	if err != nil {
-		return nil, fmt.Errorf("Error generating Merkle tree: %w", err)
+		return nil, fmt.Errorf("error generating Merkle tree: %w", err)
 	}
 
 	// Sort all of the missed attestations so the files are always generated in the same state
@@ -293,9 +292,9 @@ func (r *treeGeneratorImpl_v7) updateNetworksAndTotals() {
 
 	// Create the map for each network, including unused ones
 	for network := uint64(0); network <= highestNetworkIndex; network++ {
-		rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[network]
+		_, exists := r.rewardsFile.NetworkRewards[network]
 		if !exists {
-			rewardsForNetwork = &NetworkRewardsInfo{
+			rewardsForNetwork := &NetworkRewardsInfo{
 				CollateralRpl:    NewQuotedBigInt(0),
 				OracleDaoRpl:     NewQuotedBigInt(0),
 				SmoothingPoolEth: NewQuotedBigInt(0),
@@ -575,7 +574,7 @@ func (r *treeGeneratorImpl_v7) calculateEthRewards(checkBeaconPerformance bool) 
 					minipoolScore.Add(minipoolScore, fee)          // Total = fee + (bond/32)(1 - fee)
 
 					// Add it to the minipool's score and the total score
-					minipool.AttestationScore.Add(minipool.AttestationScore, minipoolScore)
+					minipool.AttestationScore.Add(&minipool.AttestationScore.Int, minipoolScore)
 					r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
 
 					r.successfulAttestations++
@@ -623,7 +622,7 @@ func (r *treeGeneratorImpl_v7) calculateEthRewards(checkBeaconPerformance bool) 
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
 					SuccessfulAttestations:  successfulAttestations,
 					MissedAttestations:      missingAttestations,
-					AttestationScore:        &QuotedBigInt{Int: *minipoolInfo.AttestationScore},
+					AttestationScore:        &QuotedBigInt{Int: minipoolInfo.AttestationScore.Int},
 					EthEarned:               &QuotedBigInt{Int: *minipoolInfo.MinipoolShare},
 					MissingAttestationSlots: []uint64{},
 				}
@@ -686,7 +685,7 @@ func (r *treeGeneratorImpl_v7) calculateNodeRewards() (*big.Int, *big.Int, error
 				}
 
 				minipoolEth := big.NewInt(0).Set(totalNodeOpShare)
-				minipoolEth.Mul(minipoolEth, minipool.AttestationScore)
+				minipoolEth.Mul(minipoolEth, &minipool.AttestationScore.Int)
 				minipoolEth.Div(minipoolEth, r.totalAttestationScore)
 				minipool.MinipoolShare = minipoolEth
 				nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, minipoolEth)
@@ -796,14 +795,14 @@ func (r *treeGeneratorImpl_v7) processEpoch(getDuties bool, epoch uint64) error 
 	}
 	err := wg.Wait()
 	if err != nil {
-		return fmt.Errorf("Error getting committee and attestaion records for epoch %d: %w", epoch, err)
+		return fmt.Errorf("error getting committee and attestaion records for epoch %d: %w", epoch, err)
 	}
 
 	if getDuties {
 		// Get all of the expected duties for the epoch
 		err = r.getDutiesForEpoch(committeeData)
 		if err != nil {
-			return fmt.Errorf("Error getting duties for epoch %d: %w", epoch, err)
+			return fmt.Errorf("error getting duties for epoch %d: %w", epoch, err)
 		}
 	}
 
@@ -874,7 +873,7 @@ func (r *treeGeneratorImpl_v7) checkDutiesForSlot(attestations []beacon.Attestat
 			minipoolScore.Add(minipoolScore, fee)          // Total = fee + (bond/32)(1 - fee)
 
 			// Add it to the minipool's score and the total score
-			validator.AttestationScore.Add(validator.AttestationScore, minipoolScore)
+			validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
 			r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
 			r.successfulAttestations++
 		}
@@ -1071,7 +1070,7 @@ func (r *treeGeneratorImpl_v7) getSmoothingPoolNodeDetails() error {
 							MissingAttestationSlots: map[uint64]bool{},
 							CompletedAttestations:   map[uint64]bool{},
 							WasActive:               true,
-							AttestationScore:        big.NewInt(0),
+							AttestationScore:        NewQuotedBigInt(0),
 						})
 					}
 				}

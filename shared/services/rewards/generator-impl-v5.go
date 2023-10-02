@@ -589,7 +589,7 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 					minipoolScore.Add(minipoolScore, fee)          // Total = fee + (bond/32)(1 - fee)
 
 					// Add it to the minipool's score and the total score
-					minipool.AttestationScore.Add(minipool.AttestationScore, minipoolScore)
+					minipool.AttestationScore.Add(&minipool.AttestationScore.Int, minipoolScore)
 					r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
 
 					r.successfulAttestations++
@@ -703,7 +703,7 @@ func (r *treeGeneratorImpl_v5) calculateNodeRewards() (*big.Int, *big.Int, error
 				}
 
 				minipoolEth := big.NewInt(0).Set(totalNodeOpShare)
-				minipoolEth.Mul(minipoolEth, minipool.AttestationScore)
+				minipoolEth.Mul(minipoolEth, &minipool.AttestationScore.Int)
 				minipoolEth.Div(minipoolEth, r.totalAttestationScore)
 				minipool.MinipoolShare = minipoolEth
 				nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, minipoolEth)
@@ -883,7 +883,7 @@ func (r *treeGeneratorImpl_v5) checkDutiesForSlot(attestations []beacon.Attestat
 						minipoolScore.Add(minipoolScore, fee)          // Total = fee + (bond/32)(1 - fee)
 
 						// Add it to the minipool's score and the total score
-						validator.AttestationScore.Add(validator.AttestationScore, minipoolScore)
+						validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
 						r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
 						r.successfulAttestations++
 					}
@@ -1073,7 +1073,7 @@ func (r *treeGeneratorImpl_v5) getSmoothingPoolNodeDetails() error {
 							MissingAttestationSlots: map[uint64]bool{},
 							CompletedAttestations:   map[uint64]bool{},
 							WasActive:               true,
-							AttestationScore:        big.NewInt(0),
+							AttestationScore:        NewQuotedBigInt(0),
 						})
 					}
 				}

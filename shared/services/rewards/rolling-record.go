@@ -153,7 +153,7 @@ func (r *RollingRecord) GetScores(cheatingNodes map[common.Address]bool) ([]*Min
 			continue
 		}
 
-		totalScore.Add(totalScore, mpInfo.AttestationScore)
+		totalScore.Add(totalScore, &mpInfo.AttestationScore.Int)
 		totalCount += uint64(mpInfo.AttestationCount)
 		minipoolInfos = append(minipoolInfos, mpInfo)
 	}
@@ -174,7 +174,7 @@ func (r *RollingRecord) Serialize() ([]byte, error) {
 
 	// Remove minipool perf records with zero attestations from the serialization
 	for pubkey, mp := range r.ValidatorIndexMap {
-		if mp.AttestationCount > 0 {
+		if mp.AttestationCount > 0 || len(mp.MissingAttestationSlots) > 0 {
 			clone.ValidatorIndexMap[pubkey] = mp
 		}
 	}
@@ -211,7 +211,7 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 				ValidatorIndex:          validator.Index,
 				NodeAddress:             mpd.NodeAddress,
 				MissingAttestationSlots: map[uint64]bool{},
-				AttestationScore:        big.NewInt(0),
+				AttestationScore:        NewQuotedBigInt(0),
 			}
 			r.ValidatorIndexMap[validator.Index] = minipoolInfo
 		}
@@ -387,7 +387,7 @@ func (r *RollingRecord) processAttestationsInSlot(inclusionSlot uint64, attestat
 						minipoolScore.Add(minipoolScore, fee)            // Total = fee + (bond/32)(1 - fee)
 
 						// Add it to the minipool's score
-						validator.AttestationScore.Add(validator.AttestationScore, minipoolScore)
+						validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
 						validator.AttestationCount++
 					}
 				}

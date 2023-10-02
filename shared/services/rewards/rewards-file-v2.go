@@ -9,6 +9,8 @@ import (
 
 // Holds information
 type MinipoolPerformanceFile_v2 struct {
+	RewardsFileVersion  uint64                                                  `json:"rewardsFileVersion"`
+	RulesetVersion      uint64                                                  `json:"rulesetVersion"`
 	Index               uint64                                                  `json:"index"`
 	Network             string                                                  `json:"network"`
 	StartTime           time.Time                                               `json:"startTime,omitempty"`

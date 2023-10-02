@@ -138,22 +138,22 @@ type IntervalInfo struct {
 }
 
 type MinipoolInfo struct {
-	Address                 common.Address
-	ValidatorPubkey         types.ValidatorPubkey
-	ValidatorIndex          string
-	NodeAddress             common.Address
-	NodeIndex               uint64
-	Fee                     *big.Int
-	MissedAttestations      uint64
-	GoodAttestations        uint64
-	MinipoolShare           *big.Int
-	MissingAttestationSlots map[uint64]bool
-	WasActive               bool
-	StartSlot               uint64
-	EndSlot                 uint64
-	AttestationScore        *big.Int
-	CompletedAttestations   map[uint64]bool
-	AttestationCount        int
+	Address                 common.Address        `json:"address"`
+	ValidatorPubkey         types.ValidatorPubkey `json:"pubkey"`
+	ValidatorIndex          string                `json:"index"`
+	NodeAddress             common.Address        `json:"nodeAddress"`
+	NodeIndex               uint64                `json:"-"`
+	Fee                     *big.Int              `json:"-"`
+	MissedAttestations      uint64                `json:"-"`
+	GoodAttestations        uint64                `json:"-"`
+	MinipoolShare           *big.Int              `json:"-"`
+	MissingAttestationSlots map[uint64]bool       `json:"missingAttestationSlots"`
+	WasActive               bool                  `json:"-"`
+	StartSlot               uint64                `json:"-"`
+	EndSlot                 uint64                `json:"-"`
+	AttestationScore        *QuotedBigInt         `json:"attestationScore"`
+	CompletedAttestations   map[uint64]bool       `json:"-"`
+	AttestationCount        int                   `json:"attestationCount"`
 }
 
 type IntervalDutiesInfo struct {

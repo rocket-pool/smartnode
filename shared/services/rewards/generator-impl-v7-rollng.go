@@ -52,7 +52,7 @@ func newTreeGeneratorImpl_v7_rolling(log *log.ColorLogger, logPrefix string, ind
 	return &treeGeneratorImpl_v7_rolling{
 		rewardsFile: &RewardsFile_v2{
 			RewardsFileHeader: &RewardsFileHeader{
-				RewardsFileVersion:  1,
+				RewardsFileVersion:  2,
 				RulesetVersion:      7,
 				Index:               index,
 				StartTime:           startTime.UTC(),
@@ -110,6 +110,8 @@ func (r *treeGeneratorImpl_v7_rolling) generateTree(rp *rocketpool.RocketPool, c
 	// Set the network name
 	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
+	r.rewardsFile.MinipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.rewardsFile.MinipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -129,13 +131,13 @@ func (r *treeGeneratorImpl_v7_rolling) generateTree(rp *rocketpool.RocketPool, c
 	// Calculate the RPL rewards
 	err := r.calculateRplRewards()
 	if err != nil {
-		return nil, fmt.Errorf("Error calculating RPL rewards: %w", err)
+		return nil, fmt.Errorf("error calculating RPL rewards: %w", err)
 	}
 
 	// Calculate the ETH rewards
 	err = r.calculateEthRewards(true)
 	if err != nil {
-		return nil, fmt.Errorf("Error calculating ETH rewards: %w", err)
+		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
 
 	// Calculate the network reward map and the totals
@@ -144,7 +146,7 @@ func (r *treeGeneratorImpl_v7_rolling) generateTree(rp *rocketpool.RocketPool, c
 	// Generate the Merkle Tree
 	err = r.generateMerkleTree()
 	if err != nil {
-		return nil, fmt.Errorf("Error generating Merkle tree: %w", err)
+		return nil, fmt.Errorf("error generating Merkle tree: %w", err)
 	}
 
 	// Sort all of the missed attestations so the files are always generated in the same state
@@ -282,9 +284,9 @@ func (r *treeGeneratorImpl_v7_rolling) updateNetworksAndTotals() {
 
 	// Create the map for each network, including unused ones
 	for network := uint64(0); network <= highestNetworkIndex; network++ {
-		rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[network]
+		_, exists := r.rewardsFile.NetworkRewards[network]
 		if !exists {
-			rewardsForNetwork = &NetworkRewardsInfo{
+			rewardsForNetwork := &NetworkRewardsInfo{
 				CollateralRpl:    NewQuotedBigInt(0),
 				OracleDaoRpl:     NewQuotedBigInt(0),
 				SmoothingPoolEth: NewQuotedBigInt(0),
@@ -560,7 +562,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateEthRewards(checkBeaconPerformanc
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
 					SuccessfulAttestations:  successfulAttestations,
 					MissedAttestations:      missingAttestations,
-					AttestationScore:        &QuotedBigInt{Int: *minipoolInfo.AttestationScore},
+					AttestationScore:        &QuotedBigInt{Int: minipoolInfo.AttestationScore.Int},
 					EthEarned:               &QuotedBigInt{Int: *minipoolInfo.MinipoolShare},
 					MissingAttestationSlots: []uint64{},
 				}
@@ -633,7 +635,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateNodeRewards() (*big.Int, *big.In
 
 		// Add the minipool's score to the total node score
 		minipoolEth := big.NewInt(0).Set(totalNodeOpShare)
-		minipoolEth.Mul(minipoolEth, minipool.AttestationScore)
+		minipoolEth.Mul(minipoolEth, &minipool.AttestationScore.Int)
 		minipoolEth.Div(minipoolEth, totalScore)
 		minipool.MinipoolShare = minipoolEth
 		nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, minipoolEth)

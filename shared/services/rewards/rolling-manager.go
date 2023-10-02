@@ -502,7 +502,7 @@ func (r *RollingRecordManager) getSlotFromFilename(filename string) (uint64, err
 	slotString := matches[slotIndex]
 	slot, err := strconv.ParseUint(slotString, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("slot (%s) could not be parsed to a number")
+		return 0, fmt.Errorf("slot (%s) could not be parsed to a number", slotString)
 	}
 
 	return slot, nil
