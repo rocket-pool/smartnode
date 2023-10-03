@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/types"
-	svctypes "github.com/rocket-pool/smartnode/shared/types"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
 // Legacy carryover from rocketpool-go v1 for interval 4 and 5 generators
@@ -20,22 +20,22 @@ type MinipoolDetails struct {
 }
 
 type MinipoolInfo struct {
-	Address                 common.Address         `json:"address"`
-	ValidatorPubkey         types.ValidatorPubkey  `json:"pubkey"`
-	ValidatorIndex          string                 `json:"index"`
-	NodeAddress             common.Address         `json:"nodeAddress"`
-	NodeIndex               uint64                 `json:"-"`
-	Fee                     *big.Int               `json:"-"`
-	MissedAttestations      uint64                 `json:"-"`
-	GoodAttestations        uint64                 `json:"-"`
-	MinipoolShare           *big.Int               `json:"-"`
-	MissingAttestationSlots map[uint64]bool        `json:"missingAttestationSlots"`
-	WasActive               bool                   `json:"-"`
-	StartSlot               uint64                 `json:"-"`
-	EndSlot                 uint64                 `json:"-"`
-	AttestationScore        *svctypes.QuotedBigInt `json:"attestationScore"`
-	CompletedAttestations   map[uint64]bool        `json:"-"`
-	AttestationCount        int                    `json:"attestationCount"`
+	Address                 common.Address            `json:"address"`
+	ValidatorPubkey         types.ValidatorPubkey     `json:"pubkey"`
+	ValidatorIndex          string                    `json:"index"`
+	NodeAddress             common.Address            `json:"nodeAddress"`
+	NodeIndex               uint64                    `json:"-"`
+	Fee                     *big.Int                  `json:"-"`
+	MissedAttestations      uint64                    `json:"-"`
+	GoodAttestations        uint64                    `json:"-"`
+	MinipoolShare           *big.Int                  `json:"-"`
+	MissingAttestationSlots map[uint64]bool           `json:"missingAttestationSlots"`
+	WasActive               bool                      `json:"-"`
+	StartSlot               uint64                    `json:"-"`
+	EndSlot                 uint64                    `json:"-"`
+	AttestationScore        *sharedtypes.QuotedBigInt `json:"attestationScore"`
+	CompletedAttestations   map[uint64]bool           `json:"-"`
+	AttestationCount        int                       `json:"attestationCount"`
 }
 
 type IntervalDutiesInfo struct {

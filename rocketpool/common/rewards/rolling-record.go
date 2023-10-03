@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/shared"
-	svctypes "github.com/rocket-pool/smartnode/shared/types"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -212,7 +212,7 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 				ValidatorIndex:          validator.Index,
 				NodeAddress:             mpd.NodeAddress,
 				MissingAttestationSlots: map[uint64]bool{},
-				AttestationScore:        svctypes.NewQuotedBigInt(0),
+				AttestationScore:        sharedtypes.NewQuotedBigInt(0),
 			}
 			r.ValidatorIndexMap[validator.Index] = minipoolInfo
 		}

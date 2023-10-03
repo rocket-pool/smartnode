@@ -18,7 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
-	svctypes "github.com/rocket-pool/smartnode/shared/types"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
@@ -55,7 +55,7 @@ func newTreeGeneratorImpl_v6_rolling(log *log.ColorLogger, logPrefix string, ind
 	return &treeGeneratorImpl_v6_rolling{
 		zero: big.NewInt(0),
 		rewardsFile: &RewardsFile_v1{
-			RewardsFileHeader: &svctypes.RewardsFileHeader{
+			RewardsFileHeader: &sharedtypes.RewardsFileHeader{
 				RewardsFileVersion:  1,
 				RulesetVersion:      6,
 				Index:               index,
@@ -65,15 +65,15 @@ func newTreeGeneratorImpl_v6_rolling(log *log.ColorLogger, logPrefix string, ind
 				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
 				IntervalsPassed:     intervalsPassed,
 				InvalidNetworkNodes: map[common.Address]uint64{},
-				TotalRewards: &svctypes.TotalRewards{
-					ProtocolDaoRpl:               svctypes.NewQuotedBigInt(0),
-					TotalCollateralRpl:           svctypes.NewQuotedBigInt(0),
-					TotalOracleDaoRpl:            svctypes.NewQuotedBigInt(0),
-					TotalSmoothingPoolEth:        svctypes.NewQuotedBigInt(0),
-					PoolStakerSmoothingPoolEth:   svctypes.NewQuotedBigInt(0),
-					NodeOperatorSmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+				TotalRewards: &sharedtypes.TotalRewards{
+					ProtocolDaoRpl:               sharedtypes.NewQuotedBigInt(0),
+					TotalCollateralRpl:           sharedtypes.NewQuotedBigInt(0),
+					TotalOracleDaoRpl:            sharedtypes.NewQuotedBigInt(0),
+					TotalSmoothingPoolEth:        sharedtypes.NewQuotedBigInt(0),
+					PoolStakerSmoothingPoolEth:   sharedtypes.NewQuotedBigInt(0),
+					NodeOperatorSmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 				},
-				NetworkRewards: map[uint64]*svctypes.NetworkRewardsInfo{},
+				NetworkRewards: map[uint64]*sharedtypes.NetworkRewardsInfo{},
 			},
 			NodeRewards: map[common.Address]*NodeRewardsInfo_v1{},
 			MinipoolPerformanceFile: MinipoolPerformanceFile_v1{
@@ -99,7 +99,7 @@ func (r *treeGeneratorImpl_v6_rolling) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v6_rolling) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (svctypes.IRewardsFile, error) {
+func (r *treeGeneratorImpl_v6_rolling) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (sharedtypes.IRewardsFile, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -133,13 +133,13 @@ func (r *treeGeneratorImpl_v6_rolling) generateTree(rp *rocketpool.RocketPool, c
 	// Calculate the RPL rewards
 	err := r.calculateRplRewards()
 	if err != nil {
-		return nil, fmt.Errorf("Error calculating RPL rewards: %w", err)
+		return nil, fmt.Errorf("error calculating RPL rewards: %w", err)
 	}
 
 	// Calculate the ETH rewards
 	err = r.calculateEthRewards(true)
 	if err != nil {
-		return nil, fmt.Errorf("Error calculating ETH rewards: %w", err)
+		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
 
 	// Calculate the network reward map and the totals
@@ -148,7 +148,7 @@ func (r *treeGeneratorImpl_v6_rolling) generateTree(rp *rocketpool.RocketPool, c
 	// Generate the Merkle Tree
 	err = r.generateMerkleTree()
 	if err != nil {
-		return nil, fmt.Errorf("Error generating Merkle tree: %w", err)
+		return nil, fmt.Errorf("error generating Merkle tree: %w", err)
 	}
 
 	// Sort all of the missed attestations so the files are always generated in the same state
@@ -286,12 +286,12 @@ func (r *treeGeneratorImpl_v6_rolling) updateNetworksAndTotals() {
 
 	// Create the map for each network, including unused ones
 	for network := uint64(0); network <= highestNetworkIndex; network++ {
-		rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[network]
+		_, exists := r.rewardsFile.NetworkRewards[network]
 		if !exists {
-			rewardsForNetwork = &svctypes.NetworkRewardsInfo{
-				CollateralRpl:    svctypes.NewQuotedBigInt(0),
-				OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
-				SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+			rewardsForNetwork := &sharedtypes.NetworkRewardsInfo{
+				CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
+				OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
+				SmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 			}
 			r.rewardsFile.NetworkRewards[network] = rewardsForNetwork
 		}
@@ -338,11 +338,11 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 				}
 
 				rewardsForNode = &NodeRewardsInfo_v1{
-					NodeRewardsInfo: &svctypes.NodeRewardsInfo{
+					NodeRewardsInfo: &sharedtypes.NodeRewardsInfo{
 						RewardNetwork:    network,
-						CollateralRpl:    svctypes.NewQuotedBigInt(0),
-						OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
-						SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+						CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
+						OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
+						SmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 					},
 				}
 				r.rewardsFile.NodeRewards[nodeDetails.NodeAddress] = rewardsForNode
@@ -352,10 +352,10 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 			// Add the rewards to the running total for the specified network
 			rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
 			if !exists {
-				rewardsForNetwork = &svctypes.NetworkRewardsInfo{
-					CollateralRpl:    svctypes.NewQuotedBigInt(0),
-					OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
-					SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+				rewardsForNetwork = &sharedtypes.NetworkRewardsInfo{
+					CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
+					OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
+					SmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 				}
 				r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
 			}
@@ -429,11 +429,11 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 			}
 
 			rewardsForNode = &NodeRewardsInfo_v1{
-				NodeRewardsInfo: &svctypes.NodeRewardsInfo{
+				NodeRewardsInfo: &sharedtypes.NodeRewardsInfo{
 					RewardNetwork:    network,
-					CollateralRpl:    svctypes.NewQuotedBigInt(0),
-					OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
-					SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+					CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
+					OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
+					SmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 				},
 			}
 			r.rewardsFile.NodeRewards[address] = rewardsForNode
@@ -444,10 +444,10 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 		// Add the rewards to the running total for the specified network
 		rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
 		if !exists {
-			rewardsForNetwork = &svctypes.NetworkRewardsInfo{
-				CollateralRpl:    svctypes.NewQuotedBigInt(0),
-				OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
-				SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+			rewardsForNetwork = &sharedtypes.NetworkRewardsInfo{
+				CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
+				OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
+				SmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 			}
 			r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
 		}
@@ -469,7 +469,7 @@ func (r *treeGeneratorImpl_v6_rolling) calculateRplRewards() error {
 
 	// Get expected Protocol DAO rewards
 	pDaoPercent := r.networkState.NetworkDetails.ProtocolDaoRewardsPercent
-	pDaoRewards := svctypes.NewQuotedBigInt(0)
+	pDaoRewards := sharedtypes.NewQuotedBigInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
 	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
 	r.log.Printlnf("%s Expected Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
@@ -539,11 +539,11 @@ func (r *treeGeneratorImpl_v6_rolling) calculateEthRewards(checkBeaconPerformanc
 				}
 
 				rewardsForNode = &NodeRewardsInfo_v1{
-					NodeRewardsInfo: &svctypes.NodeRewardsInfo{
+					NodeRewardsInfo: &sharedtypes.NodeRewardsInfo{
 						RewardNetwork:    network,
-						CollateralRpl:    svctypes.NewQuotedBigInt(0),
-						OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
-						SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+						CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
+						OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
+						SmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 					},
 				}
 				r.rewardsFile.NodeRewards[nodeAddress] = rewardsForNode
@@ -577,10 +577,10 @@ func (r *treeGeneratorImpl_v6_rolling) calculateEthRewards(checkBeaconPerformanc
 			// Add the rewards to the running total for the specified network
 			rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
 			if !exists {
-				rewardsForNetwork = &svctypes.NetworkRewardsInfo{
-					CollateralRpl:    svctypes.NewQuotedBigInt(0),
-					OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
-					SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+				rewardsForNetwork = &sharedtypes.NetworkRewardsInfo{
+					CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
+					OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
+					SmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 				}
 				r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
 			}

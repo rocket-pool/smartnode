@@ -5,7 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
-	svctypes "github.com/rocket-pool/smartnode/shared/types"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
 // Holds information
@@ -46,13 +46,13 @@ type SmoothingPoolMinipoolPerformance_v1 struct {
 
 // Node operator rewards
 type NodeRewardsInfo_v1 struct {
-	*svctypes.NodeRewardsInfo
+	*sharedtypes.NodeRewardsInfo
 	SmoothingPoolEligibilityRate float64 `json:"smoothingPoolEligibilityRate"`
 }
 
 // JSON struct for a complete rewards file
 type RewardsFile_v1 struct {
-	*svctypes.RewardsFileHeader
+	*sharedtypes.RewardsFileHeader
 	NodeRewards             map[common.Address]*NodeRewardsInfo_v1 `json:"nodeRewards"`
 	MinipoolPerformanceFile MinipoolPerformanceFile_v1             `json:"-"`
 }
@@ -68,18 +68,18 @@ func (f *RewardsFile_v1) Deserialize(bytes []byte) error {
 }
 
 // Get the rewards file's header
-func (f *RewardsFile_v1) GetHeader() *svctypes.RewardsFileHeader {
+func (f *RewardsFile_v1) GetHeader() *sharedtypes.RewardsFileHeader {
 	return f.RewardsFileHeader
 }
 
 // Get info about a node's rewards
-func (f *RewardsFile_v1) GetNodeRewardsInfo(address common.Address) (svctypes.INodeRewardsInfo, bool) {
+func (f *RewardsFile_v1) GetNodeRewardsInfo(address common.Address) (sharedtypes.INodeRewardsInfo, bool) {
 	rewards, exists := f.NodeRewards[address]
 	return rewards, exists
 }
 
 // Gets the minipool performance file corresponding to this rewards file
-func (f *RewardsFile_v1) GetMinipoolPerformanceFile() svctypes.IMinipoolPerformanceFile {
+func (f *RewardsFile_v1) GetMinipoolPerformanceFile() sharedtypes.IMinipoolPerformanceFile {
 	return &f.MinipoolPerformanceFile
 }
 

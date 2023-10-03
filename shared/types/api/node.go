@@ -8,7 +8,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/core"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	svctypes "github.com/rocket-pool/smartnode/shared/types"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -234,20 +234,20 @@ type NodeDistributeData struct {
 }
 
 type NodeGetRewardsInfoData struct {
-	ClaimedIntervals        []uint64                `json:"claimedIntervals"`
-	UnclaimedIntervals      []svctypes.IntervalInfo `json:"unclaimedIntervals"`
-	InvalidIntervals        []svctypes.IntervalInfo `json:"invalidIntervals"`
-	RplStake                *big.Int                `json:"rplStake"`
-	RplPrice                *big.Int                `json:"rplPrice"`
-	ActiveMinipools         uint64                  `json:"activeMinipools"`
-	EffectiveRplStake       *big.Int                `json:"effectiveRplStake"`
-	MinimumRplStake         *big.Int                `json:"minimumRplStake"`
-	MaximumRplStake         *big.Int                `json:"maximumRplStake"`
-	EthMatched              *big.Int                `json:"ethMatched"`
-	EthMatchedLimit         *big.Int                `json:"ethMatchedLimit"`
-	PendingMatchAmount      *big.Int                `json:"pendingMatchAmount"`
-	BorrowedCollateralRatio float64                 `json:"borrowedCollateralRatio"`
-	BondedCollateralRatio   float64                 `json:"bondedCollateralRatio"`
+	ClaimedIntervals        []uint64                   `json:"claimedIntervals"`
+	UnclaimedIntervals      []sharedtypes.IntervalInfo `json:"unclaimedIntervals"`
+	InvalidIntervals        []sharedtypes.IntervalInfo `json:"invalidIntervals"`
+	RplStake                *big.Int                   `json:"rplStake"`
+	RplPrice                *big.Int                   `json:"rplPrice"`
+	ActiveMinipools         uint64                     `json:"activeMinipools"`
+	EffectiveRplStake       *big.Int                   `json:"effectiveRplStake"`
+	MinimumRplStake         *big.Int                   `json:"minimumRplStake"`
+	MaximumRplStake         *big.Int                   `json:"maximumRplStake"`
+	EthMatched              *big.Int                   `json:"ethMatched"`
+	EthMatchedLimit         *big.Int                   `json:"ethMatchedLimit"`
+	PendingMatchAmount      *big.Int                   `json:"pendingMatchAmount"`
+	BorrowedCollateralRatio float64                    `json:"borrowedCollateralRatio"`
+	BondedCollateralRatio   float64                    `json:"bondedCollateralRatio"`
 }
 
 type NodeSmoothingPoolRegistrationStatusData struct {

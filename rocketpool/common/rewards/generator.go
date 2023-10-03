@@ -10,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
-	svctypes "github.com/rocket-pool/smartnode/shared/types"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -63,7 +63,7 @@ type TreeGenerator struct {
 }
 
 type treeGeneratorImpl interface {
-	generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (svctypes.IRewardsFile, error)
+	generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (sharedtypes.IRewardsFile, error)
 	approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error)
 	getRulesetVersion() uint64
 }
@@ -196,7 +196,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	return t, nil
 }
 
-func (t *TreeGenerator) GenerateTree() (svctypes.IRewardsFile, error) {
+func (t *TreeGenerator) GenerateTree() (sharedtypes.IRewardsFile, error) {
 	return t.generatorImpl.generateTree(t.rp, t.cfg, t.bc)
 }
 
@@ -212,7 +212,7 @@ func (t *TreeGenerator) GetApproximatorRulesetVersion() uint64 {
 	return t.approximatorImpl.getRulesetVersion()
 }
 
-func (t *TreeGenerator) GenerateTreeWithRuleset(ruleset uint64) (svctypes.IRewardsFile, error) {
+func (t *TreeGenerator) GenerateTreeWithRuleset(ruleset uint64) (sharedtypes.IRewardsFile, error) {
 	info, exists := t.rewardsIntervalInfos[ruleset]
 	if !exists {
 		return nil, fmt.Errorf("ruleset v%d does not exist", ruleset)

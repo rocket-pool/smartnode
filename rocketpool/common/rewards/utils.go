@@ -32,7 +32,7 @@ import (
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/shared/config"
-	svctypes "github.com/rocket-pool/smartnode/shared/types"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/web3-storage/go-w3s-client/adder"
 )
@@ -103,7 +103,7 @@ func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address, curre
 }
 
 // Gets the information for an interval including the file status, the validity, and the node's rewards
-func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, interval uint64, opts *bind.CallOpts) (info svctypes.IntervalInfo, err error) {
+func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, interval uint64, opts *bind.CallOpts) (info sharedtypes.IntervalInfo, err error) {
 	info.Index = interval
 	var event rewards.RewardsEvent
 
@@ -326,7 +326,7 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 }
 
 // Get the IPFS CID for a blob of data
-func GetCidForRewardsFile(rewardsFile svctypes.IRewardsFile, filename string) (cid.Cid, error) {
+func GetCidForRewardsFile(rewardsFile sharedtypes.IRewardsFile, filename string) (cid.Cid, error) {
 	// Encode the rewards file in JSON
 	data, err := rewardsFile.Serialize()
 	if err != nil {
@@ -412,8 +412,8 @@ func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beac
 }
 
 // Deserializes a byte array into a rewards file interface
-func DeserializeRewardsFile(bytes []byte) (svctypes.IRewardsFile, error) {
-	var header svctypes.RewardsFileHeader
+func DeserializeRewardsFile(bytes []byte) (sharedtypes.IRewardsFile, error) {
+	var header sharedtypes.RewardsFileHeader
 	err := json.Unmarshal(bytes, &header)
 	if err != nil {
 		return nil, fmt.Errorf("error deserializing rewards file header: %w", err)
