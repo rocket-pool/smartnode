@@ -38,7 +38,7 @@ import (
 
 // Implementation for tree generator ruleset v4
 type treeGeneratorImpl_v4 struct {
-	rewardsFile            *RewardsFile
+	rewardsFile            *RewardsFile_v1
 	elSnapshotHeader       *types.Header
 	log                    *log.ColorLogger
 	logPrefix              string
@@ -71,33 +71,35 @@ type treeGeneratorImpl_v4 struct {
 // Create a new tree generator
 func newTreeGeneratorImpl_v4(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *treeGeneratorImpl_v4 {
 	return &treeGeneratorImpl_v4{
-		rewardsFile: &RewardsFile{
-			RewardsFileVersion: 1,
-			RulesetVersion:     4,
-			Index:              index,
-			StartTime:          startTime.UTC(),
-			EndTime:            endTime.UTC(),
-			ConsensusEndBlock:  consensusBlock,
-			ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
-			IntervalsPassed:    intervalsPassed,
-			TotalRewards: &TotalRewards{
-				ProtocolDaoRpl:               svctypes.NewQuotedBigInt(0),
-				TotalCollateralRpl:           svctypes.NewQuotedBigInt(0),
-				TotalOracleDaoRpl:            svctypes.NewQuotedBigInt(0),
-				TotalSmoothingPoolEth:        svctypes.NewQuotedBigInt(0),
-				PoolStakerSmoothingPoolEth:   svctypes.NewQuotedBigInt(0),
-				NodeOperatorSmoothingPoolEth: svctypes.NewQuotedBigInt(0),
-			},
-			NetworkRewards:      map[uint64]*NetworkRewardsInfo{},
-			NodeRewards:         map[common.Address]*NodeRewardsInfo{},
-			InvalidNetworkNodes: map[common.Address]uint64{},
-			MinipoolPerformanceFile: MinipoolPerformanceFile{
+		rewardsFile: &RewardsFile_v1{
+			RewardsFileHeader: &svctypes.RewardsFileHeader{
+				RewardsFileVersion:  1,
+				RulesetVersion:      4,
 				Index:               index,
 				StartTime:           startTime.UTC(),
 				EndTime:             endTime.UTC(),
 				ConsensusEndBlock:   consensusBlock,
 				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
-				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance{},
+				IntervalsPassed:     intervalsPassed,
+				InvalidNetworkNodes: map[common.Address]uint64{},
+				TotalRewards: &svctypes.TotalRewards{
+					ProtocolDaoRpl:               svctypes.NewQuotedBigInt(0),
+					TotalCollateralRpl:           svctypes.NewQuotedBigInt(0),
+					TotalOracleDaoRpl:            svctypes.NewQuotedBigInt(0),
+					TotalSmoothingPoolEth:        svctypes.NewQuotedBigInt(0),
+					PoolStakerSmoothingPoolEth:   svctypes.NewQuotedBigInt(0),
+					NodeOperatorSmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+				},
+				NetworkRewards: map[uint64]*svctypes.NetworkRewardsInfo{},
+			},
+			NodeRewards: map[common.Address]*NodeRewardsInfo_v1{},
+			MinipoolPerformanceFile: MinipoolPerformanceFile_v1{
+				Index:               index,
+				StartTime:           startTime.UTC(),
+				EndTime:             endTime.UTC(),
+				ConsensusEndBlock:   consensusBlock,
+				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
+				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v1{},
 			},
 		},
 		stakingMinipoolMap: map[common.Address][]MinipoolDetails{},
@@ -113,7 +115,7 @@ func (r *treeGeneratorImpl_v4) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v4) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*RewardsFile, error) {
+func (r *treeGeneratorImpl_v4) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (svctypes.IRewardsFile, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -365,7 +367,7 @@ func (r *treeGeneratorImpl_v4) updateNetworksAndTotals() {
 	for network := uint64(0); network <= highestNetworkIndex; network++ {
 		rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[network]
 		if !exists {
-			rewardsForNetwork = &NetworkRewardsInfo{
+			rewardsForNetwork = &svctypes.NetworkRewardsInfo{
 				CollateralRpl:    svctypes.NewQuotedBigInt(0),
 				OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
 				SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
@@ -529,11 +531,13 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 					network = 0
 				}
 
-				rewardsForNode = &NodeRewardsInfo{
-					RewardNetwork:    network,
-					CollateralRpl:    svctypes.NewQuotedBigInt(0),
-					OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
-					SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+				rewardsForNode = &NodeRewardsInfo_v1{
+					NodeRewardsInfo: &svctypes.NodeRewardsInfo{
+						RewardNetwork:    network,
+						CollateralRpl:    svctypes.NewQuotedBigInt(0),
+						OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
+						SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+					},
 				}
 				r.rewardsFile.NodeRewards[address] = rewardsForNode
 			}
@@ -542,7 +546,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 			// Add the rewards to the running total for the specified network
 			rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
 			if !exists {
-				rewardsForNetwork = &NetworkRewardsInfo{
+				rewardsForNetwork = &svctypes.NetworkRewardsInfo{
 					CollateralRpl:    svctypes.NewQuotedBigInt(0),
 					OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
 					SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
@@ -636,11 +640,13 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 				network = 0
 			}
 
-			rewardsForNode = &NodeRewardsInfo{
-				RewardNetwork:    network,
-				CollateralRpl:    svctypes.NewQuotedBigInt(0),
-				OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
-				SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+			rewardsForNode = &NodeRewardsInfo_v1{
+				NodeRewardsInfo: &svctypes.NodeRewardsInfo{
+					RewardNetwork:    network,
+					CollateralRpl:    svctypes.NewQuotedBigInt(0),
+					OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
+					SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+				},
 			}
 			r.rewardsFile.NodeRewards[address] = rewardsForNode
 
@@ -650,7 +656,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 		// Add the rewards to the running total for the specified network
 		rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
 		if !exists {
-			rewardsForNetwork = &NetworkRewardsInfo{
+			rewardsForNetwork = &svctypes.NetworkRewardsInfo{
 				CollateralRpl:    svctypes.NewQuotedBigInt(0),
 				OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
 				SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
@@ -792,11 +798,13 @@ func (r *treeGeneratorImpl_v4) calculateEthRewards(checkBeaconPerformance bool) 
 					network = 0
 				}
 
-				rewardsForNode = &NodeRewardsInfo{
-					RewardNetwork:    network,
-					CollateralRpl:    svctypes.NewQuotedBigInt(0),
-					OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
-					SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+				rewardsForNode = &NodeRewardsInfo_v1{
+					NodeRewardsInfo: &svctypes.NodeRewardsInfo{
+						RewardNetwork:    network,
+						CollateralRpl:    svctypes.NewQuotedBigInt(0),
+						OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
+						SmoothingPoolEth: svctypes.NewQuotedBigInt(0),
+					},
 				}
 				r.rewardsFile.NodeRewards[nodeInfo.Address] = rewardsForNode
 			}
@@ -805,7 +813,7 @@ func (r *treeGeneratorImpl_v4) calculateEthRewards(checkBeaconPerformance bool) 
 
 			// Add minipool rewards to the JSON
 			for _, minipoolInfo := range nodeInfo.Minipools {
-				performance := &SmoothingPoolMinipoolPerformance{
+				performance := &SmoothingPoolMinipoolPerformance_v1{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
 					StartSlot:               minipoolInfo.StartSlot,
 					EndSlot:                 minipoolInfo.EndSlot,
@@ -829,7 +837,7 @@ func (r *treeGeneratorImpl_v4) calculateEthRewards(checkBeaconPerformance bool) 
 			// Add the rewards to the running total for the specified network
 			rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
 			if !exists {
-				rewardsForNetwork = &NetworkRewardsInfo{
+				rewardsForNetwork = &svctypes.NetworkRewardsInfo{
 					CollateralRpl:    svctypes.NewQuotedBigInt(0),
 					OracleDaoRpl:     svctypes.NewQuotedBigInt(0),
 					SmoothingPoolEth: svctypes.NewQuotedBigInt(0),

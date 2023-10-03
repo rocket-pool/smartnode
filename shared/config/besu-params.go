@@ -6,8 +6,8 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:23.7.2"
-	besuTagProd          string = "hyperledger/besu:23.7.2"
+	besuTagTest          string = "hyperledger/besu:23.7.3"
+	besuTagProd          string = "hyperledger/besu:23.7.3"
 	besuEventLogInterval int    = 1000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"

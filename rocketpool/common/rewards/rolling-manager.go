@@ -27,7 +27,7 @@ const (
 	recordsFilenameFormat         string = "%d-%d.json.zst"
 	recordsFilenamePattern        string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
 	checksumTableFilename         string = "checksums.sha384"
-	latestCompatibleVersionString string = "1.10.1-dev"
+	latestCompatibleVersionString string = "1.11.0-dev"
 )
 
 // Manager for RollingRecords
@@ -502,7 +502,7 @@ func (r *RollingRecordManager) getSlotFromFilename(filename string) (uint64, err
 	slotString := matches[slotIndex]
 	slot, err := strconv.ParseUint(slotString, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("slot (%s) could not be parsed to a number")
+		return 0, fmt.Errorf("slot (%s) could not be parsed to a number", slotString)
 	}
 
 	return slot, nil
