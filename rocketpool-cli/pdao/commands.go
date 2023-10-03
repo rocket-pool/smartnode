@@ -10,12 +10,14 @@ import (
 )
 
 const (
-	boolUsage       string = "accepts 'true', 'false', 'yes', or 'no'"
-	floatEthUsage   string = "specify an amount of ETH (e.g., '16.0')"
-	blockCountUsage string = "specify a number, in blocks (e.g., '40000')"
-	percentUsage    string = "specify a percentage between 0 and 1 (e.g., '0.51')"
-	uintUsage       string = "specify a number (e.g., '50')"
-	durationUsage   string = "specify a duration using hours, minutes, and seconds (e.g., '20m' or '72h0m0s')"
+	boolUsage             string = "specify 'true', 'false', 'yes', or 'no'"
+	floatEthUsage         string = "specify an amount of ETH (e.g., '16.0')"
+	floatRplUsage         string = "specify an amount of RPL (e.g., '16.0')"
+	blockCountUsage       string = "specify a number, in blocks (e.g., '40000')"
+	percentUsage          string = "specify a percentage between 0 and 1 (e.g., '0.51' for 51%)"
+	unboundedPercentUsage string = "specify a percentage that can go over 100% (e.g., '1.5' for 150%)"
+	uintUsage             string = "specify an integer (e.g., '50')"
+	durationUsage         string = "specify a duration using hours, minutes, and seconds (e.g., '20m' or '72h0m0s')"
 )
 
 // Register commands
@@ -509,6 +511,676 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 											// Run
 											return proposeSettingMinipoolUserDistributeWindowLength(c, value)
+
+										},
+									},
+								},
+							},
+
+							{
+								Name:    "network",
+								Aliases: []string{"ne"},
+								Usage:   "Network settings",
+								Subcommands: []cli.Command{
+
+									{
+										Name:      "oracle-dao-consensus-threshold",
+										Aliases:   []string{"odct"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeConsensusThresholdSettingPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting network oracle-dao-consensus-threshold value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkOracleDaoConsensusThreshold(c, value)
+
+										},
+									},
+
+									{
+										Name:      "node-penalty-threshold",
+										Aliases:   []string{"npt"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkPenaltyThresholdSettingPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting network node-penalty-threshold value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkNodePenaltyThreshold(c, value)
+
+										},
+									},
+
+									{
+										Name:      "per-penalty-rate",
+										Aliases:   []string{"ppr"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkPenaltyPerRateSettingPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting network per-penalty-rate value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkPerPenaltyRate(c, value)
+
+										},
+									},
+
+									{
+										Name:      "is-submit-balances-enabled",
+										Aliases:   []string{"isbe"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesEnabledSettingPath, boolUsage),
+										UsageText: "rocketpool pdao propose setting network is-submit-balances-enabled value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkIsSubmitBalancesEnabled(c, value)
+
+										},
+									},
+
+									{
+										Name:      "submit-balances-frequency",
+										Aliases:   []string{"sbf"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesFrequencySettingPath, blockCountUsage),
+										UsageText: "rocketpool pdao propose setting network submit-balances-frequency value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkSubmitBalancesFrequency(c, value)
+
+										},
+									},
+
+									{
+										Name:      "is-submit-prices-enabled",
+										Aliases:   []string{"ispe"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesEnabledSettingPath, boolUsage),
+										UsageText: "rocketpool pdao propose setting network is-submit-prices-enabled value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkIsSubmitPricesEnabled(c, value)
+
+										},
+									},
+
+									{
+										Name:      "submit-prices-frequency",
+										Aliases:   []string{"spf"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesFrequencySettingPath, blockCountUsage),
+										UsageText: "rocketpool pdao propose setting network submit-prices-frequency value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkSubmitPricesFrequency(c, value)
+
+										},
+									},
+
+									{
+										Name:      "minimum-node-fee",
+										Aliases:   []string{"minnf"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MinimumNodeFeeSettingPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting network minimum-node-fee value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkMinimumNodeFee(c, value)
+
+										},
+									},
+
+									{
+										Name:      "target-node-fee",
+										Aliases:   []string{"tnf"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.TargetNodeFeeSettingPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting network target-node-fee value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkTargetNodeFee(c, value)
+
+										},
+									},
+
+									{
+										Name:      "maximum-node-fee",
+										Aliases:   []string{"maxnf"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.TargetNodeFeeSettingPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting network maximum-node-fee value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkMaximumNodeFee(c, value)
+
+										},
+									},
+
+									{
+										Name:      "node-fee-demand-range",
+										Aliases:   []string{"nfdr"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeFeeDemandRangeSettingPath, floatEthUsage),
+										UsageText: "rocketpool pdao propose setting network node-fee-demand-range value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkNodeFeeDemandRange(c, value)
+
+										},
+									},
+
+									{
+										Name:      "target-reth-collateral-rate",
+										Aliases:   []string{"trcr"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.TargetRethCollateralRateSettingPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting network target-reth-collateral-rate value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkTargetRethCollateralRate(c, value)
+
+										},
+									},
+
+									{
+										Name:      "is-submit-rewards-enabled",
+										Aliases:   []string{"isre"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitRewardsEnabledSettingPath, boolUsage),
+										UsageText: "rocketpool pdao propose setting network is-submit-rewards-enabled value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkIsSubmitRewardsEnabled(c, value)
+
+										},
+									},
+								},
+							},
+
+							{
+								Name:    "node",
+								Aliases: []string{"no"},
+								Usage:   "Node settings",
+								Subcommands: []cli.Command{
+
+									{
+										Name:      "is-registration-enabled",
+										Aliases:   []string{"ire"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeRegistrationEnabledSettingPath, boolUsage),
+										UsageText: "rocketpool pdao propose setting node is-registration-enabled value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeIsRegistrationEnabled(c, value)
+
+										},
+									},
+
+									{
+										Name:      "is-smoothing-pool-registration-enabled",
+										Aliases:   []string{"ispre"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SmoothingPoolRegistrationEnabledSettingPath, boolUsage),
+										UsageText: "rocketpool pdao propose setting node is-smoothing-pool-registration-enabled value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeIsSmoothingPoolRegistrationEnabled(c, value)
+
+										},
+									},
+
+									{
+										Name:      "is-depositing-enabled",
+										Aliases:   []string{"ide"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeDepositEnabledSettingPath, boolUsage),
+										UsageText: "rocketpool pdao propose setting node is-depositing-enabled value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeIsDepositingEnabled(c, value)
+
+										},
+									},
+
+									{
+										Name:      "are-vacant-minipools-enabled",
+										Aliases:   []string{"avme"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.VacantMinipoolsEnabledSettingPath, boolUsage),
+										UsageText: "rocketpool pdao propose setting node are-vacant-minipools-enabled value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeAreVacantMinipoolsEnabled(c, value)
+
+										},
+									},
+
+									{
+										Name:      "minimum-per-minipool-stake",
+										Aliases:   []string{"minpms"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MinimumPerMinipoolStakeSettingPath, unboundedPercentUsage),
+										UsageText: "rocketpool pdao propose setting node minimum-per-minipool-stake value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeMinimumPerMinipoolStake(c, value)
+
+										},
+									},
+
+									{
+										Name:      "maximum-per-minipool-stake",
+										Aliases:   []string{"minpms"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MaximumPerMinipoolStakeSettingPath, unboundedPercentUsage),
+										UsageText: "rocketpool pdao propose setting node maximum-per-minipool-stake value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeMaximumPerMinipoolStake(c, value)
+
+										},
+									},
+								},
+							},
+
+							{
+								Name:    "proposals",
+								Aliases: []string{"p"},
+								Usage:   "Proposal settings",
+								Subcommands: []cli.Command{
+
+									{
+										Name:      "vote-time",
+										Aliases:   []string{"vt"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.VoteTimeSettingPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting proposals vote-time value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProposalsVoteTime(c, value)
+
+										},
+									},
+
+									{
+										Name:      "vote-delay-time",
+										Aliases:   []string{"vdt"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.VoteDelayTimeSettingPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting proposals vote-dalay-time value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProposalsVoteDelayTime(c, value)
+
+										},
+									},
+
+									{
+										Name:      "execute-time",
+										Aliases:   []string{"et"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ExecuteTimeSettingPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting proposals execute-time value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProposalsExecuteTime(c, value)
+
+										},
+									},
+
+									{
+										Name:      "proposal-bond",
+										Aliases:   []string{"pb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ProposalBondSettingPath, floatRplUsage),
+										UsageText: "rocketpool pdao propose setting proposals proposal-bond value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProposalsProposalBond(c, value)
+
+										},
+									},
+
+									{
+										Name:      "challenge-bond",
+										Aliases:   []string{"cb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ChallengeBondSettingPath, floatRplUsage),
+										UsageText: "rocketpool pdao propose setting proposals challenge-bond value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProposalsChallengeBond(c, value)
+
+										},
+									},
+
+									{
+										Name:      "challenge-period",
+										Aliases:   []string{"cp"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ChallengePeriodSettingPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting proposals challenge-period value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProposalsChallengePeriod(c, value)
+
+										},
+									},
+
+									{
+										Name:      "quorum",
+										Aliases:   []string{"q"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ProposalQuorumSettingPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting proposals quorum value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProposalsQuorum(c, value)
+
+										},
+									},
+
+									{
+										Name:      "veto-quorum",
+										Aliases:   []string{"vq"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ProposalVetoQuorumSettingPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting proposals veto-quorum value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProposalsVetoQuorum(c, value)
+
+										},
+									},
+
+									{
+										Name:      "max-block-age",
+										Aliases:   []string{"mba"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ProposalMaxBlockAgeSettingPath, blockCountUsage),
+										UsageText: "rocketpool pdao propose setting proposals max-block-age value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProposalsMaxBlockAge(c, value)
+
+										},
+									},
+								},
+							},
+
+							{
+								Name:    "rewards",
+								Aliases: []string{"r"},
+								Usage:   "Rewards settings",
+								Subcommands: []cli.Command{
+
+									{
+										Name:      "interval-time",
+										Aliases:   []string{"it"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.RewardsClaimIntervalTimeSettingPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting rewards interval-time value",
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingRewardsIntervalTime(c, value)
 
 										},
 									},
