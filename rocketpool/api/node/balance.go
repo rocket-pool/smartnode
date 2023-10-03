@@ -2,15 +2,12 @@ package node
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -25,15 +22,12 @@ func (f *nodeBalanceContextFactory) Create(vars map[string]string) (*nodeBalance
 	c := &nodeBalanceContext{
 		handler: f.handler,
 	}
-	inputErrs := []error{
-		server.ValidateArg("addresses", vars, input.ValidateAddresses, &c.minipoolAddresses),
-	}
-	return c, errors.Join(inputErrs...)
+	return c, nil
 }
 
 func (f *nodeBalanceContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessRoute[*nodeBalanceContext, api.NodeBalanceData](
-		router, "dissolve", f, f.handler.serviceProvider,
+		router, "balance", f, f.handler.serviceProvider,
 	)
 }
 
@@ -42,8 +36,7 @@ func (f *nodeBalanceContextFactory) RegisterRoute(router *mux.Router) {
 // ===============
 
 type nodeBalanceContext struct {
-	handler           *NodeHandler
-	minipoolAddresses []common.Address
+	handler *NodeHandler
 }
 
 func (c *nodeBalanceContext) PrepareData(data *api.NodeBalanceData, opts *bind.TransactOpts) error {

@@ -21,6 +21,9 @@ func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
 	}
 	h.factories = []server.IContextFactory{
 		&nodeBalanceContextFactory{h},
+		&nodeBurnContextFactory{h},
+		&nodeCheckCollateralContextFactory{h},
+		&nodeClaimAndStakeContextFactory{h},
 	}
 	return h
 }

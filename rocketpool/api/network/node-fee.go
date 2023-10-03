@@ -66,7 +66,7 @@ func (c *networkFeeContext) Initialize() error {
 	c.pSettings = pMgr.Settings
 	c.networkMgr, err = network.NewNetworkManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating network prices binding: %w", err)
+		return fmt.Errorf("error creating network manager binding: %w", err)
 	}
 	return nil
 }

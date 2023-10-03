@@ -1,43 +1,76 @@
 package node
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 
-	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rewards"
-	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-type nodeClaimAndStakeHandler struct {
+// ===============
+// === Factory ===
+// ===============
+
+type nodeClaimAndStakeContextFactory struct {
+	handler *NodeHandler
+}
+
+func (f *nodeClaimAndStakeContextFactory) Create(vars map[string]string) (*nodeClaimAndStakeContext, error) {
+	c := &nodeClaimAndStakeContext{
+		handler: f.handler,
+	}
+	inputErrs := []error{
+		server.ValidateArg("indices", vars, input.ValidateBigInts, &c.indices),
+		server.ValidateArg("stake-amount", vars, input.ValidateBigInt, &c.stakeAmount),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *nodeClaimAndStakeContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*nodeClaimAndStakeContext, api.TxInfoData](
+		router, "claim-and-stake", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type nodeClaimAndStakeContext struct {
+	handler *NodeHandler
+
 	indices     []*big.Int
 	stakeAmount *big.Int
 	distMainnet *rewards.MerkleDistributorMainnet
 }
 
-func (h *nodeClaimAndStakeHandler) CreateBindings(ctx *callContext) error {
-	rp := ctx.rp
-	var err error
+func (c *nodeClaimAndStakeContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	rp := sp.GetRocketPool()
+	cfg := sp.GetConfig()
+	nodeAddress, _ := sp.GetWallet().GetAddress()
 
-	h.distMainnet, err = rewards.NewMerkleDistributorMainnet(rp)
+	// Requirements
+	err := sp.RequireNodeRegistered()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	distMainnet, err := rewards.NewMerkleDistributorMainnet(rp)
 	if err != nil {
 		return fmt.Errorf("error getting merkle distributor mainnet binding: %w", err)
 	}
-	return nil
-}
-
-func (h *nodeClaimAndStakeHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
-}
-
-func (h *nodeClaimAndStakeHandler) PrepareResponse(ctx *callContext, response *api.TxInfoData) error {
-	rp := ctx.rp
-	cfg := ctx.cfg
-	node := ctx.node
-	opts := ctx.opts
 
 	// Read the tree files to get the details
 	rplAmount := []*big.Int{}
@@ -45,8 +78,8 @@ func (h *nodeClaimAndStakeHandler) PrepareResponse(ctx *callContext, response *a
 	merkleProofs := [][]common.Hash{}
 
 	// Populate the interval info for each one
-	for _, index := range h.indices {
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, node.Address, index.Uint64(), nil)
+	for _, index := range c.indices {
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, index.Uint64(), nil)
 		if err != nil {
 			return fmt.Errorf("error getting interval info for interval %d: %w", index, err)
 		}
@@ -77,17 +110,16 @@ func (h *nodeClaimAndStakeHandler) PrepareResponse(ctx *callContext, response *a
 	// Get tx info
 	var txInfo *core.TransactionInfo
 	var funcName string
-	var err error
-	if h.stakeAmount == nil {
-		txInfo, err = h.distMainnet.Claim(node.Address, h.indices, rplAmount, ethAmount, merkleProofs, opts)
+	if c.stakeAmount == nil {
+		txInfo, err = distMainnet.Claim(nodeAddress, c.indices, rplAmount, ethAmount, merkleProofs, opts)
 		funcName = "Claim"
 	} else {
-		txInfo, err = h.distMainnet.ClaimAndStake(node.Address, h.indices, rplAmount, ethAmount, merkleProofs, h.stakeAmount, opts)
+		txInfo, err = distMainnet.ClaimAndStake(nodeAddress, c.indices, rplAmount, ethAmount, merkleProofs, c.stakeAmount, opts)
 		funcName = "ClaimAndStake"
 	}
 	if err != nil {
 		return fmt.Errorf("error getting TX info for %s: %w", funcName, err)
 	}
-	response.TxInfo = txInfo
+	data.TxInfo = txInfo
 	return nil
 }

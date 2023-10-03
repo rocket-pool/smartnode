@@ -1,53 +1,100 @@
 package node
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-type nodeBurnHandler struct {
-	amountWei *big.Int
-	reth      *tokens.TokenReth
-	balance   *big.Int
+// ===============
+// === Factory ===
+// ===============
+
+type nodeBurnContextFactory struct {
+	handler *NodeHandler
 }
 
-func (h *nodeBurnHandler) CreateBindings(ctx *callContext) error {
-	rp := ctx.rp
-	var err error
+func (f *nodeBurnContextFactory) Create(vars map[string]string) (*nodeBurnContext, error) {
+	c := &nodeBurnContext{
+		handler: f.handler,
+	}
+	inputErrs := []error{
+		server.ValidateArg("amount", vars, input.ValidatePositiveWeiAmount, &c.amountWei),
+	}
+	return c, errors.Join(inputErrs...)
+}
 
-	h.reth, err = tokens.NewTokenReth(rp)
+func (f *nodeBurnContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*nodeBurnContext, api.NodeBurnData](
+		router, "burn", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type nodeBurnContext struct {
+	handler     *NodeHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	amountWei *big.Int
+	balance   *big.Int
+	reth      *tokens.TokenReth
+}
+
+func (c *nodeBurnContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeAddress()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	c.reth, err = tokens.NewTokenReth(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating reth binding: %w", err)
 	}
 	return nil
 }
 
-func (h *nodeBurnHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
-	node := ctx.node
-	h.reth.GetBalance(mc, &h.balance, node.Address)
-	h.reth.GetTotalCollateral(mc)
+func (c *nodeBurnContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.reth.TotalCollateral,
+	)
+	c.reth.GetBalance(mc, &c.balance, c.nodeAddress)
 }
 
-func (h *nodeBurnHandler) PrepareResponse(ctx *callContext, response *api.NodeBurnResponse) error {
-	opts := ctx.opts
-
+func (c *nodeBurnContext) PrepareData(data *api.NodeBurnData, opts *bind.TransactOpts) error {
 	// Check for validity
-	response.InsufficientBalance = (h.amountWei.Cmp(h.balance) > 0)
-	response.InsufficientCollateral = (h.amountWei.Cmp(h.reth.TotalCollateral) > 0)
-	response.CanBurn = !(response.InsufficientBalance || response.InsufficientCollateral)
+	data.InsufficientBalance = (c.amountWei.Cmp(c.balance) > 0)
+	data.InsufficientCollateral = (c.amountWei.Cmp(c.reth.TotalCollateral.Get()) > 0)
+	data.CanBurn = !(data.InsufficientBalance || data.InsufficientCollateral)
 
 	// Get tx info
-	if response.CanBurn {
-		txInfo, err := h.reth.Burn(h.amountWei, opts)
+	if data.CanBurn && opts != nil {
+		txInfo, err := c.reth.Burn(c.amountWei, opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for Burn: %w", err)
 		}
-		response.TxInfo = txInfo
+		data.TxInfo = txInfo
 	}
 	return nil
 }
