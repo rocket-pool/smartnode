@@ -127,15 +127,14 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 		err = fmt.Errorf("error reading %s: %w", info.TreeFilePath, err)
 		return
 	}
-	var proofWrapper RewardsFile
-	err = json.Unmarshal(fileBytes, &proofWrapper)
+	proofWrapper, err := DeserializeRewardsFile(fileBytes)
 	if err != nil {
 		err = fmt.Errorf("error deserializing %s: %w", info.TreeFilePath, err)
 		return
 	}
 
 	// Make sure the Merkle root has the expected value
-	merkleRootFromFile := common.HexToHash(proofWrapper.MerkleRoot)
+	merkleRootFromFile := common.HexToHash(proofWrapper.GetHeader().MerkleRoot)
 	if merkleRootCanon != merkleRootFromFile {
 		info.MerkleRootValid = false
 		return
@@ -143,12 +142,12 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.MerkleRootValid = true
 
 	// Get the rewards from it
-	rewards, exists := proofWrapper.NodeRewards[nodeAddress]
+	rewards, exists := proofWrapper.GetNodeRewardsInfo(nodeAddress)
 	info.NodeExists = exists
 	if exists {
-		info.CollateralRplAmount = rewards.CollateralRpl
-		info.ODaoRplAmount = rewards.OracleDaoRpl
-		info.SmoothingPoolEthAmount = rewards.SmoothingPoolEth
+		info.CollateralRplAmount = rewards.GetCollateralRpl()
+		info.ODaoRplAmount = rewards.GetOracleDaoRpl()
+		info.SmoothingPoolEthAmount = rewards.GetSmoothingPoolEth()
 
 		var proof []common.Hash
 		proof, err = rewards.GetMerkleProof()
@@ -320,9 +319,9 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 }
 
 // Get the IPFS CID for a blob of data
-func GetCidForRewardsFile(rewardsFile *RewardsFile, filename string) (cid.Cid, error) {
+func GetCidForRewardsFile(rewardsFile IRewardsFile, filename string) (cid.Cid, error) {
 	// Encode the rewards file in JSON
-	data, err := json.Marshal(rewardsFile)
+	data, err := rewardsFile.Serialize()
 	if err != nil {
 		return cid.Cid{}, fmt.Errorf("error serializing rewards file: %w", err)
 	}
@@ -357,21 +356,6 @@ func GetCidForRewardsFile(rewardsFile *RewardsFile, filename string) (cid.Cid, e
 	}
 
 	return root, err
-}
-
-// Decompresses a rewards file
-func decompressFile(compressedBytes []byte) ([]byte, error) {
-	decoder, err := zstd.NewReader(nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating compression decoder: %w", err)
-	}
-
-	decompressedBytes, err := decoder.DecodeAll(compressedBytes, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error decompressing rewards file: %w", err)
-	}
-
-	return decompressedBytes, nil
 }
 
 // Gets the start slot for the given interval
@@ -414,10 +398,45 @@ func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beac
 
 	// If we've processed all of the blocks up to the chain head and still didn't find it, error out
 	if !found {
-		return 0, fmt.Errorf("scanned up to the chain head (Beacon block %d) but none of the blocks were found.", consensusStartBlock)
+		return 0, fmt.Errorf("scanned up to the chain head (Beacon block %d) but none of the blocks were found", consensusStartBlock)
 	}
 
 	return consensusStartBlock, nil
+}
+
+// Deserializes a byte array into a rewards file interface
+func DeserializeRewardsFile(bytes []byte) (IRewardsFile, error) {
+	var header RewardsFileHeader
+	err := json.Unmarshal(bytes, &header)
+	if err != nil {
+		return nil, fmt.Errorf("error deserializing rewards file header: %w", err)
+	}
+
+	switch header.RewardsFileVersion {
+	case 1:
+		file := &RewardsFile_v1{}
+		return file, file.Deserialize(bytes)
+	case 2:
+		file := &RewardsFile_v2{}
+		return file, file.Deserialize(bytes)
+	default:
+		return nil, fmt.Errorf("unexpected rewards file version [%d]", header.RewardsFileVersion)
+	}
+}
+
+// Decompresses a rewards file
+func decompressFile(compressedBytes []byte) ([]byte, error) {
+	decoder, err := zstd.NewReader(nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating compression decoder: %w", err)
+	}
+
+	decompressedBytes, err := decoder.DecodeAll(compressedBytes, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error decompressing rewards file: %w", err)
+	}
+
+	return decompressedBytes, nil
 }
 
 // Get the bond and node fee of a minipool for the specified time

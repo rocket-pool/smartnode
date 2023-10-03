@@ -1,12 +1,12 @@
 package rewards
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared"
@@ -153,7 +153,7 @@ func (r *RollingRecord) GetScores(cheatingNodes map[common.Address]bool) ([]*Min
 			continue
 		}
 
-		totalScore.Add(totalScore, mpInfo.AttestationScore)
+		totalScore.Add(totalScore, &mpInfo.AttestationScore.Int)
 		totalCount += uint64(mpInfo.AttestationCount)
 		minipoolInfos = append(minipoolInfos, mpInfo)
 	}
@@ -163,8 +163,24 @@ func (r *RollingRecord) GetScores(cheatingNodes map[common.Address]bool) ([]*Min
 
 // Serialize the current record into a byte array
 func (r *RollingRecord) Serialize() ([]byte, error) {
+	// Clone the record
+	clone := &RollingRecord{
+		StartSlot:         r.StartSlot,
+		LastDutiesSlot:    r.LastDutiesSlot,
+		RewardsInterval:   r.RewardsInterval,
+		SmartnodeVersion:  r.SmartnodeVersion,
+		ValidatorIndexMap: map[string]*MinipoolInfo{},
+	}
+
+	// Remove minipool perf records with zero attestations from the serialization
+	for pubkey, mp := range r.ValidatorIndexMap {
+		if mp.AttestationCount > 0 || len(mp.MissingAttestationSlots) > 0 {
+			clone.ValidatorIndexMap[pubkey] = mp
+		}
+	}
+
 	// Serialize as JSON
-	bytes, err := json.Marshal(r)
+	bytes, err := json.Marshal(clone)
 	if err != nil {
 		return nil, fmt.Errorf("error serializing rolling record: %w", err)
 	}
@@ -187,15 +203,15 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 		}
 
 		_, exists = r.ValidatorIndexMap[validator.Index]
-		if !exists {
-			// Validator exists but it hasn't been recorded yet, add it to the map and update the latest index so we don't remap stuff we've already seen
+		if !exists && mpd.Status == types.Staking {
+			// Validator exists and is staking but it hasn't been recorded yet, add it to the map and update the latest index so we don't remap stuff we've already seen
 			minipoolInfo := &MinipoolInfo{
 				Address:                 mpd.MinipoolAddress,
 				ValidatorPubkey:         mpd.Pubkey,
 				ValidatorIndex:          validator.Index,
 				NodeAddress:             mpd.NodeAddress,
 				MissingAttestationSlots: map[uint64]bool{},
-				AttestationScore:        big.NewInt(0),
+				AttestationScore:        NewQuotedBigInt(0),
 			}
 			r.ValidatorIndexMap[validator.Index] = minipoolInfo
 		}
@@ -371,7 +387,7 @@ func (r *RollingRecord) processAttestationsInSlot(inclusionSlot uint64, attestat
 						minipoolScore.Add(minipoolScore, fee)            // Total = fee + (bond/32)(1 - fee)
 
 						// Add it to the minipool's score
-						validator.AttestationScore.Add(validator.AttestationScore, minipoolScore)
+						validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
 						validator.AttestationCount++
 					}
 				}

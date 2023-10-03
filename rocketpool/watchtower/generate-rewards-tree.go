@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/goccy/go-json"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -232,28 +231,29 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
 		return
 	}
-	for address, network := range rewardsFile.InvalidNetworkNodes {
+	header := rewardsFile.GetHeader()
+	for address, network := range header.InvalidNetworkNodes {
 		t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", generationPrefix, address.Hex(), network)
 	}
 	t.log.Printlnf("%s Finished in %s", generationPrefix, time.Since(start).String())
 
 	// Validate the Merkle root
-	root := common.BytesToHash(rewardsFile.MerkleTree.Root())
+	root := common.BytesToHash(header.MerkleTree.Root())
 	if root != rewardsEvent.MerkleRoot {
 		t.log.Printlnf("%s WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", generationPrefix, root.Hex(), rewardsEvent.MerkleRoot.Hex())
 	} else {
-		t.log.Printlnf("%s Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", generationPrefix, rewardsFile.MerkleRoot)
+		t.log.Printlnf("%s Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", generationPrefix, header.MerkleRoot)
 	}
 
 	// Create the JSON files
-	rewardsFile.MinipoolPerformanceFileCID = "---"
+	rewardsFile.SetMinipoolPerformanceFileCID("---")
 	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
-	minipoolPerformanceBytes, err := json.Marshal(rewardsFile.MinipoolPerformanceFile)
+	minipoolPerformanceBytes, err := rewardsFile.GetMinipoolPerformanceFile().Serialize()
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error serializing minipool performance file into JSON: %w", generationPrefix, err))
 		return
 	}
-	wrapperBytes, err := json.Marshal(rewardsFile)
+	wrapperBytes, err := rewardsFile.Serialize()
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error serializing proof wrapper into JSON: %w", generationPrefix, err))
 		return
