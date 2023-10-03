@@ -724,7 +724,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "maximum-node-fee",
 										Aliases:   []string{"maxnf"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.TargetNodeFeeSettingPath, percentUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MaximumNodeFeeSettingPath, percentUsage),
 										UsageText: "rocketpool pdao propose setting network maximum-node-fee value",
 										Action: func(c *cli.Context) error {
 
@@ -929,7 +929,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 									{
 										Name:      "maximum-per-minipool-stake",
-										Aliases:   []string{"minpms"},
+										Aliases:   []string{"maxpms"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MaximumPerMinipoolStakeSettingPath, unboundedPercentUsage),
 										UsageText: "rocketpool pdao propose setting node maximum-per-minipool-stake value",
 										Action: func(c *cli.Context) error {
