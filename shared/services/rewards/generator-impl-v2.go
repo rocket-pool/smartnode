@@ -319,7 +319,7 @@ func (r *treeGeneratorImpl_v2) calculateRplRewards() error {
 	}
 
 	// Handle node operator rewards
-	nodeOpPercent, err := state.GetNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
+	rewardsPercents, err := state.GetRewardsPercents(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
@@ -329,7 +329,7 @@ func (r *treeGeneratorImpl_v2) calculateRplRewards() error {
 	}
 	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
 	totalNodeRewards := big.NewInt(0)
-	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
+	totalNodeRewards.Mul(pendingRewards, rewardsPercents.NodePercentage)
 	totalNodeRewards.Div(totalNodeRewards, eth.EthToWei(1))
 	r.log.Printlnf("%s Approx. total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
 
@@ -449,12 +449,8 @@ func (r *treeGeneratorImpl_v2) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 
 	// Handle Oracle DAO rewards
-	oDaoPercent, err := state.GetTrustedNodeOperatorRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return err
-	}
 	totalODaoRewards := big.NewInt(0)
-	totalODaoRewards.Mul(pendingRewards, oDaoPercent)
+	totalODaoRewards.Mul(pendingRewards, rewardsPercents.OdaoPercentage)
 	totalODaoRewards.Div(totalODaoRewards, eth.EthToWei(1))
 	r.log.Printlnf("%s Total Oracle DAO RPL rewards: %s (%.3f)", r.logPrefix, totalODaoRewards.String(), eth.WeiToEth(totalODaoRewards))
 
@@ -547,12 +543,8 @@ func (r *treeGeneratorImpl_v2) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get expected Protocol DAO rewards
-	pDaoPercent, err := state.GetProtocolDaoRewardsPercent(r.cfg, r.rewardsFile.Index, r.rp, r.opts)
-	if err != nil {
-		return err
-	}
 	pDaoRewards := NewQuotedBigInt(0)
-	pDaoRewards.Mul(pendingRewards, pDaoPercent)
+	pDaoRewards.Mul(pendingRewards, rewardsPercents.PdaoPercentage)
 	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
 	r.log.Printlnf("%s Expected Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
 
