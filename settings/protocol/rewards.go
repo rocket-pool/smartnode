@@ -41,32 +41,6 @@ func GetRewardsPercentages(rp *rocketpool.RocketPool, opts *bind.CallOpts) (RplR
 	return *value, nil
 }
 
-// Estimate the gas of ProposeSetRewardsPercentage
-func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message string, odaoPercentage *big.Int, pdaoPercentage *big.Int, nodePercentage *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rewardsSettingsContract, err := getRewardsSettingsContract(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	payload, err := rewardsSettingsContract.ABI.Pack("setSettingRewardsClaimers", odaoPercentage, pdaoPercentage, nodePercentage)
-	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set rewards-claimers percent proposal payload: %w", err)
-	}
-	return protocol.EstimateProposalGas(rp, message, payload, blockNumber, treeNodes, opts)
-}
-
-// Submit a proposal to update the allocations of RPL rewards
-func ProposeSetRewardsPercentage(rp *rocketpool.RocketPool, message string, odaoPercentage *big.Int, pdaoPercentage *big.Int, nodePercentage *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rewardsSettingsContract, err := getRewardsSettingsContract(rp, nil)
-	if err != nil {
-		return 0, common.Hash{}, err
-	}
-	payload, err := rewardsSettingsContract.ABI.Pack("setSettingRewardsClaimers", odaoPercentage, pdaoPercentage, nodePercentage)
-	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("error encoding set rewards-claimers percent proposal payload: %w", err)
-	}
-	return protocol.SubmitProposal(rp, message, payload, blockNumber, treeNodes, opts)
-}
-
 // The time that the RPL rewards percentages were last updated
 func GetRewardsClaimerPercTimeUpdated(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
