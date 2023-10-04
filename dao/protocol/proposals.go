@@ -165,32 +165,6 @@ func ProposeSetAddress(rp *rocketpool.RocketPool, message, contractName, setting
 	return SubmitProposal(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
-// Estimate the gas of ProposeSetRewardsPercentage
-func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message string, odaoPercentage *big.Int, pdaoPercentage *big.Int, nodePercentage *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalSettingRewardsClaimers", odaoPercentage, pdaoPercentage, nodePercentage)
-	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set rewards-claimers percent proposal payload: %w", err)
-	}
-	return EstimateProposalGas(rp, message, payload, blockNumber, treeNodes, opts)
-}
-
-// Submit a proposal to update the allocations of RPL rewards
-func ProposeSetRewardsPercentage(rp *rocketpool.RocketPool, message string, odaoPercentage *big.Int, pdaoPercentage *big.Int, nodePercentage *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
-	if err != nil {
-		return 0, common.Hash{}, err
-	}
-	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalSettingRewardsClaimers", odaoPercentage, pdaoPercentage, nodePercentage)
-	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("error encoding set rewards-claimers percent proposal payload: %w", err)
-	}
-	return SubmitProposal(rp, message, payload, blockNumber, treeNodes, opts)
-}
-
 // Estimate the gas of ProposeSpendTreasury
 func EstimateProposeSpendTreasuryGas(rp *rocketpool.RocketPool, message, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
