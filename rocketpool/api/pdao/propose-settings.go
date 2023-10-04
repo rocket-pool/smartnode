@@ -1,20 +1,13 @@
 package pdao
 
 import (
-	"encoding/base64"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/goccy/go-json"
-	"github.com/klauspost/compress/zstd"
-	"github.com/rocket-pool/rocketpool-go/dao/protocol/voting"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -32,10 +25,6 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 		return nil, err
 	}
 	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +54,6 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 	var stakedRpl *big.Int
 	var lockedRpl *big.Int
 	var proposalBond *big.Int
-	var block beacon.BeaconBlock
 	var wg errgroup.Group
 
 	// Get the node's RPL stake
@@ -89,19 +77,6 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 		return err
 	})
 
-	// Get the latest finalized block
-	wg.Go(func() error {
-		mgr, err := state.NewNetworkStateManager(rp, cfg, ec, bc, nil)
-		if err != nil {
-			return fmt.Errorf("error creating state manager: %w", err)
-		}
-		block, err = mgr.GetLatestFinalizedBeaconBlock()
-		if err != nil {
-			return fmt.Errorf("error determining latest finalized block: %w", err)
-		}
-		return nil
-	})
-
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return nil, err
@@ -114,34 +89,13 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 	freeRpl := big.NewInt(0).Sub(stakedRpl, lockedRpl)
 	response.InsufficientRpl = (freeRpl.Cmp(proposalBond) < 0)
 
-	blockNumber := uint32(block.ExecutionBlockNumber)
+	// Get the latest finalized block number and corresponding pollard
+	blockNumber, pollard, encodedPollard, err := createPollard(rp, cfg, bc)
+	if err != nil {
+		return nil, fmt.Errorf("error creating pollard: %w", err)
+	}
 	response.BlockNumber = blockNumber
-
-	// Create the proposal tree
-	gen, err := voting.NewVotingTreeGenerator(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error creating voting power tree generator: %w", err)
-	}
-
-	// Create the voting power pollard for the proposal
-	pollard, err := gen.CreatePollardRowForProposal(blockNumber, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating voting power pollard: %w", err)
-	}
-
-	// Serialize it to JSON
-	pollardBytes, err := json.Marshal(pollard)
-	if err != nil {
-		return nil, fmt.Errorf("error serializing pollard: %w", err)
-	}
-
-	// Compress it
-	encoder, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-	if err != nil {
-		return nil, fmt.Errorf("error creating compressor: %w", err)
-	}
-	compressedBytes := encoder.EncodeAll(pollardBytes, make([]byte, 0, len(pollardBytes)))
-	response.Pollard = base64.StdEncoding.EncodeToString(compressedBytes)
+	response.Pollard = encodedPollard
 
 	// Get the account transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -722,25 +676,10 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 	// Response
 	response := api.ProposePDAOSettingResponse{}
 
-	// Decompress the pollard
-	decoder, err := zstd.NewReader(nil)
+	// Decode the pollard
+	truePollard, err := decodePollard(pollard)
 	if err != nil {
-		return nil, fmt.Errorf("error creating decompressor: %w", err)
-	}
-	compressedBytes, err := base64.StdEncoding.DecodeString(pollard)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding pollard: %w", err)
-	}
-	decompressedBytes, err := decoder.DecodeAll(compressedBytes, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error decompressing pollard: %w", err)
-	}
-
-	// Decompress it from JSON
-	var truePollard []types.VotingTreeNode
-	err = json.Unmarshal(decompressedBytes, &truePollard)
-	if err != nil {
-		return nil, fmt.Errorf("error deserializing pollard: %w", err)
+		return nil, fmt.Errorf("error regenerating pollard: %w", err)
 	}
 
 	// Get transactor

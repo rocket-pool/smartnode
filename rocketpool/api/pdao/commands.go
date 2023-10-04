@@ -1,6 +1,8 @@
 package pdao
 
 import (
+	"errors"
+
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -206,6 +208,74 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(proposeSetting(c, settingName, value, blockNumber, pollard))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "get-rewards-percentages",
+				Usage:     "Get the allocation percentages of RPL rewards for the Oracle DAO, the Protocol DAO, and the node operators",
+				UsageText: "rocketpool api pdao get-rewards-percentages",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getRewardsPercentages(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-propose-rewards-percentages",
+				Usage:     "Check whether the node can propose new RPL rewards allocation percentages for the Oracle DAO, the Protocol DAO, and the node operators",
+				UsageText: "rocketpool api pdao can-propose-rewards-percentages node odao pdao",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+						return err
+					}
+					node, err1 := cliutils.ValidateBigInt("node", c.Args().Get(0))
+					odao, err2 := cliutils.ValidateBigInt("odao", c.Args().Get(1))
+					pdao, err3 := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
+					err := errors.Join(err1, err2, err3)
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeRewardsPercentages(c, node, odao, pdao))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-rewards-percentages",
+				Usage:     "Propose new RPL rewards allocation percentages for the Oracle DAO, the Protocol DAO, and the node operators",
+				UsageText: "rocketpool api pdao propose-rewards-percentages node odao pdao block-number pollard",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 5); err != nil {
+						return err
+					}
+					node, err1 := cliutils.ValidateBigInt("node", c.Args().Get(0))
+					odao, err2 := cliutils.ValidateBigInt("odao", c.Args().Get(1))
+					pdao, err3 := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
+					blockNumber, err4 := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
+					pollard := c.Args().Get(4)
+					err := errors.Join(err1, err2, err3, err4)
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeRewardsPercentages(c, node, odao, pdao, blockNumber, pollard))
 					return nil
 
 				},

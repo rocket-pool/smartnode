@@ -164,3 +164,26 @@ type ProposePDAOSettingResponse struct {
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
+
+type PDAOGetRewardsPercentagesResponse struct {
+	Status      string   `json:"status"`
+	Error       string   `json:"error"`
+	Node        *big.Int `json:"node"`
+	OracleDao   *big.Int `json:"odao"`
+	ProtocolDao *big.Int `json:"pdao"`
+}
+
+type PDAOCanProposeRewardsPercentagesResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	BlockNumber uint32             `json:"blockNumber"`
+	Pollard     string             `json:"pollard"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOProposeRewardsPercentagesResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}

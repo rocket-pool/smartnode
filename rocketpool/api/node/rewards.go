@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
+	psettings "github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
@@ -242,10 +243,11 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		return nil
 	})
 
-	// Get the node operator rewards percent
+	// Get the rewards percents
 	wg.Go(func() error {
-		nodeOperatorRewardsPercentRaw, err := rewards.GetNodeOperatorRewardsPercent(rp, nil)
-		nodeOperatorRewardsPercent = eth.WeiToEth(nodeOperatorRewardsPercentRaw)
+		rewardsPercents, err := psettings.GetRewardsPercentages(rp, nil)
+		nodeOperatorRewardsPercent = eth.WeiToEth(rewardsPercents.NodePercentage)
+		trustedNodeOperatorRewardsPercent = eth.WeiToEth(rewardsPercents.OdaoPercentage)
 		if err != nil {
 			return err
 		}
@@ -355,16 +357,6 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		wg2.Go(func() error {
 			var err error
 			odaoSize, err = trustednode.GetMemberCount(rp, nil)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-
-		// Get the trusted node operator rewards percent
-		wg2.Go(func() error {
-			trustedNodeOperatorRewardsPercentRaw, err := rewards.GetTrustedNodeOperatorRewardsPercent(rp, nil)
-			trustedNodeOperatorRewardsPercent = eth.WeiToEth(trustedNodeOperatorRewardsPercentRaw)
 			if err != nil {
 				return err
 			}
