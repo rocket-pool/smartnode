@@ -115,7 +115,7 @@ func PrettyPrintError(err error) {
 func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress, beaconDepositAddress common.Address) {
 	fmt.Printf("%s***ALERT***\n", colorRed)
 	fmt.Println("YOUR ETH2 CLIENT IS NOT CONNECTED TO THE SAME NETWORK THAT ROCKET POOL IS USING!")
-	fmt.Println("This is likely because your ETH2 client is using the wrong configuration.")
+	fmt.Println("This is likely because your consensus client is using the wrong configuration.")
 	fmt.Println("For the safety of your funds, Rocket Pool will not let you deposit your ETH until this is resolved.")
 	fmt.Println()
 	fmt.Println("To fix it if you are in Docker mode:")

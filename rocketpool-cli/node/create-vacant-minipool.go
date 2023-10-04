@@ -41,7 +41,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		return nil
 	}
 
-	fmt.Println("Your eth2 client is on the correct network.\n")
+	fmt.Println("Your consensus client is on the correct network.\n")
 
 	// Check if the fee distributor has been initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()

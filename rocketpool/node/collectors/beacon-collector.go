@@ -28,7 +28,7 @@ type BeaconCollector struct {
 	// The beacon client
 	bc beacon.Client
 
-	// The eth1 client
+	// The execution client
 	ec rocketpool.ExecutionClient
 
 	// The node's address
