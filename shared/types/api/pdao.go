@@ -187,3 +187,78 @@ type PDAOProposeRewardsPercentagesResponse struct {
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
+
+type PDAOCanProposeOneTimeSpendResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	BlockNumber uint32             `json:"blockNumber"`
+	Pollard     string             `json:"pollard"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOProposeOneTimeSpendResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+
+type PDAOCanProposeRecurringSpendResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	BlockNumber uint32             `json:"blockNumber"`
+	Pollard     string             `json:"pollard"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOProposeRecurringSpendResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+
+type PDAOCanProposeRecurringSpendUpdateResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	BlockNumber uint32             `json:"blockNumber"`
+	Pollard     string             `json:"pollard"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOProposeRecurringSpendUpdateResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+
+type PDAOCanProposeInviteToSecurityCouncilResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	BlockNumber uint32             `json:"blockNumber"`
+	Pollard     string             `json:"pollard"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOProposeInviteToSecurityCouncilResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+
+type PDAOCanProposeKickFromSecurityCouncilResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	BlockNumber uint32             `json:"blockNumber"`
+	Pollard     string             `json:"pollard"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOProposeKickFromSecurityCouncilResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
