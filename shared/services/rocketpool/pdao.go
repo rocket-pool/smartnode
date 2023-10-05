@@ -2,6 +2,7 @@ package rocketpool
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/goccy/go-json"
 
@@ -148,6 +149,54 @@ func (c *Client) PDAOProposeSetting(setting string, value string, blockNumber ui
 	}
 	if response.Error != "" {
 		return api.ProposePDAOSettingResponse{}, fmt.Errorf("Could not get protocol DAO propose-setting: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Get the allocation percentages of RPL rewards for the Oracle DAO, the Protocol DAO, and the node operators
+func (c *Client) PDAOGetRewardsPercentages() (api.PDAOGetRewardsPercentagesResponse, error) {
+	responseBytes, err := c.callAPI("pdao get-rewards-percentages")
+	if err != nil {
+		return api.PDAOGetRewardsPercentagesResponse{}, fmt.Errorf("Could not get protocol DAO get-rewards-percentages: %w", err)
+	}
+	var response api.PDAOGetRewardsPercentagesResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOGetRewardsPercentagesResponse{}, fmt.Errorf("Could not decode protocol DAO get-rewards-percentages response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOGetRewardsPercentagesResponse{}, fmt.Errorf("Could not get protocol DAO get-rewards-percentages: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can propose new RPL rewards allocation percentages for the Oracle DAO, the Protocol DAO, and the node operators
+func (c *Client) PDAOCanProposeRewardsPercentages(node *big.Int, odao *big.Int, pdao *big.Int) (api.PDAOCanProposeRewardsPercentagesResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-rewards-percentages %s %s %s", node.String(), odao.String(), pdao.String()))
+	if err != nil {
+		return api.PDAOCanProposeRewardsPercentagesResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-rewards-percentages: %w", err)
+	}
+	var response api.PDAOCanProposeRewardsPercentagesResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanProposeRewardsPercentagesResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-rewards-percentages response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanProposeRewardsPercentagesResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-rewards-percentages: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose new RPL rewards allocation percentages for the Oracle DAO, the Protocol DAO, and the node operators
+func (c *Client) PDAOProposeRewardsPercentages(node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32, pollard string) (api.ProposePDAOSettingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-rewards-percentages %s %s %s %d %s", node, odao, pdao, blockNumber, pollard))
+	if err != nil {
+		return api.ProposePDAOSettingResponse{}, fmt.Errorf("Could not get protocol DAO propose-rewards-percentages: %w", err)
+	}
+	var response api.ProposePDAOSettingResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ProposePDAOSettingResponse{}, fmt.Errorf("Could not decode protocol DAO propose-rewards-percentages response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ProposePDAOSettingResponse{}, fmt.Errorf("Could not get protocol DAO propose-rewards-percentages: %s", response.Error)
 	}
 	return response, nil
 }

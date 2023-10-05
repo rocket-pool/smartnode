@@ -312,22 +312,23 @@ func proposeSetting(c *cli.Context, setting string, value string) error {
 	return nil
 }
 
-func parseFloat(c *cli.Context, value string) (*big.Int, error) {
+func parseFloat(c *cli.Context, name string, value string) (*big.Int, error) {
 	if c.Bool("raw") {
-		val, err := cliutils.ValidateBigInt("value", value)
+		val, err := cliutils.ValidateBigInt(name, value)
 		if err != nil {
 			return nil, err
 		}
 		return val, nil
 	} else {
-		val, err := cliutils.ValidateFraction("value", value)
+		val, err := cliutils.ValidateFraction(name, value)
 		if err != nil {
 			return nil, err
 		}
 
 		trueVal := eth.EthToWei(val)
-		if !cliutils.Confirm("Your value will be multiplied by 10^18 to be stored in the contracts, which results in:\n\n\t[%s]\n\nPlease make sure this is what you want and does not have any rounding errors.\n\nIs this result correct?") {
-			fmt.Println("Cancelled. Please try again with the '-raw' flag and provide an explicit value instead.")
+		fmt.Printf("Your value will be multiplied by 10^18 to be stored in the contracts, which results in:\n\n\t[%s]\n\n", trueVal.String())
+		if !(c.Bool("yes") || cliutils.Confirm("Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?")) {
+			fmt.Println("Cancelled. Please try again with the '--raw' flag and provide an explicit value instead.")
 			return nil, nil
 		}
 		return trueVal, nil
