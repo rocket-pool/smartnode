@@ -42,11 +42,41 @@ type SmoothingPoolMinipoolPerformance_v2 struct {
 	EthEarned               *QuotedBigInt `json:"ethEarned"`
 }
 
+// Node operator rewards
+type NodeRewardsInfo_v2 struct {
+	RewardNetwork    uint64        `json:"rewardNetwork"`
+	CollateralRpl    *QuotedBigInt `json:"collateralRpl"`
+	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl"`
+	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth"`
+	MerkleData       []byte        `json:"-"`
+	MerkleProof      []string      `json:"merkleProof"`
+}
+
+func (i *NodeRewardsInfo_v2) GetRewardNetwork() uint64 {
+	return i.RewardNetwork
+}
+func (i *NodeRewardsInfo_v2) GetCollateralRpl() *QuotedBigInt {
+	return i.CollateralRpl
+}
+func (i *NodeRewardsInfo_v2) GetOracleDaoRpl() *QuotedBigInt {
+	return i.OracleDaoRpl
+}
+func (i *NodeRewardsInfo_v2) GetSmoothingPoolEth() *QuotedBigInt {
+	return i.SmoothingPoolEth
+}
+func (n *NodeRewardsInfo_v2) GetMerkleProof() ([]common.Hash, error) {
+	proof := []common.Hash{}
+	for _, proofLevel := range n.MerkleProof {
+		proof = append(proof, common.HexToHash(proofLevel))
+	}
+	return proof, nil
+}
+
 // JSON struct for a complete rewards file
 type RewardsFile_v2 struct {
 	*RewardsFileHeader
-	NodeRewards             map[common.Address]*NodeRewardsInfo `json:"nodeRewards"`
-	MinipoolPerformanceFile MinipoolPerformanceFile_v2          `json:"-"`
+	NodeRewards             map[common.Address]*NodeRewardsInfo_v2 `json:"nodeRewards"`
+	MinipoolPerformanceFile MinipoolPerformanceFile_v2             `json:"-"`
 }
 
 // Serialize a rewards file into bytes

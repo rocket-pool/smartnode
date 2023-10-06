@@ -67,36 +67,6 @@ type INodeRewardsInfo interface {
 	GetMerkleProof() ([]common.Hash, error)
 }
 
-// Basic node operator rewards
-type NodeRewardsInfo struct {
-	RewardNetwork    uint64        `json:"rewardNetwork"`
-	CollateralRpl    *QuotedBigInt `json:"collateralRpl"`
-	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl"`
-	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth"`
-	MerkleData       []byte        `json:"-"`
-	MerkleProof      []string      `json:"merkleProof"`
-}
-
-func (i *NodeRewardsInfo) GetRewardNetwork() uint64 {
-	return i.RewardNetwork
-}
-func (i *NodeRewardsInfo) GetCollateralRpl() *QuotedBigInt {
-	return i.CollateralRpl
-}
-func (i *NodeRewardsInfo) GetOracleDaoRpl() *QuotedBigInt {
-	return i.OracleDaoRpl
-}
-func (i *NodeRewardsInfo) GetSmoothingPoolEth() *QuotedBigInt {
-	return i.SmoothingPoolEth
-}
-func (n *NodeRewardsInfo) GetMerkleProof() ([]common.Hash, error) {
-	proof := []common.Hash{}
-	for _, proofLevel := range n.MerkleProof {
-		proof = append(proof, common.HexToHash(proofLevel))
-	}
-	return proof, nil
-}
-
 // General version-agnostic information about a rewards file
 type RewardsFileHeader struct {
 	// Serialized fields

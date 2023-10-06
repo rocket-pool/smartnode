@@ -45,8 +45,33 @@ type SmoothingPoolMinipoolPerformance_v1 struct {
 
 // Node operator rewards
 type NodeRewardsInfo_v1 struct {
-	*NodeRewardsInfo
-	SmoothingPoolEligibilityRate float64 `json:"smoothingPoolEligibilityRate"`
+	RewardNetwork                uint64        `json:"rewardNetwork"`
+	CollateralRpl                *QuotedBigInt `json:"collateralRpl"`
+	OracleDaoRpl                 *QuotedBigInt `json:"oracleDaoRpl"`
+	SmoothingPoolEth             *QuotedBigInt `json:"smoothingPoolEth"`
+	SmoothingPoolEligibilityRate float64       `json:"smoothingPoolEligibilityRate"`
+	MerkleData                   []byte        `json:"-"`
+	MerkleProof                  []string      `json:"merkleProof"`
+}
+
+func (i *NodeRewardsInfo_v1) GetRewardNetwork() uint64 {
+	return i.RewardNetwork
+}
+func (i *NodeRewardsInfo_v1) GetCollateralRpl() *QuotedBigInt {
+	return i.CollateralRpl
+}
+func (i *NodeRewardsInfo_v1) GetOracleDaoRpl() *QuotedBigInt {
+	return i.OracleDaoRpl
+}
+func (i *NodeRewardsInfo_v1) GetSmoothingPoolEth() *QuotedBigInt {
+	return i.SmoothingPoolEth
+}
+func (n *NodeRewardsInfo_v1) GetMerkleProof() ([]common.Hash, error) {
+	proof := []common.Hash{}
+	for _, proofLevel := range n.MerkleProof {
+		proof = append(proof, common.HexToHash(proofLevel))
+	}
+	return proof, nil
 }
 
 // JSON struct for a complete rewards file

@@ -408,12 +408,10 @@ func (r *treeGeneratorImpl_v2) calculateRplRewards() error {
 				}
 
 				rewardsForNode = &NodeRewardsInfo_v1{
-					NodeRewardsInfo: &NodeRewardsInfo{
-						RewardNetwork:    network,
-						CollateralRpl:    NewQuotedBigInt(0),
-						OracleDaoRpl:     NewQuotedBigInt(0),
-						SmoothingPoolEth: NewQuotedBigInt(0),
-					},
+					RewardNetwork:    network,
+					CollateralRpl:    NewQuotedBigInt(0),
+					OracleDaoRpl:     NewQuotedBigInt(0),
+					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
 				r.rewardsFile.NodeRewards[address] = rewardsForNode
 			}
@@ -508,12 +506,10 @@ func (r *treeGeneratorImpl_v2) calculateRplRewards() error {
 			}
 
 			rewardsForNode = &NodeRewardsInfo_v1{
-				NodeRewardsInfo: &NodeRewardsInfo{
-					RewardNetwork:    network,
-					CollateralRpl:    NewQuotedBigInt(0),
-					OracleDaoRpl:     NewQuotedBigInt(0),
-					SmoothingPoolEth: NewQuotedBigInt(0),
-				},
+				RewardNetwork:    network,
+				CollateralRpl:    NewQuotedBigInt(0),
+				OracleDaoRpl:     NewQuotedBigInt(0),
+				SmoothingPoolEth: NewQuotedBigInt(0),
 			}
 			r.rewardsFile.NodeRewards[address] = rewardsForNode
 
@@ -673,12 +669,10 @@ func (r *treeGeneratorImpl_v2) calculateEthRewards(checkBeaconPerformance bool) 
 				}
 
 				rewardsForNode = &NodeRewardsInfo_v1{
-					NodeRewardsInfo: &NodeRewardsInfo{
-						RewardNetwork:    network,
-						CollateralRpl:    NewQuotedBigInt(0),
-						OracleDaoRpl:     NewQuotedBigInt(0),
-						SmoothingPoolEth: NewQuotedBigInt(0),
-					},
+					RewardNetwork:    network,
+					CollateralRpl:    NewQuotedBigInt(0),
+					OracleDaoRpl:     NewQuotedBigInt(0),
+					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
 				r.rewardsFile.NodeRewards[nodeInfo.Address] = rewardsForNode
 			}

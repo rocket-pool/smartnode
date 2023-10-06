@@ -39,7 +39,6 @@ type treeGeneratorImpl_v6 struct {
 	opts                   *bind.CallOpts
 	nodeDetails            []*NodeSmoothingDetails
 	smoothingPoolBalance   *big.Int
-	smoothingPoolAddress   common.Address
 	intervalDutiesInfo     *IntervalDutiesInfo
 	slotsPerEpoch          uint64
 	validatorIndexMap      map[string]*MinipoolInfo
@@ -348,12 +347,10 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 				}
 
 				rewardsForNode = &NodeRewardsInfo_v1{
-					NodeRewardsInfo: &NodeRewardsInfo{
-						RewardNetwork:    network,
-						CollateralRpl:    NewQuotedBigInt(0),
-						OracleDaoRpl:     NewQuotedBigInt(0),
-						SmoothingPoolEth: NewQuotedBigInt(0),
-					},
+					RewardNetwork:    network,
+					CollateralRpl:    NewQuotedBigInt(0),
+					OracleDaoRpl:     NewQuotedBigInt(0),
+					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
 				r.rewardsFile.NodeRewards[nodeDetails.NodeAddress] = rewardsForNode
 			}
@@ -439,12 +436,10 @@ func (r *treeGeneratorImpl_v6) calculateRplRewards() error {
 			}
 
 			rewardsForNode = &NodeRewardsInfo_v1{
-				NodeRewardsInfo: &NodeRewardsInfo{
-					RewardNetwork:    network,
-					CollateralRpl:    NewQuotedBigInt(0),
-					OracleDaoRpl:     NewQuotedBigInt(0),
-					SmoothingPoolEth: NewQuotedBigInt(0),
-				},
+				RewardNetwork:    network,
+				CollateralRpl:    NewQuotedBigInt(0),
+				OracleDaoRpl:     NewQuotedBigInt(0),
+				SmoothingPoolEth: NewQuotedBigInt(0),
 			}
 			r.rewardsFile.NodeRewards[address] = rewardsForNode
 
@@ -601,12 +596,10 @@ func (r *treeGeneratorImpl_v6) calculateEthRewards(checkBeaconPerformance bool) 
 				}
 
 				rewardsForNode = &NodeRewardsInfo_v1{
-					NodeRewardsInfo: &NodeRewardsInfo{
-						RewardNetwork:    network,
-						CollateralRpl:    NewQuotedBigInt(0),
-						OracleDaoRpl:     NewQuotedBigInt(0),
-						SmoothingPoolEth: NewQuotedBigInt(0),
-					},
+					RewardNetwork:    network,
+					CollateralRpl:    NewQuotedBigInt(0),
+					OracleDaoRpl:     NewQuotedBigInt(0),
+					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
 				r.rewardsFile.NodeRewards[nodeInfo.Address] = rewardsForNode
 			}

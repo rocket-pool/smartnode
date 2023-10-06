@@ -71,7 +71,7 @@ func newTreeGeneratorImpl_v7_rolling(log *log.ColorLogger, logPrefix string, ind
 				},
 				NetworkRewards: map[uint64]*NetworkRewardsInfo{},
 			},
-			NodeRewards: map[common.Address]*NodeRewardsInfo{},
+			NodeRewards: map[common.Address]*NodeRewardsInfo_v2{},
 			MinipoolPerformanceFile: MinipoolPerformanceFile_v2{
 				Index:               index,
 				StartTime:           startTime.UTC(),
@@ -349,7 +349,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateRplRewards() error {
 						network = 0
 					}
 
-					rewardsForNode = &NodeRewardsInfo{
+					rewardsForNode = &NodeRewardsInfo_v2{
 						RewardNetwork:    network,
 						CollateralRpl:    NewQuotedBigInt(0),
 						OracleDaoRpl:     NewQuotedBigInt(0),
@@ -444,7 +444,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateRplRewards() error {
 				network = 0
 			}
 
-			rewardsForNode = &NodeRewardsInfo{
+			rewardsForNode = &NodeRewardsInfo_v2{
 				RewardNetwork:    network,
 				CollateralRpl:    NewQuotedBigInt(0),
 				OracleDaoRpl:     NewQuotedBigInt(0),
@@ -544,7 +544,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateEthRewards(checkBeaconPerformanc
 					network = 0
 				}
 
-				rewardsForNode = &NodeRewardsInfo{
+				rewardsForNode = &NodeRewardsInfo_v2{
 					RewardNetwork:    network,
 					CollateralRpl:    NewQuotedBigInt(0),
 					OracleDaoRpl:     NewQuotedBigInt(0),
