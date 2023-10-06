@@ -479,6 +479,9 @@ func (t *submitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not get RPL price at block %d: %w", blockNumber, err)
 	}
+	if len(response.TickCumulatives) < 2 {
+		return nil, fmt.Errorf("TWAP contract didn't have enough tick cumulatives for block %d (raw: %v)", blockNumber, response.TickCumulatives)
+	}
 
 	tick := big.NewInt(0).Sub(response.TickCumulatives[1], response.TickCumulatives[0])
 	tick.Div(tick, big.NewInt(int64(interval))) // tick = (cumulative[1] - cumulative[0]) / interval
