@@ -1158,7 +1158,22 @@ func terminateService(c *cli.Context) error {
 }
 
 // View the Rocket Pool service logs
-func serviceLogs(c *cli.Context, serviceNames ...string) error {
+func serviceLogs(c *cli.Context, aliasedNames ...string) error {
+
+	// Handle name aliasing
+	serviceNames := []string{}
+	for _, name := range aliasedNames {
+		trueName := name
+		switch name {
+		case "ec", "el", "execution":
+			trueName = "eth1"
+		case "cc", "cl", "bc", "bn", "beacon", "consensus":
+			trueName = "eth2"
+		case "vc":
+			trueName = "validator"
+		}
+		serviceNames = append(serviceNames, trueName)
+	}
 
 	// Get RP client
 	rp := rocketpool.NewClientFromCtx(c)
