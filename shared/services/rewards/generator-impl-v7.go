@@ -118,6 +118,8 @@ func (r *treeGeneratorImpl_v7) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	// Set the network name
 	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
+	r.rewardsFile.MinipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.rewardsFile.MinipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -182,6 +184,8 @@ func (r *treeGeneratorImpl_v7) approximateStakerShareOfSmoothingPool(rp *rocketp
 	// Set the network name
 	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
+	r.rewardsFile.MinipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.rewardsFile.MinipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -309,6 +313,9 @@ func (r *treeGeneratorImpl_v7) updateNetworksAndTotals() {
 func (r *treeGeneratorImpl_v7) calculateRplRewards() error {
 	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
 	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
+	if pendingRewards.Cmp(common.Big0) == 0 {
+		return fmt.Errorf("there are no pending RPL rewards, so this interval cannot be used for rewards submission")
+	}
 
 	// Get baseline Protocol DAO rewards
 	pDaoPercent := r.networkState.NetworkDetails.ProtocolDaoRewardsPercent

@@ -41,7 +41,7 @@ const (
 	HoleskyV4Interval uint64 = 0
 	HoleskyV5Interval uint64 = 0
 	HoleskyV6Interval uint64 = 0
-	HoleskyV7Interval uint64 = TestingInterval
+	HoleskyV7Interval uint64 = 0
 )
 
 type TreeGenerator struct {
