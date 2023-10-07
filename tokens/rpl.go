@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -155,6 +156,19 @@ func GetRPLInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 		return nil, fmt.Errorf("Could not get RPL inflation interval rate: %w", err)
 	}
 	return *rate, nil
+}
+
+// Get the time that inflation started for this interval
+func GetRPLInflationIntervalStartTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Time, error) {
+	rocketTokenRPL, err := getRocketTokenRPL(rp, opts)
+	if err != nil {
+		return time.Time{}, err
+	}
+	value := new(*big.Int)
+	if err := rocketTokenRPL.Call(opts, value, "getInflationIntervalStartTime"); err != nil {
+		return time.Time{}, fmt.Errorf("Could not get RPL inflation interval start time: %w", err)
+	}
+	return time.Unix((*value).Int64(), 0), nil
 }
 
 //
