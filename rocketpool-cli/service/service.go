@@ -1000,6 +1000,11 @@ func pruneExecutionClient(c *cli.Context) error {
 	case cfgtypes.ExecutionClient_Besu:
 		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
 		return nil
+	case cfgtypes.ExecutionClient_Geth:
+		if cfg.Geth.EnablePbss.Value == true {
+			fmt.Println("You have PBSS enabled for Geth. Pruning is no longer required when using PBSS.")
+			return nil
+		}
 	}
 
 	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
