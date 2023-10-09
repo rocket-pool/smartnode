@@ -124,9 +124,14 @@ func (r *treeGeneratorImpl_v7_rolling) generateTree(rp *rocketpool.RocketPool, c
 
 	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(r.networkState.NodeDetails))
 
-	// Get the minipool count - this will be used for an error epsilon due to division truncation
-	minipoolCount := uint64(len(r.networkState.MinipoolDetails))
-	r.epsilon = big.NewInt(int64(minipoolCount))
+	// Get the max of node count and minipool count - this will be used for an error epsilon due to division truncation
+	nodeCount := len(r.networkState.NodeDetails)
+	minipoolCount := len(r.networkState.MinipoolDetails)
+	if nodeCount > minipoolCount {
+		r.epsilon = big.NewInt(int64(nodeCount))
+	} else {
+		r.epsilon = big.NewInt(int64(minipoolCount))
+	}
 
 	// Calculate the RPL rewards
 	err := r.calculateRplRewards()
@@ -189,9 +194,14 @@ func (r *treeGeneratorImpl_v7_rolling) approximateStakerShareOfSmoothingPool(rp 
 
 	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(r.networkState.NodeDetails))
 
-	// Get the minipool count - this will be used for an error epsilon due to division truncation
-	minipoolCount := uint64(len(r.networkState.MinipoolDetails))
-	r.epsilon = big.NewInt(int64(minipoolCount))
+	// Get the max of node count and minipool count - this will be used for an error epsilon due to division truncation
+	nodeCount := len(r.networkState.NodeDetails)
+	minipoolCount := len(r.networkState.MinipoolDetails)
+	if nodeCount > minipoolCount {
+		r.epsilon = big.NewInt(int64(nodeCount))
+	} else {
+		r.epsilon = big.NewInt(int64(minipoolCount))
+	}
 
 	// Calculate the ETH rewards
 	err := r.calculateEthRewards(false)
