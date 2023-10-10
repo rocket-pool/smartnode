@@ -25,7 +25,7 @@ const (
 	MainnetV4Interval uint64 = 6
 	MainnetV5Interval uint64 = 8
 	MainnetV6Interval uint64 = 12
-	MainnetV7Interval uint64 = TestingInterval
+	MainnetV7Interval uint64 = 15
 
 	// Prater intervals
 	PraterV2Interval uint64 = 37
@@ -33,7 +33,7 @@ const (
 	PraterV4Interval uint64 = 60
 	PraterV5Interval uint64 = 76
 	PraterV6Interval uint64 = 118
-	PraterV7Interval uint64 = TestingInterval
+	PraterV7Interval uint64 = 144
 
 	// Holesky intervals
 	HoleskyV2Interval uint64 = 0
