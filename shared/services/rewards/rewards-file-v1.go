@@ -1,10 +1,13 @@
 package rewards
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 // Holds information
@@ -30,6 +33,17 @@ func (f *MinipoolPerformanceFile_v1) SerializeHuman() ([]byte, error) {
 	return json.MarshalIndent(f, "", "\t")
 }
 
+// Deserialize a minipool performance file from bytes
+func (f *MinipoolPerformanceFile_v1) Deserialize(bytes []byte) error {
+	return json.Unmarshal(bytes, &f)
+}
+
+// Get a minipool's smoothing pool performance if it was present
+func (f *MinipoolPerformanceFile_v1) GetSmoothingPoolPerformance(minipoolAddress common.Address) (ISmoothingPoolMinipoolPerformance, bool) {
+	perf, exists := f.MinipoolPerformance[minipoolAddress]
+	return perf, exists
+}
+
 // Minipool stats
 type SmoothingPoolMinipoolPerformance_v1 struct {
 	Pubkey                  string   `json:"pubkey"`
@@ -41,6 +55,22 @@ type SmoothingPoolMinipoolPerformance_v1 struct {
 	ParticipationRate       float64  `json:"participationRate"`
 	MissingAttestationSlots []uint64 `json:"missingAttestationSlots"`
 	EthEarned               float64  `json:"ethEarned"`
+}
+
+func (p *SmoothingPoolMinipoolPerformance_v1) GetPubkey() (types.ValidatorPubkey, error) {
+	return types.HexToValidatorPubkey(p.Pubkey)
+}
+func (p *SmoothingPoolMinipoolPerformance_v1) GetSuccessfulAttestationCount() uint64 {
+	return p.SuccessfulAttestations
+}
+func (p *SmoothingPoolMinipoolPerformance_v1) GetMissedAttestationCount() uint64 {
+	return p.MissedAttestations
+}
+func (p *SmoothingPoolMinipoolPerformance_v1) GetMissingAttestationSlots() []uint64 {
+	return p.MissingAttestationSlots
+}
+func (p *SmoothingPoolMinipoolPerformance_v1) GetEthEarned() *big.Int {
+	return eth.EthToWei(p.EthEarned)
 }
 
 // Node operator rewards

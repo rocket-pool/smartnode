@@ -18,6 +18,12 @@ type IMinipoolPerformanceFile interface {
 
 	// Serialize a minipool performance file into bytes designed for human readability
 	SerializeHuman() ([]byte, error)
+
+	// Deserialize a rewards file from bytes
+	Deserialize([]byte) error
+
+	// Get a minipool's smoothing pool performance if it was present
+	GetSmoothingPoolPerformance(minipoolAddress common.Address) (ISmoothingPoolMinipoolPerformance, bool)
 }
 
 // Interface for version-agnostic rewards files
@@ -58,6 +64,15 @@ type TotalRewards struct {
 	NodeOperatorSmoothingPoolEth *QuotedBigInt `json:"nodeOperatorSmoothingPoolEth"`
 }
 
+// Minipool stats
+type ISmoothingPoolMinipoolPerformance interface {
+	GetPubkey() (types.ValidatorPubkey, error)
+	GetSuccessfulAttestationCount() uint64
+	GetMissedAttestationCount() uint64
+	GetMissingAttestationSlots() []uint64
+	GetEthEarned() *big.Int
+}
+
 // Interface for version-agnostic node operator rewards
 type INodeRewardsInfo interface {
 	GetRewardNetwork() uint64
@@ -65,6 +80,11 @@ type INodeRewardsInfo interface {
 	GetOracleDaoRpl() *QuotedBigInt
 	GetSmoothingPoolEth() *QuotedBigInt
 	GetMerkleProof() ([]common.Hash, error)
+}
+
+// Small struct to test version information for rewards files during deserialization
+type VersionHeader struct {
+	RewardsFileVersion uint64 `json:"rewardsFileVersion,omitempty"`
 }
 
 // General version-agnostic information about a rewards file
