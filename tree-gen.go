@@ -409,7 +409,7 @@ func (g *treeGenerator) slotToTime(slot uint64) time.Time {
 }
 
 // Generates the rewards file for the given generator
-func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator) (*rprewards.RewardsFile, error) {
+func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator) (rprewards.IRewardsFile, error) {
 	if g.ruleset == 0 {
 		return treegen.GenerateTree()
 	}
@@ -418,16 +418,18 @@ func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator) (*
 }
 
 // Serializes the minipool performance file into JSON
-func (g *treeGenerator) serializeMinipoolPerformance(rewardsFile *rprewards.RewardsFile) ([]byte, error) {
+func (g *treeGenerator) serializeMinipoolPerformance(rewardsFile rprewards.IRewardsFile) ([]byte, error) {
+	perfFile := rewardsFile.GetMinipoolPerformanceFile()
+
 	if g.prettyPrint {
-		return json.MarshalIndent(rewardsFile.MinipoolPerformanceFile, "", "\t")
+		return perfFile.SerializeHuman()
 	}
 
-	return json.Marshal(rewardsFile.MinipoolPerformanceFile)
+	return perfFile.Serialize()
 }
 
 // Serializes the rewards tree file in to JSON
-func (g *treeGenerator) serializeRewardsTree(rewardsFile *rprewards.RewardsFile) ([]byte, error) {
+func (g *treeGenerator) serializeRewardsTree(rewardsFile rprewards.IRewardsFile) ([]byte, error) {
 	if g.prettyPrint {
 		return json.MarshalIndent(rewardsFile, "", "\t")
 	}
@@ -436,12 +438,13 @@ func (g *treeGenerator) serializeRewardsTree(rewardsFile *rprewards.RewardsFile)
 }
 
 // Writes both the performance file and the rewards file to disk
-func (g *treeGenerator) writeFiles(rewardsFile *rprewards.RewardsFile) error {
+func (g *treeGenerator) writeFiles(rewardsFile rprewards.IRewardsFile) error {
 	g.log.Printlnf("Saving JSON files...")
+	index := rewardsFile.GetHeader().Index
 
 	// Get the output paths
-	rewardsTreePath := filepath.Join(g.outputDir, fmt.Sprintf(config.RewardsTreeFilenameFormat, string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsFile.Index))
-	minipoolPerformancePath := filepath.Join(g.outputDir, fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsFile.Index))
+	rewardsTreePath := filepath.Join(g.outputDir, fmt.Sprintf(config.RewardsTreeFilenameFormat, string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), index))
+	minipoolPerformancePath := filepath.Join(g.outputDir, fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), index))
 
 	// Serialize the minipool performance file
 	minipoolPerformanceBytes, err := g.serializeMinipoolPerformance(rewardsFile)
@@ -456,7 +459,7 @@ func (g *treeGenerator) writeFiles(rewardsFile *rprewards.RewardsFile) error {
 	}
 
 	g.log.Printlnf("Saved minipool performance file to %s", minipoolPerformancePath)
-	rewardsFile.MinipoolPerformanceFileCID = "---"
+	rewardsFile.SetMinipoolPerformanceFileCID("---")
 
 	// Serialize the rewards tree to JSON
 	wrapperBytes, err := g.serializeRewardsTree(rewardsFile)
@@ -472,7 +475,7 @@ func (g *treeGenerator) writeFiles(rewardsFile *rprewards.RewardsFile) error {
 	}
 
 	g.log.Printlnf("Saved rewards snapshot file to %s", rewardsTreePath)
-	g.log.Printlnf("Successfully generated rewards snapshot for interval %d", rewardsFile.Index)
+	g.log.Printlnf("Successfully generated rewards snapshot for interval %d", index)
 
 	return nil
 }
@@ -641,18 +644,20 @@ func (g *treeGenerator) generateTree() error {
 	if err != nil {
 		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}
-	for address, network := range rewardsFile.InvalidNetworkNodes {
+
+	header := rewardsFile.GetHeader()
+	for address, network := range header.InvalidNetworkNodes {
 		g.log.Printlnf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network)
 	}
 	g.log.Printlnf("Finished in %s", time.Since(start).String())
 
 	// Validate the Merkle root
 	if g.targets.rewardsEvent != nil {
-		root := common.BytesToHash(rewardsFile.MerkleTree.Root())
+		root := common.BytesToHash(header.MerkleTree.Root())
 		if root != g.targets.rewardsEvent.MerkleRoot {
 			g.log.Printlnf("WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", root.Hex(), g.targets.rewardsEvent.MerkleRoot.Hex())
 		} else {
-			g.log.Printlnf("Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", rewardsFile.MerkleRoot)
+			g.log.Printlnf("Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", header.MerkleRoot)
 		}
 	}
 
