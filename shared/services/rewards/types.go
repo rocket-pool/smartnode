@@ -22,6 +22,10 @@ type IMinipoolPerformanceFile interface {
 	// Deserialize a rewards file from bytes
 	Deserialize([]byte) error
 
+	// Get all of the minipool addresses with rewards in this file
+	// NOTE: the order of minipool addresses is not guaranteed to be stable, so don't rely on it
+	GetMinipoolAddresses() []common.Address
+
 	// Get a minipool's smoothing pool performance if it was present
 	GetSmoothingPoolPerformance(minipoolAddress common.Address) (ISmoothingPoolMinipoolPerformance, bool)
 }
@@ -36,6 +40,10 @@ type IRewardsFile interface {
 
 	// Get the rewards file's header
 	GetHeader() *RewardsFileHeader
+
+	// Get all of the node addresses with rewards in this file
+	// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
+	GetNodeAddresses() []common.Address
 
 	// Get info about a node's rewards
 	GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool)

@@ -38,6 +38,18 @@ func (f *MinipoolPerformanceFile_v1) Deserialize(bytes []byte) error {
 	return json.Unmarshal(bytes, &f)
 }
 
+// Get all of the minipool addresses with rewards in this file
+// NOTE: the order of minipool addresses is not guaranteed to be stable, so don't rely on it
+func (f *MinipoolPerformanceFile_v1) GetMinipoolAddresses() []common.Address {
+	addresses := make([]common.Address, len(f.MinipoolPerformance))
+	i := 0
+	for address, _ := range f.MinipoolPerformance {
+		addresses[i] = address
+		i++
+	}
+	return addresses
+}
+
 // Get a minipool's smoothing pool performance if it was present
 func (f *MinipoolPerformanceFile_v1) GetSmoothingPoolPerformance(minipoolAddress common.Address) (ISmoothingPoolMinipoolPerformance, bool) {
 	perf, exists := f.MinipoolPerformance[minipoolAddress]
@@ -124,6 +136,18 @@ func (f *RewardsFile_v1) Deserialize(bytes []byte) error {
 // Get the rewards file's header
 func (f *RewardsFile_v1) GetHeader() *RewardsFileHeader {
 	return f.RewardsFileHeader
+}
+
+// Get all of the node addresses with rewards in this file
+// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
+func (f *RewardsFile_v1) GetNodeAddresses() []common.Address {
+	addresses := make([]common.Address, len(f.NodeRewards))
+	i := 0
+	for address, _ := range f.NodeRewards {
+		addresses[i] = address
+		i++
+	}
+	return addresses
 }
 
 // Get info about a node's rewards
