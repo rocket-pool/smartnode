@@ -91,7 +91,6 @@ const (
 	MevRelayID_BloxrouteEthical   MevRelayID = "bloxrouteEthical"
 	MevRelayID_BloxrouteMaxProfit MevRelayID = "bloxrouteMaxProfit"
 	MevRelayID_BloxrouteRegulated MevRelayID = "bloxrouteRegulated"
-	MevRelayID_Blocknative        MevRelayID = "blocknative"
 	MevRelayID_Eden               MevRelayID = "eden"
 	MevRelayID_Ultrasound         MevRelayID = "ultrasound"
 	MevRelayID_Aestus             MevRelayID = "aestus"

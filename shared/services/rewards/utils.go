@@ -28,6 +28,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/storage"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -188,8 +189,7 @@ func GetELBlockHeaderForTime(targetTime time.Time, rp *rocketpool.RocketPool) (*
 	latestBlock := latestBlockHeader.Number
 
 	// Get the block that Rocket Pool deployed to the chain on, use that as the search start
-	deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
-	deployBlock, err := rp.RocketStorage.GetUint(nil, deployBlockHash)
+	deployBlock, err := storage.GetDeployBlock(rp)
 	if err != nil {
 		return nil, fmt.Errorf("error getting Rocket Pool deployment block: %w", err)
 	}
@@ -418,6 +418,26 @@ func DeserializeRewardsFile(bytes []byte) (IRewardsFile, error) {
 		return file, file.Deserialize(bytes)
 	case 2:
 		file := &RewardsFile_v2{}
+		return file, file.Deserialize(bytes)
+	default:
+		return nil, fmt.Errorf("unexpected rewards file version [%d]", header.RewardsFileVersion)
+	}
+}
+
+// Deserializes a byte array into a rewards file interface
+func DeserializeMinipoolPerformanceFile(bytes []byte) (IMinipoolPerformanceFile, error) {
+	var header VersionHeader
+	err := json.Unmarshal(bytes, &header)
+	if err != nil {
+		return nil, fmt.Errorf("error deserializing version header: %w", err)
+	}
+
+	switch header.RewardsFileVersion {
+	case 1:
+		file := &MinipoolPerformanceFile_v1{}
+		return file, file.Deserialize(bytes)
+	case 2:
+		file := &MinipoolPerformanceFile_v2{}
 		return file, file.Deserialize(bytes)
 	default:
 		return nil, fmt.Errorf("unexpected rewards file version [%d]", header.RewardsFileVersion)
