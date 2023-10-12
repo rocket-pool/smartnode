@@ -7,7 +7,7 @@ require (
 	github.com/fatih/color v1.14.1
 	github.com/goccy/go-json v0.10.2
 	github.com/rocket-pool/rocketpool-go v1.8.2
-	github.com/rocket-pool/smartnode v1.10.2
+	github.com/rocket-pool/smartnode v1.11.0
 	github.com/urfave/cli/v2 v2.23.0
 )
 
@@ -116,6 +116,6 @@ require (
 
 replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd
 
-replace github.com/rocket-pool/smartnode => ../smartnode
+// replace github.com/rocket-pool/smartnode => ../smartnode
 
 // replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
