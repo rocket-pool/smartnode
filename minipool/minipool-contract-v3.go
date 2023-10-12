@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -15,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/storage"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -595,8 +595,7 @@ func (mp *minipool_v3) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOp
 	}
 
 	// Grab the lowest block number worth querying from (should never have to go back this far in practice)
-	deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
-	fromBlockBig, err := mp.RocketPool.RocketStorage.GetUint(nil, deployBlockHash)
+	fromBlockBig, err := storage.GetDeployBlock(mp.RocketPool)
 	if err != nil {
 		return PrestakeData{}, fmt.Errorf("Error getting deploy block %s: %w", mp.Address.Hex(), err)
 	}

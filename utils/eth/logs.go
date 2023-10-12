@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/storage"
 )
 
 type FilterQuery struct {
@@ -54,8 +55,7 @@ func GetLogs(rp *rocketpool.RocketPool, addressFilter []common.Address, topicFil
 	// Get the block that Rocket Pool was deployed on as the lower bound if one wasn't specified
 	if fromBlock == nil {
 		var err error
-		deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
-		fromBlock, err = rp.RocketStorage.GetUint(nil, deployBlockHash)
+		fromBlock, err = storage.GetDeployBlock(rp)
 		if err != nil {
 			return nil, err
 		}
