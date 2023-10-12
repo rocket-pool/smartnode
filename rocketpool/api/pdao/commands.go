@@ -336,7 +336,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-propose-recurring-spend",
 				Usage:     "Check whether the node can propose a recurring spend of the Protocol DAO's treasury",
-				UsageText: "rocketpool api pdao can-propose-recurring-time-spend contract-name recipient amount-per-period period-length start-time number-of-periods",
+				UsageText: "rocketpool api pdao can-propose-recurring-spend contract-name recipient amount-per-period period-length start-time number-of-periods",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -393,7 +393,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-propose-recurring-spend-update",
 				Usage:     "Check whether the node can propose an update to an existing recurring spend plan",
-				UsageText: "rocketpool api pdao can-propose-recurring-time-spend-update contract-name recipient amount-per-period period-length number-of-periods",
+				UsageText: "rocketpool api pdao can-propose-recurring-spend-update contract-name recipient amount-per-period period-length number-of-periods",
 				Action: func(c *cli.Context) error {
 
 					// Validate args

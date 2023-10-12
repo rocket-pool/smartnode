@@ -3,7 +3,9 @@ package rocketpool
 import (
 	"fmt"
 	"math/big"
+	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -197,6 +199,166 @@ func (c *Client) PDAOProposeRewardsPercentages(node *big.Int, odao *big.Int, pda
 	}
 	if response.Error != "" {
 		return api.ProposePDAOSettingResponse{}, fmt.Errorf("Could not get protocol DAO propose-rewards-percentages: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can propose a one-time spend of the Protocol DAO's treasury
+func (c *Client) PDAOCanProposeOneTimeSpend(invoiceID string, recipient common.Address, amount *big.Int) (api.PDAOCanProposeOneTimeSpendResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-one-time-spend %s %s %s", invoiceID, recipient.Hex(), amount.String()))
+	if err != nil {
+		return api.PDAOCanProposeOneTimeSpendResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-one-time-spend: %w", err)
+	}
+	var response api.PDAOCanProposeOneTimeSpendResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanProposeOneTimeSpendResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-one-time-spend response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanProposeOneTimeSpendResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-one-time-spend: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose a one-time spend of the Protocol DAO's treasury
+func (c *Client) PDAOProposeOneTimeSpend(invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, pollard string) (api.PDAOProposeOneTimeSpendResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-one-time-spend %s %s %s %d %s", invoiceID, recipient.Hex(), amount.String(), blockNumber, pollard))
+	if err != nil {
+		return api.PDAOProposeOneTimeSpendResponse{}, fmt.Errorf("Could not get protocol DAO propose-one-time-spend: %w", err)
+	}
+	var response api.PDAOProposeOneTimeSpendResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOProposeOneTimeSpendResponse{}, fmt.Errorf("Could not decode protocol DAO propose-one-time-spend response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOProposeOneTimeSpendResponse{}, fmt.Errorf("Could not get protocol DAO propose-one-time-spend: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can propose a recurring spend of the Protocol DAO's treasury
+func (c *Client) PDAOCanProposeRecurringSpend(contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64) (api.PDAOCanProposeRecurringSpendResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-recurring-spend %s %s %s %s %d %d", contractName, recipient.Hex(), amountPerPeriod.String(), periodLength.String(), startTime.Unix(), numberOfPeriods))
+	if err != nil {
+		return api.PDAOCanProposeRecurringSpendResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-recurring-spend: %w", err)
+	}
+	var response api.PDAOCanProposeRecurringSpendResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanProposeRecurringSpendResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-recurring-spend response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanProposeRecurringSpendResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-recurring-spend: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose a recurring spend of the Protocol DAO's treasury
+func (c *Client) PDAOProposeRecurringSpend(contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32, pollard string) (api.PDAOProposeRecurringSpendResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-recurring-spend %s %s %s %s %d %d %d %s", contractName, recipient.Hex(), amountPerPeriod.String(), periodLength.String(), startTime.Unix(), numberOfPeriods, blockNumber, pollard))
+	if err != nil {
+		return api.PDAOProposeRecurringSpendResponse{}, fmt.Errorf("Could not get protocol DAO propose-recurring-spend: %w", err)
+	}
+	var response api.PDAOProposeRecurringSpendResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOProposeRecurringSpendResponse{}, fmt.Errorf("Could not decode protocol DAO propose-recurring-spend response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOProposeRecurringSpendResponse{}, fmt.Errorf("Could not get protocol DAO propose-recurring-spend: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can propose an update to an existing recurring spend plan
+func (c *Client) PDAOCanProposeRecurringSpendUpdate(contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64) (api.PDAOCanProposeRecurringSpendUpdateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-recurring-spend-update %s %s %s %s %d", contractName, recipient.Hex(), amountPerPeriod.String(), periodLength.String(), numberOfPeriods))
+	if err != nil {
+		return api.PDAOCanProposeRecurringSpendUpdateResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-recurring-spend-update: %w", err)
+	}
+	var response api.PDAOCanProposeRecurringSpendUpdateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanProposeRecurringSpendUpdateResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-recurring-spend-update response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanProposeRecurringSpendUpdateResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-recurring-spend-update: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose an update to an existing recurring spend plan
+func (c *Client) PDAOProposeRecurringSpendUpdate(contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64, blockNumber uint32, pollard string) (api.PDAOProposeRecurringSpendUpdateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-recurring-spend-update %s %s %s %s %d %d %s", contractName, recipient.Hex(), amountPerPeriod.String(), periodLength.String(), numberOfPeriods, blockNumber, pollard))
+	if err != nil {
+		return api.PDAOProposeRecurringSpendUpdateResponse{}, fmt.Errorf("Could not get protocol DAO propose-recurring-spend-update: %w", err)
+	}
+	var response api.PDAOProposeRecurringSpendUpdateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOProposeRecurringSpendUpdateResponse{}, fmt.Errorf("Could not decode protocol DAO propose-recurring-spend-update response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOProposeRecurringSpendUpdateResponse{}, fmt.Errorf("Could not get protocol DAO propose-recurring-spend-update: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can invite someone to the security council
+func (c *Client) PDAOCanProposeInviteToSecurityCouncil(id string, address common.Address) (api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-invite-to-security-council %s %s", id, address.Hex()))
+	if err != nil {
+		return api.PDAOCanProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-invite-to-security-council: %w", err)
+	}
+	var response api.PDAOCanProposeInviteToSecurityCouncilResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-invite-to-security-council response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-invite-to-security-council: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose inviting someone to the security council
+func (c *Client) PDAOProposeInviteToSecurityCouncil(id string, address common.Address, blockNumber uint32, pollard string) (api.PDAOProposeInviteToSecurityCouncilResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-invite-to-security-council %s %s %d %s", id, address.Hex(), blockNumber, pollard))
+	if err != nil {
+		return api.PDAOProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO propose-invite-to-security-council: %w", err)
+	}
+	var response api.PDAOProposeInviteToSecurityCouncilResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not decode protocol DAO propose-invite-to-security-council response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO propose-invite-to-security-council: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can kick someone from the security council
+func (c *Client) PDAOCanProposeKickFromSecurityCouncil(address common.Address) (api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-kick-from-security-council %s", address.Hex()))
+	if err != nil {
+		return api.PDAOCanProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-invite-to-security-council: %w", err)
+	}
+	var response api.PDAOCanProposeInviteToSecurityCouncilResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-invite-to-security-council response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-invite-to-security-council: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose kicking someone from the security council
+func (c *Client) PDAOProposeKickFromSecurityCouncil(address common.Address, blockNumber uint32, pollard string) (api.PDAOProposeKickFromSecurityCouncilResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-kick-from-security-council %s %d %s", address.Hex(), blockNumber, pollard))
+	if err != nil {
+		return api.PDAOProposeKickFromSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO propose-kick-from-security-council: %w", err)
+	}
+	var response api.PDAOProposeKickFromSecurityCouncilResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOProposeKickFromSecurityCouncilResponse{}, fmt.Errorf("Could not decode protocol DAO propose-kick-from-security-council response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOProposeKickFromSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO propose-kick-from-security-council: %s", response.Error)
 	}
 	return response, nil
 }

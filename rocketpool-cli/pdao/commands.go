@@ -75,15 +75,15 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Usage: "Automatically confirm all interactive questions",
 							},
 							cli.StringFlag{
-								Name:  "node",
+								Name:  "node, n",
 								Usage: "The node operator's rewards allocation (a percentage from 0 to 1 if '--raw' is not set)",
 							},
 							cli.StringFlag{
-								Name:  "odao",
+								Name:  "odao, o",
 								Usage: "The Oracle DAO's rewards allocation (a percentage from 0 to 1 if '--raw' is not set)",
 							},
 							cli.StringFlag{
-								Name:  "pdao",
+								Name:  "pdao, p",
 								Usage: "The Protocol DAO's rewards allocation (a percentage from 0 to 1 if '--raw' is not set)",
 							},
 						},
@@ -97,6 +97,214 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							// Run
 							return proposeRewardsPercentages(c)
 
+						},
+					},
+
+					{
+						Name:      "one-time-spend",
+						Aliases:   []string{"ots"},
+						Usage:     "Propose a one-time spend of the Protocol DAO's treasury",
+						UsageText: "rocketpool pdao propose one-time-spend",
+						Flags: []cli.Flag{
+							cli.BoolFlag{
+								Name:  "raw",
+								Usage: "Add this flag if you want to use 18-decimal-fixed-point-integer (wei) values instead of floating point ETH amounts",
+							},
+							cli.BoolFlag{
+								Name:  "yes, y",
+								Usage: "Automatically confirm all interactive questions",
+							},
+							cli.StringFlag{
+								Name:  "invoice-id, i",
+								Usage: "The invoice ID / number for this spend",
+							},
+							cli.StringFlag{
+								Name:  "recipient, r",
+								Usage: "The recipient of the spend",
+							},
+							cli.StringFlag{
+								Name:  "amount, a",
+								Usage: "The amount of RPL to send",
+							},
+						},
+						Action: func(c *cli.Context) error {
+
+							// Validate args
+							if err := cliutils.ValidateArgCount(c, 0); err != nil {
+								return err
+							}
+
+							// Run
+							return proposeOneTimeSpend(c)
+
+						},
+					},
+
+					{
+						Name:      "recurring-spend",
+						Aliases:   []string{"rs"},
+						Usage:     "Propose a recurring spend of the Protocol DAO's treasury",
+						UsageText: "rocketpool pdao propose recurring-spend",
+						Flags: []cli.Flag{
+							cli.BoolFlag{
+								Name:  "raw",
+								Usage: "Add this flag if you want to use 18-decimal-fixed-point-integer (wei) values instead of floating point ETH amounts",
+							},
+							cli.BoolFlag{
+								Name:  "yes, y",
+								Usage: "Automatically confirm all interactive questions",
+							},
+							cli.StringFlag{
+								Name:  "contract-name, c",
+								Usage: "The name of the recurring spend's contract / invoice (alternatively, the name of the recipient)",
+							},
+							cli.StringFlag{
+								Name:  "recipient, r",
+								Usage: "The recipient of the spend",
+							},
+							cli.StringFlag{
+								Name:  "amount-per-period, a",
+								Usage: "The amount of RPL to send",
+							},
+							cli.StringFlag{
+								Name:  "period-length, l",
+								Usage: "The length of time between each payment, in hours / minutes / seconds (e.g., 168h0m0s)",
+							},
+							cli.Uint64Flag{
+								Name:  "start-time, s",
+								Usage: "The start time of the first payment period (Unix timestamp)",
+							},
+							cli.Uint64Flag{
+								Name:  "number-of-periods, n",
+								Usage: "The total number of payment periods for the spend",
+							},
+						},
+						Action: func(c *cli.Context) error {
+
+							// Validate args
+							if err := cliutils.ValidateArgCount(c, 0); err != nil {
+								return err
+							}
+
+							// Run
+							return proposeRecurringSpend(c)
+
+						},
+					},
+
+					{
+						Name:      "recurring-spend-update",
+						Aliases:   []string{"rsu"},
+						Usage:     "Propose an update to an existing recurring spend plan",
+						UsageText: "rocketpool pdao propose recurring-spend-update",
+						Flags: []cli.Flag{
+							cli.BoolFlag{
+								Name:  "raw",
+								Usage: "Add this flag if you want to use 18-decimal-fixed-point-integer (wei) values instead of floating point ETH amounts",
+							},
+							cli.BoolFlag{
+								Name:  "yes, y",
+								Usage: "Automatically confirm all interactive questions",
+							},
+							cli.StringFlag{
+								Name:  "contract-name, c",
+								Usage: "The name of the recurring spend's contract / invoice (alternatively, the name of the recipient)",
+							},
+							cli.StringFlag{
+								Name:  "recipient, r",
+								Usage: "The recipient of the spend",
+							},
+							cli.StringFlag{
+								Name:  "amount-per-period, a",
+								Usage: "The amount of RPL to send",
+							},
+							cli.StringFlag{
+								Name:  "period-length, l",
+								Usage: "The length of time between each payment, in hours / minutes / seconds (e.g., 168h0m0s)",
+							},
+							cli.Uint64Flag{
+								Name:  "number-of-periods, n",
+								Usage: "The total number of payment periods for the spend",
+							},
+						},
+						Action: func(c *cli.Context) error {
+
+							// Validate args
+							if err := cliutils.ValidateArgCount(c, 0); err != nil {
+								return err
+							}
+
+							// Run
+							return proposeRecurringSpendUpdate(c)
+
+						},
+					},
+
+					{
+						Name:    "security-council",
+						Aliases: []string{"sc"},
+						Usage:   "Modify the security council",
+						Subcommands: []cli.Command{
+
+							{
+								Name:      "invite",
+								Aliases:   []string{"i"},
+								Usage:     "Propose an invitation to the security council",
+								UsageText: "rocketpool pdao propose security-council invite",
+								Flags: []cli.Flag{
+									cli.BoolFlag{
+										Name:  "yes, y",
+										Usage: "Automatically confirm all interactive questions",
+									},
+									cli.StringFlag{
+										Name:  "id, i",
+										Usage: "A descriptive ID of the entity being invited",
+									},
+									cli.StringFlag{
+										Name:  "address, a",
+										Usage: "The address of the entity being invited",
+									},
+								},
+								Action: func(c *cli.Context) error {
+
+									// Validate args
+									if err := cliutils.ValidateArgCount(c, 0); err != nil {
+										return err
+									}
+
+									// Run
+									return proposeSecurityCouncilInvite(c)
+
+								},
+							},
+
+							{
+								Name:      "kick",
+								Aliases:   []string{"k"},
+								Usage:     "Propose kick a member from the security council",
+								UsageText: "rocketpool pdao propose security-council kick",
+								Flags: []cli.Flag{
+									cli.BoolFlag{
+										Name:  "yes, y",
+										Usage: "Automatically confirm all interactive questions",
+									},
+									cli.StringFlag{
+										Name:  "address, a",
+										Usage: "The address of the entity to kick",
+									},
+								},
+								Action: func(c *cli.Context) error {
+
+									// Validate args
+									if err := cliutils.ValidateArgCount(c, 0); err != nil {
+										return err
+									}
+
+									// Run
+									return proposeSecurityCouncilKick(c)
+
+								},
+							},
 						},
 					},
 
