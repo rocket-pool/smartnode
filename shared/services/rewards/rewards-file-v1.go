@@ -43,7 +43,7 @@ func (f *MinipoolPerformanceFile_v1) Deserialize(bytes []byte) error {
 func (f *MinipoolPerformanceFile_v1) GetMinipoolAddresses() []common.Address {
 	addresses := make([]common.Address, len(f.MinipoolPerformance))
 	i := 0
-	for address, _ := range f.MinipoolPerformance {
+	for address := range f.MinipoolPerformance {
 		addresses[i] = address
 		i++
 	}
@@ -143,7 +143,7 @@ func (f *RewardsFile_v1) GetHeader() *RewardsFileHeader {
 func (f *RewardsFile_v1) GetNodeAddresses() []common.Address {
 	addresses := make([]common.Address, len(f.NodeRewards))
 	i := 0
-	for address, _ := range f.NodeRewards {
+	for address := range f.NodeRewards {
 		addresses[i] = address
 		i++
 	}
