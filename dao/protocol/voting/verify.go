@@ -97,12 +97,25 @@ func SubmitRoot(rp *rocketpool.RocketPool, proposalId uint64, index uint64, witn
 	return tx.Hash(), nil
 }
 
+// Get the state of a challenge on a proposal and tree node index
+func GetChallengeState(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.CallOpts) (types.ChallengeState, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
+	if err != nil {
+		return types.ChallengeState_Unchallenged, err
+	}
+	state := new(types.ChallengeState)
+	if err := rocketDAOProtocolVerifier.Call(opts, state, "getChallengeState", big.NewInt(int64(proposalId)), big.NewInt(int64(index))); err != nil {
+		return types.ChallengeState_Unchallenged, fmt.Errorf("error getting proposal %d / index %d challenge state: %w", proposalId, index, err)
+	}
+	return *state, nil
+}
+
 // Get RootSubmitted event info
-func GetRootSubmittedEvent(rp *rocketpool.RocketPool, proposalID uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) (bool, RootSubmitted, error) {
+func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalID uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) ([]RootSubmitted, error) {
 	// Get the contract
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
-		return false, RootSubmitted{}, err
+		return nil, err
 	}
 
 	// Construct a filter query for relevant logs
@@ -116,46 +129,49 @@ func GetRootSubmittedEvent(rp *rocketpool.RocketPool, proposalID uint64, interva
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
 	if err != nil {
-		return false, RootSubmitted{}, err
+		return nil, err
 	}
 	if len(logs) == 0 {
-		return false, RootSubmitted{}, nil
+		return []RootSubmitted{}, nil
 	}
 
-	// Get the log info values
-	values, err := rootSubmittedEvent.Inputs.Unpack(logs[0].Data)
-	if err != nil {
-		return false, RootSubmitted{}, fmt.Errorf("error unpacking RootSubmitted event data: %w", err)
+	events := make([]RootSubmitted, 0, len(logs))
+	for _, log := range logs {
+		// Get the log info values
+		values, err := rootSubmittedEvent.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error unpacking RootSubmitted event data: %w", err)
+		}
+
+		// Convert to a native struct
+		var raw rootSubmittedRaw
+		err = rootSubmittedEvent.Inputs.Copy(&raw, values)
+		if err != nil {
+			return nil, fmt.Errorf("error converting RootSubmitted event data to struct: %w", err)
+		}
+
+		// Get the decoded data
+		events = append(events, RootSubmitted{
+			ProposalID:  raw.ProposalID,
+			Proposer:    raw.Proposer,
+			BlockNumber: raw.BlockNumber,
+			Index:       raw.Index,
+			RootHash:    raw.RootHash,
+			Sum:         raw.Sum,
+			TreeNodes:   raw.TreeNodes,
+			Timestamp:   time.Unix(raw.Timestamp.Int64(), 0),
+		})
 	}
 
-	// Convert to a native struct
-	var raw rootSubmittedRaw
-	err = rootSubmittedEvent.Inputs.Copy(&raw, values)
-	if err != nil {
-		return false, RootSubmitted{}, fmt.Errorf("error converting RootSubmitted event data to struct: %w", err)
-	}
-
-	// Get the decoded data
-	eventData := RootSubmitted{
-		ProposalID:  raw.ProposalID,
-		Proposer:    raw.Proposer,
-		BlockNumber: raw.BlockNumber,
-		Index:       raw.Index,
-		RootHash:    raw.RootHash,
-		Sum:         raw.Sum,
-		TreeNodes:   raw.TreeNodes,
-		Timestamp:   time.Unix(raw.Timestamp.Int64(), 0),
-	}
-
-	return true, eventData, nil
+	return events, nil
 }
 
 // Get ChallengeSubmitted event info
-func GetChallengeSubmittedEvent(rp *rocketpool.RocketPool, proposalID uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) (bool, ChallengeSubmitted, error) {
+func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalID uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) ([]ChallengeSubmitted, error) {
 	// Get the contract
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
-		return false, ChallengeSubmitted{}, err
+		return nil, err
 	}
 
 	// Construct a filter query for relevant logs
@@ -169,34 +185,37 @@ func GetChallengeSubmittedEvent(rp *rocketpool.RocketPool, proposalID uint64, in
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
 	if err != nil {
-		return false, ChallengeSubmitted{}, err
+		return nil, err
 	}
 	if len(logs) == 0 {
-		return false, ChallengeSubmitted{}, nil
+		return []ChallengeSubmitted{}, nil
 	}
 
-	// Get the log info values
-	values, err := challengeSubmittedEvent.Inputs.Unpack(logs[0].Data)
-	if err != nil {
-		return false, ChallengeSubmitted{}, fmt.Errorf("error unpacking ChallengeSubmitted event data: %w", err)
+	events := make([]ChallengeSubmitted, 0, len(logs))
+	for _, log := range logs {
+		// Get the log info values
+		values, err := challengeSubmittedEvent.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error unpacking ChallengeSubmitted event data: %w", err)
+		}
+
+		// Convert to a native struct
+		var raw challengeSubmittedRaw
+		err = challengeSubmittedEvent.Inputs.Copy(&raw, values)
+		if err != nil {
+			return nil, fmt.Errorf("error converting ChallengeSubmitted event data to struct: %w", err)
+		}
+
+		// Get the decoded data
+		events = append(events, ChallengeSubmitted{
+			ProposalID: raw.ProposalID,
+			Challenger: raw.Challenger,
+			Index:      raw.Index,
+			Timestamp:  time.Unix(raw.Timestamp.Int64(), 0),
+		})
 	}
 
-	// Convert to a native struct
-	var raw challengeSubmittedRaw
-	err = challengeSubmittedEvent.Inputs.Copy(&raw, values)
-	if err != nil {
-		return false, ChallengeSubmitted{}, fmt.Errorf("error converting ChallengeSubmitted event data to struct: %w", err)
-	}
-
-	// Get the decoded data
-	eventData := ChallengeSubmitted{
-		ProposalID: raw.ProposalID,
-		Challenger: raw.Challenger,
-		Index:      raw.Index,
-		Timestamp:  time.Unix(raw.Timestamp.Int64(), 0),
-	}
-
-	return true, eventData, nil
+	return events, nil
 }
 
 // Get contracts
