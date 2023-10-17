@@ -1,11 +1,13 @@
 package protocol
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -45,6 +47,10 @@ func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []by
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
+	}
+	err = simulateProposalExecution(rp, payload)
+	if err != nil {
+		return rocketpool.GasInfo{}, fmt.Errorf("error simulating proposal execution: %w", err)
 	}
 	return rocketDAOProtocolProposals.GetTransactionGasInfo(opts, "propose", message, payload, blockNumber, treeNodes)
 }
@@ -379,6 +385,27 @@ func ProposeKickFromSecurityCouncil(rp *rocketpool.RocketPool, message string, a
 	return SubmitProposal(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
+// Simulate a proposal's execution to verify it won't revert
+func simulateProposalExecution(rp *rocketpool.RocketPool, payload []byte) error {
+	rocketDAOProposal, err := getRocketDAOProposal(rp, nil)
+	if err != nil {
+		return err
+	}
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
+		From:     *rocketDAOProposal.Address,
+		To:       rocketDAOProtocolProposals.Address,
+		GasPrice: big.NewInt(0),
+		Value:    nil,
+		Data:     payload,
+	})
+	return err
+}
+
 // Get the ABI encoding of multiple values for a ProposeSettingMulti call
 func abiEncodeMultiValues(settingTypes []types.ProposalSettingType, values []any) ([][]byte, error) {
 	// Sanity check the lengths
@@ -431,9 +458,16 @@ func abiEncodeMultiValues(settingTypes []types.ProposalSettingType, values []any
 
 // Get contracts
 var rocketDAOProtocolProposalsLock sync.Mutex
+var rocketDAOProposalLock sync.Mutex
 
 func getRocketDAOProtocolProposals(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDAOProtocolProposalsLock.Lock()
 	defer rocketDAOProtocolProposalsLock.Unlock()
 	return rp.GetContract("rocketDAOProtocolProposals", opts)
+}
+
+func getRocketDAOProposal(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
+	rocketDAOProposalLock.Lock()
+	defer rocketDAOProposalLock.Unlock()
+	return rp.GetContract("rocketDAOProposal", opts)
 }
