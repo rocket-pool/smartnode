@@ -37,8 +37,8 @@ func NewVotingTreeGenerator(rp *rocketpool.RocketPool) (*VotingTreeGenerator, er
 	return g, nil
 }
 
-// Gets a complete Pollard row for a new proposal based on the target block number.
-func (g *VotingTreeGenerator) CreatePollardRowForProposal(blockNumber uint32, opts *bind.CallOpts) ([]types.VotingTreeNode, error) {
+// Create the complete set of leaves for a new proposal at the specified block number
+func (g *VotingTreeGenerator) ConstructProposalTreeLeaves(blockNumber uint32, opts *bind.CallOpts) ([]types.VotingTreeNode, error) {
 	// Get an nxn array of each node's voting power and delegating status
 	votingPowers, err := g.getDelegatedVotingPower(blockNumber, opts)
 	if err != nil {
@@ -47,23 +47,18 @@ func (g *VotingTreeGenerator) CreatePollardRowForProposal(blockNumber uint32, op
 
 	// Get the leaf nodes of the tree
 	leaves := g.constructLeaves(votingPowers)
+	return leaves, nil
+}
 
+// Gets a complete Pollard row for a new proposal based on the target block number.
+func (g *VotingTreeGenerator) CreatePollardRowForProposal(blockNumber uint32, leaves []types.VotingTreeNode, opts *bind.CallOpts) ([]types.VotingTreeNode, error) {
 	// Create the Pollard row from the leaf nodes - don't need a proof just for the proposal
 	_, nodes := g.generatePollard(leaves, 1)
 	return nodes, nil
 }
 
 // Gets a complete proof and corresponding Pollard row to challenge an existing proposal.
-func (g *VotingTreeGenerator) CreatePollardForChallenge(blockNumber uint32, targetIndex uint64, opts *bind.CallOpts) ([]types.VotingTreeNode, []types.VotingTreeNode, error) {
-	// Get an nxn array of each node's voting power and delegating status
-	votingPowers, err := g.getDelegatedVotingPower(blockNumber, opts)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error getting voting power details: %w", err)
-	}
-
-	// Get the leaf nodes of the tree
-	leaves := g.constructLeaves(votingPowers)
-
+func (g *VotingTreeGenerator) CreatePollardForChallenge(blockNumber uint32, targetIndex uint64, leaves []types.VotingTreeNode, opts *bind.CallOpts) ([]types.VotingTreeNode, []types.VotingTreeNode, error) {
 	// Create the proof and Pollard row from the leaf nodes
 	proof, nodes := g.generatePollard(leaves, targetIndex)
 	return proof, nodes, nil
