@@ -166,13 +166,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Name:  "amount-per-period, a",
 								Usage: "The amount of RPL to send",
 							},
-							cli.StringFlag{
-								Name:  "period-length, l",
-								Usage: "The length of time between each payment, in hours / minutes / seconds (e.g., 168h0m0s)",
-							},
 							cli.Uint64Flag{
 								Name:  "start-time, s",
 								Usage: "The start time of the first payment period (Unix timestamp)",
+							},
+							cli.StringFlag{
+								Name:  "period-length, l",
+								Usage: "The length of time between each payment, in hours / minutes / seconds (e.g., 168h0m0s)",
 							},
 							cli.Uint64Flag{
 								Name:  "number-of-periods, n",
