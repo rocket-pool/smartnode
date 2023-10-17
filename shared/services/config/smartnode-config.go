@@ -22,6 +22,8 @@ const (
 	MinipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d.json"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
+	ProposalTreesFolder                string = "proposal-trees"
+	ChecksumTableFilename              string = "checksums.sha384"
 	DaemonDataPath                     string = "/.rocketpool/data"
 	WatchtowerFolder                   string = "watchtower"
 	WatchtowerStateFile                string = "state.yml"
@@ -102,6 +104,9 @@ type SmartnodeConfig struct {
 
 	// The path of the records folder where snapshots of rolling record info is stored during a rewards interval
 	RecordsPath config.Parameter `yaml:"recordsPath,omitempty"`
+
+	// The toggle for enabling pDAO proposal verification duties
+	VerifyProposals config.Parameter `yaml:"verifyProposals,omitempty"`
 
 	///////////////////////////
 	// Non-editable settings //
@@ -292,6 +297,18 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Description:          "The Smartnode will regularly check the balance of each of your minipools on the Execution Layer (**not** the Beacon Chain).\nIf any of them have a balance greater than this threshold (in ETH), the Smartnode will automatically distribute the balance. This will send your share of the balance to your withdrawal address.\n\nMust be less than 8 ETH.\n\nSet this to 0 to disable automatic distributes.\n[orange]WARNING: if you disable automatic distribution, you **must** ensure you distribute your minipool's balance before it reaches 8 ETH or you will no longer be able to distribute your rewards until you exit the minipool!",
 			Type:                 config.ParameterType_Float,
 			Default:              map[config.Network]interface{}{config.Network_All: float64(1)},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		VerifyProposals: config.Parameter{
+			ID:                   "verifyProposals",
+			Name:                 "Enable PDAO Proposal Checker",
+			Description:          "Check this box to opt into the responsibility for verifying Protocol DAO proposals. Your node will regularly check for new proposals, verify their correctness, and submit challenges to any that do not match the on-chain data (e.g., if someone tampered with voting power and attempted to cheat).\n\nTo learn more about the PDAO proposal checking duty, including requirements and RPL bonding, please see the documentation at <placeholder>.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -629,6 +646,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.PriorityFee,
 		&cfg.AutoTxGasThreshold,
 		&cfg.DistributeThreshold,
+		&cfg.VerifyProposals,
 		&cfg.RewardsTreeMode,
 		&cfg.ArchiveECUrl,
 		&cfg.Web3StorageApiToken,
@@ -806,6 +824,14 @@ func (cfg *SmartnodeConfig) GetRegenerateRewardsTreeRequestPath(interval uint64,
 	}
 
 	return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
+}
+
+func (cfg *SmartnodeConfig) GetProposalTreesFolder(daemon bool) string {
+	if daemon && !cfg.parent.IsNativeMode {
+		return filepath.Join(DaemonDataPath, ProposalTreesFolder)
+	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), ProposalTreesFolder)
 }
 
 func (cfg *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {

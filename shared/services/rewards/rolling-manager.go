@@ -26,7 +26,6 @@ import (
 const (
 	recordsFilenameFormat         string = "%d-%d.json.zst"
 	recordsFilenamePattern        string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
-	checksumTableFilename         string = "checksums.sha384"
 	latestCompatibleVersionString string = "1.11.0-dev"
 )
 
@@ -241,7 +240,7 @@ func (r *RollingRecordManager) SaveRecordToFile(record *RollingRecord) error {
 	checksumBytes := []byte(fileContents)
 
 	// Save the new file
-	checksumFilename := filepath.Join(recordsPath, checksumTableFilename)
+	checksumFilename := filepath.Join(recordsPath, config.ChecksumTableFilename)
 	err = os.WriteFile(checksumFilename, checksumBytes, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing checksum file after culling: %w", err)
@@ -538,7 +537,7 @@ func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedCheck
 func (r *RollingRecordManager) parseChecksumFile() (bool, []string, error) {
 	// Get the checksum filename
 	recordsPath := r.cfg.Smartnode.GetRecordsPath()
-	checksumFilename := filepath.Join(recordsPath, checksumTableFilename)
+	checksumFilename := filepath.Join(recordsPath, config.ChecksumTableFilename)
 
 	// Check if the file exists
 	_, err := os.Stat(checksumFilename)
