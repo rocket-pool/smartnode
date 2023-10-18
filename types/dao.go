@@ -32,6 +32,24 @@ const (
 	ProposalSettingType_Address
 )
 
+// Challenge states
+type ChallengeState uint8
+
+const (
+	ChallengeState_Unchallenged ChallengeState = iota
+	ChallengeState_Challenged
+	ChallengeState_Responded
+	ChallengeState_Paid
+)
+
+// Info about a node's voting power
+type NodeVotingInfo struct {
+	NodeAddress common.Address `json:"nodeAddress"`
+	VotingPower *big.Int       `json:"votingPower"`
+	Delegate    common.Address `json:"delegate"`
+}
+
+// A node of the voting Merkle Tree (not a Rocket Pool node)
 type VotingTreeNode struct {
 	Sum  *big.Int    `abi:"sum" json:"sum"`
 	Hash common.Hash `abi:"hash" json:"hash"`

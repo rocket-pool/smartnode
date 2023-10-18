@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -12,59 +13,39 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/multicall"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	NodeVotingDetailsBatchSize uint64 = 20
-	DepthPerRound              uint64 = 5
+	nodeVotingDetailsBatchSize uint64 = 250
+	nodeAddressBatchSize       int    = 1000
+	depthPerRound              uint64 = 5
+	threadLimit                int    = 6
 )
 
-type NodeVotingInfo struct {
-	NodeAddress common.Address
-	VotingPower *big.Int
-	Delegate    common.Address
-}
-
+// Struct for generating proposal voting trees and pollards
 type VotingTreeGenerator struct {
-	rp *rocketpool.RocketPool
+	rp        *rocketpool.RocketPool
+	mcAddress common.Address
 }
 
-func NewVotingTreeGenerator(rp *rocketpool.RocketPool) (*VotingTreeGenerator, error) {
+// Creates a new VotingTreeGenerator instance
+func NewVotingTreeGenerator(rp *rocketpool.RocketPool, multicallerAddress common.Address) (*VotingTreeGenerator, error) {
 	g := &VotingTreeGenerator{
-		rp: rp,
+		rp:        rp,
+		mcAddress: multicallerAddress,
 	}
 	return g, nil
 }
 
-// Create the complete set of leaves for a new proposal at the specified block number
-func (g *VotingTreeGenerator) ConstructProposalTreeLeaves(blockNumber uint32, opts *bind.CallOpts) ([]types.VotingTreeNode, error) {
-	// Get an nxn array of each node's voting power and delegating status
-	votingPowers, err := g.getDelegatedVotingPower(blockNumber, opts)
+// Gets the voting power and delegation info for every node at the specified block
+func (g *VotingTreeGenerator) GetNodeVotingInfo(blockNumber uint32, opts *bind.CallOpts) ([]types.NodeVotingInfo, error) {
+	rocketNetworkVoting, err := getRocketNetworkVoting(g.rp, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting voting power details: %w", err)
+		return nil, err
 	}
 
-	// Get the leaf nodes of the tree
-	leaves := g.constructLeaves(votingPowers)
-	return leaves, nil
-}
-
-// Gets a complete Pollard row for a new proposal based on the target block number.
-func (g *VotingTreeGenerator) CreatePollardRowForProposal(blockNumber uint32, leaves []types.VotingTreeNode, opts *bind.CallOpts) ([]types.VotingTreeNode, error) {
-	// Create the Pollard row from the leaf nodes - don't need a proof just for the proposal
-	_, nodes := g.generatePollard(leaves, 1)
-	return nodes, nil
-}
-
-// Gets a complete proof and corresponding Pollard row to challenge an existing proposal.
-func (g *VotingTreeGenerator) CreatePollardForChallenge(blockNumber uint32, targetIndex uint64, leaves []types.VotingTreeNode, opts *bind.CallOpts) ([]types.VotingTreeNode, []types.VotingTreeNode, error) {
-	// Create the proof and Pollard row from the leaf nodes
-	proof, nodes := g.generatePollard(leaves, targetIndex)
-	return proof, nodes, nil
-}
-
-func (g *VotingTreeGenerator) getDelegatedVotingPower(blockNumber uint32, opts *bind.CallOpts) ([][]*big.Int, error) {
 	// Get the number of voting nodes
 	nodeCountBig, err := network.GetVotingNodeCount(g.rp, blockNumber, opts)
 	if err != nil {
@@ -73,62 +54,88 @@ func (g *VotingTreeGenerator) getDelegatedVotingPower(blockNumber uint32, opts *
 	nodeCount := nodeCountBig.Uint64()
 
 	// Get the node addresses
-	nodeAddresses, err := node.GetNodeAddresses(g.rp, opts)
+	nodeAddresses, err := g.getNodeAddressesFast(opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting node addresses: %w", err)
 	}
 
-	// Load node voting details in batches
-	votingInfos := make([]NodeVotingInfo, nodeCount)
-	//delegateIndices := map[common.Address]uint64{}
-	for bsi := uint64(0); bsi < nodeCount; bsi += NodeVotingDetailsBatchSize {
+	// Sync
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
 
-		// Get batch start & end index
-		nsi := bsi
-		nei := bsi + NodeVotingDetailsBatchSize
-		if nei > nodeCount {
-			nei = nodeCount
+	// Run the getters in batches
+	votingInfos := make([]types.NodeVotingInfo, nodeCount)
+	for i := uint64(0); i < nodeCount; i += nodeVotingDetailsBatchSize {
+		i := i
+		max := i + nodeVotingDetailsBatchSize
+		if max > nodeCount {
+			max = nodeCount
 		}
 
 		// Load details
-		var wg errgroup.Group
-		for ni := nsi; ni < nei; ni++ {
-			ni := ni
-			wg.Go(func() error {
-				nodeAddress := nodeAddresses[ni]
-				votingPower, err := network.GetVotingPower(g.rp, nodeAddress, blockNumber, opts)
-				if err != nil {
-					return err
-				}
-				delegate, err := network.GetVotingDelegate(g.rp, nodeAddress, blockNumber, opts)
-				if err != nil {
-					return err
-				}
-				votingInfos[ni] = NodeVotingInfo{
-					NodeAddress: nodeAddress,
-					VotingPower: votingPower,
-					Delegate:    delegate,
-				}
-				//delegateIndices[nodeAddress] = ni
-				return nil
-			})
-		}
-		if err := wg.Wait(); err != nil {
-			return nil, err
-		}
-
+		wg.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(g.rp.Client, g.mcAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				nodeAddress := nodeAddresses[j]
+				votingInfos[j].NodeAddress = nodeAddress
+				mc.AddCall(rocketNetworkVoting, &votingInfos[j].VotingPower, "getVotingPower", nodeAddress, blockNumber)
+				mc.AddCall(rocketNetworkVoting, &votingInfos[j].Delegate, "getDelegate", nodeAddress, blockNumber)
+			}
+			_, err = mc.FlexibleCall(true, opts)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+			return nil
+		})
 	}
+
+	return votingInfos, nil
+}
+
+// Gets a complete Pollard row for a new proposal based on the target block number.
+func (g *VotingTreeGenerator) CreatePollardRowForProposal(votingInfo []types.NodeVotingInfo) []types.VotingTreeNode {
+	// Get the 2D voting power subtree for the main tree
+	votingPowers := g.getDelegatedVotingPower(votingInfo)
+
+	// Get the leaf nodes of the tree
+	leaves := g.constructLeaves(votingPowers)
+
+	// Create the Pollard row from the leaf nodes - don't need a proof just for the proposal
+	_, nodes := g.generatePollard(leaves, 1)
+	return nodes
+}
+
+// Gets a complete proof and corresponding Pollard row to challenge an existing proposal.
+func (g *VotingTreeGenerator) CreatePollardForChallenge(targetIndex uint64, votingInfo []types.NodeVotingInfo) ([]types.VotingTreeNode, []types.VotingTreeNode) {
+	// Get the 2D voting power subtree for the main tree
+	votingPowers := g.getDelegatedVotingPower(votingInfo)
+
+	// Get the leaf nodes of the tree
+	leaves := g.constructLeaves(votingPowers)
+
+	// Create the proof and Pollard row from the leaf nodes
+	proof, nodes := g.generatePollard(leaves, targetIndex)
+	return proof, nodes
+}
+
+// Get the 2D array of voting delegation and total power for each node
+func (g *VotingTreeGenerator) getDelegatedVotingPower(votingInfo []types.NodeVotingInfo) [][]*big.Int {
+	nodeCount := uint64(len(votingInfo))
 
 	// For each node, create an array of nodes that have delegated to it
 	votingPowers := make([][]*big.Int, nodeCount)
 	for i := uint64(0); i < nodeCount; i++ {
-		nodeAddress := nodeAddresses[i]
+		nodeAddress := votingInfo[i].NodeAddress
 
 		votingPower := make([]*big.Int, nodeCount)
 		for j := uint64(0); j < nodeCount; j++ {
-			votingInfo := votingInfos[j]
-			if votingInfo.Delegate == nodeAddress {
-				votingPower[j] = votingInfo.VotingPower
+			info := votingInfo[j]
+			if info.Delegate == nodeAddress {
+				votingPower[j] = info.VotingPower
 			} else {
 				votingPower[j] = big.NewInt(0)
 			}
@@ -137,7 +144,7 @@ func (g *VotingTreeGenerator) getDelegatedVotingPower(blockNumber uint32, opts *
 	}
 
 	// Return
-	return votingPowers, nil
+	return votingPowers
 }
 
 // Create the complete set of subtree leaf nodes
@@ -181,7 +188,7 @@ func (g *VotingTreeGenerator) constructLeaves(votingPowers [][]*big.Int) []types
 // For challenges, the index is the index of the node being challenged.
 // Returns the aggregated proof, and the list of nodes in the pollard row.
 func (g *VotingTreeGenerator) generatePollard(leafNodes []types.VotingTreeNode, index uint64) ([]types.VotingTreeNode, []types.VotingTreeNode) {
-	order := DepthPerRound
+	order := depthPerRound
 	offset := uint64(math.Floor(math.Log2(float64(index)))) // Depth of the node being challenged, if not building a proposal
 	depth := uint64(math.Log2(float64(len(leafNodes))))     // Total depth of the tree
 
@@ -246,6 +253,57 @@ func (g *VotingTreeGenerator) generatePollard(leafNodes []types.VotingTreeNode, 
 	return proof, nodes
 }
 
+// Get all node addresses using a multicaller
+func (g *VotingTreeGenerator) getNodeAddressesFast(opts *bind.CallOpts) ([]common.Address, error) {
+	rocketNodeManager, err := getRocketNodeManager(g.rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get minipool count
+	nodeCount, err := node.GetNodeCount(g.rp, opts)
+	if err != nil {
+		return []common.Address{}, err
+	}
+
+	// Sync
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+	addresses := make([]common.Address, nodeCount)
+
+	// Run the getters in batches
+	count := int(nodeCount)
+	for i := 0; i < count; i += nodeAddressBatchSize {
+		i := i
+		max := i + nodeAddressBatchSize
+		if max > count {
+			max = count
+		}
+
+		wg.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(g.rp.Client, g.mcAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				mc.AddCall(rocketNodeManager, &addresses[j], "getNodeAt", big.NewInt(int64(j)))
+			}
+			_, err = mc.FlexibleCall(true, opts)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+			return nil
+		})
+	}
+
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting node addresses: %w", err)
+	}
+
+	return addresses, nil
+}
+
 // Get the keccak hash of a parent node with two children
 func getParentNodeFromChildren(leftChild types.VotingTreeNode, rightChild types.VotingTreeNode) types.VotingTreeNode {
 	leftBuffer := [32]byte{}
@@ -267,4 +325,20 @@ func getHashForBalance(balance *big.Int) common.Hash {
 	balance.FillBytes(buffer[:])
 	hash := crypto.Keccak256Hash(buffer[:])
 	return hash
+}
+
+// Get contracts
+var rocketNodeManagerLock sync.Mutex
+var rocketNetworkVotingLock sync.Mutex
+
+func getRocketNodeManager(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
+	rocketNodeManagerLock.Lock()
+	defer rocketNodeManagerLock.Unlock()
+	return rp.GetContract("rocketNodeManager", opts)
+}
+
+func getRocketNetworkVoting(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
+	rocketNetworkVotingLock.Lock()
+	defer rocketNetworkVotingLock.Unlock()
+	return rp.GetContract("rocketNetworkVoting", opts)
 }

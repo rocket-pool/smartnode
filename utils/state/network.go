@@ -180,7 +180,7 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 	}
 
 	// Get the list of node addresses
-	addresses, err := getNodeAddressesFast(rp, contracts, opts)
+	addresses, err := GetNodeAddressesFast(rp, contracts, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting node addresses: %w", err)
 	}
