@@ -102,10 +102,10 @@ func (g *VotingTreeGenerator) CreatePollardRowForProposal(votingInfo []types.Nod
 	votingPowers := g.getDelegatedVotingPower(votingInfo)
 
 	// Get the leaf nodes of the tree
-	leaves := g.constructLeaves(votingPowers)
+	leafNodes := g.constructLeafNodes(votingPowers)
 
 	// Create the Pollard row from the leaf nodes - don't need a proof just for the proposal
-	_, nodes := g.generatePollard(leaves, 1)
+	_, nodes := g.generatePollard(leafNodes, 1)
 	return nodes
 }
 
@@ -115,10 +115,10 @@ func (g *VotingTreeGenerator) CreatePollardForChallenge(targetIndex uint64, voti
 	votingPowers := g.getDelegatedVotingPower(votingInfo)
 
 	// Get the leaf nodes of the tree
-	leaves := g.constructLeaves(votingPowers)
+	leafNodes := g.constructLeafNodes(votingPowers)
 
 	// Create the proof and Pollard row from the leaf nodes
-	proof, nodes := g.generatePollard(leaves, targetIndex)
+	proof, nodes := g.generatePollard(leafNodes, targetIndex)
 	return proof, nodes
 }
 
@@ -148,7 +148,7 @@ func (g *VotingTreeGenerator) getDelegatedVotingPower(votingInfo []types.NodeVot
 }
 
 // Create the complete set of subtree leaf nodes
-func (g *VotingTreeGenerator) constructLeaves(votingPowers [][]*big.Int) []types.VotingTreeNode {
+func (g *VotingTreeGenerator) constructLeafNodes(votingPowers [][]*big.Int) []types.VotingTreeNode {
 	nodeCount := uint64(len(votingPowers))
 	if nodeCount == 0 {
 		return []types.VotingTreeNode{}
