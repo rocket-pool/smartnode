@@ -78,7 +78,7 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
 		maxFee = eth.GweiToWei(maxFeeGwei)
 	}
 
-	// Get the user-requested max fee
+	// Get the user-requested priority fee
 	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {

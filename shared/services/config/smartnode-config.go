@@ -22,7 +22,6 @@ const (
 	MinipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d.json"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
-	ProposalTreesFolder                string = "proposal-trees"
 	ChecksumTableFilename              string = "checksums.sha384"
 	DaemonDataPath                     string = "/.rocketpool/data"
 	WatchtowerFolder                   string = "watchtower"
@@ -705,6 +704,14 @@ func (cfg *SmartnodeConfig) GetRecordsPath() string {
 	return filepath.Join(DaemonDataPath, "records")
 }
 
+func (cfg *SmartnodeConfig) GetVotingPath() string {
+	if cfg.parent.IsNativeMode {
+		return filepath.Join(cfg.DataPath.Value.(string), "voting")
+	}
+
+	return filepath.Join(DaemonDataPath, "voting")
+}
+
 func (cfg *SmartnodeConfig) GetWalletPathInCLI() string {
 	return filepath.Join(cfg.DataPath.Value.(string), "wallet")
 }
@@ -824,14 +831,6 @@ func (cfg *SmartnodeConfig) GetRegenerateRewardsTreeRequestPath(interval uint64,
 	}
 
 	return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
-}
-
-func (cfg *SmartnodeConfig) GetProposalTreesFolder(daemon bool) string {
-	if daemon && !cfg.parent.IsNativeMode {
-		return filepath.Join(DaemonDataPath, ProposalTreesFolder)
-	}
-
-	return filepath.Join(cfg.DataPath.Value.(string), ProposalTreesFolder)
 }
 
 func (cfg *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {
