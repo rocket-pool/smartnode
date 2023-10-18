@@ -11,16 +11,39 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 )
 
 // Constructs a pollard for the latest finalized block
 func createPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (uint32, []types.VotingTreeNode, string, error) {
-	mgr, err := proposals.NewProposalTreeManager(nil, cfg, rp, bc)
+	// Get the latest finalized block
+	stateMgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, nil)
+	if err != nil {
+		return 0, nil, "", fmt.Errorf("error creating state manager: %w", err)
+	}
+	block, err := stateMgr.GetLatestFinalizedBeaconBlock()
+	if err != nil {
+		return 0, nil, "", fmt.Errorf("error determining latest finalized block: %w", err)
+	}
+	blockNumber := uint32(block.ExecutionBlockNumber)
+
+	// Get the network voting info snapshot for the block
+	propMgr, err := proposals.NewProposalTreeManager(nil, cfg, rp, bc)
 	if err != nil {
 		return 0, nil, "", fmt.Errorf("error creating proposal tree manager: %w", err)
 	}
+	snapshot, err := propMgr.CreateSnapshotForBlock(blockNumber)
+	if err != nil {
+		return 0, nil, "", fmt.Errorf("error creating networking voting power snapshot: %w", err)
+	}
 
-	return mgr.CreateArtifactsForProposal()
+	// Save it to disk
+	err = propMgr.SaveSnapshotToFile(snapshot)
+	if err != nil {
+		return 0, nil, "", fmt.Errorf("error saving network voting power snapshot: %w", err)
+	}
+
+	return propMgr.CreateArtifactsForProposal(snapshot)
 }
 
 // Decodes a serialized pollard

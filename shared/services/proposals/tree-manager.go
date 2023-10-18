@@ -23,7 +23,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -49,8 +48,8 @@ type ProposalTreeManager struct {
 	cfg       *config.RocketPoolConfig
 	rp        *rocketpool.RocketPool
 	bc        beacon.Client
-	mgr       *state.NetworkStateManager
 
+	gen                   *voting.VotingTreeGenerator
 	compressor            *zstd.Encoder
 	decompressor          *zstd.Decoder
 	snapshotFilenameRegex *regexp.Regexp
@@ -58,10 +57,10 @@ type ProposalTreeManager struct {
 
 // Create a new ProposalTreeManager instance
 func NewProposalTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client) (*ProposalTreeManager, error) {
-	// Create the network state manager
-	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, nil)
+	// Create the proposal tree generator
+	gen, err := voting.NewVotingTreeGenerator(rp, common.HexToAddress(cfg.Smartnode.GetMulticallAddress()))
 	if err != nil {
-		return nil, fmt.Errorf("error creating state manager: %w", err)
+		return nil, fmt.Errorf("error creating voting power tree generator: %w", err)
 	}
 
 	// Create the zstd compressor and decompressor
@@ -84,7 +83,7 @@ func NewProposalTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, 
 		cfg:                   cfg,
 		rp:                    rp,
 		bc:                    bc,
-		mgr:                   mgr,
+		gen:                   gen,
 		compressor:            encoder,
 		decompressor:          decoder,
 		snapshotFilenameRegex: snapshotFilenameRegex,
@@ -93,25 +92,11 @@ func NewProposalTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, 
 	return manager, nil
 }
 
-// Construct the artifacts necessary for submitting a Protocol DAO proposal, and save the snapshot for it to disk
-func (m *ProposalTreeManager) CreateArtifactsForProposal() (uint32, []types.VotingTreeNode, string, error) {
-	// Get the latest finalized block
-	block, err := m.mgr.GetLatestFinalizedBeaconBlock()
+// Construct a snapshot of network voting power for the given slot, and save the snapshot for it to disk
+func (m *ProposalTreeManager) CreateSnapshotForBlock(blockNumber uint32) (*NetworkVotingInfoSnapshot, error) {
+	nodeVotingInfo, err := m.gen.GetNodeVotingInfo(blockNumber, nil)
 	if err != nil {
-		return 0, nil, "", fmt.Errorf("error determining latest finalized block: %w", err)
-	}
-	blockNumber := uint32(block.ExecutionBlockNumber)
-
-	// Create the proposal tree
-	gen, err := voting.NewVotingTreeGenerator(m.rp, common.HexToAddress(m.cfg.Smartnode.GetMulticallAddress()))
-	if err != nil {
-		return 0, nil, "", fmt.Errorf("error creating voting power tree generator: %w", err)
-	}
-
-	// Create the node voting info snapshot
-	nodeVotingInfo, err := gen.GetNodeVotingInfo(blockNumber, nil)
-	if err != nil {
-		return 0, nil, "", fmt.Errorf("error getting node voting info for block %d: %w", blockNumber, err)
+		return nil, fmt.Errorf("error getting node voting info for block %d: %w", blockNumber, err)
 	}
 	snapshot := &NetworkVotingInfoSnapshot{
 		SmartnodeVersion: shared.RocketPoolVersion,
@@ -119,18 +104,13 @@ func (m *ProposalTreeManager) CreateArtifactsForProposal() (uint32, []types.Voti
 		BlockNumber:      blockNumber,
 		VotingInfo:       nodeVotingInfo,
 	}
+	return snapshot, nil
+}
 
-	// Save it to disk
-	err = m.SaveSnapshotToFile(snapshot)
-	if err != nil {
-		return 0, nil, "", fmt.Errorf("error saving voting power snapshot to disk: %w", err)
-	}
-
+// Construct the artifacts necessary for submitting a Protocol DAO proposal
+func (m *ProposalTreeManager) CreateArtifactsForProposal(snapshot *NetworkVotingInfoSnapshot) (uint32, []types.VotingTreeNode, string, error) {
 	// Create the voting power pollard for the proposal
-	pollard := gen.CreatePollardRowForProposal(nodeVotingInfo)
-	if err != nil {
-		return 0, nil, "", fmt.Errorf("error creating voting power pollard: %w", err)
-	}
+	pollard := m.gen.CreatePollardRowForProposal(snapshot.VotingInfo)
 
 	// Serialize it to JSON
 	pollardBytes, err := json.Marshal(pollard)
@@ -143,7 +123,7 @@ func (m *ProposalTreeManager) CreateArtifactsForProposal() (uint32, []types.Voti
 	encodedPollard := base64.StdEncoding.EncodeToString(compressedBytes)
 
 	// Return it all
-	return blockNumber, pollard, encodedPollard, nil
+	return snapshot.BlockNumber, pollard, encodedPollard, nil
 }
 
 // Save a network voting snapshot to a file and update the snapshot info catalog
