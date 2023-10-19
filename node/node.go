@@ -544,6 +544,89 @@ func GetSmoothingPoolRegisteredNodeCount(rp *rocketpool.RocketPool, opts *bind.C
 
 }
 
+// Check if the RPL-specific withdrawal address has been set
+func GetNodeRPLWithdrawalAddressIsSet(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := rocketNodeManager.Call(opts, value, "getNodeRPLWithdrawalAddressIsSet", nodeAddress); err != nil {
+		return false, fmt.Errorf("error getting node %s's RPL withdrawal address status: %w", nodeAddress.Hex(), err)
+	}
+	return *value, nil
+}
+
+// Get the RPL-specific withdrawal address
+func GetNodeRPLWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return common.Address{}, err
+	}
+	value := new(common.Address)
+	if err := rocketNodeManager.Call(opts, value, "getNodeRPLWithdrawalAddress", nodeAddress); err != nil {
+		return common.Address{}, fmt.Errorf("error getting node %s's RPL withdrawal address: %w", nodeAddress.Hex(), err)
+	}
+	return *value, nil
+}
+
+// Get the pending RPL-specific withdrawal address
+func GetNodePendingRPLWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return common.Address{}, err
+	}
+	value := new(common.Address)
+	if err := rocketNodeManager.Call(opts, value, "getNodePendingRPLWithdrawalAddress", nodeAddress); err != nil {
+		return common.Address{}, fmt.Errorf("error getting node %s's pending RPL withdrawal address: %w", nodeAddress.Hex(), err)
+	}
+	return *value, nil
+}
+
+// Estimate the gas for setting the RPL-specific withdrawal address
+func EstimateSetRPLWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeManager.GetTransactionGasInfo(opts, "setRPLWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
+}
+
+// Set the RPL-specific withdrawal address
+func SetRPLWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNodeManager.Transact(opts, "setRPLWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error setting RPL withdrawal address: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
+// Estimate the gas for confirming the RPL-specific withdrawal address
+func EstimateConfirmRPLWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeManager.GetTransactionGasInfo(opts, "confirmRPLWithdrawalAddress", nodeAddress)
+}
+
+// Confirm the RPL-specific withdrawal address
+func ConfirmRPLWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNodeManager.Transact(opts, "confirmRPLWithdrawalAddress", nodeAddress)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error confirming RPL withdrawal address: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
 

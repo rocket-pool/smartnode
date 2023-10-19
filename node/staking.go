@@ -216,7 +216,7 @@ func CalculateTotalEffectiveRPLStake(rp *rocketpool.RocketPool, offset, limit, r
 }
 
 // Get the amount of RPL locked as part of active PDAO proposals or challenges
-func GetNodeRplLocked(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeRPLLocked(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return nil, err
@@ -224,6 +224,19 @@ func GetNodeRplLocked(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 	value := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, value, "getNodeRPLLocked", nodeAddress); err != nil {
 		return nil, fmt.Errorf("error getting node RPL locked: %w", err)
+	}
+	return *value, nil
+}
+
+// Check if the RPL-specific withdrawal address has been set
+func GetNodeRPLWithdrawalAddressIsSet(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := rocketNodeStaking.Call(opts, value, "getNodeRPLWithdrawalAddressIsSet", nodeAddress); err != nil {
+		return false, fmt.Errorf("error getting node RPL withdrawal address status: %w", err)
 	}
 	return *value, nil
 }
