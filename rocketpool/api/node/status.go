@@ -86,10 +86,15 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		details, err := node.GetNodeDetails(rp, nodeAccount.Address, nil)
 		if err == nil {
 			response.Registered = details.Exists
-			response.WithdrawalAddress = details.WithdrawalAddress
-			response.WithdrawalAddressFormatted = formatResolvedAddress(c, response.WithdrawalAddress)
-			response.PendingWithdrawalAddress = details.PendingWithdrawalAddress
-			response.PendingWithdrawalAddressFormatted = formatResolvedAddress(c, response.PendingWithdrawalAddress)
+			response.PrimaryWithdrawalAddress = details.PrimaryWithdrawalAddress
+			response.PrimaryWithdrawalAddressFormatted = formatResolvedAddress(c, response.PrimaryWithdrawalAddress)
+			response.PendingPrimaryWithdrawalAddress = details.PendingPrimaryWithdrawalAddress
+			response.PendingPrimaryWithdrawalAddressFormatted = formatResolvedAddress(c, response.PendingPrimaryWithdrawalAddress)
+			response.IsRPLWithdrawalAddressSet = details.IsRPLWithdrawalAddressSet
+			response.RPLWithdrawalAddress = details.RPLWithdrawalAddress
+			response.RPLWithdrawalAddressFormatted = formatResolvedAddress(c, response.RPLWithdrawalAddress)
+			response.PendingRPLWithdrawalAddress = details.PendingRPLWithdrawalAddress
+			response.PendingRPLWithdrawalAddressFormatted = formatResolvedAddress(c, response.PendingRPLWithdrawalAddress)
 			response.TimezoneLocation = details.TimezoneLocation
 		}
 		return err
@@ -229,12 +234,20 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	}
 
 	// Get withdrawal address balances
-	if !bytes.Equal(nodeAccount.Address.Bytes(), response.WithdrawalAddress.Bytes()) {
-		withdrawalBalances, err := tokens.GetBalances(rp, response.WithdrawalAddress, nil)
+	if !bytes.Equal(nodeAccount.Address.Bytes(), response.PrimaryWithdrawalAddress.Bytes()) {
+		withdrawalBalances, err := tokens.GetBalances(rp, response.PrimaryWithdrawalAddress, nil)
 		if err != nil {
 			return nil, err
 		}
-		response.WithdrawalBalances = withdrawalBalances
+		response.PrimaryWithdrawalBalances = withdrawalBalances
+	}
+	if !bytes.Equal(nodeAccount.Address.Bytes(), response.RPLWithdrawalAddress.Bytes()) &&
+		!bytes.Equal(response.PrimaryWithdrawalAddress.Bytes(), response.RPLWithdrawalAddress.Bytes()) {
+		withdrawalBalances, err := tokens.GetBalances(rp, response.RPLWithdrawalAddress, nil)
+		if err != nil {
+			return nil, err
+		}
+		response.RPLWithdrawalBalances = withdrawalBalances
 	}
 
 	// Get the collateral ratio

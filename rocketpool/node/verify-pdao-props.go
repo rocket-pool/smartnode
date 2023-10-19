@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol/voting"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -30,6 +31,7 @@ type verifyPdaoProps struct {
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
 	gasLimit       uint64
+	nodeAddress    common.Address
 
 	// Smartnode parameters
 	intervalSize *big.Int
@@ -91,6 +93,12 @@ func newVerifyPdaoProps(c *cli.Context, logger log.ColorLogger) (*verifyPdaoProp
 		return nil, fmt.Errorf("error getting Beacon config: %w", err)
 	}
 
+	// Get the node account
+	account, err := w.GetNodeAccount()
+	if err != nil {
+		return fmt.Errorf("error getting node account: %w", err)
+	}
+
 	// Return task
 	return &verifyPdaoProps{
 		c:              c,
@@ -103,6 +111,7 @@ func newVerifyPdaoProps(c *cli.Context, logger log.ColorLogger) (*verifyPdaoProp
 		maxFee:         maxFee,
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
+		nodeAddress:    account.Address,
 
 		intervalSize:   intervalSize,
 		genesisTime:    time.Unix(int64(beaconCfg.GenesisTime), 0),
@@ -141,7 +150,7 @@ func (t *verifyPdaoProps) getChallengeableProposals(state *state.NetworkState) (
 
 }
 
-func (t *verifyPdaoProps) checkDutiesForProposal(proposalDetails dao.ProposalDetails, headBlock uint64) (voting.RootSubmitted, error) {
+func (t *verifyPdaoProps) checkDutiesForProposal(proposalDetails dao.ProposalDetails, headBlock uint64) error {
 	// Get the block to start scanning for new events
 	/*startBlock, exists := t.proposalEventStartBlockMap[proposalDetails.ID]
 	if !exists {
@@ -154,10 +163,10 @@ func (t *verifyPdaoProps) checkDutiesForProposal(proposalDetails dao.ProposalDet
 	slot := uint64(timeSinceGenesis / t.secondsPerSlot)
 	block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(slot))
 	if err != nil {
-		return voting.RootSubmitted{}, fmt.Errorf("error getting creation block for proposal %d: error getting beacon block %d: %w", proposalDetails.ID, slot, err)
+		return fmt.Errorf("error getting creation block for proposal %d: error getting beacon block %d: %w", proposalDetails.ID, slot, err)
 	}
 	if !exists {
-		return voting.RootSubmitted{}, fmt.Errorf("error getting creation block for proposal %d: beacon block %d does not exist", proposalDetails.ID, slot)
+		return fmt.Errorf("error getting creation block for proposal %d: beacon block %d does not exist", proposalDetails.ID, slot)
 	}
 
 	startBlock := big.NewInt(int64(block.ExecutionBlockNumber))
@@ -166,11 +175,11 @@ func (t *verifyPdaoProps) checkDutiesForProposal(proposalDetails dao.ProposalDet
 	// Get the events for this proposal
 	rootSubmittedEvents, err := voting.GetRootSubmittedEvents(t.rp, proposalDetails.ID, t.intervalSize, startBlock, endBlock, nil)
 	if err != nil {
-		return voting.RootSubmitted{}, fmt.Errorf("error getting root submitted events: %w", err)
+		return fmt.Errorf("error getting root submitted events: %w", err)
 	}
 	challengeEvents, err := voting.GetChallengeSubmittedEvents(t.rp, proposalDetails.ID, t.intervalSize, startBlock, endBlock, nil)
 	if err != nil {
-		return voting.RootSubmitted{}, fmt.Errorf("error getting challenge submitted events: %w", err)
+		return fmt.Errorf("error getting challenge submitted events: %w", err)
 	}
 
 	// Create lookups of events by index
@@ -183,10 +192,24 @@ func (t *verifyPdaoProps) checkDutiesForProposal(proposalDetails dao.ProposalDet
 		ceLookup[ce.Index] = ce
 	}
 
+	// Check if this is the node's proposal
+	if proposalDetails.ProposerAddress == t.nodeAddress {
+		err = t.handleOwnProposal(proposalDetails, rseLookup, ceLookup)
+		if err != nil {
+			return fmt.Errorf("error handling own proposal %d: %w", proposalDetails.ID, err)
+		}
+	} else {
+		// TODO: look and see if challenges need to happen
+	}
+
 	// Build the tree for the proposal
 
 	// Update the start block cache for this proposal
 	//t.proposalEventStartBlockMap[proposalDetails.ID] = big.NewInt(0).Add(endBlock, common.Big1)
+}
+
+func (t *verifyPdaoProps) handleOwnProposal(details dao.ProposalDetails, rseLookup map[*big.Int]voting.RootSubmitted, ceLookup map[*big.Int]voting.ChallengeSubmitted) error {
+
 }
 
 func (t *verifyPdaoProps) getProposalsInChallengeWindow(state *state.NetworkState) ([]dao.ProposalDetails, error) {

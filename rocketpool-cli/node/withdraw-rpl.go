@@ -100,7 +100,9 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		if canWithdraw.WithdrawalDelayActive {
 			fmt.Println("The withdrawal delay period has not passed.")
 		}
-		return nil
+		if canWithdraw.HasDifferentRPLWithdrawalAddress {
+			fmt.Println("The RPL withdrawal address has been set, and is not the node address. RPL can only be withdrawn from the RPL withdrawal address.")
+		}
 	}
 
 	// Assign max fees

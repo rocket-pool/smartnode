@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/urfave/cli"
@@ -51,6 +52,8 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	var currentTime uint64
 	var rplStakedTime uint64
 	var withdrawalDelay time.Duration
+	var isRPLWithdrawalAddressSet bool
+	var rplWithdrawalAddress common.Address
 
 	// Get RPL stake
 	wg.Go(func() error {
@@ -89,6 +92,20 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 		return err
 	})
 
+	// Check if the RPL withdrawal address is set
+	wg.Go(func() error {
+		var err error
+		isRPLWithdrawalAddressSet, err = node.GetNodeRPLWithdrawalAddressIsSet(rp, nodeAccount.Address, nil)
+		return err
+	})
+
+	// Get the RPL withdrawal address
+	wg.Go(func() error {
+		var err error
+		rplWithdrawalAddress, err = node.GetNodeRPLWithdrawalAddress(rp, nodeAccount.Address, nil)
+		return err
+	})
+
 	// Get gas estimate
 	wg.Go(func() error {
 		opts, err := w.GetNodeAccountTransactor()
@@ -113,9 +130,10 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	response.InsufficientBalance = (amountWei.Cmp(rplStake) > 0)
 	response.MinipoolsUndercollateralized = (remainingRplStake.Cmp(minimumRplStake) < 0)
 	response.WithdrawalDelayActive = ((currentTime - rplStakedTime) < uint64(withdrawalDelay.Seconds()))
+	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
 
 	// Update & return response
-	response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive)
+	response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive || response.HasDifferentRPLWithdrawalAddress)
 	return &response, nil
 
 }

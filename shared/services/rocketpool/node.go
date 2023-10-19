@@ -36,10 +36,14 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 	utils.ZeroIfNil(&response.AccountBalances.RPL)
 	utils.ZeroIfNil(&response.AccountBalances.RETH)
 	utils.ZeroIfNil(&response.AccountBalances.FixedSupplyRPL)
-	utils.ZeroIfNil(&response.WithdrawalBalances.ETH)
-	utils.ZeroIfNil(&response.WithdrawalBalances.RPL)
-	utils.ZeroIfNil(&response.WithdrawalBalances.RETH)
-	utils.ZeroIfNil(&response.WithdrawalBalances.FixedSupplyRPL)
+	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.ETH)
+	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.RPL)
+	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.RETH)
+	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.FixedSupplyRPL)
+	utils.ZeroIfNil(&response.RPLWithdrawalBalances.ETH)
+	utils.ZeroIfNil(&response.RPLWithdrawalBalances.RPL)
+	utils.ZeroIfNil(&response.RPLWithdrawalBalances.RETH)
+	utils.ZeroIfNil(&response.RPLWithdrawalBalances.FixedSupplyRPL)
 	utils.ZeroIfNil(&response.PendingEffectiveRplStake)
 	utils.ZeroIfNil(&response.PendingMinimumRplStake)
 	utils.ZeroIfNil(&response.PendingMaximumRplStake)
@@ -83,66 +87,130 @@ func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse
 	return response, nil
 }
 
-// Checks if the node's withdrawal address can be set
-func (c *Client) CanSetNodeWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.CanSetNodeWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node can-set-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
+// Checks if the node's primary withdrawal address can be set
+func (c *Client) CanSetNodePrimaryWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.CanSetNodePrimaryWithdrawalAddressResponse, error) {
+	responseBytes, err := c.callAPI("node can-set-primary-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
 	if err != nil {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node withdrawal address: %w", err)
+		return api.CanSetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node primary withdrawal address: %w", err)
 	}
-	var response api.CanSetNodeWithdrawalAddressResponse
+	var response api.CanSetNodePrimaryWithdrawalAddressResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode can set node withdrawal address response: %w", err)
+		return api.CanSetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not decode can set node primary withdrawal address response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node withdrawal address: %s", response.Error)
+		return api.CanSetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node primary withdrawal address: %s", response.Error)
 	}
 	return response, nil
 }
 
-// Set the node's withdrawal address
-func (c *Client) SetNodeWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.SetNodeWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node set-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
+// Set the node's primary withdrawal address
+func (c *Client) SetNodePrimaryWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.SetNodePrimaryWithdrawalAddressResponse, error) {
+	responseBytes, err := c.callAPI("node set-primary-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
 	if err != nil {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not set node withdrawal address: %w", err)
+		return api.SetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not set node primary withdrawal address: %w", err)
 	}
-	var response api.SetNodeWithdrawalAddressResponse
+	var response api.SetNodePrimaryWithdrawalAddressResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode set node withdrawal address response: %w", err)
+		return api.SetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not decode set node primary withdrawal address response: %w", err)
 	}
 	if response.Error != "" {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not set node withdrawal address: %s", response.Error)
+		return api.SetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not set node primary withdrawal address: %s", response.Error)
 	}
 	return response, nil
 }
 
-// Checks if the node's withdrawal address can be confirmed
-func (c *Client) CanConfirmNodeWithdrawalAddress() (api.CanSetNodeWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node can-confirm-withdrawal-address")
+// Checks if the node's primary withdrawal address can be confirmed
+func (c *Client) CanConfirmNodePrimaryWithdrawalAddress() (api.CanSetNodePrimaryWithdrawalAddressResponse, error) {
+	responseBytes, err := c.callAPI("node can-confirm-primary-withdrawal-address")
 	if err != nil {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node withdrawal address: %w", err)
+		return api.CanSetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node primary withdrawal address: %w", err)
 	}
-	var response api.CanSetNodeWithdrawalAddressResponse
+	var response api.CanSetNodePrimaryWithdrawalAddressResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode can confirm node withdrawal address response: %w", err)
+		return api.CanSetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not decode can confirm node primary withdrawal address response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node withdrawal address: %s", response.Error)
+		return api.CanSetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node primary withdrawal address: %s", response.Error)
 	}
 	return response, nil
 }
 
-// Confirm the node's withdrawal address
-func (c *Client) ConfirmNodeWithdrawalAddress() (api.SetNodeWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node confirm-withdrawal-address")
+// Confirm the node's primary withdrawal address
+func (c *Client) ConfirmNodePrimaryWithdrawalAddress() (api.SetNodePrimaryWithdrawalAddressResponse, error) {
+	responseBytes, err := c.callAPI("node confirm-primary-withdrawal-address")
 	if err != nil {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node withdrawal address: %w", err)
+		return api.SetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node primary withdrawal address: %w", err)
 	}
-	var response api.SetNodeWithdrawalAddressResponse
+	var response api.SetNodePrimaryWithdrawalAddressResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode confirm node withdrawal address response: %w", err)
+		return api.SetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not decode confirm node primary withdrawal address response: %w", err)
 	}
 	if response.Error != "" {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node withdrawal address: %s", response.Error)
+		return api.SetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node primary withdrawal address: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Checks if the node's RPL withdrawal address can be set
+func (c *Client) CanSetNodeRPLWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.CanSetNodeRPLWithdrawalAddressResponse, error) {
+	responseBytes, err := c.callAPI("node can-set-rpl-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
+	if err != nil {
+		return api.CanSetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node RPL withdrawal address: %w", err)
+	}
+	var response api.CanSetNodeRPLWithdrawalAddressResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanSetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not decode can set node RPL withdrawal address response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanSetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node RPL withdrawal address: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Set the node's RPL withdrawal address
+func (c *Client) SetNodeRPLWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.SetNodeRPLWithdrawalAddressResponse, error) {
+	responseBytes, err := c.callAPI("node set-rpl-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
+	if err != nil {
+		return api.SetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not set node RPL withdrawal address: %w", err)
+	}
+	var response api.SetNodeRPLWithdrawalAddressResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not decode set node RPL withdrawal address response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not set node RPL withdrawal address: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Checks if the node's RPL withdrawal address can be confirmed
+func (c *Client) CanConfirmNodeRPLWithdrawalAddress() (api.CanSetNodeRPLWithdrawalAddressResponse, error) {
+	responseBytes, err := c.callAPI("node can-confirm-rpl-withdrawal-address")
+	if err != nil {
+		return api.CanSetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node RPL withdrawal address: %w", err)
+	}
+	var response api.CanSetNodeRPLWithdrawalAddressResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanSetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not decode can confirm node RPL withdrawal address response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanSetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node RPL withdrawal address: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Confirm the node's RPL withdrawal address
+func (c *Client) ConfirmNodeRPLWithdrawalAddress() (api.SetNodeRPLWithdrawalAddressResponse, error) {
+	responseBytes, err := c.callAPI("node confirm-rpl-withdrawal-address")
+	if err != nil {
+		return api.SetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node RPL withdrawal address: %w", err)
+	}
+	var response api.SetNodeRPLWithdrawalAddressResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not decode confirm node RPL withdrawal address response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node RPL withdrawal address: %s", response.Error)
 	}
 	return response, nil
 }

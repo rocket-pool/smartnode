@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canSetWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.CanSetNodeWithdrawalAddressResponse, error) {
+func canSetPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.CanSetNodePrimaryWithdrawalAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -28,7 +28,7 @@ func canSetWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, c
 	}
 
 	// Response
-	response := api.CanSetNodeWithdrawalAddressResponse{}
+	response := api.CanSetNodePrimaryWithdrawalAddressResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -54,7 +54,7 @@ func canSetWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, c
 	return &response, nil
 }
 
-func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.SetNodeWithdrawalAddressResponse, error) {
+func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.SetNodePrimaryWithdrawalAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -70,7 +70,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, conf
 	}
 
 	// Response
-	response := api.SetNodeWithdrawalAddressResponse{}
+	response := api.SetNodePrimaryWithdrawalAddressResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -112,7 +112,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, conf
 
 }
 
-func canConfirmWithdrawalAddress(c *cli.Context) (*api.CanConfirmNodeWithdrawalAddressResponse, error) {
+func canConfirmPrimaryWithdrawalAddress(c *cli.Context) (*api.CanConfirmNodePrimaryWithdrawalAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -128,7 +128,7 @@ func canConfirmWithdrawalAddress(c *cli.Context) (*api.CanConfirmNodeWithdrawalA
 	}
 
 	// Response
-	response := api.CanConfirmNodeWithdrawalAddressResponse{}
+	response := api.CanConfirmNodePrimaryWithdrawalAddressResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -160,7 +160,7 @@ func canConfirmWithdrawalAddress(c *cli.Context) (*api.CanConfirmNodeWithdrawalA
 	return &response, nil
 }
 
-func confirmWithdrawalAddress(c *cli.Context) (*api.ConfirmNodeWithdrawalAddressResponse, error) {
+func confirmPrimaryWithdrawalAddress(c *cli.Context) (*api.ConfirmNodePrimaryWithdrawalAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -176,7 +176,7 @@ func confirmWithdrawalAddress(c *cli.Context) (*api.ConfirmNodeWithdrawalAddress
 	}
 
 	// Response
-	response := api.ConfirmNodeWithdrawalAddressResponse{}
+	response := api.ConfirmNodePrimaryWithdrawalAddressResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -214,78 +214,6 @@ func confirmWithdrawalAddress(c *cli.Context) (*api.ConfirmNodeWithdrawalAddress
 	response.TxHash = hash
 
 	// Return response
-	return &response, nil
-
-}
-
-func getNodeWithdrawalAddress(c *cli.Context) (*api.GetNodeWithdrawalAddressResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.GetNodeWithdrawalAddressResponse{}
-
-	// Get the node's account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the address
-	address, err := storage.GetNodeWithdrawalAddress(rp, nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return response
-	response.Address = address
-	return &response, nil
-
-}
-
-func getNodePendingWithdrawalAddress(c *cli.Context) (*api.GetNodePendingWithdrawalAddressResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.GetNodePendingWithdrawalAddressResponse{}
-
-	// Get the node's account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the address
-	address, err := storage.GetNodePendingWithdrawalAddress(rp, nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return response
-	response.Address = address
 	return &response, nil
 
 }

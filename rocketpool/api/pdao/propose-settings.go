@@ -66,7 +66,7 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 	// Get the node's locked RPL
 	wg.Go(func() error {
 		var err error
-		lockedRpl, err = node.GetNodeRplLocked(rp, nodeAccount.Address, nil)
+		lockedRpl, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
 		return err
 	})
 

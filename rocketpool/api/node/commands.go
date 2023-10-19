@@ -98,9 +98,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "can-set-withdrawal-address",
-				Usage:     "Checks if the node can set its withdrawal address",
-				UsageText: "rocketpool api node can-set-withdrawal-address address confirm",
+				Name:      "can-set-primary-withdrawal-address",
+				Usage:     "Checks if the node can set its primary withdrawal address",
+				UsageText: "rocketpool api node can-set-primary-withdrawal-address address confirm",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -118,16 +118,15 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(canSetWithdrawalAddress(c, withdrawalAddress, confirm))
+					api.PrintResponse(canSetPrimaryWithdrawalAddress(c, withdrawalAddress, confirm))
 					return nil
 
 				},
 			},
 			{
-				Name:      "set-withdrawal-address",
-				Aliases:   []string{"w"},
-				Usage:     "Set the node's withdrawal address",
-				UsageText: "rocketpool api node set-withdrawal-address address confirm",
+				Name:      "set-primary-withdrawal-address",
+				Usage:     "Set the node's primary withdrawal address",
+				UsageText: "rocketpool api node set-primary-withdrawal-address address confirm",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -145,16 +144,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(setWithdrawalAddress(c, withdrawalAddress, confirm))
+					api.PrintResponse(setPrimaryWithdrawalAddress(c, withdrawalAddress, confirm))
 					return nil
 
 				},
 			},
 
 			{
-				Name:      "can-confirm-withdrawal-address",
-				Usage:     "Checks if the node can confirm its withdrawal address",
-				UsageText: "rocketpool api node can-confirm-withdrawal-address",
+				Name:      "can-confirm-primary-withdrawal-address",
+				Usage:     "Checks if the node can confirm its primary withdrawal address",
+				UsageText: "rocketpool api node can-confirm-primary-withdrawal-address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -163,15 +162,15 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(canConfirmWithdrawalAddress(c))
+					api.PrintResponse(canConfirmPrimaryWithdrawalAddress(c))
 					return nil
 
 				},
 			},
 			{
-				Name:      "confirm-withdrawal-address",
-				Usage:     "Confirms the node's withdrawal address if it was set back to the node address",
-				UsageText: "rocketpool api node confirm-withdrawal-address",
+				Name:      "confirm-primary-withdrawal-address",
+				Usage:     "Confirms the node's primary withdrawal address if it was set back to the node address",
+				UsageText: "rocketpool api node confirm-primary-withdrawal-address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -180,7 +179,95 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(confirmWithdrawalAddress(c))
+					api.PrintResponse(confirmPrimaryWithdrawalAddress(c))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-set-rpl-withdrawal-address",
+				Usage:     "Checks if the node can set its RPL withdrawal address",
+				UsageText: "rocketpool api node can-set-rpl-withdrawal-address address confirm",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					withdrawalAddress, err := cliutils.ValidateAddress("withdrawal address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					confirm, err := cliutils.ValidateBool("confirm", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canSetRPLWithdrawalAddress(c, withdrawalAddress, confirm))
+					return nil
+
+				},
+			},
+			{
+				Name:      "set-rpl-withdrawal-address",
+				Usage:     "Set the node's RPL withdrawal address",
+				UsageText: "rocketpool api node set-rpl-withdrawal-address address confirm",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					withdrawalAddress, err := cliutils.ValidateAddress("withdrawal address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					confirm, err := cliutils.ValidateBool("confirm", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setRPLWithdrawalAddress(c, withdrawalAddress, confirm))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-confirm-rpl-withdrawal-address",
+				Usage:     "Checks if the node can confirm its RPL withdrawal address",
+				UsageText: "rocketpool api node can-confirm-rpl-withdrawal-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canConfirmRPLWithdrawalAddress(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "confirm-rpl-withdrawal-address",
+				Usage:     "Confirms the node's RPL withdrawal address if it was set back to the node address",
+				UsageText: "rocketpool api node confirm-rpl-withdrawal-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(confirmRPLWithdrawalAddress(c))
 					return nil
 
 				},
