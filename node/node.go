@@ -27,11 +27,14 @@ const (
 
 // Node details
 type NodeDetails struct {
-	Address                  common.Address `json:"address"`
-	Exists                   bool           `json:"exists"`
-	WithdrawalAddress        common.Address `json:"withdrawalAddress"`
-	PendingWithdrawalAddress common.Address `json:"pendingWithdrawalAddress"`
-	TimezoneLocation         string         `json:"timezoneLocation"`
+	Address                         common.Address `json:"address"`
+	Exists                          bool           `json:"exists"`
+	PrimaryWithdrawalAddress        common.Address `json:"primaryWithdrawalAddress"`
+	PendingPrimaryWithdrawalAddress common.Address `json:"pendingPrimaryWithdrawalAddress"`
+	IsRPLWithdrawalAddressSet       bool           `json:"isRPLWithdrawalAddressSet"`
+	RPLWithdrawalAddress            common.Address `json:"rplWithdrawalAddress"`
+	PendingRPLWithdrawalAddress     common.Address `json:"pendingRPLWithdrawalAddress"`
+	TimezoneLocation                string         `json:"timezoneLocation"`
 }
 
 // Count of nodes belonging to a timezone
@@ -153,8 +156,11 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts 
 	// Data
 	var wg errgroup.Group
 	var exists bool
-	var withdrawalAddress common.Address
-	var pendingWithdrawalAddress common.Address
+	var primaryWithdrawalAddress common.Address
+	var pendingPrimaryWithdrawalAddress common.Address
+	var isRPLWithdrawalAddressSet bool
+	var rplWithdrawalAddress common.Address
+	var pendingRPLWithdrawalAddress common.Address
 	var timezoneLocation string
 
 	// Load data
@@ -165,12 +171,27 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts 
 	})
 	wg.Go(func() error {
 		var err error
-		withdrawalAddress, err = storage.GetNodeWithdrawalAddress(rp, nodeAddress, opts)
+		primaryWithdrawalAddress, err = storage.GetNodeWithdrawalAddress(rp, nodeAddress, opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		pendingWithdrawalAddress, err = storage.GetNodePendingWithdrawalAddress(rp, nodeAddress, opts)
+		pendingPrimaryWithdrawalAddress, err = storage.GetNodePendingWithdrawalAddress(rp, nodeAddress, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		isRPLWithdrawalAddressSet, err = GetNodeRPLWithdrawalAddressIsSet(rp, nodeAddress, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		rplWithdrawalAddress, err = GetNodeRPLWithdrawalAddress(rp, nodeAddress, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		pendingRPLWithdrawalAddress, err = GetNodePendingRPLWithdrawalAddress(rp, nodeAddress, opts)
 		return err
 	})
 	wg.Go(func() error {
@@ -186,11 +207,14 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts 
 
 	// Return
 	return NodeDetails{
-		Address:                  nodeAddress,
-		Exists:                   exists,
-		WithdrawalAddress:        withdrawalAddress,
-		PendingWithdrawalAddress: pendingWithdrawalAddress,
-		TimezoneLocation:         timezoneLocation,
+		Address:                         nodeAddress,
+		Exists:                          exists,
+		PrimaryWithdrawalAddress:        primaryWithdrawalAddress,
+		PendingPrimaryWithdrawalAddress: pendingPrimaryWithdrawalAddress,
+		IsRPLWithdrawalAddressSet:       isRPLWithdrawalAddressSet,
+		RPLWithdrawalAddress:            rplWithdrawalAddress,
+		PendingRPLWithdrawalAddress:     pendingRPLWithdrawalAddress,
+		TimezoneLocation:                timezoneLocation,
 	}, nil
 
 }

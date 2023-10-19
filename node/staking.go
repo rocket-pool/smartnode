@@ -228,19 +228,6 @@ func GetNodeRPLLocked(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 	return *value, nil
 }
 
-// Check if the RPL-specific withdrawal address has been set
-func GetNodeRPLWithdrawalAddressIsSet(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
-	if err != nil {
-		return false, err
-	}
-	value := new(bool)
-	if err := rocketNodeStaking.Call(opts, value, "getNodeRPLWithdrawalAddressIsSet", nodeAddress); err != nil {
-		return false, fmt.Errorf("error getting node RPL withdrawal address status: %w", err)
-	}
-	return *value, nil
-}
-
 // Get contracts
 var rocketNodeStakingLock sync.Mutex
 
