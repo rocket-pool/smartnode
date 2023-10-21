@@ -3,106 +3,168 @@ package node
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	"github.com/prysmaticlabs/prysm/v3/beacon-chain/core/signing"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/settings"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	prdeposit "github.com/prysmaticlabs/prysm/v3/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v3/proto/prysm/v1alpha1"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
+	rputils "github.com/rocket-pool/smartnode/rocketpool/utils/rp"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
+	sharedutils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
-type nodeDepositHandler struct {
+// ===============
+// === Factory ===
+// ===============
+
+type nodeDepositContextFactory struct {
+	handler *NodeHandler
+}
+
+func (f *nodeDepositContextFactory) Create(vars map[string]string) (*nodeDepositContext, error) {
+	c := &nodeDepositContext{
+		handler: f.handler,
+	}
+	inputErrs := []error{
+		server.ValidateArg("amount-wei", vars, input.ValidateBigInt, &c.amountWei),
+		server.ValidateArg("min-node-fee", vars, input.ValidateFraction, &c.minNodeFee),
+		server.ValidateArg("salt", vars, input.ValidateBigInt, &c.salt),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *nodeDepositContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*nodeDepositContext, api.NodeDepositData](
+		router, "deposit", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type nodeDepositContext struct {
+	handler *NodeHandler
+	cfg     *config.RocketPoolConfig
+	rp      *rocketpool.RocketPool
+	bc      beacon.Client
+	w       *wallet.LocalWallet
+
 	amountWei   *big.Int
 	minNodeFee  float64
 	salt        *big.Int
-	depositPool *deposit.DepositPool
-	pSettings   *settings.ProtocolDaoSettings
-	oSettings   *settings.OracleDaoSettings
-	mpMgr       *minipool.IMinipoolManager
+	node        *node.Node
+	depositPool *deposit.DepositPoolManager
+	pSettings   *protocol.ProtocolDaoSettings
+	oSettings   *oracle.OracleDaoSettings
+	mpMgr       *minipool.MinipoolManager
 }
 
-func (h *nodeDepositHandler) CreateBindings(ctx *callContext) error {
-	rp := ctx.rp
-	var err error
+func (c *nodeDepositContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.cfg = sp.GetConfig()
+	c.rp = sp.GetRocketPool()
+	c.bc = sp.GetBeaconClient()
+	c.w = sp.GetWallet()
+	nodeAddress, _ := c.w.GetAddress()
 
-	h.depositPool, err = deposit.NewDepositPool(rp)
+	// Requirements
+	err := errors.Join(
+		sp.RequireNodeRegistered(),
+		sp.RequireWalletReady(),
+	)
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	c.node, err = node.NewNode(c.rp, nodeAddress)
+	if err != nil {
+		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+	}
+	c.depositPool, err = deposit.NewDepositPoolManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error getting deposit pool binding: %w", err)
 	}
-	h.pSettings, err = settings.NewProtocolDaoSettings(rp)
+	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting pDAO settings binding: %w", err)
+		return fmt.Errorf("error getting pDAO manager binding: %w", err)
 	}
-	h.oSettings, err = settings.NewOracleDaoSettings(rp)
+	c.pSettings = pMgr.Settings
+	oMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting oDAO settings binding: %w", err)
+		return fmt.Errorf("error getting oDAO manager binding: %w", err)
 	}
-	h.mpMgr, err = minipool.NewMinipoolManager(rp)
+	c.oSettings = oMgr.Settings
+	c.mpMgr, err = minipool.NewMinipoolManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error getting minipool manager binding: %w", err)
 	}
 	return nil
 }
 
-func (h *nodeDepositHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
-	node := ctx.node
-	node.GetDepositCredit(mc)
-	h.depositPool.GetBalance(mc)
-	h.pSettings.GetNodeDepositEnabled(mc)
-	h.oSettings.GetScrubPeriod(mc)
+func (c *nodeDepositContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.node.Credit,
+		c.depositPool.Balance,
+		c.pSettings.Node.IsDepositingEnabled,
+		c.oSettings.Minipool.ScrubPeriod,
+	)
 }
 
-func (h *nodeDepositHandler) PrepareResponse(ctx *callContext, response *api.NodeDepositResponse) error {
-	rp := ctx.rp
-	bc := ctx.bc
-	node := ctx.node
-	cfg := ctx.cfg
-	opts := ctx.opts
-	w := ctx.w
-
+func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.TransactOpts) error {
 	// Initial population
-	response.CreditBalance = node.Credit
-	response.DepositDisabled = !h.pSettings.Node.IsDepositingEnabled
-	response.DepositBalance = h.depositPool.Balance
-	response.ScrubPeriod = h.oSettings.Minipools.ScrubPeriod.Formatted()
+	data.CreditBalance = c.node.Credit.Get()
+	data.DepositDisabled = !c.pSettings.Node.IsDepositingEnabled.Get()
+	data.DepositBalance = c.depositPool.Balance.Get()
+	data.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Formatted()
 
 	// Get Beacon config
-	eth2Config, err := bc.GetEth2Config()
+	eth2Config, err := c.bc.GetEth2Config()
 	if err != nil {
 		return fmt.Errorf("error getting Beacon config: %w", err)
 	}
 
 	// Adjust the salt
-	if h.salt.Cmp(big.NewInt(0)) == 0 {
-		nonce, err := rp.Client.NonceAt(context.Background(), node.Address, nil)
+	if c.salt.Cmp(big.NewInt(0)) == 0 {
+		nonce, err := c.rp.Client.NonceAt(context.Background(), c.node.Address, nil)
 		if err != nil {
 			return fmt.Errorf("error getting node's latest nonce: %w", err)
 		}
-		h.salt.SetUint64(nonce)
+		c.salt.SetUint64(nonce)
 	}
 
 	// Check node balance
-	response.NodeBalance, err = rp.Client.BalanceAt(context.Background(), node.Address, nil)
+	data.NodeBalance, err = c.rp.Client.BalanceAt(context.Background(), c.node.Address, nil)
 	if err != nil {
 		return fmt.Errorf("error getting node's ETH balance: %w", err)
 	}
 
 	// Check the node's collateral
-	collateral, err := rputils.CheckCollateral(rp, node.Address, nil)
+	collateral, err := sharedutils.CheckCollateral(c.rp, c.node.Address, nil)
 	if err != nil {
 		return fmt.Errorf("error checking node collateral: %w", err)
 	}
@@ -111,34 +173,34 @@ func (h *nodeDepositHandler) PrepareResponse(ctx *callContext, response *api.Nod
 	pendingMatchAmount := collateral.PendingMatchAmount
 
 	// Check for insufficient balance
-	totalBalance := big.NewInt(0).Add(response.NodeBalance, response.CreditBalance)
-	response.InsufficientBalance = (h.amountWei.Cmp(totalBalance) > 0)
+	totalBalance := big.NewInt(0).Add(data.NodeBalance, data.CreditBalance)
+	data.InsufficientBalance = (c.amountWei.Cmp(totalBalance) > 0)
 
 	// Check if the credit balance can be used
-	response.CanUseCredit = (response.DepositBalance.Cmp(eth.EthToWei(1)) >= 0)
+	data.CanUseCredit = (data.DepositBalance.Cmp(eth.EthToWei(1)) >= 0)
 
 	// Check data
 	validatorEthWei := eth.EthToWei(ValidatorEth)
-	matchRequest := big.NewInt(0).Sub(validatorEthWei, h.amountWei)
+	matchRequest := big.NewInt(0).Sub(validatorEthWei, c.amountWei)
 	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)
 	availableToMatch.Sub(availableToMatch, pendingMatchAmount)
-	response.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
+	data.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
 
 	// Update response
-	response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
-	if response.CanDeposit && !response.CanUseCredit && response.NodeBalance.Cmp(h.amountWei) < 0 {
+	data.CanDeposit = !(data.InsufficientBalance || data.InsufficientRplStake || data.InvalidAmount || data.DepositDisabled)
+	if data.CanDeposit && !data.CanUseCredit && data.NodeBalance.Cmp(c.amountWei) < 0 {
 		// Can't use credit and there's not enough ETH in the node wallet to deposit so error out
-		response.InsufficientBalanceWithoutCredit = true
-		response.CanDeposit = false
+		data.InsufficientBalanceWithoutCredit = true
+		data.CanDeposit = false
 	}
 
 	// Return if depositing won't work
-	if !response.CanDeposit {
+	if !data.CanDeposit {
 		return nil
 	}
 
 	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rputils.GetDepositContractInfo(rp, cfg, bc)
+	depositContractInfo, err := rputils.GetDepositContractInfo(c.rp, c.cfg, c.bc)
 	if err != nil {
 		return fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
 	}
@@ -152,37 +214,37 @@ func (h *nodeDepositHandler) PrepareResponse(ctx *callContext, response *api.Nod
 	}
 
 	// Get how much credit to use
-	if response.CanUseCredit {
-		remainingAmount := big.NewInt(0).Sub(h.amountWei, response.CreditBalance)
+	if data.CanUseCredit {
+		remainingAmount := big.NewInt(0).Sub(c.amountWei, data.CreditBalance)
 		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
 			// Send the remaining amount if the credit isn't enough to cover the whole deposit
 			opts.Value = remainingAmount
 		}
 	} else {
-		opts.Value = h.amountWei
+		opts.Value = c.amountWei
 	}
 
 	// Get the next available validator key without saving it
-	validatorKey, err := w.GetNextValidatorKey()
+	validatorKey, err := c.w.GetNextValidatorKey()
 	if err != nil {
 		return fmt.Errorf("error getting next available validator key: %w", err)
 	}
 
 	// Get the next minipool address
 	var minipoolAddress common.Address
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		node.GetExpectedMinipoolAddress(mc, &minipoolAddress, h.salt)
+	err = c.rp.Query(func(mc *batch.MultiCaller) error {
+		c.node.GetExpectedMinipoolAddress(mc, &minipoolAddress, c.salt)
 		return nil
 	}, nil)
 	if err != nil {
 		return fmt.Errorf("error getting expected minipool address: %w", err)
 	}
-	response.MinipoolAddress = minipoolAddress
+	data.MinipoolAddress = minipoolAddress
 
 	// Get the withdrawal credentials
 	var withdrawalCredentials common.Hash
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		h.mpMgr.GetMinipoolWithdrawalCredentials(mc, &withdrawalCredentials, minipoolAddress)
+	err = c.rp.Query(func(mc *batch.MultiCaller) error {
+		c.mpMgr.GetMinipoolWithdrawalCredentials(mc, &withdrawalCredentials, minipoolAddress)
 		return nil
 	}, nil)
 	if err != nil {
@@ -197,10 +259,10 @@ func (h *nodeDepositHandler) PrepareResponse(ctx *callContext, response *api.Nod
 	}
 	pubkey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
 	signature := rptypes.BytesToValidatorSignature(depositData.Signature)
-	response.ValidatorPubkey = pubkey
+	data.ValidatorPubkey = pubkey
 
 	// Make sure a validator with this pubkey doesn't already exist
-	status, err := bc.GetValidatorStatus(pubkey, nil)
+	status, err := c.bc.GetValidatorStatus(pubkey, nil)
 	if err != nil {
 		return fmt.Errorf("Error checking for existing validator status: %w\nYour funds have not been deposited for your own safety.", err)
 	}
@@ -240,17 +302,17 @@ func (h *nodeDepositHandler) PrepareResponse(ctx *callContext, response *api.Nod
 	// Get tx info
 	var txInfo *core.TransactionInfo
 	var funcName string
-	if response.CanUseCredit {
-		txInfo, err = node.DepositWithCredit(h.amountWei, h.minNodeFee, pubkey, signature, depositDataRoot, h.salt, minipoolAddress, opts)
+	if data.CanUseCredit {
+		txInfo, err = c.node.DepositWithCredit(c.amountWei, c.minNodeFee, pubkey, signature, depositDataRoot, c.salt, minipoolAddress, opts)
 		funcName = "DepositWithCredit"
 	} else {
-		txInfo, err = node.Deposit(h.amountWei, h.minNodeFee, pubkey, signature, depositDataRoot, h.salt, minipoolAddress, opts)
+		txInfo, err = c.node.Deposit(c.amountWei, c.minNodeFee, pubkey, signature, depositDataRoot, c.salt, minipoolAddress, opts)
 		funcName = "Deposit"
 	}
 	if err != nil {
 		return fmt.Errorf("error getting TX info for %s: %w", funcName, err)
 	}
-	response.TxInfo = txInfo
+	data.TxInfo = txInfo
 
 	return nil
 }

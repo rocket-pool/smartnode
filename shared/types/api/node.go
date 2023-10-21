@@ -221,12 +221,15 @@ type NodeSignData struct {
 }
 
 type NodeInitializeFeeDistributorData struct {
+	CanInitialize bool                  `json:"canInitialize"`
 	IsInitialized bool                  `json:"isInitialized"`
 	Distributor   common.Address        `json:"distributor"`
 	TxInfo        *core.TransactionInfo `json:"txInfo"`
 }
 
 type NodeDistributeData struct {
+	CanDistribute bool                  `json:"canDistribute"`
+	NoBalance     bool                  `json:"noBalance"`
 	IsInitialized bool                  `json:"isInitialized"`
 	Balance       *big.Int              `json:"balance"`
 	NodeShare     *big.Int              `json:"nodeShare"`

@@ -24,6 +24,10 @@ func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
 		&nodeBurnContextFactory{h},
 		&nodeCheckCollateralContextFactory{h},
 		&nodeClaimAndStakeContextFactory{h},
+		&nodeCreateVacantMinipoolContextFactory{h},
+		&nodeDepositContextFactory{h},
+		&nodeDistributeContextFactory{h},
+		&nodeInitializeFeeDistributorContextFactory{h},
 	}
 	return h
 }
