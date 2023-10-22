@@ -57,7 +57,7 @@ func (f *nodeDepositContextFactory) Create(vars map[string]string) (*nodeDeposit
 }
 
 func (f *nodeDepositContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeDepositContext, api.NodeDepositData](
+	server.RegisterSingleStageRoute[*nodeDepositContext, api.NodeDepositData](
 		router, "deposit", f, f.handler.serviceProvider,
 	)
 }

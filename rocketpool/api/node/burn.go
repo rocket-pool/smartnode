@@ -37,7 +37,7 @@ func (f *nodeBurnContextFactory) Create(vars map[string]string) (*nodeBurnContex
 }
 
 func (f *nodeBurnContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeBurnContext, api.NodeBurnData](
+	server.RegisterSingleStageRoute[*nodeBurnContext, api.NodeBurnData](
 		router, "burn", f, f.handler.serviceProvider,
 	)
 }

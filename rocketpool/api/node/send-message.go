@@ -1,45 +1,68 @@
 package node
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	"github.com/rocket-pool/rocketpool-go/core"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func sendMessage(c *cli.Context, address common.Address, message []byte) (*api.TxInfoData, error) {
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
+// ===============
+// === Factory ===
+// ===============
+
+type nodeSendMessageContextFactory struct {
+	handler *NodeHandler
+}
+
+func (f *nodeSendMessageContextFactory) Create(vars map[string]string) (*nodeSendMessageContext, error) {
+	c := &nodeSendMessageContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
+	inputErrs := []error{
+		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
+		server.ValidateArg("message", vars, input.ValidateByteArray, &c.message),
 	}
-	ec, err := services.GetEthClient(c)
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *nodeSendMessageContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*nodeSendMessageContext, api.TxInfoData](
+		router, "send-message", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type nodeSendMessageContext struct {
+	handler *NodeHandler
+	address common.Address
+	message []byte
+}
+
+func (c *nodeSendMessageContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	ec := sp.GetEthClient()
+
+	// Requirements
+	err := sp.RequireNodeAddress()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.TxInfoData{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	info, err := core.NewTransactionInfoRaw(ec, c.address, c.message, opts)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting transaction info: %w", err)
 	}
-
-	info, err := core.NewTransactionInfoRaw(ec, address, message, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error getting transaction info: %w", err)
-	}
-	response.TxInfo = info
-
-	// Return response
-	return &response, nil
+	data.TxInfo = info
+	return nil
 }

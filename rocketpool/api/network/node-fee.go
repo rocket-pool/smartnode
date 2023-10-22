@@ -31,7 +31,7 @@ func (f *networkFeeContextFactory) Create(vars map[string]string) (*networkFeeCo
 }
 
 func (f *networkFeeContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*networkFeeContext, api.NetworkNodeFeeData](
+	server.RegisterSingleStageRoute[*networkFeeContext, api.NetworkNodeFeeData](
 		router, "node-fee", f, f.handler.serviceProvider,
 	)
 }

@@ -258,9 +258,10 @@ type NodeSmoothingPoolRegistrationStatusData struct {
 	TimeLeftUntilChangeable time.Duration `json:"timeLeftUntilChangeable"`
 }
 
-type NodeResolveEnsNameData struct {
-	Address common.Address `json:"address"`
-	EnsName string         `json:"ensName"`
+type NodeResolveEnsData struct {
+	Address       common.Address `json:"address"`
+	EnsName       string         `json:"ensName"`
+	FormattedName string         `json:"formattedName"`
 }
 
 type SnapshotProposal struct {

@@ -50,7 +50,7 @@ func (f *nodeCreateVacantMinipoolContextFactory) Create(vars map[string]string) 
 }
 
 func (f *nodeCreateVacantMinipoolContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeCreateVacantMinipoolContext, api.NodeCreateVacantMinipoolData](
+	server.RegisterSingleStageRoute[*nodeCreateVacantMinipoolContext, api.NodeCreateVacantMinipoolData](
 		router, "create-vacant-minipool", f, f.handler.serviceProvider,
 	)
 }

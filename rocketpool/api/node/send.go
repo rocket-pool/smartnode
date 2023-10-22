@@ -2,19 +2,162 @@ package node
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
+
+// ===============
+// === Factory ===
+// ===============
+
+type nodeSendContextFactory struct {
+	handler *NodeHandler
+}
+
+func (f *nodeSendContextFactory) Create(vars map[string]string) (*nodeSendContext, error) {
+	c := &nodeSendContext{
+		handler: f.handler,
+	}
+	inputErrs := []error{
+		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
+		server.GetStringFromVars("token", vars, &c.token),
+		server.ValidateArg("recipient", vars, input.ValidateAddress, &c.recipient),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *nodeSendContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[]()[*nodeSendContext, api.NodeDepositData](
+		router, "send", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type nodeSendContext struct {
+	handler     *NodeHandler
+
+	amount        *big.Int
+	token         string
+	recipient     common.Address
+}
+
+func (c *nodeSendContext) Initialize() error {
+}
+
+func (c *nodeSendContext) GetState(mc *batch.MultiCaller) {
+	if c.tokenContract != nil {
+		c.tokenContract.BalanceOf(mc, &c.balance, c.nodeAddress)
+	} else {
+		switch c.token {
+		case "rpl":
+			
+		}
+		core.AddQueryablesToMulticall(mc,
+			c.node.Credit,
+			c.depositPool.Balance,
+			c.pSettings.Node.IsDepositingEnabled,
+			c.oSettings.Minipool.ScrubPeriod,
+		)
+	}
+}
+
+func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	rp := sp.GetRocketPool()
+	ec := sp.GetEthClient()
+	nodeAddress, _ := sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeAddress()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	if strings.HasPrefix(c.token, "0x") {
+		// Make sure the contract address is legal
+		if !common.IsHexAddress(c.token) {
+			return fmt.Errorf("[%s] is not a valid token address", c.token)
+		}
+		tokenAddress := common.HexToAddress(c.token)
+
+		// Make a binding for it
+		tokenContract, err := utils.NewErc20Contract(c.rp, tokenAddress, c.ec, nil)
+		if err != nil {
+			return fmt.Errorf("error creating ERC20 contract binding: %w", err)
+		}
+		data.TokenSymbol = tokenContract.Details.Symbol
+		data.TokenName = tokenContract.Details.Name
+
+		// Get the token balance
+		err = rp.Query(func(mc *batch.MultiCaller) error {
+			tokenContract.BalanceOf(mc, &data.Balance, nodeAddress)
+		}, nil)
+		if err != nil {
+			return fmt.Errorf("error querying ERC20 balance: %w", err)
+		}
+
+		// Check the balance
+		if data.Balance.Cmp(common.Big0) == 0 {
+			data.InsufficientBalance = true
+			data.CanSend = false
+		} else {
+			txInfo, err := tokenContract.Transfer(c.recipient, c.amount, opts)
+			if err != nil {
+				return fmt.Errorf("error getting TX info for Transfer: %w", err)
+			}
+			data.TxInfo = txInfo
+		}
+	} else {
+		switch c.token {
+		case "eth":
+			// Check the balance
+			var err error
+			data.Balance, err = c.ec.BalanceAt(context.Background(), c.nodeAddress, nil)
+			if err != nil {
+				return fmt.Errorf("error getting ETH balance: %w", err)
+			}
+
+			// txInfo, err := c.ec.Transfer
+			// TODO: need to do SendTransaction but capture the TX before sending it
+
+
+		case "eth", "rpl", "fsrpl", "reth":
+			break
+		default:
+			return fmt.Errorf("[%s] is not a valid token name or address", c.token)
+		}
+	}
+
+	return nil
+
+	// Handle ETH balance
+	switch c.token {
+	case "eth":
+	}
+}
 
 func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Address) (*api.CanNodeSendResponse, error) {
 

@@ -4,128 +4,175 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/settings"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
-type nodeRewardsInfoHandler struct {
-	networkPrices *network.NetworkPrices
-	pSettings     *settings.ProtocolDaoSettings
-	rewardsPool   *rewards.RewardsPool
+// ===============
+// === Factory ===
+// ===============
+
+type nodeGetRewardsInfoContextFactory struct {
+	handler *NodeHandler
 }
 
-func (h *nodeRewardsInfoHandler) CreateBindings(ctx *callContext) error {
-	var err error
-	rp := ctx.rp
-
-	h.networkPrices, err = network.NewNetworkPrices(rp)
-	if err != nil {
-		return fmt.Errorf("error creating network prices binding: %w", err)
+func (f *nodeGetRewardsInfoContextFactory) Create(vars map[string]string) (*nodeGetRewardsInfoContext, error) {
+	c := &nodeGetRewardsInfoContext{
+		handler: f.handler,
 	}
-	h.pSettings, err = settings.NewProtocolDaoSettings(rp)
+	return c, nil
+}
+
+func (f *nodeGetRewardsInfoContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*nodeGetRewardsInfoContext, api.NodeGetRewardsInfoData](
+		router, "get-rewards-info", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type nodeGetRewardsInfoContext struct {
+	handler *NodeHandler
+	cfg     *config.RocketPoolConfig
+	rp      *rocketpool.RocketPool
+
+	node        *node.Node
+	networkMgr  *network.NetworkManager
+	pSettings   *protocol.ProtocolDaoSettings
+	rewardsPool *rewards.RewardsPool
+}
+
+func (c *nodeGetRewardsInfoContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.cfg = sp.GetConfig()
+	c.rp = sp.GetRocketPool()
+	nodeAddress, _ := sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	c.node, err = node.NewNode(c.rp, nodeAddress)
+	if err != nil {
+		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+	}
+	c.networkMgr, err = network.NewNetworkManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating network manager binding: %w", err)
+	}
+	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating pDAO settings binding: %w", err)
 	}
-	h.rewardsPool, err = rewards.NewRewardsPool(rp)
+	c.pSettings = pMgr.Settings
+	c.rewardsPool, err = rewards.NewRewardsPool(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating rewards pool binding: %w", err)
 	}
 	return nil
 }
 
-func (h *nodeRewardsInfoHandler) GetState(ctx *callContext, mc *batch.MultiCaller) {
-	node := ctx.node
-
-	node.GetActiveMinipoolCount(mc)
-	node.GetRplStake(mc)
-	node.GetMinimumRplStake(mc)
-	node.GetMaximumRplStake(mc)
-	node.GetEffectiveRplStake(mc)
-	h.networkPrices.GetRplPrice(mc)
-	h.pSettings.GetMinimumPerMinipoolStake(mc)
-	h.pSettings.GetMaximumPerMinipoolStake(mc)
-	h.rewardsPool.GetRewardIndex(mc)
+func (c *nodeGetRewardsInfoContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.node.ActiveMinipoolCount,
+		c.node.RplStake,
+		c.node.MinimumRplStake,
+		c.node.MaximumRplStake,
+		c.node.EffectiveRplStake,
+		c.networkMgr.RplPrice,
+		c.pSettings.Node.MinimumPerMinipoolStake,
+		c.pSettings.Node.MaximumPerMinipoolStake,
+		c.rewardsPool.RewardIndex,
+	)
 }
 
-func (h *nodeRewardsInfoHandler) PrepareResponse(ctx *callContext, response *api.NodeGetRewardsInfoResponse) error {
-	rp := ctx.rp
-	node := ctx.node
-	cfg := ctx.cfg
-
+func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData, opts *bind.TransactOpts) error {
 	// Basic details
-	response.RplPrice = h.networkPrices.RplPrice.RawValue
-	response.RplStake = node.RplStake
-	response.MinimumRplStake = node.MinimumRplStake
-	response.MaximumRplStake = node.MaximumRplStake
-	response.EffectiveRplStake = node.EffectiveRplStake
+	data.RplPrice = c.networkMgr.RplPrice.Raw()
+	data.RplStake = c.node.RplStake.Get()
+	data.MinimumRplStake = c.node.MinimumRplStake.Get()
+	data.MaximumRplStake = c.node.MaximumRplStake.Get()
+	data.EffectiveRplStake = c.node.EffectiveRplStake.Get()
 
 	// Get the claimed and unclaimed intervals
-	claimStatus, err := rprewards.GetClaimStatus(rp, node.Address, h.rewardsPool.RewardIndex.Formatted())
+	claimStatus, err := rprewards.GetClaimStatus(c.rp, c.node.Address, c.rewardsPool.RewardIndex.Formatted())
 	if err != nil {
 		return fmt.Errorf("error getting rewards claim status: %w", err)
 	}
-	response.ClaimedIntervals = claimStatus.Claimed
+	data.ClaimedIntervals = claimStatus.Claimed
 
 	// Get the info for each unclaimed interval
 	for _, unclaimedInterval := range claimStatus.Unclaimed {
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, node.Address, unclaimedInterval, nil)
+		intervalInfo, err := rprewards.GetIntervalInfo(c.rp, c.cfg, c.node.Address, unclaimedInterval, nil)
 		if err != nil {
 			return fmt.Errorf("error getting interval %d info: %w", unclaimedInterval, err)
 		}
 		if !intervalInfo.TreeFileExists || !intervalInfo.MerkleRootValid {
-			response.InvalidIntervals = append(response.InvalidIntervals, intervalInfo)
+			data.InvalidIntervals = append(data.InvalidIntervals, intervalInfo)
 			continue
 		}
 		if intervalInfo.NodeExists {
-			response.UnclaimedIntervals = append(response.UnclaimedIntervals, intervalInfo)
+			data.UnclaimedIntervals = append(data.UnclaimedIntervals, intervalInfo)
 		}
 	}
 
 	// Get the number of active (non-finalized) minipools
-	response.ActiveMinipools = node.ActiveMinipoolCount.Formatted()
-	if response.ActiveMinipools > 0 {
-		collateral, err := rputils.CheckCollateral(rp, node.Address, nil)
+	data.ActiveMinipools = c.node.ActiveMinipoolCount.Formatted()
+	if data.ActiveMinipools > 0 {
+		collateral, err := rputils.CheckCollateral(c.rp, c.node.Address, nil)
 		if err != nil {
 			return fmt.Errorf("error getting node collateral: %w", err)
 		}
-		response.EthMatched = collateral.EthMatched
-		response.EthMatchedLimit = collateral.EthMatchedLimit
-		response.PendingMatchAmount = collateral.PendingMatchAmount
+		data.EthMatched = collateral.EthMatched
+		data.EthMatchedLimit = collateral.EthMatchedLimit
+		data.PendingMatchAmount = collateral.PendingMatchAmount
 
 		// Calculate the *real* minimum, including the pending bond reductions
-		minStakeFraction := h.pSettings.Node.MinimumPerMinipoolStake.RawValue
-		maxStakeFraction := h.pSettings.Node.MaximumPerMinipoolStake.RawValue
-		trueMinimumStake := big.NewInt(0).Add(response.EthMatched, response.PendingMatchAmount)
+		minStakeFraction := c.pSettings.Node.MinimumPerMinipoolStake.Raw()
+		maxStakeFraction := c.pSettings.Node.MaximumPerMinipoolStake.Raw()
+		trueMinimumStake := big.NewInt(0).Add(data.EthMatched, data.PendingMatchAmount)
 		trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
-		trueMinimumStake.Div(trueMinimumStake, response.RplPrice)
+		trueMinimumStake.Div(trueMinimumStake, data.RplPrice)
 
 		// Calculate the *real* maximum, including the pending bond reductions
 		trueMaximumStake := eth.EthToWei(32)
-		trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(response.ActiveMinipools)))
-		trueMaximumStake.Sub(trueMaximumStake, response.EthMatched)
-		trueMaximumStake.Sub(trueMaximumStake, response.PendingMatchAmount) // (32 * activeMinipools - ethMatched - pendingMatch)
+		trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(data.ActiveMinipools)))
+		trueMaximumStake.Sub(trueMaximumStake, data.EthMatched)
+		trueMaximumStake.Sub(trueMaximumStake, data.PendingMatchAmount) // (32 * activeMinipools - ethMatched - pendingMatch)
 		trueMaximumStake.Mul(trueMaximumStake, maxStakeFraction)
-		trueMaximumStake.Div(trueMaximumStake, response.RplPrice)
+		trueMaximumStake.Div(trueMaximumStake, data.RplPrice)
 
-		response.MinimumRplStake = trueMinimumStake
-		response.MaximumRplStake = trueMaximumStake
+		data.MinimumRplStake = trueMinimumStake
+		data.MaximumRplStake = trueMaximumStake
 
-		if response.EffectiveRplStake.Cmp(trueMinimumStake) < 0 {
-			response.EffectiveRplStake.SetUint64(0)
-		} else if response.EffectiveRplStake.Cmp(trueMaximumStake) > 0 {
-			response.EffectiveRplStake.Set(trueMaximumStake)
+		if data.EffectiveRplStake.Cmp(trueMinimumStake) < 0 {
+			data.EffectiveRplStake.SetUint64(0)
+		} else if data.EffectiveRplStake.Cmp(trueMaximumStake) > 0 {
+			data.EffectiveRplStake.Set(trueMaximumStake)
 		}
 
-		response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (float64(response.ActiveMinipools)*32.0 - eth.WeiToEth(response.EthMatched) - eth.WeiToEth(response.PendingMatchAmount))
-		response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthMatched) + eth.WeiToEth(response.PendingMatchAmount))
+		data.BondedCollateralRatio = eth.WeiToEth(data.RplPrice) * eth.WeiToEth(data.RplStake) / (float64(data.ActiveMinipools)*32.0 - eth.WeiToEth(data.EthMatched) - eth.WeiToEth(data.PendingMatchAmount))
+		data.BorrowedCollateralRatio = eth.WeiToEth(data.RplPrice) * eth.WeiToEth(data.RplStake) / (eth.WeiToEth(data.EthMatched) + eth.WeiToEth(data.PendingMatchAmount))
 	} else {
-		response.BorrowedCollateralRatio = -1
+		data.BorrowedCollateralRatio = -1
 	}
 
 	return nil

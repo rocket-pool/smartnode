@@ -32,7 +32,7 @@ func (f *nodeDistributeContextFactory) Create(vars map[string]string) (*nodeDist
 }
 
 func (f *nodeDistributeContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeDistributeContext, api.NodeDistributeData](
+	server.RegisterSingleStageRoute[*nodeDistributeContext, api.NodeDistributeData](
 		router, "distribute", f, f.handler.serviceProvider,
 	)
 }
