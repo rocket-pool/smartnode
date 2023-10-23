@@ -24,6 +24,7 @@ func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
 		&nodeBurnContextFactory{h},
 		&nodeCheckCollateralContextFactory{h},
 		&nodeClaimAndStakeContextFactory{h},
+		&nodeConfirmPrimaryWithdrawalAddressContextFactory{h},
 		&nodeCreateVacantMinipoolContextFactory{h},
 		&nodeDepositContextFactory{h},
 		&nodeDistributeContextFactory{h},
@@ -33,11 +34,13 @@ func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
 		&nodeResolveEnsContextFactory{h},
 		&nodeSendMessageContextFactory{h},
 		&nodeSendContextFactory{h},
+		&nodeSetPrimaryWithdrawalAddressContextFactory{h},
 		&nodeSetSmoothingPoolRegistrationStatusContextFactory{h},
 		&nodeSetStakeRplForAllowedContextFactory{h},
 		&nodeSetTimezoneContextFactory{h},
 		&nodeStakeRplContextFactory{h},
 		&nodeSwapRplContextFactory{h},
+		&nodeWithdrawRplContextFactory{h},
 	}
 	return h
 }

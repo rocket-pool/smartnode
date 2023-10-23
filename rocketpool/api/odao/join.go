@@ -91,7 +91,7 @@ func (c *oracleDaoJoinContext) GetState(mc *batch.MultiCaller) {
 		c.odaoMember.Exists,
 		c.oSettings.Member.RplBond,
 	)
-	c.rpl.GetBalance(mc, &c.rplBalance, c.nodeAddress)
+	c.rpl.BalanceOf(mc, &c.rplBalance, c.nodeAddress)
 }
 
 func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bind.TransactOpts) error {

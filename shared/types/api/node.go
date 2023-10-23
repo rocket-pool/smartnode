@@ -82,22 +82,16 @@ type NodeRegisterData struct {
 	TxInfo               *core.TransactionInfo `json:"txInfo"`
 }
 
-type NodeSetWithdrawalAddressData struct {
-	CanSet bool                  ` json:"canSet"`
-	TxInfo *core.TransactionInfo `json:"txInfo"`
+type NodeSetPrimaryWithdrawalAddressData struct {
+	CanSet            bool                  ` json:"canSet"`
+	AddressAlreadySet bool                  `json:"addressAlreadySet"`
+	TxInfo            *core.TransactionInfo `json:"txInfo"`
 }
 
-type NodeConfirmWithdrawalAddressData struct {
-	CanConfirm bool                  `json:"canConfirm"`
-	TxInfo     *core.TransactionInfo `json:"txInfo"`
-}
-
-type NodeGetWithdrawalAddressData struct {
-	Address common.Address `json:"address"`
-}
-
-type NodeGetPendingWithdrawalAddressData struct {
-	Address common.Address `json:"address"`
+type NodeConfirmPrimaryWithdrawalAddressData struct {
+	CanConfirm              bool                  `json:"canConfirm"`
+	IncorrectPendingAddress bool                  `json:"IncorrectPendingAddress"`
+	TxInfo                  *core.TransactionInfo `json:"txInfo"`
 }
 
 type NodeSetTimezoneData struct {
