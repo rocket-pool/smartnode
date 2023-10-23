@@ -97,7 +97,7 @@ func (c *faucetWithdrawContext) PrepareData(data *api.FaucetWithdrawRplData, opt
 			amount = balance
 		}
 
-		txInfo, err := c.f.Withdraw(opts, amount)
+		txInfo, err := c.f.Withdraw(amount, opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for Withdraw: %w", err)
 		}

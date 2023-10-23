@@ -19,7 +19,7 @@ const (
 )
 
 // ABI cache
-var faucetAbi abi.ABI
+var snapshotAbi abi.ABI
 var faucetOnce sync.Once
 
 // ===============
@@ -53,10 +53,6 @@ type RplFaucet struct {
 	contract *core.Contract
 }
 
-// Details for RPL Faucet
-type RplFaucetDetails struct {
-}
-
 // ====================
 // === Constructors ===
 // ====================
@@ -69,7 +65,7 @@ func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFauc
 		var parsedAbi abi.ABI
 		parsedAbi, err = abi.JSON(strings.NewReader(faucetAbiString))
 		if err == nil {
-			faucetAbi = parsedAbi
+			snapshotAbi = parsedAbi
 		}
 	})
 	if err != nil {
@@ -78,9 +74,9 @@ func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFauc
 
 	// Create the contract
 	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, faucetAbi, client, client, client),
+		Contract: bind.NewBoundContract(address, snapshotAbi, client, client, client),
 		Address:  &address,
-		ABI:      &faucetAbi,
+		ABI:      &snapshotAbi,
 		Client:   client,
 	}
 
@@ -111,26 +107,26 @@ func (c *RplFaucet) GetAllowanceFor(mc *batch.MultiCaller, allowance **big.Int, 
 // ====================
 
 // Get info for withdrawing RPL from the faucet
-func (c *RplFaucet) Withdraw(opts *bind.TransactOpts, amount *big.Int) (*core.TransactionInfo, error) {
+func (c *RplFaucet) Withdraw(amount *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "withdraw", opts, amount)
 }
 
 // Get info for withdrawing RPL from the faucet to a specific address
-func (c *RplFaucet) WithdrawTo(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*core.TransactionInfo, error) {
+func (c *RplFaucet) WithdrawTo(to common.Address, amount *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "withdrawTo", opts, to, amount)
 }
 
 // Set the withdrawal period, in blocks
-func (c *RplFaucet) SetWithdrawalPeriod(opts *bind.TransactOpts, period *big.Int) (*core.TransactionInfo, error) {
+func (c *RplFaucet) SetWithdrawalPeriod(period *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "setWithdrawalPeriod", opts, period)
 }
 
 // Set the max total withdrawal amount per period
-func (c *RplFaucet) SetMaxWithdrawalPerPeriod(opts *bind.TransactOpts, max *big.Int) (*core.TransactionInfo, error) {
+func (c *RplFaucet) SetMaxWithdrawalPerPeriod(max *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "setMaxWithdrawalPerPeriod", opts, max)
 }
 
 // Set the withdrawal fee
-func (c *RplFaucet) SetWithdrawalFee(opts *bind.TransactOpts, fee *big.Int) (*core.TransactionInfo, error) {
+func (c *RplFaucet) SetWithdrawalFee(fee *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "setWithdrawalFee", opts, fee)
 }
