@@ -32,6 +32,12 @@ func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
 		&nodeRegisterContextFactory{h},
 		&nodeResolveEnsContextFactory{h},
 		&nodeSendMessageContextFactory{h},
+		&nodeSendContextFactory{h},
+		&nodeSetSmoothingPoolRegistrationStatusContextFactory{h},
+		&nodeSetStakeRplForAllowedContextFactory{h},
+		&nodeSetTimezoneContextFactory{h},
+		&nodeStakeRplContextFactory{h},
+		&nodeSwapRplContextFactory{h},
 	}
 	return h
 }

@@ -108,23 +108,17 @@ type NodeSetTimezoneData struct {
 type NodeSwapRplData struct {
 	CanSwap             bool                  `json:"canSwap"`
 	InsufficientBalance bool                  `json:"insufficientBalance"`
+	Allowance           *big.Int              `json:"allowance"`
 	ApproveTxInfo       *core.TransactionInfo `json:"approveTxInfo"`
 	SwapTxInfo          *core.TransactionInfo `json:"swapTxInfo"`
-}
-
-type NodeSwapRplAllowanceData struct {
-	Allowance *big.Int `json:"allowance"`
 }
 
 type NodeStakeRplData struct {
 	CanStake            bool                  `json:"canStake"`
 	InsufficientBalance bool                  `json:"insufficientBalance"`
+	Allowance           *big.Int              `json:"allowance"`
 	ApproveTxInfo       *core.TransactionInfo `json:"approveTxInfo"`
 	StakeTxInfo         *core.TransactionInfo `json:"stakeTxInfo"`
-}
-
-type NodeStakeRplAllowanceData struct {
-	Allowance *big.Int `json:"allowance"`
 }
 
 type NodeSetStakeRplForAllowedData struct {
@@ -253,9 +247,11 @@ type NodeGetRewardsInfoData struct {
 	BondedCollateralRatio   float64                    `json:"bondedCollateralRatio"`
 }
 
-type NodeSmoothingPoolRegistrationStatusData struct {
-	NodeRegistered          bool          `json:"nodeRegistered"`
-	TimeLeftUntilChangeable time.Duration `json:"timeLeftUntilChangeable"`
+type NodeSetSmoothingPoolRegistrationStatusData struct {
+	NodeRegistered          bool                  `json:"nodeRegistered"`
+	CanChange               bool                  `json:"canChange"`
+	TimeLeftUntilChangeable time.Duration         `json:"timeLeftUntilChangeable"`
+	TxInfo                  *core.TransactionInfo `json:"txInfo"`
 }
 
 type NodeResolveEnsData struct {

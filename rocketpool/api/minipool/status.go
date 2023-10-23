@@ -132,9 +132,9 @@ func (c *minipoolStatusContext) CheckState(node *node.Node, response *api.Minipo
 func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	address := mp.Common().Address
 	core.QueryAllFields(mp, mc)
-	c.reth.GetBalance(mc, &c.rethBalances[index], address)
-	c.rpl.GetBalance(mc, &c.rplBalances[index], address)
-	c.fsrpl.GetBalance(mc, &c.fsrplBalances[index], address)
+	c.reth.BalanceOf(mc, &c.rethBalances[index], address)
+	c.rpl.BalanceOf(mc, &c.rplBalances[index], address)
+	c.fsrpl.BalanceOf(mc, &c.fsrplBalances[index], address)
 }
 
 func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolStatusData) error {

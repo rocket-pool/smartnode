@@ -79,7 +79,7 @@ func (c *nodeBurnContext) GetState(mc *batch.MultiCaller) {
 	core.AddQueryablesToMulticall(mc,
 		c.reth.TotalCollateral,
 	)
-	c.reth.GetBalance(mc, &c.balance, c.nodeAddress)
+	c.reth.BalanceOf(mc, &c.balance, c.nodeAddress)
 }
 
 func (c *nodeBurnContext) PrepareData(data *api.NodeBurnData, opts *bind.TransactOpts) error {

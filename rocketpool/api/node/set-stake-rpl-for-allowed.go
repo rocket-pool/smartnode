@@ -1,87 +1,77 @@
 package node
 
 import (
+	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	"github.com/rocket-pool/rocketpool-go/node"
+
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canSetStakeRplForAllowed(c *cli.Context, caller common.Address, allowed bool) (*api.CanSetStakeRplForAllowedResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.CanSetStakeRplForAllowedResponse{}
-
-	// Get gas estimates
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := node.EstimateSetStakeRPLForAllowedGas(rp, caller, allowed, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.GasInfo = gasInfo
-
-	// Update & return response
-	response.CanSet = true
-	return &response, nil
-
+type nodeSetStakeRplForAllowedContextFactory struct {
+	handler *NodeHandler
 }
 
-
-func setStakeRplForAllowed(c *cli.Context, caller common.Address, allowed bool) (*api.SetStakeRplForAllowedResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
+func (f *nodeSetStakeRplForAllowedContextFactory) Create(vars map[string]string) (*nodeSetStakeRplForAllowedContext, error) {
+	c := &nodeSetStakeRplForAllowedContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	inputErrs := []error{
+		server.ValidateArg("caller", vars, input.ValidateAddress, &c.caller),
+		server.ValidateArg("allowed", vars, input.ValidateBool, &c.allowed),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *nodeSetStakeRplForAllowedContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*nodeSetStakeRplForAllowedContext, api.NodeSetStakeRplForAllowedData](
+		router, "set-stake-rpl-for-allowed", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type nodeSetStakeRplForAllowedContext struct {
+	handler *NodeHandler
+
+	caller  common.Address
+	allowed bool
+}
+
+func (c *nodeSetStakeRplForAllowedContext) PrepareData(data *api.NodeSetStakeRplForAllowedData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	rp := sp.GetRocketPool()
+	nodeAddress, _ := sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rp, err := services.GetRocketPool(c)
+
+	// Bindings
+	node, err := node.NewNode(rp, nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating node binding: %w", err)
 	}
 
-	// Response
-	response := api.SetStakeRplForAllowedResponse{}
-
-	// Stake RPL
-	opts, err := w.GetNodeAccountTransactor()
+	data.CanSet = true
+	data.TxInfo, err = node.SetStakeRplForAllowed(c.caller, c.allowed, opts)
 	if err != nil {
-		return nil, err
-	}
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-	hash, err := node.SetStakeRPLForAllowed(rp, caller, allowed, opts)
-	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting TX info for SetStakeRplForAllowed: %w", err)
 	}
 
-	response.SetTxHash = hash
-
-	// Return response
-	return &response, nil
-
+	return nil
 }

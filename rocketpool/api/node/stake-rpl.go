@@ -1,250 +1,118 @@
 package node
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/rocket-pool/rocketpool-go/utils"
-	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.CanNodeStakeRplResponse{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Check RPL balance
-	rplBalance, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
-	}
-	response.InsufficientBalance = (amountWei.Cmp(rplBalance) > 0)
-
-	// Get gas estimates
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := node.EstimateStakeGas(rp, amountWei, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.GasInfo = gasInfo
-
-	// Update & return response
-	response.CanStake = !(response.InsufficientBalance)
-	return &response, nil
-
+type nodeStakeRplContextFactory struct {
+	handler *NodeHandler
 }
 
-func getStakeApprovalGas(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveGasResponse, error) {
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
+func (f *nodeStakeRplContextFactory) Create(vars map[string]string) (*nodeStakeRplContext, error) {
+	c := &nodeStakeRplContext{
+		handler: f.handler,
 	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
+	inputErrs := []error{
+		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
 	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.NodeStakeRplApproveGasResponse{}
-
-	// Get staking contract address
-	rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get gas estimates
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := tokens.EstimateApproveRPLGas(rp, *rocketNodeStakingAddress, amountWei, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.GasInfo = gasInfo
-	return &response, nil
+	return c, errors.Join(inputErrs...)
 }
 
-func allowanceRpl(c *cli.Context) (*api.NodeStakeRplAllowanceResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.NodeStakeRplAllowanceResponse{}
-
-	// Get staking contract address
-	rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get node account
-	account, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get node's RPL allowance
-	allowance, err := tokens.GetRPLAllowance(rp, account.Address, *rocketNodeStakingAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	response.Allowance = allowance
-
-	return &response, nil
+func (f *nodeStakeRplContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*nodeStakeRplContext, api.NodeStakeRplData](
+		router, "stake-rpl", f, f.handler.serviceProvider,
+	)
 }
 
-func approveRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveResponse, error) {
+// ===============
+// === Context ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
+type nodeStakeRplContext struct {
+	handler     *NodeHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
 
-	// Response
-	response := api.NodeStakeRplApproveResponse{}
-
-	// Get staking contract address
-	rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Approve RPL allowance
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-	hash, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	response.ApproveTxHash = hash
-
-	// Return response
-	return &response, nil
-
+	amount    *big.Int
+	rpl       *tokens.TokenRpl
+	nsAddress common.Address
+	node      *node.Node
+	balance   *big.Int
+	allowance *big.Int
 }
 
-func waitForApprovalAndStakeRpl(c *cli.Context, amountWei *big.Int, hash common.Hash) (*api.NodeStakeRplStakeResponse, error) {
+func (c *nodeStakeRplContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Wait for the RPL approval TX to successfully get included in a block
-	_, err = utils.WaitForTransaction(rp.Client, hash)
+	// Bindings
+	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
 	}
-
-	// Perform the stake
-	return stakeRpl(c, amountWei)
-
+	c.rpl, err = tokens.NewTokenRpl(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating RPL binding: %w", err)
+	}
+	rns, err := c.rp.GetContract(rocketpool.ContractName_RocketNodeStaking)
+	if err != nil {
+		return fmt.Errorf("error creating RocketNodeStaking binding: %w", err)
+	}
+	c.nsAddress = *rns.Address
+	return nil
 }
 
-func stakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplStakeResponse, error) {
+func (c *nodeStakeRplContext) GetState(mc *batch.MultiCaller) {
+	c.rpl.BalanceOf(mc, &c.balance, c.nodeAddress)
+	c.rpl.GetAllowance(mc, &c.allowance, c.nodeAddress, c.nsAddress)
+}
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
+func (c *nodeStakeRplContext) PrepareData(data *api.NodeStakeRplData, opts *bind.TransactOpts) error {
+	data.InsufficientBalance = (c.amount.Cmp(c.balance) > 0)
+	data.Allowance = c.allowance
+	data.CanStake = !(data.InsufficientBalance)
 
-	// Response
-	response := api.NodeStakeRplStakeResponse{}
+	if data.CanStake {
+		// Check allowance
+		if c.amount.Cmp(c.allowance) > 0 {
+			approvalAmount := big.NewInt(0).Sub(c.amount, c.allowance)
+			txInfo, err := c.rpl.Approve(c.nsAddress, approvalAmount, opts)
+			if err != nil {
+				return fmt.Errorf("error getting TX info to approve increasing RPL's allowance: %w", err)
+			}
+			data.ApproveTxInfo = txInfo
+		}
 
-	// Stake RPL
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
+		txInfo, err := c.node.StakeRpl(c.amount, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for StakeRpl: %w", err)
+		}
+		data.StakeTxInfo = txInfo
 	}
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-	hash, err := node.StakeRPL(rp, amountWei, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	response.StakeTxHash = hash
-
-	// Return response
-	return &response, nil
-
+	return nil
 }

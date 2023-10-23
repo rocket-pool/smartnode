@@ -1,88 +1,75 @@
 package node
 
 import (
+	"errors"
 	"fmt"
 	_ "time/tzdata"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canSetTimezoneLocation(c *cli.Context, timezoneLocation string) (*api.CanSetNodeTimezoneResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.CanSetNodeTimezoneResponse{}
-
-	// Get gas estimate
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := node.EstimateSetTimezoneLocationGas(rp, timezoneLocation, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.GasInfo = gasInfo
-	response.CanSet = true
-	return &response, nil
-
+type nodeSetTimezoneContextFactory struct {
+	handler *NodeHandler
 }
 
-func setTimezoneLocation(c *cli.Context, timezoneLocation string) (*api.SetNodeTimezoneResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
+func (f *nodeSetTimezoneContextFactory) Create(vars map[string]string) (*nodeSetTimezoneContext, error) {
+	c := &nodeSetTimezoneContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	inputErrs := []error{
+		server.ValidateArg("timezone-location", vars, input.ValidateTimezoneLocation, &c.timezoneLocation),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *nodeSetTimezoneContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*nodeSetTimezoneContext, api.NodeSetTimezoneData](
+		router, "set-timezone", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type nodeSetTimezoneContext struct {
+	handler *NodeHandler
+
+	timezoneLocation string
+}
+
+func (c *nodeSetTimezoneContext) PrepareData(data *api.NodeSetTimezoneData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	rp := sp.GetRocketPool()
+	nodeAddress, _ := sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rp, err := services.GetRocketPool(c)
+
+	// Bindings
+	node, err := node.NewNode(rp, nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating node binding: %w", err)
 	}
 
-	// Response
-	response := api.SetNodeTimezoneResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	data.CanSet = true
+	data.TxInfo, err = node.SetTimezoneLocation(c.timezoneLocation, opts)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error getting TX info for SetTimezoneLocation: %w", err)
 	}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
-	// Set timezone location
-	hash, err := node.SetTimezoneLocation(rp, timezoneLocation, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
-
+	return nil
 }
