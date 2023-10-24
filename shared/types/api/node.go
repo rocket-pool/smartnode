@@ -13,27 +13,38 @@ import (
 )
 
 type NodeStatusData struct {
-	AccountAddress                    common.Address `json:"accountAddress"`
-	AccountAddressFormatted           string         `json:"accountAddressFormatted"`
-	WithdrawalAddress                 common.Address `json:"withdrawalAddress"`
-	WithdrawalAddressFormatted        string         `json:"withdrawalAddressFormatted"`
-	PendingWithdrawalAddress          common.Address `json:"pendingWithdrawalAddress"`
-	PendingWithdrawalAddressFormatted string         `json:"pendingWithdrawalAddressFormatted"`
-	Registered                        bool           `json:"registered"`
-	Trusted                           bool           `json:"trusted"`
-	TimezoneLocation                  string         `json:"timezoneLocation"`
-	NodeBalances                      struct {
+	AccountAddress                           common.Address `json:"accountAddress"`
+	AccountAddressFormatted                  string         `json:"accountAddressFormatted"`
+	PrimaryWithdrawalAddress                 common.Address `json:"primaryWithdrawalAddress"`
+	PrimaryWithdrawalAddressFormatted        string         `json:"primaryWithdrawalAddressFormatted"`
+	PendingPrimaryWithdrawalAddress          common.Address `json:"pendingWithdrawalAddress"`
+	PendingPrimaryWithdrawalAddressFormatted string         `json:"pendingWithdrawalAddressFormatted"`
+	IsRplWithdrawalAddressSet                bool           `json:"isRplWithdrawalAddressSet"`
+	RplWithdrawalAddress                     common.Address `json:"rplWithdrawalAddress"`
+	RplWithdrawalAddressFormatted            string         `json:"rplWithdrawalAddressFormatted"`
+	PendingRplWithdrawalAddress              common.Address `json:"pendingRplWithdrawalAddress"`
+	PendingRplWithdrawalAddressFormatted     string         `json:"pendingRplWithdrawalAddressFormatted"`
+	Registered                               bool           `json:"registered"`
+	Trusted                                  bool           `json:"trusted"`
+	TimezoneLocation                         string         `json:"timezoneLocation"`
+	NodeBalances                             struct {
 		Eth   *big.Int `json:"eth"`
 		Reth  *big.Int `json:"reth"`
 		Rpl   *big.Int `json:"rpl"`
 		Fsrpl *big.Int `json:"fsrpl"`
 	} `json:"nodeBalances"`
-	WithdrawalBalances struct {
+	PrimaryWithdrawalBalances struct {
 		Eth   *big.Int `json:"eth"`
 		Reth  *big.Int `json:"reth"`
 		Rpl   *big.Int `json:"rpl"`
 		Fsrpl *big.Int `json:"fsrpl"`
-	} `json:"withdrawalBalances"`
+	} `json:"primaryWithdrawalBalances"`
+	RplWithdrawalBalances struct {
+		Eth   *big.Int `json:"eth"`
+		Reth  *big.Int `json:"reth"`
+		Rpl   *big.Int `json:"rpl"`
+		Fsrpl *big.Int `json:"fsrpl"`
+	} `json:"rplWithdrawalBalances"`
 	RplStake                       *big.Int       `json:"rplStake"`
 	EffectiveRplStake              *big.Int       `json:"effectiveRplStake"`
 	MinimumRplStake                *big.Int       `json:"minimumRplStake"`
@@ -53,16 +64,14 @@ type NodeStatusData struct {
 	PendingMatchAmount             *big.Int       `json:"pendingMatchAmount"`
 	CreditBalance                  *big.Int       `json:"creditBalance"`
 	MinipoolCounts                 struct {
-		Total               int `json:"total"`
-		Initialized         int `json:"initialized"`
-		Prelaunch           int `json:"prelaunch"`
-		Staking             int `json:"staking"`
-		Withdrawable        int `json:"withdrawable"`
-		Dissolved           int `json:"dissolved"`
-		RefundAvailable     int `json:"refundAvailable"`
-		WithdrawalAvailable int `json:"withdrawalAvailable"`
-		CloseAvailable      int `json:"closeAvailable"`
-		Finalised           int `json:"finalised"`
+		Total           int `json:"total"`
+		Initialized     int `json:"initialized"`
+		Prelaunch       int `json:"prelaunch"`
+		Staking         int `json:"staking"`
+		Withdrawable    int `json:"withdrawable"`
+		Dissolved       int `json:"dissolved"`
+		RefundAvailable int `json:"refundAvailable"`
+		Finalised       int `json:"finalised"`
 	} `json:"minipoolCounts"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
 	FeeRecipientInfo            rp.FeeRecipientInfo       `json:"feeRecipientInfo"`
@@ -195,7 +204,7 @@ type NodeSyncProgressData struct {
 	BcStatus ClientManagerStatus `json:"bcStatus"`
 }
 
-type NodeRewardsData struct {
+type NodeGetRewardsData struct {
 	NodeRegistrationTime        time.Time             `json:"nodeRegistrationTime"`
 	RewardsInterval             time.Duration         `json:"rewardsInterval"`
 	LastCheckpoint              time.Time             `json:"lastCheckpoint"`

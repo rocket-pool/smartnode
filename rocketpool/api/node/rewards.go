@@ -1,723 +1,247 @@
 package node
 
 import (
-	"bytes"
 	"fmt"
 	"math"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
-	"github.com/rocket-pool/smartnode/shared/services/state"
+	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
+const (
+	nodeShareBatchSize int = 200
+)
 
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
+// ===============
+// === Factory ===
+// ===============
+
+type nodeGetRewardsContextFactory struct {
+	handler *NodeHandler
+}
+
+func (f *nodeGetRewardsContextFactory) Create(vars map[string]string) (*nodeGetRewardsContext, error) {
+	c := &nodeGetRewardsContext{
+		handler: f.handler,
 	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireEthClientSynced(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+	return c, nil
+}
+
+func (f *nodeGetRewardsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*nodeGetRewardsContext, api.NodeGetRewardsData](
+		router, "get-rewards", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type nodeGetRewardsContext struct {
+	handler *NodeHandler
+}
+
+func (c *nodeGetRewardsContext) PrepareData(data *api.NodeGetRewardsData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	cfg := sp.GetConfig()
+	rp := sp.GetRocketPool()
+	ec := sp.GetEthClient()
+	bc := sp.GetBeaconClient()
+	nodeAddress, _ := sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.NodeRewardsResponse{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the event log interval
-	/*eventLogInterval, err := cfg.GetEventLogInterval()
-	if err != nil {
-		return nil, err
-	}*/
-
-	// Legacy contract addresses
-	//legacyRocketRewardsAddress := cfg.Smartnode.GetLegacyRewardsPoolAddress()
-	//legacyClaimNodeAddress := cfg.Smartnode.GetLegacyClaimNodeAddress()
-	//legacyClaimTrustedNodeAddress := cfg.Smartnode.GetLegacyClaimTrustedNodeAddress()
-
-	var totalEffectiveStake *big.Int
-	var totalRplSupply *big.Int
-	var inflationInterval *big.Int
-	var odaoSize uint64
-	var nodeOperatorRewardsPercent float64
-	var trustedNodeOperatorRewardsPercent float64
-	var totalDepositBalance float64
-	var totalNodeShare float64
-	var addresses []common.Address
-	var beaconHead beacon.BeaconHead
-
-	// Sync
-	var wg errgroup.Group
-
-	// Check if the node is registered or not
-	wg.Go(func() error {
-		exists, err := node.GetNodeExists(rp, nodeAccount.Address, nil)
-		if err == nil {
-			response.Registered = exists
-		}
 		return err
-	})
+	}
 
-	// Get the node registration time
-	wg.Go(func() error {
-		var time time.Time
-		var err error
-		time, err = node.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
+	// Bindings
+	rpl, err := tokens.NewTokenRpl(rp)
+	if err != nil {
+		return fmt.Errorf("error getting RPL token binding: %w", err)
+	}
+	pMgr, err := protocol.NewProtocolDaoManager(rp)
+	if err != nil {
+		return fmt.Errorf("error getting pDAO manager binding: %w", err)
+	}
 
-		if err == nil {
-			response.NodeRegistrationTime = time
+	// Details that aren't in the state
+	// TODO: add these to the state
+	var percentages protocol.RplRewardsPercentages
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		core.AddQueryablesToMulticall(mc,
+			rpl.TotalSupply,
+		)
+		pMgr.GetRewardsPercentages(mc, &percentages)
+		return nil
+	}, nil)
+
+	// This thing is so complex it's easier to just get the state snapshot and go from there
+	stateMgr, err := state.NewNetworkStateManager(rp, cfg, ec, bc, nil)
+	if err != nil {
+		return fmt.Errorf("error creating network state manager: %w", err)
+	}
+	mpMgr, err := minipool.NewMinipoolManager(rp)
+	if err != nil {
+		return fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+	state, totalEffectiveStake, err := stateMgr.GetHeadStateForNode(nodeAddress, true)
+	if err != nil {
+		return fmt.Errorf("error getting network state for node %s: %w", nodeAddress.Hex(), err)
+	}
+
+	// Some basic details
+	node := state.NodeDetailsByAddress[nodeAddress]
+	data.Registered = node.Exists
+	data.NodeRegistrationTime = time.Unix(int64(node.RegistrationTime.Uint64()), 0)
+	data.LastCheckpoint = state.NetworkDetails.IntervalStart
+	data.RewardsInterval = state.NetworkDetails.IntervalDuration
+	data.EffectiveRplStake = eth.WeiToEth(node.EffectiveRPLStake)
+	data.TotalRplStake = eth.WeiToEth(node.RplStake)
+	data.Trusted = false
+	for _, odaoDetails := range state.OracleDaoMemberDetails {
+		if odaoDetails.Address == nodeAddress {
+			data.Trusted = true
+			break
 		}
-		return err
-	})
+	}
 
-	// Get node trusted status
-	wg.Go(func() error {
-		trusted, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
-		if err == nil {
-			response.Trusted = trusted
-		}
-		return err
-	})
-
-	// Get claimed and pending rewards
-	wg.Go(func() error {
-		// Legacy rewards
-		unclaimedRplRewardsWei := big.NewInt(0)
-		rplRewards := big.NewInt(0)
-		// TEMP removal of the legacy rewards crawler for now, TODO performance improvements here
-		/*
-			rplRewards, err := legacyrewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimNodeAddress)*/
-		unclaimedEthRewardsWei := big.NewInt(0)
-		ethRewards := big.NewInt(0)
-
-		// Get the claimed and unclaimed intervals
-		unclaimed, claimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
+	// Rewards claim status
+	unclaimedRplRewards := big.NewInt(0)
+	unclaimedEthRewards := big.NewInt(0)
+	claimedRplRewards := big.NewInt(0)
+	claimedEthRewards := big.NewInt(0)
+	unclaimedODaoRplRewards := big.NewInt(0)
+	claimedODaoRplRewards := big.NewInt(0)
+	claimStatus, err := rprewards.GetClaimStatus(rp, nodeAddress, state.NetworkDetails.RewardIndex)
+	if err != nil {
+		return fmt.Errorf("error getting rewards claim status for node %s: %w", nodeAddress.Hex(), err)
+	}
+	for _, claimed := range claimStatus.Claimed {
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, claimed, nil)
 		if err != nil {
 			return err
 		}
-
-		// Get the info for each claimed interval
-		for _, claimedInterval := range claimed {
-			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval, nil)
-			if err != nil {
-				return err
-			}
-			if !intervalInfo.TreeFileExists {
-				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
-			}
-			rplRewards.Add(rplRewards, &intervalInfo.CollateralRplAmount.Int)
-			ethRewards.Add(ethRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
+		if !intervalInfo.TreeFileExists {
+			return fmt.Errorf("error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimed)
 		}
-
-		// Get the unclaimed rewards
-		for _, unclaimedInterval := range unclaimed {
-			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval, nil)
-			if err != nil {
-				return err
-			}
-			if !intervalInfo.TreeFileExists {
-				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
-			}
-			if intervalInfo.NodeExists {
-				unclaimedRplRewardsWei.Add(unclaimedRplRewardsWei, &intervalInfo.CollateralRplAmount.Int)
-				unclaimedEthRewardsWei.Add(unclaimedEthRewardsWei, &intervalInfo.SmoothingPoolEthAmount.Int)
-			}
-		}
-
-		if err == nil {
-			response.CumulativeRplRewards = eth.WeiToEth(rplRewards)
-			response.UnclaimedRplRewards = eth.WeiToEth(unclaimedRplRewardsWei)
-			response.CumulativeEthRewards = eth.WeiToEth(ethRewards)
-			response.UnclaimedEthRewards = eth.WeiToEth(unclaimedEthRewardsWei)
-		}
-		return err
-	})
-
-	// Get the start of the rewards checkpoint
-	wg.Go(func() error {
-		lastCheckpoint, err := rewards.GetClaimIntervalTimeStart(rp, nil)
-		if err == nil {
-			response.LastCheckpoint = lastCheckpoint
-		}
-		return err
-	})
-
-	// Get the rewards checkpoint interval
-	wg.Go(func() error {
-		rewardsInterval, err := rewards.GetClaimIntervalTime(rp, nil)
-		if err == nil {
-			response.RewardsInterval = rewardsInterval
-		}
-		return err
-	})
-
-	// Get the node's effective stake
-	wg.Go(func() error {
-		effectiveStake, err := node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
-		if err == nil {
-			response.EffectiveRplStake = eth.WeiToEth(effectiveStake)
-		}
-		return err
-	})
-
-	// Get the node's total stake
-	wg.Go(func() error {
-		stake, err := node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
-		if err == nil {
-			response.TotalRplStake = eth.WeiToEth(stake)
-		}
-		return err
-	})
-
-	// Get the total network effective stake
-	wg.Go(func() error {
-		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-		contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, nil)
-		if err != nil {
-			return fmt.Errorf("error creating network contract binding: %w", err)
-		}
-		totalEffectiveStake, err = rpstate.GetTotalEffectiveRplStake(rp, contracts)
-		if err != nil {
-			return fmt.Errorf("error getting total effective RPL stake: %w", err)
-		}
-		return nil
-	})
-
-	// Get the total RPL supply
-	wg.Go(func() error {
-		var err error
-		totalRplSupply, err = tokens.GetRPLTotalSupply(rp, nil)
+		claimedRplRewards.Add(claimedRplRewards, &intervalInfo.CollateralRplAmount.Int)
+		claimedODaoRplRewards.Add(claimedODaoRplRewards, &intervalInfo.ODaoRplAmount.Int)
+		claimedEthRewards.Add(claimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
+	}
+	for _, unclaimed := range claimStatus.Unclaimed {
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, unclaimed, nil)
 		if err != nil {
 			return err
 		}
-		return nil
-	})
-
-	// Get the RPL inflation interval
-	wg.Go(func() error {
-		var err error
-		inflationInterval, err = tokens.GetRPLInflationIntervalRate(rp, nil)
-		if err != nil {
-			return err
+		if !intervalInfo.TreeFileExists {
+			return fmt.Errorf("error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimed)
 		}
-		return nil
-	})
-
-	// Get the node operator rewards percent
-	wg.Go(func() error {
-		nodeOperatorRewardsPercentRaw, err := rewards.GetNodeOperatorRewardsPercent(rp, nil)
-		nodeOperatorRewardsPercent = eth.WeiToEth(nodeOperatorRewardsPercentRaw)
-		if err != nil {
-			return err
+		if intervalInfo.NodeExists {
+			unclaimedRplRewards.Add(unclaimedRplRewards, &intervalInfo.CollateralRplAmount.Int)
+			unclaimedODaoRplRewards.Add(unclaimedODaoRplRewards, &intervalInfo.ODaoRplAmount.Int)
+			unclaimedEthRewards.Add(unclaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
 		}
-		return nil
-	})
-
-	// Get the list of minipool addresses for this node
-	wg.Go(func() error {
-		_addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAccount.Address, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting node minipool addresses: %w", err)
-		}
-		addresses = _addresses
-		return nil
-	})
-
-	// Get the beacon head
-	wg.Go(func() error {
-		_beaconHead, err := bc.GetBeaconHead()
-		if err != nil {
-			return fmt.Errorf("Error getting beacon chain head: %w", err)
-		}
-		beaconHead = _beaconHead
-		return nil
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
 	}
-
-	// Calculate the total deposits and corresponding beacon chain balance share
-	minipoolDetails, err := GetBeaconBalances(rp, bc, addresses, beaconHead, nil)
-	if err != nil {
-		return nil, err
-	}
-	for _, minipool := range minipoolDetails {
-		totalDepositBalance += eth.WeiToEth(minipool.NodeDeposit)
-		totalNodeShare += eth.WeiToEth(minipool.NodeBalance)
-	}
-	response.BeaconRewards = totalNodeShare - totalDepositBalance
+	data.CumulativeRplRewards = eth.WeiToEth(claimedRplRewards)
+	data.UnclaimedRplRewards = eth.WeiToEth(unclaimedRplRewards)
+	data.CumulativeTrustedRplRewards = eth.WeiToEth(claimedODaoRplRewards)
+	data.UnclaimedTrustedRplRewards = eth.WeiToEth(unclaimedODaoRplRewards)
+	data.CumulativeEthRewards = eth.WeiToEth(claimedEthRewards)
+	data.UnclaimedEthRewards = eth.WeiToEth(unclaimedEthRewards)
 
 	// Calculate the estimated rewards
-	rewardsIntervalDays := response.RewardsInterval.Seconds() / (60 * 60 * 24)
-	inflationPerDay := eth.WeiToEth(inflationInterval)
-	totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * eth.WeiToEth(totalRplSupply)
+	rewardsIntervalDays := data.RewardsInterval.Seconds() / (60 * 60 * 24)
+	inflationPerDay := eth.WeiToEth(state.NetworkDetails.RPLInflationIntervalRate)
+	totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * eth.WeiToEth(rpl.TotalSupply.Get())
 	if totalRplAtNextCheckpoint < 0 {
 		totalRplAtNextCheckpoint = 0
 	}
-
 	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
-		response.EstimatedRewards = response.EffectiveRplStake / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
+		data.EstimatedRewards = data.EffectiveRplStake / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * eth.WeiToEth(percentages.NodePercentage)
+	}
+	if data.Trusted {
+		data.EstimatedTrustedRplRewards = totalRplAtNextCheckpoint * eth.WeiToEth(percentages.OdaoPercentage) / float64(len(state.OracleDaoMemberDetails))
 	}
 
-	if response.Trusted {
+	// Get the Beacon rewards
+	epoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
+	var totalDepositBalance float64
+	var totalNodeShare float64
+	mps := state.MinipoolDetailsByNode[nodeAddress]
+	mpsToCalcNodeShareFor := []*minipool.MinipoolCommon{}
+	beaconBalances := []*big.Int{}
+	for _, mpd := range mps {
+		mp, err := mpMgr.NewMinipoolFromVersion(mpd.MinipoolAddress, mpd.Version)
+		if err != nil {
+			return fmt.Errorf("error creating binding for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+		}
+		validator := state.ValidatorDetails[mpd.Pubkey]
+		blockBalance := eth.GweiToWei(float64(validator.Balance))
 
-		var wg2 errgroup.Group
+		// Data
+		status := mpd.Status
+		nodeDepositBalance := mpd.NodeDepositBalance
+		finalized := mpd.Finalised
 
-		// Get cumulative ODAO rewards
-		wg2.Go(func() error {
-			// Legacy rewards
-			unclaimedRplRewardsWei := big.NewInt(0)
-			rplRewards := big.NewInt(0)
-			// TODO: PERFORMANCE IMPROVEMENTS
-			//rplRewards, err := legacyrewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimTrustedNodeAddress)
-
-			// Get the claimed and unclaimed intervals
-			unclaimed, claimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
-			if err != nil {
-				return err
-			}
-
-			// Get the info for each claimed interval
-			for _, claimedInterval := range claimed {
-				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval, nil)
-				if err != nil {
-					return err
-				}
-				if !intervalInfo.TreeFileExists {
-					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
-				}
-				rplRewards.Add(rplRewards, &intervalInfo.ODaoRplAmount.Int)
-			}
-
-			// Get the unclaimed rewards
-			for _, unclaimedInterval := range unclaimed {
-				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval, nil)
-				if err != nil {
-					return err
-				}
-				if !intervalInfo.TreeFileExists {
-					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
-				}
-				if intervalInfo.NodeExists {
-					unclaimedRplRewardsWei.Add(unclaimedRplRewardsWei, &intervalInfo.ODaoRplAmount.Int)
-				}
-			}
-
-			if err == nil {
-				response.CumulativeTrustedRplRewards = eth.WeiToEth(rplRewards)
-				response.UnclaimedTrustedRplRewards = eth.WeiToEth(unclaimedRplRewardsWei)
-			}
-			return err
-		})
-
-		// Get the ODAO member count
-		wg2.Go(func() error {
-			var err error
-			odaoSize, err = trustednode.GetMemberCount(rp, nil)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-
-		// Get the trusted node operator rewards percent
-		wg2.Go(func() error {
-			trustedNodeOperatorRewardsPercentRaw, err := rewards.GetTrustedNodeOperatorRewardsPercent(rp, nil)
-			trustedNodeOperatorRewardsPercent = eth.WeiToEth(trustedNodeOperatorRewardsPercentRaw)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-
-		// Get the node's oDAO RPL stake
-		wg2.Go(func() error {
-			bond, err := trustednode.GetMemberRPLBondAmount(rp, nodeAccount.Address, nil)
-			if err == nil {
-				response.TrustedRplBond = eth.WeiToEth(bond)
-			}
-			return err
-		})
-
-		// Wait for data
-		if err := wg2.Wait(); err != nil {
-			return nil, err
+		// Deal with pools that haven't received deposits yet so their balance is still 0
+		if nodeDepositBalance == nil {
+			nodeDepositBalance = big.NewInt(0)
 		}
 
-		response.EstimatedTrustedRplRewards = totalRplAtNextCheckpoint * trustedNodeOperatorRewardsPercent / float64(odaoSize)
-
-	}
-
-	// Return response
-	return &response, nil
-
-}
-
-// Settings
-const MinipoolBalanceDetailsBatchSize = 20
-
-// Beacon chain balance info for a minipool
-type minipoolBalanceDetails struct {
-	IsStaking    bool
-	NodeDeposit  *big.Int
-	NodeBalance  *big.Int
-	TotalBalance *big.Int
-}
-
-// Get an eth2 epoch number by time
-func EpochAt(config beacon.Eth2Config, time uint64) uint64 {
-	return config.GenesisEpoch + (time-config.GenesisTime)/config.SecondsPerEpoch
-}
-
-// Get the balances of the minipools on the beacon chain
-func GetBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
-
-	// Get minipool validator statuses
-	validators, err := GetMinipoolValidators(rp, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &beaconHead.Epoch})
-	if err != nil {
-		return []minipoolBalanceDetails{}, err
-	}
-
-	// Load details in batches
-	details := make([]minipoolBalanceDetails, len(addresses))
-	for bsi := 0; bsi < len(addresses); bsi += MinipoolBalanceDetailsBatchSize {
-
-		// Get batch start & end index
-		msi := bsi
-		mei := bsi + MinipoolBalanceDetailsBatchSize
-		if mei > len(addresses) {
-			mei = len(addresses)
-		}
-
-		// Load details
-		var wg errgroup.Group
-		for mi := msi; mi < mei; mi++ {
-			mi := mi
-			wg.Go(func() error {
-				address := addresses[mi]
-				validator := validators[address]
-				mpDetails, err := GetMinipoolBalanceDetails(rp, address, opts, validator, beaconHead.Epoch)
-				if err == nil {
-					details[mi] = mpDetails
-				}
-				return err
-			})
-		}
-		if err := wg.Wait(); err != nil {
-			return []minipoolBalanceDetails{}, err
-		}
-
-	}
-
-	// Return
-	return details, nil
-}
-
-// Get the balances of the minipools on the beacon chain
-func GetBeaconBalancesFromState(rp *rocketpool.RocketPool, mpds []*rpstate.NativeMinipoolDetails, state *state.NetworkState, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
-
-	// Load details in batches
-	details := make([]minipoolBalanceDetails, len(mpds))
-	for bsi := 0; bsi < len(mpds); bsi += MinipoolBalanceDetailsBatchSize {
-
-		// Get batch start & end index
-		msi := bsi
-		mei := bsi + MinipoolBalanceDetailsBatchSize
-		if mei > len(mpds) {
-			mei = len(mpds)
-		}
-
-		// Load details
-		var wg errgroup.Group
-		for mi := msi; mi < mei; mi++ {
-			mi := mi
-			wg.Go(func() error {
-				mpDetails, err := GetMinipoolBalanceDetailsFromState(rp, mpds[mi], state, opts, beaconHead.Epoch)
-				if err == nil {
-					details[mi] = mpDetails
-				}
-				return err
-			})
-		}
-		if err := wg.Wait(); err != nil {
-			return []minipoolBalanceDetails{}, err
-		}
-
-	}
-
-	// Return
-	return details, nil
-}
-
-// Get minipool balance details
-func GetMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, blockEpoch uint64) (minipoolBalanceDetails, error) {
-
-	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, opts)
-	if err != nil {
-		return minipoolBalanceDetails{}, err
-	}
-	blockBalance := eth.GweiToWei(float64(validator.Balance))
-
-	// Data
-	var wg errgroup.Group
-	var status types.MinipoolStatus
-	var nodeDepositBalance *big.Int
-	var finalized bool
-
-	// Load data
-	wg.Go(func() error {
-		var err error
-		status, err = mp.GetStatus(opts)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		nodeDepositBalance, err = mp.GetNodeDepositBalance(opts)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		finalized, err = mp.GetFinalised(opts)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return minipoolBalanceDetails{}, err
-	}
-
-	// Deal with pools that haven't received deposits yet so their balance is still 0
-	if nodeDepositBalance == nil {
-		nodeDepositBalance = big.NewInt(0)
-	}
-
-	// Ignore finalized minipools
-	if finalized {
-		return minipoolBalanceDetails{
-			NodeDeposit:  big.NewInt(0),
-			NodeBalance:  big.NewInt(0),
-			TotalBalance: big.NewInt(0),
-		}, nil
-	}
-
-	// Use node deposit balance if initialized or prelaunch
-	if status == types.Initialized || status == types.Prelaunch {
-		return minipoolBalanceDetails{
-			NodeDeposit:  nodeDepositBalance,
-			NodeBalance:  nodeDepositBalance,
-			TotalBalance: blockBalance,
-		}, nil
-	}
-
-	// Use node deposit balance if validator not yet active on beacon chain at block
-	if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
-		return minipoolBalanceDetails{
-			NodeDeposit:  nodeDepositBalance,
-			NodeBalance:  nodeDepositBalance,
-			TotalBalance: blockBalance,
-		}, nil
-	}
-
-	// Get node balance at block
-	nodeBalance, err := mp.CalculateNodeShare(blockBalance, opts)
-	if err != nil {
-		return minipoolBalanceDetails{}, err
-	}
-
-	// Return
-	return minipoolBalanceDetails{
-		IsStaking:    (validator.ExitEpoch > blockEpoch),
-		NodeDeposit:  nodeDepositBalance,
-		NodeBalance:  nodeBalance,
-		TotalBalance: blockBalance,
-	}, nil
-
-}
-
-// Get minipool balance details
-func GetMinipoolBalanceDetailsFromState(rp *rocketpool.RocketPool, mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, opts *bind.CallOpts, blockEpoch uint64) (minipoolBalanceDetails, error) {
-
-	// Create minipool
-	mp, err := minipool.NewMinipoolFromVersion(rp, mpd.MinipoolAddress, mpd.Version, opts)
-	if err != nil {
-		return minipoolBalanceDetails{}, err
-	}
-	validator := state.ValidatorDetails[mpd.Pubkey]
-	blockBalance := eth.GweiToWei(float64(validator.Balance))
-
-	// Data
-	status := mpd.Status
-	nodeDepositBalance := mpd.NodeDepositBalance
-	finalized := mpd.Finalised
-
-	// Deal with pools that haven't received deposits yet so their balance is still 0
-	if nodeDepositBalance == nil {
-		nodeDepositBalance = big.NewInt(0)
-	}
-
-	// Ignore finalized minipools
-	if finalized {
-		return minipoolBalanceDetails{
-			NodeDeposit:  big.NewInt(0),
-			NodeBalance:  big.NewInt(0),
-			TotalBalance: big.NewInt(0),
-		}, nil
-	}
-
-	// Use node deposit balance if initialized or prelaunch
-	if status == types.Initialized || status == types.Prelaunch {
-		return minipoolBalanceDetails{
-			NodeDeposit:  nodeDepositBalance,
-			NodeBalance:  nodeDepositBalance,
-			TotalBalance: blockBalance,
-		}, nil
-	}
-
-	// Use node deposit balance if validator not yet active on beacon chain at block
-	if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
-		return minipoolBalanceDetails{
-			NodeDeposit:  nodeDepositBalance,
-			NodeBalance:  nodeDepositBalance,
-			TotalBalance: blockBalance,
-		}, nil
-	}
-
-	// Get node balance at block
-	nodeBalance, err := mp.CalculateNodeShare(blockBalance, opts)
-	if err != nil {
-		return minipoolBalanceDetails{}, err
-	}
-
-	// Return
-	return minipoolBalanceDetails{
-		IsStaking:    (validator.ExitEpoch > blockEpoch),
-		NodeDeposit:  nodeDepositBalance,
-		NodeBalance:  nodeBalance,
-		TotalBalance: blockBalance,
-	}, nil
-
-}
-
-// Settings
-const MinipoolPubkeyBatchSize = 50
-
-// Get minipool validator statuses
-func GetMinipoolValidators(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, callOpts *bind.CallOpts, validatorStatusOpts *beacon.ValidatorStatusOptions) (map[common.Address]beacon.ValidatorStatus, error) {
-
-	// Load minipool validator pubkeys in batches
-	pubkeys := make([]types.ValidatorPubkey, len(addresses))
-	for bsi := 0; bsi < len(addresses); bsi += MinipoolPubkeyBatchSize {
-
-		// Get batch start & end index
-		msi := bsi
-		mei := bsi + MinipoolPubkeyBatchSize
-		if mei > len(addresses) {
-			mei = len(addresses)
-		}
-
-		// Load details
-		var wg errgroup.Group
-		for mi := msi; mi < mei; mi++ {
-			mi := mi
-			wg.Go(func() error {
-				address := addresses[mi]
-				pubkey, err := minipool.GetMinipoolPubkey(rp, address, callOpts)
-				if err == nil {
-					pubkeys[mi] = pubkey
-				}
-				return err
-			})
-		}
-		if err := wg.Wait(); err != nil {
-			return map[common.Address]beacon.ValidatorStatus{}, err
-		}
-
-	}
-
-	// Filter out null and duplicate pubkeys
-	filteredPubkeys := []types.ValidatorPubkey{}
-	for _, pubkey := range pubkeys {
-		if bytes.Equal(pubkey.Bytes(), types.ValidatorPubkey{}.Bytes()) {
+		// Ignore finalized minipools
+		if finalized {
 			continue
 		}
-		isDuplicate := false
-		for _, pk := range filteredPubkeys {
-			if bytes.Equal(pubkey.Bytes(), pk.Bytes()) {
-				isDuplicate = true
-				break
-			}
-		}
-		if isDuplicate {
+
+		// Use node deposit balance if initialized or prelaunch
+		if status == types.MinipoolStatus_Initialized || status == types.MinipoolStatus_Prelaunch {
+			totalDepositBalance += eth.WeiToEth(nodeDepositBalance)
+			totalNodeShare += eth.WeiToEth(nodeDepositBalance)
 			continue
 		}
-		filteredPubkeys = append(filteredPubkeys, pubkey)
-	}
 
-	// Get validator statuses
-	statuses, err := bc.GetValidatorStatuses(filteredPubkeys, validatorStatusOpts)
-	if err != nil {
-		return map[common.Address]beacon.ValidatorStatus{}, err
-	}
-
-	// Build validator map
-	validators := make(map[common.Address]beacon.ValidatorStatus)
-	for mi := 0; mi < len(addresses); mi++ {
-		address := addresses[mi]
-		pubkey := pubkeys[mi]
-		status, ok := statuses[pubkey]
-		if !ok {
-			status = beacon.ValidatorStatus{}
+		// Use node deposit balance if validator not yet active on beacon chain at block
+		if !validator.Exists || validator.ActivationEpoch >= epoch {
+			totalDepositBalance += eth.WeiToEth(nodeDepositBalance)
+			totalNodeShare += eth.WeiToEth(nodeDepositBalance)
+			continue
 		}
-		validators[address] = status
+
+		// Add this to the list of MPs to get the node share for
+		totalDepositBalance += eth.WeiToEth(nodeDepositBalance)
+		mpsToCalcNodeShareFor = append(mpsToCalcNodeShareFor, mp.Common())
+		beaconBalances = append(beaconBalances, blockBalance)
 	}
 
-	// Return
-	return validators, nil
+	// Get node shares in batches
+	nodeShares := make([]*big.Int, len(mpsToCalcNodeShareFor))
+	err = rp.BatchQuery(len(mpsToCalcNodeShareFor), nodeShareBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mpsToCalcNodeShareFor[i].CalculateNodeShare(mc, &nodeShares[i], beaconBalances[i])
+		return nil
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("error calculating node shares of beacon balances: %w", err)
+	}
 
+	// Sum up the node shares
+	for _, nodeShare := range nodeShares {
+		totalNodeShare += eth.WeiToEth(nodeShare)
+	}
+	data.BeaconRewards = totalNodeShare - totalDepositBalance
+	return nil
 }
