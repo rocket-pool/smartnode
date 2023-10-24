@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/smartnode/rocketpool/api/node"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/voting"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -60,14 +60,7 @@ func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, 
 	if err != nil {
 		return err
 	}
-
 	data.AccountAddress = nodeAddress
-
-	// Get snapshot proposals
-	snapshotResponse, err := node.GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
-	if err != nil {
-		return fmt.Errorf("error getting snapshot proposals: %w", err)
-	}
 
 	// Get delegate address
 	idHash := cfg.Smartnode.GetVotingSnapshotID()
@@ -79,12 +72,12 @@ func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, 
 		return fmt.Errorf("error getting voting delegate info: %w", err)
 	}
 
-	// Get voted proposals
-	votedProposals, err := node.GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAddress, data.VotingDelegate)
+	// Get snapshot proposals
+	snapshotResponse, err := voting.GetSnapshotProposals(cfg, data.AccountAddress, data.VotingDelegate, true)
 	if err != nil {
-		return fmt.Errorf("error getting proposal votes: %w", err)
+		return fmt.Errorf("error getting snapshot proposals: %w", err)
 	}
-	data.ProposalVotes = votedProposals.Data.Votes
-	data.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
+
+	data.ActiveSnapshotProposals = snapshotResponse
 	return nil
 }

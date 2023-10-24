@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
 type NetworkNodeFeeData struct {
@@ -56,10 +57,9 @@ type NetworkRewardsFileData struct {
 }
 
 type NetworkDaoProposalsData struct {
-	AccountAddress          common.Address         `json:"accountAddress"`
-	VotingDelegate          common.Address         `json:"votingDelegate"`
-	ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
-	ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
+	AccountAddress          common.Address                  `json:"accountAddress"`
+	VotingDelegate          common.Address                  `json:"votingDelegate"`
+	ActiveSnapshotProposals []*sharedtypes.SnapshotProposal `json:"activeSnapshotProposals"`
 }
 
 type NetworkLatestDelegateData struct {

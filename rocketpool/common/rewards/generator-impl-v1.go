@@ -18,6 +18,7 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -351,15 +352,21 @@ func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 	if err != nil {
 		return fmt.Errorf("error creating rewards pool binding: %w", err)
 	}
+	pMgr, err := protocol.NewProtocolDaoManager(r.rp)
+	if err != nil {
+		return fmt.Errorf("error creating pDAO manager binding: %w", err)
+	}
 
 	// Get the state
-	err = r.rp.Query(nil, r.opts,
-		rewardsPool.PendingRplRewards,
-		rewardsPool.NodeOperatorRewardsPercent,
-		rewardsPool.OracleDaoRewardsPercent,
-		rewardsPool.ProtocolDaoRewardsPercent,
-		rewardsPool.IntervalDuration,
-	)
+	var percentages protocol.RplRewardsPercentages
+	err = r.rp.Query(func(mc *batch.MultiCaller) error {
+		pMgr.GetRewardsPercentages(mc, &percentages)
+		core.AddQueryablesToMulticall(mc,
+			rewardsPool.PendingRplRewards,
+			rewardsPool.IntervalDuration,
+		)
+		return nil
+	}, r.opts)
 	if err != nil {
 		return fmt.Errorf("error getting rewards pool details: %w", err)
 	}
@@ -367,7 +374,7 @@ func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 	// Handle node operator rewards
 	snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
 	intervalDuration := rewardsPool.IntervalDuration.Formatted()
-	nodeOpPercent := rewardsPool.NodeOperatorRewardsPercent.Raw()
+	nodeOpPercent := percentages.NodePercentage
 	pendingRewards := rewardsPool.PendingRplRewards.Get()
 
 	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
@@ -509,7 +516,7 @@ func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 
 	// Handle Oracle DAO rewards
-	oDaoPercent := rewardsPool.OracleDaoRewardsPercent.Raw()
+	oDaoPercent := percentages.OdaoPercentage
 	totalODaoRewards := big.NewInt(0)
 	totalODaoRewards.Mul(pendingRewards, oDaoPercent)
 	totalODaoRewards.Div(totalODaoRewards, eth.EthToWei(1))
@@ -613,7 +620,7 @@ func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get expected Protocol DAO rewards
-	pDaoPercent := rewardsPool.ProtocolDaoRewardsPercent.Raw()
+	pDaoPercent := percentages.PdaoPercentage
 	pDaoRewards := sharedtypes.NewQuotedBigInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
 	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))

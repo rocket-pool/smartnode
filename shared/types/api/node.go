@@ -69,9 +69,8 @@ type NodeStatusData struct {
 	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
 	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
 	SnapshotResponse            struct {
-		Error                   string                 `json:"error"`
-		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
-		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
+		Error                   string                          `json:"error"`
+		ActiveSnapshotProposals []*sharedtypes.SnapshotProposal `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
 }
 
@@ -83,14 +82,27 @@ type NodeRegisterData struct {
 }
 
 type NodeSetPrimaryWithdrawalAddressData struct {
-	CanSet            bool                  ` json:"canSet"`
+	CanSet            bool                  `json:"canSet"`
 	AddressAlreadySet bool                  `json:"addressAlreadySet"`
 	TxInfo            *core.TransactionInfo `json:"txInfo"`
 }
 
 type NodeConfirmPrimaryWithdrawalAddressData struct {
 	CanConfirm              bool                  `json:"canConfirm"`
-	IncorrectPendingAddress bool                  `json:"IncorrectPendingAddress"`
+	IncorrectPendingAddress bool                  `json:"incorrectPendingAddress"`
+	TxInfo                  *core.TransactionInfo `json:"txInfo"`
+}
+
+type NodeSetRplWithdrawalAddressData struct {
+	CanSet            bool                  `json:"canSet"`
+	AddressAlreadySet bool                  `json:"addressAlreadySet"`
+	PrimaryAlreadySet bool                  `json:"primaryAlreadySet"`
+	TxInfo            *core.TransactionInfo `json:"txInfo"`
+}
+
+type NodeConfirmRplWithdrawalAddressData struct {
+	CanConfirm              bool                  `json:"canConfirm"`
+	IncorrectPendingAddress bool                  `json:"incorrectPendingAddress"`
 	TxInfo                  *core.TransactionInfo `json:"txInfo"`
 }
 
@@ -254,47 +266,14 @@ type NodeResolveEnsData struct {
 	FormattedName string         `json:"formattedName"`
 }
 
-type SnapshotProposal struct {
-	Id            string    `json:"id"`
-	Title         string    `json:"title"`
-	Start         int64     `json:"start"`
-	End           int64     `json:"end"`
-	State         string    `json:"state"`
-	Snapshot      string    `json:"snapshot"`
-	Author        string    `json:"author"`
-	Choices       []string  `json:"choices"`
-	Scores        []float64 `json:"scores"`
-	ScoresTotal   float64   `json:"scores_total"`
-	ScoresUpdated int64     `json:"scores_updated"`
-	Quorum        float64   `json:"quorum"`
-	Link          string    `json:"link"`
-}
-type NodeSnapshotData struct {
-	Data struct {
-		Proposals []SnapshotProposal `json:"proposals"`
-	}
+type NodeGetSnapshotVotingPowerData struct {
+	VotingPower float64 `json:"votingPower"`
 }
 
-type SnapshotVotingPower struct {
-	Data struct {
-		Vp struct {
-			Vp float64 `json:"vp"`
-		} `json:"vp"`
-	} `json:"data"`
+type NodeGetSnapshotProposalsData struct {
+	Proposals []*sharedtypes.SnapshotProposal `json:"proposals"`
 }
-type SnapshotProposalVote struct {
-	Choice   interface{}    `json:"choice"`
-	Voter    common.Address `json:"voter"`
-	Proposal struct {
-		Id    string `json:"id"`
-		State string `json:"state"`
-	} `json:"proposal"`
-}
-type NodeSnapshotVotedProposalsData struct {
-	Data struct {
-		Votes []SnapshotProposalVote `json:"votes"`
-	} `json:"data"`
-}
+
 type NodeSmoothingRewardsData struct {
 	EthBalance *big.Int `json:"eth_balance"`
 }
