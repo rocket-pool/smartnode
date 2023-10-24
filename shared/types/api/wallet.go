@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -17,36 +17,23 @@ type ValidatorKeystore struct {
 	Pubkey  types.ValidatorPubkey  `json:"pubkey"`
 }
 
-type WalletStatusResponse struct {
-	Status            string         `json:"status"`
-	Error             string         `json:"error"`
+type WalletStatusData struct {
 	PasswordSet       bool           `json:"passwordSet"`
 	WalletInitialized bool           `json:"walletInitialized"`
 	AccountAddress    common.Address `json:"accountAddress"`
 }
 
-type SetPasswordResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
-}
-
-type InitWalletResponse struct {
-	Status         string         `json:"status"`
-	Error          string         `json:"error"`
+type WalletInitData struct {
 	Mnemonic       string         `json:"mnemonic"`
 	AccountAddress common.Address `json:"accountAddress"`
 }
 
-type RecoverWalletResponse struct {
-	Status         string                  `json:"status"`
-	Error          string                  `json:"error"`
+type WalletRecoverData struct {
 	AccountAddress common.Address          `json:"accountAddress"`
 	ValidatorKeys  []types.ValidatorPubkey `json:"validatorKeys"`
 }
 
-type SearchAndRecoverWalletResponse struct {
-	Status         string                  `json:"status"`
-	Error          string                  `json:"error"`
+type WalletSearchAndRecoverData struct {
 	FoundWallet    bool                    `json:"foundWallet"`
 	AccountAddress common.Address          `json:"accountAddress"`
 	DerivationPath string                  `json:"derivationPath"`
@@ -54,37 +41,23 @@ type SearchAndRecoverWalletResponse struct {
 	ValidatorKeys  []types.ValidatorPubkey `json:"validatorKeys"`
 }
 
-type RebuildWalletResponse struct {
-	Status        string                  `json:"status"`
-	Error         string                  `json:"error"`
+type WalletRebuildData struct {
 	ValidatorKeys []types.ValidatorPubkey `json:"validatorKeys"`
 }
 
-type ExportWalletResponse struct {
-	Status            string `json:"status"`
-	Error             string `json:"error"`
+type WalletExportData struct {
 	Password          string `json:"password"`
 	Wallet            string `json:"wallet"`
 	AccountPrivateKey string `json:"accountPrivateKey"`
 }
 
-type SetEnsNameResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	Address common.Address     `json:"address"`
-	EnsName string             `json:"ensName"`
-	TxHash  common.Hash        `json:"txHash"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+type WalletSetEnsNameData struct {
+	Address common.Address        `json:"address"`
+	EnsName string                `json:"ensName"`
+	TxInfo  *core.TransactionInfo `json:"txInfo"`
 }
 
-type TestMnemonicResponse struct {
-	Status           string         `json:"status"`
-	Error            string         `json:"error"`
+type WalletTestMnemonicData struct {
 	CurrentAddress   common.Address `json:"currentAddress"`
 	RecoveredAddress common.Address `json:"recoveredAddress"`
-}
-
-type PurgeResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
 }

@@ -225,10 +225,11 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	}
 
 	// Get the next available validator key without saving it
-	validatorKey, err := c.w.GetNextValidatorKey()
+	validatorKey, index, err := c.w.GetNextValidatorKey()
 	if err != nil {
 		return fmt.Errorf("error getting next available validator key: %w", err)
 	}
+	data.Index = index
 
 	// Get the next minipool address
 	var minipoolAddress common.Address

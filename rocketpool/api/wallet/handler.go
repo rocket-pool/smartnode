@@ -1,11 +1,35 @@
 package wallet
 
 import (
+	"github.com/gorilla/mux"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
+
+type WalletHandler struct {
+	serviceProvider *services.ServiceProvider
+	factories       []server.IContextFactory
+}
+
+func NewWalletHandler(serviceProvider *services.ServiceProvider) *WalletHandler {
+	h := &WalletHandler{
+		serviceProvider: serviceProvider,
+	}
+	h.factories = []server.IContextFactory{
+		&walletCreateValidatorKeyContextFactory{h},
+		&walletSetEnsNameContextFactory{h},
+	}
+	return h
+}
+
+func (h *WalletHandler) RegisterRoutes(router *mux.Router) {
+	for _, factory := range h.factories {
+		factory.RegisterRoute(router)
+	}
+}
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
@@ -14,24 +38,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage the node wallet",
 		Subcommands: []cli.Command{
-			{
-				Name:      "create-next-pubkey",
-				Aliases:   []string{"s"},
-				Usage:     "Creates the next available pubkey for the node wallet, saves it, and updates the wallet on disk",
-				UsageText: "rocketpool api wallet create-next-pubkey",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(createNextPubkey(c))
-					return nil
-
-				},
-			},
 
 			{
 				Name:      "status",

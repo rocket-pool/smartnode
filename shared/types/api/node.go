@@ -164,6 +164,7 @@ type NodeDepositData struct {
 	InConsensus                      bool                    `json:"inConsensus"`
 	MinipoolAddress                  common.Address          `json:"minipoolAddress"`
 	ValidatorPubkey                  rptypes.ValidatorPubkey `json:"validatorPubkey"`
+	Index                            uint                    `json:"index"`
 	ScrubPeriod                      time.Duration           `json:"scrubPeriod"`
 	TxInfo                           *core.TransactionInfo   `json:"txInfo"`
 }

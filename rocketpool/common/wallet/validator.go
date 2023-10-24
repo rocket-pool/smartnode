@@ -84,6 +84,7 @@ func (w *LocalWallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
+	w.keystoreManager.Save()
 
 	// Return validator key
 	return key, nil
@@ -139,10 +140,10 @@ func (w *LocalWallet) DeleteValidatorStores() error {
 }
 
 // Returns the next validator key that will be generated without saving it
-func (w *LocalWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
+func (w *LocalWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, uint, error) {
 	err := w.checkIfReady()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Get account index
@@ -152,11 +153,11 @@ func (w *LocalWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
 	// Get validator key
 	key, _, err := w.getValidatorPrivateKey(index)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Return validator key
-	return key, nil
+	return key, index, nil
 }
 
 // Recover a set of validator keys by their public key
@@ -203,6 +204,7 @@ func (w *LocalWallet) SaveValidatorKey(key ValidatorKey) error {
 			return fmt.Errorf("could not store validator key %s in %s keystore: %w", key.PublicKey.Hex(), name, err)
 		}
 	}
+	w.keystoreManager.Save()
 
 	// Return
 	return nil
@@ -248,6 +250,7 @@ func (w *LocalWallet) RecoverValidatorKey(pubkey types.ValidatorPubkey, startInd
 			return 0, fmt.Errorf("error storing %s validator key: %w", name, err)
 		}
 	}
+	w.keystoreManager.Save()
 
 	// Return
 	return index + startIndex, nil
