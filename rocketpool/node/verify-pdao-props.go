@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol/voting"
@@ -96,7 +95,7 @@ func newVerifyPdaoProps(c *cli.Context, logger log.ColorLogger) (*verifyPdaoProp
 	// Get the node account
 	account, err := w.GetNodeAccount()
 	if err != nil {
-		return fmt.Errorf("error getting node account: %w", err)
+		return nil, fmt.Errorf("error getting node account: %w", err)
 	}
 
 	// Return task
@@ -120,6 +119,7 @@ func newVerifyPdaoProps(c *cli.Context, logger log.ColorLogger) (*verifyPdaoProp
 	}, nil
 }
 
+/*
 // Verify pDAO proposals
 func (t *verifyPdaoProps) run(state *state.NetworkState) error {
 
@@ -137,6 +137,7 @@ func (t *verifyPdaoProps) run(state *state.NetworkState) error {
 		return err
 	}
 
+	return nil
 }
 
 func (t *verifyPdaoProps) getChallengeableProposals(state *state.NetworkState) ([]dao.ProposalDetails, error) {
@@ -149,6 +150,7 @@ func (t *verifyPdaoProps) getChallengeableProposals(state *state.NetworkState) (
 	// Get the block and pollard for the proposal
 
 }
+*/
 
 func (t *verifyPdaoProps) checkDutiesForProposal(proposalDetails dao.ProposalDetails, headBlock uint64) error {
 	// Get the block to start scanning for new events
@@ -206,12 +208,14 @@ func (t *verifyPdaoProps) checkDutiesForProposal(proposalDetails dao.ProposalDet
 
 	// Update the start block cache for this proposal
 	//t.proposalEventStartBlockMap[proposalDetails.ID] = big.NewInt(0).Add(endBlock, common.Big1)
+	return nil
 }
 
 func (t *verifyPdaoProps) handleOwnProposal(details dao.ProposalDetails, rseLookup map[*big.Int]voting.RootSubmitted, ceLookup map[*big.Int]voting.ChallengeSubmitted) error {
-
+	return nil
 }
 
 func (t *verifyPdaoProps) getProposalsInChallengeWindow(state *state.NetworkState) ([]dao.ProposalDetails, error) {
 	// TODO
+	return nil, nil
 }

@@ -434,35 +434,35 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
 			config.Network_Prater:  "https://goerli.etherscan.io/tx",
-			config.Network_Devnet:  "https://goerli.etherscan.io/tx",
+			config.Network_Devnet:  "https://holesky.etherscan.io/tx",
 			config.Network_Holesky: "https://holesky.etherscan.io/tx",
 		},
 
 		stakeUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://stake.rocketpool.net",
-			config.Network_Prater:  "https://testnet.rocketpool.net",
+			config.Network_Prater:  "https://goerli.rocketpool.net",
 			config.Network_Devnet:  "TBD",
-			config.Network_Holesky: "TBD",
+			config.Network_Holesky: "https://testnet.rocketpool.net",
 		},
 
 		chainID: map[config.Network]uint{
 			config.Network_Mainnet: 1,     // Mainnet
 			config.Network_Prater:  5,     // Goerli
-			config.Network_Devnet:  5,     // Also goerli
+			config.Network_Devnet:  17000, // Holesky
 			config.Network_Holesky: 17000, // Holesky
 		},
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			config.Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
-			config.Network_Devnet:  "0x6A18E47f8CcB453Dd0894AC003f74BEE7e47A368",
+			config.Network_Devnet:  "0x24503C4f4CEfCfa2d3930Ec7C8CFD44a78c7a25E",
 			config.Network_Holesky: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
 			config.Network_Prater:  "0x5e932688e81a182e3de211db6544f98b8e4f89c7",
-			config.Network_Devnet:  "0x09b6aEF57B580f5CB46746BA59ed312Ba80E8Ad4",
+			config.Network_Devnet:  "0x60AD78075524eCadA707a2fC7E67024f7F30E3D9",
 			config.Network_Holesky: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
@@ -476,14 +476,14 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
 			config.Network_Prater:  "0x178E141a0E3b34152f73Ff610437A7bf9B83267A",
-			config.Network_Devnet:  "0x2DF914425da6d0067EF1775AfDBDd7B24fc8100E",
+			config.Network_Devnet:  "0xC932ca658b00DDD1EaA5EeB3BDEc7d7825567255",
 			config.Network_Holesky: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
 		v1_0_0_RewardsPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
 			config.Network_Prater:  "0xf9aE18eB0CE4930Bc3d7d1A5E33e4286d4FB0f8B",
-			config.Network_Devnet:  "0x4A1b5Ab9F6C36E7168dE5F994172028Ca8554e02",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
 
@@ -579,21 +579,21 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		polygonPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1029Ac2Be4e08516697093e2AFeC435057f3511",
 			config.Network_Prater:  "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
-			config.Network_Devnet:  "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
 
 		arbitrumPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x05330300f829AD3fC8f33838BC88CFC4093baD53",
 			config.Network_Prater:  "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
-			config.Network_Devnet:  "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
 
 		zkSyncEraPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8",
 			config.Network_Prater:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
-			config.Network_Devnet:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
 
@@ -607,28 +607,28 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
 			config.Network_Prater:  "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
-			config.Network_Devnet:  "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
+			config.Network_Devnet:  "0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d",
 			config.Network_Holesky: "0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d",
 		},
 
 		multicallAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
 			config.Network_Prater:  "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Devnet:  "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
+			config.Network_Devnet:  "0x0540b786f03c9491f3a2ab4b0e3ae4ecd4f63ce7",
 			config.Network_Holesky: "0x0540b786f03c9491f3a2ab4b0e3ae4ecd4f63ce7",
 		},
 
 		balancebatcherAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
 			config.Network_Prater:  "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
-			config.Network_Devnet:  "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
+			config.Network_Devnet:  "0xfAa2e7C84eD801dd9D27Ac1ed957274530796140",
 			config.Network_Holesky: "0xfAa2e7C84eD801dd9D27Ac1ed957274530796140",
 		},
 
 		flashbotsProtectUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://rpc.flashbots.net/",
 			config.Network_Prater:  "https://rpc-goerli.flashbots.net/",
-			config.Network_Devnet:  "https://rpc-goerli.flashbots.net/",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
 	}
@@ -931,11 +931,15 @@ func getNetworkOptions() []config.ParameterOption {
 			Name:        "Ethereum Mainnet",
 			Description: "This is the real Ethereum main network, using real ETH and real RPL to make real validators.",
 			Value:       config.Network_Mainnet,
-		}, {
-			Name:        "Prater Testnet",
-			Description: "This is the Prater test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to Mainnet.",
-			Value:       config.Network_Prater,
-		}, {
+		},
+		/*
+			{
+				Name:        "Prater Testnet",
+				Description: "This is the Prater test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to Mainnet.",
+				Value:       config.Network_Prater,
+			},
+		*/
+		{
 			Name:        "Holesky Testnet",
 			Description: "This is the Holešky (Holešovice) test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to Mainnet.",
 			Value:       config.Network_Holesky,
@@ -945,7 +949,7 @@ func getNetworkOptions() []config.ParameterOption {
 	if strings.HasSuffix(shared.RocketPoolVersion, "-dev") {
 		options = append(options, config.ParameterOption{
 			Name:        "Devnet",
-			Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to Prater or Holesky for staging. You should not use this network unless invited to do so by the developers.",
+			Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to Holesky for staging. You should not use this network unless invited to do so by the developers.",
 			Value:       config.Network_Devnet,
 		})
 	}
