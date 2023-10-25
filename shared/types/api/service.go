@@ -2,15 +2,11 @@ package api
 
 import "github.com/ethereum/go-ethereum/common"
 
-type TerminateDataFolderResponse struct {
-	Status        string `json:"status"`
-	Error         string `json:"error"`
-	FolderExisted bool   `json:"folderExisted"`
+type ServiceTerminateDataFolderData struct {
+	FolderExisted bool `json:"folderExisted"`
 }
 
-type CreateFeeRecipientFileResponse struct {
-	Status      string         `json:"status"`
-	Error       string         `json:"error"`
+type ServiceCreateFeeRecipientFileData struct {
 	Distributor common.Address `json:"distributor"`
 }
 
@@ -30,14 +26,7 @@ type ClientManagerStatus struct {
 	FallbackClientStatus ClientStatus `json:"fallbackEcStatus"`
 }
 
-type ClientStatusResponse struct {
-	Status          string              `json:"status"`
-	Error           string              `json:"error"`
+type ServiceClientStatusData struct {
 	EcManagerStatus ClientManagerStatus `json:"ecManagerStatus"`
 	BcManagerStatus ClientManagerStatus `json:"bcManagerStatus"`
-}
-
-type RestartVcResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
 }

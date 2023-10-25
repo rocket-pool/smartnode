@@ -5,32 +5,61 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-const dataFolder string = "/.rocketpool/data"
+const (
+	dataFolder string = "/.rocketpool/data"
+)
+
+// ===============
+// === Factory ===
+// ===============
+
+type serviceTerminateDataFolderContextFactory struct {
+	handler *ServiceHandler
+}
+
+func (f *serviceTerminateDataFolderContextFactory) Create(vars map[string]string) (*serviceTerminateDataFolderContext, error) {
+	c := &serviceTerminateDataFolderContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
+
+func (f *serviceTerminateDataFolderContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*serviceTerminateDataFolderContext, api.ServiceTerminateDataFolderData](
+		router, "terminate-data-folder", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type serviceTerminateDataFolderContext struct {
+	handler *ServiceHandler
+}
 
 // Deletes the contents of the data folder including the wallet file, password file, and all validator keys.
 // Don't use this unless you have a very good reason to do it (such as switching from Prater to Mainnet).
-func terminateDataFolder(c *cli.Context) (*api.TerminateDataFolderResponse, error) {
-
-	// Response
-	response := api.TerminateDataFolderResponse{}
-
+func (c *serviceTerminateDataFolderContext) PrepareData(data *api.ServiceTerminateDataFolderData, opts *bind.TransactOpts) error {
 	// Check if it exists
 	_, err := os.Stat(dataFolder)
 	if os.IsNotExist(err) {
-		response.FolderExisted = false
-		return &response, nil
+		data.FolderExisted = false
+		return nil
 	}
-	response.FolderExisted = true
+	data.FolderExisted = true
 
 	// Traverse it
 	files, err := os.ReadDir(dataFolder)
 	if err != nil {
-		return nil, fmt.Errorf("error enumerating files: %w", err)
+		return fmt.Errorf("error enumerating files: %w", err)
 	}
 
 	// Delete the children
@@ -44,7 +73,7 @@ func terminateDataFolder(c *cli.Context) (*api.TerminateDataFolderResponse, erro
 				err = os.Remove(fullPath)
 			}
 			if err != nil {
-				return nil, fmt.Errorf("error removing [%s]: %w", file.Name(), err)
+				return fmt.Errorf("error removing [%s]: %w", file.Name(), err)
 			}
 		}
 	}
@@ -53,7 +82,7 @@ func terminateDataFolder(c *cli.Context) (*api.TerminateDataFolderResponse, erro
 	validatorsDir := filepath.Join(dataFolder, "validators")
 	files, err = os.ReadDir(validatorsDir)
 	if err != nil {
-		return nil, fmt.Errorf("error enumerating validator files: %w", err)
+		return fmt.Errorf("error enumerating validator files: %w", err)
 	}
 
 	// Delete the children
@@ -65,11 +94,9 @@ func terminateDataFolder(c *cli.Context) (*api.TerminateDataFolderResponse, erro
 			err = os.Remove(fullPath)
 		}
 		if err != nil {
-			return nil, fmt.Errorf("error removing [%s]: %w", file.Name(), err)
+			return fmt.Errorf("error removing [%s]: %w", file.Name(), err)
 		}
 	}
 
-	// Return response
-	return &response, nil
-
+	return nil
 }

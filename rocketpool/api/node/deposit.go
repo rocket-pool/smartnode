@@ -26,13 +26,13 @@ import (
 	ethpb "github.com/prysmaticlabs/prysm/v3/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/validator"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	rputils "github.com/rocket-pool/smartnode/rocketpool/utils/rp"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 	sharedutils "github.com/rocket-pool/smartnode/shared/utils/rp"
-	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 

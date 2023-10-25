@@ -200,11 +200,6 @@ type NodeBurnData struct {
 	TxInfo                 *core.TransactionInfo `json:"txInfo"`
 }
 
-type NodeSyncProgressData struct {
-	EcStatus ClientManagerStatus `json:"ecStatus"`
-	BcStatus ClientManagerStatus `json:"bcStatus"`
-}
-
 type NodeGetRewardsData struct {
 	NodeRegistrationTime        time.Time             `json:"nodeRegistrationTime"`
 	RewardsInterval             time.Duration         `json:"rewardsInterval"`

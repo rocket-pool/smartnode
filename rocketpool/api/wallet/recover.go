@@ -14,10 +14,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-const (
-	findIterations uint = 100000
-)
-
 // ===============
 // === Factory ===
 // ===============

@@ -3,37 +3,53 @@ package service
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/validator"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/validator"
-	"github.com/urfave/cli"
 )
 
-// Restarts the Validator client
-func restartVc(c *cli.Context) (*api.RestartVcResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	bc, err := services.GetBeaconClient(c)
+type serviceRestartVcContextFactory struct {
+	handler *ServiceHandler
+}
+
+func (f *serviceRestartVcContextFactory) Create(vars map[string]string) (*serviceRestartVcContext, error) {
+	c := &serviceRestartVcContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
+
+func (f *serviceRestartVcContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*serviceRestartVcContext, api.SuccessData](
+		router, "restart-vc", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type serviceRestartVcContext struct {
+	handler *ServiceHandler
+}
+
+func (c *serviceRestartVcContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	cfg := sp.GetConfig()
+	bc := sp.GetBeaconClient()
+	d := sp.GetDocker()
+
+	err := validator.RestartValidator(cfg, bc, nil, d)
 	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	d, err := services.GetDocker(c)
-	if err != nil {
-		return nil, err
+		return fmt.Errorf("error restarting validator client: %w", err)
 	}
 
-	// Response
-	response := api.RestartVcResponse{}
-
-	if err := validator.RestartValidator(cfg, bc, nil, d); err != nil {
-		return nil, fmt.Errorf("error restarting validator client: %w", err)
-	}
-
-	// Return response
-	return &response, nil
-
+	data.Success = true
+	return nil
 }

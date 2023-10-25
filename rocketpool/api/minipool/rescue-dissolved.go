@@ -15,10 +15,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 	rpbeacon "github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/validator"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/input"
-	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 // ===============

@@ -12,8 +12,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -31,20 +31,9 @@ func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.C
 
 		// Get validator container name & client type label
 		var containerName string
-		var clientTypeLabel string
+		clientTypeLabel := "validator"
 		if cfg.Smartnode.ProjectName.Value == "" {
 			return errors.New("Rocket Pool docker project name not set")
-		}
-		clientType, _ := bc.GetClientType()
-		switch clientType {
-		case beacon.SplitProcess:
-			containerName = cfg.Smartnode.ProjectName.Value.(string) + ValidatorContainerSuffix
-			clientTypeLabel = "validator"
-		case beacon.SingleProcess:
-			containerName = cfg.Smartnode.ProjectName.Value.(string) + BeaconContainerSuffix
-			clientTypeLabel = "beacon"
-		default:
-			return fmt.Errorf("Can't restart the validator, unknown client type '%d'", clientType)
 		}
 
 		// Log
@@ -112,21 +101,10 @@ func StopValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.Colo
 	if !cfg.IsNativeMode {
 
 		// Get validator container name & client type label
-		var containerName string
-		var clientTypeLabel string
+		containerName := cfg.Smartnode.ProjectName.Value.(string) + ValidatorContainerSuffix
+		clientTypeLabel := "validator"
 		if cfg.Smartnode.ProjectName.Value == "" {
 			return errors.New("Rocket Pool docker project name not set")
-		}
-		clientType, _ := bc.GetClientType()
-		switch clientType {
-		case beacon.SplitProcess:
-			containerName = cfg.Smartnode.ProjectName.Value.(string) + ValidatorContainerSuffix
-			clientTypeLabel = "validator"
-		case beacon.SingleProcess:
-			containerName = cfg.Smartnode.ProjectName.Value.(string) + BeaconContainerSuffix
-			clientTypeLabel = "beacon"
-		default:
-			return fmt.Errorf("Can't stop the validator, unknown client type '%d'", clientType)
 		}
 
 		// Log
