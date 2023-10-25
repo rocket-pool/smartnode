@@ -2,35 +2,67 @@ package wallet
 
 import (
 	"errors"
+	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func setPassword(c *cli.Context, password string) (*api.SetPasswordResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	pm, err := services.GetPasswordManager(c)
-	if err != nil {
-		return nil, err
+type walletSetPasswordContextFactory struct {
+	handler *WalletHandler
+}
+
+func (f *walletSetPasswordContextFactory) Create(vars map[string]string) (*walletSetPasswordContext, error) {
+	c := &walletSetPasswordContext{
+		handler: f.handler,
+	}
+	inputErrs := []error{
+		server.ValidateArg("password", vars, input.ValidateNodePassword, &c.password),
+		server.ValidateArg("save", vars, input.ValidateBool, &c.save),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *walletSetPasswordContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*walletSetPasswordContext, api.SuccessData](
+		router, "set-password", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type walletSetPasswordContext struct {
+	handler  *WalletHandler
+	password []byte
+	save     bool
+}
+
+func (c *walletSetPasswordContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	w := sp.GetWallet()
+
+	_, hasPassword := w.GetPassword()
+	if hasPassword {
+		return fmt.Errorf("wallet password has already been set")
+	}
+	w.RememberPassword(c.password)
+	if c.save {
+		err := w.SavePassword()
+		if err != nil {
+			return fmt.Errorf("error saving wallet password to disk: %w", err)
+		}
 	}
 
-	// Response
-	response := api.SetPasswordResponse{}
-
-	// Check if password is already set
-	if pm.IsPasswordSet() {
-		return nil, errors.New("The node password is already set")
-	}
-
-	// Set password
-	if err := pm.SetPassword(password); err != nil {
-		return nil, err
-	}
-
-	// Return response
-	return &response, nil
-
+	data.Success = true
+	return nil
 }

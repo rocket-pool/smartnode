@@ -20,8 +20,14 @@ func NewWalletHandler(serviceProvider *services.ServiceProvider) *WalletHandler 
 	}
 	h.factories = []server.IContextFactory{
 		&walletCreateValidatorKeyContextFactory{h},
+		&walletDeletePasswordContextFactory{h},
 		&walletExportContextFactory{h},
+		&walletForgetPasswordContextFactory{h},
+		&walletInitializeContextFactory{h},
+		&walletRebuildContextFactory{h},
+		&walletSavePasswordContextFactory{h},
 		&walletSetEnsNameContextFactory{h},
+		&walletSetPasswordContextFactory{h},
 	}
 	return h
 }

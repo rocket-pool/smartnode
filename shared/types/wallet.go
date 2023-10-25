@@ -10,3 +10,11 @@ const (
 	WalletStatus_NoPassword       WalletStatus = iota
 	WalletStatus_KeystoreMismatch WalletStatus = iota
 )
+
+type DerivationPath string
+
+const (
+	DerivationPath_Default    DerivationPath = ""
+	DerivationPath_LedgerLive DerivationPath = "ledger-live"
+	DerivationPath_Mew        DerivationPath = "mew"
+)

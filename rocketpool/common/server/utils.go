@@ -29,6 +29,31 @@ func ValidateArg[ArgType any](name string, args map[string]string, impl ArgValid
 	return nil
 }
 
+// Validates an optional argument, converting to the required type if it exists
+func ValidateOptionalArg[ArgType any](name string, args map[string]string, impl ArgValidator[ArgType], result_Out *ArgType, exists_Out *bool) error {
+	// Make sure it exists
+	arg, exists := args[name]
+	if !exists {
+		if exists_Out != nil {
+			*exists_Out = false
+		}
+		return nil
+	}
+
+	// Run the parser
+	result, err := impl(name, arg)
+	if err != nil {
+		return err
+	}
+
+	// Set the result
+	*result_Out = result
+	if exists_Out != nil {
+		*exists_Out = true
+	}
+	return nil
+}
+
 // Gets a string argument, ensuring that it exists in the provided vars list
 func GetStringFromVars(name string, args map[string]string, result_Out *string) error {
 	// Make sure it exists
@@ -40,6 +65,19 @@ func GetStringFromVars(name string, args map[string]string, result_Out *string) 
 	// Set the result
 	*result_Out = arg
 	return nil
+}
+
+// Gets an optional string argument from the provided vars list
+func GetOptionalStringFromVars(name string, args map[string]string, result_Out *string) bool {
+	// Make sure it exists
+	arg, exists := args[name]
+	if !exists {
+		return false
+	}
+
+	// Set the result
+	*result_Out = arg
+	return true
 }
 
 // Handles an error related to parsing the input parameters of a request

@@ -237,11 +237,11 @@ func ValidateBurnableTokenType(name, value string) (string, error) {
 }
 
 // Validate a node password
-func ValidateNodePassword(name, value string) (string, error) {
+func ValidateNodePassword(name string, value string) ([]byte, error) {
 	if len(value) < MinPasswordLength {
-		return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, MinPasswordLength)
+		return nil, fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, MinPasswordLength)
 	}
-	return value, nil
+	return []byte(value), nil
 }
 
 // Validate a wallet mnemonic phrase

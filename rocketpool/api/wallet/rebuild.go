@@ -1,52 +1,65 @@
 package wallet
 
 import (
-	"github.com/urfave/cli"
+	"errors"
+	"fmt"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
+
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	walletutils "github.com/rocket-pool/smartnode/shared/utils/wallet"
 )
 
-func rebuildWallet(c *cli.Context) (*api.RebuildWalletResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
+type walletRebuildContextFactory struct {
+	handler *WalletHandler
+}
 
-	// Response
-	response := api.RebuildWalletResponse{}
+func (f *walletRebuildContextFactory) Create(vars map[string]string) (*walletRebuildContext, error) {
+	c := &walletRebuildContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
 
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
+func (f *walletRebuildContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*walletRebuildContext, api.WalletRebuildData](
+		router, "rebuild", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type walletRebuildContext struct {
+	handler *WalletHandler
+}
+
+func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	cfg := sp.GetConfig()
+	rp := sp.GetRocketPool()
+	w := sp.GetWallet()
+
+	// Requirements
+	err := errors.Join(
+		sp.RequireWalletReady(),
+		sp.RequireEthClientSynced(),
+	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Recover validator keys
-	response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, nodeAccount.Address, w, false)
+	data.ValidatorKeys, err = wallet.RecoverMinipoolKeys(cfg, rp, w, false)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error recovering minipool keys: %w", err)
 	}
-
-	// Save wallet
-	if err := w.Save(); err != nil {
-		return nil, err
-	}
-
-	// Return response
-	return &response, nil
-
+	return nil
 }
