@@ -23,6 +23,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
@@ -74,6 +75,15 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	// Get node trusted status
 	wg.Go(func() error {
+		isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
+		if err == nil {
+			response.IsHoustonDeployed = isHoustonDeployed
+		}
+		return err
+	})
+
+	// Get node trusted status
+	wg.Go(func() error {
 		trusted, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
 		if err == nil {
 			response.Trusted = trusted
@@ -83,7 +93,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	// Get node details
 	wg.Go(func() error {
-		details, err := node.GetNodeDetails(rp, nodeAccount.Address, nil)
+		details, err := node.GetNodeDetails(rp, nodeAccount.Address, response.IsHoustonDeployed, nil)
 		if err == nil {
 			response.Registered = details.Exists
 			response.PrimaryWithdrawalAddress = details.PrimaryWithdrawalAddress
@@ -241,7 +251,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		}
 		response.PrimaryWithdrawalBalances = withdrawalBalances
 	}
-	if !bytes.Equal(nodeAccount.Address.Bytes(), response.RPLWithdrawalAddress.Bytes()) &&
+	if response.IsHoustonDeployed && !bytes.Equal(nodeAccount.Address.Bytes(), response.RPLWithdrawalAddress.Bytes()) &&
 		!bytes.Equal(response.PrimaryWithdrawalAddress.Bytes(), response.RPLWithdrawalAddress.Bytes()) {
 		withdrawalBalances, err := tokens.GetBalances(rp, response.RPLWithdrawalAddress, nil)
 		if err != nil {

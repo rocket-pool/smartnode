@@ -181,10 +181,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "is-atlas-deployed",
-				Aliases:   []string{"iad"},
-				Usage:     "Checks if Atlas has been deployed yet.",
-				UsageText: "rocketpool api network is-atlas-deployed",
+				Name:      "is-houston-deployed",
+				Aliases:   []string{"ihd"},
+				Usage:     "Checks if Houston has been deployed yet.",
+				UsageText: "rocketpool api network is-houston-deployed",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -193,7 +193,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(isAtlasDeployed(c))
+					api.PrintResponse(isHoustonDeployed(c))
 					return nil
 
 				},

@@ -28,3 +28,14 @@ func IsAtlasDeployed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, erro
 	constraint, _ := version.NewConstraint(">= 1.2.0")
 	return constraint.Check(currentVersion), nil
 }
+
+// Check if Houston has been deployed
+func IsHoustonDeployed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	currentVersion, err := utils.GetCurrentVersion(rp, opts)
+	if err != nil {
+		return false, err
+	}
+
+	constraint, _ := version.NewConstraint(">= 1.3.0")
+	return constraint.Check(currentVersion), nil
+}

@@ -123,6 +123,15 @@ func newVerifyPdaoProps(c *cli.Context, logger log.ColorLogger) (*verifyPdaoProp
 // Verify pDAO proposals
 func (t *verifyPdaoProps) run(state *state.NetworkState) error {
 
+	// Check for Houston
+	isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
+	if err != nil {
+		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
+	}
+	if !isHoustonDeployed {
+		return nil
+	}
+
 	// Log
 	t.log.Println("Checking for Protocol DAO proposals to verify...")
 

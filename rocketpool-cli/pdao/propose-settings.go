@@ -268,6 +268,16 @@ func proposeSetting(c *cli.Context, setting string, value string) error {
 	}
 	defer rp.Close()
 
+	// Check for Houston
+	houston, err := rp.IsHoustonDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
+	}
+	if !houston.IsHoustonDeployed {
+		fmt.Println("This command cannot be used until Houston has been deployed.")
+		return nil
+	}
+
 	// Check if proposal can be made
 	canPropose, err := rp.PDAOCanProposeSetting(setting, value)
 	if err != nil {

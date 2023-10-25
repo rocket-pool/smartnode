@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func isAtlasDeployed(c *cli.Context) (*api.IsAtlasDeployedResponse, error) {
+func isHoustonDeployed(c *cli.Context) (*api.IsHoustonDeployedResponse, error) {
 
 	// Get services
 	if err := services.RequireRocketStorage(c); err != nil {
@@ -19,13 +19,13 @@ func isAtlasDeployed(c *cli.Context) (*api.IsAtlasDeployedResponse, error) {
 	}
 
 	// Response
-	response := api.IsAtlasDeployedResponse{}
+	response := api.IsHoustonDeployedResponse{}
 
-	isAtlasDeployed, err := state.IsAtlasDeployed(rp, nil)
+	isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	response.IsAtlasDeployed = isAtlasDeployed
+	response.IsHoustonDeployed = isHoustonDeployed
 
 	// Return response
 	return &response, nil

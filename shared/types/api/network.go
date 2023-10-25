@@ -84,10 +84,10 @@ type DownloadRewardsFileResponse struct {
 	Error  string `json:"error"`
 }
 
-type IsAtlasDeployedResponse struct {
-	Status          string `json:"status"`
-	Error           string `json:"error"`
-	IsAtlasDeployed bool   `json:"isAtlasDeployed"`
+type IsHoustonDeployedResponse struct {
+	Status            string `json:"status"`
+	Error             string `json:"error"`
+	IsHoustonDeployed bool   `json:"isHoustonDeployed"`
 }
 
 type GetLatestDelegateResponse struct {

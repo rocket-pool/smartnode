@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -43,6 +44,12 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
+	}
+
+	// Check for Houston
+	isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Houston has been deployed: %w", err)
 	}
 
 	// Data
@@ -92,19 +99,21 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 		return err
 	})
 
-	// Check if the RPL withdrawal address is set
-	wg.Go(func() error {
-		var err error
-		isRPLWithdrawalAddressSet, err = node.GetNodeRPLWithdrawalAddressIsSet(rp, nodeAccount.Address, nil)
-		return err
-	})
+	if isHoustonDeployed {
+		// Check if the RPL withdrawal address is set
+		wg.Go(func() error {
+			var err error
+			isRPLWithdrawalAddressSet, err = node.GetNodeRPLWithdrawalAddressIsSet(rp, nodeAccount.Address, nil)
+			return err
+		})
 
-	// Get the RPL withdrawal address
-	wg.Go(func() error {
-		var err error
-		rplWithdrawalAddress, err = node.GetNodeRPLWithdrawalAddress(rp, nodeAccount.Address, nil)
-		return err
-	})
+		// Get the RPL withdrawal address
+		wg.Go(func() error {
+			var err error
+			rplWithdrawalAddress, err = node.GetNodeRPLWithdrawalAddress(rp, nodeAccount.Address, nil)
+			return err
+		})
+	}
 
 	// Get gas estimate
 	wg.Go(func() error {

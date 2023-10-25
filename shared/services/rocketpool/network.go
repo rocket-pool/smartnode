@@ -151,18 +151,18 @@ func (c *Client) DownloadRewardsFile(interval uint64) (api.DownloadRewardsFileRe
 	return response, nil
 }
 
-// Check if Atlas has been deployed yet
-func (c *Client) IsAtlasDeployed() (api.IsAtlasDeployedResponse, error) {
-	responseBytes, err := c.callAPI("network is-atlas-deployed")
+// Check if Houston has been deployed yet
+func (c *Client) IsHoustonDeployed() (api.IsHoustonDeployedResponse, error) {
+	responseBytes, err := c.callAPI("network is-houston-deployed")
 	if err != nil {
-		return api.IsAtlasDeployedResponse{}, fmt.Errorf("could not check if Atlas is deployed: %w", err)
+		return api.IsHoustonDeployedResponse{}, fmt.Errorf("could not check if Houston is deployed: %w", err)
 	}
-	var response api.IsAtlasDeployedResponse
+	var response api.IsHoustonDeployedResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.IsAtlasDeployedResponse{}, fmt.Errorf("could not decode is-atlas-deployed response: %w", err)
+		return api.IsHoustonDeployedResponse{}, fmt.Errorf("could not decode is-houston-deployed response: %w", err)
 	}
 	if response.Error != "" {
-		return api.IsAtlasDeployedResponse{}, fmt.Errorf("could not check if Atlas is deployed: %s", response.Error)
+		return api.IsHoustonDeployedResponse{}, fmt.Errorf("could not check if Houston is deployed: %s", response.Error)
 	}
 	return response, nil
 }

@@ -16,6 +16,7 @@ import (
 type NodeStatusResponse struct {
 	Status                                   string          `json:"status"`
 	Error                                    string          `json:"error"`
+	IsHoustonDeployed                        bool            `json:"isHoustonDeployed"`
 	AccountAddress                           common.Address  `json:"accountAddress"`
 	AccountAddressFormatted                  string          `json:"accountAddressFormatted"`
 	PrimaryWithdrawalAddress                 common.Address  `json:"primaryWithdrawalAddress"`

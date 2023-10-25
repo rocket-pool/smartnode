@@ -155,7 +155,11 @@ func getStatus(c *cli.Context) error {
 				math.RoundDown(eth.WeiToEth(status.PrimaryWithdrawalBalances.ETH), 6),
 				math.RoundDown(eth.WeiToEth(status.PrimaryWithdrawalBalances.RPL), 6))
 		} else {
-			fmt.Printf("%sThe node's primary withdrawal address has not been changed, so ETH rewards and minipool withdrawals will be sent to the node itself.\n", colorYellow)
+			if status.IsHoustonDeployed {
+				fmt.Printf("%sThe node's primary withdrawal address has not been changed, so ETH rewards and minipool withdrawals will be sent to the node itself.\n", colorYellow)
+			} else {
+				fmt.Printf("%sThe node's primary withdrawal address has not been changed, so all rewards and minipool withdrawals will be sent to the node itself.\n", colorYellow)
+			}
 			fmt.Printf("Consider changing this to a cold wallet address that you control using the `set-withdrawal-address` command.\n%s", colorReset)
 		}
 		fmt.Println("")
@@ -166,27 +170,29 @@ func getStatus(c *cli.Context) error {
 		}
 
 		// RPL withdrawal address & balances
-		fmt.Printf("%s=== RPL Withdrawal Address ===%s\n", colorGreen, colorReset)
-		if !status.IsRPLWithdrawalAddressSet {
-			fmt.Printf("The node's RPL withdrawal address has not been set. All RPL rewards will be sent to the primary withdrawal address.")
-		} else if bytes.Equal(status.AccountAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
-			fmt.Printf("The node's RPL withdrawal address has been explicitly set to the node address itself (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
-		} else if bytes.Equal(status.PrimaryWithdrawalAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
-			fmt.Printf("The node's RPL withdrawal address has been explicitly set to the primary withdrawal address (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
-		} else {
-			fmt.Printf(
-				"The node's RPL withdrawal address %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
-				colorBlue,
-				status.RPLWithdrawalAddressFormatted,
-				colorReset,
-				math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.ETH), 6),
-				math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.RPL), 6))
-		}
-		fmt.Println("")
-		if status.PendingRPLWithdrawalAddress.Hex() != blankAddress.Hex() {
-			fmt.Printf("%sThe node's RPL withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingPrimaryWithdrawalAddressFormatted)
-			fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
+		if status.IsHoustonDeployed {
+			fmt.Printf("%s=== RPL Withdrawal Address ===%s\n", colorGreen, colorReset)
+			if !status.IsRPLWithdrawalAddressSet {
+				fmt.Printf("The node's RPL withdrawal address has not been set. All RPL rewards will be sent to the primary withdrawal address.")
+			} else if bytes.Equal(status.AccountAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
+				fmt.Printf("The node's RPL withdrawal address has been explicitly set to the node address itself (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
+			} else if bytes.Equal(status.PrimaryWithdrawalAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
+				fmt.Printf("The node's RPL withdrawal address has been explicitly set to the primary withdrawal address (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
+			} else {
+				fmt.Printf(
+					"The node's RPL withdrawal address %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
+					colorBlue,
+					status.RPLWithdrawalAddressFormatted,
+					colorReset,
+					math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.ETH), 6),
+					math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.RPL), 6))
+			}
 			fmt.Println("")
+			if status.PendingRPLWithdrawalAddress.Hex() != blankAddress.Hex() {
+				fmt.Printf("%sThe node's RPL withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingPrimaryWithdrawalAddressFormatted)
+				fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
+				fmt.Println("")
+			}
 		}
 
 		// Fee distributor details
