@@ -1,54 +1,70 @@
 package wallet
 
 import (
-	"encoding/hex"
+	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func exportWallet(c *cli.Context) (*api.ExportWalletResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	pm, err := services.GetPasswordManager(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
+type walletExportContextFactory struct {
+	handler *WalletHandler
+}
 
-	// Response
-	response := api.ExportWalletResponse{}
+func (f *walletExportContextFactory) Create(vars map[string]string) (*walletExportContext, error) {
+	c := &walletExportContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
+
+func (f *walletExportContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*walletExportContext, api.WalletExportData](
+		router, "export", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type walletExportContext struct {
+	handler *WalletHandler
+}
+
+func (c *walletExportContext) PrepareData(data *api.WalletExportData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	w := sp.GetWallet()
+
+	// Requirements
+	err := sp.RequireWalletReady()
+	if err != nil {
+		return err
+	}
 
 	// Get password
-	password, err := pm.GetPassword()
-	if err != nil {
-		return nil, err
+	pw, isSet := w.GetPassword()
+	if !isSet {
+		return fmt.Errorf("password has not been set; cannot decrypt wallet keystore without it")
 	}
-	response.Password = password
+	data.Password = pw
 
 	// Serialize wallet
-	wallet, err := w.String()
+	walletString, err := w.String()
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error serializing wallet keystore: %w", err)
 	}
-	response.Wallet = wallet
+	data.Wallet = walletString
 
 	// Get account private key
-	privateKey, err := w.GetNodePrivateKeyBytes()
-	if err != nil {
-		return nil, err
-	}
-	response.AccountPrivateKey = hex.EncodeToString(privateKey)
+	data.AccountPrivateKey = w.GetNodePrivateKeyBytes()
 
-	// Return response
-	return &response, nil
-
+	return nil
 }

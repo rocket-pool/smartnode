@@ -23,7 +23,7 @@ type WalletStatusData struct {
 	AccountAddress    common.Address `json:"accountAddress"`
 }
 
-type WalletInitData struct {
+type WalletInitializeData struct {
 	Mnemonic       string         `json:"mnemonic"`
 	AccountAddress common.Address `json:"accountAddress"`
 }
@@ -46,9 +46,9 @@ type WalletRebuildData struct {
 }
 
 type WalletExportData struct {
-	Password          string `json:"password"`
+	Password          []byte `json:"password"`
 	Wallet            string `json:"wallet"`
-	AccountPrivateKey string `json:"accountPrivateKey"`
+	AccountPrivateKey []byte `json:"accountPrivateKey"`
 }
 
 type WalletSetEnsNameData struct {

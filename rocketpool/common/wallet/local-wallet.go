@@ -218,6 +218,11 @@ func (w *LocalWallet) ForgetPassword() {
 	w.passwordManager.Clear()
 }
 
+// Retrieves the wallet's password
+func (w *LocalWallet) GetPassword() ([]byte, bool) {
+	return w.passwordManager.Get()
+}
+
 // Save the wallet's password to disk
 func (w *LocalWallet) SavePassword() error {
 	err := w.passwordManager.Save()
