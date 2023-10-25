@@ -14,20 +14,16 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-const (
-	findIterations uint = 100000
-)
-
 // ===============
 // === Factory ===
 // ===============
 
-type walletRecoverContextFactory struct {
+type walletTestRecoverContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletRecoverContextFactory) Create(vars map[string]string) (*walletRecoverContext, error) {
-	c := &walletRecoverContext{
+func (f *walletTestRecoverContextFactory) Create(vars map[string]string) (*walletTestRecoverContext, error) {
+	c := &walletTestRecoverContext{
 		handler: f.handler,
 	}
 	server.GetOptionalStringFromVars("derivation-path", vars, &c.derivationPath)
@@ -35,15 +31,13 @@ func (f *walletRecoverContextFactory) Create(vars map[string]string) (*walletRec
 		server.ValidateArg("mnemonic", vars, input.ValidateWalletMnemonic, &c.mnemonic),
 		server.ValidateOptionalArg("skip-validator-key-recovery", vars, input.ValidateBool, &c.skipValidatorKeyRecovery, nil),
 		server.ValidateOptionalArg("index", vars, input.ValidateUint, &c.index, nil),
-		server.ValidateOptionalArg("password", vars, input.ValidateNodePassword, &c.password, &c.passwordExists),
-		server.ValidateOptionalArg("save-password", vars, input.ValidateBool, &c.savePassword, nil),
 	}
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *walletRecoverContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*walletRecoverContext, api.WalletRecoverData](
-		router, "recover", f, f.handler.serviceProvider,
+func (f *walletTestRecoverContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*walletTestRecoverContext, api.WalletRecoverData](
+		router, "test-recover", f, f.handler.serviceProvider,
 	)
 }
 
@@ -51,40 +45,19 @@ func (f *walletRecoverContextFactory) RegisterRoute(router *mux.Router) {
 // === Context ===
 // ===============
 
-type walletRecoverContext struct {
+type walletTestRecoverContext struct {
 	handler                  *WalletHandler
 	skipValidatorKeyRecovery bool
 	mnemonic                 string
 	derivationPath           string
 	index                    uint64
-	password                 []byte
-	passwordExists           bool
-	savePassword             bool
 }
 
-func (c *walletRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bind.TransactOpts) error {
+func (c *walletTestRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	rp := sp.GetRocketPool()
-	w := sp.GetWallet()
 
-	// Requirements
-	switch w.GetStatus() {
-	case types.WalletStatus_Ready, types.WalletStatus_KeystoreMismatch:
-		return fmt.Errorf("a wallet is already present")
-	default:
-		_, hasPassword := w.GetPassword()
-		if !hasPassword && !c.passwordExists {
-			return fmt.Errorf("you must set a password before recovering a wallet, or provide one in this call")
-		}
-		w.RememberPassword(c.password)
-		if c.savePassword {
-			err := w.SavePassword()
-			if err != nil {
-				return fmt.Errorf("error saving wallet password to disk: %w", err)
-			}
-		}
-	}
 	if !c.skipValidatorKeyRecovery {
 		err := sp.RequireEthClientSynced()
 		if err != nil {
@@ -107,7 +80,7 @@ func (c *walletRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bi
 	}
 
 	// Recover the wallet
-	err := w.Recover(path, uint(c.index), c.mnemonic)
+	w, err := wallet.TestRecovery(path, uint(c.index), c.mnemonic, cfg.Smartnode.GetChainID())
 	if err != nil {
 		return fmt.Errorf("error recovering wallet: %w", err)
 	}
@@ -115,7 +88,7 @@ func (c *walletRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bi
 
 	// Recover validator keys
 	if !c.skipValidatorKeyRecovery {
-		data.ValidatorKeys, err = wallet.RecoverMinipoolKeys(cfg, rp, w, false)
+		data.ValidatorKeys, err = wallet.RecoverMinipoolKeys(cfg, rp, w, true)
 		if err != nil {
 			return fmt.Errorf("error recovering minipool keys: %w", err)
 		}

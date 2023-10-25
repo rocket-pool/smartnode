@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/types"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
 // Encrypted validator keystore following the EIP-2335 standard
@@ -18,9 +19,8 @@ type ValidatorKeystore struct {
 }
 
 type WalletStatusData struct {
-	PasswordSet       bool           `json:"passwordSet"`
-	WalletInitialized bool           `json:"walletInitialized"`
-	AccountAddress    common.Address `json:"accountAddress"`
+	AccountAddress common.Address           `json:"accountAddress"`
+	WalletStatus   sharedtypes.WalletStatus `json:"walletStatus"`
 }
 
 type WalletInitializeData struct {

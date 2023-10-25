@@ -1,44 +1,47 @@
 package wallet
 
 import (
-	"github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getStatus(c *cli.Context) (*api.WalletStatusResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	pm, err := services.GetPasswordManager(c)
-	if err != nil {
-		return nil, err
+type walletStatusFactory struct {
+	handler *WalletHandler
+}
+
+func (f *walletStatusFactory) Create(vars map[string]string) (*walletStatusContext, error) {
+	c := &walletStatusContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
+	return c, nil
+}
 
-	// Response
-	response := api.WalletStatusResponse{}
+func (f *walletStatusFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*walletStatusContext, api.WalletStatusData](
+		router, "status", f, f.handler.serviceProvider,
+	)
+}
 
-	// Get wallet status
-	response.PasswordSet = pm.IsPasswordSet()
-	response.WalletInitialized = w.IsInitialized()
+// ===============
+// === Context ===
+// ===============
 
-	// Get accounts if initialized
-	if response.WalletInitialized {
+type walletStatusContext struct {
+	handler *WalletHandler
+}
 
-		// Get node account
-		nodeAccount, err := w.GetNodeAccount()
-		if err != nil {
-			return nil, err
-		}
-		response.AccountAddress = nodeAccount.Address
+func (c *walletStatusContext) PrepareData(data *api.WalletStatusData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	w := sp.GetWallet()
 
-	}
-
-	// Return response
-	return &response, nil
-
+	data.WalletStatus = w.GetStatus()
+	data.AccountAddress, _ = w.GetAddress()
+	return nil
 }

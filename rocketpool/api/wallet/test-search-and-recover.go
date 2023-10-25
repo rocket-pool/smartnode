@@ -9,40 +9,33 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
-	"github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/input"
-)
-
-const (
-	findIterations uint = 100000
 )
 
 // ===============
 // === Factory ===
 // ===============
 
-type walletSearchAndRecoverContextFactory struct {
+type walletTestSearchAndRecoverContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletSearchAndRecoverContextFactory) Create(vars map[string]string) (*walletSearchAndRecoverContext, error) {
-	c := &walletSearchAndRecoverContext{
+func (f *walletTestSearchAndRecoverContextFactory) Create(vars map[string]string) (*walletTestSearchAndRecoverContext, error) {
+	c := &walletTestSearchAndRecoverContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
 		server.ValidateArg("mnemonic", vars, input.ValidateWalletMnemonic, &c.mnemonic),
 		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
 		server.ValidateOptionalArg("skip-validator-key-recovery", vars, input.ValidateBool, &c.skipValidatorKeyRecovery, nil),
-		server.ValidateOptionalArg("password", vars, input.ValidateNodePassword, &c.password, &c.passwordExists),
-		server.ValidateOptionalArg("save-password", vars, input.ValidateBool, &c.savePassword, nil),
 	}
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *walletSearchAndRecoverContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*walletSearchAndRecoverContext, api.WalletSearchAndRecoverData](
-		router, "search-and-recover", f, f.handler.serviceProvider,
+func (f *walletTestSearchAndRecoverContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessRoute[*walletTestSearchAndRecoverContext, api.WalletSearchAndRecoverData](
+		router, "test-search-and-recover", f, f.handler.serviceProvider,
 	)
 }
 
@@ -50,39 +43,18 @@ func (f *walletSearchAndRecoverContextFactory) RegisterRoute(router *mux.Router)
 // === Context ===
 // ===============
 
-type walletSearchAndRecoverContext struct {
+type walletTestSearchAndRecoverContext struct {
 	handler                  *WalletHandler
 	skipValidatorKeyRecovery bool
 	mnemonic                 string
 	address                  common.Address
-	password                 []byte
-	passwordExists           bool
-	savePassword             bool
 }
 
-func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRecoverData, opts *bind.TransactOpts) error {
+func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRecoverData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	rp := sp.GetRocketPool()
-	w := sp.GetWallet()
 
-	// Requirements
-	switch w.GetStatus() {
-	case types.WalletStatus_Ready, types.WalletStatus_KeystoreMismatch:
-		return fmt.Errorf("a wallet is already present")
-	default:
-		_, hasPassword := w.GetPassword()
-		if !hasPassword && !c.passwordExists {
-			return fmt.Errorf("you must set a password before recovering a wallet, or provide one in this call")
-		}
-		w.RememberPassword(c.password)
-		if c.savePassword {
-			err := w.SavePassword()
-			if err != nil {
-				return fmt.Errorf("error saving wallet password to disk: %w", err)
-			}
-		}
-	}
 	if !c.skipValidatorKeyRecovery {
 		err := sp.RequireEthClientSynced()
 		if err != nil {
@@ -91,6 +63,7 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 	}
 
 	// Try each derivation path across all of the iterations
+	var recoveredWallet *wallet.LocalWallet
 	paths := []string{
 		wallet.DefaultNodeKeyPath,
 		wallet.LedgerLiveNodeKeyPath,
@@ -98,8 +71,9 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 	}
 	for i := uint(0); i < findIterations; i++ {
 		for j := 0; j < len(paths); j++ {
+			var err error
 			derivationPath := paths[j]
-			recoveredWallet, err := wallet.TestRecovery(derivationPath, i, c.mnemonic, cfg.Smartnode.GetChainID())
+			recoveredWallet, err = wallet.TestRecovery(derivationPath, i, c.mnemonic, cfg.Smartnode.GetChainID())
 			if err != nil {
 				return fmt.Errorf("error recovering wallet with path [%s], index [%d]: %w", derivationPath, i, err)
 			}
@@ -122,17 +96,12 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 	if !data.FoundWallet {
 		return fmt.Errorf("exhausted all derivation paths and indices from 0 to %d, wallet not found", findIterations)
 	}
-
-	// Recover the wallet
-	err := w.Recover(data.DerivationPath, data.Index, c.mnemonic)
-	if err != nil {
-		return fmt.Errorf("error recovering wallet: %w", err)
-	}
-	data.AccountAddress, _ = w.GetAddress()
+	data.AccountAddress, _ = recoveredWallet.GetAddress()
 
 	// Recover validator keys
 	if !c.skipValidatorKeyRecovery {
-		data.ValidatorKeys, err = wallet.RecoverMinipoolKeys(cfg, rp, w, false)
+		var err error
+		data.ValidatorKeys, err = wallet.RecoverMinipoolKeys(cfg, rp, recoveredWallet, true)
 		if err != nil {
 			return fmt.Errorf("error recovering minipool keys: %w", err)
 		}
