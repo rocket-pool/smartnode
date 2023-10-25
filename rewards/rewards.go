@@ -100,6 +100,45 @@ func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.
 	return time.Duration((*unixTime).Int64()) * time.Second, nil
 }
 
+// Get the percent of checkpoint rewards that goes to node operators
+func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	perc := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimNode"); err != nil {
+		return nil, fmt.Errorf("error getting node operator rewards percent: %w", err)
+	}
+	return *perc, nil
+}
+
+// Get the percent of checkpoint rewards that goes to ODAO members
+func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	perc := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimTrustedNode"); err != nil {
+		return nil, fmt.Errorf("error getting trusted node operator rewards percent: %w", err)
+	}
+	return *perc, nil
+}
+
+// Get the percent of checkpoint rewards that goes to the PDAO
+func GetProtocolDaoRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	perc := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimDAO"); err != nil {
+		return nil, fmt.Errorf("error getting protocol DAO rewards percent: %w", err)
+	}
+	return *perc, nil
+}
+
 // Get the amount of RPL rewards that will be provided to node operators
 func GetPendingRPLRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
