@@ -64,7 +64,8 @@ func GetNodeManagerVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 }
 
 // Get all node details
-func GetNodes(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NodeDetails, error) {
+// The 'includeRplWithdrawalAddress' flag is used for backwards compatibility with Atlas, - set it to `false` if Houston hasn't been deployed yet
+func GetNodes(rp *rocketpool.RocketPool, includeRplWithdrawalAddress bool, opts *bind.CallOpts) ([]NodeDetails, error) {
 
 	// Get node addresses
 	nodeAddresses, err := GetNodeAddresses(rp, opts)
@@ -89,7 +90,7 @@ func GetNodes(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NodeDetails, er
 			ni := ni
 			wg.Go(func() error {
 				nodeAddress := nodeAddresses[ni]
-				nodeDetails, err := GetNodeDetails(rp, nodeAddress, opts)
+				nodeDetails, err := GetNodeDetails(rp, nodeAddress, includeRplWithdrawalAddress, opts)
 				if err == nil {
 					details[ni] = nodeDetails
 				}
@@ -151,7 +152,8 @@ func GetNodeAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.
 }
 
 // Get a node's details
-func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (NodeDetails, error) {
+// The 'includeRplWithdrawalAddress' flag is used for backwards compatibility with Atlas, - set it to `false` if Houston hasn't been deployed yet
+func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, includeRplWithdrawalAddress bool, opts *bind.CallOpts) (NodeDetails, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -179,21 +181,23 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts 
 		pendingPrimaryWithdrawalAddress, err = storage.GetNodePendingWithdrawalAddress(rp, nodeAddress, opts)
 		return err
 	})
-	wg.Go(func() error {
-		var err error
-		isRPLWithdrawalAddressSet, err = GetNodeRPLWithdrawalAddressIsSet(rp, nodeAddress, opts)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		rplWithdrawalAddress, err = GetNodeRPLWithdrawalAddress(rp, nodeAddress, opts)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		pendingRPLWithdrawalAddress, err = GetNodePendingRPLWithdrawalAddress(rp, nodeAddress, opts)
-		return err
-	})
+	if includeRplWithdrawalAddress {
+		wg.Go(func() error {
+			var err error
+			isRPLWithdrawalAddressSet, err = GetNodeRPLWithdrawalAddressIsSet(rp, nodeAddress, opts)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			rplWithdrawalAddress, err = GetNodeRPLWithdrawalAddress(rp, nodeAddress, opts)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			pendingRPLWithdrawalAddress, err = GetNodePendingRPLWithdrawalAddress(rp, nodeAddress, opts)
+			return err
+		})
+	}
 	wg.Go(func() error {
 		var err error
 		timezoneLocation, err = GetNodeTimezoneLocation(rp, nodeAddress, opts)
