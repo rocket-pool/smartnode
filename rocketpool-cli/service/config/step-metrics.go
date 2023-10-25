@@ -21,7 +21,7 @@ func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		} else {
 			wiz.md.Config.EnableMetrics.Value = false
 		}
-		if wiz.md.Config.Smartnode.Network.Value == config.Network_Holesky {
+		if wiz.md.Config.Smartnode.Network.Value == config.Network_Holesky || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
 			// Skip MEV for Holesky
 			wiz.finishedModal.show()
 		} else {

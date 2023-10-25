@@ -77,7 +77,7 @@ func (home *settingsHome) createContent() {
 	// Create the category list
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-			if home.md.Config.Smartnode.Network.Value == config.Network_Holesky && home.settingsSubpages[index].getPage().id == "settings-mev-boost" {
+			if (home.md.Config.Smartnode.Network.Value == config.Network_Holesky || home.md.Config.Smartnode.Network.Value == config.Network_Devnet) && home.settingsSubpages[index].getPage().id == "settings-mev-boost" {
 				// Disable MEV-Boost for Holesky
 				layout.descriptionBox.SetText("MEV-Boost is currently disabled for the Holesky test network.")
 			} else {
@@ -102,7 +102,7 @@ func (home *settingsHome) createContent() {
 		categoryList.AddItem(subpage.getPage().title, "", 0, nil)
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
-		if home.md.Config.Smartnode.Network.Value == config.Network_Holesky && home.settingsSubpages[i].getPage().id == "settings-mev-boost" {
+		if (home.md.Config.Smartnode.Network.Value == config.Network_Holesky || home.md.Config.Smartnode.Network.Value == config.Network_Devnet) && home.settingsSubpages[i].getPage().id == "settings-mev-boost" {
 			// Disable MEV-Boost for Holesky
 			return
 		} else {
