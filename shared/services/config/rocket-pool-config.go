@@ -433,7 +433,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
 			EnvironmentVariables: []string{"ENABLE_MEV_BOOST"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			OverwriteOnUpgrade:   false,
 		},
 	}
 
