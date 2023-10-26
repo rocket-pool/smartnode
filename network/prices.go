@@ -66,19 +66,6 @@ func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, op
 	return tx.Hash(), nil
 }
 
-// Returns the latest block number that oracles should be reporting prices for
-func GetLatestReportablePricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	latestReportableBlock := new(*big.Int)
-	if err := rocketNetworkPrices.Call(opts, latestReportableBlock, "getLatestReportableBlock"); err != nil {
-		return nil, fmt.Errorf("error getting latest reportable block: %w", err)
-	}
-	return *latestReportableBlock, nil
-}
-
 // Returns an array of block numbers for prices submissions the given trusted node has submitted since fromBlock
 func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int, opts *bind.CallOpts) (*[]uint64, error) {
 	// Get contracts

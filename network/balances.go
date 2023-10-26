@@ -118,19 +118,6 @@ func SubmitBalances(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEt
 	return tx.Hash(), nil
 }
 
-// Returns the latest block number that oracles should be reporting balances for
-func GetLatestReportableBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	latestReportableBlock := new(*big.Int)
-	if err := rocketNetworkBalances.Call(opts, latestReportableBlock, "getLatestReportableBlock"); err != nil {
-		return nil, fmt.Errorf("error getting latest reportable block: %w", err)
-	}
-	return *latestReportableBlock, nil
-}
-
 // Returns an array of block numbers for balances submissions the given trusted node has submitted since fromBlock
 func GetBalancesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int, opts *bind.CallOpts) (*[]uint64, error) {
 	// Get contracts

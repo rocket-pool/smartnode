@@ -39,7 +39,6 @@ type NetworkDetails struct {
 	RPLInflationIntervalRate          *big.Int
 	RPLTotalSupply                    *big.Int
 	PricesBlock                       uint64
-	LatestReportablePricesBlock       uint64
 	ETHUtilizationRate                float64
 	StakingETHBalance                 *big.Int
 	RETHExchangeRate                  float64
@@ -50,7 +49,6 @@ type NetworkDetails struct {
 	SmoothingPoolBalance              *big.Int
 	NodeFee                           float64
 	BalancesBlock                     *big.Int
-	LatestReportableBalancesBlock     *big.Int
 	SubmitBalancesEnabled             bool
 	SubmitPricesEnabled               bool
 	MinipoolLaunchTimeout             *big.Int
@@ -79,12 +77,10 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	var effectiveQueueCapacity *big.Int
 	var totalQueueLength *big.Int
 	var pricesBlock *big.Int
-	var latestReportablePricesBlock *big.Int
 	var ethUtilizationRate *big.Int
 	var rETHExchangeRate *big.Int
 	var nodeFee *big.Int
 	var balancesBlock *big.Int
-	var latestReportableBalancesBlock *big.Int
 	var minipoolLaunchTimeout *big.Int
 	var promotionScrubPeriodSeconds *big.Int
 	var windowStartRaw *big.Int
@@ -110,7 +106,6 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	contracts.Multicaller.AddCall(contracts.RocketTokenRPL, &details.RPLInflationIntervalRate, "getInflationIntervalRate")
 	contracts.Multicaller.AddCall(contracts.RocketTokenRPL, &details.RPLTotalSupply, "totalSupply")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkPrices, &pricesBlock, "getPricesBlock")
-	contracts.Multicaller.AddCall(contracts.RocketNetworkPrices, &latestReportablePricesBlock, "getLatestReportableBlock")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkBalances, &ethUtilizationRate, "getETHUtilizationRate")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkBalances, &details.StakingETHBalance, "getStakingETHBalance")
 	contracts.Multicaller.AddCall(contracts.RocketTokenRETH, &rETHExchangeRate, "getExchangeRate")
@@ -119,7 +114,6 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	contracts.Multicaller.AddCall(contracts.RocketNodeStaking, &details.TotalRPLStake, "getTotalRPLStake")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkFees, &nodeFee, "getNodeFee")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkBalances, &balancesBlock, "getBalancesBlock")
-	contracts.Multicaller.AddCall(contracts.RocketNetworkBalances, &latestReportableBalancesBlock, "getLatestReportableBlock")
 	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.SubmitBalancesEnabled, "getSubmitBalancesEnabled")
 	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.SubmitPricesEnabled, "getSubmitPricesEnabled")
 	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsMinipool, &minipoolLaunchTimeout, "getLaunchTimeout")
@@ -147,12 +141,10 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	}
 	details.QueueLength = totalQueueLength
 	details.PricesBlock = pricesBlock.Uint64()
-	details.LatestReportablePricesBlock = latestReportablePricesBlock.Uint64()
 	details.ETHUtilizationRate = eth.WeiToEth(ethUtilizationRate)
 	details.RETHExchangeRate = eth.WeiToEth(rETHExchangeRate)
 	details.NodeFee = eth.WeiToEth(nodeFee)
 	details.BalancesBlock = balancesBlock
-	details.LatestReportableBalancesBlock = latestReportableBalancesBlock
 	details.MinipoolLaunchTimeout = minipoolLaunchTimeout
 	details.PromotionScrubPeriod = convertToDuration(promotionScrubPeriodSeconds)
 	details.BondReductionWindowStart = convertToDuration(windowStartRaw)
