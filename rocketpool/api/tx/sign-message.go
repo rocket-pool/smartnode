@@ -1,32 +1,68 @@
-package node
+package tx
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	_ "time/tzdata"
 
-	"github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func signMessage(c *cli.Context, message string) (*api.NodeSignResponse, error) {
-	w, err := services.GetWallet(c)
+// ===============
+// === Factory ===
+// ===============
+
+type txSignMessageContextFactory struct {
+	handler *TxHandler
+}
+
+func (f *txSignMessageContextFactory) Create(vars map[string]string) (*txSignMessageContext, error) {
+	c := &txSignMessageContext{
+		handler: f.handler,
+	}
+	inputErrs := []error{
+		server.ValidateArg("message", vars, input.ValidateByteArray, &c.message),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *txSignMessageContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessGet[*txSignMessageContext, api.TxSignMessageData](
+		router, "sign-message", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type txSignMessageContext struct {
+	handler *TxHandler
+	message []byte
+}
+
+func (c *txSignMessageContext) PrepareData(data *api.TxSignMessageData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	w := sp.GetWallet()
+
+	err := errors.Join(
+		sp.RequireWalletReady(),
+	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.NodeSignResponse{}
-	signedBytes, err := w.SignMessage(message)
+	signedBytes, err := w.SignMessage(c.message)
 	if err != nil {
-		return nil, fmt.Errorf("Error signing message [%s]: %w", message, err)
+		return fmt.Errorf("error signing message: %w", err)
 	}
-	response.SignedData = hexutils.AddPrefix(hex.EncodeToString(signedBytes))
-
-	// Return response
-	return &response, nil
-
+	data.SignedMessage = hexutils.AddPrefix(hex.EncodeToString(signedBytes))
+	return nil
 }

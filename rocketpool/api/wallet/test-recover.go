@@ -36,7 +36,7 @@ func (f *walletTestRecoverContextFactory) Create(vars map[string]string) (*walle
 }
 
 func (f *walletTestRecoverContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*walletTestRecoverContext, api.WalletRecoverData](
+	server.RegisterQuerylessGet[*walletTestRecoverContext, api.WalletRecoverData](
 		router, "test-recover", f, f.handler.serviceProvider,
 	)
 }

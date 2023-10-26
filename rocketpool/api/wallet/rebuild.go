@@ -28,7 +28,7 @@ func (f *walletRebuildContextFactory) Create(vars map[string]string) (*walletReb
 }
 
 func (f *walletRebuildContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*walletRebuildContext, api.WalletRebuildData](
+	server.RegisterQuerylessGet[*walletRebuildContext, api.WalletRebuildData](
 		router, "rebuild", f, f.handler.serviceProvider,
 	)
 }

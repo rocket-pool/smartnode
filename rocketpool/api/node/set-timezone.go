@@ -33,7 +33,7 @@ func (f *nodeSetTimezoneContextFactory) Create(vars map[string]string) (*nodeSet
 }
 
 func (f *nodeSetTimezoneContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeSetTimezoneContext, api.NodeSetTimezoneData](
+	server.RegisterQuerylessGet[*nodeSetTimezoneContext, api.NodeSetTimezoneData](
 		router, "set-timezone", f, f.handler.serviceProvider,
 	)
 }

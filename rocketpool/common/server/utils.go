@@ -89,6 +89,12 @@ func handleInputError(w http.ResponseWriter, err error) {
 	}
 }
 
+// Handle routes called with an invalid method
+func handleInvalidMethod(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusMethodNotAllowed)
+	w.Write([]byte{})
+}
+
 // Handles a Node daemon response
 func handleResponse(w http.ResponseWriter, response any, err error) {
 	// Write out any errors

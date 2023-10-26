@@ -26,7 +26,7 @@ func (f *nodeBalanceContextFactory) Create(vars map[string]string) (*nodeBalance
 }
 
 func (f *nodeBalanceContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeBalanceContext, api.NodeBalanceData](
+	server.RegisterQuerylessGet[*nodeBalanceContext, api.NodeBalanceData](
 		router, "balance", f, f.handler.serviceProvider,
 	)
 }

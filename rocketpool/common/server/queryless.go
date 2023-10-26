@@ -2,7 +2,10 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+
+	"github.com/goccy/go-json"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -20,25 +23,79 @@ type IQuerylessCallContext[DataType any] interface {
 	PrepareData(data *DataType, opts *bind.TransactOpts) error
 }
 
-// Interface for queryless call context factories - these will be invoked during route handling to create the
-// unique context for the route
-type IQuerylessCallContextFactory[ContextType IQuerylessCallContext[DataType], DataType any] interface {
+// Interface for queryless call context factories that handle GET calls.
+// These will be invoked during route handling to create the unique context for the route.
+type IQuerylessGetContextFactory[ContextType IQuerylessCallContext[DataType], DataType any] interface {
 	// Create the context for the route
 	Create(vars map[string]string) (ContextType, error)
 }
 
+// Interface for queryless call context factories that handle POST requests.
+// These will be invoked during route handling to create the unique context for the route
+type IQuerylessPostContextFactory[ContextType IQuerylessCallContext[DataType], BodyType any, DataType any] interface {
+	// Create the context for the route
+	Create(body BodyType) (ContextType, error)
+}
+
 // Registers a new route with the router, which will invoke the provided factory to create and execute the context
-// for the route when it's called; use this for typical general-purpose calls
-func RegisterQuerylessRoute[ContextType IQuerylessCallContext[DataType], DataType any](
+// for the route when it's called via GET; use this for typical general-purpose calls
+func RegisterQuerylessGet[ContextType IQuerylessCallContext[DataType], DataType any](
 	router *mux.Router,
 	functionName string,
-	factory IQuerylessCallContextFactory[ContextType, DataType],
+	factory IQuerylessGetContextFactory[ContextType, DataType],
 	serviceProvider *services.ServiceProvider,
 ) {
 	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			handleInvalidMethod(w)
+			return
+		}
+
 		// Create the handler and deal with any input validation errors
 		vars := mux.Vars(r)
 		context, err := factory.Create(vars)
+		if err != nil {
+			handleInputError(w, err)
+			return
+		}
+
+		// Run the context's processing routine
+		response, err := runQuerylessRoute[DataType](context, serviceProvider)
+		handleResponse(w, response, err)
+	})
+}
+
+// Registers a new route with the router, which will invoke the provided factory to create and execute the context
+// for the route when it's called via POST; use this for typical general-purpose calls
+func RegisterQuerylessPost[ContextType IQuerylessCallContext[DataType], BodyType any, DataType any](
+	router *mux.Router,
+	functionName string,
+	factory IQuerylessPostContextFactory[ContextType, BodyType, DataType],
+	serviceProvider *services.ServiceProvider,
+) {
+	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			handleInvalidMethod(w)
+			return
+		}
+
+		// Read the body
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			handleInputError(w, fmt.Errorf("error reading request body: %w", err))
+			return
+		}
+
+		// Deserialize the body
+		var body BodyType
+		err = json.Unmarshal(bodyBytes, &body)
+		if err != nil {
+			handleInputError(w, fmt.Errorf("error deserializing request body: %w", err))
+			return
+		}
+
+		// Create the handler and deal with any input validation errors
+		context, err := factory.Create(body)
 		if err != nil {
 			handleInputError(w, err)
 			return

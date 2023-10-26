@@ -31,7 +31,7 @@ func (f *networkGenerateRewardsContextFactory) Create(vars map[string]string) (*
 }
 
 func (f *networkGenerateRewardsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*networkGenerateRewardsContext, api.SuccessData](
+	server.RegisterQuerylessGet[*networkGenerateRewardsContext, api.SuccessData](
 		router, "generate-rewards-tree", f, f.handler.serviceProvider,
 	)
 }

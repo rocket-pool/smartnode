@@ -32,7 +32,7 @@ func (f *minipoolRollbackDelegatesContextFactory) Create(vars map[string]string)
 }
 
 func (f *minipoolRollbackDelegatesContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*minipoolRollbackDelegatesContext, api.BatchTxInfoData](
+	server.RegisterQuerylessGet[*minipoolRollbackDelegatesContext, api.BatchTxInfoData](
 		router, "delegate/rollback", f, f.handler.serviceProvider,
 	)
 }

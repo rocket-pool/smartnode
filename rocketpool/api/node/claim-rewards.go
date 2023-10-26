@@ -37,7 +37,7 @@ func (f *nodeClaimAndStakeContextFactory) Create(vars map[string]string) (*nodeC
 }
 
 func (f *nodeClaimAndStakeContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeClaimAndStakeContext, api.TxInfoData](
+	server.RegisterQuerylessGet[*nodeClaimAndStakeContext, api.TxInfoData](
 		router, "claim-and-stake", f, f.handler.serviceProvider,
 	)
 }

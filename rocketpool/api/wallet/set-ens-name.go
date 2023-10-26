@@ -31,7 +31,7 @@ func (f *walletSetEnsNameContextFactory) Create(vars map[string]string) (*wallet
 }
 
 func (f *walletSetEnsNameContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*walletSetEnsNameContext, api.WalletSetEnsNameData](
+	server.RegisterQuerylessGet[*walletSetEnsNameContext, api.WalletSetEnsNameData](
 		router, "set-ens-name", f, f.handler.serviceProvider,
 	)
 }

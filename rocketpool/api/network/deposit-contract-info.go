@@ -26,7 +26,7 @@ func (f *networkDepositInfoContextFactory) Create(vars map[string]string) (*netw
 }
 
 func (f *networkDepositInfoContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*networkDepositInfoContext, api.NetworkDepositContractInfoData](
+	server.RegisterQuerylessGet[*networkDepositInfoContext, api.NetworkDepositContractInfoData](
 		router, "deposit-contract-info", f, f.handler.serviceProvider,
 	)
 }

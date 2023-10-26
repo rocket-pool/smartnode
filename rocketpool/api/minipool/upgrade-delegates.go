@@ -32,7 +32,7 @@ func (f *minipoolUpgradeDelegatesContextFactory) Create(vars map[string]string) 
 }
 
 func (f *minipoolUpgradeDelegatesContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*minipoolUpgradeDelegatesContext, api.BatchTxInfoData](
+	server.RegisterQuerylessGet[*minipoolUpgradeDelegatesContext, api.BatchTxInfoData](
 		router, "delegate/upgrade", f, f.handler.serviceProvider,
 	)
 }

@@ -36,7 +36,7 @@ func (f *nodeGetSnapshotProposalsContextFactory) Create(vars map[string]string) 
 }
 
 func (f *nodeGetSnapshotProposalsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeGetSnapshotProposalsContext, api.NodeGetSnapshotProposalsData](
+	server.RegisterQuerylessGet[*nodeGetSnapshotProposalsContext, api.NodeGetSnapshotProposalsData](
 		router, "get-snapshot-proposals", f, f.handler.serviceProvider,
 	)
 }

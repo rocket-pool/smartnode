@@ -32,7 +32,7 @@ func (f *minipoolRefundContextFactory) Create(vars map[string]string) (*minipool
 }
 
 func (f *minipoolRefundContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*minipoolRefundContext, api.BatchTxInfoData](
+	server.RegisterQuerylessGet[*minipoolRefundContext, api.BatchTxInfoData](
 		router, "refund", f, f.handler.serviceProvider,
 	)
 }

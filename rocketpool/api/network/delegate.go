@@ -26,7 +26,7 @@ func (f *networkDelegateContextFactory) Create(vars map[string]string) (*network
 }
 
 func (f *networkDelegateContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*networkDelegateContext, api.NetworkLatestDelegateData](
+	server.RegisterQuerylessGet[*networkDelegateContext, api.NetworkLatestDelegateData](
 		router, "latest-delegate", f, f.handler.serviceProvider,
 	)
 }

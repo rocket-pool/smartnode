@@ -305,8 +305,8 @@ func (w *LocalWallet) Sign(serializedTx []byte) ([]byte, error) {
 }
 
 // Signs an arbitrary message using the wallet's private key
-func (w *LocalWallet) SignMessage(message string) ([]byte, error) {
-	messageHash := accounts.TextHash([]byte(message))
+func (w *LocalWallet) SignMessage(message []byte) ([]byte, error) {
+	messageHash := accounts.TextHash(message)
 	signedMessage, err := crypto.Sign(messageHash, w.nodePrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("Error signing message: %w", err)

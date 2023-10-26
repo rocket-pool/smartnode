@@ -40,7 +40,7 @@ func (f *nodeSendContextFactory) Create(vars map[string]string) (*nodeSendContex
 }
 
 func (f *nodeSendContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeSendContext, api.NodeSendData](
+	server.RegisterQuerylessGet[*nodeSendContext, api.NodeSendData](
 		router, "send", f, f.handler.serviceProvider,
 	)
 }

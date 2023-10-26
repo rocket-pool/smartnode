@@ -26,7 +26,7 @@ func (f *serviceRestartVcContextFactory) Create(vars map[string]string) (*servic
 }
 
 func (f *serviceRestartVcContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*serviceRestartVcContext, api.SuccessData](
+	server.RegisterQuerylessGet[*serviceRestartVcContext, api.SuccessData](
 		router, "restart-vc", f, f.handler.serviceProvider,
 	)
 }

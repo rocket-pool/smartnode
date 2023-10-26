@@ -26,7 +26,7 @@ func (f *walletExportContextFactory) Create(vars map[string]string) (*walletExpo
 }
 
 func (f *walletExportContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*walletExportContext, api.WalletExportData](
+	server.RegisterQuerylessGet[*walletExportContext, api.WalletExportData](
 		router, "export", f, f.handler.serviceProvider,
 	)
 }

@@ -9,9 +9,11 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 	"github.com/tyler-smith/go-bip39"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/types"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
@@ -271,11 +273,8 @@ func ValidateDAOMemberID(name, value string) (string, error) {
 
 // Validate a transaction hash
 func ValidateTxHash(name, value string) (common.Hash, error) {
-
 	// Remove a 0x prefix if present
-	if strings.HasPrefix(value, "0x") {
-		value = value[2:]
-	}
+	value = strings.TrimPrefix(value, "0x")
 
 	// Hash should be 64 characters long
 	if len(value) != hex.EncodedLen(common.HashLength) {
@@ -290,7 +289,27 @@ func ValidateTxHash(name, value string) (common.Hash, error) {
 	hash := common.BytesToHash(bytes)
 
 	return hash, nil
+}
 
+// Validate TX info
+func ValidateTxInfo(name string, value string) (*core.TransactionInfo, error) {
+	// Remove a 0x prefix if present
+	value = strings.TrimPrefix(value, "0x")
+
+	// Try to parse the string
+	bytes, err := hex.DecodeString(value)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
+	}
+
+	// Deserialize it
+	var info core.TransactionInfo
+	err = json.Unmarshal(bytes, &info)
+	if err != nil {
+		return nil, fmt.Errorf("Deserializing %s failed: %w", name, err)
+	}
+
+	return &info, nil
 }
 
 // Validate a validator pubkey

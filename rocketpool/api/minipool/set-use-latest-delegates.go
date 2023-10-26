@@ -33,7 +33,7 @@ func (f *minipoolSetUseLatestDelegatesContextFactory) Create(vars map[string]str
 }
 
 func (f *minipoolSetUseLatestDelegatesContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*minipoolSetUseLatestDelegatesContext, api.BatchTxInfoData](
+	server.RegisterQuerylessGet[*minipoolSetUseLatestDelegatesContext, api.BatchTxInfoData](
 		router, "delegate/set-use-latest", f, f.handler.serviceProvider,
 	)
 }

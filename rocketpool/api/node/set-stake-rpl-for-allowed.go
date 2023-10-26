@@ -34,7 +34,7 @@ func (f *nodeSetStakeRplForAllowedContextFactory) Create(vars map[string]string)
 }
 
 func (f *nodeSetStakeRplForAllowedContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeSetStakeRplForAllowedContext, api.NodeSetStakeRplForAllowedData](
+	server.RegisterQuerylessGet[*nodeSetStakeRplForAllowedContext, api.NodeSetStakeRplForAllowedData](
 		router, "set-stake-rpl-for-allowed", f, f.handler.serviceProvider,
 	)
 }

@@ -1,45 +1,73 @@
 package tx
 
 import (
+	"encoding/hex"
+	"errors"
 	"fmt"
+	_ "time/tzdata"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func signTx(c *cli.Context, txInfo *core.TransactionInfo) (*api.SignedTxData, error) {
-	// Get services
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, fmt.Errorf("error getting Rocket Pool binding: %w", err)
+// ===============
+// === Factory ===
+// ===============
+
+type txSignTxContextFactory struct {
+	handler *TxHandler
+}
+
+func (f *txSignTxContextFactory) Create(vars map[string]string) (*txSignTxContext, error) {
+	c := &txSignTxContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, fmt.Errorf("error getting wallet: %w", err)
+	inputErrs := []error{
+		server.ValidateArg("tx-info", vars, input.ValidateTxInfo, &c.txInfo),
 	}
-	opts, err := w.GetNodeAccountTransactor()
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *txSignTxContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessGet[*txSignTxContext, api.TxSignTxData](
+		router, "sign-tx", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type txSignTxContext struct {
+	handler *TxHandler
+	txInfo  *core.TransactionInfo
+}
+
+func (c *txSignTxContext) PrepareData(data *api.TxSignTxData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	rp := sp.GetRocketPool()
+
+	err := errors.Join(
+		sp.RequireWalletReady(),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("error getting node account transactor: %w", err)
+		return err
 	}
 
-	// Response
-	response := api.SignedTxData{}
-
-	// Sign it
-	tx, err := rp.SignTransaction(txInfo, opts)
+	tx, err := rp.SignTransaction(c.txInfo, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error signing transaction: %w", err)
+		return fmt.Errorf("error signing transaction: %w", err)
 	}
 
-	// Marshal it
-	txBytes, err := tx.MarshalBinary()
+	bytes, err := tx.MarshalBinary()
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling signed transaction: %w", err)
+		return fmt.Errorf("error marshalling transaction: %w", err)
 	}
-
-	// Return
-	response.TxBytes = txBytes
-	return &response, nil
+	data.SignedTx = hex.EncodeToString(bytes)
+	return nil
 }

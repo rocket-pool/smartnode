@@ -34,7 +34,7 @@ func (f *walletTestSearchAndRecoverContextFactory) Create(vars map[string]string
 }
 
 func (f *walletTestSearchAndRecoverContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*walletTestSearchAndRecoverContext, api.WalletSearchAndRecoverData](
+	server.RegisterQuerylessGet[*walletTestSearchAndRecoverContext, api.WalletSearchAndRecoverData](
 		router, "test-search-and-recover", f, f.handler.serviceProvider,
 	)
 }

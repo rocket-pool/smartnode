@@ -32,7 +32,7 @@ func (f *serviceTerminateDataFolderContextFactory) Create(vars map[string]string
 }
 
 func (f *serviceTerminateDataFolderContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*serviceTerminateDataFolderContext, api.ServiceTerminateDataFolderData](
+	server.RegisterQuerylessGet[*serviceTerminateDataFolderContext, api.ServiceTerminateDataFolderData](
 		router, "terminate-data-folder", f, f.handler.serviceProvider,
 	)
 }

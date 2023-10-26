@@ -1,6 +1,8 @@
 package api
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/smartnode/shared/types"
@@ -33,4 +35,21 @@ type BatchTxData struct {
 
 type SignedTxData struct {
 	TxBytes []byte `json:"txBytes"`
+}
+
+type TxSubmission struct {
+	TxInfo         *core.TransactionInfo `json:"txInfo"`
+	GasLimit       uint64                `json:"gasLimit"`
+	MaxFee         *big.Int              `json:"maxFee"`
+	MaxPriorityFee *big.Int              `json:"maxPriorityFee"`
+}
+
+type SubmitTxBody struct {
+	Submission TxSubmission `json:"submission"`
+	Nonce      *big.Int     `json:"nonce,omitempty"`
+}
+
+type BatchSubmitTxsBody struct {
+	Submissions []TxSubmission `json:"submissions"`
+	FirstNonce  *big.Int       `json:"firstNonce,omitempty"`
 }

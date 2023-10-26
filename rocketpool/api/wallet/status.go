@@ -24,7 +24,7 @@ func (f *walletStatusFactory) Create(vars map[string]string) (*walletStatusConte
 }
 
 func (f *walletStatusFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*walletStatusContext, api.WalletStatusData](
+	server.RegisterQuerylessGet[*walletStatusContext, api.WalletStatusData](
 		router, "status", f, f.handler.serviceProvider,
 	)
 }

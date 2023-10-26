@@ -26,7 +26,7 @@ func (f *walletDeletePasswordContextFactory) Create(vars map[string]string) (*wa
 }
 
 func (f *walletDeletePasswordContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*walletDeletePasswordContext, api.SuccessData](
+	server.RegisterQuerylessGet[*walletDeletePasswordContext, api.SuccessData](
 		router, "delete-password", f, f.handler.serviceProvider,
 	)
 }

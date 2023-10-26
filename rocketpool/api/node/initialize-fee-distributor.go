@@ -30,7 +30,7 @@ func (f *nodeInitializeFeeDistributorContextFactory) Create(vars map[string]stri
 }
 
 func (f *nodeInitializeFeeDistributorContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeInitializeFeeDistributorContext, api.NodeInitializeFeeDistributorData](
+	server.RegisterQuerylessGet[*nodeInitializeFeeDistributorContext, api.NodeInitializeFeeDistributorData](
 		router, "initialize-fee-distributor", f, f.handler.serviceProvider,
 	)
 }

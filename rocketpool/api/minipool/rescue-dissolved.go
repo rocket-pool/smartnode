@@ -41,7 +41,7 @@ func (f *minipoolRescueDissolvedContextFactory) Create(vars map[string]string) (
 }
 
 func (f *minipoolRescueDissolvedContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*minipoolRescueDissolvedContext, api.BatchTxInfoData](
+	server.RegisterQuerylessGet[*minipoolRescueDissolvedContext, api.BatchTxInfoData](
 		router, "rescue-dissolved", f, f.handler.serviceProvider,
 	)
 }

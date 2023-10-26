@@ -27,7 +27,7 @@ func (f *nodeCheckCollateralContextFactory) Create(vars map[string]string) (*nod
 }
 
 func (f *nodeCheckCollateralContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*nodeCheckCollateralContext, api.NodeCheckCollateralData](
+	server.RegisterQuerylessGet[*nodeCheckCollateralContext, api.NodeCheckCollateralData](
 		router, "check-collateral", f, f.handler.serviceProvider,
 	)
 }

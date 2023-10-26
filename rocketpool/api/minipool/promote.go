@@ -33,7 +33,7 @@ func (f *minipoolPromoteContextFactory) Create(vars map[string]string) (*minipoo
 }
 
 func (f *minipoolPromoteContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessRoute[*minipoolPromoteContext, api.BatchTxInfoData](
+	server.RegisterQuerylessGet[*minipoolPromoteContext, api.BatchTxInfoData](
 		router, "promote", f, f.handler.serviceProvider,
 	)
 }
