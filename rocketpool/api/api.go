@@ -1,12 +1,19 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"os"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/fatih/color"
+	"github.com/gorilla/mux"
+	"github.com/rocket-pool/smartnode/rocketpool/api/service"
 	"github.com/rocket-pool/smartnode/rocketpool/api/tx"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/auction"
 	"github.com/rocket-pool/smartnode/rocketpool/api/faucet"
@@ -15,89 +22,94 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/odao"
 	"github.com/rocket-pool/smartnode/rocketpool/api/queue"
-	apiservice "github.com/rocket-pool/smartnode/rocketpool/api/service"
 	"github.com/rocket-pool/smartnode/rocketpool/api/wallet"
-	"github.com/rocket-pool/smartnode/shared/services"
-	apitypes "github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 const (
-	MaxConcurrentEth1Requests = 200
+	ApiLogColor color.Attribute = color.FgHiBlue
 )
 
-// Waits for an auction transaction
-func waitForTransaction(c *cli.Context, hash common.Hash) (*apitypes.ApiResponse, error) {
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := apitypes.ApiResponse{}
-	err = rp.WaitForTransactionByHash(hash)
-	if err != nil {
-		return nil, fmt.Errorf("error waiting for transaction %s: %w", hash.Hex(), err)
-	}
-
-	// Return response
-	return &response, nil
+type IHandler interface {
+	RegisterRoutes(router *mux.Router)
 }
 
-// Register commands
-func RegisterCommands(app *cli.App, name string, aliases []string) {
-	// CLI command
-	command := cli.Command{
-		Name:        name,
-		Aliases:     aliases,
-		Usage:       "Run Rocket Pool API commands",
-		Subcommands: []cli.Command{},
-	}
+type ApiManager struct {
+	log        log.ColorLogger
+	handlers   []IHandler
+	socketPath string
+	socket     net.Listener
+	server     http.Server
+	router     *mux.Router
+}
 
-	// Don't show help message for api errors because of JSON serialisation
-	command.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
-		return err
-	}
+func NewApiManager(sp *services.ServiceProvider) *ApiManager {
+	// Create the router
+	router := mux.NewRouter()
 
-	// Register subcommands
-	auction.RegisterSubcommands(&command, "auction", []string{"a"})
-	faucet.RegisterSubcommands(&command, "faucet", []string{"f"})
-	minipool.RegisterSubcommands(&command, "minipool", []string{"m"})
-	network.RegisterSubcommands(&command, "network", []string{"e"})
-	node.RegisterSubcommands(&command, "node", []string{"n"})
-	odao.RegisterSubcommands(&command, "odao", []string{"o"})
-	queue.RegisterSubcommands(&command, "queue", []string{"q"})
-	tx.RegisterSubcommands(&command, "tx", []string{"t"})
-	wallet.RegisterSubcommands(&command, "wallet", []string{"w"})
-	apiservice.RegisterSubcommands(&command, "service", []string{"s"})
-
-	// Append a general wait-for-transaction command to support async operations
-	command.Subcommands = append(command.Subcommands, cli.Command{
-		Name:      "wait",
-		Usage:     "Wait for a transaction to complete",
-		UsageText: "rocketpool api wait tx-hash",
-		Action: func(c *cli.Context) error {
-			// Validate args
-			if err := cliutils.ValidateArgCount(c, 1); err != nil {
-				return err
-			}
-			hash, err := cliutils.ValidateTxHash("tx-hash", c.Args().Get(0))
-			if err != nil {
-				return err
-			}
-
-			// Run
-			api.PrintResponse(waitForTransaction(c, hash))
-			return nil
+	// Create the manager
+	cfg := sp.GetConfig()
+	mgr := &ApiManager{
+		log: log.NewColorLogger(ApiLogColor),
+		handlers: []IHandler{
+			auction.NewAuctionHandler(sp),
+			faucet.NewFaucetHandler(sp),
+			minipool.NewMinipoolHandler(sp),
+			network.NewNetworkHandler(sp),
+			node.NewNodeHandler(sp),
+			odao.NewOracleDaoHandler(sp),
+			queue.NewQueueHandler(sp),
+			service.NewServiceHandler(sp),
+			tx.NewTxHandler(sp),
+			wallet.NewWalletHandler(sp),
 		},
-	})
+		socketPath: cfg.Smartnode.GetSocketPath(),
+		router:     router,
+		server: http.Server{
+			Handler: router,
+		},
+	}
 
-	// Register CLI command
-	app.Commands = append(app.Commands, command)
+	// Register each route
+	for _, handler := range mgr.handlers {
+		handler.RegisterRoutes(mgr.router)
+	}
 
-	// The daemon makes a large number of concurrent RPC requests to the Eth1 client
-	// The HTTP transport is set to cache connections for future re-use equal to the maximum expected number of concurrent requests
-	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
-	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
+	return mgr
+}
+
+// Starts listening for incoming HTTP requests
+func (m *ApiManager) Start() error {
+	// Create the socket
+	socket, err := net.Listen("unix", m.socketPath)
+	if err != nil {
+		return fmt.Errorf("error creating socket: %w", err)
+	}
+	m.socket = socket
+
+	// Start listening
+	go func() {
+		err := m.server.Serve(socket)
+		if !errors.Is(err, http.ErrServerClosed) {
+			m.log.Printlnf("error while listening for HTTP requests: %s", err.Error())
+		}
+	}()
+
+	return nil
+}
+
+// Stops the HTTP listener
+func (m *ApiManager) Stop() error {
+	// Shutdown the listener
+	err := m.server.Shutdown(context.Background())
+	if err != nil {
+		return fmt.Errorf("error stopping listener: %w", err)
+	}
+
+	// Remove the socket file
+	err = os.Remove(m.socketPath)
+	if err != nil {
+		return fmt.Errorf("error removing socket file: %w", err)
+	}
+
+	return nil
 }

@@ -35,7 +35,8 @@ func NewOracleDaoHandler(serviceProvider *services.ServiceProvider) *OracleDaoHa
 }
 
 func (h *OracleDaoHandler) RegisterRoutes(router *mux.Router) {
+	subrouter := router.PathPrefix("/odao").Subrouter()
 	for _, factory := range h.factories {
-		factory.RegisterRoute(router)
+		factory.RegisterRoute(subrouter)
 	}
 }

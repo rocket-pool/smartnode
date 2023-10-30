@@ -51,7 +51,8 @@ func NewMinipoolHandler(serviceProvider *services.ServiceProvider) *MinipoolHand
 }
 
 func (h *MinipoolHandler) RegisterRoutes(router *mux.Router) {
+	subrouter := router.PathPrefix("/minipool").Subrouter()
 	for _, factory := range h.factories {
-		factory.RegisterRoute(router)
+		factory.RegisterRoute(subrouter)
 	}
 }

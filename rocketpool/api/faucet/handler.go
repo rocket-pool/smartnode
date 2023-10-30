@@ -24,7 +24,8 @@ func NewFaucetHandler(serviceProvider *services.ServiceProvider) *FaucetHandler 
 }
 
 func (h *FaucetHandler) RegisterRoutes(router *mux.Router) {
+	subrouter := router.PathPrefix("/faucet").Subrouter()
 	for _, factory := range h.factories {
-		factory.RegisterRoute(router)
+		factory.RegisterRoute(subrouter)
 	}
 }

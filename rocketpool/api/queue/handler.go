@@ -24,7 +24,8 @@ func NewQueueHandler(serviceProvider *services.ServiceProvider) *QueueHandler {
 }
 
 func (h *QueueHandler) RegisterRoutes(router *mux.Router) {
+	subrouter := router.PathPrefix("/queue").Subrouter()
 	for _, factory := range h.factories {
-		factory.RegisterRoute(router)
+		factory.RegisterRoute(subrouter)
 	}
 }

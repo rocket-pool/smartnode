@@ -24,7 +24,8 @@ func NewServiceHandler(serviceProvider *services.ServiceProvider) *ServiceHandle
 }
 
 func (h *ServiceHandler) RegisterRoutes(router *mux.Router) {
+	subrouter := router.PathPrefix("/service").Subrouter()
 	for _, factory := range h.factories {
-		factory.RegisterRoute(router)
+		factory.RegisterRoute(subrouter)
 	}
 }

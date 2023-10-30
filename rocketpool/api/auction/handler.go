@@ -28,7 +28,8 @@ func NewAuctionHandler(serviceProvider *services.ServiceProvider) *AuctionHandle
 }
 
 func (h *AuctionHandler) RegisterRoutes(router *mux.Router) {
+	subrouter := router.PathPrefix("/auction").Subrouter()
 	for _, factory := range h.factories {
-		factory.RegisterRoute(router)
+		factory.RegisterRoute(subrouter)
 	}
 }

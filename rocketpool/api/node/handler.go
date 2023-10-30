@@ -51,7 +51,8 @@ func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
 }
 
 func (h *NodeHandler) RegisterRoutes(router *mux.Router) {
+	subrouter := router.PathPrefix("/node").Subrouter()
 	for _, factory := range h.factories {
-		factory.RegisterRoute(router)
+		factory.RegisterRoute(subrouter)
 	}
 }
