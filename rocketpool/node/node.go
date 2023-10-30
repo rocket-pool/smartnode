@@ -133,7 +133,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	promoteMinipools, err := newPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor))
+	promoteMinipools, err := NewPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor))
 	if err != nil {
 		return err
 	}

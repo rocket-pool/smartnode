@@ -12,9 +12,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-// The fraction of the timeout period to trigger overdue transactions
-const TimeoutSafetyFactor int = 2
-
 // Print the gas price and cost of a TX
 func PrintAndCheckGasInfo(gasInfo core.GasInfo, checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) bool {
 	// Check the gas threshold if requested

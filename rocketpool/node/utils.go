@@ -8,15 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
-func getAutoTxInfo(cfg *config.RocketPoolConfig, logger *log.ColorLogger) (bool, *big.Int, *big.Int, float64) {
-	// Check if auto-distributing is disabled
-	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
-	disabled := false
-	if gasThreshold == 0 {
-		logger.Println("Automatic tx gas threshold is 0, disabling auto-distribute.")
-		disabled = true
-	}
-
+func getAutoTxInfo(cfg *config.RocketPoolConfig, logger *log.ColorLogger) (*big.Int, *big.Int) {
 	// Get the user-requested max fee
 	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
 	var maxFee *big.Int
@@ -36,5 +28,5 @@ func getAutoTxInfo(cfg *config.RocketPoolConfig, logger *log.ColorLogger) (bool,
 		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
 
-	return disabled, maxFee, priorityFee, gasThreshold
+	return maxFee, priorityFee
 }

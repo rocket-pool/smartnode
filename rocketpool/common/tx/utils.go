@@ -7,10 +7,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
+
+// The fraction of the timeout period to trigger overdue transactions
+const TimeoutSafetyFactor time.Duration = 2
 
 // Prints a TX's details to the logger and waits for it to validated.
 func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, logger *log.ColorLogger, txInfo *core.TransactionInfo, opts *bind.TransactOpts) error {
@@ -38,14 +40,8 @@ func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, rp *rocketpool.Roc
 }
 
 // True if a transaction is due and needs to bypass the gas threshold
-func IsTransactionDue(rp *rocketpool.RocketPool, startTime time.Time) (bool, time.Duration, error) {
-	// Get the dissolve timeout
-	timeout, err := protocol.GetMinipoolLaunchTimeout(rp, nil)
-	if err != nil {
-		return false, 0, err
-	}
-
-	dueTime := timeout / time.Duration(TimeoutSafetyFactor)
+func IsTransactionDue(rp *rocketpool.RocketPool, startTime time.Time, minipoolLaunchTimeout time.Duration) (bool, time.Duration, error) {
+	dueTime := minipoolLaunchTimeout / TimeoutSafetyFactor
 	isDue := time.Since(startTime) > dueTime
 	timeUntilDue := time.Until(startTime.Add(dueTime))
 	return isDue, timeUntilDue, nil
