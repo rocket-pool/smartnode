@@ -12,21 +12,20 @@ import (
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Distribute minipools task
 type distributeMinipools struct {
-	c                   *cli.Context
+	sp                  *services.ServiceProvider
 	log                 log.ColorLogger
 	cfg                 *config.RocketPoolConfig
 	w                   *wallet.LocalWallet
@@ -43,89 +42,41 @@ type distributeMinipools struct {
 }
 
 // Create distribute minipools task
-func newDistributeMinipools(c *cli.Context, logger log.ColorLogger) (*distributeMinipools, error) {
-
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-	d, err := services.GetDocker(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if auto-distributing is disabled
-	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
-	distributeThreshold := cfg.Smartnode.DistributeThreshold.Value.(float64)
-	disabled := false
-	if gasThreshold == 0 {
-		logger.Println("Automatic tx gas threshold is 0, disabling auto-distribute.")
-		disabled = true
-	} else {
-		// Safety clamp
-		if distributeThreshold >= 8 {
-			logger.Printlnf("WARNING: Auto-distribute threshold is more than 8 ETH (%.6f ETH), reducing to 7.5 ETH for safety", distributeThreshold)
-			distributeThreshold = 7.5
-		} else if distributeThreshold == 0 {
-			logger.Println("Auto-distribute threshold is 0, disabling auto-distribute.")
-			disabled = true
-		}
-	}
-
-	// Get the user-requested max fee
-	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
-	var maxFee *big.Int
-	if maxFeeGwei == 0 {
-		maxFee = nil
-	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
-	}
-
-	// Get the user-requested max fee
-	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
-	var priorityFee *big.Int
-	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
-	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
-	}
-
+func NewDistributeMinipools(sp *services.ServiceProvider, logger log.ColorLogger) (*distributeMinipools, error) {
 	// Return task
 	return &distributeMinipools{
-		c:                   c,
-		log:                 logger,
-		cfg:                 cfg,
-		w:                   w,
-		rp:                  rp,
-		bc:                  bc,
-		d:                   d,
-		gasThreshold:        gasThreshold,
-		distributeThreshold: eth.EthToWei(distributeThreshold),
-		disabled:            disabled,
-		eight:               eth.EthToWei(8),
-		maxFee:              maxFee,
-		maxPriorityFee:      priorityFee,
-		gasLimit:            0,
+		sp:       sp,
+		log:      logger,
+		eight:    eth.EthToWei(8),
+		gasLimit: 0,
 	}, nil
-
 }
 
 // Distribute minipools
-func (t *distributeMinipools) run(state *state.NetworkState) error {
+func (t *distributeMinipools) Run(state *state.NetworkState) error {
+	// Get services
+	t.cfg = t.sp.GetConfig()
+	t.w = t.sp.GetWallet()
+	t.rp = t.sp.GetRocketPool()
+	t.bc = t.sp.GetBeaconClient()
+	t.d = t.sp.GetDocker()
+	t.w = t.sp.GetWallet()
+	nodeAddress, hasNodeAddress := t.w.GetAddress()
+	if !hasNodeAddress {
+		return nil
+	}
+	t.disabled, t.maxFee, t.maxPriorityFee, t.gasThreshold = getAutoTxInfo(t.cfg, &t.log)
+
+	distributeThreshold := t.cfg.Smartnode.DistributeThreshold.Value.(float64)
+	// Safety clamp
+	if distributeThreshold >= 8 {
+		t.log.Printlnf("WARNING: Auto-distribute threshold is more than 8 ETH (%.6f ETH), reducing to 7.5 ETH for safety", distributeThreshold)
+		distributeThreshold = 7.5
+	} else if distributeThreshold == 0 {
+		t.log.Println("Auto-distribute threshold is 0, disabling auto-distribute.")
+		t.disabled = true
+	}
+	t.distributeThreshold = eth.EthToWei(distributeThreshold)
 
 	// Check if auto-distribute is disabled
 	if t.disabled {
@@ -134,20 +85,18 @@ func (t *distributeMinipools) run(state *state.NetworkState) error {
 
 	// Log
 	t.log.Println("Checking for minipools to distribute...")
+	mpMgr, err := minipool.NewMinipoolManager(t.rp)
+	if err != nil {
+		return fmt.Errorf("error creating minipool manager: %w", err)
+	}
 
 	// Get the latest state
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
 	}
 
-	// Get node account
-	nodeAccount, err := t.w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
-
 	// Get prelaunch minipools
-	minipools, err := t.getDistributableMinipools(nodeAccount.Address, state, opts)
+	minipools, err := t.getDistributableMinipools(nodeAddress, state, opts)
 	if err != nil {
 		return err
 	}
@@ -159,30 +108,24 @@ func (t *distributeMinipools) run(state *state.NetworkState) error {
 	t.log.Printlnf("%d minipool(s) can have their balances distributed...", len(minipools))
 
 	// Distribute minipools
-	successCount := 0
 	for _, mpd := range minipools {
-		success, err := t.distributeMinipool(mpd, opts)
+		_, err := t.distributeMinipool(mpMgr, mpd, opts)
 		if err != nil {
-			t.log.Println(fmt.Errorf("Could not distribute balance of minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
+			t.log.Println(fmt.Errorf("error distributing balance of minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
 			return err
-		}
-		if success {
-			successCount++
 		}
 	}
 
 	// Return
 	return nil
-
 }
 
 // Get distributable minipools
 func (t *distributeMinipools) getDistributableMinipools(nodeAddress common.Address, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
-
 	// Filter minipools by status
 	distributableMinipools := []*rpstate.NativeMinipoolDetails{}
 	for _, mpd := range state.MinipoolDetailsByNode[nodeAddress] {
-		if mpd.Status != rptypes.Staking || mpd.Finalised {
+		if mpd.Status != rptypes.MinipoolStatus_Staking || mpd.Finalised {
 			// Ignore minipools that aren't staking and non-finalized
 			continue
 		}
@@ -201,22 +144,20 @@ func (t *distributeMinipools) getDistributableMinipools(nodeAddress common.Addre
 
 	// Return
 	return distributableMinipools, nil
-
 }
 
 // Distribute a minipool
-func (t *distributeMinipools) distributeMinipool(mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
-
+func (t *distributeMinipools) distributeMinipool(mpMgr *minipool.MinipoolManager, mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
 	// Log
 	t.log.Printlnf("Distributing minipool %s (total balance of %.6f ETH)...", mpd.MinipoolAddress.Hex(), eth.WeiToEth(mpd.Balance))
 
-	mp, err := minipool.NewMinipoolFromVersion(t.rp, mpd.MinipoolAddress, mpd.Version, callOpts)
+	mp, err := mpMgr.NewMinipoolFromVersion(mpd.MinipoolAddress, mpd.Version)
 	if err != nil {
-		return false, fmt.Errorf("cannot create binding for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+		return false, fmt.Errorf("error creating minipool binding for %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
 
 	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
+	opts, err := t.w.GetTransactor()
 	if err != nil {
 		return false, err
 	}
@@ -224,53 +165,49 @@ func (t *distributeMinipools) distributeMinipool(mpd *rpstate.NativeMinipoolDeta
 	// Get the gas limit
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
-		return false, fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", mpd.MinipoolAddress.Hex(), mp.GetVersion())
+		return false, fmt.Errorf("minipool %s cannot be converted to v3 (current version: %d)", mpd.MinipoolAddress.Hex(), mpd.Version)
 	}
-	gasInfo, err := mpv3.EstimateDistributeBalanceGas(true, opts)
+	txInfo, err := mpv3.DistributeBalance(opts, true)
 	if err != nil {
-		return false, fmt.Errorf("Could not estimate the gas required to distribute minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+		return false, fmt.Errorf("error getting distribute minipool tx for %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
-	var gas *big.Int
+	if txInfo.SimError != "" {
+		return false, fmt.Errorf("simulating distribute minipool tx for %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimError)
+	}
+	var gasLimit *big.Int
 	if t.gasLimit != 0 {
-		gas = new(big.Int).SetUint64(t.gasLimit)
+		gasLimit = new(big.Int).SetUint64(t.gasLimit)
 	} else {
-		gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+		gasLimit = new(big.Int).SetUint64(txInfo.GasInfo.SafeGasLimit)
 	}
 
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(&t.log)
 		if err != nil {
 			return false, err
 		}
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
 		return false, nil
 	}
 
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = t.maxPriorityFee
-	opts.GasLimit = gas.Uint64()
-
-	// Distribute minipool
-	hash, err := mpv3.DistributeBalance(true, opts)
-	if err != nil {
-		return false, err
-	}
+	opts.GasLimit = gasLimit.Uint64()
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
 	if err != nil {
 		return false, err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully distributed balance of minipool %s.", mp.GetAddress().Hex())
+	t.log.Printlnf("Successfully distributed balance of minipool %s.", mpd.MinipoolAddress.Hex())
 
 	// Return
 	return true, nil
-
 }

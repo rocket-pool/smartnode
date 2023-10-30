@@ -5,17 +5,17 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/gas/etherchain"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/gas/etherscan"
 	rpsvc "github.com/rocket-pool/smartnode/rocketpool-cli/utils/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/shared/gas/etherchain"
+	"github.com/rocket-pool/smartnode/shared/gas/etherscan"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bool) error {
+func AssignMaxFeeAndLimit(gasInfo core.GasInfo, rp *rpsvc.Client, headless bool) error {
 
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
@@ -127,16 +127,16 @@ func GetHeadlessMaxFeeWei() (*big.Int, error) {
 		return etherchainData.RapidWei, nil
 	}
 
-	fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
+	fmt.Printf("%sWARNING: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 	etherscanData, err := etherscan.GetGasPrices()
 	if err == nil {
 		return eth.GweiToWei(etherscanData.FastGwei), nil
 	}
 
-	return nil, fmt.Errorf("Error getting gas price suggestions: %w", err)
+	return nil, fmt.Errorf("error getting gas price suggestions: %w", err)
 }
 
-func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) float64 {
+func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInfo core.GasInfo, priorityFee float64, gasLimit uint64) float64 {
 
 	rapidGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.RapidWei)+priorityFee, 0)
 	rapidEth := eth.WeiToEth(gasSuggestion.RapidWei)
@@ -229,7 +229,7 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
 
 }
 
-func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) float64 {
+func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo core.GasInfo, priorityFee float64, gasLimit uint64) float64 {
 
 	fastGwei := math.RoundUp(gasSuggestion.FastGwei+priorityFee, 0)
 	fastEth := gasSuggestion.FastGwei / eth.WeiPerGwei
