@@ -36,12 +36,12 @@ func (f *txBatchSubmitTxsContextFactory) Create(body api.BatchSubmitTxsBody) (*t
 		if submission.GasLimit == 0 {
 			return nil, fmt.Errorf("submission %d gas limit must be set", i)
 		}
-		if submission.MaxFee == nil {
-			return nil, fmt.Errorf("submission %d max fee must be set", i)
-		}
-		if submission.MaxPriorityFee == nil {
-			return nil, fmt.Errorf("submission %d max priority fee must be set", i)
-		}
+	}
+	if body.MaxFee == nil {
+		return nil, fmt.Errorf("submission max fee must be set")
+	}
+	if body.MaxPriorityFee == nil {
+		return nil, fmt.Errorf("submission max priority fee must be set")
 	}
 	return c, nil
 }
@@ -87,11 +87,11 @@ func (c *txBatchSubmitTxsContext) PrepareData(data *api.BatchTxData, opts *bind.
 	}
 
 	txHashes := make([]common.Hash, len(c.body.Submissions))
+	opts.GasFeeCap = c.body.MaxFee
+	opts.GasTipCap = c.body.MaxPriorityFee
 	for i, submission := range c.body.Submissions {
 		opts.Nonce = currentNonce
 		opts.GasLimit = submission.GasLimit
-		opts.GasFeeCap = submission.MaxFee
-		opts.GasTipCap = submission.MaxPriorityFee
 
 		tx, err := rp.ExecuteTransaction(submission.TxInfo, opts)
 		if err != nil {

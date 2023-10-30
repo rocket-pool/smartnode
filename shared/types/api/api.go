@@ -37,19 +37,16 @@ type SignedTxData struct {
 	TxBytes []byte `json:"txBytes"`
 }
 
-type TxSubmission struct {
-	TxInfo         *core.TransactionInfo `json:"txInfo"`
-	GasLimit       uint64                `json:"gasLimit"`
-	MaxFee         *big.Int              `json:"maxFee"`
-	MaxPriorityFee *big.Int              `json:"maxPriorityFee"`
-}
-
 type SubmitTxBody struct {
-	Submission TxSubmission `json:"submission"`
-	Nonce      *big.Int     `json:"nonce,omitempty"`
+	Submission     *core.TransactionSubmission `json:"submission"`
+	Nonce          *big.Int                    `json:"nonce,omitempty"`
+	MaxFee         *big.Int                    `json:"maxFee"`
+	MaxPriorityFee *big.Int                    `json:"maxPriorityFee"`
 }
 
 type BatchSubmitTxsBody struct {
-	Submissions []TxSubmission `json:"submissions"`
-	FirstNonce  *big.Int       `json:"firstNonce,omitempty"`
+	Submissions    []*core.TransactionSubmission `json:"submissions"`
+	FirstNonce     *big.Int                      `json:"firstNonce,omitempty"`
+	MaxFee         *big.Int                      `json:"maxFee"`
+	MaxPriorityFee *big.Int                      `json:"maxPriorityFee"`
 }

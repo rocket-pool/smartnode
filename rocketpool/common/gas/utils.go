@@ -47,6 +47,40 @@ func PrintAndCheckGasInfo(gasInfo core.GasInfo, checkThreshold bool, gasThreshol
 	return true
 }
 
+// Print the gas price and cost of a TX batch
+func PrintAndCheckGasInfoForBatch(submissions []*core.TransactionSubmission, checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int) bool {
+	// Check the gas threshold if requested
+	if checkThreshold {
+		gasThresholdWei := math.RoundUp(gasThresholdGwei*eth.WeiPerGwei, 0)
+		gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdWei))
+		if maxFeeWei.Cmp(gasThreshold) != -1 {
+			logger.Printlnf("Current network gas price is %.2f Gwei, which is not lower than the set threshold of %.2f Gwei. "+
+				"Aborting the transaction.", eth.WeiToGwei(maxFeeWei), gasThresholdGwei)
+			return false
+		}
+	} else {
+		logger.Println("This transaction does not check the gas threshold limit, continuing...")
+	}
+
+	// Print the total TX cost
+	totalEstGasWei := big.NewInt(0)
+	totalAssignedGasWei := big.NewInt(0)
+	for _, submission := range submissions {
+		lowGas := big.NewInt(0).SetUint64(submission.TxInfo.GasInfo.EstGasLimit)
+		highGas := big.NewInt(0).SetUint64(submission.GasLimit)
+		lowGas.Mul(lowGas, maxFeeWei)
+		highGas.Mul(highGas, maxFeeWei)
+		totalEstGasWei.Add(totalEstGasWei, lowGas)
+		totalAssignedGasWei.Add(totalAssignedGasWei, highGas)
+	}
+	logger.Printlnf("These transactions combined will use a max fee of %.6f Gwei, for a total of up to %.6f - %.6f ETH.",
+		eth.WeiToGwei(maxFeeWei),
+		math.RoundDown(eth.WeiToEth(totalEstGasWei), 6),
+		math.RoundDown(eth.WeiToEth(totalAssignedGasWei), 6))
+
+	return true
+}
+
 // Get the suggested max fee for service operations
 func GetMaxFeeWeiForDaemon(logger *log.ColorLogger) (*big.Int, error) {
 	etherchainData, err := etherchain.GetGasPrices()

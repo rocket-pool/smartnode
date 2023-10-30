@@ -32,10 +32,10 @@ func (f *txSubmitTxContextFactory) Create(body api.SubmitTxBody) (*txSubmitTxCon
 	if body.Submission.GasLimit == 0 {
 		return nil, fmt.Errorf("submission gas limit must be set")
 	}
-	if body.Submission.MaxFee == nil {
+	if body.MaxFee == nil {
 		return nil, fmt.Errorf("submission max fee must be set")
 	}
-	if body.Submission.MaxPriorityFee == nil {
+	if body.MaxPriorityFee == nil {
 		return nil, fmt.Errorf("submission max priority fee must be set")
 	}
 	return c, nil
@@ -71,8 +71,8 @@ func (c *txSubmitTxContext) PrepareData(data *api.TxData, opts *bind.TransactOpt
 		opts.Nonce = c.body.Nonce
 	}
 	opts.GasLimit = c.body.Submission.GasLimit
-	opts.GasFeeCap = c.body.Submission.MaxFee
-	opts.GasTipCap = c.body.Submission.MaxPriorityFee
+	opts.GasFeeCap = c.body.MaxFee
+	opts.GasTipCap = c.body.MaxPriorityFee
 
 	tx, err := rp.ExecuteTransaction(c.body.Submission.TxInfo, opts)
 	if err != nil {
