@@ -4,9 +4,8 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 )
 
 // Represents the collector for the RPL metrics
@@ -23,11 +22,8 @@ type RplCollector struct {
 	// The date and time of the next RPL rewards checkpoint
 	checkpointTime *prometheus.Desc
 
-	// The Rocket Pool config
-	cfg *config.RocketPoolConfig
-
-	// The Rocket Pool contract manager
-	rp *rocketpool.RocketPool
+	// The Smartnode service provider
+	sp *services.ServiceProvider
 
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
@@ -37,7 +33,7 @@ type RplCollector struct {
 }
 
 // Create a new RplCollector instance
-func NewRplCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *RplCollector {
+func NewRplCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *RplCollector {
 	subsystem := "rpl"
 	return &RplCollector{
 		rplPrice: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rpl_price"),
@@ -56,8 +52,7 @@ func NewRplCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, st
 			"The date and time of the next RPL rewards checkpoint",
 			nil, nil,
 		),
-		rp:          rp,
-		cfg:         cfg,
+		sp:          sp,
 		stateLocker: stateLocker,
 		logPrefix:   "RPL Collector",
 	}

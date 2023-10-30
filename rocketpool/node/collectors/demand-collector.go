@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 )
 
 const namespace = "rocketpool"
@@ -27,8 +27,8 @@ type DemandCollector struct {
 	// The number of minipools currently in the queue
 	queueLength *prometheus.Desc
 
-	// The Rocket Pool contract manager
-	rp *rocketpool.RocketPool
+	// The Smartnode service provider
+	sp *services.ServiceProvider
 
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
@@ -38,7 +38,7 @@ type DemandCollector struct {
 }
 
 // Create a new DemandCollector instance
-func NewDemandCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *DemandCollector {
+func NewDemandCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *DemandCollector {
 	subsystem := "demand"
 	return &DemandCollector{
 		depositPoolBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "deposit_pool_balance"),
@@ -61,7 +61,7 @@ func NewDemandCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *De
 			"The number of minipools currently in the queue",
 			nil, nil,
 		),
-		rp:          rp,
+		sp:          sp,
 		stateLocker: stateLocker,
 		logPrefix:   "Demand Collector",
 	}
@@ -86,8 +86,8 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 
 	balanceFloat := eth.WeiToEth(state.NetworkDetails.DepositPoolBalance)
 	excessFloat := eth.WeiToEth(state.NetworkDetails.DepositPoolExcess)
-	totalFloat := eth.WeiToEth(state.NetworkDetails.QueueCapacity.Total)
-	effectiveFloat := eth.WeiToEth(state.NetworkDetails.QueueCapacity.Effective)
+	totalFloat := eth.WeiToEth(state.NetworkDetails.TotalQueueCapacity)
+	effectiveFloat := eth.WeiToEth(state.NetworkDetails.EffectiveQueueCapacity)
 	queueLength := float64(state.NetworkDetails.QueueLength.Uint64())
 
 	channel <- prometheus.MustNewConstMetric(

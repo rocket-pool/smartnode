@@ -1530,6 +1530,8 @@ github.com/rocket-pool/rocketpool-go v1.10.1-0.20231019084533-9773ee65d99b h1:BZ
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20231019084533-9773ee65d99b/go.mod h1:FTnbsaQRxyzYSrWjThgtf7HWp182MxayRzQbvgjXNWM=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20231023010839-a04a06e919dc h1:4IjwZ7J9p/fiGjRsbuDRTpAKgjIadWonzPC2WfL9XbA=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20231023010839-a04a06e919dc/go.mod h1:FTnbsaQRxyzYSrWjThgtf7HWp182MxayRzQbvgjXNWM=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20231023040141-b5c2aa369648 h1:E7cAi8E+LHYFf2ZnpOXdD0VEBqbUIbGxQ6JnPHrg7ZM=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20231023040141-b5c2aa369648/go.mod h1:FTnbsaQRxyzYSrWjThgtf7HWp182MxayRzQbvgjXNWM=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
@@ -2211,6 +2213,7 @@ golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 h1:H2TDz8ibqkAF6YGhCdN3j
 golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2/go.mod h1:K8+ghG5WaK9qNqU5K3HdILfMLy1f3aNYFI/wnl100a8=
 gonum.org/v1/gonum v0.12.0 h1:xKuo6hzt+gMav00meVPUlXwSdoEJP46BR+wdxQEFK2o=
 gonum.org/v1/gonum v0.12.0/go.mod h1:73TDxJfAAHeA8Mk9mf8NlIppyhQNo5GLTcYeqgo2lvY=
+gonum.org/v1/gonum v0.13.0 h1:a0T3bh+7fhRyqeNbiC3qVHYmkiQgit3wnNan/2c0HMM=
 gonum.org/v1/gonum v0.13.0/go.mod h1:/WPYRckkfWrhWefxyYTfrTtQR0KH4iyHNuzxqXAKyAU=
 google.golang.org/api v0.0.0-20180910000450-7ca32eb868bf/go.mod h1:4mhQ8q/RsB7i+udVvVy5NUi08OU8ZlA0gRVgrF7VFY0=
 google.golang.org/api v0.0.0-20181030000543-1d582fd0359e/go.mod h1:4mhQ8q/RsB7i+udVvVy5NUi08OU8ZlA0gRVgrF7VFY0=

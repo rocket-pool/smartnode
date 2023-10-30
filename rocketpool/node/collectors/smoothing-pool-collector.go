@@ -4,9 +4,8 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 )
 
 // Represents the collector for Smoothing Pool metrics
@@ -14,11 +13,8 @@ type SmoothingPoolCollector struct {
 	// the ETH balance on the smoothing pool
 	ethBalanceOnSmoothingPool *prometheus.Desc
 
-	// The Rocket Pool contract manager
-	rp *rocketpool.RocketPool
-
-	// The EC client
-	ec *services.ExecutionClientManager
+	// The Smartnode service provider
+	sp *services.ServiceProvider
 
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
@@ -28,15 +24,14 @@ type SmoothingPoolCollector struct {
 }
 
 // Create a new SmoothingPoolCollector instance
-func NewSmoothingPoolCollector(rp *rocketpool.RocketPool, ec *services.ExecutionClientManager, stateLocker *StateLocker) *SmoothingPoolCollector {
+func NewSmoothingPoolCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *SmoothingPoolCollector {
 	subsystem := "smoothing_pool"
 	return &SmoothingPoolCollector{
 		ethBalanceOnSmoothingPool: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_balance"),
 			"The ETH balance on the smoothing pool",
 			nil, nil,
 		),
-		rp:          rp,
-		ec:          ec,
+		sp:          sp,
 		stateLocker: stateLocker,
 		logPrefix:   "SP Collector",
 	}

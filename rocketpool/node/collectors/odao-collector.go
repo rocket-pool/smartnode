@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 )
 
 // Represents the collector for the ODAO metrics
@@ -21,8 +21,8 @@ type OdaoCollector struct {
 	// The latest ETH1 block where network prices were reportable by the ODAO
 	latestReportableBlock *prometheus.Desc
 
-	// The Rocket Pool contract manager
-	rp *rocketpool.RocketPool
+	// The Smartnode service provider
+	sp *services.ServiceProvider
 
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
@@ -32,7 +32,7 @@ type OdaoCollector struct {
 }
 
 // Create a new DemandCollector instance
-func NewOdaoCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *OdaoCollector {
+func NewOdaoCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *OdaoCollector {
 	subsystem := "odao"
 	return &OdaoCollector{
 		currentEth1Block: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "current_eth1_block"),
@@ -51,7 +51,7 @@ func NewOdaoCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *Odao
 			"The latest ETH1 block where network prices were reportable by the ODAO",
 			nil, nil,
 		),
-		rp:          rp,
+		sp:          sp,
 		stateLocker: stateLocker,
 		logPrefix:   "ODAO Collector",
 	}

@@ -4,10 +4,8 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 )
 
 // Represents the collector for the Supply metrics
@@ -27,8 +25,8 @@ type SupplyCollector struct {
 	// The number of active (non-finalized) Rocket Pool minipools
 	activeMinipools *prometheus.Desc
 
-	// The Rocket Pool contract manager
-	rp *rocketpool.RocketPool
+	// The Smartnode service provider
+	sp *services.ServiceProvider
 
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
@@ -38,7 +36,7 @@ type SupplyCollector struct {
 }
 
 // Create a new PerformanceCollector instance
-func NewSupplyCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *SupplyCollector {
+func NewSupplyCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *SupplyCollector {
 	subsystem := "supply"
 	return &SupplyCollector{
 		nodeCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "node_count"),
@@ -61,7 +59,7 @@ func NewSupplyCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *Su
 			"The number of active (non-finalized) Rocket Pool minipools",
 			nil, nil,
 		),
-		rp:          rp,
+		sp:          sp,
 		stateLocker: stateLocker,
 		logPrefix:   "Supply Collector",
 	}
@@ -85,7 +83,6 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// Sync
-	var wg errgroup.Group
 	nodeCount := float64(-1)
 	nodeFee := state.NetworkDetails.NodeFee
 	initializedCount := float64(-1)
@@ -95,42 +92,24 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	finalizedCount := float64(-1)
 
 	// Get total number of Rocket Pool nodes
-	wg.Go(func() error {
-		nodeCountUint, err := node.GetNodeCount(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting total number of Rocket Pool nodes: %w", err)
-		}
-
-		nodeCount = float64(nodeCountUint)
-		return nil
-	})
+	nodeCount = float64(len(state.NodeDetails))
 
 	// Get the total number of Rocket Pool minipools
-	wg.Go(func() error {
-		minipoolCounts, err := minipool.GetMinipoolCountPerStatus(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
+	for _, mpd := range state.MinipoolDetails {
+		if mpd.Finalised {
+			finalizedCount++
+		} else {
+			switch mpd.Status {
+			case types.MinipoolStatus_Initialized:
+				initializedCount++
+			case types.MinipoolStatus_Prelaunch:
+				prelaunchCount++
+			case types.MinipoolStatus_Staking:
+				stakingCount++
+			case types.MinipoolStatus_Dissolved:
+				dissolvedCount++
+			}
 		}
-
-		initializedCount = float64(minipoolCounts.Initialized.Uint64())
-		prelaunchCount = float64(minipoolCounts.Prelaunch.Uint64())
-		stakingCount = float64(minipoolCounts.Staking.Uint64())
-		dissolvedCount = float64(minipoolCounts.Dissolved.Uint64())
-
-		finalizedCountUint, err := minipool.GetFinalisedMinipoolCount(collector.rp, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
-		}
-
-		finalizedCount = float64(finalizedCountUint)
-		stakingCount -= finalizedCount // Remove finalized minipools from the staking count
-		return nil
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		collector.logError(err)
-		return
 	}
 
 	channel <- prometheus.MustNewConstMetric(

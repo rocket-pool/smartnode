@@ -3,21 +3,26 @@ package collectors
 import (
 	"context"
 	"fmt"
-	"log"
 	"math"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
-	"github.com/rocket-pool/smartnode/shared/utils/eth2"
+	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
+	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"golang.org/x/sync/errgroup"
+)
+
+const (
+	nodeShareBatchSize int = 200
 )
 
 // Represents the collector for the user's node
@@ -79,17 +84,8 @@ type NodeCollector struct {
 	// The collateral ratio with respect to the amount of bonded ETH
 	bondedCollateralRatio *prometheus.Desc
 
-	// The Rocket Pool contract manager
-	rp *rocketpool.RocketPool
-
-	// The beacon client
-	bc beacon.Client
-
-	// The node's address
-	nodeAddress common.Address
-
-	// The event log interval for the current eth1 client
-	eventLogInterval *big.Int
+	// The Smartnode service provider
+	sp *services.ServiceProvider
 
 	// The next block to start from when looking at cumulative RPL rewards
 	nextRewardsStartBlock *big.Int
@@ -103,9 +99,6 @@ type NodeCollector struct {
 	// Map of reward intervals that have already been processed
 	handledIntervals map[uint64]bool
 
-	// The Rocket Pool config
-	cfg *config.RocketPoolConfig
-
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
 
@@ -114,15 +107,7 @@ type NodeCollector struct {
 }
 
 // Create a new NodeCollector instance
-func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *NodeCollector {
-
-	// Get the event log interval
-	eventLogInterval, err := cfg.GetEventLogInterval()
-	if err != nil {
-		log.Printf("Error getting event log interval: %s\n", err.Error())
-		return nil
-	}
-
+func NewNodeCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *NodeCollector {
 	subsystem := "node"
 	return &NodeCollector{
 		totalStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_staked_rpl"),
@@ -201,12 +186,8 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			"The collateral ratio with respect to the amount of bonded ETH",
 			nil, nil,
 		),
-		rp:               rp,
-		bc:               bc,
-		nodeAddress:      nodeAddress,
-		eventLogInterval: big.NewInt(int64(eventLogInterval)),
+		sp:               sp,
 		handledIntervals: map[uint64]bool{},
-		cfg:              cfg,
 		stateLocker:      stateLocker,
 		logPrefix:        "Node Collector",
 	}
@@ -243,8 +224,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return
 	}
 
-	nd := state.NodeDetailsByAddress[collector.nodeAddress]
-	minipools := state.MinipoolDetailsByNode[collector.nodeAddress]
+	// Get services
+	rp := collector.sp.GetRocketPool()
+	cfg := collector.sp.GetConfig()
+	nodeAddress, hasNodeAddress := collector.sp.GetWallet().GetAddress()
+	if !hasNodeAddress {
+		return
+	}
+
+	nd := state.NodeDetailsByAddress[nodeAddress]
+	minipools := state.MinipoolDetailsByNode[nodeAddress]
 
 	// Sync
 	var wg errgroup.Group
@@ -262,7 +251,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	var activeMinipoolCount float64
 	rplPriceRaw := state.NetworkDetails.RplPrice
 	rplPrice := eth.WeiToEth(rplPriceRaw)
-	var beaconHead beacon.BeaconHead
 	unclaimedEthRewards := float64(0)
 	unclaimedRplRewards := float64(0)
 	if totalEffectiveStake == nil {
@@ -287,16 +275,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		}*/
 
 		// Get the claimed and unclaimed intervals
-		unclaimed, claimed, err := rprewards.GetClaimStatus(collector.rp, collector.nodeAddress)
+		status, err := rprewards.GetClaimStatus(rp, nodeAddress, state.NetworkDetails.RewardIndex)
 		if err != nil {
 			return err
 		}
 
 		// Get the info for each claimed interval
-		for _, claimedInterval := range claimed {
+		for _, claimedInterval := range status.Claimed {
 			_, exists := collector.handledIntervals[claimedInterval]
 			if !exists {
-				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, claimedInterval, nil)
+				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, claimedInterval, nil)
 				if err != nil {
 					return err
 				}
@@ -310,8 +298,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			}
 		}
 		// Get the unclaimed rewards
-		for _, unclaimedInterval := range unclaimed {
-			intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval, nil)
+		for _, unclaimedInterval := range status.Unclaimed {
+			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, unclaimedInterval, nil)
 			if err != nil {
 				return err
 			}
@@ -325,7 +313,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		// Get the block for the next rewards checkpoint
-		header, err := collector.rp.Client.HeaderByNumber(context.Background(), nil)
+		header, err := rp.Client.HeaderByNumber(context.Background(), nil)
 		if err != nil {
 			return fmt.Errorf("Error getting latest block header: %w", err)
 		}
@@ -351,16 +339,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
-	// Get the beacon head
-	wg.Go(func() error {
-		_beaconHead, err := collector.bc.GetBeaconHead()
-		if err != nil {
-			return fmt.Errorf("Error getting beacon chain head: %w", err)
-		}
-		beaconHead = _beaconHead
-		return nil
-	})
-
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		collector.logError(err)
@@ -381,6 +359,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	pendingBondedEth := big.NewInt(0)
 	rewardableBorrowedEth := big.NewInt(0)
 	rewardableBondedEth := big.NewInt(0)
+	epoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
 	for _, mpd := range minipools {
 		if mpd.Finalised {
 			// Ignore finalized minipools in the ratio math
@@ -408,11 +387,13 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			// Validator doesn't exist on Beacon yet
 			continue
 		}
-		if validator.ActivationEpoch > beaconHead.Epoch {
+		/* Removed with rewards v7
+		if validator.ActivationEpoch > epoch {
 			// Validator hasn't activated yet
 			continue
 		}
-		if validator.ExitEpoch <= beaconHead.Epoch {
+		*/
+		if validator.ExitEpoch <= epoch {
 			// Validator exited
 			continue
 		}
@@ -460,7 +441,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
 	}
-	minipoolDetails, err := eth2.GetBeaconBalancesFromState(collector.rp, minipools, state, beaconHead, opts)
+	minipoolDetails, err := getBeaconBalancesFromState(rp, minipools, state, opts)
 	if err != nil {
 		collector.logError(err)
 		return
@@ -550,4 +531,90 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 // Log error messages
 func (collector *NodeCollector) logError(err error) {
 	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
+}
+
+// Beacon chain balance info for a minipool
+type minipoolBalanceDetails struct {
+	NodeDeposit  *big.Int
+	NodeBalance  *big.Int
+	TotalBalance *big.Int
+}
+
+// Get the balances of the minipools on the beacon chain
+func getBeaconBalancesFromState(rp *rocketpool.RocketPool, mpds []*rpstate.NativeMinipoolDetails, state *state.NetworkState, opts *bind.CallOpts) ([]*minipoolBalanceDetails, error) {
+	epoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
+	mpMgr, err := minipool.NewMinipoolManager(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+
+	detailsList := make([]*minipoolBalanceDetails, len(mpds))
+	mpsToCalcNodeShareFor := []*minipool.MinipoolCommon{}
+	beaconBalances := []*big.Int{}
+	detailsForNodeShareCalc := []*minipoolBalanceDetails{}
+	for i, mpd := range mpds {
+		mp, err := mpMgr.NewMinipoolFromVersion(mpd.MinipoolAddress, mpd.Version)
+		if err != nil {
+			return nil, fmt.Errorf("error creating binding for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+		}
+		validator := state.ValidatorDetails[mpd.Pubkey]
+		blockBalance := eth.GweiToWei(float64(validator.Balance))
+
+		// Data
+		status := mpd.Status
+		nodeDepositBalance := mpd.NodeDepositBalance
+		finalized := mpd.Finalised
+
+		// Deal with pools that haven't received deposits yet so their balance is still 0
+		if nodeDepositBalance == nil {
+			nodeDepositBalance = big.NewInt(0)
+		}
+
+		details := &minipoolBalanceDetails{
+			NodeDeposit:  big.NewInt(0),
+			NodeBalance:  big.NewInt(0),
+			TotalBalance: big.NewInt(0),
+		}
+		detailsList[i] = details
+
+		// Ignore finalized minipools
+		if finalized {
+			continue
+		}
+
+		// Use node deposit balance if initialized or prelaunch
+		if status == types.MinipoolStatus_Initialized || status == types.MinipoolStatus_Prelaunch {
+			details.NodeDeposit.Set(nodeDepositBalance)
+			details.NodeBalance.Set(nodeDepositBalance)
+			details.TotalBalance.Set(blockBalance)
+			continue
+		}
+
+		// Use node deposit balance if validator not yet active on beacon chain at block
+		if !validator.Exists || validator.ActivationEpoch >= epoch {
+			details.NodeDeposit.Set(nodeDepositBalance)
+			details.NodeBalance.Set(nodeDepositBalance)
+			details.TotalBalance.Set(blockBalance)
+			continue
+		}
+
+		// Add this to the list of MPs to get the node share for
+		details.NodeDeposit.Set(nodeDepositBalance)
+		details.TotalBalance.Set(blockBalance)
+		mpsToCalcNodeShareFor = append(mpsToCalcNodeShareFor, mp.Common())
+		beaconBalances = append(beaconBalances, blockBalance)
+		detailsForNodeShareCalc = append(detailsForNodeShareCalc, details)
+	}
+
+	// Get node shares in batches
+	err = rp.BatchQuery(len(mpsToCalcNodeShareFor), nodeShareBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mpsToCalcNodeShareFor[i].CalculateNodeShare(mc, &detailsForNodeShareCalc[i].NodeBalance, beaconBalances[i])
+		return nil
+	}, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error calculating node shares of beacon balances: %w", err)
+	}
+
+	// Return
+	return detailsList, nil
 }

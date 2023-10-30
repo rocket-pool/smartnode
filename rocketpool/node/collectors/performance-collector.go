@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 )
 
 // Represents the collector for the Performance metrics
@@ -28,8 +28,8 @@ type PerformanceCollector struct {
 	// The ETH balance of the rETH contract address
 	rethContractBalance *prometheus.Desc
 
-	// The Rocket Pool contract manager
-	rp *rocketpool.RocketPool
+	// The Smartnode service provider
+	sp *services.ServiceProvider
 
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
@@ -39,7 +39,7 @@ type PerformanceCollector struct {
 }
 
 // Create a new PerformanceCollector instance
-func NewPerformanceCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *PerformanceCollector {
+func NewPerformanceCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *PerformanceCollector {
 	subsystem := "performance"
 	return &PerformanceCollector{
 		ethUtilizationRate: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_utilization_rate"),
@@ -66,7 +66,7 @@ func NewPerformanceCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker
 			"The total rETH supply",
 			nil, nil,
 		),
-		rp:          rp,
+		sp:          sp,
 		stateLocker: stateLocker,
 		logPrefix:   "Performance Collector",
 	}
