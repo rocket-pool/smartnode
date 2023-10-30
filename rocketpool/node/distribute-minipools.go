@@ -24,7 +24,7 @@ import (
 )
 
 // Distribute minipools task
-type distributeMinipools struct {
+type DistributeMinipools struct {
 	sp                  *services.ServiceProvider
 	log                 log.ColorLogger
 	cfg                 *config.RocketPoolConfig
@@ -42,9 +42,8 @@ type distributeMinipools struct {
 }
 
 // Create distribute minipools task
-func NewDistributeMinipools(sp *services.ServiceProvider, logger log.ColorLogger) (*distributeMinipools, error) {
-	// Return task
-	return &distributeMinipools{
+func NewDistributeMinipools(sp *services.ServiceProvider, logger log.ColorLogger) (*DistributeMinipools, error) {
+	return &DistributeMinipools{
 		sp:       sp,
 		log:      logger,
 		eight:    eth.EthToWei(8),
@@ -53,7 +52,7 @@ func NewDistributeMinipools(sp *services.ServiceProvider, logger log.ColorLogger
 }
 
 // Distribute minipools
-func (t *distributeMinipools) Run(state *state.NetworkState) error {
+func (t *DistributeMinipools) Run(state *state.NetworkState) error {
 	// Get services
 	t.cfg = t.sp.GetConfig()
 	t.w = t.sp.GetWallet()
@@ -61,10 +60,7 @@ func (t *distributeMinipools) Run(state *state.NetworkState) error {
 	t.bc = t.sp.GetBeaconClient()
 	t.d = t.sp.GetDocker()
 	t.w = t.sp.GetWallet()
-	nodeAddress, hasNodeAddress := t.w.GetAddress()
-	if !hasNodeAddress {
-		return nil
-	}
+	nodeAddress, _ := t.w.GetAddress()
 	t.disabled, t.maxFee, t.maxPriorityFee, t.gasThreshold = getAutoTxInfo(t.cfg, &t.log)
 
 	distributeThreshold := t.cfg.Smartnode.DistributeThreshold.Value.(float64)
@@ -121,7 +117,7 @@ func (t *distributeMinipools) Run(state *state.NetworkState) error {
 }
 
 // Get distributable minipools
-func (t *distributeMinipools) getDistributableMinipools(nodeAddress common.Address, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
+func (t *DistributeMinipools) getDistributableMinipools(nodeAddress common.Address, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 	// Filter minipools by status
 	distributableMinipools := []*rpstate.NativeMinipoolDetails{}
 	for _, mpd := range state.MinipoolDetailsByNode[nodeAddress] {
@@ -147,7 +143,7 @@ func (t *distributeMinipools) getDistributableMinipools(nodeAddress common.Addre
 }
 
 // Distribute a minipool
-func (t *distributeMinipools) distributeMinipool(mpMgr *minipool.MinipoolManager, mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
+func (t *DistributeMinipools) distributeMinipool(mpMgr *minipool.MinipoolManager, mpd *rpstate.NativeMinipoolDetails, callOpts *bind.CallOpts) (bool, error) {
 	// Log
 	t.log.Printlnf("Distributing minipool %s (total balance of %.6f ETH)...", mpd.MinipoolAddress.Hex(), eth.WeiToEth(mpd.Balance))
 

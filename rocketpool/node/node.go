@@ -121,7 +121,7 @@ func run(c *cli.Context) error {
 	stateLocker := collectors.NewStateLocker()
 
 	// Initialize tasks
-	manageFeeRecipient, err := newManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor))
+	manageFeeRecipient, err := NewManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor))
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	downloadRewardsTrees, err := newDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor))
+	downloadRewardsTrees, err := NewDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor))
 	if err != nil {
 		return err
 	}
