@@ -485,7 +485,7 @@ func (t *SubmitNetworkBalances) submitBalances(balances networkBalances) error {
 		return fmt.Errorf("error getting network manager: %w", err)
 	}
 
-	// Get the gas limit
+	// Get the TX info
 	txInfo, err := networkMgr.SubmitBalances(balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	if err != nil {
 		if enableSubmissionAfterConsensus_Balances && strings.Contains(err.Error(), "Network balances for an equal or higher block are set") {
@@ -496,8 +496,11 @@ func (t *SubmitNetworkBalances) submitBalances(balances networkBalances) error {
 			}
 			t.log.Println("Network balance consensus has already been reached but submitting anyway for the health check.")
 		} else {
-			return fmt.Errorf("Could not estimate the gas required to submit network balances: %w", err)
+			return fmt.Errorf("error getting TX for submitting network balances: %w", err)
 		}
+	}
+	if txInfo.SimError != "" {
+		return fmt.Errorf("simulating TX for submitting network balances failed: %s", txInfo.SimError)
 	}
 
 	// Print the gas info

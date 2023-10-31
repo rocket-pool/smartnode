@@ -123,6 +123,9 @@ func (t *DissolveTimedOutMinipools) dissolveMinipool(mp minipool.IMinipool) erro
 	if err != nil {
 		return fmt.Errorf("error getting dissolve tx for minipool %s: %w", address.Hex(), err)
 	}
+	if txInfo.SimError != "" {
+		return fmt.Errorf("simulating dissolve TX failed: %s", txInfo.SimError)
+	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))

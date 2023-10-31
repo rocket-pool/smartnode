@@ -4,21 +4,19 @@ import (
 	"fmt"
 	"math/big"
 	"math/rand"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -46,44 +44,15 @@ const (
 	UpdateColor                    = color.FgHiWhite
 )
 
-// Register watchtower command
-func RegisterCommands(app *cli.App, name string, aliases []string) {
-	app.Commands = append(app.Commands, cli.Command{
-		Name:    name,
-		Aliases: aliases,
-		Usage:   "Run Rocket Pool watchtower activity daemon",
-		Action: func(c *cli.Context) error {
-			return run(c)
-		},
-	})
-}
-
 // Run daemon
-func run(c *cli.Context) error {
-
-	// Configure
-	configureHTTP()
+func Run(sp *services.ServiceProvider) error {
+	// Get services
+	cfg := sp.GetConfig()
+	rp := sp.GetRocketPool()
+	bc := sp.GetBeaconClient()
 
 	// Wait until node is registered
-	if err := services.WaitNodeRegistered(c, true); err != nil {
-		return err
-	}
-
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
+	if err := sp.WaitNodeRegistered(true); err != nil {
 		return err
 	}
 
@@ -115,42 +84,18 @@ func run(c *cli.Context) error {
 		return err
 	}
 
-	// Get the node address
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return fmt.Errorf("error getting node account: %w", err)
-	}
-
 	// Initialize tasks
-	respondChallenges, err := NewRespondChallenges(c, log.NewColorLogger(RespondChallengesColor), m)
-	if err != nil {
-		return fmt.Errorf("error during respond-to-challenges check: %w", err)
-	}
-	submitRplPrice, err := newSubmitRplPrice(c, log.NewColorLogger(SubmitRplPriceColor), errorLog)
-	if err != nil {
-		return fmt.Errorf("error during rpl price check: %w", err)
-	}
-	submitNetworkBalances, err := NewSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
-	if err != nil {
-		return fmt.Errorf("error during network balances check: %w", err)
-	}
-	dissolveTimedOutMinipools, err := NewDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
-	if err != nil {
-		return fmt.Errorf("error during timed-out minipools check: %w", err)
-	}
-	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
-	if err != nil {
-		return fmt.Errorf("error during scrub check: %w", err)
-	}
-	var submitRewardsTree_Stateless *submitRewardsTree_Stateless
+	respondChallenges := NewRespondChallenges(sp, log.NewColorLogger(RespondChallengesColor), m)
+	submitRplPrice := NewSubmitRplPrice(sp, log.NewColorLogger(SubmitRplPriceColor), errorLog)
+	submitNetworkBalances := NewSubmitNetworkBalances(sp, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
+	dissolveTimedOutMinipools := NewDissolveTimedOutMinipools(sp, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
+	submitScrubMinipools := NewSubmitScrubMinipools(sp, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
+	var submitRewardsTree_Stateless *SubmitRewardsTree_Stateless
 	var submitRewardsTree_Rolling *SubmitRewardsTree_Rolling
 	if !useRollingRecords {
-		submitRewardsTree_Stateless, err = newSubmitRewardsTree_Stateless(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
-		if err != nil {
-			return fmt.Errorf("error during stateless rewards tree check: %w", err)
-		}
+		submitRewardsTree_Stateless = NewSubmitRewardsTree_Stateless(sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	} else {
-		submitRewardsTree_Rolling, err = NewSubmitRewardsTree_Rolling(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+		submitRewardsTree_Rolling, err = NewSubmitRewardsTree_Rolling(sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 		if err != nil {
 			return fmt.Errorf("error during rolling rewards tree check: %w", err)
 		}
@@ -159,18 +104,9 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during penalties check: %w", err)
 	}*/
-	generateRewardsTree, err := NewGenerateRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
-	if err != nil {
-		return fmt.Errorf("error during manual tree generation check: %w", err)
-	}
-	cancelBondReductions, err := NewCancelBondReductions(c, log.NewColorLogger(CancelBondsColor), errorLog, bondReductionCollector)
-	if err != nil {
-		return fmt.Errorf("error during bond reduction cancel check: %w", err)
-	}
-	checkSoloMigrations, err := NewCheckSoloMigrations(c, log.NewColorLogger(CheckSoloMigrationsColor), errorLog, soloMigrationCollector)
-	if err != nil {
-		return fmt.Errorf("error during solo migration check: %w", err)
-	}
+	generateRewardsTree := NewGenerateRewardsTree(sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+	cancelBondReductions := NewCancelBondReductions(sp, log.NewColorLogger(CancelBondsColor), errorLog, bondReductionCollector)
+	checkSoloMigrations := NewCheckSoloMigrations(sp, log.NewColorLogger(CheckSoloMigrationsColor), errorLog, soloMigrationCollector)
 
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
@@ -187,7 +123,7 @@ func run(c *cli.Context) error {
 			interval := time.Duration(randomSeconds)*time.Second + minTasksInterval
 
 			// Check the EC status
-			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
+			err := sp.WaitEthClientSynced(false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
@@ -195,7 +131,7 @@ func run(c *cli.Context) error {
 			}
 
 			// Check the BC status
-			err = services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+			err = sp.WaitBeaconClientSynced(false) // Force refresh the primary / fallback BC status
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
@@ -211,8 +147,13 @@ func run(c *cli.Context) error {
 				continue
 			}
 
+			nodeAddress, hasNodeAddress := sp.GetWallet().GetAddress()
+			if !hasNodeAddress {
+				continue
+			}
+
 			// Check if on the Oracle DAO
-			isOnOdao, err := isOnOracleDAO(rp, nodeAccount.Address, latestBlock)
+			isOnOdao, err := isOnOracleDAO(rp, nodeAddress, latestBlock)
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
@@ -220,14 +161,14 @@ func run(c *cli.Context) error {
 			}
 
 			// Run the manual rewards tree generation
-			if err := generateRewardsTree.run(); err != nil {
+			if err := generateRewardsTree.Run(); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			if isOnOdao {
 				// Run the challenge check
-				if err := respondChallenges.run(); err != nil {
+				if err := respondChallenges.Run(); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
@@ -241,7 +182,7 @@ func run(c *cli.Context) error {
 				}
 
 				// Run the network balance submission check
-				if err := submitNetworkBalances.run(state); err != nil {
+				if err := submitNetworkBalances.Run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
@@ -254,38 +195,38 @@ func run(c *cli.Context) error {
 					time.Sleep(taskCooldown)
 				} else {
 					// Run the network balance and rewards tree submission check
-					if err := submitRewardsTree_Rolling.run(state); err != nil {
+					if err := submitRewardsTree_Rolling.Run(state); err != nil {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
 				}
 
 				// Run the price submission check
-				if err := submitRplPrice.run(state); err != nil {
+				if err := submitRplPrice.Run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the minipool dissolve check
-				if err := dissolveTimedOutMinipools.run(state); err != nil {
+				if err := dissolveTimedOutMinipools.Run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the minipool scrub check
-				if err := submitScrubMinipools.run(state); err != nil {
+				if err := submitScrubMinipools.Run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the bond cancel check
-				if err := cancelBondReductions.run(state); err != nil {
+				if err := cancelBondReductions.Run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
 				// Run the solo migration check
-				if err := checkSoloMigrations.run(state); err != nil {
+				if err := checkSoloMigrations.Run(state); err != nil {
 					errorLog.Println(err)
 				}
 				/*time.Sleep(taskCooldown)
@@ -305,7 +246,7 @@ func run(c *cli.Context) error {
 					}
 				} else {
 					// Run the network balance and rewards tree submission check
-					if err := submitRewardsTree_Rolling.run(nil); err != nil {
+					if err := submitRewardsTree_Rolling.Run(nil); err != nil {
 						errorLog.Println(err)
 					}
 				}
@@ -313,12 +254,11 @@ func run(c *cli.Context) error {
 
 			time.Sleep(interval)
 		}
-		wg.Done()
 	}()
 
 	// Run metrics loop
 	go func() {
-		err := runMetricsServer(c, log.NewColorLogger(MetricsColor), scrubCollector, bondReductionCollector, soloMigrationCollector)
+		err := runMetricsServer(sp, log.NewColorLogger(MetricsColor), scrubCollector, bondReductionCollector, soloMigrationCollector)
 		if err != nil {
 			errorLog.Println(err)
 		}
@@ -328,16 +268,6 @@ func run(c *cli.Context) error {
 	// Wait for both threads to stop
 	wg.Wait()
 	return nil
-}
-
-// Configure HTTP transport settings
-func configureHTTP() {
-
-	// The daemon makes a large number of concurrent RPC requests to the Eth1 client
-	// The HTTP transport is set to cache connections for future re-use equal to the maximum expected number of concurrent requests
-	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
-	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
-
 }
 
 // Update the latest network state at each cycle

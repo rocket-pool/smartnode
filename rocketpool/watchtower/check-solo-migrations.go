@@ -257,6 +257,10 @@ func (t *CheckSoloMigrations) scrubVacantMinipool(state *state.NetworkState, add
 		t.printMessage(fmt.Sprintf("error getting scrub tx for minipool: %s", err.Error()))
 		return
 	}
+	if txInfo.SimError != "" {
+		t.printMessage(fmt.Sprintf("simulating scrub TX failed: %s", txInfo.SimError))
+		return
+	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))

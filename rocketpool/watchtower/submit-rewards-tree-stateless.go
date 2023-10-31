@@ -15,35 +15,39 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/klauspost/compress/zstd"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/config"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
 	"github.com/web3-storage/go-w3s-client"
 )
 
 // Submit rewards Merkle Tree task
-type submitRewardsTree_Stateless struct {
-	c                *cli.Context
+type SubmitRewardsTree_Stateless struct {
+	sp               *services.ServiceProvider
 	log              *log.ColorLogger
 	errLog           *log.ColorLogger
 	cfg              *config.RocketPoolConfig
 	w                *wallet.LocalWallet
 	rp               *rocketpool.RocketPool
-	ec               rocketpool.ExecutionClient
+	ec               core.ExecutionClient
 	bc               beacon.Client
+	rewardsPool      *rewards.RewardsPool
 	lock             *sync.Mutex
 	isRunning        bool
 	generationPrefix string
@@ -51,72 +55,28 @@ type submitRewardsTree_Stateless struct {
 }
 
 // Create submit rewards Merkle Tree task
-func newSubmitRewardsTree_Stateless(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*submitRewardsTree_Stateless, error) {
-
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
+func NewSubmitRewardsTree_Stateless(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) *SubmitRewardsTree_Stateless {
 	lock := &sync.Mutex{}
-	generator := &submitRewardsTree_Stateless{
-		c:                c,
+	return &SubmitRewardsTree_Stateless{
+		sp:               sp,
 		log:              &logger,
 		errLog:           &errorLogger,
-		cfg:              cfg,
-		ec:               ec,
-		bc:               bc,
-		w:                w,
-		rp:               rp,
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Merkle Tree]",
 		m:                m,
 	}
-
-	return generator, nil
 }
 
 // Submit rewards Merkle Tree
-func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.NetworkState, beaconSlot uint64) error {
-
-	// Wait for clients to sync
-	if err := services.WaitEthClientSynced(t.c, true); err != nil {
-		return err
-	}
-	if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
-		return err
-	}
-
-	// Get node account
-	nodeAccount, err := t.w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
-
+func (t *SubmitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.NetworkState, beaconSlot uint64) error {
 	// Check node trusted status
 	if !nodeTrusted {
 		if t.cfg.Smartnode.RewardsTreeMode.Value.(cfgtypes.RewardsMode) != cfgtypes.RewardsMode_Generate {
 			return nil
 		} else {
 			// Create the state, since it's not done except for manual generators
+			var err error
 			state, err = t.m.GetStateForSlot(beaconSlot)
 			if err != nil {
 				return fmt.Errorf("error getting state for beacon slot %d: %w", beaconSlot, err)
@@ -168,6 +128,19 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 	t.lock.Unlock()
 
+	// Get services
+	t.cfg = t.sp.GetConfig()
+	t.w = t.sp.GetWallet()
+	t.rp = t.sp.GetRocketPool()
+	t.ec = t.sp.GetEthClient()
+	t.bc = t.sp.GetBeaconClient()
+	nodeAddress, _ := t.w.GetAddress()
+	t.rewardsPool, err = rewards.NewRewardsPool(t.rp)
+	if err != nil {
+		t.handleError(fmt.Errorf("error creating Rewards Pool binding: %w", err))
+		return nil
+	}
+
 	// Get the expected file paths
 	rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
 	compressedRewardsTreePath := rewardsTreePath + config.RewardsTreeIpfsExtension
@@ -182,7 +155,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		}
 
 		// Return if this node has already submitted the tree for the current interval and there's a file present
-		hasSubmitted, err := t.hasSubmittedTree(nodeAccount.Address, currentIndexBig)
+		hasSubmitted, err := t.hasSubmittedTree(nodeAddress, currentIndexBig)
 		if err != nil {
 			return fmt.Errorf("error checking if Merkle tree submission has already been processed: %w", err)
 		}
@@ -195,25 +168,25 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		// Deserialize the file
 		wrapperBytes, err := os.ReadFile(rewardsTreePath)
 		if err != nil {
-			return fmt.Errorf("Error reading rewards tree file: %w", err)
+			return fmt.Errorf("error reading rewards tree file: %w", err)
 		}
 
 		proofWrapper, err := rprewards.DeserializeRewardsFile(wrapperBytes)
 		if err != nil {
-			return fmt.Errorf("Error deserializing rewards tree file: %w", err)
+			return fmt.Errorf("error deserializing rewards tree file: %w", err)
 		}
 
 		// Upload the file
 		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			return fmt.Errorf("Error uploading Merkle tree to Web3.Storage: %w", err)
+			return fmt.Errorf("error uploading Merkle tree to Web3.Storage: %w", err)
 		}
 		t.log.Printlnf("Uploaded Merkle tree with CID %s", cid)
 
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper.GetHeader(), cid, big.NewInt(int64(intervalsPassed)))
 		if err != nil {
-			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
+			return fmt.Errorf("error submitting rewards snapshot: %w", err)
 		}
 
 		t.log.Printlnf("Successfully submitted rewards snapshot for interval %d.", currentIndex)
@@ -225,10 +198,9 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 
 	// Done
 	return nil
-
 }
 
-func (t *submitRewardsTree_Stateless) handleError(err error) {
+func (t *SubmitRewardsTree_Stateless) handleError(err error) {
 	t.errLog.Println(fmt.Errorf("%s %w", t.generationPrefix, err))
 	t.errLog.Println("*** Rewards tree generation failed. ***")
 	t.lock.Lock()
@@ -237,13 +209,12 @@ func (t *submitRewardsTree_Stateless) handleError(err error) {
 }
 
 // Print a message from the tree generation goroutine
-func (t *submitRewardsTree_Stateless) printMessage(message string) {
+func (t *SubmitRewardsTree_Stateless) printMessage(message string) {
 	t.log.Printlnf("%s %s", t.generationPrefix, message)
 }
 
 // Checks to see if an existing rewards file is still valid
-func (t *submitRewardsTree_Stateless) isExistingFileValid(rewardsTreePath string, intervalsPassed uint64) bool {
-
+func (t *SubmitRewardsTree_Stateless) isExistingFileValid(rewardsTreePath string, intervalsPassed uint64) bool {
 	_, err := os.Stat(rewardsTreePath)
 	if !os.IsNotExist(err) {
 		// The file already exists, attempt to read it
@@ -271,12 +242,10 @@ func (t *submitRewardsTree_Stateless) isExistingFileValid(rewardsTreePath string
 	}
 
 	return false
-
 }
 
 // Kick off the tree generation goroutine
-func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) {
-
+func (t *SubmitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) {
 	go func() {
 		t.lock.Lock()
 		t.isRunning = true
@@ -299,12 +268,10 @@ func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 		t.isRunning = false
 		t.lock.Unlock()
 	}()
-
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
-
+func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
 	// Log
 	if uint64(intervalsPassed) > 1 {
 		t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", uint64(intervalsPassed))
@@ -326,11 +293,11 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	// Generate the rewards file
 	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, nil)
 	if err != nil {
-		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
+		return fmt.Errorf("error creating Merkle tree generator: %w", err)
 	}
 	rewardsFile, err := treegen.GenerateTree()
 	if err != nil {
-		return fmt.Errorf("Error generating Merkle tree: %w", err)
+		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}
 	for address, network := range rewardsFile.GetHeader().InvalidNetworkNodes {
 		t.printMessage(fmt.Sprintf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network))
@@ -339,13 +306,13 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	// Serialize the minipool performance file
 	minipoolPerformanceBytes, err := rewardsFile.GetMinipoolPerformanceFile().Serialize()
 	if err != nil {
-		return fmt.Errorf("Error serializing minipool performance file into JSON: %w", err)
+		return fmt.Errorf("error serializing minipool performance file into JSON: %w", err)
 	}
 
 	// Write it to disk
 	err = os.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
 	if err != nil {
-		return fmt.Errorf("Error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
+		return fmt.Errorf("error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
 	}
 
 	// Upload it if this is an Oracle DAO node
@@ -353,7 +320,7 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		t.printMessage("Uploading minipool performance file to Web3.Storage...")
 		minipoolPerformanceCid, err := t.uploadFileToWeb3Storage(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
 		if err != nil {
-			return fmt.Errorf("Error uploading minipool performance file to Web3.Storage: %w", err)
+			return fmt.Errorf("error uploading minipool performance file to Web3.Storage: %w", err)
 		}
 		t.printMessage(fmt.Sprintf("Uploaded minipool performance file with CID %s", minipoolPerformanceCid))
 		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid)
@@ -365,14 +332,14 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	// Serialize the rewards tree to JSON
 	wrapperBytes, err := rewardsFile.Serialize()
 	if err != nil {
-		return fmt.Errorf("Error serializing proof wrapper into JSON: %w", err)
+		return fmt.Errorf("error serializing proof wrapper into JSON: %w", err)
 	}
 	t.printMessage("Generation complete! Saving tree...")
 
 	// Write the rewards tree to disk
 	err = os.WriteFile(rewardsTreePath, wrapperBytes, 0644)
 	if err != nil {
-		return fmt.Errorf("Error saving rewards tree file to %s: %w", rewardsTreePath, err)
+		return fmt.Errorf("error saving rewards tree file to %s: %w", rewardsTreePath, err)
 	}
 
 	// Only do the upload and submission process if this is an Oracle DAO node
@@ -381,14 +348,14 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		t.printMessage("Uploading to Web3.Storage and submitting results to the contracts...")
 		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			return fmt.Errorf("Error uploading Merkle tree to Web3.Storage: %w", err)
+			return fmt.Errorf("error uploading Merkle tree to Web3.Storage: %w", err)
 		}
 		t.printMessage(fmt.Sprintf("Uploaded Merkle tree with CID %s", cid))
 
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid, big.NewInt(int64(intervalsPassed)))
 		if err != nil {
-			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
+			return fmt.Errorf("error submitting rewards snapshot: %w", err)
 		}
 
 		t.printMessage(fmt.Sprintf("Successfully submitted rewards snapshot for interval %d.", currentIndex))
@@ -397,15 +364,13 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	return nil
-
 }
 
 // Submit rewards info to the contracts
-func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFileHeader *rprewards.RewardsFileHeader, cid string, intervalsPassed *big.Int) error {
-
+func (t *SubmitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFileHeader *sharedtypes.RewardsFileHeader, cid string, intervalsPassed *big.Int) error {
 	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFileHeader.MerkleRoot))
 	if err != nil {
-		return fmt.Errorf("Error decoding merkle root: %w", err)
+		return fmt.Errorf("error decoding merkle root: %w", err)
 	}
 	treeRoot := common.BytesToHash(treeRootBytes)
 
@@ -430,7 +395,7 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	}
 
 	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
+	opts, err := t.w.GetTransactor()
 	if err != nil {
 		return err
 	}
@@ -450,39 +415,36 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 		UserETH:         &rewardsFileHeader.TotalRewards.PoolStakerSmoothingPoolEth.Int,
 	}
 
-	// Get the gas limit
-	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
+	// Get the tx info
+	txInfo, err := t.rewardsPool.SubmitRewardSnapshot(submission, opts)
 	if err != nil {
 		if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
 			// Set a gas limit which will intentionally be too low and revert
-			gasInfo = rocketpool.GasInfo{
+			txInfo.GasInfo = core.GasInfo{
 				EstGasLimit:  utils.RewardsSubmissionForcedGas,
 				SafeGasLimit: utils.RewardsSubmissionForcedGas,
 			}
 			t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
 		} else {
-			return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
+			return fmt.Errorf("error getting TX for submitting the rewards tree: %w", err)
 		}
+	}
+	if txInfo.SimError != "" {
+		return fmt.Errorf("simulating TX for submitting the rewards tree failed: %s", txInfo.SimError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
-
-	// Submit RPL price
-	hash, err := rewards.SubmitRewardSnapshot(t.rp, submission, opts)
-	if err != nil {
-		return err
-	}
+	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.log, txInfo, opts)
 	if err != nil {
 		return err
 	}
@@ -492,8 +454,7 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 }
 
 // Compress and upload a file to Web3.Storage and get the CID for it
-func (t *submitRewardsTree_Stateless) uploadFileToWeb3Storage(wrapperBytes []byte, compressedPath string, description string) (string, error) {
-
+func (t *SubmitRewardsTree_Stateless) uploadFileToWeb3Storage(wrapperBytes []byte, compressedPath string, description string) (string, error) {
 	// Get the API token
 	apiToken := t.cfg.Smartnode.Web3StorageApiToken.Value.(string)
 	if apiToken == "" {
@@ -503,7 +464,7 @@ func (t *submitRewardsTree_Stateless) uploadFileToWeb3Storage(wrapperBytes []byt
 	// Create the client
 	w3sClient, err := w3s.NewClient(w3s.WithToken(apiToken))
 	if err != nil {
-		return "", fmt.Errorf("Error creating new Web3.Storage client: %w", err)
+		return "", fmt.Errorf("error creating new Web3.Storage client: %w", err)
 	}
 
 	// Compress the file
@@ -513,14 +474,14 @@ func (t *submitRewardsTree_Stateless) uploadFileToWeb3Storage(wrapperBytes []byt
 	// Create the compressed tree file
 	compressedFile, err := os.Create(compressedPath)
 	if err != nil {
-		return "", fmt.Errorf("Error creating %s file [%s]: %w", description, compressedPath, err)
+		return "", fmt.Errorf("error creating %s file [%s]: %w", description, compressedPath, err)
 	}
 	defer compressedFile.Close()
 
 	// Write the compressed data to the file
 	_, err = compressedFile.Write(compressedBytes)
 	if err != nil {
-		return "", fmt.Errorf("Error writing %s to %s: %w", description, compressedPath, err)
+		return "", fmt.Errorf("error writing %s to %s: %w", description, compressedPath, err)
 	}
 
 	// Rewind it to the start
@@ -529,20 +490,18 @@ func (t *submitRewardsTree_Stateless) uploadFileToWeb3Storage(wrapperBytes []byt
 	// Upload it
 	cid, err := w3sClient.Put(context.Background(), compressedFile)
 	if err != nil {
-		return "", fmt.Errorf("Error uploading %s: %w", description, err)
+		return "", fmt.Errorf("error uploading %s: %w", description, err)
 	}
 
 	return cid.String(), nil
-
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
-func (t *submitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Time, state *state.NetworkState) (uint64, uint64, error) {
-
+func (t *SubmitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Time, state *state.NetworkState) (uint64, uint64, error) {
 	// Get the beacon head
 	beaconHead, err := t.bc.GetBeaconHead()
 	if err != nil {
-		return 0, 0, fmt.Errorf("Error getting Beacon head: %w", err)
+		return 0, 0, fmt.Errorf("error getting Beacon head: %w", err)
 	}
 
 	// Get the target block number
@@ -564,7 +523,7 @@ func (t *submitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Tim
 		// Try to get the current block
 		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
 		if err != nil {
-			return 0, 0, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
+			return 0, 0, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
 		}
 
 		// If the block was missing, try the previous one
@@ -576,12 +535,16 @@ func (t *submitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Tim
 			return targetSlot, block.ExecutionBlockNumber, nil
 		}
 	}
-
 }
 
 // Check whether the rewards tree for the current interval been submitted by the node
-func (t *submitRewardsTree_Stateless) hasSubmittedTree(nodeAddress common.Address, index *big.Int) (bool, error) {
+func (t *SubmitRewardsTree_Stateless) hasSubmittedTree(nodeAddress common.Address, index *big.Int) (bool, error) {
 	indexBuffer := make([]byte, 32)
 	index.FillBytes(indexBuffer)
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("rewards.snapshot.submitted.node"), nodeAddress.Bytes(), indexBuffer))
+	var result bool
+	err := t.rp.Query(func(mc *batch.MultiCaller) error {
+		t.rp.Storage.GetBool(mc, &result, crypto.Keccak256Hash([]byte("rewards.snapshot.submitted.node"), nodeAddress.Bytes(), indexBuffer))
+		return nil
+	}, nil)
+	return result, err
 }

@@ -646,8 +646,11 @@ func (t *SubmitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 			}
 			t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
 		} else {
-			return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
+			return fmt.Errorf("error getting TX for submitting the rewards tree: %w", err)
 		}
+	}
+	if txInfo.SimError != "" {
+		return fmt.Errorf("simulating TX for submitting the rewards tree failed: %s", txInfo.SimError)
 	}
 
 	// Print the gas info

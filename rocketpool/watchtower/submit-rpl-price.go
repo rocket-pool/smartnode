@@ -15,19 +15,21 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -191,12 +193,12 @@ type poolObserveResponse struct {
 }
 
 // Submit RPL price task
-type submitRplPrice struct {
-	c         *cli.Context
+type SubmitRplPrice struct {
+	sp        *services.ServiceProvider
 	log       log.ColorLogger
 	errLog    log.ColorLogger
 	cfg       *config.RocketPoolConfig
-	ec        rocketpool.ExecutionClient
+	ec        core.ExecutionClient
 	w         *wallet.LocalWallet
 	rp        *rocketpool.RocketPool
 	bc        beacon.Client
@@ -205,67 +207,25 @@ type submitRplPrice struct {
 }
 
 // Create submit RPL price task
-func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*submitRplPrice, error) {
-
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return task
+func NewSubmitRplPrice(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger) *SubmitRplPrice {
 	lock := &sync.Mutex{}
-	return &submitRplPrice{
-		c:      c,
+	return &SubmitRplPrice{
+		sp:     sp,
 		log:    logger,
 		errLog: errorLogger,
-		cfg:    cfg,
-		ec:     ec,
-		w:      w,
-		rp:     rp,
-		bc:     bc,
 		lock:   lock,
-	}, nil
-
+	}
 }
 
 // Submit RPL price
-func (t *submitRplPrice) run(state *state.NetworkState) error {
-
-	// Wait for eth client to sync
-	if err := services.WaitEthClientSynced(t.c, true); err != nil {
-		return err
-	}
-
-	// Get node account
-	nodeAccount, err := t.w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
-
+func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 	// Check if submission is enabled
 	if !state.NetworkDetails.SubmitPricesEnabled {
 		return nil
 	}
 
 	// Check if Optimism rate is stale and submit
-	err = t.submitOptimismPrice()
+	err := t.submitOptimismPrice()
 	if err != nil {
 		// Error is not fatal for this task so print and continue
 		t.log.Printlnf("Error submitting Optimism price: %s", err.Error())
@@ -352,6 +312,14 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		logPrefix := "[Price Report]"
 		t.log.Printlnf("%s Starting price report in a separate thread.", logPrefix)
 
+		// Get services
+		t.cfg = t.sp.GetConfig()
+		t.w = t.sp.GetWallet()
+		t.rp = t.sp.GetRocketPool()
+		t.ec = t.sp.GetEthClient()
+		t.bc = t.sp.GetBeaconClient()
+		nodeAddress, _ := t.w.GetAddress()
+
 		// Log
 		t.log.Printlnf("Getting RPL price for block %d...", blockNumber)
 
@@ -366,7 +334,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
 
 		// Check if we have reported these specific values before
-		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice)
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAddress, blockNumber, rplPrice)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -379,7 +347,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		}
 
 		// We haven't submitted these values, check if we've submitted any for this block so we can log it
-		hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
+		hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAddress, blockNumber)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -406,10 +374,9 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 
 	// Return
 	return nil
-
 }
 
-func (t *submitRplPrice) handleError(err error) {
+func (t *SubmitRplPrice) handleError(err error) {
 	t.errLog.Println(err)
 	t.errLog.Println("*** Price report failed. ***")
 	t.lock.Lock()
@@ -418,27 +385,35 @@ func (t *submitRplPrice) handleError(err error) {
 }
 
 // Check whether prices for a block has already been submitted by the node
-func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blockNumber uint64) (bool, error) {
-
+func (t *SubmitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blockNumber uint64) (bool, error) {
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf))
-
+	var result bool
+	err := t.rp.Query(func(mc *batch.MultiCaller) error {
+		t.rp.Storage.GetBool(mc, &result, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf))
+		return nil
+	}, nil)
+	return result, err
 }
 
 // Check whether specific prices for a block has already been submitted by the node
-func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice *big.Int) (bool, error) {
+func (t *SubmitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice *big.Int) (bool, error) {
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
 
 	rplPriceBuf := make([]byte, 32)
 	rplPrice.FillBytes(rplPriceBuf)
 
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf))
+	var result bool
+	err := t.rp.Query(func(mc *batch.MultiCaller) error {
+		t.rp.Storage.GetBool(mc, &result, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf))
+		return nil
+	}, nil)
+	return result, err
 }
 
 // Get RPL price via TWAP at block
-func (t *submitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
+func (t *SubmitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 
 	// Initialize call options
 	opts := &bind.CallOpts{
@@ -463,7 +438,7 @@ func (t *submitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 	}
 	addr := common.HexToAddress(poolAddress)
 	poolContract := bind.NewBoundContract(addr, parsed, client.Client, client.Client, client.Client)
-	pool := rocketpool.Contract{
+	pool := core.Contract{
 		Contract: poolContract,
 		Address:  &addr,
 		ABI:      &parsed,
@@ -500,61 +475,61 @@ func (t *submitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 
 }
 
-func (t *submitRplPrice) printMessage(message string) {
+func (t *SubmitRplPrice) printMessage(message string) {
 	t.log.Println(message)
 }
 
 // Submit RPL price and total effective RPL stake
-func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) error {
+func (t *SubmitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) error {
 
 	// Log
 	t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
 
 	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
+	opts, err := t.w.GetTransactor()
 	if err != nil {
 		return err
 	}
 
-	// Get the gas limit
-	gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, opts)
+	// Create the network manager
+	networkMgr, err := network.NewNetworkManager(t.rp)
 	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
+		return fmt.Errorf("error creating network manager binding: %w", err)
+	}
+
+	// Get the tx info
+	txInfo, err := networkMgr.SubmitPrices(blockNumber, rplPrice, opts)
+	if err != nil {
+		return fmt.Errorf("errpr getting the TX for submitting RPL price: %w", err)
+	}
+	if txInfo.SimError != "" {
+		return fmt.Errorf("simulating SubmitPrices tx failed: %s", txInfo.SimError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
-
-	// Submit RPL price
-	hash, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, opts)
-	if err != nil {
-		return err
-	}
+	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
 	t.log.Printlnf("Successfully submitted RPL price for block %d.", blockNumber)
-
-	// Return
 	return nil
-
 }
 
 // Checks if Optimism rate is stale and if it's our turn to submit, calls submitRate on the messenger
-func (t *submitRplPrice) submitOptimismPrice() error {
+func (t *SubmitRplPrice) submitOptimismPrice() error {
 	priceMessengerAddress := t.cfg.Smartnode.GetOptimismMessengerAddress()
 
 	if priceMessengerAddress == "" {
@@ -694,7 +669,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 }
 
 // Checks if Polygon rate is stale and if it's our turn to submit, calls submitRate on the messenger
-func (t *submitRplPrice) submitPolygonPrice() error {
+func (t *SubmitRplPrice) submitPolygonPrice() error {
 	priceMessengerAddress := t.cfg.Smartnode.GetPolygonMessengerAddress()
 
 	if priceMessengerAddress == "" {
@@ -834,7 +809,7 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 }
 
 // Checks if Arbitrum rate is stale and if it's our turn to submit, calls submitRate on the messenger
-func (t *submitRplPrice) submitArbitrumPrice() error {
+func (t *SubmitRplPrice) submitArbitrumPrice() error {
 	priceMessengerAddress := t.cfg.Smartnode.GetArbitrumMessengerAddress()
 
 	if priceMessengerAddress == "" {
@@ -999,7 +974,7 @@ func (t *submitRplPrice) submitArbitrumPrice() error {
 }
 
 // Checks if zkSync Era rate is stale and if it's our turn to submit, calls submitRate on the messenger
-func (t *submitRplPrice) submitZkSyncEraPrice() error {
+func (t *SubmitRplPrice) submitZkSyncEraPrice() error {
 	priceMessengerAddress := t.cfg.Smartnode.GetZkSyncEraMessengerAddress()
 
 	if priceMessengerAddress == "" {
@@ -1157,7 +1132,7 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 }
 
 // Checks if Base rate is stale and if it's our turn to submit, calls submitRate on the messenger
-func (t *submitRplPrice) submitBasePrice() error {
+func (t *SubmitRplPrice) submitBasePrice() error {
 	priceMessengerAddress := t.cfg.Smartnode.GetBaseMessengerAddress()
 
 	if priceMessengerAddress == "" {

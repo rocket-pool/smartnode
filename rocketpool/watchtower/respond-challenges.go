@@ -72,6 +72,9 @@ func (t *RespondChallenges) Run() error {
 	if err != nil {
 		return fmt.Errorf("error getting DecideChallenge TX info: %w", err)
 	}
+	if txInfo.SimError != "" {
+		return fmt.Errorf("simulating DecideChallenge TX failed: %s", txInfo.SimError)
+	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
