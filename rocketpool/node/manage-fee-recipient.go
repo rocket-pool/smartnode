@@ -39,11 +39,11 @@ type feeRecipientInfo struct {
 }
 
 // Create manage fee recipient task
-func NewManageFeeRecipient(sp *services.ServiceProvider, logger log.ColorLogger) (*ManageFeeRecipient, error) {
+func NewManageFeeRecipient(sp *services.ServiceProvider, logger log.ColorLogger) *ManageFeeRecipient {
 	return &ManageFeeRecipient{
 		sp:  sp,
 		log: logger,
-	}, nil
+	}
 }
 
 // Manage fee recipient

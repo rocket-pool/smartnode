@@ -54,12 +54,11 @@ type minipoolBondReductionDetails struct {
 }
 
 // Create reduce bonds task
-func NewReduceBonds(sp *services.ServiceProvider, logger log.ColorLogger) (*ReduceBonds, error) {
+func NewReduceBonds(sp *services.ServiceProvider, logger log.ColorLogger) *ReduceBonds {
 	return &ReduceBonds{
 		sp:  sp,
 		log: logger,
-	}, nil
-
+	}
 }
 
 // Reduce bonds
@@ -71,9 +70,9 @@ func (t *ReduceBonds) Run(state *state.NetworkState) error {
 	t.w = t.sp.GetWallet()
 	nodeAddress, _ := t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
+	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
 
 	// Check if auto-bond-reduction is disabled
-	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
 	if t.gasThreshold == 0 {
 		t.log.Println("Automatic tx gas threshold is 0, disabling auto-reduce.")
 		return nil

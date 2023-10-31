@@ -41,12 +41,12 @@ type DistributeMinipools struct {
 }
 
 // Create distribute minipools task
-func NewDistributeMinipools(sp *services.ServiceProvider, logger log.ColorLogger) (*DistributeMinipools, error) {
+func NewDistributeMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *DistributeMinipools {
 	return &DistributeMinipools{
 		sp:    sp,
 		log:   logger,
 		eight: eth.EthToWei(8),
-	}, nil
+	}
 }
 
 // Distribute minipools
@@ -60,9 +60,9 @@ func (t *DistributeMinipools) Run(state *state.NetworkState) error {
 	t.w = t.sp.GetWallet()
 	nodeAddress, _ := t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
+	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
 
 	// Check if auto-distributing is disabled
-	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
 	if t.gasThreshold == 0 {
 		t.log.Println("Automatic tx gas threshold is 0, disabling auto-distribute.")
 		return nil

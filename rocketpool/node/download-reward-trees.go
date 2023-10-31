@@ -18,11 +18,11 @@ type DownloadRewardsTrees struct {
 }
 
 // Create manage fee recipient task
-func NewDownloadRewardsTrees(sp *services.ServiceProvider, logger log.ColorLogger) (*DownloadRewardsTrees, error) {
+func NewDownloadRewardsTrees(sp *services.ServiceProvider, logger log.ColorLogger) *DownloadRewardsTrees {
 	return &DownloadRewardsTrees{
 		sp:  sp,
 		log: logger,
-	}, nil
+	}
 }
 
 // Manage fee recipient

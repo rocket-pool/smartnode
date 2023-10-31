@@ -36,11 +36,11 @@ type PromoteMinipools struct {
 }
 
 // Create promote minipools task
-func NewPromoteMinipools(sp *services.ServiceProvider, logger log.ColorLogger) (*PromoteMinipools, error) {
+func NewPromoteMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *PromoteMinipools {
 	return &PromoteMinipools{
 		sp:  sp,
 		log: logger,
-	}, nil
+	}
 }
 
 // Stake prelaunch minipools
@@ -52,6 +52,7 @@ func (t *PromoteMinipools) Run(state *state.NetworkState) error {
 	t.w = t.sp.GetWallet()
 	nodeAddress, _ := t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
+	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
 
 	// Log
 	t.log.Println("Checking for minipools to promote...")
@@ -104,7 +105,7 @@ func (t *PromoteMinipools) getVacantMinipools(nodeAddress common.Address, state 
 	// Get the time of the target block
 	block, err := t.rp.Client.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(state.ElBlockNumber))
 	if err != nil {
-		return nil, fmt.Errorf("Can't get the latest block time: %w", err)
+		return nil, fmt.Errorf("error getting the latest block time: %w", err)
 	}
 	blockTime := time.Unix(int64(block.Time), 0)
 
@@ -160,7 +161,6 @@ func (t *PromoteMinipools) createPromoteMinipoolTx(mpd *rpstate.NativeMinipoolDe
 	if err != nil {
 		return nil, fmt.Errorf("error creating promote tx submission for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
-
 	return submission, nil
 }
 

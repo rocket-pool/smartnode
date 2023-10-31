@@ -129,7 +129,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
+	stakePrelaunchMinipools, err := NewStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
 	if err != nil {
 		return err
 	}
