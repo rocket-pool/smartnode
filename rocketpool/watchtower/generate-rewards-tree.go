@@ -13,27 +13,27 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
-	"github.com/rocket-pool/smartnode/shared/services/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
 )
 
 // Generate rewards Merkle Tree task
-type generateRewardsTree struct {
-	c         *cli.Context
+type GenerateRewardsTree struct {
+	sp        *services.ServiceProvider
 	log       log.ColorLogger
 	errLog    log.ColorLogger
 	cfg       *config.RocketPoolConfig
 	rp        *rocketpool.RocketPool
-	ec        rocketpool.ExecutionClient
+	ec        core.ExecutionClient
 	bc        beacon.Client
 	lock      *sync.Mutex
 	isRunning bool
@@ -41,45 +41,25 @@ type generateRewardsTree struct {
 }
 
 // Create generate rewards Merkle Tree task
-func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*generateRewardsTree, error) {
-
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
+func NewGenerateRewardsTree(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) *GenerateRewardsTree {
 	lock := &sync.Mutex{}
-	generator := &generateRewardsTree{
-		c:         c,
+	return &GenerateRewardsTree{
+		sp:        sp,
 		log:       logger,
 		errLog:    errorLogger,
-		cfg:       cfg,
-		ec:        ec,
-		bc:        bc,
-		rp:        rp,
 		lock:      lock,
 		isRunning: false,
 		m:         m,
 	}
-
-	return generator, nil
 }
 
 // Check for generation requests
-func (t *generateRewardsTree) run() error {
+func (t *GenerateRewardsTree) Run() error {
+	// Get services
+	t.cfg = t.sp.GetConfig()
+	t.rp = t.sp.GetRocketPool()
+	t.ec = t.sp.GetEthClient()
+	t.bc = t.sp.GetBeaconClient()
 	t.log.Println("Checking for manual rewards tree generation requests...")
 
 	// Check if rewards generation is already running
@@ -135,8 +115,7 @@ func (t *generateRewardsTree) run() error {
 	return nil
 }
 
-func (t *generateRewardsTree) generateRewardsTree(index uint64) {
-
+func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 	// Begin generation of the tree
 	generationPrefix := fmt.Sprintf("[Interval %d Tree]", index)
 	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)
@@ -161,7 +140,11 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	opts := &bind.CallOpts{
 		BlockNumber: elBlockHeader.Number,
 	}
-	address, err := client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
+	var address common.Address
+	err = client.Query(func(mc *batch.MultiCaller) error {
+		client.Storage.GetAddress(mc, &address, string(rocketpool.ContractName_RocketTokenRETH))
+		return nil
+	}, opts)
 	if err != nil {
 		errMessage := err.Error()
 		t.log.Printlnf("%s Error getting state for block %d: %s", generationPrefix, elBlockHeader.Number.Uint64(), errMessage)
@@ -178,14 +161,17 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 					t.handleError(fmt.Errorf("Error connecting to archive EC: %w", err))
 					return
 				}
-				client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(t.cfg.Smartnode.GetStorageAddress()))
+				client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(t.cfg.Smartnode.GetStorageAddress()), common.HexToAddress(t.cfg.Smartnode.GetMulticallAddress()), common.HexToAddress(t.cfg.Smartnode.GetBalanceBatcherAddress()))
 				if err != nil {
 					t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", err))
 					return
 				}
 
 				// Get the rETH address from the archive EC
-				address, err = client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
+				err = client.Query(func(mc *batch.MultiCaller) error {
+					client.Storage.GetAddress(mc, &address, string(rocketpool.ContractName_RocketTokenRETH))
+					return nil
+				}, opts)
 				if err != nil {
 					t.handleError(fmt.Errorf("%s Error verifying rETH address with Archive EC: %w", err))
 					return
@@ -217,8 +203,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
-
+func (t *GenerateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
 	// Generate the rewards file
 	start := time.Now()
 	treegen, err := rprewards.NewTreeGenerator(&t.log, generationPrefix, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state, nil)
@@ -277,10 +262,9 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 	t.lock.Lock()
 	t.isRunning = false
 	t.lock.Unlock()
-
 }
 
-func (t *generateRewardsTree) handleError(err error) {
+func (t *GenerateRewardsTree) handleError(err error) {
 	t.errLog.Println(err)
 	t.errLog.Println("*** Rewards tree generation failed. ***")
 	t.lock.Lock()

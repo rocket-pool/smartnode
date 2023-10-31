@@ -11,22 +11,24 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -36,13 +38,13 @@ const (
 )
 
 // Submit network balances task
-type submitNetworkBalances struct {
-	c         *cli.Context
+type SubmitNetworkBalances struct {
+	sp        *services.ServiceProvider
 	log       *log.ColorLogger
 	errLog    *log.ColorLogger
 	cfg       *config.RocketPoolConfig
 	w         *wallet.LocalWallet
-	ec        rocketpool.ExecutionClient
+	ec        core.ExecutionClient
 	rp        *rocketpool.RocketPool
 	bc        beacon.Client
 	lock      *sync.Mutex
@@ -67,64 +69,19 @@ type minipoolBalanceDetails struct {
 }
 
 // Create submit network balances task
-func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*submitNetworkBalances, error) {
-
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return task
+func NewSubmitNetworkBalances(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger) *SubmitNetworkBalances {
 	lock := &sync.Mutex{}
-	return &submitNetworkBalances{
-		c:         c,
+	return &SubmitNetworkBalances{
+		sp:        sp,
 		log:       &logger,
 		errLog:    &errorLogger,
-		cfg:       cfg,
-		w:         w,
-		ec:        ec,
-		rp:        rp,
-		bc:        bc,
 		lock:      lock,
 		isRunning: false,
-	}, nil
-
+	}
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) run(state *state.NetworkState) error {
-
-	// Wait for eth clients to sync
-	if err := services.WaitEthClientSynced(t.c, true); err != nil {
-		return err
-	}
-	if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
-		return err
-	}
-
-	// Get node account
-	nodeAccount, err := t.w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
-
+func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	// Check balance submission
 	if !state.NetworkDetails.SubmitBalancesEnabled {
 		return nil
@@ -180,11 +137,19 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		t.lock.Lock()
 		t.isRunning = true
 		t.lock.Unlock()
-		logPrefix := "[Balance Report]"
-		t.log.Printlnf("%s Starting balance report in a separate thread.", logPrefix)
+
+		// Get services
+		t.cfg = t.sp.GetConfig()
+		t.w = t.sp.GetWallet()
+		t.rp = t.sp.GetRocketPool()
+		t.ec = t.sp.GetEthClient()
+		t.bc = t.sp.GetBeaconClient()
+		nodeAddress, _ := t.w.GetAddress()
 
 		// Log
-		t.log.Printlnf("Calculating network balances for block %d...", blockNumber)
+		logPrefix := "[Balance Report]"
+		t.log.Printlnf("%s Starting balance report in a separate thread.", logPrefix)
+		t.log.Printlnf("%s Calculating network balances for block %d...", logPrefix, blockNumber)
 
 		// Get network balances at block
 		balances, err := t.getNetworkBalances(header, blockNumberBig, slotNumber, blockTime)
@@ -194,17 +159,17 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		}
 
 		// Log
-		t.log.Printlnf("Deposit pool balance: %s wei", balances.DepositPool.String())
-		t.log.Printlnf("Node credit balance: %s wei", balances.NodeCreditBalance.String())
-		t.log.Printlnf("Total minipool user balance: %s wei", balances.MinipoolsTotal.String())
-		t.log.Printlnf("Staking minipool user balance: %s wei", balances.MinipoolsStaking.String())
-		t.log.Printlnf("Fee distributor user balance: %s wei", balances.DistributorShareTotal.String())
-		t.log.Printlnf("Smoothing pool user balance: %s wei", balances.SmoothingPoolShare.String())
-		t.log.Printlnf("rETH contract balance: %s wei", balances.RETHContract.String())
-		t.log.Printlnf("rETH token supply: %s wei", balances.RETHSupply.String())
+		t.log.Printlnf("%s Deposit pool balance: %s wei", logPrefix, balances.DepositPool.String())
+		t.log.Printlnf("%s Node credit balance: %s wei", logPrefix, balances.NodeCreditBalance.String())
+		t.log.Printlnf("%s Total minipool user balance: %s wei", logPrefix, balances.MinipoolsTotal.String())
+		t.log.Printlnf("%s Staking minipool user balance: %s wei", logPrefix, balances.MinipoolsStaking.String())
+		t.log.Printlnf("%s Fee distributor user balance: %s wei", logPrefix, balances.DistributorShareTotal.String())
+		t.log.Printlnf("%s Smoothing pool user balance: %s wei", logPrefix, balances.SmoothingPoolShare.String())
+		t.log.Printlnf("%s rETH contract balance: %s wei", logPrefix, balances.RETHContract.String())
+		t.log.Printlnf("%s rETH token supply: %s wei", logPrefix, balances.RETHSupply.String())
 
 		// Check if we have reported these specific values before
-		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, balances)
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAddress, blockNumber, balances)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -217,7 +182,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		}
 
 		// We haven't submitted these values, check if we've submitted any for this block so we can log it
-		hasSubmitted, err := t.hasSubmittedBlockBalances(nodeAccount.Address, blockNumber)
+		hasSubmitted, err := t.hasSubmittedBlockBalances(nodeAddress, blockNumber)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -244,10 +209,9 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 	// Return
 	return nil
-
 }
 
-func (t *submitNetworkBalances) handleError(err error) {
+func (t *SubmitNetworkBalances) handleError(err error) {
 	t.errLog.Println(err)
 	t.errLog.Println("*** Balance report failed. ***")
 	t.lock.Lock()
@@ -256,17 +220,19 @@ func (t *submitNetworkBalances) handleError(err error) {
 }
 
 // Check whether balances for a block has already been submitted by the node
-func (t *submitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Address, blockNumber uint64) (bool, error) {
-
+func (t *SubmitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Address, blockNumber uint64) (bool, error) {
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf))
-
+	var result bool
+	err := t.rp.Query(func(mc *batch.MultiCaller) error {
+		t.rp.Storage.GetBool(mc, &result, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf))
+		return nil
+	}, nil)
+	return result, err
 }
 
 // Check whether specific balances for a block has already been submitted by the node
-func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress common.Address, blockNumber uint64, balances networkBalances) (bool, error) {
-
+func (t *SubmitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress common.Address, blockNumber uint64, balances networkBalances) (bool, error) {
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
 	totalEth.Sub(totalEth, balances.NodeCreditBalance)
@@ -288,17 +254,21 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 	rethSupplyBuf := make([]byte, 32)
 	balances.RETHSupply.FillBytes(rethSupplyBuf)
 
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf, totalEthBuf, stakingBuf, rethSupplyBuf))
-
+	var result bool
+	err := t.rp.Query(func(mc *batch.MultiCaller) error {
+		t.rp.Storage.GetBool(mc, &result, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf, totalEthBuf, stakingBuf, rethSupplyBuf))
+		return nil
+	}, nil)
+	return result, err
 }
 
 // Prints a message to the log
-func (t *submitNetworkBalances) printMessage(message string) {
+func (t *SubmitNetworkBalances) printMessage(message string) {
 	t.log.Println(message)
 }
 
 // Get the network balances at a specific block
-func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time) (networkBalances, error) {
+func (t *SubmitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time) (networkBalances, error) {
 
 	// Get a client with the block number available
 	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, elBlock)
@@ -420,7 +390,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 }
 
 // Get minipool balance details
-func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, cfg *config.RocketPoolConfig) minipoolBalanceDetails {
+func (t *SubmitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, cfg *config.RocketPoolConfig) minipoolBalanceDetails {
 
 	status := mpd.Status
 	userDepositBalance := mpd.UserDepositBalance
@@ -437,14 +407,14 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 	}
 
 	// Dissolved minipools don't contribute to rETH
-	if status == rptypes.Dissolved {
+	if status == rptypes.MinipoolStatus_Dissolved {
 		return minipoolBalanceDetails{
 			UserBalance: big.NewInt(0),
 		}
 	}
 
 	// Use user deposit balance if initialized or prelaunch
-	if status == rptypes.Initialized || status == rptypes.Prelaunch {
+	if status == rptypes.MinipoolStatus_Initialized || status == rptypes.MinipoolStatus_Prelaunch {
 		return minipoolBalanceDetails{
 			UserBalance: userDepositBalance,
 		}
@@ -486,8 +456,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
-
+func (t *SubmitNetworkBalances) submitBalances(balances networkBalances) error {
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
 	totalEth.Sub(totalEth, balances.NodeCreditBalance)
@@ -505,17 +474,23 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	t.log.Printlnf("Submitting network balances for block %d...", balances.Block)
 
 	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
+	opts, err := t.w.GetTransactor()
 	if err != nil {
 		return fmt.Errorf("error getting node transactor: %w", err)
 	}
 
+	// Get the network manager
+	networkMgr, err := network.NewNetworkManager(t.rp)
+	if err != nil {
+		return fmt.Errorf("error getting network manager: %w", err)
+	}
+
 	// Get the gas limit
-	gasInfo, err := network.EstimateSubmitBalancesGas(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+	txInfo, err := networkMgr.SubmitBalances(balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	if err != nil {
 		if enableSubmissionAfterConsensus_Balances && strings.Contains(err.Error(), "Network balances for an equal or higher block are set") {
 			// Set a gas limit which will intentionally be too low and revert
-			gasInfo = rocketpool.GasInfo{
+			txInfo.GasInfo = core.GasInfo{
 				EstGasLimit:  utils.BalanceSubmissionForcedGas,
 				SafeGasLimit: utils.BalanceSubmissionForcedGas,
 			}
@@ -527,23 +502,17 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
-
-	// Submit balances
-	hash, err := network.SubmitBalances(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
-	if err != nil {
-		return fmt.Errorf("error submitting balances: %w", err)
-	}
+	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.log, txInfo, opts)
 	if err != nil {
 		return fmt.Errorf("error waiting for transaction: %w", err)
 	}
@@ -553,5 +522,4 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 
 	// Return
 	return nil
-
 }

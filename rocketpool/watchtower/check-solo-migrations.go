@@ -108,7 +108,6 @@ func (t *CheckSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 	t.rp = t.sp.GetRocketPool()
 	t.ec = t.sp.GetEthClient()
 	t.bc = t.sp.GetBeaconClient()
-	t.w = t.sp.GetWallet()
 	var err error
 	t.mpMgr, err = minipool.NewMinipoolManager(t.rp)
 	if err != nil {

@@ -56,19 +56,6 @@ func main() {
 			Usage: "Address to serve metrics on if enabled",
 			Value: "0.0.0.0",
 		},
-		cli.UintFlag{
-			Name:  "metricsPort, r",
-			Usage: "Port to serve metrics on if enabled",
-			Value: 9102,
-		},
-		cli.BoolFlag{
-			Name:  "ignore-sync-check",
-			Usage: "Set this to true if you already checked the sync status of the execution client(s) and don't need to re-check it for this command",
-		},
-		cli.BoolFlag{
-			Name:  "force-fallbacks",
-			Usage: "Set this to true if you know the primary EC or CC is offline and want to bypass its health checks, and just use the fallback EC and CC instead",
-		},
 		cli.BoolFlag{
 			Name:  "use-protected-api",
 			Usage: "Set this to true to use the Flashbots Protect RPC instead of your local Execution Client. Useful to ensure your transactions aren't front-run.",
@@ -81,6 +68,13 @@ func main() {
 		Aliases: []string{"n"},
 		Usage:   "Run primary Rocket Pool node activity daemon and API server",
 		Action: func(c *cli.Context) error {
+			// Create env vars
+			metricsAddress := c.String("metricsAddress")
+			if metricsAddress == "" {
+				metricsAddress = "0.0.0.0"
+			}
+			os.Setenv("NODE_METRICS_ADDRESS", metricsAddress)
+
 			// Create the service provider
 			sp, err := services.NewServiceProvider(c)
 			if err != nil {
@@ -104,6 +98,13 @@ func main() {
 		Aliases: []string{"w"},
 		Usage:   "Run Rocket Pool watchtower activity daemon for Oracle DAO duties",
 		Action: func(c *cli.Context) error {
+			// Create env vars
+			metricsAddress := c.String("metricsAddress")
+			if metricsAddress == "" {
+				metricsAddress = "0.0.0.0"
+			}
+			os.Setenv("WATCHTOWER_METRICS_ADDRESS", metricsAddress)
+
 			// Create the service provider
 			sp, err := services.NewServiceProvider(c)
 			if err != nil {

@@ -101,7 +101,6 @@ func (t *CancelBondReductions) checkBondReductions(state *state.NetworkState) er
 	t.w = t.sp.GetWallet()
 	t.rp = t.sp.GetRocketPool()
 	t.ec = t.sp.GetEthClient()
-	t.w = t.sp.GetWallet()
 	var err error
 	t.mpMgr, err = minipool.NewMinipoolManager(t.rp)
 	if err != nil {

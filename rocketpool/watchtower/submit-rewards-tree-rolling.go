@@ -15,34 +15,38 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/klauspost/compress/zstd"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/config"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
 	"github.com/web3-storage/go-w3s-client"
 )
 
 // Process balances and rewards task
-type submitRewardsTree_Rolling struct {
-	c           *cli.Context
+type SubmitRewardsTree_Rolling struct {
+	sp          *services.ServiceProvider
 	log         log.ColorLogger
 	errLog      log.ColorLogger
 	cfg         *config.RocketPoolConfig
 	w           *wallet.LocalWallet
-	ec          rocketpool.ExecutionClient
+	ec          core.ExecutionClient
 	rp          *rocketpool.RocketPool
 	bc          beacon.Client
+	rewardsPool *rewards.RewardsPool
 	genesisTime time.Time
 	recordMgr   *rprewards.RollingRecordManager
 	stateMgr    *state.NetworkStateManager
@@ -53,28 +57,14 @@ type submitRewardsTree_Rolling struct {
 }
 
 // Create submit rewards tree with rolling record support
-func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, stateMgr *state.NetworkStateManager) (*submitRewardsTree_Rolling, error) {
-
+func NewSubmitRewardsTree_Rolling(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, stateMgr *state.NetworkStateManager) (*SubmitRewardsTree_Rolling, error) {
 	// Get services
-	cfg, err := services.GetConfig(c)
+	cfg := sp.GetConfig()
+	rp := sp.GetRocketPool()
+	bc := sp.GetBeaconClient()
+	rewardsPool, err := rewards.NewRewardsPool(rp)
 	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating Rewards Pool binding: %w", err)
 	}
 
 	// Get the beacon config
@@ -87,17 +77,17 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 
 	// Get the current interval index
-	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
+	err = rp.Query(nil, nil, rewardsPool.RewardIndex)
 	if err != nil {
 		return nil, fmt.Errorf("error getting rewards index: %w", err)
 	}
-	currentIndex := currentIndexBig.Uint64()
+	currentIndex := rewardsPool.RewardIndex.Formatted()
 
 	// Get the previous RocketRewardsPool addresses
 	prevAddresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
 
 	// Get the last rewards event and starting epoch
-	found, event, err := rewards.GetRewardsEvent(rp, currentIndex-1, prevAddresses, nil)
+	found, event, err := rewardsPool.GetRewardsEvent(rp, currentIndex-1, prevAddresses, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting event for rewards interval %d: %w", currentIndex-1, err)
 	}
@@ -114,15 +104,10 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	// Create the task
 	lock := &sync.Mutex{}
 	logPrefix := "[Rolling Record]"
-	task := &submitRewardsTree_Rolling{
-		c:           c,
+	task := &SubmitRewardsTree_Rolling{
+		sp:          sp,
 		log:         logger,
 		errLog:      errorLogger,
-		cfg:         cfg,
-		ec:          ec,
-		w:           w,
-		rp:          rp,
-		bc:          bc,
 		stateMgr:    stateMgr,
 		genesisTime: genesisTime,
 		logPrefix:   logPrefix,
@@ -150,19 +135,10 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	// Return
 	task.recordMgr = recordMgr
 	return task, nil
-
 }
 
 // Update the rolling record and run the submission process if applicable
-func (t *submitRewardsTree_Rolling) run(headState *state.NetworkState) error {
-	// Wait for clients to sync
-	if err := services.WaitEthClientSynced(t.c, true); err != nil {
-		return err
-	}
-	if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
-		return err
-	}
-
+func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 	t.lock.Lock()
 	if t.isRunning {
 		t.log.Println("Record update is already running in the background.")
@@ -171,17 +147,25 @@ func (t *submitRewardsTree_Rolling) run(headState *state.NetworkState) error {
 	}
 	t.lock.Unlock()
 
-	nodeAccount, err := t.w.GetNodeAccount()
-	if err != nil {
-		return fmt.Errorf("error loading node account: %w", err)
-	}
-	nodeAddress := nodeAccount.Address
-
 	go func() {
 		t.lock.Lock()
 		t.isRunning = true
 		t.lock.Unlock()
 		t.log.Printlnf("%s Running record update in a separate thread.", t.logPrefix)
+
+		// Get services
+		t.cfg = t.sp.GetConfig()
+		t.w = t.sp.GetWallet()
+		t.rp = t.sp.GetRocketPool()
+		t.ec = t.sp.GetEthClient()
+		t.bc = t.sp.GetBeaconClient()
+		nodeAddress, _ := t.w.GetAddress()
+		var err error
+		t.rewardsPool, err = rewards.NewRewardsPool(t.rp)
+		if err != nil {
+			t.handleError(fmt.Errorf("error creating Rewards Pool binding: %w", err))
+			return
+		}
 
 		// Capture the latest head state if one isn't passed in
 		if headState == nil {
@@ -313,12 +297,12 @@ func (t *submitRewardsTree_Rolling) run(headState *state.NetworkState) error {
 }
 
 // Print a message from the tree generation goroutine
-func (t *submitRewardsTree_Rolling) printMessage(message string) {
+func (t *SubmitRewardsTree_Rolling) printMessage(message string) {
 	t.log.Printlnf("%s %s", t.logPrefix, message)
 }
 
 // Print an error and unlock the mutex
-func (t *submitRewardsTree_Rolling) handleError(err error) {
+func (t *SubmitRewardsTree_Rolling) handleError(err error) {
 	t.errLog.Printlnf("%s %s", t.logPrefix, err.Error())
 	t.errLog.Println("*** Rolling Record processing failed. ***")
 	t.lock.Lock()
@@ -327,7 +311,7 @@ func (t *submitRewardsTree_Rolling) handleError(err error) {
 }
 
 // Check if a rewards interval submission is required and if so, the slot number for the update
-func (t *submitRewardsTree_Rolling) isRewardsIntervalSubmissionRequired(state *state.NetworkState) (bool, uint64, uint64, time.Time, time.Time, error) {
+func (t *SubmitRewardsTree_Rolling) isRewardsIntervalSubmissionRequired(state *state.NetworkState) (bool, uint64, uint64, time.Time, time.Time, error) {
 	// Check if a rewards interval has passed and needs to be calculated
 	startTime := state.NetworkDetails.IntervalStart
 	intervalTime := state.NetworkDetails.IntervalDuration
@@ -354,7 +338,7 @@ func (t *submitRewardsTree_Rolling) isRewardsIntervalSubmissionRequired(state *s
 
 // Get the actual slot to be used for a rewards interval submission instead of the naively-determined one
 // NOTE: only call this once the required epoch (targetSlotEpoch + 1) has been finalized
-func (t *submitRewardsTree_Rolling) getTrueRewardsIntervalSubmissionSlot(targetSlot uint64) (uint64, uint64, error) {
+func (t *SubmitRewardsTree_Rolling) getTrueRewardsIntervalSubmissionSlot(targetSlot uint64) (uint64, uint64, error) {
 	// Get the first successful block
 	for {
 		// Try to get the current block
@@ -375,7 +359,7 @@ func (t *submitRewardsTree_Rolling) getTrueRewardsIntervalSubmissionSlot(targetS
 }
 
 // Checks to see if an existing rewards file is still valid and whether or not it should be regenerated or just resubmitted
-func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardsTreePath string, intervalsPassed uint64, nodeAddress common.Address, isInOdao bool) (rprewards.IRewardsFile, []byte, bool, bool) {
+func (t *SubmitRewardsTree_Rolling) isExistingFileValid(rewardsTreePath string, intervalsPassed uint64, nodeAddress common.Address, isInOdao bool) (sharedtypes.IRewardsFile, []byte, bool, bool) {
 	// Check if the rewards file exists
 	_, err := os.Stat(rewardsTreePath)
 	if os.IsNotExist(err) {
@@ -425,7 +409,11 @@ func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardsTreePath string, 
 			UserETH:         &header.TotalRewards.PoolStakerSmoothingPoolEth.Int,
 		}
 
-		hasSubmitted, err := rewards.GetTrustedNodeSubmittedSpecificRewards(t.rp, nodeAddress, submission, nil)
+		var hasSubmitted bool
+		err = t.rp.Query(func(mc *batch.MultiCaller) error {
+			t.rewardsPool.GetTrustedNodeSubmittedSpecificRewards(mc, &hasSubmitted, nodeAddress, submission)
+			return nil
+		}, nil)
 		if err != nil {
 			t.log.Printlnf("%s WARNING: could not check if node has previously submitted file %s: %s; regenerating file...\n", t.logPrefix, rewardsTreePath, err.Error())
 			return nil, nil, false, true
@@ -451,7 +439,7 @@ func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardsTreePath string, 
 }
 
 // Run a rewards interval report submission
-func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.RocketPool, state *state.NetworkState, isInOdao bool, intervalsPassed uint64, startTime time.Time, endTime time.Time, mustRegenerate bool, existingRewardsFile rprewards.IRewardsFile, fileBytes []byte) error {
+func (t *SubmitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.RocketPool, state *state.NetworkState, isInOdao bool, intervalsPassed uint64, startTime time.Time, endTime time.Time, mustRegenerate bool, existingRewardsFile sharedtypes.IRewardsFile, fileBytes []byte) error {
 	// Prep the record for reporting
 	err := t.recordMgr.PrepareRecordForReport(state)
 	if err != nil {
@@ -515,8 +503,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
-
+func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
 	// Log
 	if intervalsPassed > 1 {
 		t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", intervalsPassed)
@@ -597,12 +584,10 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	}
 
 	return nil
-
 }
 
 // Submit rewards info to the contracts
-func (t *submitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFileHeader *rprewards.RewardsFileHeader, cid string, intervalsPassed *big.Int) error {
-
+func (t *SubmitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFileHeader *sharedtypes.RewardsFileHeader, cid string, intervalsPassed *big.Int) error {
 	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFileHeader.MerkleRoot))
 	if err != nil {
 		return fmt.Errorf("Error decoding merkle root: %w", err)
@@ -630,7 +615,7 @@ func (t *submitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 	}
 
 	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
+	opts, err := t.w.GetTransactor()
 	if err != nil {
 		return err
 	}
@@ -651,11 +636,11 @@ func (t *submitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 	}
 
 	// Get the gas limit
-	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
+	txInfo, err := t.rewardsPool.SubmitRewardSnapshot(submission, opts)
 	if err != nil {
 		if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
 			// Set a gas limit which will intentionally be too low and revert
-			gasInfo = rocketpool.GasInfo{
+			txInfo.GasInfo = core.GasInfo{
 				EstGasLimit:  utils.RewardsSubmissionForcedGas,
 				SafeGasLimit: utils.RewardsSubmissionForcedGas,
 			}
@@ -667,22 +652,16 @@ func (t *submitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
-
-	// Submit RPL price
-	hash, err := rewards.SubmitRewardSnapshot(t.rp, submission, opts)
-	if err != nil {
-		return err
-	}
+	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
 	if err != nil {
 		return err
 	}
@@ -692,8 +671,7 @@ func (t *submitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 }
 
 // Compress and upload a file to Web3.Storage and get the CID for it
-func (t *submitRewardsTree_Rolling) uploadFileToWeb3Storage(wrapperBytes []byte, compressedPath string, description string) (string, error) {
-
+func (t *SubmitRewardsTree_Rolling) uploadFileToWeb3Storage(wrapperBytes []byte, compressedPath string, description string) (string, error) {
 	// Get the API token
 	apiToken := t.cfg.Smartnode.Web3StorageApiToken.Value.(string)
 	if apiToken == "" {
@@ -733,5 +711,4 @@ func (t *submitRewardsTree_Rolling) uploadFileToWeb3Storage(wrapperBytes []byte,
 	}
 
 	return cid.String(), nil
-
 }

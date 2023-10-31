@@ -8,19 +8,14 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
 )
 
-func runMetricsServer(c *cli.Context, logger log.ColorLogger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector) error {
-
+func runMetricsServer(sp *services.ServiceProvider, logger log.ColorLogger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector) error {
 	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return err
-	}
+	cfg := sp.GetConfig()
 
 	// Return if metrics are disabled
 	if cfg.EnableMetrics.Value == false {
@@ -36,11 +31,11 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, scrubCollector *co
 	registry.MustRegister(scrubCollector)
 	registry.MustRegister(bondReductionCollector)
 	registry.MustRegister(soloMigrationCollector)
-	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 
 	// Start the HTTP server
-	metricsAddress := c.GlobalString("metricsAddress")
-	metricsPort := c.GlobalUint("metricsPort")
+	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
+	metricsAddress := os.Getenv("WATCHTOWER_METRICS_ADDRESS")
+	metricsPort := cfg.WatchtowerMetricsPort.Value.(uint64)
 	logger.Printlnf("Starting metrics exporter on %s:%d.", metricsAddress, metricsPort)
 	metricsPath := "/metrics"
 	http.Handle(metricsPath, handler)
@@ -54,11 +49,10 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, scrubCollector *co
             </html>`,
 		))
 	})
-	err = http.ListenAndServe(fmt.Sprintf("%s:%d", metricsAddress, metricsPort), nil)
+	err := http.ListenAndServe(fmt.Sprintf("%s:%d", metricsAddress, metricsPort), nil)
 	if err != nil {
 		return fmt.Errorf("Error running HTTP server: %w", err)
 	}
 
 	return nil
-
 }

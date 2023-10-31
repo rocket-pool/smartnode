@@ -3,125 +3,94 @@ package watchtower
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Respond to challenges task
-type respondChallenges struct {
-	c   *cli.Context
+type RespondChallenges struct {
+	sp  *services.ServiceProvider
 	log log.ColorLogger
-	cfg *config.RocketPoolConfig
-	w   *wallet.LocalWallet
-	rp  *rocketpool.RocketPool
-	m   *state.NetworkStateManager
 }
 
 // Create respond to challenges task
-func newRespondChallenges(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*respondChallenges, error) {
-
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return task
-	return &respondChallenges{
-		c:   c,
+func NewRespondChallenges(sp *services.ServiceProvider, logger log.ColorLogger, m *state.NetworkStateManager) *RespondChallenges {
+	return &RespondChallenges{
+		sp:  sp,
 		log: logger,
-		cfg: cfg,
-		w:   w,
-		rp:  rp,
-		m:   m,
-	}, nil
-
+	}
 }
 
 // Respond to challenges
-func (t *respondChallenges) run() error {
-
-	// Wait for eth client to sync
-	if err := services.WaitEthClientSynced(t.c, true); err != nil {
-		return err
-	}
-
-	// Get node account
-	nodeAccount, err := t.w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
+func (t *RespondChallenges) Run() error {
+	// Get services
+	cfg := t.sp.GetConfig()
+	w := t.sp.GetWallet()
+	rp := t.sp.GetRocketPool()
+	nodeAddress, _ := w.GetAddress()
 
 	// Log
 	t.log.Println("Checking for challenges to respond to...")
+	member, err := oracle.NewOracleDaoMember(rp, nodeAddress)
+	if err != nil {
+		return fmt.Errorf("error creating Oracle DAO member binding: %w", err)
+	}
 
 	// Check for active challenges
-	isChallenged, err := trustednode.GetMemberIsChallenged(t.rp, nodeAccount.Address, nil)
+	err = rp.Query(nil, nil, member.IsChallenged)
 	if err != nil {
-		return err
+		return fmt.Errorf("error checking if member is challenged: %w", err)
 	}
-	if !isChallenged {
+	if !member.IsChallenged.Get() {
 		return nil
 	}
 
 	// Log
-	t.log.Printlnf("Node %s has an active challenge against it, responding...", nodeAccount.Address.Hex())
+	t.log.Printlnf("Node %s has an active challenge against it, responding...", nodeAddress.Hex())
 
 	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
+	opts, err := w.GetTransactor()
 	if err != nil {
 		return err
 	}
 
-	// Get the gas limit
-	gasInfo, err := trustednode.EstimateDecideChallengeGas(t.rp, nodeAccount.Address, opts)
+	// Create an oDAO manager
+	odaoMgr, err := oracle.NewOracleDaoManager(rp)
 	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to respond to the challenge: %w", err)
+		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
+	}
+
+	// Get the tx info
+	txInfo, err := odaoMgr.DecideChallenge(nodeAddress, opts)
+	if err != nil {
+		return fmt.Errorf("error getting DecideChallenge TX info: %w", err)
 	}
 
 	// Print the gas info
-	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
+	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
-
-	// Respond to challenge
-	hash, err := trustednode.DecideChallenge(t.rp, nodeAccount.Address, opts)
-	if err != nil {
-		return err
-	}
+	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(cfg))
+	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log & return
-	t.log.Printlnf("Successfully responded to challenge against node %s.", nodeAccount.Address.Hex())
+	t.log.Printlnf("Successfully responded to challenge against node %s.", nodeAddress.Hex())
 	return nil
-
 }

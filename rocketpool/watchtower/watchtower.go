@@ -122,7 +122,7 @@ func run(c *cli.Context) error {
 	}
 
 	// Initialize tasks
-	respondChallenges, err := newRespondChallenges(c, log.NewColorLogger(RespondChallengesColor), m)
+	respondChallenges, err := NewRespondChallenges(c, log.NewColorLogger(RespondChallengesColor), m)
 	if err != nil {
 		return fmt.Errorf("error during respond-to-challenges check: %w", err)
 	}
@@ -130,11 +130,11 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during rpl price check: %w", err)
 	}
-	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
+	submitNetworkBalances, err := NewSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
 	if err != nil {
 		return fmt.Errorf("error during network balances check: %w", err)
 	}
-	dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
+	dissolveTimedOutMinipools, err := NewDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
 	if err != nil {
 		return fmt.Errorf("error during timed-out minipools check: %w", err)
 	}
@@ -143,14 +143,14 @@ func run(c *cli.Context) error {
 		return fmt.Errorf("error during scrub check: %w", err)
 	}
 	var submitRewardsTree_Stateless *submitRewardsTree_Stateless
-	var submitRewardsTree_Rolling *submitRewardsTree_Rolling
+	var submitRewardsTree_Rolling *SubmitRewardsTree_Rolling
 	if !useRollingRecords {
 		submitRewardsTree_Stateless, err = newSubmitRewardsTree_Stateless(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 		if err != nil {
 			return fmt.Errorf("error during stateless rewards tree check: %w", err)
 		}
 	} else {
-		submitRewardsTree_Rolling, err = newSubmitRewardsTree_Rolling(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+		submitRewardsTree_Rolling, err = NewSubmitRewardsTree_Rolling(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 		if err != nil {
 			return fmt.Errorf("error during rolling rewards tree check: %w", err)
 		}
@@ -159,7 +159,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during penalties check: %w", err)
 	}*/
-	generateRewardsTree, err := newGenerateRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+	generateRewardsTree, err := NewGenerateRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	if err != nil {
 		return fmt.Errorf("error during manual tree generation check: %w", err)
 	}
