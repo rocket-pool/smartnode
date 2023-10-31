@@ -120,10 +120,11 @@ func GetLatestPricesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, int
 	return results, nil
 }
 
+// TODO: will be adjusted/removed
 // Returns a mapping of members and whether they have submitted prices this interval or not
 func GetTrustedNodeLatestPricesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (map[common.Address]bool, error) {
 	// Get the update frequency
-	updatePricesFrequency, err := protocol.GetSubmitPricesFrequency(rp, opts)
+	updatePricesFrequency, err := protocol.GetSubmitPricesEpochs(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -155,10 +156,11 @@ func GetTrustedNodeLatestPricesParticipation(rp *rocketpool.RocketPool, interval
 	return participationTable, nil
 }
 
+// TODO: needs adjustments
 // Calculates the participation rate of every trusted node on price submission since the last block that member count changed
 func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (*node.TrustedNodeParticipation, error) {
 	// Get the update frequency
-	updatePricesFrequency, err := protocol.GetSubmitPricesFrequency(rp, opts)
+	updatePricesFrequency, err := protocol.GetSubmitPricesEpochs(rp, opts) //
 	if err != nil {
 		return nil, err
 	}

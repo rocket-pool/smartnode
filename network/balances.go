@@ -173,10 +173,11 @@ func GetLatestBalancesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, i
 	return results, nil
 }
 
+// TODO: will be adjusted/removed
 // Returns a mapping of members and whether they have submitted balances this interval or not
 func GetTrustedNodeLatestBalancesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (map[common.Address]bool, error) {
 	// Get the update frequency
-	updateBalancesFrequency, err := protocol.GetSubmitBalancesFrequency(rp, opts)
+	updateBalancesFrequency, err := protocol.GetSubmitBalancesEpochs(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -208,10 +209,11 @@ func GetTrustedNodeLatestBalancesParticipation(rp *rocketpool.RocketPool, interv
 	return participationTable, nil
 }
 
+// TODO: will be adjusted/removed
 // Calculates the participation rate of every trusted node on balance submission since the last block that member count changed
 func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (*node.TrustedNodeParticipation, error) {
 	// Get the update frequency
-	updateBalancesFrequency, err := protocol.GetSubmitBalancesFrequency(rp, opts)
+	updateBalancesFrequency, err := protocol.GetSubmitBalancesEpochs(rp, opts)
 	if err != nil {
 		return nil, err
 	}
