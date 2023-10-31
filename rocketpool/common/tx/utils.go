@@ -94,9 +94,9 @@ func PrintAndWaitForTransactionBatch(cfg *config.RocketPoolConfig, rp *rocketpoo
 }
 
 // True if a transaction is due and needs to bypass the gas threshold
-func IsTransactionDue(rp *rocketpool.RocketPool, startTime time.Time, minipoolLaunchTimeout time.Duration) (bool, time.Duration, error) {
+func IsTransactionDue(startTime time.Time, minipoolLaunchTimeout time.Duration) (bool, time.Duration) {
 	dueTime := minipoolLaunchTimeout / TimeoutSafetyFactor
 	isDue := time.Since(startTime) > dueTime
 	timeUntilDue := time.Until(startTime.Add(dueTime))
-	return isDue, timeUntilDue, nil
+	return isDue, timeUntilDue
 }

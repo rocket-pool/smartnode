@@ -141,7 +141,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	reduceBonds, err := newReduceBonds(c, log.NewColorLogger(ReduceBondAmountColor))
+	reduceBonds, err := NewReduceBonds(c, log.NewColorLogger(ReduceBondAmountColor))
 	if err != nil {
 		return err
 	}

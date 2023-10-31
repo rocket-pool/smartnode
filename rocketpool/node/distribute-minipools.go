@@ -177,7 +177,6 @@ func (t *DistributeMinipools) createDistributeMinipoolTx(mpd *rpstate.NativeMini
 	if err != nil {
 		return nil, fmt.Errorf("error creating distribute tx submission for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
-
 	return submission, nil
 }
 

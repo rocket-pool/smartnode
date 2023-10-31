@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -33,15 +33,13 @@ type PromoteMinipools struct {
 	gasThreshold   float64
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
-	gasLimit       uint64
 }
 
 // Create promote minipools task
 func NewPromoteMinipools(sp *services.ServiceProvider, logger log.ColorLogger) (*PromoteMinipools, error) {
 	return &PromoteMinipools{
-		sp:       sp,
-		log:      logger,
-		gasLimit: 0,
+		sp:  sp,
+		log: logger,
 	}, nil
 }
 
@@ -58,13 +56,8 @@ func (t *PromoteMinipools) Run(state *state.NetworkState) error {
 	// Log
 	t.log.Println("Checking for minipools to promote...")
 
-	// Get the latest state
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
-	}
-
 	// Get prelaunch minipools
-	minipools, err := t.getVacantMinipools(nodeAddress, state, opts)
+	minipools, err := t.getVacantMinipools(nodeAddress, state)
 	if err != nil {
 		return err
 	}
@@ -79,15 +72,22 @@ func (t *PromoteMinipools) Run(state *state.NetworkState) error {
 		return fmt.Errorf("error creating minipool manager: %w", err)
 	}
 
-	// Promote minipools
-	timeoutBig := state.NetworkDetails.MinipoolLaunchTimeout
-	timeout := time.Duration(timeoutBig.Uint64()) * time.Second
-	for _, mpd := range minipools {
-		_, err := t.promoteMinipool(mpd, timeout, opts)
+	// Get promote minipools submissions
+	txSubmissions := make([]*core.TransactionSubmission, len(minipools))
+	for i, mpd := range minipools {
+		txSubmissions[i], err = t.createPromoteMinipoolTx(mpd)
 		if err != nil {
-			t.log.Println(fmt.Errorf("Could not promote minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
+			t.log.Println(fmt.Errorf("error preparing submission to promote minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
 			return err
 		}
+	}
+
+	// Promote
+	timeoutBig := state.NetworkDetails.MinipoolLaunchTimeout
+	timeout := time.Duration(timeoutBig.Uint64()) * time.Second
+	err = t.promoteMinipools(txSubmissions, minipools, timeout)
+	if err != nil {
+		return fmt.Errorf("error promoting minipools: %w", err)
 	}
 
 	// Return
@@ -95,14 +95,14 @@ func (t *PromoteMinipools) Run(state *state.NetworkState) error {
 }
 
 // Get vacant minipools
-func (t *PromoteMinipools) getVacantMinipools(nodeAddress common.Address, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
+func (t *PromoteMinipools) getVacantMinipools(nodeAddress common.Address, state *state.NetworkState) ([]*rpstate.NativeMinipoolDetails, error) {
 	vacantMinipools := []*rpstate.NativeMinipoolDetails{}
 
 	// Get the scrub period
 	scrubPeriod := state.NetworkDetails.PromotionScrubPeriod
 
 	// Get the time of the target block
-	block, err := t.rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
+	block, err := t.rp.Client.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(state.ElBlockNumber))
 	if err != nil {
 		return nil, fmt.Errorf("Can't get the latest block time: %w", err)
 	}
@@ -126,40 +126,50 @@ func (t *PromoteMinipools) getVacantMinipools(nodeAddress common.Address, state 
 	return vacantMinipools, nil
 }
 
-// Promote a minipool
-func (t *PromoteMinipools) promoteMinipool(mpd *rpstate.NativeMinipoolDetails, minipoolLaunchTimeout time.Duration, callOpts *bind.CallOpts) (bool, error) {
+// Get submission info for promoting a minipool
+func (t *PromoteMinipools) createPromoteMinipoolTx(mpd *rpstate.NativeMinipoolDetails) (*core.TransactionSubmission, error) {
 	// Log
-	t.log.Printlnf("Promoting minipool %s...", mpd.MinipoolAddress.Hex())
+	t.log.Printlnf("Preparing to promote minipool %s...", mpd.MinipoolAddress.Hex())
 
 	// Get the updated minipool interface
 	mp, err := t.mpMgr.NewMinipoolFromVersion(mpd.MinipoolAddress, mpd.Version)
 	if err != nil {
-		return false, fmt.Errorf("error creating minipool binding for %s: %w", mpd.MinipoolAddress.Hex(), err)
+		return nil, fmt.Errorf("error creating minipool binding for %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
-		return false, fmt.Errorf("cannot promote minipool %s because its delegate version is too low (v%d); please update the delegate to promote it", mpd.MinipoolAddress.Hex(), mpd.Version)
+		return nil, fmt.Errorf("cannot promote minipool %s because its delegate version is too low (v%d); please update the delegate to promote it", mpd.MinipoolAddress.Hex(), mpd.Version)
 	}
 
 	// Get transactor
 	opts, err := t.w.GetTransactor()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	// Get the gas limit
 	txInfo, err := mpv3.Promote(opts)
 	if err != nil {
-		return false, fmt.Errorf("error getting promote minipool tx for %s: %w", mpd.MinipoolAddress.Hex(), err)
+		return nil, fmt.Errorf("error getting promote minipool tx for %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
 	if txInfo.SimError != "" {
-		return false, fmt.Errorf("simulating promote minipool tx for %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimError)
+		return nil, fmt.Errorf("simulating promote minipool tx for %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimError)
 	}
-	var gasLimit *big.Int
-	if t.gasLimit != 0 {
-		gasLimit = new(big.Int).SetUint64(t.gasLimit)
-	} else {
-		gasLimit = new(big.Int).SetUint64(txInfo.GasInfo.SafeGasLimit)
+
+	submission, err := core.CreateTxSubmissionFromInfo(txInfo, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating promote tx submission for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+	}
+
+	return submission, nil
+}
+
+// Promote all available minipools
+func (t *PromoteMinipools) promoteMinipools(submissions []*core.TransactionSubmission, minipools []*rpstate.NativeMinipoolDetails, minipoolLaunchTimeout time.Duration) error {
+	// Get transactor
+	opts, err := t.w.GetTransactor()
+	if err != nil {
+		return err
 	}
 
 	// Get the max fee
@@ -167,39 +177,40 @@ func (t *PromoteMinipools) promoteMinipool(mpd *rpstate.NativeMinipoolDetails, m
 	if maxFee == nil || maxFee.Uint64() == 0 {
 		maxFee, err = gas.GetMaxFeeWeiForDaemon(&t.log)
 		if err != nil {
-			return false, err
+			return err
 		}
 	}
-
-	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
-		// Check for the timeout buffer
-		creationTime := time.Unix(mpd.StatusTime.Int64(), 0)
-		isDue, timeUntilDue, err := tx.IsTransactionDue(t.rp, creationTime, minipoolLaunchTimeout)
-		if err != nil {
-			t.log.Printlnf("Error checking if minipool is due: %s\nPromoting now for safety...", err.Error())
-		}
-		if !isDue {
-			t.log.Printlnf("Time until promoting will be forced for safety: %s", timeUntilDue)
-			return false, nil
-		}
-
-		t.log.Println("NOTICE: The minipool has exceeded half of the timeout period, so it will be force-promoted at the current gas price.")
-	}
-
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = t.maxPriorityFee
-	opts.GasLimit = gasLimit.Uint64()
 
-	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
+	// Print the gas info
+	forceSubmissions := []*core.TransactionSubmission{}
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, &t.log, maxFee) {
+		// Check for the timeout buffers
+		for i, mpd := range minipools {
+			creationTime := time.Unix(mpd.StatusTime.Int64(), 0)
+			isDue, timeUntilDue := tx.IsTransactionDue(creationTime, minipoolLaunchTimeout)
+			if !isDue {
+				t.log.Printlnf("Time until promoting minipool %s will be forced for safety: %s", mpd.MinipoolAddress.Hex(), timeUntilDue)
+				continue
+			}
+			t.log.Printlnf("NOTICE: Minipool %s has exceeded half of the timeout period, so it will be force-promoted at the current gas price.", mpd.MinipoolAddress.Hex())
+			forceSubmissions = append(forceSubmissions, submissions[i])
+		}
+
+		if len(forceSubmissions) == 0 {
+			return nil
+		}
+		submissions = forceSubmissions
+	}
+
+	// Print TX info and wait for them to be included in a block
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, opts)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully promoted minipool %s.", mpd.MinipoolAddress.Hex())
-
-	// Return
-	return true, nil
+	t.log.Println("Successfully promoted all minipools.")
+	return nil
 }
