@@ -19,11 +19,11 @@ import (
 
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -147,8 +147,8 @@ func (t *ReduceBonds) Run(state *state.NetworkState) error {
 
 // Temp mitigation for the Dybsy bug
 func (t *ReduceBonds) forceFeeDistribution(state *state.NetworkState) (bool, error) {
-	nodeAddress, _ := t.sp.w.GetAddress()
-	distributorAddress := state.NodeDetails[nodeAddress].FeeDistributorAddress
+	nodeAddress, _ := t.w.GetAddress()
+	distributorAddress := state.NodeDetailsByAddress[nodeAddress].FeeDistributorAddress
 
 	// Get fee distributor
 	distributor, err := node.NewNodeDistributor(t.rp, nodeAddress, distributorAddress)

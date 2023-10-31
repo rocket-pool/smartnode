@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/node"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower"
 	"github.com/rocket-pool/smartnode/shared"
@@ -41,7 +42,7 @@ func main() {
 			Email: "kane@rocketpool.net",
 		},
 	}
-	app.Copyright = "(c) 2022 Rocket Pool Pty Ltd"
+	app.Copyright = "(C) 2023 Rocket Pool Pty Ltd"
 
 	// Set application flags
 	app.Flags = []cli.Flag{
@@ -90,10 +91,43 @@ func main() {
 		},
 	}
 
-	// Register commands
-	api.RegisterCommands(app, "api", []string{"a"})
-	node.RegisterCommands(app, "node", []string{"n"})
-	watchtower.RegisterCommands(app, "watchtower", []string{"w"})
+	// Register primary daemon
+	app.Commands = append(app.Commands, cli.Command{
+		Name:    "node",
+		Aliases: []string{"n"},
+		Usage:   "Run primary Rocket Pool node activity daemon and API server",
+		Action: func(c *cli.Context) error {
+			// Create the service provider
+			sp, err := services.NewServiceProvider(c)
+			if err != nil {
+				return fmt.Errorf("error creating service provider: %w", err)
+			}
+
+			// Create the API server
+			apiMgr := api.NewApiManager(sp)
+			err = apiMgr.Start()
+			if err != nil {
+				return fmt.Errorf("error starting API server: %w", err)
+			}
+
+			return node.Run(sp)
+		},
+	})
+
+	// Register watchtower daemon
+	app.Commands = append(app.Commands, cli.Command{
+		Name:    "watchtower",
+		Aliases: []string{"w"},
+		Usage:   "Run Rocket Pool watchtower activity daemon for Oracle DAO duties",
+		Action: func(c *cli.Context) error {
+			// Create the service provider
+			sp, err := services.NewServiceProvider(c)
+			if err != nil {
+				return fmt.Errorf("error creating service provider: %w", err)
+			}
+			return watchtower.Run(sp)
+		},
+	})
 
 	// Get command being run
 	var commandName string

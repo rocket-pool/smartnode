@@ -3,7 +3,6 @@ package node
 import (
 	"fmt"
 	"math/big"
-	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -11,16 +10,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
-	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet/keystore/lighthouse"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet/keystore/nimbus"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet/keystore/prysm"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet/keystore/teku"
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
-	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
-	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
-	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -44,56 +42,28 @@ const (
 	UpdateColor                  = color.FgHiWhite
 )
 
-// Register node command
-func RegisterCommands(app *cli.App, name string, aliases []string) {
-	app.Commands = append(app.Commands, cli.Command{
-		Name:    name,
-		Aliases: aliases,
-		Usage:   "Run Rocket Pool node activity daemon",
-		Action: func(c *cli.Context) error {
-			return run(c)
-		},
-	})
-}
-
 // Run daemon
-func run(c *cli.Context) error {
+func Run(sp *services.ServiceProvider) error {
+	// Get services
+	cfg := sp.GetConfig()
+	rp := sp.GetRocketPool()
+	ec := sp.GetEthClient()
+	bc := sp.GetBeaconClient()
 
 	// Handle the initial fee recipient file deployment
-	err := deployDefaultFeeRecipientFile(c)
+	err := deployDefaultFeeRecipientFile(cfg)
 	if err != nil {
 		return err
 	}
 
 	// Clean up old fee recipient files
-	err = removeLegacyFeeRecipientFiles(c)
+	err = removeLegacyFeeRecipientFiles(cfg)
 	if err != nil {
 		return err
 	}
-
-	// Configure
-	configureHTTP()
 
 	// Wait until node is registered
-	if err := services.WaitNodeRegistered(c, true); err != nil {
-		return err
-	}
-
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
+	if err := sp.WaitNodeRegistered(true); err != nil {
 		return err
 	}
 
@@ -104,47 +74,24 @@ func run(c *cli.Context) error {
 		fmt.Println("Starting node daemon in Docker Mode.")
 	}
 
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return fmt.Errorf("error getting node account: %w", err)
-	}
-
 	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
 	updateLog := log.NewColorLogger(UpdateColor)
 
 	// Create the state manager
-	m, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, &updateLog)
+	m, err := state.NewNetworkStateManager(rp, cfg, ec, bc, &updateLog)
 	if err != nil {
 		return err
 	}
 	stateLocker := collectors.NewStateLocker()
 
 	// Initialize tasks
-	manageFeeRecipient, err := NewManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor))
-	if err != nil {
-		return err
-	}
-	distributeMinipools, err := newDistributeMinipools(c, log.NewColorLogger(DistributeMinipoolsColor))
-	if err != nil {
-		return err
-	}
-	stakePrelaunchMinipools, err := NewStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
-	if err != nil {
-		return err
-	}
-	promoteMinipools, err := NewPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor))
-	if err != nil {
-		return err
-	}
-	downloadRewardsTrees, err := NewDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor))
-	if err != nil {
-		return err
-	}
-	reduceBonds, err := NewReduceBonds(c, log.NewColorLogger(ReduceBondAmountColor))
-	if err != nil {
-		return err
-	}
+	manageFeeRecipient := NewManageFeeRecipient(sp, log.NewColorLogger(ManageFeeRecipientColor))
+	distributeMinipools := NewDistributeMinipools(sp, log.NewColorLogger(DistributeMinipoolsColor))
+	stakePrelaunchMinipools := NewStakePrelaunchMinipools(sp, log.NewColorLogger(StakePrelaunchMinipoolsColor))
+	promoteMinipools := NewPromoteMinipools(sp, log.NewColorLogger(PromoteMinipoolsColor))
+	downloadRewardsTrees := NewDownloadRewardsTrees(sp, log.NewColorLogger(DownloadRewardsTreesColor))
+	reduceBonds := NewReduceBonds(sp, log.NewColorLogger(ReduceBondAmountColor))
 
 	// Wait group to handle the various threads
 	wg := new(sync.WaitGroup)
@@ -157,7 +104,7 @@ func run(c *cli.Context) error {
 	go func() {
 		for {
 			// Check the EC status
-			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
+			err := sp.WaitEthClientSynced(false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
@@ -165,7 +112,7 @@ func run(c *cli.Context) error {
 			}
 
 			// Check the BC status
-			err = services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+			err = sp.WaitBeaconClientSynced(false) // Force refresh the primary / fallback BC status
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
@@ -178,7 +125,11 @@ func run(c *cli.Context) error {
 				updateTotalEffectiveStake = true
 				lastTotalEffectiveStakeTime = time.Now() // Even if the call below errors out, this will prevent contant errors related to this flag
 			}
-			state, totalEffectiveStake, err := updateNetworkState(m, &updateLog, nodeAccount.Address, updateTotalEffectiveStake)
+			nodeAddress, hasNodeAddress := sp.GetWallet().GetAddress()
+			if !hasNodeAddress {
+				continue
+			}
+			state, totalEffectiveStake, err := updateNetworkState(m, &updateLog, nodeAddress, updateTotalEffectiveStake)
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
@@ -187,48 +138,47 @@ func run(c *cli.Context) error {
 			stateLocker.UpdateState(state, totalEffectiveStake)
 
 			// Manage the fee recipient for the node
-			if err := manageFeeRecipient.run(state); err != nil {
+			if err := manageFeeRecipient.Run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the rewards download check
-			if err := downloadRewardsTrees.run(state); err != nil {
+			if err := downloadRewardsTrees.Run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the minipool stake check
-			if err := stakePrelaunchMinipools.run(state); err != nil {
+			if err := stakePrelaunchMinipools.Run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the balance distribution check
-			if err := distributeMinipools.run(state); err != nil {
+			if err := distributeMinipools.Run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the reduce bond check
-			if err := reduceBonds.run(state); err != nil {
+			if err := reduceBonds.Run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
 
 			// Run the minipool promotion check
-			if err := promoteMinipools.run(state); err != nil {
+			if err := promoteMinipools.Run(state); err != nil {
 				errorLog.Println(err)
 			}
 
 			time.Sleep(tasksInterval)
 		}
-		wg.Done()
 	}()
 
 	// Run metrics loop
 	go func() {
-		err := runMetricsServer(c, log.NewColorLogger(MetricsColor), stateLocker)
+		err := runMetricsServer(sp, log.NewColorLogger(MetricsColor), stateLocker)
 		if err != nil {
 			errorLog.Println(err)
 		}
@@ -241,26 +191,10 @@ func run(c *cli.Context) error {
 
 }
 
-// Configure HTTP transport settings
-func configureHTTP() {
-
-	// The daemon makes a large number of concurrent RPC requests to the Eth1 client
-	// The HTTP transport is set to cache connections for future re-use equal to the maximum expected number of concurrent requests
-	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
-	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
-
-}
-
 // Copy the default fee recipient file into the proper location
-func deployDefaultFeeRecipientFile(c *cli.Context) error {
-
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return err
-	}
-
+func deployDefaultFeeRecipientFile(cfg *config.RocketPoolConfig) error {
 	feeRecipientPath := cfg.Smartnode.GetFeeRecipientFilePath()
-	_, err = os.Stat(feeRecipientPath)
+	_, err := os.Stat(feeRecipientPath)
 	if os.IsNotExist(err) {
 		// Make sure the validators dir is created
 		validatorsFolder := filepath.Dir(feeRecipientPath)
@@ -283,30 +217,22 @@ func deployDefaultFeeRecipientFile(c *cli.Context) error {
 			return fmt.Errorf("could not write default fee recipient file to %s: %w", feeRecipientPath, err)
 		}
 	} else if err != nil {
-		return fmt.Errorf("Error checking fee recipient file status: %w", err)
+		return fmt.Errorf("error checking fee recipient file status: %w", err)
 	}
 
 	return nil
-
 }
 
 // Remove the old fee recipient files that were created in v1.5.0
-func removeLegacyFeeRecipientFiles(c *cli.Context) error {
-
+func removeLegacyFeeRecipientFiles(cfg *config.RocketPoolConfig) error {
 	legacyFeeRecipientFile := "rp-fee-recipient.txt"
-
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return err
-	}
-
 	validatorsFolder := cfg.Smartnode.GetValidatorKeychainPath()
 
 	// Remove the legacy files
 	keystoreDirs := []string{lighthouse.KeystoreDir, nimbus.KeystoreDir, prysm.KeystoreDir, teku.KeystoreDir}
 	for _, keystoreDir := range keystoreDirs {
 		oldFile := filepath.Join(validatorsFolder, keystoreDir, legacyFeeRecipientFile)
-		_, err = os.Stat(oldFile)
+		_, err := os.Stat(oldFile)
 		if !os.IsNotExist(err) {
 			err = os.Remove(oldFile)
 			if err != nil {
@@ -316,7 +242,6 @@ func removeLegacyFeeRecipientFiles(c *cli.Context) error {
 	}
 
 	return nil
-
 }
 
 // Update the latest network state at each cycle
