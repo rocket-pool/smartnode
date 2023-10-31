@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -302,27 +303,59 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	// Log
 	t.log.Println("Checking for RPL price checkpoint...")
 
-	// Get block to submit price for
-	blockNumber := state.NetworkDetails.LatestReportablePricesBlock
+	// // Check for Houston
+	// state.NetworkDetails.IntervalStart
+	// houston, err := t.rp.IsHoustonDeployed()
+	// if err != nil {
+	// 	return fmt.Errorf("error checking if Houston has been deployed: %w", err)
+	// }
+	// if !houston.IsHoustonDeployed {
+	// 	fmt.Println("This command cannot be used until Houston has been deployed.")
+	// 	return nil
+	// }
 
-	// Check if a submission needs to be made
-	pricesBlock := state.NetworkDetails.PricesBlock
-	if blockNumber <= pricesBlock {
-		return nil
-	}
+	// Check the last submission block
+	lastSubmissionBlock := state.NetworkDetails.BalancesBlock.Uint64()
 
 	// Get the time of the block
-	header, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(blockNumber))
+	header, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(lastSubmissionBlock))
 	if err != nil {
 		return err
 	}
-	blockTime := time.Unix(int64(header.Time), 0)
+	lastSubmissionBlockTime := time.Unix(int64(header.Time), 0)
+
+	eth2Config := state.BeaconConfig
+
+	submissionIntervalTime := state.NetworkDetails.BalancesIntervalEpochs * eth2Config.SecondsPerEpoch
+
+	nexSubmissionTime := lastSubmissionBlockTime.Add(time.Duration(submissionIntervalTime) * time.Second)
+
+	if time.Now().Before(nexSubmissionTime) {
+		return nil
+	}
 
 	// Get the Beacon block corresponding to this time
-	eth2Config := state.BeaconConfig
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
-	timeSinceGenesis := blockTime.Sub(genesisTime)
+	timeSinceGenesis := lastSubmissionBlockTime.Sub(genesisTime)
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
+
+	ecBlock := beacon.Eth1Data{}
+
+	// Search for the last existing block, going back one slot if the block is not found.
+	for blockExists := false; !blockExists; slotNumber -= 1 {
+		ecBlock, blockExists, err = t.bc.GetEth1DataForEth2Block(strconv.FormatUint(slotNumber, 10))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Fetch the target block
+	targetBlockHeader, err := t.ec.HeaderByHash(context.Background(), ecBlock.BlockHash)
+	if err != nil {
+		return err
+	}
+
+	blockNumber := targetBlockHeader.Number.Uint64()
 
 	// Check if the targetEpoch is finalized yet
 	targetEpoch := slotNumber / eth2Config.SlotsPerEpoch

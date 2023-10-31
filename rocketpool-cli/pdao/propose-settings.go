@@ -134,9 +134,9 @@ func proposeSettingNetworkIsSubmitBalancesEnabled(c *cli.Context, value bool) er
 	return proposeSetting(c, protocol.SubmitBalancesEnabledSettingPath, trueValue)
 }
 
-func proposeSettingNetworkSubmitBalancesFrequency(c *cli.Context, value uint64) error {
+func proposeSettingNetworkSubmitBalancesEpochs(c *cli.Context, value uint64) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.SubmitBalancesFrequencySettingPath, trueValue)
+	return proposeSetting(c, protocol.SubmitBalancesEpochsSettingPath, trueValue)
 }
 
 func proposeSettingNetworkIsSubmitPricesEnabled(c *cli.Context, value bool) error {
@@ -144,9 +144,9 @@ func proposeSettingNetworkIsSubmitPricesEnabled(c *cli.Context, value bool) erro
 	return proposeSetting(c, protocol.SubmitPricesEnabledSettingPath, trueValue)
 }
 
-func proposeSettingNetworkSubmitPricesFrequency(c *cli.Context, value uint64) error {
+func proposeSettingNetworkSubmitPricesEpochs(c *cli.Context, value uint64) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.SubmitPricesFrequencySettingPath, trueValue)
+	return proposeSetting(c, protocol.SubmitPricesEpochsSettingPath, trueValue)
 }
 
 func proposeSettingNetworkMinimumNodeFee(c *cli.Context, value *big.Int) error {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -125,35 +126,59 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		return err
 	}
 
-	// Check balance submission
+	// Check if balance submission is enabled
 	if !state.NetworkDetails.SubmitBalancesEnabled {
 		return nil
 	}
 
-	// Log
-	t.log.Println("Checking for network balance checkpoint...")
-
-	// Get block to submit balances for
-	blockNumberBig := state.NetworkDetails.LatestReportableBalancesBlock
-	blockNumber := blockNumberBig.Uint64()
-
-	// Check if a submission needs to be made
-	if blockNumber <= state.NetworkDetails.BalancesBlock.Uint64() {
-		return nil
-	}
+	// Check the last submission block
+	lastSubmissionBlock := state.NetworkDetails.BalancesBlock.Uint64()
 
 	// Get the time of the block
-	header, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(blockNumber))
+	header, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(lastSubmissionBlock))
 	if err != nil {
 		return err
 	}
-	blockTime := time.Unix(int64(header.Time), 0)
+	lastSubmissionBlockTime := time.Unix(int64(header.Time), 0)
+
+	eth2Config := state.BeaconConfig
+
+	// Convert epochs to seconds as the interval time
+	submissionIntervalTime := state.NetworkDetails.BalancesIntervalEpochs * eth2Config.SecondsPerEpoch
+
+	// Next submission adds the interval time to the last submission time
+	nexSubmissionTime := lastSubmissionBlockTime.Add(time.Duration(submissionIntervalTime) * time.Second)
+
+	// Return if the time to submit has not arrived
+	if time.Now().Before(nexSubmissionTime) {
+		return nil
+	}
+	// Log
+	t.log.Println("Checking for network balance checkpoint...")
 
 	// Get the Beacon block corresponding to this time
-	eth2Config := state.BeaconConfig
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
-	timeSinceGenesis := blockTime.Sub(genesisTime)
+	timeSinceGenesis := nexSubmissionTime.Sub(genesisTime)
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
+
+	ecBlock := beacon.Eth1Data{}
+
+	// Search for the last existing block, going back one slot if the block is not found.
+	for blockExists := false; !blockExists; slotNumber -= 1 {
+		ecBlock, blockExists, err = t.bc.GetEth1DataForEth2Block(strconv.FormatUint(slotNumber, 10))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Fetch the target block
+	targetBlockHeader, err := t.ec.HeaderByHash(context.Background(), ecBlock.BlockHash)
+	if err != nil {
+		return err
+	}
+
+	blockNumber := targetBlockHeader.Number.Uint64()
+
 	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
 
 	// Check if the required epoch is finalized yet
@@ -184,10 +209,10 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		t.log.Printlnf("%s Starting balance report in a separate thread.", logPrefix)
 
 		// Log
-		t.log.Printlnf("Calculating network balances for block %d...", blockNumber)
+		t.log.Printlnf("Calculating network balances for block %d...", targetBlockHeader.Number)
 
 		// Get network balances at block
-		balances, err := t.getNetworkBalances(header, blockNumberBig, slotNumber, blockTime)
+		balances, err := t.getNetworkBalances(header, targetBlockHeader.Number, slotNumber, time.Unix(int64(targetBlockHeader.Time), 0))
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return

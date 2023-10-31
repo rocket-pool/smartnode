@@ -109,9 +109,9 @@ type GetPDAOSettingsResponse struct {
 		NodePenaltyThreshold        float64  `json:"nodePenaltyThreshold"`
 		PerPenaltyRate              float64  `json:"perPenaltyRate"`
 		IsSubmitBalancesEnabled     bool     `json:"isSubmitBalancesEnabled"`
-		SubmitBalancesFrequency     uint64   `json:"submitBalancesFrequency"`
+		SubmitBalancesEpochs        uint64   `json:"submitBalancesEpochs"`
 		IsSubmitPricesEnabled       bool     `json:"isSubmitPricesEnabled"`
-		SubmitPricesFrequency       uint64   `json:"submitPricesFrequency"`
+		SubmitPricesEpochs          uint64   `json:"submitPricesEpochs"`
 		MinimumNodeFee              float64  `json:"minimumNodeFee"`
 		TargetNodeFee               float64  `json:"targetNodeFee"`
 		MaximumNodeFee              float64  `json:"maximumNodeFee"`
