@@ -51,22 +51,6 @@ func main() {
 			Usage: "Rocket Pool service user config absolute `path`",
 			Value: "/.rocketpool/user-settings.yml",
 		},
-		cli.Float64Flag{
-			Name:  "maxFee",
-			Usage: "Desired max fee in gwei",
-		},
-		cli.Float64Flag{
-			Name:  "maxPrioFee",
-			Usage: "Desired max priority fee in gwei",
-		},
-		cli.Uint64Flag{
-			Name:  "gasLimit, l",
-			Usage: "Desired gas limit",
-		},
-		cli.StringFlag{
-			Name:  "nonce",
-			Usage: "Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction",
-		},
 		cli.StringFlag{
 			Name:  "metricsAddress, m",
 			Usage: "Address to serve metrics on if enabled",

@@ -9,33 +9,35 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
 )
 
 const (
 	scrubBuffer uint64 = 10000000 // 0.01 ETH
 )
 
-type cancelBondReductions struct {
-	c                *cli.Context
+type CancelBondReductions struct {
+	sp               *services.ServiceProvider
 	log              log.ColorLogger
 	errLog           log.ColorLogger
 	cfg              *config.RocketPoolConfig
 	w                *wallet.LocalWallet
 	rp               *rocketpool.RocketPool
-	ec               rocketpool.ExecutionClient
+	ec               core.ExecutionClient
+	mpMgr            *minipool.MinipoolManager
 	coll             *collectors.BondReductionCollector
 	lock             *sync.Mutex
 	isRunning        bool
@@ -43,55 +45,21 @@ type cancelBondReductions struct {
 }
 
 // Create cancel bond reductions task
-func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.BondReductionCollector) (*cancelBondReductions, error) {
-
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return task
+func NewCancelBondReductions(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.BondReductionCollector) *CancelBondReductions {
 	lock := &sync.Mutex{}
-	return &cancelBondReductions{
-		c:                c,
+	return &CancelBondReductions{
+		sp:               sp,
 		log:              logger,
 		errLog:           errorLogger,
-		cfg:              cfg,
-		w:                w,
-		rp:               rp,
-		ec:               ec,
 		coll:             coll,
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Bond Reduction]",
-	}, nil
-
+	}
 }
 
 // Start the bond reduction cancellation thread
-func (t *cancelBondReductions) run(state *state.NetworkState) error {
-
-	// Wait for eth clients to sync
-	if err := services.WaitEthClientSynced(t.c, true); err != nil {
-		return err
-	}
-	if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
-		return err
-	}
-
+func (t *CancelBondReductions) Run(state *state.NetworkState) error {
 	// Log
 	t.log.Println("Checking for bond reductions to cancel...")
 
@@ -124,11 +92,21 @@ func (t *cancelBondReductions) run(state *state.NetworkState) error {
 
 	// Return
 	return nil
-
 }
 
 // Check for bond reductions to cancel
-func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) error {
+func (t *CancelBondReductions) checkBondReductions(state *state.NetworkState) error {
+	// Get services
+	t.cfg = t.sp.GetConfig()
+	t.w = t.sp.GetWallet()
+	t.rp = t.sp.GetRocketPool()
+	t.ec = t.sp.GetEthClient()
+	t.w = t.sp.GetWallet()
+	var err error
+	t.mpMgr, err = minipool.NewMinipoolManager(t.rp)
+	if err != nil {
+		return fmt.Errorf("error creating minipool manager: %w", err)
+	}
 
 	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", state.BeaconSlotNumber, state.ElBlockNumber))
 
@@ -157,26 +135,26 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 		validator := state.ValidatorDetails[mpd.Pubkey]
 		if validator.Exists {
 			switch validator.Status {
-			case beacon.ValidatorState_PendingInitialized,
-				beacon.ValidatorState_PendingQueued:
+			case types.ValidatorState_PendingInitialized,
+				types.ValidatorState_PendingQueued:
 				// Do nothing because this validator isn't live yet
 				continue
 
-			case beacon.ValidatorState_ActiveOngoing:
+			case types.ValidatorState_ActiveOngoing:
 				// Check the balance
 				if validator.Balance < threshold {
 					// Cancel because it's under-balance
-					t.cancelBondReduction(mpd.MinipoolAddress, fmt.Sprintf("minipool balance is %d (below the threshold)", validator.Balance))
+					t.cancelBondReduction(state, mpd.MinipoolAddress, fmt.Sprintf("minipool balance is %d (below the threshold)", validator.Balance))
 					balanceTooLowCount += 1
 				}
 
-			case beacon.ValidatorState_ActiveExiting,
-				beacon.ValidatorState_ActiveSlashed,
-				beacon.ValidatorState_ExitedUnslashed,
-				beacon.ValidatorState_ExitedSlashed,
-				beacon.ValidatorState_WithdrawalPossible,
-				beacon.ValidatorState_WithdrawalDone:
-				t.cancelBondReduction(mpd.MinipoolAddress, "minipool is already slashed, exiting, or exited")
+			case types.ValidatorState_ActiveExiting,
+				types.ValidatorState_ActiveSlashed,
+				types.ValidatorState_ExitedUnslashed,
+				types.ValidatorState_ExitedSlashed,
+				types.ValidatorState_WithdrawalPossible,
+				types.ValidatorState_WithdrawalDone:
+				t.cancelBondReduction(state, mpd.MinipoolAddress, "minipool is already slashed, exiting, or exited")
 				invalidStateCount += 1
 
 			default:
@@ -189,11 +167,10 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 	t.updateMetricsCollector(state, float64(len(reductionMps)), invalidStateCount, balanceTooLowCount)
 
 	return nil
-
 }
 
 // Update the bond reduction metrics collector
-func (t *cancelBondReductions) updateMetricsCollector(state *state.NetworkState, minipoolCount float64, invalidStateCount float64, balanceTooLowCount float64) {
+func (t *CancelBondReductions) updateMetricsCollector(state *state.NetworkState, minipoolCount float64, invalidStateCount float64, balanceTooLowCount float64) {
 	if t.coll != nil {
 		t.coll.UpdateLock.Lock()
 		defer t.coll.UpdateLock.Unlock()
@@ -211,8 +188,7 @@ func (t *cancelBondReductions) updateMetricsCollector(state *state.NetworkState,
 }
 
 // Cancel a bond reduction
-func (t *cancelBondReductions) cancelBondReduction(address common.Address, reason string) {
-
+func (t *CancelBondReductions) cancelBondReduction(state *state.NetworkState, address common.Address, reason string) {
 	// Log
 	t.printMessage("=== CANCELLING BOND REDUCTION ===")
 	t.printMessage(fmt.Sprintf("Minipool: %s", address.Hex()))
@@ -220,39 +196,48 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	t.printMessage("=================================")
 
 	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
+	opts, err := t.w.GetTransactor()
 	if err != nil {
 		t.printMessage(fmt.Sprintf("error getting node account transactor: %s", err.Error()))
 		return
 	}
 
-	// Get the gas limit
-	gasInfo, err := minipool.EstimateVoteCancelReductionGas(t.rp, address, opts)
+	// Make the binding
+	mpd := state.MinipoolDetailsByAddress[address]
+	mp, err := t.mpMgr.NewMinipoolFromVersion(address, mpd.Version)
 	if err != nil {
-		t.printMessage(fmt.Sprintf("could not estimate the gas required to voteCancelReduction the minipool: %s", err.Error()))
+		t.printMessage(fmt.Sprintf("error creating binding for minipool %s: %s", address.Hex(), err.Error()))
+		return
+	}
+	mpv3, success := minipool.GetMinipoolAsV3(mp)
+	if !success {
+		t.printMessage(fmt.Sprintf("error converting minipool %s to v3: %s", address.Hex(), err.Error()))
+	}
+
+	// Get the tx info
+	txInfo, err := mpv3.VoteCancelReduction(opts)
+	if err != nil {
+		t.printMessage(fmt.Sprintf("error getting voteCancelReduction tx for minipool %s: %s", address.Hex(), err.Error()))
+		return
+	}
+	if txInfo.SimError != "" {
+		t.printMessage(fmt.Sprintf("simulating voteCancelReduction tx for minipool %s failed: %s", address.Hex(), txInfo.SimError))
 		return
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
 		return
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
-
-	// Cancel the reduction
-	hash, err := minipool.VoteCancelReduction(t.rp, address, opts)
-	if err != nil {
-		t.printMessage(fmt.Sprintf("could not vote to cancel bond reduction: %s", err.Error()))
-		return
-	}
+	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
 	if err != nil {
 		t.printMessage(fmt.Sprintf("error waiting for cancel transaction: %s", err.Error()))
 		return
@@ -260,10 +245,9 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 
 	// Log
 	t.log.Printlnf("Successfully voted to cancel the bond reduction of minipool %s.", address.Hex())
-
 }
 
-func (t *cancelBondReductions) handleError(err error) {
+func (t *CancelBondReductions) handleError(err error) {
 	t.errLog.Println(err)
 	t.errLog.Println("*** Bond reduction cancel check failed. ***")
 	t.lock.Lock()
@@ -272,6 +256,6 @@ func (t *cancelBondReductions) handleError(err error) {
 }
 
 // Print a message from the tree generation goroutine
-func (t *cancelBondReductions) printMessage(message string) {
+func (t *CancelBondReductions) printMessage(message string) {
 	t.log.Printlnf("%s %s", t.generationPrefix, message)
 }

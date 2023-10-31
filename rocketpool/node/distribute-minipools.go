@@ -164,7 +164,7 @@ func (t *DistributeMinipools) createDistributeMinipoolTx(mpd *rpstate.NativeMini
 		return nil, err
 	}
 
-	// Get the gas limit
+	// Get the tx info
 	txInfo, err := mpv3.DistributeBalance(opts, true)
 	if err != nil {
 		return nil, fmt.Errorf("error getting distribute minipool tx for %s: %w", mpd.MinipoolAddress.Hex(), err)

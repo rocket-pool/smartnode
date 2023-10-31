@@ -148,7 +148,7 @@ func (t *PromoteMinipools) createPromoteMinipoolTx(mpd *rpstate.NativeMinipoolDe
 		return nil, err
 	}
 
-	// Get the gas limit
+	// Get the tx info
 	txInfo, err := mpv3.Promote(opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting promote minipool tx for %s: %w", mpd.MinipoolAddress.Hex(), err)

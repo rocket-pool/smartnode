@@ -316,7 +316,7 @@ func (t *ReduceBonds) createReduceBondTx(mpd *rpstate.NativeMinipoolDetails) (*c
 		return nil, fmt.Errorf("cannot reduce bond for minipool %s because its delegate version is too low (v%d); please update the delegate", mpd.MinipoolAddress.Hex(), mpd.Version)
 	}
 
-	// Get the gas limit
+	// Get the tx info
 	txInfo, err := mpv3.ReduceBondAmount(opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting reduce bond TX info for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)

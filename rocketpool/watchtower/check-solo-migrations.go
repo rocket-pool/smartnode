@@ -9,19 +9,21 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/config"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
 )
 
 const (
@@ -31,15 +33,16 @@ const (
 	migrationBalanceBuffer      float64 = 0.01
 )
 
-type checkSoloMigrations struct {
-	c                *cli.Context
+type CheckSoloMigrations struct {
+	sp               *services.ServiceProvider
 	log              log.ColorLogger
 	errLog           log.ColorLogger
 	cfg              *config.RocketPoolConfig
 	w                *wallet.LocalWallet
 	rp               *rocketpool.RocketPool
-	ec               rocketpool.ExecutionClient
+	ec               core.ExecutionClient
 	bc               beacon.Client
+	mpMgr            *minipool.MinipoolManager
 	coll             *collectors.SoloMigrationCollector
 	lock             *sync.Mutex
 	isRunning        bool
@@ -47,60 +50,22 @@ type checkSoloMigrations struct {
 }
 
 // Create check solo migrations task
-func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.SoloMigrationCollector) (*checkSoloMigrations, error) {
-
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return task
+func NewCheckSoloMigrations(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.SoloMigrationCollector) *CheckSoloMigrations {
 	lock := &sync.Mutex{}
-	return &checkSoloMigrations{
-		c:                c,
+	return &CheckSoloMigrations{
+		sp:               sp,
 		log:              logger,
 		errLog:           errorLogger,
-		cfg:              cfg,
-		w:                w,
-		rp:               rp,
-		ec:               ec,
-		bc:               bc,
 		coll:             coll,
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Solo Migration]",
-	}, nil
+	}
 
 }
 
 // Start the solo migration checking thread
-func (t *checkSoloMigrations) run(state *state.NetworkState) error {
-
-	// Wait for eth clients to sync
-	if err := services.WaitEthClientSynced(t.c, true); err != nil {
-		return err
-	}
-	if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
-		return err
-	}
-
+func (t *CheckSoloMigrations) Run(state *state.NetworkState) error {
 	// Log
 	t.log.Println("Checking for solo migrations...")
 
@@ -133,11 +98,22 @@ func (t *checkSoloMigrations) run(state *state.NetworkState) error {
 
 	// Return
 	return nil
-
 }
 
 // Check for solo staker migration validity
-func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) error {
+func (t *CheckSoloMigrations) checkSoloMigrations(state *state.NetworkState) error {
+	// Get services
+	t.cfg = t.sp.GetConfig()
+	t.w = t.sp.GetWallet()
+	t.rp = t.sp.GetRocketPool()
+	t.ec = t.sp.GetEthClient()
+	t.bc = t.sp.GetBeaconClient()
+	t.w = t.sp.GetWallet()
+	var err error
+	t.mpMgr, err = minipool.NewMinipoolManager(t.rp)
+	if err != nil {
+		return fmt.Errorf("error creating minipool manager: %w", err)
+	}
 
 	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", state.BeaconSlotNumber, state.ElBlockNumber))
 	oneGwei := eth.GweiToWei(1)
@@ -159,7 +135,7 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 	threshold := uint64(32000000000)
 	buffer := uint64(migrationBalanceBuffer * eth.WeiPerGwei)
 	for _, mpd := range state.MinipoolDetails {
-		if mpd.Status == types.Dissolved {
+		if mpd.Status == types.MinipoolStatus_Dissolved {
 			// Ignore minipools that are already dissolved
 			continue
 		}
@@ -174,14 +150,14 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 		// Scrub minipools that aren't seen on Beacon yet
 		validator := state.ValidatorDetails[mpd.Pubkey]
 		if !validator.Exists {
-			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("minipool %s (pubkey %s) did not exist on Beacon yet, but is required to be active_ongoing for migration", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex()))
+			t.scrubVacantMinipool(state, mpd.MinipoolAddress, fmt.Sprintf("minipool %s (pubkey %s) did not exist on Beacon yet, but is required to be active_ongoing for migration", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex()))
 			doesntExistCount += 1
 			continue
 		}
 
 		// Scrub minipools that are in the wrong state
-		if validator.Status != beacon.ValidatorState_ActiveOngoing {
-			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("minipool %s (pubkey %s) was in state %v, but is required to be active_ongoing for migration", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex(), validator.Status))
+		if validator.Status != sharedtypes.ValidatorState_ActiveOngoing {
+			t.scrubVacantMinipool(state, mpd.MinipoolAddress, fmt.Sprintf("minipool %s (pubkey %s) was in state %v, but is required to be active_ongoing for migration", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex(), validator.Status))
 			invalidStateCount += 1
 			continue
 		}
@@ -193,19 +169,19 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 			creationTime := time.Unix(mpd.StatusTime.Int64(), 0)
 			remainingTime := creationTime.Add(scrubThreshold).Sub(blockTime)
 			if remainingTime < 0 {
-				t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("minipool timed out (created %s, current time %s, scrubbed after %s)", creationTime, blockTime, scrubThreshold))
+				t.scrubVacantMinipool(state, mpd.MinipoolAddress, fmt.Sprintf("minipool timed out (created %s, current time %s, scrubbed after %s)", creationTime, blockTime, scrubThreshold))
 				timedOutCount += 1
 				continue
 			}
 			continue
 		case elPrefix:
 			if withdrawalCreds != mpd.WithdrawalCredentials {
-				t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("withdrawal credentials do not match (expected %s, actual %s)", mpd.WithdrawalCredentials.Hex(), withdrawalCreds.Hex()))
+				t.scrubVacantMinipool(state, mpd.MinipoolAddress, fmt.Sprintf("withdrawal credentials do not match (expected %s, actual %s)", mpd.WithdrawalCredentials.Hex(), withdrawalCreds.Hex()))
 				invalidCredentialsCount += 1
 				continue
 			}
 		default:
-			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("unexpected prefix in withdrawal credentials: %s", withdrawalCreds.Hex()))
+			t.scrubVacantMinipool(state, mpd.MinipoolAddress, fmt.Sprintf("unexpected prefix in withdrawal credentials: %s", withdrawalCreds.Hex()))
 			invalidCredentialsCount += 1
 			continue
 		}
@@ -219,12 +195,12 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 		currentBalance += minipoolBalanceGwei
 
 		if currentBalance < threshold {
-			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("current balance of %d is lower than the threshold of %d", currentBalance, threshold))
+			t.scrubVacantMinipool(state, mpd.MinipoolAddress, fmt.Sprintf("current balance of %d is lower than the threshold of %d", currentBalance, threshold))
 			balanceTooLowCount += 1
 			continue
 		}
 		if currentBalance < (creationBalanceGwei - buffer) {
-			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("current balance of %d is lower than the creation balance of %d, and below the acceptable buffer threshold of %d", currentBalance, creationBalanceGwei, buffer))
+			t.scrubVacantMinipool(state, mpd.MinipoolAddress, fmt.Sprintf("current balance of %d is lower than the creation balance of %d, and below the acceptable buffer threshold of %d", currentBalance, creationBalanceGwei, buffer))
 			balanceTooLowCount += 1
 			continue
 		}
@@ -252,12 +228,10 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 	}
 
 	return nil
-
 }
 
 // Scrub a vacant minipool
-func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason string) {
-
+func (t *CheckSoloMigrations) scrubVacantMinipool(state *state.NetworkState, address common.Address, reason string) {
 	// Log
 	t.printMessage("=== SCRUBBING SOLO MIGRATION ===")
 	t.printMessage(fmt.Sprintf("Minipool: %s", address.Hex()))
@@ -265,57 +239,49 @@ func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason
 	t.printMessage("================================")
 
 	// Make the binding
-	mp, err := minipool.NewMinipool(t.rp, address, nil)
+	mpd := state.MinipoolDetailsByAddress[address]
+	mp, err := t.mpMgr.NewMinipoolFromVersion(address, mpd.Version)
 	if err != nil {
-		t.printMessage(fmt.Sprintf("error scrubbing migration of minipool %s: %s", address.Hex(), err.Error()))
+		t.printMessage(fmt.Sprintf("error creating binding for minipool %s: %s", address.Hex(), err.Error()))
 		return
 	}
-
 	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
+	opts, err := t.w.GetTransactor()
 	if err != nil {
 		t.printMessage(fmt.Sprintf("error getting node account transactor: %s", err.Error()))
 		return
 	}
 
-	// Get the gas limit
-	gasInfo, err := mp.EstimateVoteScrubGas(opts)
+	// Get the tx info
+	txInfo, err := mp.Common().VoteScrub(opts)
 	if err != nil {
-		t.printMessage(fmt.Sprintf("could not estimate the gas required to scrub the minipool: %s", err.Error()))
+		t.printMessage(fmt.Sprintf("error getting scrub tx for minipool: %s", err.Error()))
 		return
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
 		return
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = gasInfo.SafeGasLimit
-
-	// Cancel the reduction
-	hash, err := mp.VoteScrub(opts)
-	if err != nil {
-		t.printMessage(fmt.Sprintf("could not vote to scrub the minipool: %s", err.Error()))
-		return
-	}
+	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
 	if err != nil {
 		t.printMessage(fmt.Sprintf("error waiting for scrub transaction: %s", err.Error()))
 		return
 	}
 
 	// Log
-	t.log.Printlnf("Successfully voted to scrub minipool %s.", mp.GetAddress().Hex())
-
+	t.log.Printlnf("Successfully voted to scrub minipool %s.", address.Hex())
 }
 
-func (t *checkSoloMigrations) handleError(err error) {
+func (t *CheckSoloMigrations) handleError(err error) {
 	t.errLog.Println(err)
 	t.errLog.Println("*** Solo migration check failed. ***")
 	t.lock.Lock()
@@ -324,6 +290,6 @@ func (t *checkSoloMigrations) handleError(err error) {
 }
 
 // Print a message from the tree generation goroutine
-func (t *checkSoloMigrations) printMessage(message string) {
+func (t *CheckSoloMigrations) printMessage(message string) {
 	t.log.Printlnf("%s %s", t.generationPrefix, message)
 }

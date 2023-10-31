@@ -190,7 +190,7 @@ func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinip
 		return nil, err
 	}
 
-	// Get the gas limit
+	// Get the tx info
 	signature := rptypes.BytesToValidatorSignature(depositData.Signature)
 	txInfo, err := mp.Common().Stake(signature, depositDataRoot, opts)
 	if err != nil {
