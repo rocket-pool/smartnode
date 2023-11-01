@@ -18,6 +18,14 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
+// Info for a price updated event
+type PriceUpdatedEvent struct {
+	BlockNumber   *big.Int `json:"blockNumber"`
+	SlotTimestamp *big.Int `json:"slotTimestamp"`
+	RplPrice      *big.Int `json:"rplPrice"`
+	Time          *big.Int `json:"time"`
+}
+
 // Get the block number which network prices are current for
 func GetPricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
@@ -59,7 +67,7 @@ func SubmitPrices(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64,
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNetworkPrices.Transact(opts, "submitPrices", big.NewInt(int64(block)),big.NewInt(int64(slotTimestamp)), rplPrice)
+	tx, err := rocketNetworkPrices.Transact(opts, "submitPrices", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), rplPrice)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error submitting network prices: %w", err)
 	}
@@ -118,6 +126,45 @@ func GetLatestPricesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, int
 		results[i] = address
 	}
 	return results, nil
+}
+
+// Get the event info for a price update
+func GetPriceUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts *bind.CallOpts) (bool, PriceUpdatedEvent, error) {
+	// Get contracts
+	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
+	if err != nil {
+		return false, PriceUpdatedEvent{}, err
+	}
+
+	// Construct a filter query for relevant logs
+	pricesUpdatedEvent := rocketNetworkPrices.ABI.Events["PricesUpdated"]
+	currentAddress := *rocketNetworkPrices.Address
+	indexBytes := [32]byte{}
+	topicFilter := [][]common.Hash{{pricesUpdatedEvent.ID}, {indexBytes}}
+
+	// Get the event logs
+	logs, err := eth.GetLogs(rp, []common.Address{currentAddress}, topicFilter, big.NewInt(1), big.NewInt(int64(blockNumber)), big.NewInt(int64(blockNumber)), nil)
+	if err != nil {
+		return false, PriceUpdatedEvent{}, err
+	}
+	if len(logs) == 0 {
+		return false, PriceUpdatedEvent{}, nil
+	}
+
+	// Get the log info values
+	values, err := pricesUpdatedEvent.Inputs.Unpack(logs[0].Data)
+	if err != nil {
+		return false, PriceUpdatedEvent{}, fmt.Errorf("error unpacking price updated event data: %w", err)
+	}
+
+	// Convert to a native struct
+	var eventData PriceUpdatedEvent
+	err = pricesUpdatedEvent.Inputs.Copy(&eventData, values)
+	if err != nil {
+		return false, PriceUpdatedEvent{}, fmt.Errorf("error converting price updated event data to struct: %w", err)
+	}
+
+	return true, eventData, nil
 }
 
 // TODO: will be adjusted/removed

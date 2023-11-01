@@ -18,6 +18,14 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
+// Info for a balances updated event
+type BalancesUpdatedEvent struct {
+	BlockNumber   *big.Int `json:"blockNumber"`
+	SlotTimestamp *big.Int `json:"slotTimestamp"`
+	RplPrice      *big.Int `json:"rplPrice"`
+	Time          *big.Int `json:"time"`
+}
+
 // Get the block number which network balances are current for
 func GetBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
@@ -171,6 +179,44 @@ func GetLatestBalancesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, i
 		results[i] = address
 	}
 	return results, nil
+}
+
+func GetBalancesUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts *bind.CallOpts) (bool, BalancesUpdatedEvent, error) {
+	// Get contracts
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
+	if err != nil {
+		return false, BalancesUpdatedEvent{}, err
+	}
+
+	// Construct a filter query for relevant logs
+	balancesUpdatedEvent := rocketNetworkBalances.ABI.Events["BalancesUpdated"]
+	currentAddress := *rocketNetworkBalances.Address
+	indexBytes := [32]byte{}
+	topicFilter := [][]common.Hash{{balancesUpdatedEvent.ID}, {indexBytes}}
+
+	// Get the event logs
+	logs, err := eth.GetLogs(rp, []common.Address{currentAddress}, topicFilter, big.NewInt(1), big.NewInt(int64(blockNumber)), big.NewInt(int64(blockNumber)), nil)
+	if err != nil {
+		return false, BalancesUpdatedEvent{}, err
+	}
+	if len(logs) == 0 {
+		return false, BalancesUpdatedEvent{}, nil
+	}
+
+	// Get the log info values
+	values, err := balancesUpdatedEvent.Inputs.Unpack(logs[0].Data)
+	if err != nil {
+		return false, BalancesUpdatedEvent{}, fmt.Errorf("error unpacking price updated event data: %w", err)
+	}
+
+	// Convert to a native struct
+	var eventData BalancesUpdatedEvent
+	err = balancesUpdatedEvent.Inputs.Copy(&eventData, values)
+	if err != nil {
+		return false, BalancesUpdatedEvent{}, fmt.Errorf("error converting price updated event data to struct: %w", err)
+	}
+
+	return true, eventData, nil
 }
 
 // TODO: will be adjusted/removed
