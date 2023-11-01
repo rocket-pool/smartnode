@@ -538,16 +538,8 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances, slotTim
 		return fmt.Errorf("error getting node transactor: %w", err)
 	}
 
-	submission := network.BalanceSubmission{
-		BlockNumber:   big.NewInt(0).SetUint64(balances.Block),
-		SlotTimestamp: big.NewInt(0).SetUint64(slotTimestamp),
-		TotalEth:      totalEth,
-		StakingEth:    balances.MinipoolsStaking,
-		RethSupply:    balances.RETHSupply,
-	}
-
 	// Get the gas limit
-	gasInfo, err := network.EstimateSubmitBalancesGas(t.rp, submission, opts)
+	gasInfo, err := network.EstimateSubmitBalancesGas(t.rp, balances.Block, slotTimestamp, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	if err != nil {
 		if enableSubmissionAfterConsensus_Balances && strings.Contains(err.Error(), "Network balances for an equal or higher block are set") {
 			// Set a gas limit which will intentionally be too low and revert
@@ -573,7 +565,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances, slotTim
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Submit balances
-	hash, err := network.SubmitBalances(t.rp, submission, opts)
+	hash, err := network.SubmitBalances(t.rp, balances.Block, slotTimestamp, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting balances: %w", err)
 	}
