@@ -1,13 +1,13 @@
-package rocketpool
+package client
 
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"math"
-	"math/big"
 	"net"
 	"net/http"
 	"os"
@@ -20,15 +20,15 @@ import (
 	"github.com/a8m/envsubst"
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
-	"golang.org/x/crypto/ssh"
 
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
 	externalip "github.com/glendc/go-external-ip"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/docker"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
@@ -87,143 +87,31 @@ func getExternalIP() (net.IP, error) {
 
 // Rocket Pool client
 type Client struct {
-	configPath         string
-	daemonPath         string
-	maxFee             float64
-	maxPrioFee         float64
-	gasLimit           uint64
-	customNonce        *big.Int
-	client             *ssh.Client
-	originalMaxFee     float64
-	originalMaxPrioFee float64
-	originalGasLimit   uint64
-	debugPrint         bool
-	ignoreSyncCheck    bool
-	forceFallbacks     bool
-}
-
-func getClientStatusString(clientStatus api.ClientStatus) string {
-	if clientStatus.IsSynced {
-		return "synced and ready"
-	}
-
-	if clientStatus.IsWorking {
-		return fmt.Sprintf("syncing (%.2f%%)", SyncRatioToPercent(clientStatus.SyncProgress))
-	}
-
-	return fmt.Sprintf("unavailable (%s)", clientStatus.Error)
-}
-
-// Check the status of the Execution and Consensus client(s) and provision the API with them
-func checkClientStatus(rp *Client) (bool, error) {
-
-	// Check if the primary clients are up, synced, and able to respond to requests - if not, forces the use of the fallbacks for this command
-	response, err := rp.GetClientStatus()
-	if err != nil {
-		return false, err
-	}
-
-	ecMgrStatus := response.EcManagerStatus
-	bcMgrStatus := response.BcManagerStatus
-
-	// Primary EC and CC are good
-	if ecMgrStatus.PrimaryClientStatus.IsSynced && bcMgrStatus.PrimaryClientStatus.IsSynced {
-		rp.SetClientStatusFlags(true, false)
-		return true, nil
-	}
-
-	// Get the status messages
-	primaryEcStatus := getClientStatusString(ecMgrStatus.PrimaryClientStatus)
-	primaryBcStatus := getClientStatusString(bcMgrStatus.PrimaryClientStatus)
-	fallbackEcStatus := getClientStatusString(ecMgrStatus.FallbackClientStatus)
-	fallbackBcStatus := getClientStatusString(bcMgrStatus.FallbackClientStatus)
-
-	// Check the fallbacks if enabled
-	if ecMgrStatus.FallbackEnabled && bcMgrStatus.FallbackEnabled {
-
-		// Fallback EC and CC are good
-		if ecMgrStatus.FallbackClientStatus.IsSynced && bcMgrStatus.FallbackClientStatus.IsSynced {
-			fmt.Printf("%sNOTE: primary clients are not ready, using fallback clients...\n\tPrimary EC status: %s\n\tPrimary CC status: %s%s\n\n", colorYellow, primaryEcStatus, primaryBcStatus, colorReset)
-			rp.SetClientStatusFlags(true, true)
-			return true, nil
-		}
-
-		// Both pairs aren't ready
-		fmt.Printf("Error: neither primary nor fallback client pairs are ready.\n\tPrimary EC status: %s\n\tFallback EC status: %s\n\tPrimary CC status: %s\n\tFallback CC status: %s\n", primaryEcStatus, fallbackEcStatus, primaryBcStatus, fallbackBcStatus)
-		return false, nil
-	}
-
-	// Primary isn't ready and fallback isn't enabled
-	fmt.Printf("Error: primary client pair isn't ready and fallback clients aren't enabled.\n\tPrimary EC status: %s\n\tPrimary CC status: %s\n", primaryEcStatus, primaryBcStatus)
-	return false, nil
+	configPath string
+	daemonPath string
+	debugPrint bool
+	apiPath    string
+	apiClient  http.Client
 }
 
 // Create new Rocket Pool client from CLI context without checking for sync status
 // Only use this function from commands that may work if the Daemon service doesn't exist
 // Most users should call NewClientFromCtx(c).WithStatus() or NewClientFromCtx(c).WithReady()
 func NewClientFromCtx(c *cli.Context) *Client {
-
-	// Return client
 	client := &Client{
-		configPath:         os.ExpandEnv(c.GlobalString("config-path")),
-		daemonPath:         os.ExpandEnv(c.GlobalString("daemon-path")),
-		maxFee:             c.GlobalFloat64("maxFee"),
-		maxPrioFee:         c.GlobalFloat64("maxPrioFee"),
-		gasLimit:           c.GlobalUint64("gasLimit"),
-		originalMaxFee:     c.GlobalFloat64("maxFee"),
-		originalMaxPrioFee: c.GlobalFloat64("maxPrioFee"),
-		originalGasLimit:   c.GlobalUint64("gasLimit"),
-		debugPrint:         c.GlobalBool("debug"),
-		forceFallbacks:     false,
-		ignoreSyncCheck:    false,
+		configPath: os.ExpandEnv(c.GlobalString("config-path")),
+		daemonPath: os.ExpandEnv(c.GlobalString("daemon-path")),
+		apiPath:    os.ExpandEnv(c.GlobalString("api-socket-path")),
+		debugPrint: c.GlobalBool("debug"),
 	}
-
-	if nonce, ok := c.App.Metadata["nonce"]; ok {
-		client.customNonce = nonce.(*big.Int)
+	client.apiClient = http.Client{
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return net.Dial("unix", client.apiPath)
+			},
+		},
 	}
-
 	return client
-}
-
-// Check the status of a newly created client and return it
-// Only use this function from commands that may work without the clients being synced-
-// most users should use WithReady instead
-func (c *Client) WithStatus() (*Client, bool, error) {
-	ready, err := checkClientStatus(c)
-	if err != nil {
-		c.Close()
-		return nil, false, err
-	}
-
-	return c, ready, nil
-}
-
-// Check the status of a newly created client and ensure the eth clients are synced and ready
-func (c *Client) WithReady() (*Client, error) {
-	_, ready, err := c.WithStatus()
-	if err != nil {
-		return nil, err
-	}
-
-	if !ready {
-		c.Close()
-		return nil, fmt.Errorf("clients not ready")
-	}
-
-	return c, nil
-}
-
-// Close client remote connection
-func (c *Client) Close() {
-	if c == nil {
-		return
-	}
-
-	if c.client == nil {
-		return
-	}
-
-	_ = c.client.Close()
 }
 
 // Load the config
@@ -663,12 +551,6 @@ func (c *Client) GetServiceVersion() (string, error) {
 
 }
 
-// Increments the custom nonce parameter.
-// This is used for calls that involve multiple transactions, so they don't all have the same nonce.
-func (c *Client) IncrementCustomNonce() {
-	c.customNonce.Add(c.customNonce, big.NewInt(1))
-}
-
 // Get the current Docker image used by the given container
 func (c *Client) GetDockerImage(container string) (string, error) {
 
@@ -942,24 +824,6 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 	return nil
 }
 
-// Get the gas settings
-func (c *Client) GetGasSettings() (float64, float64, uint64) {
-	return c.maxFee, c.maxPrioFee, c.gasLimit
-}
-
-// Get the gas fees
-func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit uint64) {
-	c.maxFee = maxFee
-	c.maxPrioFee = maxPrioFee
-	c.gasLimit = gasLimit
-}
-
-// Set the flags for ignoring EC and CC sync checks and forcing fallbacks to prevent unnecessary duplication of effort by the API during CLI commands
-func (c *Client) SetClientStatusFlags(ignoreSyncCheck bool, forceFallbacks bool) {
-	c.ignoreSyncCheck = ignoreSyncCheck
-	c.forceFallbacks = forceFallbacks
-}
-
 // Get the command used to escalate privileges on the system
 func (c *Client) getEscalationCommand() (string, error) {
 	// Check for sudo first
@@ -1130,166 +994,153 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	// Read and substitute the templates
 	deployedContainers := []string{}
 
-	// API
-	contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, config.ApiContainerName+templateSuffix))
-	if err != nil {
-		return []string{}, fmt.Errorf("error reading and substituting API container template: %w", err)
-	}
-	apiComposePath := filepath.Join(runtimeFolder, config.ApiContainerName+composeFileSuffix)
-	err = os.WriteFile(apiComposePath, contents, 0664)
-	if err != nil {
-		return []string{}, fmt.Errorf("could not write API container file to %s: %w", apiComposePath, err)
-	}
-	deployedContainers = append(deployedContainers, apiComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.ApiContainerName+composeFileSuffix))
-
 	// Node
-	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.NodeContainerName+templateSuffix))
+	contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_Node)+templateSuffix))
 	if err != nil {
 		return []string{}, fmt.Errorf("error reading and substituting node container template: %w", err)
 	}
-	nodeComposePath := filepath.Join(runtimeFolder, config.NodeContainerName+composeFileSuffix)
+	nodeComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_Node)+composeFileSuffix)
 	err = os.WriteFile(nodeComposePath, contents, 0664)
 	if err != nil {
 		return []string{}, fmt.Errorf("could not write node container file to %s: %w", nodeComposePath, err)
 	}
 	deployedContainers = append(deployedContainers, nodeComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.NodeContainerName+composeFileSuffix))
+	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_Node)+composeFileSuffix))
 
 	// Watchtower
-	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.WatchtowerContainerName+templateSuffix))
+	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_Watchtower)+templateSuffix))
 	if err != nil {
 		return []string{}, fmt.Errorf("error reading and substituting watchtower container template: %w", err)
 	}
-	watchtowerComposePath := filepath.Join(runtimeFolder, config.WatchtowerContainerName+composeFileSuffix)
+	watchtowerComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_Watchtower)+composeFileSuffix)
 	err = os.WriteFile(watchtowerComposePath, contents, 0664)
 	if err != nil {
 		return []string{}, fmt.Errorf("could not write watchtower container file to %s: %w", watchtowerComposePath, err)
 	}
 	deployedContainers = append(deployedContainers, watchtowerComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.WatchtowerContainerName+composeFileSuffix))
+	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_Watchtower)+composeFileSuffix))
 
 	// Validator
-	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.ValidatorContainerName+templateSuffix))
+	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_ValidatorClient)+templateSuffix))
 	if err != nil {
 		return []string{}, fmt.Errorf("error reading and substituting validator container template: %w", err)
 	}
-	validatorComposePath := filepath.Join(runtimeFolder, config.ValidatorContainerName+composeFileSuffix)
+	validatorComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_ValidatorClient)+composeFileSuffix)
 	err = os.WriteFile(validatorComposePath, contents, 0664)
 	if err != nil {
 		return []string{}, fmt.Errorf("could not write validator container file to %s: %w", validatorComposePath, err)
 	}
 	deployedContainers = append(deployedContainers, validatorComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.ValidatorContainerName+composeFileSuffix))
+	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_ValidatorClient)+composeFileSuffix))
 
 	// Check the EC mode to see if it needs to be deployed
 	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.Eth1ContainerName+templateSuffix))
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_ExecutionClient)+templateSuffix))
 		if err != nil {
 			return []string{}, fmt.Errorf("error reading and substituting execution client container template: %w", err)
 		}
-		eth1ComposePath := filepath.Join(runtimeFolder, config.Eth1ContainerName+composeFileSuffix)
+		eth1ComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_ExecutionClient)+composeFileSuffix)
 		err = os.WriteFile(eth1ComposePath, contents, 0664)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not write execution client container file to %s: %w", eth1ComposePath, err)
 		}
 		deployedContainers = append(deployedContainers, eth1ComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.Eth1ContainerName+composeFileSuffix))
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_ExecutionClient)+composeFileSuffix))
 	}
 
 	// Check the Consensus mode
 	if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.Eth2ContainerName+templateSuffix))
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_BeaconNode)+templateSuffix))
 		if err != nil {
 			return []string{}, fmt.Errorf("error reading and substituting consensus client container template: %w", err)
 		}
-		eth2ComposePath := filepath.Join(runtimeFolder, config.Eth2ContainerName+composeFileSuffix)
+		eth2ComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_BeaconNode)+composeFileSuffix)
 		err = os.WriteFile(eth2ComposePath, contents, 0664)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not write consensus client container file to %s: %w", eth2ComposePath, err)
 		}
 		deployedContainers = append(deployedContainers, eth2ComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.Eth2ContainerName+composeFileSuffix))
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_BeaconNode)+composeFileSuffix))
 	}
 
 	// Check the metrics containers
 	if cfg.EnableMetrics.Value == true {
 		// Grafana
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.GrafanaContainerName+templateSuffix))
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_Grafana)+templateSuffix))
 		if err != nil {
 			return []string{}, fmt.Errorf("error reading and substituting Grafana container template: %w", err)
 		}
-		grafanaComposePath := filepath.Join(runtimeFolder, config.GrafanaContainerName+composeFileSuffix)
+		grafanaComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_Grafana)+composeFileSuffix)
 		err = os.WriteFile(grafanaComposePath, contents, 0664)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not write Grafana container file to %s: %w", grafanaComposePath, err)
 		}
 		deployedContainers = append(deployedContainers, grafanaComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.GrafanaContainerName+composeFileSuffix))
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_Grafana)+composeFileSuffix))
 
 		// Node exporter
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.ExporterContainerName+templateSuffix))
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_Exporter)+templateSuffix))
 		if err != nil {
 			return []string{}, fmt.Errorf("error reading and substituting Node Exporter container template: %w", err)
 		}
-		exporterComposePath := filepath.Join(runtimeFolder, config.ExporterContainerName+composeFileSuffix)
+		exporterComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_Exporter)+composeFileSuffix)
 		err = os.WriteFile(exporterComposePath, contents, 0664)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not write Node Exporter container file to %s: %w", exporterComposePath, err)
 		}
 		deployedContainers = append(deployedContainers, exporterComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.ExporterContainerName+composeFileSuffix))
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_Exporter)+composeFileSuffix))
 
 		// Prometheus
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.PrometheusContainerName+templateSuffix))
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_Prometheus)+templateSuffix))
 		if err != nil {
 			return []string{}, fmt.Errorf("error reading and substituting Prometheus container template: %w", err)
 		}
-		prometheusComposePath := filepath.Join(runtimeFolder, config.PrometheusContainerName+composeFileSuffix)
+		prometheusComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_Prometheus)+composeFileSuffix)
 		err = os.WriteFile(prometheusComposePath, contents, 0664)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not write Prometheus container file to %s: %w", prometheusComposePath, err)
 		}
 		deployedContainers = append(deployedContainers, prometheusComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.PrometheusContainerName+composeFileSuffix))
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_Prometheus)+composeFileSuffix))
 	}
 
 	// Check MEV-Boost
 	if cfg.EnableMevBoost.Value == true && cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_MevBoost)+templateSuffix))
 		if err != nil {
 			return []string{}, fmt.Errorf("error reading and substituting MEV-Boost container template: %w", err)
 		}
-		mevBoostComposePath := filepath.Join(runtimeFolder, config.MevBoostContainerName+composeFileSuffix)
+		mevBoostComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_MevBoost)+composeFileSuffix)
 		err = os.WriteFile(mevBoostComposePath, contents, 0664)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not write MEV-Boost container file to %s: %w", mevBoostComposePath, err)
 		}
 		deployedContainers = append(deployedContainers, mevBoostComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.MevBoostContainerName+composeFileSuffix))
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_MevBoost)+composeFileSuffix))
 	}
 
 	// Create the custom keys dir
 	customKeyDir, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys"))
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder manually.%s\n", colorYellow, err.Error(), colorReset)
+		fmt.Printf("%sWARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder manually.%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 		return deployedContainers, nil
 	}
 	err = os.MkdirAll(customKeyDir, 0775)
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), customKeyDir, colorReset)
+		fmt.Printf("%sWARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder [%s] manually.%s\n", terminal.ColorYellow, err.Error(), customKeyDir, terminal.ColorReset)
 	}
 
 	// Create the rewards file dir
 	rewardsFilePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(0, false))
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't expand the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder manually.%s\n", colorYellow, err.Error(), colorReset)
+		fmt.Printf("%sWARNING: Couldn't expand the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder manually.%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 		return deployedContainers, nil
 	}
 	rewardsFileDir := filepath.Dir(rewardsFilePath)
 	err = os.MkdirAll(rewardsFileDir, 0775)
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), rewardsFileDir, colorReset)
+		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", terminal.ColorYellow, err.Error(), rewardsFileDir, terminal.ColorReset)
 	}
 
 	return c.composeAddons(cfg, rocketpoolDir, settings, deployedContainers)
@@ -1356,45 +1207,7 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 	return c.runApiCall(cmd)
 }
 
-// Call the Rocket Pool API with some custom environment variables
-func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, otherArgs ...string) ([]byte, error) {
-	// Sanitize and parse the args
-	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)
-
-	// Create the command to run
-	var cmd string
-	if c.daemonPath == "" {
-		envArgs := ""
-		for key, value := range envVars {
-			os.Setenv(key, shellescape.Quote(value))
-			envArgs += fmt.Sprintf("-e %s ", key)
-		}
-		containerName, err := c.getAPIContainerName()
-		if err != nil {
-			return []byte{}, err
-		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s %s api %s", envArgs, shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
-	} else {
-		envArgs := ""
-		for key, value := range envVars {
-			envArgs += fmt.Sprintf("%s=%s ", key, shellescape.Quote(value))
-		}
-		cmd = fmt.Sprintf("%s %s --settings %s %s %s %s %s api %s",
-			envArgs,
-			c.daemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
-			ignoreSyncCheckFlag,
-			forceFallbackECFlag,
-			c.getGasOpts(),
-			c.getCustomNonce(),
-			args)
-	}
-
-	// Run the command
-	return c.runApiCall(cmd)
-}
-
-func (c *Client) getApiCallArgs(args string, otherArgs ...string) (string, string, string) {
+func (c *Client) getApiCallArgs(args string, otherArgs ...string) string {
 	// Sanitize arguments
 	var sanitizedArgs []string
 	for _, arg := range strings.Fields(args) {
@@ -1409,16 +1222,7 @@ func (c *Client) getApiCallArgs(args string, otherArgs ...string) (string, strin
 		}
 	}
 
-	ignoreSyncCheckFlag := ""
-	if c.ignoreSyncCheck {
-		ignoreSyncCheckFlag = "--ignore-sync-check"
-	}
-	forceFallbacksFlag := ""
-	if c.forceFallbacks {
-		forceFallbacksFlag = "--force-fallbacks"
-	}
-
-	return ignoreSyncCheckFlag, forceFallbacksFlag, args
+	return args
 }
 
 func (c *Client) runApiCall(cmd string) ([]byte, error) {
@@ -1440,42 +1244,7 @@ func (c *Client) runApiCall(cmd string) ([]byte, error) {
 		}
 	}
 
-	// Reset the gas settings after the call
-	c.maxFee = c.originalMaxFee
-	c.maxPrioFee = c.originalMaxPrioFee
-	c.gasLimit = c.originalGasLimit
-
 	return output, err
-}
-
-// Get the API container name
-func (c *Client) getAPIContainerName() (string, error) {
-	cfg, _, err := c.LoadConfig()
-	if err != nil {
-		return "", err
-	}
-	if cfg.Smartnode.ProjectName.Value == "" {
-		return "", errors.New("Rocket Pool docker project name not set")
-	}
-	return cfg.Smartnode.ProjectName.Value.(string) + APIContainerSuffix, nil
-}
-
-// Get gas price & limit flags
-func (c *Client) getGasOpts() string {
-	var opts string
-	opts += fmt.Sprintf("--maxFee %f ", c.maxFee)
-	opts += fmt.Sprintf("--maxPrioFee %f ", c.maxPrioFee)
-	opts += fmt.Sprintf("--gasLimit %d ", c.gasLimit)
-	return opts
-}
-
-func (c *Client) getCustomNonce() string {
-	// Set the custom nonce
-	nonce := ""
-	if c.customNonce != nil {
-		nonce = fmt.Sprintf("--nonce %s", c.customNonce.String())
-	}
-	return nonce
 }
 
 // Run a command and print its output

@@ -35,7 +35,7 @@ func (c *Client) AuctionStatus() (api.AuctionStatusResponse, error) {
 
 // Get RPL lots for auction
 func (c *Client) AuctionLots() (api.AuctionLotsResponse, error) {
-	responseBytes, err := c.callAPI("auction lots")
+	responseBytes, err := c.callAPI("auction/lots")
 	if err != nil {
 		return api.AuctionLotsResponse{}, fmt.Errorf("Could not get auction lots: %w", err)
 	}

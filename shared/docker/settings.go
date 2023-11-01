@@ -10,6 +10,7 @@ const (
 	ContainerName_ValidatorClient ContainerName = "validator"
 	ContainerName_MevBoost        ContainerName = "mev-boost"
 	ContainerName_Node            ContainerName = "node"
+	ContainerName_Watchtower      ContainerName = "watchtower"
 	ContainerName_Exporter        ContainerName = "exporter"
 	ContainerName_Prometheus      ContainerName = "prometheus"
 	ContainerName_Grafana         ContainerName = "grafana"
