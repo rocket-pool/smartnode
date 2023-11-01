@@ -13,8 +13,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
 	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"golang.org/x/sync/errgroup"
 )
 

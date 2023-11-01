@@ -21,7 +21,9 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/eth1"
 	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
@@ -29,8 +31,6 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 const (

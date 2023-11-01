@@ -14,10 +14,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Config

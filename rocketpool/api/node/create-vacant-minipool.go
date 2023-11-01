@@ -20,7 +20,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
-	rputils "github.com/rocket-pool/smartnode/rocketpool/utils/rp"
+	rputils "github.com/rocket-pool/smartnode/rocketpool/common/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"

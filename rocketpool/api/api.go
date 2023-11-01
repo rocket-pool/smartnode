@@ -12,8 +12,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/smartnode/rocketpool/api/service"
 	"github.com/rocket-pool/smartnode/rocketpool/api/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 
 	"github.com/rocket-pool/smartnode/rocketpool/api/auction"
 	"github.com/rocket-pool/smartnode/rocketpool/api/faucet"

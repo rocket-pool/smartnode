@@ -21,7 +21,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/eth1"
 	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
@@ -31,9 +33,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/config"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/web3-storage/go-w3s-client"
 )
 

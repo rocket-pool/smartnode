@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet/keystore/lighthouse"
@@ -19,7 +20,6 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet/keystore/teku"
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Config

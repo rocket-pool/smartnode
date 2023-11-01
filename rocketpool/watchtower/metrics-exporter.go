@@ -8,9 +8,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 func runMetricsServer(sp *services.ServiceProvider, logger log.ColorLogger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector) error {

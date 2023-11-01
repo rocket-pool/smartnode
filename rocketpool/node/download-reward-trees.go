@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // Manage download rewards trees task

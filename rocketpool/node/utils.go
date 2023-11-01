@@ -4,8 +4,8 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
 	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 func getAutoTxInfo(cfg *config.RocketPoolConfig, logger *log.ColorLogger) (*big.Int, *big.Int) {

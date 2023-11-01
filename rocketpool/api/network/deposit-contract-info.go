@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
-	rputils "github.com/rocket-pool/smartnode/rocketpool/utils/rp"
+	rputils "github.com/rocket-pool/smartnode/rocketpool/common/utils"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
