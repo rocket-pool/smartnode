@@ -9,8 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/prysmaticlabs/prysm/v3/beacon-chain/core/signing"
-	prdeposit "github.com/prysmaticlabs/prysm/v3/contracts/deposit"
+	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
+	prdeposit "github.com/prysmaticlabs/prysm/v4/contracts/deposit"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -19,7 +19,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 
-	ethpb "github.com/prysmaticlabs/prysm/v3/proto/prysm/v1alpha1"
+	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
