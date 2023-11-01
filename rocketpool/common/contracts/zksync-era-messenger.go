@@ -26,7 +26,7 @@ var zksyncEraOnce sync.Once
 // ===============
 
 // Binding for the zkSync Era Messenger
-type ZksyncEraMessenger struct {
+type ZkSyncEraMessenger struct {
 
 	// === Internal fields ===
 	contract *core.Contract
@@ -37,7 +37,7 @@ type ZksyncEraMessenger struct {
 // ====================
 
 // Creates a new zkSync Era Messenger contract binding
-func NewZksyncEraMessenger(address common.Address, client core.ExecutionClient) (*ZksyncEraMessenger, error) {
+func NewZkSyncEraMessenger(address common.Address, client core.ExecutionClient) (*ZkSyncEraMessenger, error) {
 	// Parse the ABI
 	var err error
 	zksyncEraOnce.Do(func() {
@@ -59,7 +59,7 @@ func NewZksyncEraMessenger(address common.Address, client core.ExecutionClient) 
 		Client:   client,
 	}
 
-	return &ZksyncEraMessenger{
+	return &ZkSyncEraMessenger{
 		contract: contract,
 	}, nil
 }
@@ -69,7 +69,7 @@ func NewZksyncEraMessenger(address common.Address, client core.ExecutionClient) 
 // =============
 
 // Check if the RPL rate is stale and needs to be updated
-func (c *ZksyncEraMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
+func (c *ZkSyncEraMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
 	core.AddCall(mc, c.contract, out, "rateStale")
 }
 
@@ -78,6 +78,6 @@ func (c *ZksyncEraMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
 // ====================
 
 // Send the latest RPL rate to the L2
-func (c *ZksyncEraMessenger) SubmitRate(l2GasLimit *big.Int, l2GasPerPubdataByteLimit *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *ZkSyncEraMessenger) SubmitRate(l2GasLimit *big.Int, l2GasPerPubdataByteLimit *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "submitRate", opts, l2GasLimit, l2GasPerPubdataByteLimit)
 }

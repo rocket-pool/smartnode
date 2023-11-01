@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
 
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
@@ -287,9 +287,13 @@ func isOnOracleDAO(rp *rocketpool.RocketPool, nodeAddress common.Address, block 
 		BlockNumber: big.NewInt(0).SetUint64(block.ExecutionBlockNumber),
 	}
 
-	nodeTrusted, err := trustednode.GetMemberExists(rp, nodeAddress, opts)
+	member, err := oracle.NewOracleDaoMember(rp, nodeAddress)
+	if err != nil {
+		return false, fmt.Errorf("error creating oDAO member binding: %w", err)
+	}
+	err = rp.Query(nil, opts, member.Exists)
 	if err != nil {
 		return false, fmt.Errorf("error checking if node is in the Oracle DAO for Beacon block %d, EL block %d: %w", block.Slot, block.ExecutionBlockNumber, err)
 	}
-	return nodeTrusted, nil
+	return member.Exists.Get(), nil
 }
