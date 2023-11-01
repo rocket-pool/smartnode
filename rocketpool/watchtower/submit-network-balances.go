@@ -229,7 +229,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		t.log.Printlnf("rETH token supply: %s wei", balances.RETHSupply.String())
 
 		// Check if we have reported these specific values before
-		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, balances)
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, uint64(nexSubmissionTime.Unix()), balances)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -255,7 +255,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		t.log.Println("Submitting balances...")
 
 		// Submit balances
-		if err := t.submitBalances(balances); err != nil {
+		if err := t.submitBalances(balances, uint64(nexSubmissionTime.Unix())); err != nil {
 			t.handleError(fmt.Errorf("%s could not submit network balances: %w", logPrefix, err))
 			return
 		}
@@ -290,7 +290,7 @@ func (t *submitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Add
 }
 
 // Check whether specific balances for a block has already been submitted by the node
-func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress common.Address, blockNumber uint64, balances networkBalances) (bool, error) {
+func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress common.Address, blockNumber uint64, slotTimestamp uint64, balances networkBalances) (bool, error) {
 
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
@@ -304,6 +304,9 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
 
+	slotTimestampBuf := make([]byte, 32)
+	big.NewInt(int64(slotTimestamp)).FillBytes(slotTimestampBuf)
+
 	totalEthBuf := make([]byte, 32)
 	totalEth.FillBytes(totalEthBuf)
 
@@ -313,7 +316,7 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 	rethSupplyBuf := make([]byte, 32)
 	balances.RETHSupply.FillBytes(rethSupplyBuf)
 
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf, totalEthBuf, stakingBuf, rethSupplyBuf))
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf, slotTimestampBuf, totalEthBuf, stakingBuf, rethSupplyBuf))
 
 }
 
@@ -511,7 +514,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
+func (t *submitNetworkBalances) submitBalances(balances networkBalances, slotTimestamp uint64) error {
 
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
@@ -535,8 +538,16 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 		return fmt.Errorf("error getting node transactor: %w", err)
 	}
 
+	submission := network.BalanceSubmission{
+		BlockNumber:   big.NewInt(0).SetUint64(balances.Block),
+		SlotTimestamp: big.NewInt(0).SetUint64(slotTimestamp),
+		TotalEth:      totalEth,
+		StakingEth:    balances.MinipoolsStaking,
+		RethSupply:    balances.RETHSupply,
+	}
+
 	// Get the gas limit
-	gasInfo, err := network.EstimateSubmitBalancesGas(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+	gasInfo, err := network.EstimateSubmitBalancesGas(t.rp, submission, opts)
 	if err != nil {
 		if enableSubmissionAfterConsensus_Balances && strings.Contains(err.Error(), "Network balances for an equal or higher block are set") {
 			// Set a gas limit which will intentionally be too low and revert
@@ -562,7 +573,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Submit balances
-	hash, err := network.SubmitBalances(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+	hash, err := network.SubmitBalances(t.rp, submission, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting balances: %w", err)
 	}

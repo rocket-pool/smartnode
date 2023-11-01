@@ -399,7 +399,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
 
 		// Check if we have reported these specific values before
-		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice)
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, uint64(nexSubmissionTime.Unix()), rplPrice)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -425,7 +425,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		t.log.Println("Submitting RPL price...")
 
 		// Submit RPL price
-		if err := t.submitRplPrice(blockNumber, rplPrice); err != nil {
+		if err := t.submitRplPrice(blockNumber, uint64(nexSubmissionTime.Unix()), rplPrice); err != nil {
 			t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
 			return
 		}
@@ -460,14 +460,17 @@ func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blo
 }
 
 // Check whether specific prices for a block has already been submitted by the node
-func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice *big.Int) (bool, error) {
+func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, slotTimestamp uint64, rplPrice *big.Int) (bool, error) {
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+
+	slotTimestampBuf := make([]byte, 32)
+	big.NewInt(int64(slotTimestamp)).FillBytes(slotTimestampBuf)
 
 	rplPriceBuf := make([]byte, 32)
 	rplPrice.FillBytes(rplPriceBuf)
 
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf))
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, slotTimestampBuf, rplPriceBuf))
 }
 
 // Get RPL price via TWAP at block
@@ -541,7 +544,7 @@ func (t *submitRplPrice) printMessage(message string) {
 }
 
 // Submit RPL price and total effective RPL stake
-func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) error {
+func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64, rplPrice *big.Int) error {
 
 	// Log
 	t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
@@ -553,7 +556,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) e
 	}
 
 	// Get the gas limit
-	gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, opts)
+	gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, slotTimestamp, rplPrice, opts)
 	if err != nil {
 		return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
 	}
@@ -570,7 +573,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) e
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Submit RPL price
-	hash, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, opts)
+	hash, err := network.SubmitPrices(t.rp, blockNumber, slotTimestamp, rplPrice, opts)
 	if err != nil {
 		return err
 	}
