@@ -9,8 +9,16 @@ import (
 	"github.com/rocket-pool/rocketpool-go/core"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
+
+// Info for the node's fee recipient
+type FeeRecipientInfo struct {
+	SmoothingPoolAddress  common.Address `json:"smoothingPoolAddress"`
+	FeeDistributorAddress common.Address `json:"feeDistributorAddress"`
+	IsInSmoothingPool     bool           `json:"isInSmoothingPool"`
+	IsInOptOutCooldown    bool           `json:"isInOptOutCooldown"`
+	OptOutEpoch           uint64         `json:"optOutEpoch"`
+}
 
 type NodeStatusData struct {
 	AccountAddress                           common.Address `json:"accountAddress"`
@@ -74,7 +82,7 @@ type NodeStatusData struct {
 		Finalised       int `json:"finalised"`
 	} `json:"minipoolCounts"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
-	FeeRecipientInfo            rp.FeeRecipientInfo       `json:"feeRecipientInfo"`
+	FeeRecipientInfo            FeeRecipientInfo          `json:"feeRecipientInfo"`
 	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
 	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
 	SnapshotResponse            struct {

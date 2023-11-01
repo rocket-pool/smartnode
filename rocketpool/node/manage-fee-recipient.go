@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool/common/validator"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -27,15 +28,6 @@ type ManageFeeRecipient struct {
 	cfg *config.RocketPoolConfig
 	log log.ColorLogger
 	bc  beacon.Client
-}
-
-// Info for the node's fee recipient
-type feeRecipientInfo struct {
-	SmoothingPoolAddress  common.Address `json:"smoothingPoolAddress"`
-	FeeDistributorAddress common.Address `json:"feeDistributorAddress"`
-	IsInSmoothingPool     bool           `json:"isInSmoothingPool"`
-	IsInOptOutCooldown    bool           `json:"isInOptOutCooldown"`
-	OptOutEpoch           uint64         `json:"optOutEpoch"`
 }
 
 // Create manage fee recipient task
@@ -113,8 +105,8 @@ func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 }
 
 // Get info about the node's fee recipient
-func (t *ManageFeeRecipient) getFeeRecipientInfo(nodeAddress common.Address, state *state.NetworkState) (*feeRecipientInfo, error) {
-	info := &feeRecipientInfo{
+func (t *ManageFeeRecipient) getFeeRecipientInfo(nodeAddress common.Address, state *state.NetworkState) (*api.FeeRecipientInfo, error) {
+	info := &api.FeeRecipientInfo{
 		IsInOptOutCooldown: false,
 		OptOutEpoch:        0,
 	}

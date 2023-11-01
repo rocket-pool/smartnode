@@ -25,6 +25,7 @@ import (
 	prdeposit "github.com/prysmaticlabs/prysm/v3/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v3/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/collateral"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool/common/validator"
 	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
@@ -32,7 +33,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/input"
-	sharedutils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
@@ -164,7 +164,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	}
 
 	// Check the node's collateral
-	collateral, err := sharedutils.CheckCollateral(c.rp, c.node.Address, nil)
+	collateral, err := collateral.CheckCollateral(c.rp, c.node.Address, nil)
 	if err != nil {
 		return fmt.Errorf("error checking node collateral: %w", err)
 	}

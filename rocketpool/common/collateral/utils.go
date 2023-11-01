@@ -1,7 +1,6 @@
-package rp
+package collateral
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -16,85 +15,11 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
 const (
-	minipoolPubkeyBatchSize        int = 500
 	minipoolReduceDetailsBatchSize int = 200
 )
-
-func GetNodeValidatorIndices(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, opts *bind.CallOpts) ([]string, error) {
-	// Create the bindings
-	node, err := node.NewNode(rp, nodeAddress)
-	if err != nil {
-		return nil, fmt.Errorf("error getting node %s binding: %w", nodeAddress.Hex(), err)
-	}
-	mpMgr, err := minipool.NewMinipoolManager(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error creating minipool manager binding: %w", err)
-	}
-
-	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		node.ValidatingMinipoolCount.AddToQuery(mc)
-		return nil
-	}, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error getting contract state: %w", err)
-	}
-
-	// Get the validating addresses
-	addresses, err := node.GetValidatingMinipoolAddresses(node.ValidatingMinipoolCount.Formatted(), opts)
-	if err != nil {
-		return nil, fmt.Errorf("error getting validating minipool addresses: %w", err)
-	}
-
-	// Create the minipools
-	minipools, err := mpMgr.CreateMinipoolsFromAddresses(addresses, false, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error getting validating minipools: %w", err)
-	}
-
-	// Get the list of pubkeys
-	pubkeys := make([]types.ValidatorPubkey, len(addresses))
-	err = rp.BatchQuery(len(addresses), minipoolPubkeyBatchSize, func(mc *batch.MultiCaller, i int) error {
-		minipools[i].Common().Pubkey.AddToQuery(mc)
-		return nil
-	}, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error getting validating pubkeys: %w", err)
-	}
-
-	// Populate the slice of pubkeys
-	for i, mp := range minipools {
-		pubkeys[i] = mp.Common().Pubkey.Get()
-	}
-
-	// Remove zero pubkeys
-	zeroPubkey := types.ValidatorPubkey{}
-	filteredPubkeys := []types.ValidatorPubkey{}
-	for _, pubkey := range pubkeys {
-		if !bytes.Equal(pubkey[:], zeroPubkey[:]) {
-			filteredPubkeys = append(filteredPubkeys, pubkey)
-		}
-	}
-	pubkeys = filteredPubkeys
-
-	// Get validator statuses by pubkeys
-	statuses, err := bc.GetValidatorStatuses(pubkeys, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting validator statuses: %w", err)
-	}
-
-	// Enumerate validators statuses and fill indices array
-	validatorIndices := make([]string, 0, len(statuses)+1)
-	for _, status := range statuses {
-		validatorIndices = append(validatorIndices, status.Index)
-	}
-	return validatorIndices, nil
-}
 
 type CollateralAmounts struct {
 	EthMatched         *big.Int

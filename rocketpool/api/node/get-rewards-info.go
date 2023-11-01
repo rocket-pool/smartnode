@@ -14,11 +14,11 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool/common/collateral"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // ===============
@@ -137,7 +137,7 @@ func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData
 	// Get the number of active (non-finalized) minipools
 	data.ActiveMinipools = c.node.ActiveMinipoolCount.Formatted()
 	if data.ActiveMinipools > 0 {
-		collateral, err := rputils.CheckCollateral(c.rp, c.node.Address, nil)
+		collateral, err := collateral.CheckCollateral(c.rp, c.node.Address, nil)
 		if err != nil {
 			return fmt.Errorf("error getting node collateral: %w", err)
 		}

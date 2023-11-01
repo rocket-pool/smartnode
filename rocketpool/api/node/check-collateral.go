@@ -6,9 +6,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/smartnode/rocketpool/common/collateral"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // ===============
@@ -52,7 +52,7 @@ func (c *nodeCheckCollateralContext) PrepareData(data *api.NodeCheckCollateralDa
 	}
 
 	// Check collateral
-	collateral, err := rputils.CheckCollateral(rp, nodeAddress, nil)
+	collateral, err := collateral.CheckCollateral(rp, nodeAddress, nil)
 	if err != nil {
 		return fmt.Errorf("error checking node collateral: %w", err)
 	}

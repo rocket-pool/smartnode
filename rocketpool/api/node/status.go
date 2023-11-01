@@ -23,12 +23,12 @@ import (
 	"github.com/wealdtech/go-ens/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/collateral"
 	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool/common/voting"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 const (
@@ -227,7 +227,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	}
 
 	// Collateral
-	collateral, err := rputils.CheckCollateralWithMinipoolCache(c.rp, c.node.Address, mps, nil)
+	collateral, err := collateral.CheckCollateralWithMinipoolCache(c.rp, c.node.Address, mps, nil)
 	if err != nil {
 		return fmt.Errorf("error getting node collateral balance: %w", err)
 	}

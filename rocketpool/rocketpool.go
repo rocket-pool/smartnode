@@ -11,12 +11,10 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/node"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower"
 	"github.com/rocket-pool/smartnode/shared"
-	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
 // Run
 func main() {
-
 	// Initialise application
 	app := cli.NewApp()
 
@@ -114,21 +112,9 @@ func main() {
 		},
 	})
 
-	// Get command being run
-	var commandName string
-	app.Before = func(c *cli.Context) error {
-		commandName = c.Args().First()
-		return nil
-	}
-
 	// Run application
 	if err := app.Run(os.Args); err != nil {
-		if commandName == "api" {
-			apiutils.PrintErrorResponse(err)
-		} else {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
-
 }
