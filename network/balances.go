@@ -97,21 +97,21 @@ func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 }
 
 // Estimate the gas of SubmitBalances
-func EstimateSubmitBalancesGas(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitBalancesGas(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNetworkBalances.GetTransactionGasInfo(opts, "submitBalances", big.NewInt(int64(block)), totalEth, stakingEth, rethSupply)
+	return rocketNetworkBalances.GetTransactionGasInfo(opts, "submitBalances", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), totalEth, stakingEth, rethSupply)
 }
 
 // Submit network balances for an epoch
-func SubmitBalances(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func SubmitBalances(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), totalEth, stakingEth, rethSupply)
+	tx, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), stakingEth, rethSupply)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error submitting network balances: %w", err)
 	}
