@@ -19,6 +19,7 @@ func NewServiceHandler(serviceProvider *services.ServiceProvider) *ServiceHandle
 		&serviceClientStatusContextFactory{h},
 		&serviceRestartVcContextFactory{h},
 		&serviceTerminateDataFolderContextFactory{h},
+		&serviceVersionContextFactory{h},
 	}
 	return h
 }

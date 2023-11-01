@@ -2,55 +2,41 @@ package rocketpool
 
 import (
 	"fmt"
+	"net/http"
 
-	"github.com/goccy/go-json"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-// Get faucet status
-func (c *Client) FaucetStatus() (api.FaucetStatusData, error) {
-	responseBytes, err := c.callAPI("faucet status")
-	if err != nil {
-		return api.FaucetStatusData{}, fmt.Errorf("Could not get faucet status: %w", err)
-	}
-	var response api.FaucetStatusData
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.FaucetStatusData{}, fmt.Errorf("Could not decode faucet status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.FaucetStatusData{}, fmt.Errorf("Could not get faucet status: %s", response.Error)
-	}
-	return response, nil
+type FaucetRequester struct {
+	client *http.Client
+	route  string
 }
 
-// Check whether the node can withdraw RPL from the faucet
-func (c *Client) CanFaucetWithdrawRpl() (api.CanFaucetWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI("faucet can-withdraw-rpl")
+func NewFaucetRequester(client *http.Client) *FaucetRequester {
+	return &FaucetRequester{
+		client: client,
+		route:  "faucet",
+	}
+}
+
+// Get faucet status
+func (r *FaucetRequester) Status() (*api.ApiResponse[api.FaucetStatusData], error) {
+	method := "status"
+	args := map[string]string{}
+	response, err := SendGetRequest[api.FaucetStatusData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
 	if err != nil {
-		return api.CanFaucetWithdrawRplResponse{}, fmt.Errorf("Could not get can withdraw RPL from faucet status: %w", err)
-	}
-	var response api.CanFaucetWithdrawRplResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanFaucetWithdrawRplResponse{}, fmt.Errorf("Could not decode can withdraw RPL from faucet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanFaucetWithdrawRplResponse{}, fmt.Errorf("Could not get can withdraw RPL from faucet status: %s", response.Error)
+		return nil, fmt.Errorf("error during Faucet Status request: %w", err)
 	}
 	return response, nil
 }
 
 // Withdraw RPL from the faucet
-func (c *Client) FaucetWithdrawRpl() (api.FaucetWithdrawRplData, error) {
-	responseBytes, err := c.callAPI("faucet withdraw-rpl")
+func (r *FaucetRequester) WithdrawRpl() (*api.ApiResponse[api.FaucetWithdrawRplData], error) {
+	method := "withdraw-rpl"
+	args := map[string]string{}
+	response, err := SendGetRequest[api.FaucetWithdrawRplData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
 	if err != nil {
-		return api.FaucetWithdrawRplData{}, fmt.Errorf("Could not withdraw RPL from faucet: %w", err)
-	}
-	var response api.FaucetWithdrawRplData
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.FaucetWithdrawRplData{}, fmt.Errorf("Could not decode withdraw RPL from faucet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.FaucetWithdrawRplData{}, fmt.Errorf("Could not withdraw RPL from faucet: %s", response.Error)
+		return nil, fmt.Errorf("error during Faucet WithdrawRpl request: %w", err)
 	}
 	return response, nil
 }

@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -11,6 +12,14 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
+
+// When printing sync percents, we should avoid printing 100%.
+// This function is only called if we're still syncing,
+// and the `%0.2f` token will round up if we're above 99.99%.
+func SyncRatioToPercent(in float64) float64 {
+	return math.Min(99.99, in*100)
+	// TODO: INCORPORATE THIS
+}
 
 // Settings
 var ethClientRecentBlockThreshold, _ = time.ParseDuration("5m")

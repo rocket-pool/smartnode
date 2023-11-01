@@ -30,3 +30,7 @@ type ServiceClientStatusData struct {
 	EcManagerStatus ClientManagerStatus `json:"ecManagerStatus"`
 	BcManagerStatus ClientManagerStatus `json:"bcManagerStatus"`
 }
+
+type ServiceVersionData struct {
+	Version string `json:"version"`
+}

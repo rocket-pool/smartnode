@@ -22,6 +22,7 @@ func NewTxHandler(serviceProvider *services.ServiceProvider) *TxHandler {
 		&txSignMessageContextFactory{h},
 		&txSignTxContextFactory{h},
 		&txSubmitTxContextFactory{h},
+		&txWaitContextFactory{h},
 	}
 	return h
 }

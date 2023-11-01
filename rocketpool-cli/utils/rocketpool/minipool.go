@@ -3,6 +3,7 @@ package rocketpool
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -10,48 +11,25 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
+type MinipoolRequester struct {
+	client *http.Client
+	route  string
+}
+
+func NewMinipoolRequester(client *http.Client) *MinipoolRequester {
+	return &MinipoolRequester{
+		client: client,
+		route:  "minipool",
+	}
+}
+
 // Get minipool status
-func (c *Client) MinipoolStatus() (api.MinipoolStatusData, error) {
-	responseBytes, err := c.callAPI("minipool status")
+func (r *MinipoolRequester) Status() (*api.ApiResponse[api.MinipoolStatusData], error) {
+	method := "status"
+	args := map[string]string{}
+	response, err := SendGetRequest[api.MinipoolStatusData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
 	if err != nil {
-		return api.MinipoolStatusData{}, fmt.Errorf("Could not get minipool status: %w", err)
-	}
-	var response api.MinipoolStatusData
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.MinipoolStatusData{}, fmt.Errorf("Could not decode minipool status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.MinipoolStatusData{}, fmt.Errorf("Could not get minipool status: %s", response.Error)
-	}
-	for i := 0; i < len(response.Minipools); i++ {
-		mp := &response.Minipools[i]
-		if mp.Node.DepositBalance == nil {
-			mp.Node.DepositBalance = big.NewInt(0)
-		}
-		if mp.Node.RefundBalance == nil {
-			mp.Node.RefundBalance = big.NewInt(0)
-		}
-		if mp.User.DepositBalance == nil {
-			mp.User.DepositBalance = big.NewInt(0)
-		}
-		if mp.Balances.ETH == nil {
-			mp.Balances.ETH = big.NewInt(0)
-		}
-		if mp.Balances.RPL == nil {
-			mp.Balances.RPL = big.NewInt(0)
-		}
-		if mp.Balances.RETH == nil {
-			mp.Balances.RETH = big.NewInt(0)
-		}
-		if mp.Balances.FixedSupplyRPL == nil {
-			mp.Balances.FixedSupplyRPL = big.NewInt(0)
-		}
-		if mp.Validator.Balance == nil {
-			mp.Validator.Balance = big.NewInt(0)
-		}
-		if mp.Validator.NodeBalance == nil {
-			mp.Validator.NodeBalance = big.NewInt(0)
-		}
+		return nil, fmt.Errorf("error during Minipool Status request: %w", err)
 	}
 	return response, nil
 }
