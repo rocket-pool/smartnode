@@ -19,7 +19,7 @@ const (
 )
 
 // ABI cache
-var snapshotAbi abi.ABI
+var faucetAbi abi.ABI
 var faucetOnce sync.Once
 
 // ===============
@@ -65,7 +65,7 @@ func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFauc
 		var parsedAbi abi.ABI
 		parsedAbi, err = abi.JSON(strings.NewReader(faucetAbiString))
 		if err == nil {
-			snapshotAbi = parsedAbi
+			faucetAbi = parsedAbi
 		}
 	})
 	if err != nil {
@@ -74,9 +74,9 @@ func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFauc
 
 	// Create the contract
 	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, snapshotAbi, client, client, client),
+		Contract: bind.NewBoundContract(address, faucetAbi, client, client, client),
 		Address:  &address,
-		ABI:      &snapshotAbi,
+		ABI:      &faucetAbi,
 		Client:   client,
 	}
 
