@@ -20,10 +20,12 @@ import (
 
 // Info for a balances updated event
 type BalancesUpdatedEvent struct {
-	BlockNumber   *big.Int `json:"blockNumber"`
-	SlotTimestamp *big.Int `json:"slotTimestamp"`
-	RplPrice      *big.Int `json:"rplPrice"`
-	Time          *big.Int `json:"time"`
+	BlockNumber    *big.Int `json:"blockNumber"`
+	SlotTimestamp  *big.Int `json:"slotTimestamp"`
+	TotalEth       *big.Int `json:"totalEth"`
+	StakingEth     *big.Int `json:"stakingEth"`
+	RethSupply     *big.Int `json:"rethSupply"`
+	BlockTimestamp *big.Int `json:"blockTimestamp"`
 }
 
 // Get the block number which network balances are current for
