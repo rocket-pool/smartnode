@@ -180,6 +180,7 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
+	isHoustonDeployedMasterFlag := false
 	go func() {
 		for {
 			// Randomize the next interval
@@ -238,6 +239,12 @@ func run(c *cli.Context) error {
 					errorLog.Println(err)
 					time.Sleep(taskCooldown)
 					continue
+				}
+
+				// Check for Houston
+				if !isHoustonDeployedMasterFlag && state.IsHoustonDeployed {
+					printHoustonMessage(&updateLog)
+					isHoustonDeployedMasterFlag = true
 				}
 
 				// Run the network balance submission check
@@ -362,4 +369,27 @@ func isOnOracleDAO(rp *rocketpool.RocketPool, nodeAddress common.Address, block 
 		return false, fmt.Errorf("error checking if node is in the Oracle DAO for Beacon block %d, EL block %d: %w", block.Slot, block.ExecutionBlockNumber, err)
 	}
 	return nodeTrusted, nil
+}
+
+// Check if Houston has been deployed yet
+func printHoustonMessage(log *log.ColorLogger) {
+	log.Println(`
+*       .
+*      / \
+*     |.'.|
+*     |'.'|
+*   ,'|   |'.
+*  |,-'-|-'-.|
+*   __|_| |         _        _      _____           _
+*  | ___ \|        | |      | |    | ___ \         | |
+*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
+*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
+*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
+*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
+* +---------------------------------------------------+
+* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
+* +---------------------------------------------------+
+*
+* =============== Houston has launched! ===============
+`)
 }

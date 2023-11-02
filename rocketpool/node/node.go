@@ -154,6 +154,7 @@ func run(c *cli.Context) error {
 	lastTotalEffectiveStakeTime := time.Unix(0, 0)
 
 	// Run task loop
+	isHoustonDeployedMasterFlag := false
 	go func() {
 		for {
 			// Check the EC status
@@ -185,6 +186,12 @@ func run(c *cli.Context) error {
 				continue
 			}
 			stateLocker.UpdateState(state, totalEffectiveStake)
+
+			// Check for Houston
+			if !isHoustonDeployedMasterFlag && state.IsHoustonDeployed {
+				printHoustonMessage(&updateLog)
+				isHoustonDeployedMasterFlag = true
+			}
 
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.run(state); err != nil {
@@ -327,4 +334,27 @@ func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, node
 		return nil, nil, fmt.Errorf("error updating network state: %w", err)
 	}
 	return state, totalEffectiveStake, nil
+}
+
+// Check if Houston has been deployed yet
+func printHoustonMessage(log *log.ColorLogger) {
+	log.Println(`
+*       .
+*      / \
+*     |.'.|
+*     |'.'|
+*   ,'|   |'.
+*  |,-'-|-'-.|
+*   __|_| |         _        _      _____           _
+*  | ___ \|        | |      | |    | ___ \         | |
+*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
+*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
+*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
+*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
+* +---------------------------------------------------+
+* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
+* +---------------------------------------------------+
+*
+* =============== Houston has launched! ===============
+`)
 }

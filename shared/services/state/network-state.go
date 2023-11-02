@@ -22,6 +22,9 @@ const (
 )
 
 type NetworkState struct {
+	// Network version
+	IsHoustonDeployed bool
+
 	// Block / slot for this state
 	ElBlockNumber    uint64
 	BeaconSlotNumber uint64
@@ -70,6 +73,11 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
+	isHoustonDeployed, err := IsHoustonDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Houston is deployed: %w", err)
+	}
+
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -79,6 +87,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
 		log:                      log,
+		IsHoustonDeployed:        isHoustonDeployed,
 	}
 
 	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
@@ -203,6 +212,11 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
+	isHoustonDeployed, err := IsHoustonDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
+	if err != nil {
+		return nil, nil, fmt.Errorf("error checking if Houston is deployed: %w", err)
+	}
+
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -212,6 +226,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
 		log:                      log,
+		IsHoustonDeployed:        isHoustonDeployed,
 	}
 
 	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
