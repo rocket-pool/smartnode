@@ -72,11 +72,13 @@ func (r *NodeRequester) ConfirmRplWithdrawalAddress() (*api.ApiResponse[api.Node
 }
 
 // Send tokens from the node to an address
-func (r *NodeRequester) Send(amount *big.Int, token string, toAddress common.Address) (*api.ApiResponse[api.NodeSetTimezoneData], error) {
+func (r *NodeRequester) Send(amount *big.Int, token string, recipient common.Address) (*api.ApiResponse[api.NodeSendData], error) {
 	args := map[string]string{
-		"amount": amount.String(),
+		"amount":    amount.String(),
+		"token":     token,
+		"recipient": recipient.Hex(),
 	}
-	return sendGetRequest[api.NodeSetTimezoneData](r, "set-timezone", "SetTimezone", args)
+	return sendGetRequest[api.NodeSendData](r, "send", "Send", args)
 }
 
 // Set the node's RPL withdrawal address
@@ -135,37 +137,6 @@ func (r *NodeRequester) WithdrawRpl(amount *big.Int) (*api.ApiResponse[api.NodeW
 }
 
 // ================================
-
-func (c *Client) NodeSend(amountWei *big.Int, token string, toAddress common.Address) (api.NodeSendResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node send %s %s %s", amountWei.String(), token, toAddress.Hex()))
-	if err != nil {
-		return api.NodeSendResponse{}, fmt.Errorf("Could not send tokens from node: %w", err)
-	}
-	var response api.NodeSendResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeSendResponse{}, fmt.Errorf("Could not decode node send response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeSendResponse{}, fmt.Errorf("Could not send tokens from node: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether the node can burn tokens
-func (c *Client) CanNodeBurn(amountWei *big.Int, token string) (api.CanNodeBurnResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-burn %s %s", amountWei.String(), token))
-	if err != nil {
-		return api.CanNodeBurnResponse{}, fmt.Errorf("Could not get can node burn status: %w", err)
-	}
-	var response api.CanNodeBurnResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNodeBurnResponse{}, fmt.Errorf("Could not decode can node burn response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanNodeBurnResponse{}, fmt.Errorf("Could not get can node burn status: %s", response.Error)
-	}
-	return response, nil
-}
 
 // Burn tokens owned by the node for ETH
 func (c *Client) NodeBurn(amountWei *big.Int, token string) (api.NodeBurnResponse, error) {
