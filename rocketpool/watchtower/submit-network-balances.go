@@ -134,20 +134,27 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 	// Check the last submission block
 	lastSubmissionBlock := state.NetworkDetails.BalancesBlock.Uint64()
 
-	// Get the time of the block
-	header, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(lastSubmissionBlock))
-	if err != nil {
-		return err
-	}
-	lastSubmissionBlockTime := time.Unix(int64(header.Time), 0)
+	// Get the previous RocketNetworkPrices addresses
+	prevAddresses := t.cfg.Smartnode.GetPreviousRocketNetworkBalancesAddresses()
 
+	// Get the last balances updated event
+	found, event, err := network.GetBalancesUpdatedEvent(t.rp, lastSubmissionBlock, prevAddresses, nil)
+	if err != nil {
+		return fmt.Errorf("error getting event for balances updated on block %d: %w", lastSubmissionBlock, err)
+	}
+	if !found {
+		return fmt.Errorf("event for balances updated on block %d not found", lastSubmissionBlock)
+	}
+
+	// Get the last submission reference time
+	lastSubmissionTime := time.Unix(event.SlotTimestamp.Int64(), 0)
 	eth2Config := state.BeaconConfig
 
-	// Convert epochs to seconds as the interval time
-	submissionIntervalTime := state.NetworkDetails.BalancesIntervalEpochs * eth2Config.SecondsPerEpoch
+	// Get the duration in seconds for the interval between submissions
+	submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesIntervalEpochs * eth2Config.SecondsPerEpoch * uint64(time.Second))
 
 	// Next submission adds the interval time to the last submission time
-	nexSubmissionTime := lastSubmissionBlockTime.Add(time.Duration(submissionIntervalTime) * time.Second)
+	nexSubmissionTime := lastSubmissionTime.Add(submissionIntervalDuration)
 
 	// Return if the time to submit has not arrived
 	if time.Now().Before(nexSubmissionTime) {
@@ -163,7 +170,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 	ecBlock := beacon.Eth1Data{}
 
-	// Search for the last existing block, going back one slot if the block is not found.
+	// Search for the last existing EL block, going back one slot if the block is not found.
 	for blockExists := false; !blockExists; slotNumber -= 1 {
 		ecBlock, blockExists, err = t.bc.GetEth1DataForEth2Block(strconv.FormatUint(slotNumber, 10))
 		if err != nil {
@@ -212,7 +219,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		t.log.Printlnf("Calculating network balances for block %d...", targetBlockHeader.Number)
 
 		// Get network balances at block
-		balances, err := t.getNetworkBalances(header, targetBlockHeader.Number, slotNumber, time.Unix(int64(targetBlockHeader.Time), 0))
+		balances, err := t.getNetworkBalances(targetBlockHeader, targetBlockHeader.Number, slotNumber, time.Unix(int64(targetBlockHeader.Time), 0))
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return

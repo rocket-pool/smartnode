@@ -303,32 +303,29 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	// Log
 	t.log.Println("Checking for RPL price checkpoint...")
 
-	// // Check for Houston
-	// state.NetworkDetails.IntervalStart
-	// houston, err := t.rp.IsHoustonDeployed()
-	// if err != nil {
-	// 	return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	// }
-	// if !houston.IsHoustonDeployed {
-	// 	fmt.Println("This command cannot be used until Houston has been deployed.")
-	// 	return nil
-	// }
-
 	// Check the last submission block
 	lastSubmissionBlock := state.NetworkDetails.BalancesBlock.Uint64()
 
-	// Get the time of the block
-	header, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(lastSubmissionBlock))
-	if err != nil {
-		return err
-	}
-	lastSubmissionBlockTime := time.Unix(int64(header.Time), 0)
+	// Get the previous RocketNetworkPrices addresses
+	prevAddresses := t.cfg.Smartnode.GetPreviousRocketNetworkPricesAddresses()
 
+	// Get the last prices updated event
+	found, event, err := network.GetPriceUpdatedEvent(t.rp, lastSubmissionBlock, prevAddresses, nil)
+	if err != nil {
+		return fmt.Errorf("error getting event for price updated on block %d: %w", lastSubmissionBlock, err)
+	}
+	if !found {
+		return fmt.Errorf("event for price updated on block %d not found", lastSubmissionBlock)
+	}
+
+	// Get the last submission reference time
+	lastSubmissionTime := time.Unix(event.SlotTimestamp.Int64(), 0)
 	eth2Config := state.BeaconConfig
 
-	submissionIntervalTime := state.NetworkDetails.BalancesIntervalEpochs * eth2Config.SecondsPerEpoch
+	// Get the duration in seconds for the interval between submissions
+	submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesIntervalEpochs * eth2Config.SecondsPerEpoch * uint64(time.Second))
 
-	nexSubmissionTime := lastSubmissionBlockTime.Add(time.Duration(submissionIntervalTime) * time.Second)
+	nexSubmissionTime := lastSubmissionTime.Add(submissionIntervalDuration)
 
 	if time.Now().Before(nexSubmissionTime) {
 		return nil
@@ -336,7 +333,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 
 	// Get the Beacon block corresponding to this time
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
-	timeSinceGenesis := lastSubmissionBlockTime.Sub(genesisTime)
+	timeSinceGenesis := nexSubmissionTime.Sub(genesisTime)
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 
 	ecBlock := beacon.Eth1Data{}
