@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"strconv"
+	"net/http"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -12,158 +12,109 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	utils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
-// Get node status
-func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
-	responseBytes, err := c.callAPI("node status")
-	if err != nil {
-		return api.NodeStatusResponse{}, fmt.Errorf("Could not get node status: %w", err)
-	}
-	var response api.NodeStatusResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeStatusResponse{}, fmt.Errorf("Could not decode node status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeStatusResponse{}, fmt.Errorf("Could not get node status: %s", response.Error)
-	}
-	utils.ZeroIfNil(&response.RplStake)
-	utils.ZeroIfNil(&response.EffectiveRplStake)
-	utils.ZeroIfNil(&response.MinimumRplStake)
-	utils.ZeroIfNil(&response.MaximumRplStake)
-	utils.ZeroIfNil(&response.AccountBalances.ETH)
-	utils.ZeroIfNil(&response.AccountBalances.RPL)
-	utils.ZeroIfNil(&response.AccountBalances.RETH)
-	utils.ZeroIfNil(&response.AccountBalances.FixedSupplyRPL)
-	utils.ZeroIfNil(&response.WithdrawalBalances.ETH)
-	utils.ZeroIfNil(&response.WithdrawalBalances.RPL)
-	utils.ZeroIfNil(&response.WithdrawalBalances.RETH)
-	utils.ZeroIfNil(&response.WithdrawalBalances.FixedSupplyRPL)
-	utils.ZeroIfNil(&response.PendingEffectiveRplStake)
-	utils.ZeroIfNil(&response.PendingMinimumRplStake)
-	utils.ZeroIfNil(&response.PendingMaximumRplStake)
-	utils.ZeroIfNil(&response.EthMatched)
-	utils.ZeroIfNil(&response.EthMatchedLimit)
-	utils.ZeroIfNil(&response.PendingMatchAmount)
-	utils.ZeroIfNil(&response.CreditBalance)
-	utils.ZeroIfNil(&response.FeeDistributorBalance)
-	return response, nil
+type NodeRequester struct {
+	client *http.Client
+	route  string
 }
 
-// Check whether the node can be registered
-func (c *Client) CanRegisterNode(timezoneLocation string) (api.CanRegisterNodeResponse, error) {
-	responseBytes, err := c.callAPI("node can-register", timezoneLocation)
-	if err != nil {
-		return api.CanRegisterNodeResponse{}, fmt.Errorf("Could not get can register node status: %w", err)
+func NewNodeRequester(client *http.Client) *NodeRequester {
+	return &NodeRequester{
+		client: client,
+		route:  "node",
 	}
-	var response api.CanRegisterNodeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanRegisterNodeResponse{}, fmt.Errorf("Could not decode can register node response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanRegisterNodeResponse{}, fmt.Errorf("Could not get can register node status: %s", response.Error)
-	}
-	return response, nil
 }
 
 // Register the node
-func (c *Client) RegisterNode(timezoneLocation string) (api.NodeRegisterResponse, error) {
-	responseBytes, err := c.callAPI("node register", timezoneLocation)
+func (r *NodeRequester) Register(timezoneLocation string) (*api.ApiResponse[api.NodeRegisterData], error) {
+	method := "register"
+	args := map[string]string{
+		"timezone": timezoneLocation,
+	}
+	response, err := SendGetRequest[api.NodeRegisterData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
 	if err != nil {
-		return api.NodeRegisterResponse{}, fmt.Errorf("Could not register node: %w", err)
-	}
-	var response api.NodeRegisterResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeRegisterResponse{}, fmt.Errorf("Could not decode register node response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeRegisterResponse{}, fmt.Errorf("Could not register node: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Checks if the node's withdrawal address can be set
-func (c *Client) CanSetNodeWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.CanSetNodeWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node can-set-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
-	if err != nil {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node withdrawal address: %w", err)
-	}
-	var response api.CanSetNodeWithdrawalAddressResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode can set node withdrawal address response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node withdrawal address: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Set the node's withdrawal address
-func (c *Client) SetNodeWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.SetNodeWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node set-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
-	if err != nil {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not set node withdrawal address: %w", err)
-	}
-	var response api.SetNodeWithdrawalAddressResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode set node withdrawal address response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not set node withdrawal address: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Checks if the node's withdrawal address can be confirmed
-func (c *Client) CanConfirmNodeWithdrawalAddress() (api.CanSetNodeWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node can-confirm-withdrawal-address")
-	if err != nil {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node withdrawal address: %w", err)
-	}
-	var response api.CanSetNodeWithdrawalAddressResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode can confirm node withdrawal address response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node withdrawal address: %s", response.Error)
+		return nil, fmt.Errorf("error during Node Register request: %w", err)
 	}
 	return response, nil
 }
 
 // Confirm the node's withdrawal address
-func (c *Client) ConfirmNodeWithdrawalAddress() (api.SetNodeWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node confirm-withdrawal-address")
+func (r *NodeRequester) ConfirmPrimaryWithdrawalAddress() (*api.ApiResponse[api.NodeConfirmPrimaryWithdrawalAddressData], error) {
+	method := "primary-withdrawal-address/confirm"
+	args := map[string]string{}
+	response, err := SendGetRequest[api.NodeConfirmPrimaryWithdrawalAddressData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
 	if err != nil {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node withdrawal address: %w", err)
-	}
-	var response api.SetNodeWithdrawalAddressResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode confirm node withdrawal address response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node withdrawal address: %s", response.Error)
+		return nil, fmt.Errorf("error during Node ConfirmPrimaryWithdrawalAddress request: %w", err)
 	}
 	return response, nil
 }
 
-// Checks if the node's timezone location can be set
-func (c *Client) CanSetNodeTimezone(timezoneLocation string) (api.CanSetNodeTimezoneResponse, error) {
-	responseBytes, err := c.callAPI("node can-set-timezone", timezoneLocation)
+// Set the node's primary withdrawal address
+func (r *NodeRequester) SetPrimaryWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (*api.ApiResponse[api.NodeSetPrimaryWithdrawalAddressData], error) {
+	method := "primary-withdrawal-address/set"
+	args := map[string]string{
+		"address": withdrawalAddress.Hex(),
+		"confirm": fmt.Sprint(confirm),
+	}
+	response, err := SendGetRequest[api.NodeSetPrimaryWithdrawalAddressData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
 	if err != nil {
-		return api.CanSetNodeTimezoneResponse{}, fmt.Errorf("Could not get can set node timezone: %w", err)
+		return nil, fmt.Errorf("error during Node SetPrimaryWithdrawalAddress request: %w", err)
 	}
-	var response api.CanSetNodeTimezoneResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanSetNodeTimezoneResponse{}, fmt.Errorf("Could not decode can set node timezone response: %w", err)
+	return response, nil
+}
+
+// Confirm the node's RPL address
+func (r *NodeRequester) ConfirmRplWithdrawalAddress() (*api.ApiResponse[api.NodeConfirmRplWithdrawalAddressData], error) {
+	method := "rpl-withdrawal-address/confirm"
+	args := map[string]string{}
+	response, err := SendGetRequest[api.NodeConfirmRplWithdrawalAddressData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
+	if err != nil {
+		return nil, fmt.Errorf("error during Node ConfirmRplWithdrawalAddress request: %w", err)
 	}
-	if response.Error != "" {
-		return api.CanSetNodeTimezoneResponse{}, fmt.Errorf("Could not get can set node timezone: %s", response.Error)
+	return response, nil
+}
+
+// Set the node's RPL withdrawal address
+func (r *NodeRequester) SetRplWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (*api.ApiResponse[api.NodeSetRplWithdrawalAddressData], error) {
+	method := "rpl-withdrawal-address/set"
+	args := map[string]string{
+		"address": withdrawalAddress.Hex(),
+		"confirm": fmt.Sprint(confirm),
+	}
+	response, err := SendGetRequest[api.NodeSetRplWithdrawalAddressData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
+	if err != nil {
+		return nil, fmt.Errorf("error during Node SetRplWithdrawalAddress request: %w", err)
 	}
 	return response, nil
 }
 
 // Set the node's timezone location
+func (r *NodeRequester) SetTimezone(timezoneLocation string) (*api.ApiResponse[api.NodeSetTimezoneData], error) {
+	method := "set-timezone"
+	args := map[string]string{
+		"timezone": timezoneLocation,
+	}
+	response, err := SendGetRequest[api.NodeSetTimezoneData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
+	if err != nil {
+		return nil, fmt.Errorf("error during Node SetTimezone request: %w", err)
+	}
+	return response, nil
+}
+
+// Get node status
+func (r *NodeRequester) Status() (*api.ApiResponse[api.NodeStatusData], error) {
+	method := "status"
+	args := map[string]string{}
+	response, err := SendGetRequest[api.NodeStatusData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
+	if err != nil {
+		return nil, fmt.Errorf("error during Node Status request: %w", err)
+	}
+	return response, nil
+}
+
+// ================================
+
 func (c *Client) SetNodeTimezone(timezoneLocation string) (api.SetNodeTimezoneResponse, error) {
 	responseBytes, err := c.callAPI("node set-timezone", timezoneLocation)
 	if err != nil {

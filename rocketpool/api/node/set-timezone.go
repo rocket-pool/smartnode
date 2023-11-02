@@ -27,7 +27,7 @@ func (f *nodeSetTimezoneContextFactory) Create(vars map[string]string) (*nodeSet
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("timezone-location", vars, input.ValidateTimezoneLocation, &c.timezoneLocation),
+		server.ValidateArg("timezone", vars, input.ValidateTimezoneLocation, &c.timezoneLocation),
 	}
 	return c, errors.Join(inputErrs...)
 }

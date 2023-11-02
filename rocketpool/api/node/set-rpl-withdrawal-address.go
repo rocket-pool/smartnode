@@ -38,7 +38,7 @@ func (f *nodeSetRplWithdrawalAddressContextFactory) Create(vars map[string]strin
 
 func (f *nodeSetRplWithdrawalAddressContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSetRplWithdrawalAddressContext, api.NodeSetRplWithdrawalAddressData](
-		router, "set-rpl-withdrawal-address", f, f.handler.serviceProvider,
+		router, "rpl-withdrawal-address/set", f, f.handler.serviceProvider,
 	)
 }
 

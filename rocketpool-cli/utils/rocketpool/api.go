@@ -23,6 +23,8 @@ type ApiRequester struct {
 	Auction  *AuctionRequester
 	Faucet   *FaucetRequester
 	Minipool *MinipoolRequester
+	Network  *NetworkRequester
+	Node     *NodeRequester
 
 	socketPath string
 	client     *http.Client
