@@ -34,6 +34,16 @@ func (r *NodeRequester) GetClient() *http.Client {
 	return r.client
 }
 
+// Make a node deposit
+func (r *NodeRequester) Deposit(amount *big.Int, minFee float64, salt *big.Int) (*api.ApiResponse[api.NodeDepositData], error) {
+	args := map[string]string{
+		"amount":       amount.String(),
+		"min-node-fee": fmt.Sprint(minFee),
+		"salt":         salt.String(),
+	}
+	return sendGetRequest[api.NodeDepositData](r, "deposit", "Deposit", args)
+}
+
 // Register the node
 func (r *NodeRequester) Register(timezoneLocation string) (*api.ApiResponse[api.NodeRegisterData], error) {
 	args := map[string]string{
@@ -61,6 +71,14 @@ func (r *NodeRequester) ConfirmRplWithdrawalAddress() (*api.ApiResponse[api.Node
 	return sendGetRequest[api.NodeConfirmRplWithdrawalAddressData](r, "rpl-withdrawal-address/confirm", "ConfirmRplWithdrawalAddress", nil)
 }
 
+// Send tokens from the node to an address
+func (r *NodeRequester) Send(amount *big.Int, token string, toAddress common.Address) (*api.ApiResponse[api.NodeSetTimezoneData], error) {
+	args := map[string]string{
+		"amount": amount.String(),
+	}
+	return sendGetRequest[api.NodeSetTimezoneData](r, "set-timezone", "SetTimezone", args)
+}
+
 // Set the node's RPL withdrawal address
 func (r *NodeRequester) SetRplWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (*api.ApiResponse[api.NodeSetRplWithdrawalAddressData], error) {
 	args := map[string]string{
@@ -70,12 +88,29 @@ func (r *NodeRequester) SetRplWithdrawalAddress(withdrawalAddress common.Address
 	return sendGetRequest[api.NodeSetRplWithdrawalAddressData](r, "rpl-withdrawal-address/set", "SetRplWithdrawalAddress", args)
 }
 
+// Sets the allow state of another address staking on behalf of the node
+func (r *NodeRequester) SetStakeRplForAllowed(caller common.Address, allowed bool) (*api.ApiResponse[api.NodeSetStakeRplForAllowedData], error) {
+	args := map[string]string{
+		"caller":  caller.Hex(),
+		"allowed": fmt.Sprint(allowed),
+	}
+	return sendGetRequest[api.NodeSetStakeRplForAllowedData](r, "set-stake-rpl-for-allowed", "SetStakeRplForAllowed", args)
+}
+
 // Set the node's timezone location
 func (r *NodeRequester) SetTimezone(timezoneLocation string) (*api.ApiResponse[api.NodeSetTimezoneData], error) {
 	args := map[string]string{
 		"timezone": timezoneLocation,
 	}
 	return sendGetRequest[api.NodeSetTimezoneData](r, "set-timezone", "SetTimezone", args)
+}
+
+// Stake RPL against the node
+func (r *NodeRequester) StakeRpl(amount *big.Int) (*api.ApiResponse[api.NodeStakeRplData], error) {
+	args := map[string]string{
+		"amount": amount.String(),
+	}
+	return sendGetRequest[api.NodeStakeRplData](r, "stake-rpl", "StakeRpl", args)
 }
 
 // Get node status
@@ -91,297 +126,16 @@ func (r *NodeRequester) SwapRpl(amount *big.Int) (*api.ApiResponse[api.NodeSwapR
 	return sendGetRequest[api.NodeSwapRplData](r, "swap-rpl", "SwapRpl", args)
 }
 
+// Withdraw RPL staked against the node
+func (r *NodeRequester) WithdrawRpl(amount *big.Int) (*api.ApiResponse[api.NodeWithdrawRplData], error) {
+	args := map[string]string{
+		"amount": amount.String(),
+	}
+	return sendGetRequest[api.NodeWithdrawRplData](r, "withdraw-rpl", "WithdrawRpl", args)
+}
+
 // ================================
 
-// Get the gas estimate for approving legacy RPL interaction
-func (c *Client) NodeSwapRplApprovalGas(amountWei *big.Int) (api.NodeSwapRplApproveGasResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node get-swap-rpl-approval-gas %s", amountWei.String()))
-	if err != nil {
-		return api.NodeSwapRplApproveGasResponse{}, fmt.Errorf("Could not get old RPL approval gas: %w", err)
-	}
-	var response api.NodeSwapRplApproveGasResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeSwapRplApproveGasResponse{}, fmt.Errorf("Could not decode node swap RPL approve gas response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeSwapRplApproveGasResponse{}, fmt.Errorf("Could not get old RPL approval gas: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Approves old RPL for a token swap
-func (c *Client) NodeSwapRplApprove(amountWei *big.Int) (api.NodeSwapRplApproveResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl-approve-rpl %s", amountWei.String()))
-	if err != nil {
-		return api.NodeSwapRplApproveResponse{}, fmt.Errorf("Could not approve old RPL: %w", err)
-	}
-	var response api.NodeSwapRplApproveResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeSwapRplApproveResponse{}, fmt.Errorf("Could not decode node swap RPL approve response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeSwapRplApproveResponse{}, fmt.Errorf("Could not approve old RPL tokens for swapping: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Swap node's old RPL tokens for new RPL tokens, waiting for the approval to be included in a block first
-func (c *Client) NodeWaitAndSwapRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeSwapRplSwapResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node wait-and-swap-rpl %s %s", amountWei.String(), approvalTxHash.String()))
-	if err != nil {
-		return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %w", err)
-	}
-	var response api.NodeSwapRplSwapResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not decode node swap RPL tokens response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Swap node's old RPL tokens for new RPL tokens
-func (c *Client) NodeSwapRpl(amountWei *big.Int) (api.NodeSwapRplSwapResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl %s", amountWei.String()))
-	if err != nil {
-		return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %w", err)
-	}
-	var response api.NodeSwapRplSwapResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not decode node swap RPL tokens response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Get a node's legacy RPL allowance for swapping on the new RPL contract
-func (c *Client) GetNodeSwapRplAllowance() (api.NodeSwapRplAllowanceResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl-allowance"))
-	if err != nil {
-		return api.NodeSwapRplAllowanceResponse{}, fmt.Errorf("Could not get node swap RPL allowance: %w", err)
-	}
-	var response api.NodeSwapRplAllowanceResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeSwapRplAllowanceResponse{}, fmt.Errorf("Could not decode node swap RPL allowance response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeSwapRplAllowanceResponse{}, fmt.Errorf("Could not get node swap RPL allowance: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether the node can stake RPL
-func (c *Client) CanNodeStakeRpl(amountWei *big.Int) (api.CanNodeStakeRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-stake-rpl %s", amountWei.String()))
-	if err != nil {
-		return api.CanNodeStakeRplResponse{}, fmt.Errorf("Could not get can node stake RPL status: %w", err)
-	}
-	var response api.CanNodeStakeRplResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNodeStakeRplResponse{}, fmt.Errorf("Could not decode can node stake RPL response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanNodeStakeRplResponse{}, fmt.Errorf("Could not get can node stake RPL status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Get the gas estimate for approving new RPL interaction
-func (c *Client) NodeStakeRplApprovalGas(amountWei *big.Int) (api.NodeStakeRplApproveGasResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node get-stake-rpl-approval-gas %s", amountWei.String()))
-	if err != nil {
-		return api.NodeStakeRplApproveGasResponse{}, fmt.Errorf("Could not get new RPL approval gas: %w", err)
-	}
-	var response api.NodeStakeRplApproveGasResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeStakeRplApproveGasResponse{}, fmt.Errorf("Could not decode node stake RPL approve gas response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeStakeRplApproveGasResponse{}, fmt.Errorf("Could not get new RPL approval gas: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Approve RPL for staking against the node
-func (c *Client) NodeStakeRplApprove(amountWei *big.Int) (api.NodeStakeRplApproveResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl-approve-rpl %s", amountWei.String()))
-	if err != nil {
-		return api.NodeStakeRplApproveResponse{}, fmt.Errorf("Could not approve RPL for staking: %w", err)
-	}
-	var response api.NodeStakeRplApproveResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeStakeRplApproveResponse{}, fmt.Errorf("Could not decode stake node RPL approve response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeStakeRplApproveResponse{}, fmt.Errorf("Could not approve RPL for staking: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Stake RPL against the node waiting for approvalTxHash to be included in a block first
-func (c *Client) NodeWaitAndStakeRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeStakeRplStakeResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node wait-and-stake-rpl %s %s", amountWei.String(), approvalTxHash.String()))
-	if err != nil {
-		return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %w", err)
-	}
-	var response api.NodeStakeRplStakeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not decode stake node RPL response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Stake RPL against the node
-func (c *Client) NodeStakeRpl(amountWei *big.Int) (api.NodeStakeRplStakeResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl %s", amountWei.String()))
-	if err != nil {
-		return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %w", err)
-	}
-	var response api.NodeStakeRplStakeResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not decode stake node RPL response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Get a node's RPL allowance for the staking contract
-func (c *Client) GetNodeStakeRplAllowance() (api.NodeStakeRplAllowanceResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl-allowance"))
-	if err != nil {
-		return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not get node stake RPL allowance: %w", err)
-	}
-	var response api.NodeStakeRplAllowanceResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not decode node stake RPL allowance response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not get node stake RPL allowance: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Checks if the node operate can set RPL stake for allowed
-func (c *Client) CanSetStakeRPLForAllowed(caller common.Address, allowed bool) (api.CanSetStakeRplForAllowedResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-stake-rpl-for-allowed %s %t", caller.Hex(), allowed))
-	if err != nil {
-		return api.CanSetStakeRplForAllowedResponse{}, fmt.Errorf("Could not get can set stake RPL for allowed: %w", err)
-	}
-	var response api.CanSetStakeRplForAllowedResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanSetStakeRplForAllowedResponse{}, fmt.Errorf("Could not decode can set stake RPL for allowed: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanSetStakeRplForAllowedResponse{}, fmt.Errorf("Could not set stake RPL for allowed: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Sets the allow state of another address staking on behalf of the node
-func (c *Client) SetStakeRPLForAllowed(caller common.Address, allowed bool) (api.SetStakeRplForAllowedResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node set-stake-rpl-for-allowed %s %t", caller.Hex(), allowed))
-	if err != nil {
-		return api.SetStakeRplForAllowedResponse{}, fmt.Errorf("Could not set stake RPL for allowed: %w", err)
-	}
-	var response api.SetStakeRplForAllowedResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetStakeRplForAllowedResponse{}, fmt.Errorf("Could not decode set stake RPL for allowed response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SetStakeRplForAllowedResponse{}, fmt.Errorf("Could not set stake RPL for allowed: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether the node can withdraw RPL
-func (c *Client) CanNodeWithdrawRpl(amountWei *big.Int) (api.CanNodeWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-rpl %s", amountWei.String()))
-	if err != nil {
-		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
-	}
-	var response api.CanNodeWithdrawRplResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not decode can node withdraw RPL response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Withdraw RPL staked against the node
-func (c *Client) NodeWithdrawRpl(amountWei *big.Int) (api.NodeWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-rpl %s", amountWei.String()))
-	if err != nil {
-		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %w", err)
-	}
-	var response api.NodeWithdrawRplResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not decode withdraw node RPL response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether the node can make a deposit
-func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int) (api.CanNodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s", amountWei.String(), minFee, salt.String()))
-	if err != nil {
-		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %w", err)
-	}
-	var response api.CanNodeDepositResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not decode can node deposit response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Make a node deposit
-func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, submit bool) (api.NodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t %t", amountWei.String(), minFee, salt.String(), useCreditBalance, submit))
-	if err != nil {
-		return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
-	}
-	var response api.NodeDepositResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeDepositResponse{}, fmt.Errorf("Could not decode node deposit response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether the node can send tokens
-func (c *Client) CanNodeSend(amountWei *big.Int, token string, toAddress common.Address) (api.CanNodeSendResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-send %s %s %s", amountWei.String(), token, toAddress.Hex()))
-	if err != nil {
-		return api.CanNodeSendResponse{}, fmt.Errorf("Could not get can node send status: %w", err)
-	}
-	var response api.CanNodeSendResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNodeSendResponse{}, fmt.Errorf("Could not decode can node send response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanNodeSendResponse{}, fmt.Errorf("Could not get can node send status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Send tokens from the node to an address
 func (c *Client) NodeSend(amountWei *big.Int, token string, toAddress common.Address) (api.NodeSendResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node send %s %s %s", amountWei.String(), token, toAddress.Hex()))
 	if err != nil {

@@ -49,7 +49,7 @@ func (f *nodeDepositContextFactory) Create(vars map[string]string) (*nodeDeposit
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("amount-wei", vars, input.ValidateBigInt, &c.amountWei),
+		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
 		server.ValidateArg("min-node-fee", vars, input.ValidateFraction, &c.minNodeFee),
 		server.ValidateArg("salt", vars, input.ValidateBigInt, &c.salt),
 	}
@@ -73,7 +73,7 @@ type nodeDepositContext struct {
 	bc      beacon.Client
 	w       *wallet.LocalWallet
 
-	amountWei   *big.Int
+	amount      *big.Int
 	minNodeFee  float64
 	salt        *big.Int
 	node        *node.Node
@@ -174,21 +174,21 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 
 	// Check for insufficient balance
 	totalBalance := big.NewInt(0).Add(data.NodeBalance, data.CreditBalance)
-	data.InsufficientBalance = (c.amountWei.Cmp(totalBalance) > 0)
+	data.InsufficientBalance = (c.amount.Cmp(totalBalance) > 0)
 
 	// Check if the credit balance can be used
 	data.CanUseCredit = (data.DepositBalance.Cmp(eth.EthToWei(1)) >= 0)
 
 	// Check data
 	validatorEthWei := eth.EthToWei(ValidatorEth)
-	matchRequest := big.NewInt(0).Sub(validatorEthWei, c.amountWei)
+	matchRequest := big.NewInt(0).Sub(validatorEthWei, c.amount)
 	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)
 	availableToMatch.Sub(availableToMatch, pendingMatchAmount)
 	data.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
 
 	// Update response
 	data.CanDeposit = !(data.InsufficientBalance || data.InsufficientRplStake || data.InvalidAmount || data.DepositDisabled)
-	if data.CanDeposit && !data.CanUseCredit && data.NodeBalance.Cmp(c.amountWei) < 0 {
+	if data.CanDeposit && !data.CanUseCredit && data.NodeBalance.Cmp(c.amount) < 0 {
 		// Can't use credit and there's not enough ETH in the node wallet to deposit so error out
 		data.InsufficientBalanceWithoutCredit = true
 		data.CanDeposit = false
@@ -215,13 +215,13 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 
 	// Get how much credit to use
 	if data.CanUseCredit {
-		remainingAmount := big.NewInt(0).Sub(c.amountWei, data.CreditBalance)
+		remainingAmount := big.NewInt(0).Sub(c.amount, data.CreditBalance)
 		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
 			// Send the remaining amount if the credit isn't enough to cover the whole deposit
 			opts.Value = remainingAmount
 		}
 	} else {
-		opts.Value = c.amountWei
+		opts.Value = c.amount
 	}
 
 	// Get the next available validator key without saving it
@@ -304,10 +304,10 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	var txInfo *core.TransactionInfo
 	var funcName string
 	if data.CanUseCredit {
-		txInfo, err = c.node.DepositWithCredit(c.amountWei, c.minNodeFee, pubkey, signature, depositDataRoot, c.salt, minipoolAddress, opts)
+		txInfo, err = c.node.DepositWithCredit(c.amount, c.minNodeFee, pubkey, signature, depositDataRoot, c.salt, minipoolAddress, opts)
 		funcName = "DepositWithCredit"
 	} else {
-		txInfo, err = c.node.Deposit(c.amountWei, c.minNodeFee, pubkey, signature, depositDataRoot, c.salt, minipoolAddress, opts)
+		txInfo, err = c.node.Deposit(c.amount, c.minNodeFee, pubkey, signature, depositDataRoot, c.salt, minipoolAddress, opts)
 		funcName = "Deposit"
 	}
 	if err != nil {
