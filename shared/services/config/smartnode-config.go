@@ -571,7 +571,10 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				common.HexToAddress("0x6e91E3416acf3d015358eeAAF247a0674F6c306f"),
 			},
-			config.Network_Devnet:  {},
+			config.Network_Devnet: {
+				common.HexToAddress("0x7a3fb45C0709d58d2f712b042D1f079988849389"),
+				common.HexToAddress("0x99856894b360843EB487E252ccED703752cE7C64"),
+			},
 			config.Network_Holesky: {},
 		},
 
