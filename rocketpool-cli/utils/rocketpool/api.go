@@ -18,6 +18,12 @@ const (
 	jsonContentType string = "application/json"
 )
 
+type IRequester interface {
+	GetName() string
+	GetRoute() string
+	GetClient() *http.Client
+}
+
 // Binder for the Rocket Pool daemon API server
 type ApiRequester struct {
 	Auction  *AuctionRequester
@@ -47,8 +53,20 @@ func NewApiRequester(socketPath string) *ApiRequester {
 	return apiRequester
 }
 
+// Submit a minipool request that takes in a list of addresses and returns whatever type is requested
+func sendGetRequest[DataType any](r IRequester, method string, requestName string, args map[string]string) (*api.ApiResponse[DataType], error) {
+	if args == nil {
+		args = map[string]string{}
+	}
+	response, err := rawGetRequest[DataType](r.GetClient(), fmt.Sprintf("%s/%s", r.GetRoute(), method), args)
+	if err != nil {
+		return nil, fmt.Errorf("error during %s %s request: %w", r.GetName(), requestName, err)
+	}
+	return response, nil
+}
+
 // Submit a GET request to the API server
-func SendGetRequest[DataType any](client *http.Client, path string, params map[string]string) (*api.ApiResponse[DataType], error) {
+func rawGetRequest[DataType any](client *http.Client, path string, params map[string]string) (*api.ApiResponse[DataType], error) {
 	// Create the request
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(baseUrl, path), nil)
 	if err != nil {
@@ -68,7 +86,7 @@ func SendGetRequest[DataType any](client *http.Client, path string, params map[s
 }
 
 // Submit a POST request to the API server
-func SendPostRequest[DataType any](client *http.Client, path string, body string) (*api.ApiResponse[DataType], error) {
+func rawPostRequest[DataType any](client *http.Client, path string, body string) (*api.ApiResponse[DataType], error) {
 	resp, err := client.Post(fmt.Sprintf(baseUrl, path), jsonContentType, strings.NewReader(body))
 	return handleResponse[DataType](resp, path, err)
 }

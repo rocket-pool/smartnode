@@ -13,19 +13,27 @@ import (
 
 type MinipoolRequester struct {
 	client *http.Client
-	route  string
 }
 
 func NewMinipoolRequester(client *http.Client) *MinipoolRequester {
 	return &MinipoolRequester{
 		client: client,
-		route:  "minipool",
 	}
+}
+
+func (r *MinipoolRequester) GetName() string {
+	return "Minipool"
+}
+func (r *MinipoolRequester) GetRoute() string {
+	return "minipool"
+}
+func (r *MinipoolRequester) GetClient() *http.Client {
+	return r.client
 }
 
 // Get begin reduce bond details
 func (r *MinipoolRequester) GetBeginReduceBondDetails() (*api.ApiResponse[api.MinipoolBeginReduceBondDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolBeginReduceBondDetailsData](r, "begin-reduce-bond", "BeginReduceBond")
+	return sendGetRequest[api.MinipoolBeginReduceBondDetailsData](r, "begin-reduce-bond/details", "GetBeginReduceBondDetails", nil)
 }
 
 // Begin reduce bond on minipools
@@ -38,35 +46,25 @@ func (r *MinipoolRequester) BeginReduceBond(addresses []common.Address, newBondA
 
 // Verify that migrating a solo validator's withdrawal creds to a minipool address is possible
 func (r *MinipoolRequester) CanChangeWithdrawalCredentials(address common.Address, mnemonic string) (*api.ApiResponse[api.MinipoolCanChangeWithdrawalCredentialsData], error) {
-	method := "change-withdrawal-creds/verify"
 	args := map[string]string{
 		"address":  address.Hex(),
 		"mnemonic": mnemonic,
 	}
-	response, err := SendGetRequest[api.MinipoolCanChangeWithdrawalCredentialsData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
-	if err != nil {
-		return nil, fmt.Errorf("error during Minipool CanChangeWithdrawalCredentials request: %w", err)
-	}
-	return response, nil
+	return sendGetRequest[api.MinipoolCanChangeWithdrawalCredentialsData](r, "change-withdrawal-creds/verify", "CanChangeWithdrawalCredentials", args)
 }
 
 // Migrate a solo validator's withdrawal creds to a minipool address
 func (r *MinipoolRequester) ChangeWithdrawalCredentials(address common.Address, mnemonic string) (*api.ApiResponse[api.SuccessData], error) {
-	method := "change-withdrawal-creds"
 	args := map[string]string{
 		"address":  address.Hex(),
 		"mnemonic": mnemonic,
 	}
-	response, err := SendGetRequest[api.SuccessData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
-	if err != nil {
-		return nil, fmt.Errorf("error during Minipool ChangeWithdrawalCredentials request: %w", err)
-	}
-	return response, nil
+	return sendGetRequest[api.SuccessData](r, "change-withdrawal-creds", "ChangeWithdrawalCredentials", args)
 }
 
 // Get close details
 func (r *MinipoolRequester) GetCloseDetails() (*api.ApiResponse[api.MinipoolCloseDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolCloseDetailsData](r, "close", "Close")
+	return sendGetRequest[api.MinipoolCloseDetailsData](r, "close/details", "GetCloseDetails", nil)
 }
 
 // Close minipools
@@ -76,7 +74,7 @@ func (r *MinipoolRequester) Close(addresses []common.Address) (*api.ApiResponse[
 
 // Get delegate details
 func (r *MinipoolRequester) GetDelegateDetails() (*api.ApiResponse[api.MinipoolDelegateDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolDelegateDetailsData](r, "delegate", "Delegate")
+	return sendGetRequest[api.MinipoolDelegateDetailsData](r, "delegate/details", "GetDelegateDetails", nil)
 }
 
 // Rollback minipool delegates
@@ -99,7 +97,7 @@ func (r *MinipoolRequester) UpgradeDelegates(addresses []common.Address) (*api.A
 
 // Get distribute minipool balances details
 func (r *MinipoolRequester) GetDistributeDetails() (*api.ApiResponse[api.MinipoolDistributeDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolDistributeDetailsData](r, "distribute", "Distribute")
+	return sendGetRequest[api.MinipoolDistributeDetailsData](r, "distribute/details", "GetDistributeDetails", nil)
 }
 
 // Distribute minipool balances
@@ -109,7 +107,7 @@ func (r *MinipoolRequester) Distribute(addresses []common.Address) (*api.ApiResp
 
 // Get dissolve details
 func (r *MinipoolRequester) GetDissolveDetails() (*api.ApiResponse[api.MinipoolDissolveDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolDissolveDetailsData](r, "dissolve", "Dissolve")
+	return sendGetRequest[api.MinipoolDissolveDetailsData](r, "dissolve/details", "GetDissolveDetails", nil)
 }
 
 // Dissolve minipools
@@ -119,7 +117,7 @@ func (r *MinipoolRequester) Dissolve(addresses []common.Address) (*api.ApiRespon
 
 // Get exit details
 func (r *MinipoolRequester) GetExitDetails() (*api.ApiResponse[api.MinipoolExitDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolExitDetailsData](r, "exit", "Exit")
+	return sendGetRequest[api.MinipoolExitDetailsData](r, "exit/details", "GetExitDetails", nil)
 }
 
 // Exit minipools
@@ -129,21 +127,16 @@ func (r *MinipoolRequester) Exit(addresses []common.Address) (*api.ApiResponse[a
 
 // Import a validator private key for a vacant minipool
 func (r *MinipoolRequester) ImportKey(address common.Address, mnemonic string) (*api.ApiResponse[api.SuccessData], error) {
-	method := "import-key"
 	args := map[string]string{
 		"address":  address.Hex(),
 		"mnemonic": mnemonic,
 	}
-	response, err := SendGetRequest[api.SuccessData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
-	if err != nil {
-		return nil, fmt.Errorf("error during Minipool ImportKey request: %w", err)
-	}
-	return response, nil
+	return sendGetRequest[api.SuccessData](r, "import-key", "ImportKey", args)
 }
 
 // Get promote details
 func (r *MinipoolRequester) GetPromoteDetails() (*api.ApiResponse[api.MinipoolPromoteDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolPromoteDetailsData](r, "promote", "Promote")
+	return sendGetRequest[api.MinipoolPromoteDetailsData](r, "promote/details", "GetPromoteDetails", nil)
 }
 
 // Promote minipools
@@ -153,7 +146,7 @@ func (r *MinipoolRequester) Promote(addresses []common.Address) (*api.ApiRespons
 
 // Get reduce bond details
 func (r *MinipoolRequester) GetReduceBondDetails() (*api.ApiResponse[api.MinipoolReduceBondDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolReduceBondDetailsData](r, "reduce-bond", "ReduceBond")
+	return sendGetRequest[api.MinipoolReduceBondDetailsData](r, "reduce-bond/details", "GetReduceBondDetails", nil)
 }
 
 // Reduce bond on minipools
@@ -163,7 +156,7 @@ func (r *MinipoolRequester) ReduceBond(addresses []common.Address, newBondAmount
 
 // Get refund details
 func (r *MinipoolRequester) GetRefundDetails() (*api.ApiResponse[api.MinipoolRefundDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolRefundDetailsData](r, "refund", "Refund")
+	return sendGetRequest[api.MinipoolRefundDetailsData](r, "refund/details", "GetRefundDetails", nil)
 }
 
 // Refund ETH from minipools
@@ -173,7 +166,7 @@ func (r *MinipoolRequester) Refund(addresses []common.Address) (*api.ApiResponse
 
 // Get rescue dissolved details
 func (r *MinipoolRequester) GetRescueDissolvedDetails() (*api.ApiResponse[api.MinipoolRescueDissolvedDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolRescueDissolvedDetailsData](r, "rescue-dissolved", "RescueDissolved")
+	return sendGetRequest[api.MinipoolRescueDissolvedDetailsData](r, "rescue-dissolved/details", "GetRescueDissolvedDetails", nil)
 }
 
 // Rescue dissolved minipools
@@ -190,7 +183,7 @@ func (r *MinipoolRequester) RescueDissolved(addresses []common.Address, depositA
 
 // Get stake details
 func (r *MinipoolRequester) GetStakeDetails() (*api.ApiResponse[api.MinipoolStakeDetailsData], error) {
-	return sendDetailsRequest[api.MinipoolStakeDetailsData](r, "stake", "Stake")
+	return sendGetRequest[api.MinipoolStakeDetailsData](r, "stake/details", "GetStakeDetails", nil)
 }
 
 // Stake minipools
@@ -200,36 +193,15 @@ func (r *MinipoolRequester) Stake(addresses []common.Address) (*api.ApiResponse[
 
 // Get minipool status
 func (r *MinipoolRequester) Status() (*api.ApiResponse[api.MinipoolStatusData], error) {
-	method := "status"
-	args := map[string]string{}
-	response, err := SendGetRequest[api.MinipoolStatusData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
-	if err != nil {
-		return nil, fmt.Errorf("error during Minipool Status request: %w", err)
-	}
-	return response, nil
+	return sendGetRequest[api.MinipoolStatusData](r, "status", "Status", nil)
 }
 
 // Get the artifacts necessary for vanity address searching
 func (r *MinipoolRequester) GetVanityArtifacts(nodeAddress common.Address) (*api.ApiResponse[api.MinipoolVanityArtifactsData], error) {
-	method := "vanity-artifacts"
 	args := map[string]string{
 		"nodeAddress": nodeAddress.Hex(),
 	}
-	response, err := SendGetRequest[api.MinipoolVanityArtifactsData](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
-	if err != nil {
-		return nil, fmt.Errorf("error during Minipool GetVanityArtifacts request: %w", err)
-	}
-	return response, nil
-}
-
-// Submit a minipool request that asks for details of some route and returns whatever type is requested
-func sendDetailsRequest[DataType any](r *MinipoolRequester, method string, requestName string) (*api.ApiResponse[DataType], error) {
-	args := map[string]string{}
-	response, err := SendGetRequest[DataType](r.client, fmt.Sprintf("%s/%s/details", r.route, method), args)
-	if err != nil {
-		return nil, fmt.Errorf("error during Minipool %s Details request: %w", requestName, err)
-	}
-	return response, nil
+	return sendGetRequest[api.MinipoolVanityArtifactsData](r, "vanity-artifacts", "GetVanityArtifacts", args)
 }
 
 // Submit a minipool request that takes in a list of addresses and returns whatever type is requested
@@ -242,9 +214,5 @@ func sendMultiMinipoolRequest[DataType any](r *MinipoolRequester, method string,
 		args = map[string]string{}
 	}
 	args["addresses"] = strings.Join(addressStrings, ",")
-	response, err := SendGetRequest[DataType](r.client, fmt.Sprintf("%s/%s", r.route, method), args)
-	if err != nil {
-		return nil, fmt.Errorf("error during Minipool %s request: %w", requestName, err)
-	}
-	return response, nil
+	return sendGetRequest[DataType](r, method, requestName, args)
 }
