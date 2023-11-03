@@ -151,7 +151,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 	eth2Config := state.BeaconConfig
 
 	// Get the duration in seconds for the interval between submissions
-	submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesIntervalEpochs * eth2Config.SecondsPerEpoch * uint64(time.Second))
+	submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesIntervalFrequency * uint64(time.Second))
 
 	// Next submission adds the interval time to the last submission time
 	nexSubmissionTime := lastSubmissionTime.Add(submissionIntervalDuration)

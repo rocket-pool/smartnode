@@ -323,7 +323,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	eth2Config := state.BeaconConfig
 
 	// Get the duration in seconds for the interval between submissions
-	submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesIntervalEpochs * eth2Config.SecondsPerEpoch * uint64(time.Second))
+	submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesIntervalFrequency * uint64(time.Second))
 
 	nexSubmissionTime := lastSubmissionTime.Add(submissionIntervalDuration)
 
