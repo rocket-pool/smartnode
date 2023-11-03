@@ -19,9 +19,9 @@ const (
 	NetworkSettingsContractName         string = "rocketDAOProtocolSettingsNetwork"
 	NodeConsensusThresholdSettingPath   string = "network.consensus.threshold"
 	SubmitBalancesEnabledSettingPath    string = "network.submit.balances.enabled"
-	SubmitBalancesEpochsSettingPath     string = "network.submit.balances.epochs"
+	SubmitBalancesFrequencySettingPath  string = "network.submit.balances.frequency"
 	SubmitPricesEnabledSettingPath      string = "network.submit.prices.enabled"
-	SubmitPricesEpochsSettingPath       string = "network.submit.prices.epochs"
+	SubmitPricesFrequencySettingPath    string = "network.submit.prices.frequency"
 	MinimumNodeFeeSettingPath           string = "network.node.fee.minimum"
 	TargetNodeFeeSettingPath            string = "network.node.fee.target"
 	MaximumNodeFeeSettingPath           string = "network.node.fee.maximum"
@@ -70,23 +70,23 @@ func EstimateProposeSubmitBalancesEnabledGas(rp *rocketpool.RocketPool, value bo
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", SubmitBalancesEnabledSettingPath), NetworkSettingsContractName, SubmitBalancesEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
-// The frequency in epochs at which network balances should be submitted by trusted nodes
-func GetSubmitBalancesEpochs(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+// The frequency in seconds at which network balances should be submitted by trusted nodes
+func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	value := new(*big.Int)
-	if err := networkSettingsContract.Call(opts, value, "getSubmitBalancesEpochs"); err != nil {
+	if err := networkSettingsContract.Call(opts, value, "getSubmitBalancesFrequency"); err != nil {
 		return 0, fmt.Errorf("error getting network balance submission frequency: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
-func ProposeSubmitBalancesEpochs(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SubmitBalancesEpochsSettingPath), NetworkSettingsContractName, SubmitBalancesEpochsSettingPath, value, blockNumber, treeNodes, opts)
+func ProposeSubmitBalancesFrequency(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SubmitBalancesFrequencySettingPath), NetworkSettingsContractName, SubmitBalancesFrequencySettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeSubmitBalancesEpochsGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SubmitBalancesEpochsSettingPath), NetworkSettingsContractName, SubmitBalancesEpochsSettingPath, value, blockNumber, treeNodes, opts)
+func EstimateProposeSubmitBalancesFrequencyGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SubmitBalancesFrequencySettingPath), NetworkSettingsContractName, SubmitBalancesFrequencySettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Network price submissions currently enabled
@@ -108,23 +108,23 @@ func EstimateProposeSubmitPricesEnabledGas(rp *rocketpool.RocketPool, value bool
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", SubmitPricesEnabledSettingPath), NetworkSettingsContractName, SubmitPricesEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
-// The frequency in epochs at which network prices should be submitted by trusted nodes
-func GetSubmitPricesEpochs(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+// The frequency in seconds at which network prices should be submitted by trusted nodes
+func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	value := new(*big.Int)
-	if err := networkSettingsContract.Call(opts, value, "getSubmitPricesEpochs"); err != nil {
+	if err := networkSettingsContract.Call(opts, value, "getSubmitPricesFrequency"); err != nil {
 		return 0, fmt.Errorf("error getting network price submission frequency: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
-func ProposeSubmitPricesEpochs(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SubmitPricesEpochsSettingPath), NetworkSettingsContractName, SubmitPricesEpochsSettingPath, value, blockNumber, treeNodes, opts)
+func ProposeSubmitPricesFrequency(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SubmitPricesFrequencySettingPath), NetworkSettingsContractName, SubmitPricesFrequencySettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeSubmitPricesEpochsGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SubmitPricesEpochsSettingPath), NetworkSettingsContractName, SubmitPricesEpochsSettingPath, value, blockNumber, treeNodes, opts)
+func EstimateProposeSubmitPricesFrequencyGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SubmitPricesFrequencySettingPath), NetworkSettingsContractName, SubmitPricesFrequencySettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Minimum node commission rate
