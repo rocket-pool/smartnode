@@ -198,7 +198,7 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Network.SubmitBalancesEpochs, err = protocol.GetSubmitBalancesEpochs(rp, nil)
+		response.Network.SubmitBalancesFrequency, err = protocol.GetSubmitBalancesFrequency(rp, nil)
 		return err
 	})
 
@@ -210,7 +210,7 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Network.SubmitPricesEpochs, err = protocol.GetSubmitPricesEpochs(rp, nil)
+		response.Network.SubmitPricesFrequency, err = protocol.GetSubmitPricesFrequency(rp, nil)
 		return err
 	})
 

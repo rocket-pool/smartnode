@@ -349,12 +349,12 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 		}
 
 	// SubmitBalancesFrequency
-	case protocol.SubmitBalancesEpochsSettingPath:
+	case protocol.SubmitBalancesFrequencySettingPath:
 		newValue, err := cliutils.ValidateBigInt(valueName, value)
 		if err != nil {
 			return nil, err
 		}
-		response.GasInfo, err = protocol.EstimateProposeSubmitBalancesEpochsGas(rp, newValue, blockNumber, pollard, opts)
+		response.GasInfo, err = protocol.EstimateProposeSubmitBalancesFrequencyGas(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error estimating gas for proposing SubmitBalancesFrequency: %w", err)
 		}
@@ -371,12 +371,12 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 		}
 
 	// SubmitPricesFrequency
-	case protocol.SubmitPricesEpochsSettingPath:
+	case protocol.SubmitPricesFrequencySettingPath:
 		newValue, err := cliutils.ValidateBigInt(valueName, value)
 		if err != nil {
 			return nil, err
 		}
-		response.GasInfo, err = protocol.EstimateProposeSubmitPricesEpochsGas(rp, newValue, blockNumber, pollard, opts)
+		response.GasInfo, err = protocol.EstimateProposeSubmitPricesFrequencyGas(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error estimating gas for proposing SubmitPricesEpochs: %w", err)
 		}
@@ -942,14 +942,14 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		}
 
 	// SubmitBalancesFrequency
-	case protocol.SubmitBalancesEpochsSettingPath:
+	case protocol.SubmitBalancesFrequencySettingPath:
 		newValue, err := cliutils.ValidateBigInt(valueName, value)
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeSubmitBalancesEpochs(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeSubmitBalancesFrequency(rp, newValue, blockNumber, truePollard, opts)
 		if err != nil {
-			return nil, fmt.Errorf("error proposing SubmitBalancesEpochs: %w", err)
+			return nil, fmt.Errorf("error proposing SubmitBalancesFrequency: %w", err)
 		}
 
 	// SubmitPricesEnabled
@@ -964,14 +964,14 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		}
 
 	// SubmitPricesFrequency
-	case protocol.SubmitPricesEpochsSettingPath:
+	case protocol.SubmitPricesFrequencySettingPath:
 		newValue, err := cliutils.ValidateBigInt(valueName, value)
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeSubmitPricesEpochs(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeSubmitPricesFrequency(rp, newValue, blockNumber, truePollard, opts)
 		if err != nil {
-			return nil, fmt.Errorf("error proposing SubmitPricesEpochs: %w", err)
+			return nil, fmt.Errorf("error proposing SubmitPricesFrequency: %w", err)
 		}
 
 	// MinimumNodeFee

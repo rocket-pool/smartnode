@@ -1058,10 +1058,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									},
 
 									{
-										Name:      "submit-balances-epochs",
+										Name:      "submit-balances-frequency",
 										Aliases:   []string{"sbf"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesEpochsSettingPath, epochsUsage),
-										UsageText: "rocketpool pdao propose setting network submit-balances-epochs value",
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesFrequencySettingPath, epochsUsage),
+										UsageText: "rocketpool pdao propose setting network submit-balances-frequency value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
 												Name:  "yes, y",
@@ -1080,7 +1080,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkSubmitBalancesEpochs(c, value)
+											return proposeSettingNetworkSubmitBalancesFrequency(c, value)
 
 										},
 									},
@@ -1114,10 +1114,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									},
 
 									{
-										Name:      "submit-prices-epochs",
+										Name:      "submit-prices-frequency",
 										Aliases:   []string{"spf"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesEpochsSettingPath, epochsUsage),
-										UsageText: "rocketpool pdao propose setting network submit-prices-epochs value",
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesFrequencySettingPath, epochsUsage),
+										UsageText: "rocketpool pdao propose setting network submit-prices-frequency value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
 												Name:  "yes, y",
@@ -1136,7 +1136,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkSubmitPricesEpochs(c, value)
+											return proposeSettingNetworkSubmitPricesFrequency(c, value)
 
 										},
 									},
