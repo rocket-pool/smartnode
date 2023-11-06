@@ -29,9 +29,10 @@ func TestSubmitPrices(t *testing.T) {
 
 	// Submit prices
 	var pricesBlock uint64 = 100
+	var slotTimestamp uint64 = 16000000
 	rplPrice := eth.EthToWei(1000)
 	effectiveRplStake := eth.EthToWei(24000)
-	if _, err := network.SubmitPrices(rp, pricesBlock, rplPrice, effectiveRplStake, trustedNodeAccount.GetTransactor()); err != nil {
+	if _, err := network.SubmitPrices(rp, pricesBlock, slotTimestamp, rplPrice, effectiveRplStake, trustedNodeAccount.GetTransactor()); err != nil {
 		t.Fatal(err)
 	}
 
