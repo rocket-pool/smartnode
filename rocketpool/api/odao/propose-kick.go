@@ -120,7 +120,7 @@ func (c *oracleDaoProposeKickContext) PrepareData(data *api.OracleDaoProposeKick
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", c.candidate.ID, c.candidate.Url, math.RoundDown(eth.WeiToEth(c.fineAmount), 6))
+		message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", c.candidate.ID.Get(), c.candidate.Url.Get(), math.RoundDown(eth.WeiToEth(c.fineAmount), 6))
 		txInfo, err := c.odaoMgr.ProposeKickMember(message, c.address, c.fineAmount, opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for ProposeKickMember: %w", err)

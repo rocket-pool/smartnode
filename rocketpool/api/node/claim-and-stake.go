@@ -51,7 +51,6 @@ type nodeClaimAndStakeContext struct {
 
 	indices     []*big.Int
 	stakeAmount *big.Int
-	distMainnet *rewards.MerkleDistributorMainnet
 }
 
 func (c *nodeClaimAndStakeContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
@@ -110,7 +109,7 @@ func (c *nodeClaimAndStakeContext) PrepareData(data *api.TxInfoData, opts *bind.
 	// Get tx info
 	var txInfo *core.TransactionInfo
 	var funcName string
-	if c.stakeAmount == nil {
+	if c.stakeAmount.Cmp(common.Big0) == 0 {
 		txInfo, err = distMainnet.Claim(nodeAddress, c.indices, rplAmount, ethAmount, merkleProofs, opts)
 		funcName = "Claim"
 	} else {

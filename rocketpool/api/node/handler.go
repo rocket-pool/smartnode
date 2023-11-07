@@ -27,7 +27,7 @@ func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
 		&nodeCreateVacantMinipoolContextFactory{h},
 		&nodeDepositContextFactory{h},
 		&nodeDistributeContextFactory{h},
-		&nodeGetRewardsContextFactory{h},
+		&nodeRewardsContextFactory{h},
 		&nodeGetRewardsInfoContextFactory{h},
 		&nodeGetSnapshotProposalsContextFactory{h},
 		&nodeGetSnapshotVotingPowerContextFactory{h},

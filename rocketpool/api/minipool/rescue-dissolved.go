@@ -35,7 +35,7 @@ func (f *minipoolRescueDissolvedContextFactory) Create(vars map[string]string) (
 	}
 	inputErrs := []error{
 		server.ValidateArg("addresses", vars, input.ValidateAddresses, &c.minipoolAddresses),
-		server.ValidateArg("depositAmounts", vars, input.ValidateBigInts, &c.depositAmounts),
+		server.ValidateArg("deposit-amounts", vars, input.ValidateBigInts, &c.depositAmounts),
 	}
 	return c, errors.Join(inputErrs...)
 }

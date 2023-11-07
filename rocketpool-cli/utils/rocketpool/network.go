@@ -32,6 +32,11 @@ func (r *NetworkRequester) GetActiveDaoProposals() (*api.ApiResponse[api.Network
 	return sendGetRequest[api.NetworkDaoProposalsData](r, "dao-proposals", "GetActiveDaoProposals", nil)
 }
 
+// Get the deposit contract info for Rocket Pool and the Beacon Client
+func (r *NetworkRequester) GetDepositContractInfo() (*api.ApiResponse[api.NetworkDepositContractInfoData], error) {
+	return sendGetRequest[api.NetworkDepositContractInfoData](r, "deposit-contract-info", "GetDepositContractInfo", nil)
+}
+
 // Download a rewards info file from IPFS or Github for the given interval
 func (r *NetworkRequester) DownloadRewardsFile(interval uint64) (*api.ApiResponse[api.SuccessData], error) {
 	args := map[string]string{

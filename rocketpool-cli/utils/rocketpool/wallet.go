@@ -1,214 +1,152 @@
 package rocketpool
 
 import (
+	"encoding/hex"
 	"fmt"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-// Get wallet status
-func (c *Client) WalletStatus() (api.WalletStatusResponse, error) {
-	responseBytes, err := c.callAPI("wallet status")
-	if err != nil {
-		return api.WalletStatusResponse{}, fmt.Errorf("Could not get wallet status: %w", err)
-	}
-	var response api.WalletStatusResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.WalletStatusResponse{}, fmt.Errorf("Could not decode wallet status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.WalletStatusResponse{}, fmt.Errorf("Could not get wallet status: %s", response.Error)
-	}
-	return response, nil
+type WalletRequester struct {
+	client *http.Client
 }
 
-// Set wallet password
-func (c *Client) SetPassword(password string) (api.SetPasswordResponse, error) {
-	responseBytes, err := c.callAPI("wallet set-password", password)
-	if err != nil {
-		return api.SetPasswordResponse{}, fmt.Errorf("Could not set wallet password: %w", err)
+func NewWalletRequester(client *http.Client) *WalletRequester {
+	return &WalletRequester{
+		client: client,
 	}
-	var response api.SetPasswordResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetPasswordResponse{}, fmt.Errorf("Could not decode set wallet password response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SetPasswordResponse{}, fmt.Errorf("Could not set wallet password: %s", response.Error)
-	}
-	return response, nil
 }
 
-// Initialize wallet
-func (c *Client) InitWallet(derivationPath string) (api.InitWalletResponse, error) {
-	responseBytes, err := c.callAPI("wallet init --derivation-path", derivationPath)
-	if err != nil {
-		return api.InitWalletResponse{}, fmt.Errorf("Could not initialize wallet: %w", err)
-	}
-	var response api.InitWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.InitWalletResponse{}, fmt.Errorf("Could not decode initialize wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.InitWalletResponse{}, fmt.Errorf("Could not initialize wallet: %s", response.Error)
-	}
-	return response, nil
+func (r *WalletRequester) GetName() string {
+	return "Wallet"
 }
-
-// Recover wallet
-func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) (api.RecoverWalletResponse, error) {
-	command := "wallet recover "
-	if skipValidatorKeyRecovery {
-		command += "--skip-validator-key-recovery "
-	}
-	if walletIndex != 0 {
-		command += fmt.Sprintf("--wallet-index %d ", walletIndex)
-	}
-	command += "--derivation-path"
-
-	responseBytes, err := c.callAPI(command, derivationPath, mnemonic)
-	if err != nil {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %w", err)
-	}
-	var response api.RecoverWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not decode recover wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %s", response.Error)
-	}
-	return response, nil
+func (r *WalletRequester) GetRoute() string {
+	return "wallet"
 }
-
-// Search and recover wallet
-func (c *Client) SearchAndRecoverWallet(mnemonic string, address common.Address, skipValidatorKeyRecovery bool) (api.SearchAndRecoverWalletResponse, error) {
-	command := "wallet search-and-recover "
-	if skipValidatorKeyRecovery {
-		command += "--skip-validator-key-recovery "
-	}
-
-	responseBytes, err := c.callAPI(command, mnemonic, address.Hex())
-	if err != nil {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not search and recover wallet: %w", err)
-	}
-	var response api.SearchAndRecoverWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not decode search-and-recover wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not search and recover wallet: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Recover wallet
-func (c *Client) TestRecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) (api.RecoverWalletResponse, error) {
-	command := "wallet test-recovery "
-	if skipValidatorKeyRecovery {
-		command += "--skip-validator-key-recovery "
-	}
-	if walletIndex != 0 {
-		command += fmt.Sprintf("--wallet-index %d ", walletIndex)
-	}
-	command += "--derivation-path"
-
-	responseBytes, err := c.callAPI(command, derivationPath, mnemonic)
-	if err != nil {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not test recover wallet: %w", err)
-	}
-	var response api.RecoverWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not decode test recover wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.RecoverWalletResponse{}, fmt.Errorf("Could not test recover wallet: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Search and recover wallet
-func (c *Client) TestSearchAndRecoverWallet(mnemonic string, address common.Address, skipValidatorKeyRecovery bool) (api.SearchAndRecoverWalletResponse, error) {
-	command := "wallet test-search-and-recover "
-	if skipValidatorKeyRecovery {
-		command += "--skip-validator-key-recovery "
-	}
-
-	responseBytes, err := c.callAPI(command, mnemonic, address.Hex())
-	if err != nil {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not test search and recover wallet: %w", err)
-	}
-	var response api.SearchAndRecoverWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not decode test-search-and-recover wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not test search and recover wallet: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Rebuild wallet
-func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
-	responseBytes, err := c.callAPI("wallet rebuild")
-	if err != nil {
-		return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %w", err)
-	}
-	var response api.RebuildWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RebuildWalletResponse{}, fmt.Errorf("Could not decode rebuild wallet response: %w", err)
-	}
-	if response.Error != "" {
-		return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Estimate the gas required to set an ENS reverse record to a name
-func (c *Client) EstimateGasSetEnsName(name string) (api.SetEnsNameResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("wallet estimate-gas-set-ens-name %s", name))
-	if err != nil {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-name response: %w", err)
-	}
-	var response api.SetEnsNameResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not decode estimate-gas-set-ens-name response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-name response: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Set an ENS reverse record to a name
-func (c *Client) SetEnsName(name string) (api.SetEnsNameResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-ens-name %s", name))
-	if err != nil {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not update ENS record: %w", err)
-	}
-	var response api.SetEnsNameResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not decode set-ens-name response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SetEnsNameResponse{}, fmt.Errorf("Could not update ENS record: %s", response.Error)
-	}
-	return response, nil
+func (r *WalletRequester) GetClient() *http.Client {
+	return r.client
 }
 
 // Export wallet
-func (c *Client) ExportWallet() (api.ExportWalletResponse, error) {
-	responseBytes, err := c.callAPI("wallet export")
-	if err != nil {
-		return api.ExportWalletResponse{}, fmt.Errorf("Could not export wallet: %w", err)
+func (r *WalletRequester) Export(message []byte, address common.Address) (*api.ApiResponse[api.WalletExportData], error) {
+	return sendGetRequest[api.WalletExportData](r, "export", "Export", nil)
+}
+
+// Initialize the wallet with a new key
+func (r *WalletRequester) Initialize(derivationPath *string, index *uint64, password []byte, save *bool) (*api.ApiResponse[api.WalletInitializeData], error) {
+	args := map[string]string{}
+	if derivationPath != nil {
+		args["derivation-path"] = *derivationPath
 	}
-	var response api.ExportWalletResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ExportWalletResponse{}, fmt.Errorf("Could not decode export wallet response: %w", err)
+	if index != nil {
+		args["index"] = fmt.Sprint(*index)
 	}
-	if response.Error != "" {
-		return api.ExportWalletResponse{}, fmt.Errorf("Could not export wallet: %s", response.Error)
+	if password != nil {
+		args["password"] = hex.EncodeToString(password)
 	}
-	return response, nil
+	if save != nil {
+		args["save"] = fmt.Sprint(*save)
+	}
+	return sendGetRequest[api.WalletInitializeData](r, "initialize", "Initialize", args)
+}
+
+// Rebuild the validator keys associated with the wallet
+func (r *WalletRequester) Rebuild(message []byte, address common.Address) (*api.ApiResponse[api.WalletRebuildData], error) {
+	return sendGetRequest[api.WalletRebuildData](r, "rebuild", "Rebuild", nil)
+}
+
+// Recover wallet
+func (r *WalletRequester) Recover(derivationPath *string, mnemonic *string, skipValidatorKeyRecovery *bool, index *uint64, password []byte, save *bool) (*api.ApiResponse[api.WalletRecoverData], error) {
+	args := map[string]string{}
+	if derivationPath != nil {
+		args["derivation-path"] = *derivationPath
+	}
+	if mnemonic != nil {
+		args["mnemonic"] = *mnemonic
+	}
+	if skipValidatorKeyRecovery != nil {
+		args["skip-validator-key-recovery"] = fmt.Sprint(*skipValidatorKeyRecovery)
+	}
+	if index != nil {
+		args["index"] = fmt.Sprint(*index)
+	}
+	if password != nil {
+		args["password"] = hex.EncodeToString(password)
+	}
+	if save != nil {
+		args["save"] = fmt.Sprint(*save)
+	}
+	return sendGetRequest[api.WalletRecoverData](r, "recover", "Recover", args)
+}
+
+// Search and recover wallet
+func (r *WalletRequester) SearchAndRecover(mnemonic string, address common.Address, skipValidatorKeyRecovery *bool, password []byte, save *bool) (*api.ApiResponse[api.WalletSearchAndRecoverData], error) {
+	args := map[string]string{
+		"mnemonic": mnemonic,
+		"address":  address.Hex(),
+	}
+	if skipValidatorKeyRecovery != nil {
+		args["skip-validator-key-recovery"] = fmt.Sprint(*skipValidatorKeyRecovery)
+	}
+	if password != nil {
+		args["password"] = hex.EncodeToString(password)
+	}
+	if save != nil {
+		args["save"] = fmt.Sprint(*save)
+	}
+	return sendGetRequest[api.WalletSearchAndRecoverData](r, "search-and-recover", "SearchAndRecover", args)
+}
+
+// Set an ENS reverse record to a name
+func (r *WalletRequester) SetEnsName(name string) (*api.ApiResponse[api.WalletSetEnsNameData], error) {
+	args := map[string]string{
+		"name": name,
+	}
+	return sendGetRequest[api.WalletSetEnsNameData](r, "set-ens-name", "SetEnsName", args)
+}
+
+// Sets the wallet keystore's password
+func (r *WalletRequester) SetPassword(password []byte, save bool) (*api.ApiResponse[api.SuccessData], error) {
+	args := map[string]string{
+		"password": hex.EncodeToString(password),
+		"save":     fmt.Sprint(save),
+	}
+	return sendGetRequest[api.SuccessData](r, "set-password", "SetPassword", args)
+}
+
+// Get wallet status
+func (r *WalletRequester) Status(message []byte, address common.Address) (*api.ApiResponse[api.WalletStatusData], error) {
+	return sendGetRequest[api.WalletStatusData](r, "status", "Status", nil)
+}
+
+// Search for and recover the wallet in test-mode so none of the artifacts are saved
+func (r *WalletRequester) TestSearchAndRecover(mnemonic string, address common.Address, skipValidatorKeyRecovery *bool) (*api.ApiResponse[api.WalletSearchAndRecoverData], error) {
+	args := map[string]string{
+		"mnemonic": mnemonic,
+		"address":  address.Hex(),
+	}
+	if skipValidatorKeyRecovery != nil {
+		args["skip-validator-key-recovery"] = fmt.Sprint(*skipValidatorKeyRecovery)
+	}
+	return sendGetRequest[api.WalletSearchAndRecoverData](r, "test-search-and-recover", "TestSearchAndRecover", args)
+}
+
+// Recover wallet in test-mode so none of the artifacts are saved
+func (r *WalletRequester) TestRecover(derivationPath *string, mnemonic string, skipValidatorKeyRecovery *bool, index *uint64) (*api.ApiResponse[api.WalletRecoverData], error) {
+	args := map[string]string{
+		"mnemonic": mnemonic,
+	}
+	if derivationPath != nil {
+		args["derivation-path"] = *derivationPath
+	}
+	if skipValidatorKeyRecovery != nil {
+		args["skip-validator-key-recovery"] = fmt.Sprint(*skipValidatorKeyRecovery)
+	}
+	if index != nil {
+		args["index"] = fmt.Sprint(*index)
+	}
+	return sendGetRequest[api.WalletRecoverData](r, "test-recover", "TestRecover", args)
 }

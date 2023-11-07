@@ -103,7 +103,7 @@ func (c *oracleDaoProposeLeaveContext) PrepareData(data *api.OracleDaoProposeLea
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		message := fmt.Sprintf("%s (%s) leaves", c.odaoMember.ID, c.odaoMember.Url)
+		message := fmt.Sprintf("%s (%s) leaves", c.odaoMember.ID.Get(), c.odaoMember.Url.Get())
 		txInfo, err := c.odaoMgr.ProposeMemberLeave(message, c.nodeAddress, opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for ProposeMemberLeave: %w", err)

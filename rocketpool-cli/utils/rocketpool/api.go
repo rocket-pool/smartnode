@@ -31,6 +31,11 @@ type ApiRequester struct {
 	Minipool *MinipoolRequester
 	Network  *NetworkRequester
 	Node     *NodeRequester
+	ODao     *ODaoRequester
+	Queue    *QueueRequester
+	Service  *ServiceRequester
+	Tx       *TxRequester
+	Wallet   *WalletRequester
 
 	socketPath string
 	client     *http.Client

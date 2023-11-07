@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Print a TX's details to the console.
-func PrintTransactionHash(rp *rocketpool.Client, hash common.Hash) {
+func PrintTransactionHash(rp *client.Client, hash common.Hash) {
 
 	finalMessage := "Waiting for the transaction to be included in a block... you may wait here for it, or press CTRL+C to exit and return to the terminal.\n\n"
 	printTransactionHashImpl(rp, hash, finalMessage)
@@ -20,7 +20,7 @@ func PrintTransactionHash(rp *rocketpool.Client, hash common.Hash) {
 }
 
 // Print a TX's details to the console, but inform the user NOT to cancel it.
-func PrintTransactionHashNoCancel(rp *rocketpool.Client, hash common.Hash) {
+func PrintTransactionHashNoCancel(rp *client.Client, hash common.Hash) {
 
 	finalMessage := "Waiting for the transaction to be included in a block... **DO NOT EXIT!** This transaction is one of several that must be completed.\n\n"
 	printTransactionHashImpl(rp, hash, finalMessage)
@@ -38,7 +38,7 @@ func PrintMultiTransactionNonceWarning() {
 }
 
 // Implementation of PrintTransactionHash and PrintTransactionHashNoCancel
-func printTransactionHashImpl(rp *rocketpool.Client, hash common.Hash, finalMessage string) {
+func printTransactionHashImpl(rp *client.Client, hash common.Hash, finalMessage string) {
 
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
@@ -124,7 +124,7 @@ func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress
 }
 
 // Prints what network you're currently on
-func PrintNetwork(rp *rocketpool.Client) error {
+func PrintNetwork(rp *client.Client) error {
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error loading global config: %w", err)

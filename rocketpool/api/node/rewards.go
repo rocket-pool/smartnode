@@ -30,20 +30,20 @@ const (
 // === Factory ===
 // ===============
 
-type nodeGetRewardsContextFactory struct {
+type nodeRewardsContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeGetRewardsContextFactory) Create(vars map[string]string) (*nodeGetRewardsContext, error) {
-	c := &nodeGetRewardsContext{
+func (f *nodeRewardsContextFactory) Create(vars map[string]string) (*nodeRewardsContext, error) {
+	c := &nodeRewardsContext{
 		handler: f.handler,
 	}
 	return c, nil
 }
 
-func (f *nodeGetRewardsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*nodeGetRewardsContext, api.NodeGetRewardsData](
-		router, "get-rewards", f, f.handler.serviceProvider,
+func (f *nodeRewardsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessGet[*nodeRewardsContext, api.NodeRewardsData](
+		router, "rewards", f, f.handler.serviceProvider,
 	)
 }
 
@@ -51,11 +51,11 @@ func (f *nodeGetRewardsContextFactory) RegisterRoute(router *mux.Router) {
 // === Context ===
 // ===============
 
-type nodeGetRewardsContext struct {
+type nodeRewardsContext struct {
 	handler *NodeHandler
 }
 
-func (c *nodeGetRewardsContext) PrepareData(data *api.NodeGetRewardsData, opts *bind.TransactOpts) error {
+func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	rp := sp.GetRocketPool()

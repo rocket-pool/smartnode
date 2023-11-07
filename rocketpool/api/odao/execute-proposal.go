@@ -39,7 +39,7 @@ func (f *oracleDaoExecuteProposalContextFactory) Create(vars map[string]string) 
 
 func (f *oracleDaoExecuteProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoExecuteProposalContext, api.OracleDaoExecuteProposalData](
-		router, "execute-proposal", f, f.handler.serviceProvider,
+		router, "proposal/execute", f, f.handler.serviceProvider,
 	)
 }
 

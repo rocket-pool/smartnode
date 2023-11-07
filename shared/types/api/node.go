@@ -208,7 +208,7 @@ type NodeBurnData struct {
 	TxInfo                 *core.TransactionInfo `json:"txInfo"`
 }
 
-type NodeGetRewardsData struct {
+type NodeRewardsData struct {
 	NodeRegistrationTime        time.Time             `json:"nodeRegistrationTime"`
 	RewardsInterval             time.Duration         `json:"rewardsInterval"`
 	LastCheckpoint              time.Time             `json:"lastCheckpoint"`

@@ -1,64 +1,37 @@
 package rocketpool
 
 import (
-	"fmt"
-	"math/big"
-
-	"github.com/goccy/go-json"
+	"net/http"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-// Get queue status
-func (c *Client) QueueStatus() (api.QueueStatusData, error) {
-	responseBytes, err := c.callAPI("queue status")
-	if err != nil {
-		return api.QueueStatusData{}, fmt.Errorf("Could not get queue status: %w", err)
-	}
-	var response api.QueueStatusData
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.QueueStatusData{}, fmt.Errorf("Could not decode queue status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.QueueStatusData{}, fmt.Errorf("Could not get queue status: %s", response.Error)
-	}
-	if response.DepositPoolBalance == nil {
-		response.DepositPoolBalance = big.NewInt(0)
-	}
-	if response.MinipoolQueueCapacity == nil {
-		response.MinipoolQueueCapacity = big.NewInt(0)
-	}
-	return response, nil
+type QueueRequester struct {
+	client *http.Client
 }
 
-// Check whether the queue can be processed
-func (c *Client) CanProcessQueue() (api.CanProcessQueueResponse, error) {
-	responseBytes, err := c.callAPI("queue can-process")
-	if err != nil {
-		return api.CanProcessQueueResponse{}, fmt.Errorf("Could not get can process queue status: %w", err)
+func NewQueueRequester(client *http.Client) *QueueRequester {
+	return &QueueRequester{
+		client: client,
 	}
-	var response api.CanProcessQueueResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanProcessQueueResponse{}, fmt.Errorf("Could not decode can process queue response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanProcessQueueResponse{}, fmt.Errorf("Could not get can process queue status: %s", response.Error)
-	}
-	return response, nil
+}
+
+func (r *QueueRequester) GetName() string {
+	return "Queue"
+}
+func (r *QueueRequester) GetRoute() string {
+	return "queue"
+}
+func (r *QueueRequester) GetClient() *http.Client {
+	return r.client
 }
 
 // Process the queue
-func (c *Client) ProcessQueue() (api.ProcessQueueResponse, error) {
-	responseBytes, err := c.callAPI("queue process")
-	if err != nil {
-		return api.ProcessQueueResponse{}, fmt.Errorf("Could not process queue: %w", err)
-	}
-	var response api.ProcessQueueResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ProcessQueueResponse{}, fmt.Errorf("Could not decode process queue response: %w", err)
-	}
-	if response.Error != "" {
-		return api.ProcessQueueResponse{}, fmt.Errorf("Could not process queue: %s", response.Error)
-	}
-	return response, nil
+func (r *QueueRequester) Process() (*api.ApiResponse[api.QueueProcessData], error) {
+	return sendGetRequest[api.QueueProcessData](r, "process", "Process", nil)
+}
+
+// Get queue status
+func (r *QueueRequester) Status() (*api.ApiResponse[api.QueueStatusData], error) {
+	return sendGetRequest[api.QueueStatusData](r, "status", "Status", nil)
 }

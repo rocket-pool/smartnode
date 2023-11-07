@@ -41,7 +41,7 @@ func (f *nodeCreateVacantMinipoolContextFactory) Create(vars map[string]string) 
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("amount-wei", vars, input.ValidateBigInt, &c.amountWei),
+		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
 		server.ValidateArg("min-node-fee", vars, input.ValidateFraction, &c.minNodeFee),
 		server.ValidateArg("salt", vars, input.ValidateBigInt, &c.salt),
 		server.ValidateArg("pubkey", vars, input.ValidatePubkey, &c.pubkey),
@@ -65,7 +65,7 @@ type nodeCreateVacantMinipoolContext struct {
 	rp      *rocketpool.RocketPool
 	bc      beacon.Client
 
-	amountWei  *big.Int
+	amount     *big.Int
 	minNodeFee float64
 	salt       *big.Int
 	pubkey     rptypes.ValidatorPubkey
@@ -153,7 +153,7 @@ func (c *nodeCreateVacantMinipoolContext) PrepareData(data *api.NodeCreateVacant
 
 	// Check data
 	validatorEthWei := eth.EthToWei(ValidatorEth)
-	matchRequest := big.NewInt(0).Sub(validatorEthWei, c.amountWei)
+	matchRequest := big.NewInt(0).Sub(validatorEthWei, c.amount)
 	availableToMatch := big.NewInt(0).Sub(c.node.EthMatchedLimit.Get(), c.node.EthMatched.Get())
 	data.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
 
@@ -196,7 +196,7 @@ func (c *nodeCreateVacantMinipoolContext) PrepareData(data *api.NodeCreateVacant
 	balanceWei.Mul(balanceWei, big.NewInt(1e9))
 
 	// Get tx info
-	txInfo, err := c.node.CreateVacantMinipool(c.amountWei, c.minNodeFee, c.pubkey, c.salt, data.MinipoolAddress, balanceWei, opts)
+	txInfo, err := c.node.CreateVacantMinipool(c.amount, c.minNodeFee, c.pubkey, c.salt, data.MinipoolAddress, balanceWei, opts)
 	if err != nil {
 		return fmt.Errorf("error getting TX info for CreateVacantMinipool: %w", err)
 	}

@@ -78,10 +78,11 @@ type OracleDaoProposeLeaveData struct {
 }
 
 type OracleDaoProposeReplaceData struct {
-	CanPropose             bool                  `json:"canPropose"`
-	ProposalCooldownActive bool                  `json:"proposalCooldownActive"`
-	MemberAlreadyExists    bool                  `json:"memberAlreadyExists"`
-	TxInfo                 *core.TransactionInfo `json:"txInfo"`
+	CanPropose               bool                  `json:"canPropose"`
+	ProposalCooldownActive   bool                  `json:"proposalCooldownActive"`
+	MemberDoesNotExist       bool                  `json:"memberDoesNotExist"`
+	ReplacementAlreadyExists bool                  `json:"replacementAlreadyExists"`
+	TxInfo                   *core.TransactionInfo `json:"txInfo"`
 }
 
 type OracleDaoProposeKickData struct {
@@ -131,13 +132,6 @@ type OracleDaoLeaveData struct {
 	CanLeave            bool                  `json:"canLeave"`
 	ProposalExpired     bool                  `json:"proposalExpired"`
 	InsufficientMembers bool                  `json:"insufficientMembers"`
-	TxInfo              *core.TransactionInfo `json:"txInfo"`
-}
-
-type OracleDaoReplaceData struct {
-	CanReplace          bool                  `json:"canReplace"`
-	ProposalExpired     bool                  `json:"proposalExpired"`
-	MemberAlreadyExists bool                  `json:"memberAlreadyExists"`
 	TxInfo              *core.TransactionInfo `json:"txInfo"`
 }
 

@@ -33,7 +33,7 @@ func (f *minipoolVanityContextFactory) Create(vars map[string]string) (*minipool
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.GetStringFromVars("nodeAddress", vars, &c.nodeAddressStr),
+		server.GetStringFromVars("node-address", vars, &c.nodeAddressStr),
 	}
 	return c, errors.Join(inputErrs...)
 }

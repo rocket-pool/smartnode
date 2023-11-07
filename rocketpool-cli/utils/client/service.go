@@ -21,7 +21,6 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/docker"
-	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -305,7 +304,7 @@ func (c *Client) GetServiceVersion() (string, error) {
 	// Get service container version output
 	var versionString string
 	if c.daemonPath == "" {
-		response, err := SendGetRequest[api.ServiceVersionData](c, "service/version", nil)
+		response, err := c.Api.Service.Version()
 		if err != nil {
 			return "", fmt.Errorf("error requesting Rocket Pool service version: %w", err)
 		}
