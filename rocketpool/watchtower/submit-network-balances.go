@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	v120_network "github.com/rocket-pool/rocketpool-go/legacy/v1.2.0/network"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
@@ -53,6 +54,7 @@ type submitNetworkBalances struct {
 // Network balance info
 type networkBalances struct {
 	Block                 uint64
+	SlotTimestamp         uint64
 	DepositPool           *big.Int
 	MinipoolsTotal        *big.Int
 	MinipoolsStaking      *big.Int
@@ -238,7 +240,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 			t.log.Printlnf("rETH token supply: %s wei", balances.RETHSupply.String())
 
 			// Check if we have reported these specific values before
-			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, uint64(nexSubmissionTime.Unix()), balances)
+			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, uint64(nexSubmissionTime.Unix()), balances, false)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 				return
@@ -347,7 +349,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 			t.log.Printlnf("rETH token supply: %s wei", balances.RETHSupply.String())
 
 			// Check if we have reported these specific values before
-			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, balances)
+			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, balances, true)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 				return
@@ -632,7 +634,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) submitBalances(balances networkBalances, slotTimestamp uint64) error {
+func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
@@ -664,9 +666,9 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances, slotTim
 	}
 
 	if isHoustonDeployed {
-		gasInfo, err = network.EstimateSubmitBalancesGas(t.rp, balances.Block, slotTimestamp, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+		gasInfo, err = network.EstimateSubmitBalancesGas(t.rp, balances.Block, balances.SlotTimestamp, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	} else {
-		gasInfo, err = network.EstimateSubmitBalancesGas(t.rp, balances.Block, slotTimestamp, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+		gasInfo, err = v120_network.EstimateSubmitBalancesGas(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	}
 
 	if err != nil {
@@ -692,11 +694,18 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances, slotTim
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
-
+	var hash common.Hash
 	// Submit balances
-	hash, err := network.SubmitBalances(t.rp, balances.Block, slotTimestamp, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
-	if err != nil {
-		return fmt.Errorf("error submitting balances: %w", err)
+	if isHoustonDeployed {
+		hash, err = network.SubmitBalances(t.rp, balances.Block, balances.SlotTimestamp, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+		if err != nil {
+			return fmt.Errorf("error submitting balances: %w", err)
+		}
+	} else {
+		hash, err = v120_network.SubmitBalances(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+		if err != nil {
+			return fmt.Errorf("error submitting balances: %w", err)
+		}
 	}
 
 	// Print TX info and wait for it to be included in a block
