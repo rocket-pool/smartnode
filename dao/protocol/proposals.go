@@ -52,6 +52,47 @@ type ProposalDetails struct {
 	State                types.ProtocolDaoProposalState `json:"state"`
 }
 
+// Get all proposal details
+func GetProposals(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]ProposalDetails, error) {
+	// Get proposal count
+	proposalCount, err := GetTotalProposalCount(rp, opts)
+	if err != nil {
+		return []ProposalDetails{}, err
+	}
+
+	// Load proposal details in batches
+	details := make([]ProposalDetails, proposalCount)
+	for bsi := uint64(0); bsi < proposalCount; bsi += ProposalDetailsBatchSize {
+
+		// Get batch start & end index
+		psi := bsi
+		pei := bsi + ProposalDetailsBatchSize
+		if pei > proposalCount {
+			pei = proposalCount
+		}
+
+		// Load details
+		var wg errgroup.Group
+		for pi := psi; pi < pei; pi++ {
+			pi := pi
+			wg.Go(func() error {
+				proposalDetails, err := GetProposalDetails(rp, pi+1, opts) // Proposals are 1-indexed
+				if err == nil {
+					details[pi] = proposalDetails
+				}
+				return err
+			})
+		}
+		if err := wg.Wait(); err != nil {
+			return []ProposalDetails{}, err
+		}
+
+	}
+
+	// Return
+	return details, nil
+}
+
 // Get a proposal's details
 func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (ProposalDetails, error) {
 	var wg errgroup.Group
@@ -195,16 +236,16 @@ func GetProposalVetoQuorum(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 }
 
 // The total number of Protocol DAO proposals
-func GetTotalProposalCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetTotalProposalCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	value := new(*big.Int)
 	if err := rocketDAOProtocolProposals.Call(opts, value, "getTotal"); err != nil {
-		return nil, fmt.Errorf("error getting total proposal count: %w", err)
+		return 0, fmt.Errorf("error getting total proposal count: %w", err)
 	}
-	return *value, nil
+	return (*value).Uint64(), nil
 }
 
 // Get the address of the proposer
@@ -239,11 +280,11 @@ func GetProposalStartBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 	if err != nil {
 		return 0, err
 	}
-	value := new(uint64)
+	value := new(*big.Int)
 	if err := rocketDAOProtocolProposals.Call(opts, value, "getStart", proposalId); err != nil {
 		return 0, fmt.Errorf("error getting start block for proposal %d: %w", proposalId, err)
 	}
-	return *value, nil
+	return (*value).Uint64(), nil
 }
 
 // Get the phase 1 end block of this proposal
@@ -252,11 +293,11 @@ func GetProposalPhase1EndBlock(rp *rocketpool.RocketPool, proposalId uint64, opt
 	if err != nil {
 		return 0, err
 	}
-	value := new(uint64)
+	value := new(*big.Int)
 	if err := rocketDAOProtocolProposals.Call(opts, value, "getPhase1End", proposalId); err != nil {
 		return 0, fmt.Errorf("error getting phase 1 end block for proposal %d: %w", proposalId, err)
 	}
-	return *value, nil
+	return (*value).Uint64(), nil
 }
 
 // Get the phase 2 end block of this proposal
@@ -265,11 +306,11 @@ func GetProposalPhase2EndBlock(rp *rocketpool.RocketPool, proposalId uint64, opt
 	if err != nil {
 		return 0, err
 	}
-	value := new(uint64)
+	value := new(*big.Int)
 	if err := rocketDAOProtocolProposals.Call(opts, value, "getPhase2End", proposalId); err != nil {
 		return 0, fmt.Errorf("error getting phase 2 end block for proposal %d: %w", proposalId, err)
 	}
-	return *value, nil
+	return (*value).Uint64(), nil
 }
 
 // Get the block where the proposal expires and can no longer be executed if it is successful
@@ -278,11 +319,11 @@ func GetProposalExpiryBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *
 	if err != nil {
 		return 0, err
 	}
-	value := new(uint64)
+	value := new(*big.Int)
 	if err := rocketDAOProtocolProposals.Call(opts, value, "getExpires", proposalId); err != nil {
 		return 0, fmt.Errorf("error getting expiry block for proposal %d: %w", proposalId, err)
 	}
-	return *value, nil
+	return (*value).Uint64(), nil
 }
 
 // Get the time the proposal was created
