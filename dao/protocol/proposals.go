@@ -2,19 +2,171 @@ package protocol
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
+	strutils "github.com/rocket-pool/rocketpool-go/utils/strings"
+	"golang.org/x/sync/errgroup"
 )
+
+// Settings
+const (
+	ProposalDAONamesBatchSize = 50
+	ProposalDetailsBatchSize  = 10
+)
+
+// Proposal details
+type ProposalDetails struct {
+	ID                   uint64                         `json:"id"`
+	ProposerAddress      common.Address                 `json:"proposerAddress"`
+	Message              string                         `json:"message"`
+	StartBlock           uint64                         `json:"startBlock"`
+	Phase1EndBlock       uint64                         `json:"phase1EndBlock"`
+	Phase2EndBlock       uint64                         `json:"phase2EndBlock"`
+	ExpiryBlock          uint64                         `json:"expiryBlock"`
+	CreatedTime          time.Time                      `json:"createdTime"`
+	VotingPowerRequired  *big.Int                       `json:"votingPowerRequired"`
+	VotingPowerFor       *big.Int                       `json:"votingPowerFor"`
+	VotingPowerAgainst   *big.Int                       `json:"votingPowerAgainst"`
+	VotingPowerAbstained *big.Int                       `json:"votingPowerAbstained"`
+	VotingPowerToVeto    *big.Int                       `json:"votingPowerVeto"`
+	IsDestroyed          bool                           `json:"isDestroyed"`
+	IsFinalized          bool                           `json:"isFinalized"`
+	IsExecuted           bool                           `json:"isExecuted"`
+	IsVetoed             bool                           `json:"isVetoed"`
+	VetoQuorum           *big.Int                       `json:"vetoQuorum"`
+	Payload              []byte                         `json:"payload"`
+	PayloadStr           string                         `json:"payloadStr"`
+	State                types.ProtocolDaoProposalState `json:"state"`
+}
+
+// Get a proposal's details
+func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (ProposalDetails, error) {
+	var wg errgroup.Group
+	var prop ProposalDetails
+
+	// Load data
+	wg.Go(func() error {
+		var err error
+		prop.ProposerAddress, err = GetProposalProposer(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.Message, err = GetProposalMessage(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.StartBlock, err = GetProposalStartBlock(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.Phase1EndBlock, err = GetProposalPhase1EndBlock(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.Phase2EndBlock, err = GetProposalPhase2EndBlock(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.ExpiryBlock, err = GetProposalExpiryBlock(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.CreatedTime, err = GetProposalCreationTime(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.VotingPowerRequired, err = GetProposalVotingPowerRequired(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.VotingPowerFor, err = GetProposalVotingPowerFor(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.VotingPowerAgainst, err = GetProposalVotingPowerAgainst(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.VotingPowerAbstained, err = GetProposalVotingPowerAbstained(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.VotingPowerToVeto, err = GetProposalVotingPowerVetoed(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.IsDestroyed, err = GetProposalIsDestroyed(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.IsFinalized, err = GetProposalIsFinalized(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.IsExecuted, err = GetProposalIsExecuted(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.IsVetoed, err = GetProposalIsVetoed(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.VetoQuorum, err = GetProposalVetoQuorum(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.Payload, err = GetProposalPayload(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.State, err = GetProposalState(rp, proposalId, opts)
+		return err
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return ProposalDetails{}, err
+	}
+
+	// Get proposal payload string
+	payloadStr, err := GetProposalPayloadString(rp, prop.Payload, opts)
+	if err != nil {
+		payloadStr = "(unknown)"
+	}
+	prop.PayloadStr = payloadStr
+	return prop, nil
+}
 
 // Get the block that was used for voting power calculation in a proposal
 func GetProposalBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint32, error) {
@@ -38,6 +190,309 @@ func GetProposalVetoQuorum(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 	value := new(*big.Int)
 	if err := rocketDAOProtocolProposals.Call(opts, value, "getProposalVetoQuorum", proposalId); err != nil {
 		return nil, fmt.Errorf("error getting proposal veto quorum for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// The total number of Protocol DAO proposals
+func GetTotalProposalCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getTotal"); err != nil {
+		return nil, fmt.Errorf("error getting total proposal count: %w", err)
+	}
+	return *value, nil
+}
+
+// Get the address of the proposer
+func GetProposalProposer(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (common.Address, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return common.Address{}, err
+	}
+	value := new(common.Address)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getProposer", proposalId); err != nil {
+		return common.Address{}, fmt.Errorf("error getting proposer for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the proposal's message
+func GetProposalMessage(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (string, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return "", err
+	}
+	value := new(string)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getMessage", proposalId); err != nil {
+		return "", fmt.Errorf("error getting message for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the start block of this proposal
+func GetProposalStartBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return 0, err
+	}
+	value := new(uint64)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getStart", proposalId); err != nil {
+		return 0, fmt.Errorf("error getting start block for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the phase 1 end block of this proposal
+func GetProposalPhase1EndBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return 0, err
+	}
+	value := new(uint64)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getPhase1End", proposalId); err != nil {
+		return 0, fmt.Errorf("error getting phase 1 end block for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the phase 2 end block of this proposal
+func GetProposalPhase2EndBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return 0, err
+	}
+	value := new(uint64)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getPhase2End", proposalId); err != nil {
+		return 0, fmt.Errorf("error getting phase 2 end block for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the block where the proposal expires and can no longer be executed if it is successful
+func GetProposalExpiryBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return 0, err
+	}
+	value := new(uint64)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getExpires", proposalId); err != nil {
+		return 0, fmt.Errorf("error getting expiry block for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the time the proposal was created
+func GetProposalCreationTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (time.Time, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getCreated", proposalId); err != nil {
+		return time.Time{}, fmt.Errorf("error getting creation time for proposal %d: %w", proposalId, err)
+	}
+	return time.Unix((*value).Int64(), 0), nil
+}
+
+// Get the cumulative amount of voting power voting in favor of this proposal
+func GetProposalVotingPowerFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getVotesFor", proposalId); err != nil {
+		return nil, fmt.Errorf("error getting total 'for' voting power for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the cumulative amount of voting power voting against this proposal
+func GetProposalVotingPowerAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getVotesAgainst", proposalId); err != nil {
+		return nil, fmt.Errorf("error getting total 'against' voting power for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the cumulative amount of voting power that vetoed this proposal
+func GetProposalVotingPowerVetoed(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getVotesVeto", proposalId); err != nil {
+		return nil, fmt.Errorf("error getting total 'veto' voting power for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the cumulative amount of voting power that abstained from this proposal
+func GetProposalVotingPowerAbstained(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getVotesAbstained", proposalId); err != nil {
+		return nil, fmt.Errorf("error getting total 'abstained' voting power for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the cumulative amount of voting power that must vote on this proposal for it to be eligible for execution if it succeeds
+func GetProposalVotingPowerRequired(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getVotesRequired", proposalId); err != nil {
+		return nil, fmt.Errorf("error getting required voting power for proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get whether or not the proposal has been destroyed
+func GetProposalIsDestroyed(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (bool, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getDestroyed", proposalId); err != nil {
+		return false, fmt.Errorf("error getting destroyed status of proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get whether or not the proposal has been finalized
+func GetProposalIsFinalized(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (bool, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getFinalised", proposalId); err != nil {
+		return false, fmt.Errorf("error getting finalized status of proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get whether or not the proposal has been executed
+func GetProposalIsExecuted(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (bool, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getExecuted", proposalId); err != nil {
+		return false, fmt.Errorf("error getting executed status of proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get whether or not the proposal's veto quorum has been met and it has been vetoed
+func GetProposalIsVetoed(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (bool, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getVetoed", proposalId); err != nil {
+		return false, fmt.Errorf("error getting veto status of proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the proposal's payload
+func GetProposalPayload(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) ([]byte, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	value := new([]byte)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getPayload", proposalId); err != nil {
+		return nil, fmt.Errorf("error getting payload of proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get a proposal's payload as a human-readable string
+func GetProposalPayloadString(rp *rocketpool.RocketPool, payload []byte, opts *bind.CallOpts) (string, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return "", err
+	}
+
+	// Get proposal DAO contract ABI
+	daoContractAbi := rocketDAOProtocolProposals.ABI
+
+	// Get proposal payload method
+	method, err := daoContractAbi.MethodById(payload)
+	if err != nil {
+		return "", fmt.Errorf("error getting proposal payload method: %w", err)
+	}
+
+	// Get proposal payload argument values
+	args, err := method.Inputs.UnpackValues(payload[4:])
+	if err != nil {
+		return "", fmt.Errorf("error getting proposal payload arguments: %w", err)
+	}
+
+	// Format argument values as strings
+	argStrs := []string{}
+	for ai, arg := range args {
+		switch method.Inputs[ai].Type.T {
+		case abi.AddressTy:
+			argStrs = append(argStrs, arg.(common.Address).Hex())
+		case abi.HashTy:
+			argStrs = append(argStrs, arg.(common.Hash).Hex())
+		case abi.FixedBytesTy:
+			fallthrough
+		case abi.BytesTy:
+			argStrs = append(argStrs, hex.EncodeToString(arg.([]byte)))
+		default:
+			argStrs = append(argStrs, fmt.Sprintf("%v", arg))
+		}
+	}
+
+	// Build & return payload string
+	return strutils.Sanitize(fmt.Sprintf("%s(%s)", method.RawName, strings.Join(argStrs, ","))), nil
+}
+
+// Get the proposal's state
+func GetProposalState(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (types.ProtocolDaoProposalState, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return types.ProtocolDaoProposalState_Pending, err
+	}
+	value := new(types.ProtocolDaoProposalState)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getState", proposalId); err != nil {
+		return types.ProtocolDaoProposalState_Pending, fmt.Errorf("error getting state of proposal %d: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the option that the address voted on for the proposal, and whether or not it's voted yet
+func GetAddressVoteDirection(rp *rocketpool.RocketPool, proposalId uint64, address common.Address, opts *bind.CallOpts) (types.VoteDirection, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return types.VoteDirection_NoVote, err
+	}
+	value := new(types.VoteDirection)
+	if err := rocketDAOProtocolProposals.Call(opts, value, "getReceiptDirection", proposalId, address); err != nil {
+		return types.VoteDirection_NoVote, fmt.Errorf("error getting voting status of proposal %d by address %s: %w", proposalId, address.Hex(), err)
 	}
 	return *value, nil
 }

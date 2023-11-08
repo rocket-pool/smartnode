@@ -23,6 +23,37 @@ const (
 
 var ProposalStates = []string{"Pending", "Active", "Cancelled", "Defeated", "Succeeded", "Expired", "Executed"}
 
+// pDAO proposal states
+type ProtocolDaoProposalState uint8
+
+const (
+	ProtocolDaoProposalState_Pending ProtocolDaoProposalState = iota
+	ProtocolDaoProposalState_ActivePhase1
+	ProtocolDaoProposalState_ActivePhase2
+	ProtocolDaoProposalState_Destroyed
+	ProtocolDaoProposalState_Vetoed
+	ProtocolDaoProposalState_QuorumNotMet
+	ProtocolDaoProposalState_Defeated
+	ProtocolDaoProposalState_Succeeded
+	ProtocolDaoProposalState_Expired
+	ProtocolDaoProposalState_Executed
+)
+
+var ProtocolDaoProposalStates = []string{"Pending", "Active (Phase 1)", "Active (Phase 2)", "Destroyed", "Vetoed", "Quorum not Met", "Defeated", "Succeeded", "Expired", "Executed"}
+
+// pDAO voting direction
+type VoteDirection uint8
+
+const (
+	VoteDirection_NoVote VoteDirection = iota
+	VoteDirection_Abstain
+	VoteDirection_For
+	VoteDirection_Against
+	VoteDirection_AgainstWithVeto
+)
+
+var VoteDirections = []string{"Not Voted", "Abstain", "In Favor", "Against", "Against with Veto"}
+
 // DAO setting types
 type ProposalSettingType uint8
 
