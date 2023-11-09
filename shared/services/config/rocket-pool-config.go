@@ -123,6 +123,7 @@ type RocketPoolConfig struct {
 
 	// Addons
 	GraffitiWallWriter addontypes.SmartnodeAddon `yaml:"addon-gww,omitempty"`
+	RescueNode         addontypes.SmartnodeAddon `yaml:"addon-rescue-node,omitempty"`
 }
 
 // Load configuration settings from a file
@@ -469,6 +470,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
 	// Addons
 	cfg.GraffitiWallWriter = addons.NewGraffitiWallWriter()
+	cfg.RescueNode = addons.NewRescueNode()
 
 	// Apply the default values for mainnet
 	cfg.Smartnode.Network.Value = cfg.Smartnode.Network.Options[0].Value
@@ -570,6 +572,7 @@ func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 		"native":             cfg.Native,
 		"mevBoost":           cfg.MevBoost,
 		"addons-gww":         cfg.GraffitiWallWriter.GetConfig(),
+		"addons-rescue-node": cfg.RescueNode.GetConfig(),
 	}
 }
 
@@ -1022,6 +1025,8 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
 	// Addons
 	cfg.GraffitiWallWriter.UpdateEnvVars(envVars)
+	// Don't do this- we only want the change to apply to the validator container
+	//cfg.RescueNode.UpdateEnvVars(envVars, consensusClient)
 
 	return envVars
 
@@ -1142,6 +1147,26 @@ func (cfg *RocketPoolConfig) Validate() []string {
 			}
 		default:
 			errors = append(errors, "You do not have a MEV-Boost mode configured. You must either select a mode in the `rocketpool service config` UI, or disable MEV-Boost.\nNote that MEV-Boost will be required in a future update, at which point you can no longer disable it.")
+		}
+	}
+
+	// Technically not required since native mode doesn't support addons, but defensively check to make sure a native mode
+	// user hasn't tried to configure the rescue node via the TUI
+	if cfg.RescueNode.GetEnabledParameter().Value.(bool) {
+		if cfg.IsNativeMode {
+			errors = append(errors, "Rescue Node add-on is incompatible with native mode.\nYou can still connect manually, visit the rescue node website for more information.")
+		}
+
+		params := cfg.RescueNode.GetConfig().GetParameters()
+		for _, param := range params {
+			if param.Type != config.ParameterType_String {
+				continue
+			}
+
+			if param.Value.(string) == "" {
+				errors = append(errors, "Rescue Node requires both a username and a password.")
+				break
+			}
 		}
 	}
 
