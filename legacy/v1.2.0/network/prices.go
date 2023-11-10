@@ -12,8 +12,8 @@ import (
 )
 
 // Get the block number which network prices are current for
-func GetPricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
+func GetPricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketNetworkPricesAddress *common.Address) (uint64, error) {
+	rocketNetworkPrices, err := getRocketNetworkPrices(rp, legacyRocketNetworkPricesAddress, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -25,8 +25,8 @@ func GetPricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 }
 
 // Get the current network RPL price in ETH
-func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
+func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketNetworkPricesAddress *common.Address) (*big.Int, error) {
+	rocketNetworkPrices, err := getRocketNetworkPrices(rp, legacyRocketNetworkPricesAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +38,8 @@ func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, erro
 }
 
 // Estimate the gas of SubmitPrices
-func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNetworkPrices, err := getRocketNetworkPrices(rp, nil)
+func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts, legacyRocketNetworkPricesAddress *common.Address) (rocketpool.GasInfo, error) {
+	rocketNetworkPrices, err := getRocketNetworkPrices(rp, legacyRocketNetworkPricesAddress, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -47,8 +47,8 @@ func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, rplPrice *
 }
 
 // Submit network prices and total effective RPL stake for an epoch
-func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNetworkPrices, err := getRocketNetworkPrices(rp, nil)
+func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts, legacyRocketNetworkPricesAddress *common.Address) (common.Hash, error) {
+	rocketNetworkPrices, err := getRocketNetworkPrices(rp, legacyRocketNetworkPricesAddress, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -60,8 +60,8 @@ func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, op
 }
 
 // Returns the latest block number that oracles should be reporting prices for
-func GetLatestReportablePricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
+func GetLatestReportablePricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketNetworkPricesAddress *common.Address) (*big.Int, error) {
+	rocketNetworkPrices, err := getRocketNetworkPrices(rp, legacyRocketNetworkPricesAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +75,11 @@ func GetLatestReportablePricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOp
 // Get contracts
 var rocketNetworkPricesLock sync.Mutex
 
-func getRocketNetworkPrices(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
+func getRocketNetworkPrices(rp *rocketpool.RocketPool, address *common.Address, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNetworkPricesLock.Lock()
 	defer rocketNetworkPricesLock.Unlock()
-	return rp.GetContract("rocketNetworkPrices", opts)
+	if address != nil {
+		return rp.VersionManager.V1_2_0.GetContract("rocketNetworkPrices", opts)
+	}
+	return rp.VersionManager.V1_2_0.GetContractWithAddress("rocketNetworkPrices", *address)
 }
