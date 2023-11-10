@@ -98,7 +98,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, isHoustonDeployed)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
@@ -237,7 +237,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, isHoustonDeployed)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network details: %w", err)
 	}
