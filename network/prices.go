@@ -129,7 +129,7 @@ func GetLatestPricesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, int
 }
 
 // Get the event info for a price update
-func GetPriceUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, rocketNetworkPricesAddresses []common.Address, opts *bind.CallOpts) (bool, PriceUpdatedEvent, error) {
+func GetPriceUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts *bind.CallOpts) (bool, PriceUpdatedEvent, error) {
 	// Get contracts
 	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
 	if err != nil {
@@ -138,25 +138,12 @@ func GetPriceUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, rocketN
 
 	// Create the list of addresses to check
 	currentAddress := *rocketNetworkPrices.Address
-	if rocketNetworkPricesAddresses == nil {
-		rocketNetworkPricesAddresses = []common.Address{currentAddress}
-	} else {
-		found := false
-		for _, address := range rocketNetworkPricesAddresses {
-			if address == currentAddress {
-				found = true
-				break
-			}
-		}
-		if !found {
-			rocketNetworkPricesAddresses = append(rocketNetworkPricesAddresses, currentAddress)
-		}
-	}
+	rocketNetworkPricesAddress := []common.Address{currentAddress}
 
 	// Construct a filter query for relevant logs
 	pricesUpdatedEvent := rocketNetworkPrices.ABI.Events["PricesUpdated"]
 	indexBytes := [32]byte{}
-	addressFilter := rocketNetworkPricesAddresses
+	addressFilter := rocketNetworkPricesAddress
 	topicFilter := [][]common.Hash{{pricesUpdatedEvent.ID}, {indexBytes}}
 
 	// Get the event logs
