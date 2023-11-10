@@ -153,12 +153,6 @@ type SmartnodeConfig struct {
 	// The contract address of rocketNetworkPrices from v1.1.0
 	v1_1_0_NetworkPricesAddress map[config.Network]string `yaml:"-"`
 
-	// The contract address of rocketNetworkPrices from v1.2.0
-	v1_2_0_NetworkPricesAddress map[config.Network]string `yaml:"-"`
-
-	// The contract address of rocketNetworkBalances from v1.2.0
-	v1_2_0_NetworkBalancesAddress map[config.Network]string `yaml:"-"`
-
 	// The contract address of rocketNodeStaking from v1.1.0
 	v1_1_0_NodeStakingAddress map[config.Network]string `yaml:"-"`
 
@@ -170,6 +164,12 @@ type SmartnodeConfig struct {
 
 	// The contract address of rocketMinipoolFactory from v1.1.0
 	v1_1_0_MinipoolFactoryAddress map[config.Network]string `yaml:"-"`
+
+	// The contract address of rocketNetworkPrices from v1.2.0
+	v1_2_0_NetworkPricesAddress map[config.Network]string `yaml:"-"`
+
+	// The contract address of rocketNetworkBalances from v1.2.0
+	v1_2_0_NetworkBalancesAddress map[config.Network]string `yaml:"-"`
 
 	// Addresses for RocketRewardsPool that have been upgraded during development
 	previousRewardsPoolAddresses map[config.Network][]common.Address `yaml:"-"`
