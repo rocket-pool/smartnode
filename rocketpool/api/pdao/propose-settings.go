@@ -378,7 +378,7 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 		}
 		response.GasInfo, err = protocol.EstimateProposeSubmitPricesFrequencyGas(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
-			return nil, fmt.Errorf("error estimating gas for proposing SubmitPricesEpochs: %w", err)
+			return nil, fmt.Errorf("error estimating gas for proposing SubmitPricesFrequency: %w", err)
 		}
 
 	// MinimumNodeFee

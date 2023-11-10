@@ -14,7 +14,6 @@ const (
 	floatEthUsage         string = "specify an amount of ETH (e.g., '16.0')"
 	floatRplUsage         string = "specify an amount of RPL (e.g., '16.0')"
 	blockCountUsage       string = "specify a number, in blocks (e.g., '40000')"
-	epochsUsage           string = "specify an amount of epochs (e.g., 225 for a full day)"
 	percentUsage          string = "specify a percentage between 0 and 1 (e.g., '0.51' for 51%)"
 	unboundedPercentUsage string = "specify a percentage that can go over 100% (e.g., '1.5' for 150%)"
 	uintUsage             string = "specify an integer (e.g., '50')"
@@ -1060,7 +1059,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "submit-balances-frequency",
 										Aliases:   []string{"sbf"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesFrequencySettingPath, epochsUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesFrequencySettingPath, uintUsage),
 										UsageText: "rocketpool pdao propose setting network submit-balances-frequency value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
@@ -1116,7 +1115,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "submit-prices-frequency",
 										Aliases:   []string{"spf"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesFrequencySettingPath, epochsUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesFrequencySettingPath, uintUsage),
 										UsageText: "rocketpool pdao propose setting network submit-prices-frequency value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
