@@ -153,6 +153,12 @@ type SmartnodeConfig struct {
 	// The contract address of rocketNetworkPrices from v1.1.0
 	v1_1_0_NetworkPricesAddress map[config.Network]string `yaml:"-"`
 
+	// The contract address of rocketNetworkPrices from v1.2.0
+	v1_2_0_NetworkPricesAddress map[config.Network]string `yaml:"-"`
+
+	// The contract address of rocketNetworkBalances from v1.2.0
+	v1_2_0_NetworkBalancesAddress map[config.Network]string `yaml:"-"`
+
 	// The contract address of rocketNodeStaking from v1.1.0
 	v1_1_0_NodeStakingAddress map[config.Network]string `yaml:"-"`
 
@@ -894,6 +900,14 @@ func (cfg *SmartnodeConfig) GetV100MinipoolManagerAddress() common.Address {
 
 func (cfg *SmartnodeConfig) GetV110NetworkPricesAddress() common.Address {
 	return common.HexToAddress(cfg.v1_1_0_NetworkPricesAddress[cfg.Network.Value.(config.Network)])
+}
+
+func (cfg *SmartnodeConfig) GetV120NetworkPricesAddress() common.Address {
+	return common.HexToAddress(cfg.v1_2_0_NetworkPricesAddress[cfg.Network.Value.(config.Network)])
+}
+
+func (cfg *SmartnodeConfig) GetV120NetworkBalancesAddress() common.Address {
+	return common.HexToAddress(cfg.v1_2_0_NetworkBalancesAddress[cfg.Network.Value.(config.Network)])
 }
 
 func (cfg *SmartnodeConfig) GetV110NodeStakingAddress() common.Address {

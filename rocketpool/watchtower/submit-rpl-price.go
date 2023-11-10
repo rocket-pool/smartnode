@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	v120_network "github.com/rocket-pool/rocketpool-go/legacy/v1.2.0/network"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -325,7 +326,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		eth2Config := state.BeaconConfig
 
 		// Get the duration in seconds for the interval between submissions
-		submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesIntervalFrequency * uint64(time.Second))
+		submissionIntervalDuration := time.Duration(state.NetworkDetails.PricesSubmissionFrequency * uint64(time.Second))
 
 		nexSubmissionTime := lastSubmissionTime.Add(submissionIntervalDuration)
 
@@ -398,7 +399,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
 
 			// Check if we have reported these specific values before
-			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, uint64(nexSubmissionTime.Unix()), rplPrice)
+			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, uint64(nexSubmissionTime.Unix()), rplPrice, true)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 				return
@@ -411,7 +412,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			}
 
 			// We haven't submitted these values, check if we've submitted any for this block so we can log it
-			hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
+			hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber, uint64(nexSubmissionTime.Unix()), true)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 				return
@@ -424,7 +425,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			t.log.Println("Submitting RPL price...")
 
 			// Submit RPL price
-			if err := t.submitRplPrice(blockNumber, uint64(nexSubmissionTime.Unix()), rplPrice); err != nil {
+			if err := t.submitRplPrice(blockNumber, uint64(nexSubmissionTime.Unix()), rplPrice, true); err != nil {
 				t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
 				return
 			}
@@ -500,7 +501,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
 
 			// Check if we have reported these specific values before
-			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice)
+			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, 0, rplPrice, false)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 				return
@@ -513,7 +514,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			}
 
 			// We haven't submitted these values, check if we've submitted any for this block so we can log it
-			hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
+			hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber, 0, false)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 				return
@@ -526,7 +527,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			t.log.Println("Submitting RPL price...")
 
 			// Submit RPL price
-			if err := t.submitRplPrice(blockNumber, rplPrice); err != nil {
+			if err := t.submitRplPrice(blockNumber, 0, rplPrice, false); err != nil {
 				t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
 				return
 			}
@@ -554,16 +555,22 @@ func (t *submitRplPrice) handleError(err error) {
 }
 
 // Check whether prices for a block has already been submitted by the node
-func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blockNumber uint64) (bool, error) {
+func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blockNumber uint64, slotTimestamp uint64, isHoustonDeployed bool) (bool, error) {
 
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+
+	slotTimestampBuf := make([]byte, 32)
+	big.NewInt(int64(slotTimestamp)).FillBytes(slotTimestampBuf)
+	if isHoustonDeployed {
+		return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, slotTimestampBuf))
+	}
 	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf))
 
 }
 
 // Check whether specific prices for a block has already been submitted by the node
-func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, slotTimestamp uint64, rplPrice *big.Int) (bool, error) {
+func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, slotTimestamp uint64, rplPrice *big.Int, isHoustonDeployed bool) (bool, error) {
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
 
@@ -573,7 +580,11 @@ func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Addr
 	rplPriceBuf := make([]byte, 32)
 	rplPrice.FillBytes(rplPriceBuf)
 
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, slotTimestampBuf, rplPriceBuf))
+	if isHoustonDeployed {
+		return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, slotTimestampBuf, rplPriceBuf))
+	}
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf))
+
 }
 
 // Get RPL price via TWAP at block
@@ -647,7 +658,7 @@ func (t *submitRplPrice) printMessage(message string) {
 }
 
 // Submit RPL price and total effective RPL stake
-func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64, rplPrice *big.Int) error {
+func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64, rplPrice *big.Int, isHoustonDeployed bool) error {
 
 	// Log
 	t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
@@ -658,10 +669,22 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 		return err
 	}
 
-	// Get the gas limit
-	gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, slotTimestamp, rplPrice, opts)
-	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
+	var gasInfo rocketpool.GasInfo
+	var rocketNetworkPricesAddress common.Address
+
+	if isHoustonDeployed {
+		// Get the gas limit
+		gasInfo, err = network.EstimateSubmitPricesGas(t.rp, blockNumber, slotTimestamp, rplPrice, opts)
+		if err != nil {
+			return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
+		}
+	} else {
+		// Get the gas limit
+		rocketNetworkPricesAddress = t.cfg.Smartnode.GetV120NetworkPricesAddress()
+		gasInfo, err = v120_network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, opts, &rocketNetworkPricesAddress)
+		if err != nil {
+			return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
+		}
 	}
 
 	// Print the gas info
@@ -675,10 +698,18 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
+	var hash common.Hash
 	// Submit RPL price
-	hash, err := network.SubmitPrices(t.rp, blockNumber, slotTimestamp, rplPrice, opts)
-	if err != nil {
-		return err
+	if isHoustonDeployed {
+		hash, err = network.SubmitPrices(t.rp, blockNumber, slotTimestamp, rplPrice, opts)
+		if err != nil {
+			return err
+		}
+	} else {
+		hash, err = v120_network.SubmitPrices(t.rp, blockNumber, rplPrice, opts, &rocketNetworkPricesAddress)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Print TX info and wait for it to be included in a block

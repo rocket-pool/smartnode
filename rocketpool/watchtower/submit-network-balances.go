@@ -155,7 +155,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		eth2Config := state.BeaconConfig
 
 		// Get the duration in seconds for the interval between submissions
-		submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesIntervalFrequency * uint64(time.Second))
+		submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesSubmissionFrequency * uint64(time.Second))
 
 		// Next submission adds the interval time to the last submission time
 		nexSubmissionTime := lastSubmissionTime.Add(submissionIntervalDuration)
@@ -270,7 +270,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 			balances.SlotTimestamp = uint64(nexSubmissionTime.Unix())
 
 			// Submit balances
-			if err := t.submitBalances(balances); err != nil {
+			if err := t.submitBalances(balances, true); err != nil {
 				t.handleError(fmt.Errorf("%s could not submit network balances: %w", logPrefix, err))
 				return
 			}
@@ -283,7 +283,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		}()
 	} else { // Houston still not deployed, using legacy submission
 		// Get block to submit balances for
-		blockNumber := lastSubmissionBlock + 5760
+		blockNumber := state.NetworkDetails.LatestReportableBalancesBlock
 		blockNumberBig := new(big.Int).SetUint64(blockNumber)
 
 		// Check if a submission needs to be made
@@ -379,7 +379,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 			t.log.Println("Submitting balances...")
 
 			// Submit balances
-			if err := t.submitBalances(balances); err != nil {
+			if err := t.submitBalances(balances, false); err != nil {
 				t.handleError(fmt.Errorf("%s could not submit network balances: %w", logPrefix, err))
 				return
 			}
@@ -638,7 +638,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 }
 
 // Submit network balances
-func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
+func (t *submitNetworkBalances) submitBalances(balances networkBalances, isHoustonDeployed bool) error {
 
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
@@ -664,15 +664,12 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 
 	// Get the gas limit
 	var gasInfo rocketpool.GasInfo
-	isHoustonDeployed, err := state.IsHoustonDeployed(t.rp, nil)
-	if err != nil {
-		return fmt.Errorf("error detecting Houston deployment: %w", err)
-	}
-
+	var rocketNetworkBalancesAddress common.Address
 	if isHoustonDeployed {
 		gasInfo, err = network.EstimateSubmitBalancesGas(t.rp, balances.Block, balances.SlotTimestamp, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	} else {
-		gasInfo, err = v120_network.EstimateSubmitBalancesGas(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+		rocketNetworkBalancesAddress = t.cfg.Smartnode.GetV120NetworkBalancesAddress()
+		gasInfo, err = v120_network.EstimateSubmitBalancesGas(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts, &rocketNetworkBalancesAddress)
 	}
 
 	if err != nil {
@@ -706,7 +703,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 			return fmt.Errorf("error submitting balances: %w", err)
 		}
 	} else {
-		hash, err = v120_network.SubmitBalances(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+		hash, err = v120_network.SubmitBalances(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts, &rocketNetworkBalancesAddress)
 		if err != nil {
 			return fmt.Errorf("error submitting balances: %w", err)
 		}
