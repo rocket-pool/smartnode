@@ -206,6 +206,9 @@ type SmartnodeConfig struct {
 
 	// The FlashBots Protect RPC endpoint
 	flashbotsProtectUrl map[config.Network]string `yaml:"-"`
+
+	// The contract address of the RPL faucet
+	firstHoustonSubmissionTimestamp map[config.Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -971,6 +974,10 @@ func (cfg *SmartnodeConfig) GetBalanceBatcherAddress() string {
 
 func (cfg *SmartnodeConfig) GetFlashbotsProtectUrl() string {
 	return cfg.flashbotsProtectUrl[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetFirstHoustonSubmissionTimestamp() string {
+	return cfg.firstHoustonSubmissionTimestamp[cfg.Network.Value.(config.Network)]
 }
 
 func getNetworkOptions() []config.ParameterOption {

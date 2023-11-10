@@ -309,27 +309,31 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		// Check the last submission block
 		lastSubmissionBlock := state.NetworkDetails.BalancesBlock.Uint64()
 
-		// Get the previous RocketNetworkPrices addresses
-		prevAddresses := t.cfg.Smartnode.GetPreviousRocketNetworkPricesAddresses()
+		// Get the duration in seconds for the interval between submissions
+		submissionIntervalDuration := time.Duration(state.NetworkDetails.PricesSubmissionFrequency * uint64(time.Second))
+		eth2Config := state.BeaconConfig
 
 		// Get the last prices updated event
-		found, event, err := network.GetPriceUpdatedEvent(t.rp, lastSubmissionBlock, prevAddresses, nil)
+		found, event, err := network.GetPriceUpdatedEvent(t.rp, lastSubmissionBlock, nil)
 		if err != nil {
 			return fmt.Errorf("error getting event for price updated on block %d: %w", lastSubmissionBlock, err)
 		}
+		var nexSubmissionTime time.Time
 		if !found {
-			return fmt.Errorf("event for price updated on block %d not found", lastSubmissionBlock)
+			// The first submission after Houston is deployed won't find an event emitted by this contract
+			// Fetch the first Houston submission slot from the config
+			timestamp, err := strconv.ParseInt(t.cfg.Smartnode.GetFirstHoustonSubmissionTimestamp(), 10, 64)
+			if err != nil {
+				return fmt.Errorf("error getting first houston submission timestamp: %w", err)
+			}
+			nexSubmissionTime = time.Unix(timestamp, 0)
+		} else {
+
+			// Get the last submission reference time
+			lastSubmissionTime := time.Unix(event.SlotTimestamp.Int64(), 0)
+
+			nexSubmissionTime = lastSubmissionTime.Add(submissionIntervalDuration)
 		}
-
-		// Get the last submission reference time
-		lastSubmissionTime := time.Unix(event.SlotTimestamp.Int64(), 0)
-		eth2Config := state.BeaconConfig
-
-		// Get the duration in seconds for the interval between submissions
-		submissionIntervalDuration := time.Duration(state.NetworkDetails.PricesSubmissionFrequency * uint64(time.Second))
-
-		nexSubmissionTime := lastSubmissionTime.Add(submissionIntervalDuration)
-
 		if time.Now().Before(nexSubmissionTime) {
 			return nil
 		}
