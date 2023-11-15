@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -20,7 +19,6 @@ import (
 const (
 	nodeVotingDetailsBatchSize uint64 = 250
 	nodeAddressBatchSize       int    = 1000
-	depthPerRound              uint64 = 5
 	threadLimit                int    = 6
 )
 
@@ -96,6 +94,61 @@ func (g *VotingTreeGenerator) GetNodeVotingInfo(blockNumber uint32, opts *bind.C
 	return votingInfos, nil
 }
 
+// Get the leaves of a Network Voting Power tree based on node voting info
+func (g *VotingTreeGenerator) CreateLeavesForNetwork(infos []types.NodeVotingInfo) []*types.VotingTreeNode {
+	// Create a map of the voting power of each node, accounting for delegation
+	votingPower := map[common.Address]*big.Int{}
+	for _, info := range infos {
+		delegateVp, exists := votingPower[info.Delegate]
+		if !exists {
+			delegateVp = big.NewInt(0)
+			votingPower[info.Delegate] = delegateVp
+		}
+		delegateVp.Add(delegateVp, info.VotingPower)
+	}
+
+	// Make the tree leaves
+	leaves := make([]*types.VotingTreeNode, len(infos))
+	zeroHash := getHashForBalance(common.Big0)
+	for i, info := range infos {
+		vp, exists := votingPower[info.NodeAddress]
+		if !exists || vp.Cmp(common.Big0) == 0 {
+			leaves[i] = &types.VotingTreeNode{
+				Sum:  big.NewInt(0),
+				Hash: zeroHash,
+			}
+		} else {
+			leaves[i] = &types.VotingTreeNode{
+				Sum:  big.NewInt(0).Set(vp),
+				Hash: getHashForBalance(vp),
+			}
+		}
+	}
+	return leaves
+}
+
+// Get the leaves of a Node Voting Power tree based on node voting info
+func (g *VotingTreeGenerator) CreateLeavesForNode(infos []types.NodeVotingInfo, address common.Address) []*types.VotingTreeNode {
+	leaves := make([]*types.VotingTreeNode, len(infos))
+	zeroHash := getHashForBalance(common.Big0)
+	for i, info := range infos {
+		if info.Delegate == address {
+			leaves[i] = &types.VotingTreeNode{
+				Sum:  info.VotingPower,
+				Hash: getHashForBalance(info.VotingPower),
+			}
+		} else {
+			leaves[i] = &types.VotingTreeNode{
+				Sum:  big.NewInt(0),
+				Hash: zeroHash,
+			}
+		}
+	}
+	return leaves
+}
+
+// ===============
+
 // Gets a complete Pollard row for a new proposal based on the target block number.
 func (g *VotingTreeGenerator) CreatePollardRowForProposal(votingInfo []types.NodeVotingInfo) []types.VotingTreeNode {
 	// Get the 2D voting power subtree for the main tree
@@ -120,67 +173,6 @@ func (g *VotingTreeGenerator) CreatePollardForChallenge(targetIndex uint64, voti
 	// Create the proof and Pollard row from the leaf nodes
 	proof, nodes := g.generatePollard(leafNodes, targetIndex)
 	return proof, nodes
-}
-
-// Get the 2D array of voting delegation and total power for each node
-func (g *VotingTreeGenerator) getDelegatedVotingPower(votingInfo []types.NodeVotingInfo) [][]*big.Int {
-	nodeCount := uint64(len(votingInfo))
-
-	// For each node, create an array of nodes that have delegated to it
-	votingPowers := make([][]*big.Int, nodeCount)
-	for i := uint64(0); i < nodeCount; i++ {
-		nodeAddress := votingInfo[i].NodeAddress
-
-		votingPower := make([]*big.Int, nodeCount)
-		for j := uint64(0); j < nodeCount; j++ {
-			info := votingInfo[j]
-			if info.Delegate == nodeAddress {
-				votingPower[j] = info.VotingPower
-			} else {
-				votingPower[j] = big.NewInt(0)
-			}
-		}
-		votingPowers[i] = votingPower
-	}
-
-	// Return
-	return votingPowers
-}
-
-// Create the complete set of subtree leaf nodes
-func (g *VotingTreeGenerator) constructLeafNodes(votingPowers [][]*big.Int) []types.VotingTreeNode {
-	nodeCount := uint64(len(votingPowers))
-	if nodeCount == 0 {
-		return []types.VotingTreeNode{}
-	}
-
-	// Create the slice of leaf nodes for the subtree
-	subTreeDepth := uint64(math.Ceil(math.Log2(float64(nodeCount))))              // First power of 2 greater than nodeCount
-	subTreeLeafCountPerMainTreeNode := uint64(math.Pow(2, float64(subTreeDepth))) // Number of leaf nodes in the sub-tree that correspond to a single leaf of the main tree
-	totalSubTreeLeafNodes := subTreeLeafCountPerMainTreeNode * subTreeLeafCountPerMainTreeNode
-
-	// Create the leaf nodes
-	leafNodes := make([]types.VotingTreeNode, totalSubTreeLeafNodes)
-	for i := uint64(0); i < subTreeLeafCountPerMainTreeNode; i++ {
-		for j := uint64(0); j < subTreeLeafCountPerMainTreeNode; j++ {
-			index := i*subTreeLeafCountPerMainTreeNode + j
-			var balance *big.Int
-
-			// Get the balance if i and j are both in-bounds
-			if i < nodeCount && j < nodeCount {
-				balance = votingPowers[i][j]
-			} else {
-				balance = big.NewInt(0)
-			}
-
-			leafNode := types.VotingTreeNode{
-				Sum:  balance,
-				Hash: getHashForBalance(balance),
-			}
-			leafNodes[index] = leafNode
-		}
-	}
-	return leafNodes
 }
 
 // Generates a complete Pollard, either for a new proposal or for a challenge.
@@ -302,29 +294,6 @@ func (g *VotingTreeGenerator) getNodeAddressesFast(opts *bind.CallOpts) ([]commo
 	}
 
 	return addresses, nil
-}
-
-// Get the keccak hash of a parent node with two children
-func getParentNodeFromChildren(leftChild types.VotingTreeNode, rightChild types.VotingTreeNode) types.VotingTreeNode {
-	leftBuffer := [32]byte{}
-	rightBuffer := [32]byte{}
-	leftChild.Sum.FillBytes(leftBuffer[:])
-	rightChild.Sum.FillBytes(rightBuffer[:])
-	hash := crypto.Keccak256Hash(leftChild.Hash[:], leftBuffer[:], rightChild.Hash[:], rightBuffer[:])
-
-	sum := big.NewInt(0).Add(leftChild.Sum, rightChild.Sum)
-	return types.VotingTreeNode{
-		Hash: hash,
-		Sum:  sum,
-	}
-}
-
-// Get the keccak hash of a balance as a uint256
-func getHashForBalance(balance *big.Int) common.Hash {
-	buffer := [32]byte{}
-	balance.FillBytes(buffer[:])
-	hash := crypto.Keccak256Hash(buffer[:])
-	return hash
 }
 
 // Get contracts
