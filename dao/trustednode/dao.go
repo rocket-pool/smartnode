@@ -19,7 +19,7 @@ const (
 	MemberDetailsBatchSize = 20
 )
 
-// Proposal details
+// Member details
 type MemberDetails struct {
 	Address                common.Address `json:"address"`
 	Exists                 bool           `json:"exists"`

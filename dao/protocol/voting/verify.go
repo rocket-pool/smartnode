@@ -19,8 +19,7 @@ type RootSubmitted struct {
 	Proposer    common.Address         `json:"proposer"`
 	BlockNumber uint32                 `json:"blockNumber"`
 	Index       *big.Int               `json:"index"`
-	RootHash    common.Hash            `json:"rootHash"`
-	Sum         *big.Int               `json:"sum"`
+	Root        types.VotingTreeNode   `json:"root"`
 	TreeNodes   []types.VotingTreeNode `json:"treeNodes"`
 	Timestamp   time.Time              `json:"timestamp"`
 }
@@ -31,8 +30,7 @@ type rootSubmittedRaw struct {
 	Proposer    common.Address         `json:"proposer"`
 	BlockNumber uint32                 `json:"blockNumber"`
 	Index       *big.Int               `json:"index"`
-	RootHash    common.Hash            `json:"rootHash"`
-	Sum         *big.Int               `json:"sum"`
+	Root        types.VotingTreeNode   `json:"root"`
 	TreeNodes   []types.VotingTreeNode `json:"treeNodes"`
 	Timestamp   *big.Int               `json:"timestamp"`
 }
@@ -156,8 +154,7 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalID uint64, interv
 			Proposer:    raw.Proposer,
 			BlockNumber: raw.BlockNumber,
 			Index:       raw.Index,
-			RootHash:    raw.RootHash,
-			Sum:         raw.Sum,
+			Root:        raw.Root,
 			TreeNodes:   raw.TreeNodes,
 			Timestamp:   time.Unix(raw.Timestamp.Int64(), 0),
 		})
