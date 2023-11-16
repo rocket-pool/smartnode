@@ -62,7 +62,7 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 			Name:                 "Enable PBSS",
 			Description:          "Enable Geth's new path-based state scheme. With this enabled, you will no longer need to manually prune Geth; it will automatically prune its database in real-time.\n\n[orange]NOTE:\nEnabling this will require you to remove and resync your Geth DB using `rocketpool service resync-eth1`.\nYou will need a synced fallback node configured before doing this, or you will no longer be able to attest until it has finished resyncing!",
 			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: false},
+			Default:              map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"GETH_ENABLE_PBSS"},
 			CanBeBlank:           false,
