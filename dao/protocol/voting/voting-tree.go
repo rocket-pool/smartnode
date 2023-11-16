@@ -62,7 +62,7 @@ func CreateTreeFromLeaves(leaves []*types.VotingTreeNode, virtualRootIndex uint6
 
 	return &VotingTree{
 		nodes:            nodes,
-		depth:            uint64(math.Floor(originalPower)),
+		depth:            uint64(ceilingPower),
 		virtualRootIndex: virtualRootIndex,
 	}
 }
@@ -88,9 +88,9 @@ func (t *VotingTree) CheckForChallengeableArtifacts(virtualRootIndex uint64, pro
 		proposedNode := proposedPollard[i]
 		if localNode.Hash != proposedNode.Hash || localNode.Sum.Cmp(proposedNode.Sum) != 0 {
 			// Get the local index from the pollard offset being used
-			firstPollardIndex := len(localPollard)/2 + 1 // Add 1 because it's 1-indexed
+			firstPollardIndex := len(localPollard) // First index is just the length of the pollard row because it's 1-indexed
 			localIndex := uint64(firstPollardIndex + i)
-			virtualIndex := t.getVirtualIndexFromLocalIndex(localIndex)
+			virtualIndex := t.getVirtualIndexFromLocalIndex(localIndex, virtualRootIndex)
 
 			// Create a new tree from the proposed pollard
 			proposedSubtree := CreateTreeFromLeaves(proposedPollard, virtualRootIndex)
@@ -142,7 +142,7 @@ func (t *VotingTree) generatePollard(virtualRootIndex uint64) []*types.VotingTre
 
 	// Get the indices of the pollard
 	pollardSize := uint64(math.Pow(2, float64(relativeDepth)))
-	firstIndex := (index - 1) * pollardSize // Subtract 1 to make it 0-indexed
+	firstIndex := index*pollardSize - 1 // Subtract 1 to make it 0-indexed
 	lastIndex := firstIndex + pollardSize
 	return t.nodes[firstIndex:lastIndex]
 }
@@ -158,9 +158,9 @@ func (t *VotingTree) getLocalIndexFromVirtualIndex(virtualIndex uint64) uint64 {
 	return levelStartIndex + offset
 }
 
-// Get the virtual index of the tree (where the root node has index 1) corresponding to a local one
-func (t *VotingTree) getVirtualIndexFromLocalIndex(localIndex uint64) uint64 {
-	if t.virtualRootIndex == 1 {
+// Get the virtual index of the tree (where the root node has index 1) corresponding to a local one, using the provided virtual index of the root node
+func (t *VotingTree) getVirtualIndexFromLocalIndex(localIndex uint64, virtualRootIndex uint64) uint64 {
+	if virtualRootIndex == 1 {
 		return localIndex
 	}
 
@@ -168,7 +168,7 @@ func (t *VotingTree) getVirtualIndexFromLocalIndex(localIndex uint64) uint64 {
 	firstLevelIndex := uint64(math.Pow(2, float64(level)))
 	offset := localIndex - firstLevelIndex
 
-	virtualFirstLevelIndex := firstLevelIndex * t.virtualRootIndex
+	virtualFirstLevelIndex := firstLevelIndex * virtualRootIndex
 	return virtualFirstLevelIndex + offset
 }
 
