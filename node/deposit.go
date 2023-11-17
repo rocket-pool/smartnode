@@ -94,6 +94,62 @@ func GetNodeDepositCredit(rp *rocketpool.RocketPool, nodeAddress common.Address,
 	return *creditBalance, nil
 }
 
+// Get the current ETH balance for the given node operator
+func GetNodeEthBalance(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	creditBalance := new(*big.Int)
+	if err := rocketNodeDeposit.Call(opts, creditBalance, "getNodeEthBalance", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node ETH balance: %w", err)
+	}
+	return *creditBalance, nil
+}
+
+// Get the sum of the credit balance of a given node operator and their ETH balance
+func GetNodeCreditAndBalance(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	creditAndBalance := new(*big.Int)
+	if err := rocketNodeDeposit.Call(opts, creditAndBalance, "getNodeCreditAndBalance", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node credit and ETH balance: %w", err)
+	}
+	return *creditAndBalance, nil
+}
+
+// Get the sum of the amount of ETH credit currently usable by a given node operator and their balance
+func GetNodeUsableCreditAndBalance(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	usableCreditBalance := new(*big.Int)
+	if err := rocketNodeDeposit.Call(opts, usableCreditBalance, "getNodeUsableCreditAndBalance", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node usable credit and ETH balance: %w", err)
+	}
+	return *usableCreditBalance, nil
+}
+
+// Get the amount of ETH credit currently usable by a given node operator
+func GetNodeUsableCredit(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	usableCredit := new(*big.Int)
+	if err := rocketNodeDeposit.Call(opts, usableCredit, "getNodeUsableCredit", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node usable credit: %w", err)
+	}
+	return *usableCredit, nil
+}
+
 // Get contracts
 var rocketNodeDepositLock sync.Mutex
 
