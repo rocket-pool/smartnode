@@ -7,8 +7,75 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/multicall"
+	"golang.org/x/sync/errgroup"
 )
+
+const (
+	nodeVotingDetailsBatchSize uint64 = 250
+)
+
+// Gets the voting power and delegation info for every node at the specified block using multicall
+func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, multicallAddress common.Address, opts *bind.CallOpts) (*types.NodeInfoSnapshot, error) {
+	rocketNetworkVoting, err := getRocketNetworkVoting(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the number of voting nodes
+	nodeCountBig, err := GetVotingNodeCount(rp, blockNumber, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting voting node count: %w", err)
+	}
+	nodeCount := nodeCountBig.Uint64()
+
+	// Get the node addresses
+	nodeAddresses, err := node.GetNodeAddressesFast(rp, multicallAddress, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting node addresses: %w", err)
+	}
+
+	// Sync
+	var wg errgroup.Group
+
+	// Run the getters in batches
+	votingInfos := make([]types.NodeVotingInfo, nodeCount)
+	for i := uint64(0); i < nodeCount; i += nodeVotingDetailsBatchSize {
+		i := i
+		max := i + nodeVotingDetailsBatchSize
+		if max > nodeCount {
+			max = nodeCount
+		}
+
+		// Load details
+		wg.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(rp.Client, multicallAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				nodeAddress := nodeAddresses[j]
+				votingInfos[j].NodeAddress = nodeAddress
+				mc.AddCall(rocketNetworkVoting, &votingInfos[j].VotingPower, "getVotingPower", nodeAddress, blockNumber)
+				mc.AddCall(rocketNetworkVoting, &votingInfos[j].Delegate, "getDelegate", nodeAddress, blockNumber)
+			}
+			_, err = mc.FlexibleCall(true, opts)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+			return nil
+		})
+	}
+
+	return &types.NodeInfoSnapshot{
+		BlockNumber: blockNumber,
+		Info:        votingInfos,
+	}, nil
+}
 
 // Check whether or not on-chain voting has been initialized for the given node
 func GetVotingInitialized(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (bool, error) {

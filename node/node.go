@@ -14,11 +14,13 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/storage"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/utils/multicall"
 	"github.com/rocket-pool/rocketpool-go/utils/strings"
 )
 
 // Settings
 const (
+	nodeAddressFastBatchSize    int    = 1000
 	NodeAddressBatchSize               = 50
 	NodeDetailsBatchSize               = 20
 	SmoothingPoolCountBatchSize uint64 = 2000
@@ -149,6 +151,56 @@ func GetNodeAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.
 	// Return
 	return addresses, nil
 
+}
+
+// Get all node addresses using a multicaller
+func GetNodeAddressesFast(rp *rocketpool.RocketPool, multicallAddress common.Address, opts *bind.CallOpts) ([]common.Address, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get minipool count
+	nodeCount, err := GetNodeCount(rp, opts)
+	if err != nil {
+		return []common.Address{}, err
+	}
+
+	// Sync
+	var wg errgroup.Group
+	addresses := make([]common.Address, nodeCount)
+
+	// Run the getters in batches
+	count := int(nodeCount)
+	for i := 0; i < count; i += nodeAddressFastBatchSize {
+		i := i
+		max := i + nodeAddressFastBatchSize
+		if max > count {
+			max = count
+		}
+
+		wg.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(rp.Client, multicallAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				mc.AddCall(rocketNodeManager, &addresses[j], "getNodeAt", big.NewInt(int64(j)))
+			}
+			_, err = mc.FlexibleCall(true, opts)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+			return nil
+		})
+	}
+
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting node addresses: %w", err)
+	}
+
+	return addresses, nil
 }
 
 // Get a node's details

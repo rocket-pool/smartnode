@@ -80,6 +80,11 @@ type NodeVotingInfo struct {
 	Delegate    common.Address `json:"delegate"`
 }
 
+type NodeInfoSnapshot struct {
+	BlockNumber uint32           `json:"blockNumber"`
+	Info        []NodeVotingInfo `json:"info"`
+}
+
 // A node of the voting Merkle Tree (not a Rocket Pool node)
 type VotingTreeNode struct {
 	Sum  *big.Int    `abi:"sum" json:"sum"`
