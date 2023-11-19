@@ -70,7 +70,7 @@ func EstimateProposeSubmitBalancesEnabledGas(rp *rocketpool.RocketPool, value bo
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", SubmitBalancesEnabledSettingPath), NetworkSettingsContractName, SubmitBalancesEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
-// The frequency in blocks at which network balances should be submitted by trusted nodes
+// The frequency in seconds at which network balances should be submitted by trusted nodes
 func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
@@ -108,7 +108,7 @@ func EstimateProposeSubmitPricesEnabledGas(rp *rocketpool.RocketPool, value bool
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", SubmitPricesEnabledSettingPath), NetworkSettingsContractName, SubmitPricesEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
-// The frequency in blocks at which network prices should be submitted by trusted nodes
+// The frequency in seconds at which network prices should be submitted by trusted nodes
 func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {

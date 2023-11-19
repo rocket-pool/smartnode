@@ -18,6 +18,16 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
+// Info for a balances updated event
+type BalancesUpdatedEvent struct {
+	BlockNumber    *big.Int `json:"blockNumber"`
+	SlotTimestamp  *big.Int `json:"slotTimestamp"`
+	TotalEth       *big.Int `json:"totalEth"`
+	StakingEth     *big.Int `json:"stakingEth"`
+	RethSupply     *big.Int `json:"rethSupply"`
+	BlockTimestamp *big.Int `json:"blockTimestamp"`
+}
+
 // Get the block number which network balances are current for
 func GetBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
@@ -97,38 +107,25 @@ func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 }
 
 // Estimate the gas of SubmitBalances
-func EstimateSubmitBalancesGas(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitBalancesGas(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNetworkBalances.GetTransactionGasInfo(opts, "submitBalances", big.NewInt(int64(block)), totalEth, stakingEth, rethSupply)
+	return rocketNetworkBalances.GetTransactionGasInfo(opts, "submitBalances", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), totalEth, stakingEth, rethSupply)
 }
 
 // Submit network balances for an epoch
-func SubmitBalances(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func SubmitBalances(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkBalances, err := getRocketNetworkBalances(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), totalEth, stakingEth, rethSupply)
+	tx, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), stakingEth, rethSupply)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error submitting network balances: %w", err)
 	}
 	return tx.Hash(), nil
-}
-
-// Returns the latest block number that oracles should be reporting balances for
-func GetLatestReportableBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	latestReportableBlock := new(*big.Int)
-	if err := rocketNetworkBalances.Call(opts, latestReportableBlock, "getLatestReportableBlock"); err != nil {
-		return nil, fmt.Errorf("error getting latest reportable block: %w", err)
-	}
-	return *latestReportableBlock, nil
 }
 
 // Returns an array of block numbers for balances submissions the given trusted node has submitted since fromBlock
@@ -186,6 +183,49 @@ func GetLatestBalancesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, i
 	return results, nil
 }
 
+func GetBalancesUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts *bind.CallOpts) (bool, BalancesUpdatedEvent, error) {
+	// Get contracts
+	rocketNetworkBalances, err := getRocketNetworkBalances(rp, opts)
+	if err != nil {
+		return false, BalancesUpdatedEvent{}, err
+	}
+
+	// Create the list of addresses to check
+	currentAddress := *rocketNetworkBalances.Address
+	rocketNetworkBalancesAddress := []common.Address{currentAddress}
+
+	// Construct a filter query for relevant logs
+	balancesUpdatedEvent := rocketNetworkBalances.ABI.Events["BalancesUpdated"]
+	indexBytes := [32]byte{}
+	addressFilter := rocketNetworkBalancesAddress
+	topicFilter := [][]common.Hash{{balancesUpdatedEvent.ID}, {indexBytes}}
+
+	// Get the event logs
+	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), big.NewInt(int64(blockNumber)), big.NewInt(int64(blockNumber)), nil)
+	if err != nil {
+		return false, BalancesUpdatedEvent{}, err
+	}
+	if len(logs) == 0 {
+		return false, BalancesUpdatedEvent{}, nil
+	}
+
+	// Get the log info values
+	values, err := balancesUpdatedEvent.Inputs.Unpack(logs[0].Data)
+	if err != nil {
+		return false, BalancesUpdatedEvent{}, fmt.Errorf("error unpacking price updated event data: %w", err)
+	}
+
+	// Convert to a native struct
+	var eventData BalancesUpdatedEvent
+	err = balancesUpdatedEvent.Inputs.Copy(&eventData, values)
+	if err != nil {
+		return false, BalancesUpdatedEvent{}, fmt.Errorf("error converting price updated event data to struct: %w", err)
+	}
+
+	return true, eventData, nil
+}
+
+// TODO: will be adjusted/removed
 // Returns a mapping of members and whether they have submitted balances this interval or not
 func GetTrustedNodeLatestBalancesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (map[common.Address]bool, error) {
 	// Get the update frequency
@@ -221,6 +261,7 @@ func GetTrustedNodeLatestBalancesParticipation(rp *rocketpool.RocketPool, interv
 	return participationTable, nil
 }
 
+// TODO: will be adjusted/removed
 // Calculates the participation rate of every trusted node on balance submission since the last block that member count changed
 func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (*node.TrustedNodeParticipation, error) {
 	// Get the update frequency
