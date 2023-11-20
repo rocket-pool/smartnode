@@ -19,7 +19,7 @@ const (
 )
 
 // Gets the voting power and delegation info for every node at the specified block using multicall
-func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, multicallAddress common.Address, opts *bind.CallOpts) (*types.NodeInfoSnapshot, error) {
+func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, multicallAddress common.Address, opts *bind.CallOpts) ([]types.NodeVotingInfo, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, opts)
 	if err != nil {
 		return nil, err
@@ -71,10 +71,7 @@ func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, mult
 		})
 	}
 
-	return &types.NodeInfoSnapshot{
-		BlockNumber: blockNumber,
-		Info:        votingInfos,
-	}, nil
+	return votingInfos, nil
 }
 
 // Check whether or not on-chain voting has been initialized for the given node
