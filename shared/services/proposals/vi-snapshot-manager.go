@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -58,7 +57,7 @@ type VotingInfoSnapshotManager struct {
 }
 
 // Create a new VotingInfoSnapshotManager instance
-func NewVotingInfoSnapshotManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client) (*VotingInfoSnapshotManager, error) {
+func NewVotingInfoSnapshotManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool) (*VotingInfoSnapshotManager, error) {
 	// Create the snapshot filename regex
 	logPrefix := "[Voting Info Snapshot]"
 	filenameRegex := regexp.MustCompile(votingInfoSnapshotFilenamePattern)

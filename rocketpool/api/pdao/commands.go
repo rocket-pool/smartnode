@@ -192,11 +192,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "propose-setting",
 				Usage:     "Propose updating a PDAO setting (use can-propose-setting to get the pollard)",
-				UsageText: "rocketpool api pdao propose-setting setting-name value pollard",
+				UsageText: "rocketpool api pdao propose-setting setting-name value",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 4); err != nil {
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
 					settingName := c.Args().Get(0)
@@ -205,10 +205,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					pollard := c.Args().Get(3)
 
 					// Run
-					api.PrintResponse(proposeSetting(c, settingName, value, blockNumber, pollard))
+					api.PrintResponse(proposeSetting(c, settingName, value, blockNumber))
 					return nil
 
 				},
@@ -258,25 +257,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "propose-rewards-percentages",
 				Usage:     "Propose new RPL rewards allocation percentages for the Oracle DAO, the Protocol DAO, and the node operators",
-				UsageText: "rocketpool api pdao propose-rewards-percentages node odao pdao block-number pollard",
+				UsageText: "rocketpool api pdao propose-rewards-percentages node odao pdao block-number",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 5); err != nil {
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
 					node, err1 := cliutils.ValidateBigInt("node", c.Args().Get(0))
 					odao, err2 := cliutils.ValidateBigInt("odao", c.Args().Get(1))
 					pdao, err3 := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
 					blockNumber, err4 := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
-					pollard := c.Args().Get(4)
 					err := errors.Join(err1, err2, err3, err4)
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(proposeRewardsPercentages(c, node, odao, pdao, blockNumber, pollard))
+					api.PrintResponse(proposeRewardsPercentages(c, node, odao, pdao, blockNumber))
 					return nil
 
 				},
@@ -309,25 +307,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "propose-one-time-spend",
 				Usage:     "Propose a one-time spend of the Protocol DAO's treasury",
-				UsageText: "rocketpool api pdao propose-one-time-spend invoice-id recipient amount block-number pollard",
+				UsageText: "rocketpool api pdao propose-one-time-spend invoice-id recipient amount block-number",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 5); err != nil {
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
 					invoiceID := c.Args().Get(0)
 					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
 					amount, err2 := cliutils.ValidateBigInt("amount", c.Args().Get(2))
 					blockNumber, err3 := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
-					pollard := c.Args().Get(4)
 					err := errors.Join(err1, err2, err3)
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(proposeOneTimeSpend(c, invoiceID, recipient, amount, blockNumber, pollard))
+					api.PrintResponse(proposeOneTimeSpend(c, invoiceID, recipient, amount, blockNumber))
 					return nil
 
 				},
@@ -363,11 +360,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "propose-recurring-spend",
 				Usage:     "Propose a recurring spend of the Protocol DAO's treasury",
-				UsageText: "rocketpool api pdao propose-recurring-spend contract-name recipient amount-per-period period-length start-time number-of-periods block-number pollard",
+				UsageText: "rocketpool api pdao propose-recurring-spend contract-name recipient amount-per-period period-length start-time number-of-periods block-number",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 8); err != nil {
+					if err := cliutils.ValidateArgCount(c, 7); err != nil {
 						return err
 					}
 					contractName := c.Args().Get(0)
@@ -377,14 +374,13 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					startTime, err4 := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
 					numberOfPeriods, err5 := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
 					blockNumber, err6 := cliutils.ValidateUint32("blockNumber", c.Args().Get(6))
-					pollard := c.Args().Get(7)
 					err := errors.Join(err1, err2, err3, err4, err5, err6)
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(proposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, time.Unix(int64(startTime), 0), numberOfPeriods, blockNumber, pollard))
+					api.PrintResponse(proposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, time.Unix(int64(startTime), 0), numberOfPeriods, blockNumber))
 					return nil
 
 				},
@@ -419,11 +415,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "propose-recurring-spend-update",
 				Usage:     "Propose an update to an existing recurring spend plan",
-				UsageText: "rocketpool api pdao propose-recurring-spend-update contract-name recipient amount-per-period period-length number-of-periods block-number pollard",
+				UsageText: "rocketpool api pdao propose-recurring-spend-update contract-name recipient amount-per-period period-length number-of-periods block-number",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 7); err != nil {
+					if err := cliutils.ValidateArgCount(c, 6); err != nil {
 						return err
 					}
 					contractName := c.Args().Get(0)
@@ -432,14 +428,13 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					periodLength, err3 := cliutils.ValidateDuration("period-length", c.Args().Get(3))
 					numberOfPeriods, err4 := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(4))
 					blockNumber, err5 := cliutils.ValidateUint32("blockNumber", c.Args().Get(5))
-					pollard := c.Args().Get(6)
 					err := errors.Join(err1, err2, err3, err4, err5)
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(proposeRecurringSpendUpdate(c, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, pollard))
+					api.PrintResponse(proposeRecurringSpendUpdate(c, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber))
 					return nil
 
 				},
@@ -471,24 +466,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "propose-invite-to-security-council",
 				Usage:     "Propose inviting someone to the security council",
-				UsageText: "rocketpool api pdao propose-invite-to-security-council id address block-number pollard",
+				UsageText: "rocketpool api pdao propose-invite-to-security-council id address block-number",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 4); err != nil {
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
 					id := c.Args().Get(0)
 					address, err1 := cliutils.ValidateAddress("address", c.Args().Get(1))
 					blockNumber, err2 := cliutils.ValidateUint32("blockNumber", c.Args().Get(2))
-					pollard := c.Args().Get(3)
 					err := errors.Join(err1, err2)
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(proposeInviteToSecurityCouncil(c, id, address, blockNumber, pollard))
+					api.PrintResponse(proposeInviteToSecurityCouncil(c, id, address, blockNumber))
 					return nil
 
 				},
@@ -519,23 +513,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "propose-kick-from-security-council",
 				Usage:     "Propose kicking someone from the security council",
-				UsageText: "rocketpool api pdao propose-kick-from-security-council address block-number pollard",
+				UsageText: "rocketpool api pdao propose-kick-from-security-council address block-number",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
 					address, err1 := cliutils.ValidateAddress("address", c.Args().Get(0))
 					blockNumber, err2 := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
-					pollard := c.Args().Get(2)
 					err := errors.Join(err1, err2)
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(proposeKickFromSecurityCouncil(c, address, blockNumber, pollard))
+					api.PrintResponse(proposeKickFromSecurityCouncil(c, address, blockNumber))
 					return nil
 
 				},

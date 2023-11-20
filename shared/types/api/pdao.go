@@ -155,7 +155,6 @@ type CanProposePDAOSettingResponse struct {
 	LockedRpl       *big.Int           `json:"lockedRpl"`
 	ProposalBond    *big.Int           `json:"proposalBond"`
 	BlockNumber     uint32             `json:"blockNumber"`
-	Pollard         string             `json:"pollard"`
 	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
 }
 type ProposePDAOSettingResponse struct {
@@ -177,7 +176,6 @@ type PDAOCanProposeRewardsPercentagesResponse struct {
 	Status      string             `json:"status"`
 	Error       string             `json:"error"`
 	BlockNumber uint32             `json:"blockNumber"`
-	Pollard     string             `json:"pollard"`
 	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
 }
 
@@ -192,7 +190,6 @@ type PDAOCanProposeOneTimeSpendResponse struct {
 	Status      string             `json:"status"`
 	Error       string             `json:"error"`
 	BlockNumber uint32             `json:"blockNumber"`
-	Pollard     string             `json:"pollard"`
 	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
 }
 
@@ -207,7 +204,6 @@ type PDAOCanProposeRecurringSpendResponse struct {
 	Status      string             `json:"status"`
 	Error       string             `json:"error"`
 	BlockNumber uint32             `json:"blockNumber"`
-	Pollard     string             `json:"pollard"`
 	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
 }
 
@@ -222,7 +218,6 @@ type PDAOCanProposeRecurringSpendUpdateResponse struct {
 	Status      string             `json:"status"`
 	Error       string             `json:"error"`
 	BlockNumber uint32             `json:"blockNumber"`
-	Pollard     string             `json:"pollard"`
 	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
 }
 
@@ -237,7 +232,6 @@ type PDAOCanProposeInviteToSecurityCouncilResponse struct {
 	Status      string             `json:"status"`
 	Error       string             `json:"error"`
 	BlockNumber uint32             `json:"blockNumber"`
-	Pollard     string             `json:"pollard"`
 	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
 }
 
@@ -252,7 +246,6 @@ type PDAOCanProposeKickFromSecurityCouncilResponse struct {
 	Status      string             `json:"status"`
 	Error       string             `json:"error"`
 	BlockNumber uint32             `json:"blockNumber"`
-	Pollard     string             `json:"pollard"`
 	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
 }
 

@@ -44,7 +44,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 
 	// Try proposing
 	message := fmt.Sprintf("invite %s (%s) to the security council", id, address.Hex())
-	blockNumber, pollard, encodedPollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc)
 	if err != nil {
 		return nil, err
 	}
@@ -55,14 +55,17 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 
 	// Update & return response
 	response.BlockNumber = blockNumber
-	response.Pollard = encodedPollard
 	response.GasInfo = gasInfo
 	return &response, nil
 }
 
-func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Address, blockNumber uint32, pollard string) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
+func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Address, blockNumber uint32) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
+		return nil, err
+	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -70,6 +73,10 @@ func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Ad
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -91,11 +98,11 @@ func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Ad
 
 	// Propose
 	message := fmt.Sprintf("invite %s (%s) to the security council", id, address.Hex())
-	truePollard, err := decodePollard(pollard)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, err
 	}
-	proposalID, hash, err := protocol.ProposeInviteToSecurityCouncil(rp, message, id, address, blockNumber, truePollard, opts)
+	proposalID, hash, err := protocol.ProposeInviteToSecurityCouncil(rp, message, id, address, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
