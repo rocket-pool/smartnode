@@ -64,7 +64,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-vote-proposal",
 				Usage:     "Check whether the node can vote on a proposal",
-				UsageText: "rocketpool api pdao can-vote-proposal proposal-id support",
+				UsageText: "rocketpool api pdao can-vote-proposal proposal-id vote-direction",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -75,13 +75,13 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					support, err := cliutils.ValidateBool("support", c.Args().Get(1))
+					voteDir, err := cliutils.ValidateVoteDirection("vote direction", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canVoteOnProposal(c, proposalId, support))
+					api.PrintResponse(canVoteOnProposal(c, proposalId, voteDir))
 					return nil
 
 				},
@@ -90,7 +90,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "vote-proposal",
 				Aliases:   []string{"v"},
 				Usage:     "Vote on a proposal",
-				UsageText: "rocketpool api pdao vote-proposal proposal-id support",
+				UsageText: "rocketpool api pdao vote-proposal proposal-id vote-direction",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -101,13 +101,13 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					support, err := cliutils.ValidateBool("support", c.Args().Get(1))
+					voteDir, err := cliutils.ValidateVoteDirection("vote direction", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(voteOnProposal(c, proposalId, support))
+					api.PrintResponse(voteOnProposal(c, proposalId, voteDir))
 					return nil
 
 				},

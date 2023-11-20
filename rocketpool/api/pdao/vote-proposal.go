@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -23,11 +24,19 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 	if err := services.RequireNodeTrusted(c); err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -79,23 +88,33 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 		return err
 	})
 
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Get the proposal artifacts
+	propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
+	if err != nil {
+		return nil, err
+	}
+	totalDelegatedVP, nodeIndex, proof, err := propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get gas estimate
 	wg.Go(func() error {
 		opts, err := w.GetNodeAccountTransactor()
 		if err != nil {
 			return err
 		}
-		gasInfo, err := protocol.EstimateVoteOnProposalGas(rp, proposalId, support, opts)
+		gasInfo, err := protocol.EstimateVoteOnProposalGas(rp, proposalId, voteDirection, totalDelegatedVP, nodeIndex, proof, opts)
 		if err == nil {
 			response.GasInfo = gasInfo
 		}
 		return err
 	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
 
 	// Check data
 	votingPower, err := network.GetVotingPower(rp, nodeAccount.Address, proposalBlock, nil)
@@ -111,10 +130,14 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 
 }
 
-func voteOnProposal(c *cli.Context, proposalId uint64, support bool) (*api.VoteOnPDAOProposalResponse, error) {
+func voteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.VoteOnPDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
+		return nil, err
+	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -125,12 +148,38 @@ func voteOnProposal(c *cli.Context, proposalId uint64, support bool) (*api.VoteO
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.VoteOnPDAOProposalResponse{}
 
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the block used by the proposal
+	proposalBlock, err := protocol.GetProposalBlock(rp, proposalId, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the proposal artifacts
+	propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
+	if err != nil {
+		return nil, err
+	}
+	totalDelegatedVP, nodeIndex, proof, err := propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +191,7 @@ func voteOnProposal(c *cli.Context, proposalId uint64, support bool) (*api.VoteO
 	}
 
 	// Vote on proposal
-	hash, err := protocol.VoteOnProposal(rp, proposalId, support, opts)
+	hash, err := protocol.VoteOnProposal(rp, proposalId, voteDirection, totalDelegatedVP, nodeIndex, proof, opts)
 	if err != nil {
 		return nil, err
 	}

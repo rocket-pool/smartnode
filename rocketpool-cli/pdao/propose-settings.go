@@ -306,7 +306,7 @@ func proposeSetting(c *cli.Context, setting string, value string) error {
 	}
 
 	// Submit proposal
-	response, err := rp.PDAOProposeSetting(setting, value, canPropose.BlockNumber, canPropose.Pollard)
+	response, err := rp.PDAOProposeSetting(setting, value, canPropose.BlockNumber)
 	if err != nil {
 		return err
 	}

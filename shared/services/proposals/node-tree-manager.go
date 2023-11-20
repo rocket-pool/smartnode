@@ -93,7 +93,7 @@ func NewNodeTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig) (*No
 }
 
 // Create a node voting tree from a voting info snapshot and the node's index
-func (m *NodeTreeManager) CreateNetworkVotingTree(snapshot *VotingInfoSnapshot, rpNodeIndex uint64, networkTreeNodeIndex uint64) *NodeVotingTree {
+func (m *NodeTreeManager) CreateNodeVotingTree(snapshot *VotingInfoSnapshot, rpNodeIndex uint64, networkTreeNodeIndex uint64) *NodeVotingTree {
 	address := &snapshot.Info[rpNodeIndex].NodeAddress
 	leaves := make([]*types.VotingTreeNode, len(snapshot.Info))
 	zeroHash := getHashForBalance(common.Big0)

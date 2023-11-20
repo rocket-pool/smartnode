@@ -6,14 +6,11 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao"
-	"github.com/rocket-pool/rocketpool-go/dao/protocol/voting"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli"
@@ -161,12 +158,12 @@ func (t *verifyPdaoProps) getChallengeableProposals(state *state.NetworkState) (
 }
 */
 
+/*
 func (t *verifyPdaoProps) checkDutiesForProposal(proposalDetails dao.ProposalDetails, headBlock uint64) error {
 	// Get the block to start scanning for new events
-	/*startBlock, exists := t.proposalEventStartBlockMap[proposalDetails.ID]
+	startBlock, exists := t.proposalEventStartBlockMap[proposalDetails.ID]
 	if !exists {
 	}
-	*/
 
 	// Determine the start block for the even scan window based on the time the proposal was created
 	createTime := time.Unix(int64(proposalDetails.CreatedTime), 0)
@@ -228,3 +225,4 @@ func (t *verifyPdaoProps) getProposalsInChallengeWindow(state *state.NetworkStat
 	// TODO
 	return nil, nil
 }
+*/

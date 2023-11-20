@@ -123,7 +123,7 @@ func proposeRecurringSpend(c *cli.Context) error {
 	}
 
 	// Submit
-	response, err := rp.PDAOProposeRecurringSpend(contractName, recipient, amount, periodLength, startTime, numPeriods, canResponse.BlockNumber, canResponse.Pollard)
+	response, err := rp.PDAOProposeRecurringSpend(contractName, recipient, amount, periodLength, startTime, numPeriods, canResponse.BlockNumber)
 	if err != nil {
 		return err
 	}
