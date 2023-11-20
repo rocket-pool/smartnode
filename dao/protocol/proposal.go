@@ -34,6 +34,7 @@ const (
 type ProtocolDaoProposalDetails struct {
 	ID                   uint64                         `json:"id"`
 	ProposerAddress      common.Address                 `json:"proposerAddress"`
+	TargetBlock          uint32                         `json:"targetBlock"`
 	Message              string                         `json:"message"`
 	StartBlock           uint64                         `json:"startBlock"`
 	Phase1EndBlock       uint64                         `json:"phase1EndBlock"`
@@ -105,6 +106,11 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 	wg.Go(func() error {
 		var err error
 		prop.ProposerAddress, err = GetProposalProposer(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.TargetBlock, err = GetProposalBlock(rp, proposalId, opts)
 		return err
 	})
 	wg.Go(func() error {

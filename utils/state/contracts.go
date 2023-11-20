@@ -48,6 +48,9 @@ type NetworkContracts struct {
 
 	// Atlas
 	RocketMinipoolBondReducer *rocketpool.Contract
+
+	// Houston
+	RocketDAOProtocolProposal *rocketpool.Contract
 }
 
 type contractArtifacts struct {
@@ -58,7 +61,7 @@ type contractArtifacts struct {
 }
 
 // Get a new network contracts container
-func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) (*NetworkContracts, error) {
+func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, isHoustonDeployed bool, opts *bind.CallOpts) (*NetworkContracts, error) {
 	// Get the latest block number if it's not provided
 	if opts == nil {
 		latestElBlock, err := rp.Client.BlockNumber(context.Background())
@@ -159,6 +162,15 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 		name:     "rocketMinipoolBondReducer",
 		contract: &contracts.RocketMinipoolBondReducer,
 	})
+
+	// Houston wrappers
+	if isHoustonDeployed {
+		wrappers = append(wrappers, contractArtifacts{
+			name:     "rocketDAOProtocolProposal",
+			contract: &contracts.RocketDAOProtocolProposal,
+		})
+
+	}
 
 	// Add the address and ABI getters to multicall
 	for i, wrapper := range wrappers {
