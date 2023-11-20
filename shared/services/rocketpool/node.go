@@ -503,6 +503,38 @@ func (c *Client) NodeWithdrawRpl(amountWei *big.Int) (api.NodeWithdrawRplRespons
 	return response, nil
 }
 
+// Check whether we can withdraw ETH staked on behalf of the node
+func (c *Client) CanNodeWithdrawEth(amountWei *big.Int) (api.CanNodeWithdrawEthResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-eth %s", amountWei.String()))
+	if err != nil {
+		return api.CanNodeWithdrawEthResponse{}, fmt.Errorf("Could not get can node withdraw ETH status: %w", err)
+	}
+	var response api.CanNodeWithdrawEthResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNodeWithdrawEthResponse{}, fmt.Errorf("Could not decode can node withdraw ETH response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNodeWithdrawEthResponse{}, fmt.Errorf("Could not get can node withdraw ETH status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Withdraw ETH staked on behalf of the node
+func (c *Client) NodeWithdrawEth(amountWei *big.Int) (api.NodeWithdrawEthResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-eth %s", amountWei.String()))
+	if err != nil {
+		return api.NodeWithdrawEthResponse{}, fmt.Errorf("Could not withdraw node ETH: %w", err)
+	}
+	var response api.NodeWithdrawEthResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeWithdrawEthResponse{}, fmt.Errorf("Could not decode withdraw node ETH response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeWithdrawEthResponse{}, fmt.Errorf("Could not withdraw node ETH: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can make a deposit
 func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int) (api.CanNodeDepositResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s", amountWei.String(), minFee, salt.String()))

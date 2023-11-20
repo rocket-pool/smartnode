@@ -271,6 +271,11 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			return nil, err
 		}
 		response.UsableCreditAndBalance = usableCreditAndBalance
+		ethBalance, err := node.GetNodeEthBalance(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+		response.EthBalance = ethBalance
 
 	}
 
