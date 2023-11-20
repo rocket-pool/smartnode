@@ -36,6 +36,28 @@ func Deposit(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee floa
 	return tx, nil
 }
 
+// Estimate the gas to WithdrawETH
+func EstimateWithdrawEthGas(rp *rocketpool.RocketPool, ethAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "withdrawEth", ethAmount)
+}
+
+// Withdraw unused Ether that was staked on behalf of the node
+func WithdrawEth(rp *rocketpool.RocketPool, ethAmount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := rocketNodeDeposit.Transact(opts, "withdrawEth", ethAmount)
+	if err != nil {
+		return nil, fmt.Errorf("error trying to withdraw ETH: %w", err)
+	}
+	return tx, nil
+}
+
 // Estimate the gas of DepositWithCredit
 func EstimateDepositWithCreditGas(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
