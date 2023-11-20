@@ -742,10 +742,10 @@ func (cfg *SmartnodeConfig) GetRecordsPath() string {
 
 func (cfg *SmartnodeConfig) GetVotingPath() string {
 	if cfg.parent.IsNativeMode {
-		return filepath.Join(cfg.DataPath.Value.(string), "voting")
+		return filepath.Join(cfg.DataPath.Value.(string), "voting", string(cfg.Network.Value.(config.Network)))
 	}
 
-	return filepath.Join(DaemonDataPath, "voting")
+	return filepath.Join(DaemonDataPath, "voting", string(cfg.Network.Value.(config.Network)))
 }
 
 func (cfg *SmartnodeConfig) GetWalletPathInCLI() string {
