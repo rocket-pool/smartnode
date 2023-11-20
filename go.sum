@@ -1427,6 +1427,12 @@ github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd h1:p9K
 github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd/go.mod h1:UE9fof8P7iESVtLn1K9CTSkNRYVFHZHlf96RKbU33kA=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20231025032642-90d1d2e61034 h1:OUjqxv6JoIdHqnkpMZGxmvGDrZtnyOQ6fSXv66+0Wnw=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20231025032642-90d1d2e61034/go.mod h1:BL08w51uFHR1AbrnqMwPNSf8a3EpQoE3aGglxcDcw84=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20231115174402-fca34dd8edbc h1:2nz0Cp12nltc7Rq6PA8y0wOpspDOsqfY1Dk56Jkpmoo=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20231115174402-fca34dd8edbc/go.mod h1:BL08w51uFHR1AbrnqMwPNSf8a3EpQoE3aGglxcDcw84=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20231119193224-0dba8a05e455 h1:5X065GHv/jrZQJUG44l7jZDX2mwSQ9v2HmtLFHaQtiY=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20231119193224-0dba8a05e455/go.mod h1:BL08w51uFHR1AbrnqMwPNSf8a3EpQoE3aGglxcDcw84=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20231120003349-9f3f61c552fc h1:xMNKAtz0QaXDCbU1m0q8MDKmmF3IK49oTYBjvlSBgCg=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20231120003349-9f3f61c552fc/go.mod h1:BL08w51uFHR1AbrnqMwPNSf8a3EpQoE3aGglxcDcw84=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
