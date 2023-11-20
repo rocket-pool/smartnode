@@ -1429,6 +1429,8 @@ github.com/rocket-pool/rocketpool-go v1.10.1-0.20231025032642-90d1d2e61034 h1:OU
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20231025032642-90d1d2e61034/go.mod h1:BL08w51uFHR1AbrnqMwPNSf8a3EpQoE3aGglxcDcw84=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20231117003744-9019293a5bcc h1:XgA1B3KeXpPV9uHvkWn74v+Ym171tqyfRCGnaPpxSVs=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20231117003744-9019293a5bcc/go.mod h1:BL08w51uFHR1AbrnqMwPNSf8a3EpQoE3aGglxcDcw84=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20231119234007-b76541bcc8da h1:Bm2XUax9dtb2kkLzQGLbBlStFVunpKTHdUcCRx3Jpz8=
+github.com/rocket-pool/rocketpool-go v1.10.1-0.20231119234007-b76541bcc8da/go.mod h1:BL08w51uFHR1AbrnqMwPNSf8a3EpQoE3aGglxcDcw84=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=

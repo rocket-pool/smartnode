@@ -1059,7 +1059,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "submit-balances-frequency",
 										Aliases:   []string{"sbf"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesFrequencySettingPath, blockCountUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesFrequencySettingPath, uintUsage),
 										UsageText: "rocketpool pdao propose setting network submit-balances-frequency value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
@@ -1115,7 +1115,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "submit-prices-frequency",
 										Aliases:   []string{"spf"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesFrequencySettingPath, blockCountUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesFrequencySettingPath, uintUsage),
 										UsageText: "rocketpool pdao propose setting network submit-prices-frequency value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
