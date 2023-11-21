@@ -94,7 +94,7 @@ func ValidateAddresses(name, value string) ([]common.Address, error) {
 	addresses := make([]common.Address, len(elements))
 	for i, element := range elements {
 		if !common.IsHexAddress(element) {
-			return nil, fmt.Errorf("Invalid address %d in %s '%s'", i, name, value)
+			return nil, fmt.Errorf("Invalid address %d in %s: '%s'", i, name, element)
 		}
 		addresses[i] = common.HexToAddress(element)
 	}
