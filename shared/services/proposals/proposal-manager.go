@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -69,7 +70,7 @@ func (m *ProposalManager) CreateLatestFinalizedTree() (uint32, *NetworkVotingTre
 	blockNumber := uint32(block.ExecutionBlockNumber)
 
 	// Get the network tree for the block
-	tree, err := m.GetNetworkTree(blockNumber)
+	tree, err := m.GetNetworkTree(blockNumber, nil)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -88,7 +89,7 @@ func (m *ProposalManager) CreatePollardForProposal() (uint32, []*types.VotingTre
 }
 
 func (m *ProposalManager) GetPollardForProposal(blockNumber uint32) ([]*types.VotingTreeNode, error) {
-	tree, err := m.GetNetworkTree(blockNumber)
+	tree, err := m.GetNetworkTree(blockNumber, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +119,7 @@ func (m *ProposalManager) GetVotingInfoSnapshot(blockNumber uint32) (*VotingInfo
 	return snapshot, nil
 }
 
-func (m *ProposalManager) GetNetworkTree(blockNumber uint32) (*NetworkVotingTree, error) {
+func (m *ProposalManager) GetNetworkTree(blockNumber uint32, snapshot *VotingInfoSnapshot) (*NetworkVotingTree, error) {
 	// Try to load the network tree from disk
 	tree, err := m.networkTreeMgr.LoadFromDisk(blockNumber)
 	if err != nil {
@@ -129,9 +130,11 @@ func (m *ProposalManager) GetNetworkTree(blockNumber uint32) (*NetworkVotingTree
 
 	// Try to load the voting info snapshot from disk or create it
 	m.logMessage("Network tree for block %d didn't exist, creating one.", blockNumber)
-	snapshot, err := m.GetVotingInfoSnapshot(blockNumber)
-	if err != nil {
-		return nil, err
+	if snapshot == nil {
+		snapshot, err = m.GetVotingInfoSnapshot(blockNumber)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Generate the tree
@@ -143,7 +146,7 @@ func (m *ProposalManager) GetNetworkTree(blockNumber uint32) (*NetworkVotingTree
 	return tree, nil
 }
 
-func (m *ProposalManager) GetNodeTree(blockNumber uint32, nodeIndex uint64) (*NodeVotingTree, error) {
+func (m *ProposalManager) GetNodeTree(blockNumber uint32, nodeIndex uint64, snapshot *VotingInfoSnapshot) (*NodeVotingTree, error) {
 	// Try to load the node tree from disk
 	tree, err := m.nodeTreeMgr.LoadFromDisk(blockNumber, nodeIndex)
 	if err != nil {
@@ -154,9 +157,11 @@ func (m *ProposalManager) GetNodeTree(blockNumber uint32, nodeIndex uint64) (*No
 
 	// Try to load the voting info snapshot from disk or create it
 	m.logMessage("Node tree for block %d, node index %d didn't exist, creating one.", blockNumber, nodeIndex)
-	snapshot, err := m.GetVotingInfoSnapshot(blockNumber)
-	if err != nil {
-		return nil, err
+	if snapshot == nil {
+		snapshot, err = m.GetVotingInfoSnapshot(blockNumber)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Generate the tree
@@ -185,7 +190,7 @@ func (m *ProposalManager) GetArtifactsForVoting(blockNumber uint32, nodeAddress 
 	}
 
 	// Get the tree
-	tree, err := m.GetNodeTree(blockNumber, nodeIndex)
+	tree, err := m.GetNodeTree(blockNumber, nodeIndex, snapshot)
 	if err != nil {
 		return nil, 0, nil, err
 	}
@@ -200,6 +205,88 @@ func (m *ProposalManager) GetArtifactsForVoting(blockNumber uint32, nodeAddress 
 		proof[i] = *proofPtrs[i]
 	}
 	return totalDelegatedVp, nodeIndex, proof, nil
+}
+
+// Gets the root node and pollard for a proposer's response to a challenge against a tree node
+func (m *ProposalManager) GetArtifactsForChallengeResponse(blockNumber uint32, challengedIndex uint64) (types.VotingTreeNode, []types.VotingTreeNode, error) {
+	// Load the voting info snapshot
+	snapshot, err := m.GetVotingInfoSnapshot(blockNumber)
+	if err != nil {
+		return types.VotingTreeNode{}, nil, err
+	}
+
+	// Get the proper tree
+	rpNodeIndex := getRPNodeIndexFromTreeNodeIndex(snapshot, challengedIndex)
+	var tree *VotingTree
+	if rpNodeIndex == nil {
+		// This is a node in the network tree
+		networkTree, err := m.GetNetworkTree(blockNumber, snapshot)
+		if err != nil {
+			return types.VotingTreeNode{}, nil, err
+		}
+		tree = networkTree.VotingTree
+	} else {
+		// This is a node in a node tree
+		nodeTree, err := m.GetNodeTree(blockNumber, *rpNodeIndex, snapshot)
+		if err != nil {
+			return types.VotingTreeNode{}, nil, err
+		}
+		tree = nodeTree.VotingTree
+	}
+
+	// Create the artifacts
+	rootPtr, pollardPtrs := tree.GetArtifactsForChallengeResponse(challengedIndex)
+	pollard := make([]types.VotingTreeNode, len(pollardPtrs))
+	for i := range pollardPtrs {
+		pollard[i] = *pollardPtrs[i]
+	}
+	return *rootPtr, pollard, nil
+}
+
+// Checks a RootSubmitted event against the local artifacts to see if there's a mismatch at an index; if so, returns the index, the node, and the proof
+func (m *ProposalManager) CheckForChallengeableArtifacts(event protocol.RootSubmitted) (uint64, types.VotingTreeNode, []types.VotingTreeNode, error) {
+	// Load the voting info snapshot
+	blockNumber := event.BlockNumber
+	index := event.Index.Uint64()
+	snapshot, err := m.GetVotingInfoSnapshot(blockNumber)
+	if err != nil {
+		return 0, types.VotingTreeNode{}, nil, err
+	}
+
+	// Get the proper tree
+	rpNodeIndex := getRPNodeIndexFromTreeNodeIndex(snapshot, index)
+	var tree *VotingTree
+	if rpNodeIndex == nil {
+		// This is a node in the network tree
+		networkTree, err := m.GetNetworkTree(blockNumber, snapshot)
+		if err != nil {
+			return 0, types.VotingTreeNode{}, nil, err
+		}
+		tree = networkTree.VotingTree
+	} else {
+		// This is a node in a node tree
+		nodeTree, err := m.GetNodeTree(blockNumber, *rpNodeIndex, snapshot)
+		if err != nil {
+			return 0, types.VotingTreeNode{}, nil, err
+		}
+		tree = nodeTree.VotingTree
+	}
+
+	// Check for artifacts
+	challengedIndex, challengedNode, proofPtrs, err := tree.CheckForChallengeableArtifacts(index, event.TreeNodes)
+	if err != nil {
+		return 0, types.VotingTreeNode{}, nil, fmt.Errorf("error checking for challengeable artifacts: %w", err)
+	}
+	if challengedIndex == 0 {
+		// Nothing to challenge, the trees match
+		return 0, types.VotingTreeNode{}, nil, nil
+	}
+
+	proof := make([]types.VotingTreeNode, len(proofPtrs))
+	for i := range proofPtrs {
+		proof[i] = *proofPtrs[i]
+	}
+	return challengedIndex, *challengedNode, proof, nil
 }
 
 // Log a message to the logger

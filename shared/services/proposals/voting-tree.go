@@ -81,7 +81,7 @@ func (t *VotingTree) GetPollardForProposal() (*types.VotingTreeNode, []*types.Vo
 }
 
 // Create a pollard for a challenged tree node, to be used as a challenge response
-func (t *VotingTree) GetPollardForChallengeResponse(challengedIndex uint64) (*types.VotingTreeNode, []*types.VotingTreeNode) {
+func (t *VotingTree) GetArtifactsForChallengeResponse(challengedIndex uint64) (*types.VotingTreeNode, []*types.VotingTreeNode) {
 	return t.generatePollard(challengedIndex)
 }
 
