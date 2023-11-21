@@ -51,6 +51,19 @@ type challengeSubmittedRaw struct {
 	Timestamp  *big.Int       `json:"timestamp"`
 }
 
+// Get the node of a proposal at the given index
+func GetNode(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.CallOpts) (types.VotingTreeNode, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
+	if err != nil {
+		return types.VotingTreeNode{}, err
+	}
+	node := new(types.VotingTreeNode)
+	if err := rocketDAOProtocolVerifier.Call(opts, node, "getNode", big.NewInt(int64(proposalId)), big.NewInt(int64(index))); err != nil {
+		return types.VotingTreeNode{}, fmt.Errorf("error getting proposal %d / index %d node: %w", proposalId, index, err)
+	}
+	return *node, nil
+}
+
 // Estimate the gas of CreateChallenge
 func EstimateCreateChallengeGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, node types.VotingTreeNode, witness []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
