@@ -52,21 +52,21 @@ type challengeSubmittedRaw struct {
 }
 
 // Estimate the gas of CreateChallenge
-func EstimateCreateChallengeGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateCreateChallengeGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, node types.VotingTreeNode, witness []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "createChallenge", big.NewInt(int64(proposalId)), big.NewInt((int64(index))))
+	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "createChallenge", big.NewInt(int64(proposalId)), big.NewInt((int64(index))), node, witness)
 }
 
-// Submit the Merkle root for a proposal at the specific index in response to a challenge
-func CreateChallenge(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.TransactOpts) (common.Hash, error) {
+// Challenge a proposal at a specific tree node index, providing a Merkle proof of the node as well
+func CreateChallenge(rp *rocketpool.RocketPool, proposalId uint64, index uint64, node types.VotingTreeNode, witness []types.VotingTreeNode, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketDAOProtocolVerifier.Transact(opts, "createChallenge", big.NewInt(int64(proposalId)), big.NewInt((int64(index))))
+	tx, err := rocketDAOProtocolVerifier.Transact(opts, "createChallenge", big.NewInt(int64(proposalId)), big.NewInt((int64(index))), node, witness)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error creating challenge: %w", err)
 	}
@@ -74,21 +74,21 @@ func CreateChallenge(rp *rocketpool.RocketPool, proposalId uint64, index uint64,
 }
 
 // Estimate the gas of SubmitRoot
-func EstimateSubmitRootGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, witness []types.VotingTreeNode, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitRootGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "submitRoot", big.NewInt(int64(proposalId)), big.NewInt((int64(index))), witness, treeNodes)
+	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "submitRoot", big.NewInt(int64(proposalId)), big.NewInt((int64(index))), treeNodes)
 }
 
 // Submit the Merkle root for a proposal at the specific index in response to a challenge
-func SubmitRoot(rp *rocketpool.RocketPool, proposalId uint64, index uint64, witness []types.VotingTreeNode, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (common.Hash, error) {
+func SubmitRoot(rp *rocketpool.RocketPool, proposalId uint64, index uint64, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketDAOProtocolVerifier.Transact(opts, "submitRoot", big.NewInt(int64(proposalId)), big.NewInt((int64(index))), witness, treeNodes)
+	tx, err := rocketDAOProtocolVerifier.Transact(opts, "submitRoot", big.NewInt(int64(proposalId)), big.NewInt((int64(index))), treeNodes)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error submitting proposal root: %w", err)
 	}
