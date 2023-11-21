@@ -163,14 +163,15 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	details.PricesBlock = pricesBlock.Uint64()
 	if !isHoustonDeployed {
 		details.LatestReportablePricesBlock = latestReportablePricesBlock.Uint64()
+		details.LatestReportableBalancesBlock = latestReportableBalancesBlock.Uint64()
+	} else {
+		details.PricesSubmissionFrequency = pricesSubmissionFrequency.Uint64()
+		details.BalancesSubmissionFrequency = balancesSubmissionFrequency.Uint64()
 	}
-	details.PricesSubmissionFrequency = pricesSubmissionFrequency.Uint64()
 	details.ETHUtilizationRate = eth.WeiToEth(ethUtilizationRate)
 	details.RETHExchangeRate = eth.WeiToEth(rETHExchangeRate)
 	details.NodeFee = eth.WeiToEth(nodeFee)
 	details.BalancesBlock = balancesBlock
-	details.LatestReportableBalancesBlock = latestReportableBalancesBlock.Uint64()
-	details.BalancesSubmissionFrequency = balancesSubmissionFrequency.Uint64()
 	details.MinipoolLaunchTimeout = minipoolLaunchTimeout
 	details.PromotionScrubPeriod = convertToDuration(promotionScrubPeriodSeconds)
 	details.BondReductionWindowStart = convertToDuration(windowStartRaw)
