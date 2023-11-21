@@ -30,7 +30,7 @@ func nodeWithdrawEth(c *cli.Context) error {
 	}
 
 	if !houston.IsHoustonDeployed {
-		return fmt.Errorf("this command is only available after Houston deployment")
+		return fmt.Errorf("This command cannot be used until Houston has been deployed.")
 	}
 
 	// Get withdrawal amount

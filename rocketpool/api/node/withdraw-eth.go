@@ -73,7 +73,7 @@ func canNodeWithdrawEth(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 		if err != nil {
 			return err
 		}
-		gasInfo, err := node.EstimateWithdrawRPLGas(rp, amountWei, opts)
+		gasInfo, err := node.EstimateWithdrawEthGas(rp, nodeAccount.Address, amountWei, opts)
 		if err == nil {
 			response.GasInfo = gasInfo
 		}
@@ -119,6 +119,12 @@ func nodeWithdrawEth(c *cli.Context, amountWei *big.Int) (*api.NodeWithdrawRplRe
 		return nil, err
 	}
 
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
 	if err != nil {
@@ -126,7 +132,7 @@ func nodeWithdrawEth(c *cli.Context, amountWei *big.Int) (*api.NodeWithdrawRplRe
 	}
 
 	// Withdraw ETH
-	tx, err := node.WithdrawEth(rp, amountWei, opts)
+	tx, err := node.WithdrawEth(rp, nodeAccount.Address, amountWei, opts)
 	if err != nil {
 		return nil, err
 	}

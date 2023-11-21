@@ -61,8 +61,9 @@ func getStatus(c *cli.Context) error {
 	}
 	if status.IsHoustonDeployed {
 		fmt.Printf(
-			"The node has %.6f ETH in its credit balance. %.6f can be used to make new minipools.\n",
-			math.RoundDown(eth.WeiToEth(status.CreditAndBalance), 6),
+			"The node has %.6f ETH in its credit balance and %.6f ETH staked on its behalf. %.6f can be used to make new minipools.\n",
+			math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
+			math.RoundDown(eth.WeiToEth(status.EthBalance), 6),
 			math.RoundDown(eth.WeiToEth(status.UsableCreditAndBalance), 6),
 		)
 	} else {
