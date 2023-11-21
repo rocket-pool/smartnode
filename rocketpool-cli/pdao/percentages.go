@@ -113,7 +113,7 @@ func proposeRewardsPercentages(c *cli.Context) error {
 	}
 
 	// Submit
-	response, err := rp.PDAOProposeRewardsPercentages(nodePercent, odaoPercent, pdaoPercent, canResponse.BlockNumber, canResponse.Pollard)
+	response, err := rp.PDAOProposeRewardsPercentages(nodePercent, odaoPercent, pdaoPercent, canResponse.BlockNumber)
 	if err != nil {
 		return err
 	}

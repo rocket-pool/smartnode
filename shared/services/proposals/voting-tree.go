@@ -81,7 +81,7 @@ func (t *VotingTree) GetPollardForProposal() (*types.VotingTreeNode, []*types.Vo
 }
 
 // Create a pollard for a challenged tree node, to be used as a challenge response
-func (t *VotingTree) GetPollardForChallengeResponse(challengedIndex uint64) (*types.VotingTreeNode, []*types.VotingTreeNode) {
+func (t *VotingTree) GetArtifactsForChallengeResponse(challengedIndex uint64) (*types.VotingTreeNode, []*types.VotingTreeNode) {
 	return t.generatePollard(challengedIndex)
 }
 
@@ -123,9 +123,14 @@ func (t *VotingTree) getArtifactsForChallenge(targetIndex uint64) (*types.Voting
 	localTargetIndex := t.getLocalIndexFromVirtualIndex(targetIndex)
 	challengedNode := t.Nodes[localTargetIndex-1] // 0-indexed
 
-	// Create a proof for the node using this tree, starting from the bottom up
+	return challengedNode, t.generateMerkleProof(localTargetIndex)
+}
+
+// Create a Merkle summation proof for the provided tree node
+// Note the index is a *local* one, not a virtual one
+func (t *VotingTree) generateMerkleProof(localIndex uint64) []*types.VotingTreeNode {
 	proof := []*types.VotingTreeNode{}
-	index := localTargetIndex
+	index := localIndex
 	for index > 1 { // Recurse until we get to the root node, stop before that
 		var partnerIndex uint64
 		if index%2 == 0 {
@@ -141,7 +146,7 @@ func (t *VotingTree) getArtifactsForChallenge(targetIndex uint64) (*types.Voting
 		// Go up a level
 		index = index / 2
 	}
-	return challengedNode, proof
+	return proof
 }
 
 // Construct a pollard using the provided node index as the root node

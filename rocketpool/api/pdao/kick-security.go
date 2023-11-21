@@ -44,7 +44,7 @@ func canProposeKickFromSecurityCouncil(c *cli.Context, address common.Address) (
 
 	// Try proposing
 	message := fmt.Sprintf("kick %s from the security council", address.Hex())
-	blockNumber, pollard, encodedPollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc)
 	if err != nil {
 		return nil, err
 	}
@@ -55,14 +55,17 @@ func canProposeKickFromSecurityCouncil(c *cli.Context, address common.Address) (
 
 	// Update & return response
 	response.BlockNumber = blockNumber
-	response.Pollard = encodedPollard
 	response.GasInfo = gasInfo
 	return &response, nil
 }
 
-func proposeKickFromSecurityCouncil(c *cli.Context, address common.Address, blockNumber uint32, pollard string) (*api.PDAOProposeKickFromSecurityCouncilResponse, error) {
+func proposeKickFromSecurityCouncil(c *cli.Context, address common.Address, blockNumber uint32) (*api.PDAOProposeKickFromSecurityCouncilResponse, error) {
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
+		return nil, err
+	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -70,6 +73,10 @@ func proposeKickFromSecurityCouncil(c *cli.Context, address common.Address, bloc
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -91,11 +98,11 @@ func proposeKickFromSecurityCouncil(c *cli.Context, address common.Address, bloc
 
 	// Propose
 	message := fmt.Sprintf("kick %s from the security council", address.Hex())
-	truePollard, err := decodePollard(pollard)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, err
 	}
-	proposalID, hash, err := protocol.ProposeKickFromSecurityCouncil(rp, message, address, blockNumber, truePollard, opts)
+	proposalID, hash, err := protocol.ProposeKickFromSecurityCouncil(rp, message, address, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}

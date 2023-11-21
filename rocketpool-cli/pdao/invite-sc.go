@@ -62,7 +62,7 @@ func proposeSecurityCouncilInvite(c *cli.Context) error {
 	}
 
 	// Submit
-	response, err := rp.PDAOProposeInviteToSecurityCouncil(id, address, canResponse.BlockNumber, canResponse.Pollard)
+	response, err := rp.PDAOProposeInviteToSecurityCouncil(id, address, canResponse.BlockNumber)
 	if err != nil {
 		return err
 	}

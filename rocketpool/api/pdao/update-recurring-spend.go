@@ -46,7 +46,7 @@ func canProposeRecurringSpendUpdate(c *cli.Context, contractName string, recipie
 
 	// Try proposing
 	message := fmt.Sprintf("update recurring payment to %s", contractName)
-	blockNumber, pollard, encodedPollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc)
 	if err != nil {
 		return nil, err
 	}
@@ -57,14 +57,17 @@ func canProposeRecurringSpendUpdate(c *cli.Context, contractName string, recipie
 
 	// Update & return response
 	response.BlockNumber = blockNumber
-	response.Pollard = encodedPollard
 	response.GasInfo = gasInfo
 	return &response, nil
 }
 
-func proposeRecurringSpendUpdate(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64, blockNumber uint32, pollard string) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeRecurringSpendUpdate(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64, blockNumber uint32) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
+		return nil, err
+	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -72,6 +75,10 @@ func proposeRecurringSpendUpdate(c *cli.Context, contractName string, recipient 
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -93,11 +100,11 @@ func proposeRecurringSpendUpdate(c *cli.Context, contractName string, recipient 
 
 	// Propose
 	message := fmt.Sprintf("update recurring payment to %s", contractName)
-	truePollard, err := decodePollard(pollard)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, err
 	}
-	proposalID, hash, err := protocol.ProposeRecurringTreasurySpendUpdate(rp, message, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, truePollard, opts)
+	proposalID, hash, err := protocol.ProposeRecurringTreasurySpendUpdate(rp, message, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}

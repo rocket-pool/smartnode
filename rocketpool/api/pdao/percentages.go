@@ -73,12 +73,11 @@ func canProposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, 
 	}
 
 	// Get the latest finalized block number and corresponding pollard
-	blockNumber, pollard, encodedPollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc)
 	if err != nil {
 		return nil, fmt.Errorf("error creating pollard: %w", err)
 	}
 	response.BlockNumber = blockNumber
-	response.Pollard = encodedPollard
 
 	gasInfo, err := protocol.EstimateProposeSetRewardsPercentageGas(rp, "update RPL rewards distribution", odao, pdao, node, blockNumber, pollard, opts)
 	response.GasInfo = gasInfo
@@ -87,7 +86,7 @@ func canProposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, 
 	return &response, nil
 }
 
-func proposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32, pollard string) (*api.PDAOProposeRewardsPercentagesResponse, error) {
+func proposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32) (*api.PDAOProposeRewardsPercentagesResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -95,11 +94,19 @@ func proposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, pda
 	if err := services.RequireRocketStorage(c); err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +121,7 @@ func proposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, pda
 	}
 
 	// Decode the pollard
-	truePollard, err := decodePollard(pollard)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("error regenerating pollard: %w", err)
 	}
@@ -126,7 +133,7 @@ func proposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, pda
 	}
 
 	// Submit the proposal
-	proposalID, hash, err := protocol.ProposeSetRewardsPercentage(rp, "update RPL rewards distribution", odao, pdao, node, blockNumber, truePollard, opts)
+	proposalID, hash, err := protocol.ProposeSetRewardsPercentage(rp, "update RPL rewards distribution", odao, pdao, node, blockNumber, pollard, opts)
 	response.ProposalId = proposalID
 	response.TxHash = hash
 

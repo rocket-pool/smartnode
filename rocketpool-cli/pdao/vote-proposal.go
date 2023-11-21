@@ -98,31 +98,30 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Get support status
-	var support bool
-	var supportLabel string
-	if c.String("support") != "" {
-
-		// Parse support status
+	var voteDirection types.VoteDirection
+	var voteDirectionLabel string
+	if c.String("vote-direction") != "" {
+		// Parse vote dirrection
 		var err error
-		support, err = cliutils.ValidateBool("support", c.String("support"))
+		voteDirection, err = cliutils.ValidateVoteDirection("vote-direction", c.String("vote-direction"))
 		if err != nil {
 			return err
 		}
-
 	} else {
-
-		// Prompt for support status
-		support = cliutils.Confirm("Would you like to vote in support of the proposal?")
-
-	}
-	if support {
-		supportLabel = "in support of"
-	} else {
-		supportLabel = "against"
+		// Prompt for vote direction
+		options := []string{
+			"Abstain",
+			"In Favor",
+			"Against",
+			"Veto",
+		}
+		var selected int
+		selected, voteDirectionLabel = cliutils.Select("How would you like to vote on the proposal?", options)
+		voteDirection = types.VoteDirection(selected + 1)
 	}
 
 	// Check if proposal can be voted on
-	canVote, err := rp.PDAOCanVoteProposal(selectedProposal.ID, support)
+	canVote, err := rp.PDAOCanVoteProposal(selectedProposal.ID, voteDirection)
 	if err != nil {
 		return err
 	}
@@ -144,13 +143,13 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote '%s' proposal %d? Your vote cannot be changed later.", voteDirectionLabel, selectedProposal.ID))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Vote on proposal
-	response, err := rp.PDAOVoteProposal(selectedProposal.ID, support)
+	response, err := rp.PDAOVoteProposal(selectedProposal.ID, voteDirection)
 	if err != nil {
 		return err
 	}
@@ -162,7 +161,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully voted %s proposal %d.\n", supportLabel, selectedProposal.ID)
+	fmt.Printf("Successfully voted '%s' for proposal %d.\n", voteDirectionLabel, selectedProposal.ID)
 	return nil
 
 }

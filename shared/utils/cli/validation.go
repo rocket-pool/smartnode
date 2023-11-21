@@ -321,3 +321,13 @@ func ValidateDuration(name, value string) (time.Duration, error) {
 	}
 	return duration, nil
 }
+
+// Validate a vote direction
+func ValidateVoteDirection(name, value string) (types.VoteDirection, error) {
+	for i, dir := range types.VoteDirections {
+		if value == dir {
+			return types.VoteDirection(i), nil
+		}
+	}
+	return 0, fmt.Errorf("Invalid %s '%s': not a valid vote direction name", name, value)
+}

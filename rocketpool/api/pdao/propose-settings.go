@@ -90,12 +90,11 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 	response.InsufficientRpl = (freeRpl.Cmp(proposalBond) < 0)
 
 	// Get the latest finalized block number and corresponding pollard
-	blockNumber, pollard, encodedPollard, err := createPollard(rp, cfg, bc)
+	blockNumber, pollard, err := createPollard(rp, cfg, bc)
 	if err != nil {
 		return nil, fmt.Errorf("error creating pollard: %w", err)
 	}
 	response.BlockNumber = blockNumber
-	response.Pollard = encodedPollard
 
 	// Get the account transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -655,13 +654,17 @@ func canProposeSetting(c *cli.Context, settingName string, value string) (*api.C
 
 }
 
-func proposeSetting(c *cli.Context, settingName string, value string, blockNumber uint32, pollard string) (*api.ProposePDAOSettingResponse, error) {
+func proposeSetting(c *cli.Context, settingName string, value string, blockNumber uint32) (*api.ProposePDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
 	if err := services.RequireRocketStorage(c); err != nil {
+		return nil, err
+	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -672,12 +675,16 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.ProposePDAOSettingResponse{}
 
 	// Decode the pollard
-	truePollard, err := decodePollard(pollard)
+	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("error regenerating pollard: %w", err)
 	}
@@ -705,7 +712,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeCreateLotEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeCreateLotEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing CreateLotEnabled: %w", err)
 		}
@@ -716,7 +723,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeBidOnLotEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeBidOnLotEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing BidOnLotEnabled: %w", err)
 		}
@@ -727,7 +734,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeLotMinimumEthValue(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeLotMinimumEthValue(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing LotMinimumEthValue: %w", err)
 		}
@@ -738,7 +745,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeLotMaximumEthValue(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeLotMaximumEthValue(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing LotMaximumEthValue: %w", err)
 		}
@@ -749,7 +756,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeLotDuration(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeLotDuration(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing LotDuration: %w", err)
 		}
@@ -760,7 +767,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeLotStartingPriceRatio(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeLotStartingPriceRatio(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing LotStartingPriceRatio: %w", err)
 		}
@@ -771,7 +778,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeLotReservePriceRatio(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeLotReservePriceRatio(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing LotReservePriceRatio: %w", err)
 		}
@@ -782,7 +789,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeDepositEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeDepositEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing DepositEnabled: %w", err)
 		}
@@ -793,7 +800,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeAssignDepositsEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeAssignDepositsEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing AssignDepositsEnabled: %w", err)
 		}
@@ -804,7 +811,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMinimumDeposit(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMinimumDeposit(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MinimumDeposit: %w", err)
 		}
@@ -815,7 +822,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMaximumDepositPoolSize(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMaximumDepositPoolSize(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MaximumDepositPoolSize: %w", err)
 		}
@@ -826,7 +833,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMaximumDepositAssignments(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMaximumDepositAssignments(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MaximumDepositAssignments: %w", err)
 		}
@@ -837,7 +844,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMaximumSocializedDepositAssignments(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMaximumSocializedDepositAssignments(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MaximumSocializedDepositAssignments: %w", err)
 		}
@@ -848,7 +855,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeDepositFee(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeDepositFee(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing DepositFee: %w", err)
 		}
@@ -859,7 +866,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMinipoolSubmitWithdrawableEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMinipoolSubmitWithdrawableEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MinipoolSubmitWithdrawableEnabled: %w", err)
 		}
@@ -870,7 +877,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMinipoolLaunchTimeout(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMinipoolLaunchTimeout(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MinipoolLaunchTimeout: %w", err)
 		}
@@ -881,7 +888,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeBondReductionEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeBondReductionEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing BondReductionEnabled: %w", err)
 		}
@@ -892,7 +899,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMaximumMinipoolCount(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMaximumMinipoolCount(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MaximumMinipoolCount: %w", err)
 		}
@@ -903,7 +910,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMinipoolUserDistributeWindowStart(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMinipoolUserDistributeWindowStart(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MinipoolUserDistributeWindowStart: %w", err)
 		}
@@ -914,7 +921,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMinipoolUserDistributeWindowLength(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMinipoolUserDistributeWindowLength(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MinipoolUserDistributeWindowLength: %w", err)
 		}
@@ -925,7 +932,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeNodeConsensusThreshold(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeNodeConsensusThreshold(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing NodeConsensusThreshold: %w", err)
 		}
@@ -936,7 +943,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeSubmitBalancesEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeSubmitBalancesEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing SubmitBalancesEnabled: %w", err)
 		}
@@ -947,7 +954,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeSubmitBalancesFrequency(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeSubmitBalancesFrequency(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing SubmitBalancesFrequency: %w", err)
 		}
@@ -958,7 +965,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeSubmitPricesEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeSubmitPricesEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing SubmitPricesEnabled: %w", err)
 		}
@@ -969,7 +976,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeSubmitPricesFrequency(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeSubmitPricesFrequency(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing SubmitPricesFrequency: %w", err)
 		}
@@ -980,7 +987,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMinimumNodeFee(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMinimumNodeFee(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MinimumNodeFee: %w", err)
 		}
@@ -991,7 +998,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeTargetNodeFee(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeTargetNodeFee(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing TargetNodeFee: %w", err)
 		}
@@ -1002,7 +1009,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMaximumNodeFee(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMaximumNodeFee(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MaximumNodeFee: %w", err)
 		}
@@ -1013,7 +1020,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeNodeFeeDemandRange(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeNodeFeeDemandRange(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing NodeFeeDemandRange: %w", err)
 		}
@@ -1024,7 +1031,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeTargetRethCollateralRate(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeTargetRethCollateralRate(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing TargetRethCollateralRate: %w", err)
 		}
@@ -1035,7 +1042,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeNetworkPenaltyThreshold(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeNetworkPenaltyThreshold(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing NetworkPenaltyThreshold: %w", err)
 		}
@@ -1046,7 +1053,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeNetworkPenaltyPerRate(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeNetworkPenaltyPerRate(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing NetworkPenaltyPerRate: %w", err)
 		}
@@ -1057,7 +1064,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeSubmitRewardsEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeSubmitRewardsEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing SubmitRewardsEnabled: %w", err)
 		}
@@ -1068,7 +1075,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeNodeRegistrationEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeNodeRegistrationEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing NodeRegistrationEnabled: %w", err)
 		}
@@ -1079,7 +1086,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeSmoothingPoolRegistrationEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeSmoothingPoolRegistrationEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing SmoothingPoolRegistrationEnabled: %w", err)
 		}
@@ -1090,7 +1097,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeNodeDepositEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeNodeDepositEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing NodeDepositEnabled: %w", err)
 		}
@@ -1101,7 +1108,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeVacantMinipoolsEnabled(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeVacantMinipoolsEnabled(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing VacantMinipoolsEnabled: %w", err)
 		}
@@ -1112,7 +1119,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMinimumPerMinipoolStake(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMinimumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MinimumPerMinipoolStake: %w", err)
 		}
@@ -1123,7 +1130,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeMaximumPerMinipoolStake(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeMaximumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing MaximumPerMinipoolStake: %w", err)
 		}
@@ -1134,7 +1141,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeVoteTime(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeVoteTime(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing VoteTime: %w", err)
 		}
@@ -1145,7 +1152,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeVoteDelayTime(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeVoteDelayTime(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing VoteDelayTime: %w", err)
 		}
@@ -1156,7 +1163,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeExecuteTime(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeExecuteTime(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing ExecuteTime: %w", err)
 		}
@@ -1167,7 +1174,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeProposalBond(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeProposalBond(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing ProposalBond: %w", err)
 		}
@@ -1178,7 +1185,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeChallengeBond(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeChallengeBond(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing ChallengeBond: %w", err)
 		}
@@ -1189,7 +1196,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeChallengePeriod(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeChallengePeriod(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing ChallengePeriod: %w", err)
 		}
@@ -1200,7 +1207,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeProposalQuorum(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeProposalQuorum(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing ProposalQuorum: %w", err)
 		}
@@ -1211,7 +1218,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeProposalVetoQuorum(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeProposalVetoQuorum(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing ProposalVetoQuorum: %w", err)
 		}
@@ -1222,7 +1229,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeProposalMaxBlockAge(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeProposalMaxBlockAge(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing ProposalMaxBlockAge: %w", err)
 		}
@@ -1233,7 +1240,7 @@ func proposeSetting(c *cli.Context, settingName string, value string, blockNumbe
 		if err != nil {
 			return nil, err
 		}
-		proposalID, hash, err = protocol.ProposeRewardsClaimIntervalTime(rp, newValue, blockNumber, truePollard, opts)
+		proposalID, hash, err = protocol.ProposeRewardsClaimIntervalTime(rp, newValue, blockNumber, pollard, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error proposing RewardsClaimIntervalTime: %w", err)
 		}

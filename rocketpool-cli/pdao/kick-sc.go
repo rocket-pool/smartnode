@@ -56,7 +56,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 	}
 
 	// Submit
-	response, err := rp.PDAOProposeKickFromSecurityCouncil(address, canResponse.BlockNumber, canResponse.Pollard)
+	response, err := rp.PDAOProposeKickFromSecurityCouncil(address, canResponse.BlockNumber)
 	if err != nil {
 		return err
 	}

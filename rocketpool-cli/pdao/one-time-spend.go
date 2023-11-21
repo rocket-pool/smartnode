@@ -87,7 +87,7 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	}
 
 	// Submit
-	response, err := rp.PDAOProposeOneTimeSpend(invoiceID, recipient, amount, canResponse.BlockNumber, canResponse.Pollard)
+	response, err := rp.PDAOProposeOneTimeSpend(invoiceID, recipient, amount, canResponse.BlockNumber)
 	if err != nil {
 		return err
 	}

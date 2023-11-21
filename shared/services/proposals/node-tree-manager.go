@@ -9,9 +9,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -57,7 +55,6 @@ type NodeTreeManager struct {
 	log       *log.ColorLogger
 	logPrefix string
 	cfg       *config.RocketPoolConfig
-	rp        *rocketpool.RocketPool
 
 	filenameRegex           *regexp.Regexp
 	latestCompatibleVersion *semver.Version
@@ -65,7 +62,7 @@ type NodeTreeManager struct {
 }
 
 // Create a new NodeTreeManager instance
-func NewNodeTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client) (*NodeTreeManager, error) {
+func NewNodeTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig) (*NodeTreeManager, error) {
 	// Create the snapshot filename regex
 	logPrefix := "[Node Tree]"
 	filenameRegex := regexp.MustCompile(nodeVotingTreeFilenamePattern)
@@ -80,7 +77,6 @@ func NewNodeTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *
 		log:                     log,
 		logPrefix:               logPrefix,
 		cfg:                     cfg,
-		rp:                      rp,
 		filenameRegex:           filenameRegex,
 		latestCompatibleVersion: latestCompatibleVersion,
 	}
@@ -97,7 +93,7 @@ func NewNodeTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *
 }
 
 // Create a node voting tree from a voting info snapshot and the node's index
-func (m *NodeTreeManager) CreateNetworkVotingTree(snapshot *VotingInfoSnapshot, rpNodeIndex uint64, networkTreeNodeIndex uint64) *NodeVotingTree {
+func (m *NodeTreeManager) CreateNodeVotingTree(snapshot *VotingInfoSnapshot, rpNodeIndex uint64, networkTreeNodeIndex uint64) *NodeVotingTree {
 	address := &snapshot.Info[rpNodeIndex].NodeAddress
 	leaves := make([]*types.VotingTreeNode, len(snapshot.Info))
 	zeroHash := getHashForBalance(common.Big0)

@@ -5,42 +5,50 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao"
-	"github.com/rocket-pool/rocketpool-go/dao/protocol/voting"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
+	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli"
 )
 
+type challenge struct {
+	proposalID      uint64
+	challengedIndex uint64
+	challengedNode  types.VotingTreeNode
+	witness         []types.VotingTreeNode
+}
+
 type verifyPdaoProps struct {
-	c              *cli.Context
-	log            log.ColorLogger
-	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	bc             beacon.Client
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
-	nodeAddress    common.Address
+	c                   *cli.Context
+	log                 *log.ColorLogger
+	cfg                 *config.RocketPoolConfig
+	w                   *wallet.Wallet
+	rp                  *rocketpool.RocketPool
+	bc                  beacon.Client
+	gasThreshold        float64
+	maxFee              *big.Int
+	maxPriorityFee      *big.Int
+	gasLimit            uint64
+	nodeAddress         common.Address
+	propMgr             *proposals.ProposalManager
+	lastScannedBlock    *big.Int
+	validPropCache      map[uint64]bool
+	rootSubmissionCache map[uint64]map[uint64]*protocol.RootSubmitted
 
 	// Smartnode parameters
 	intervalSize *big.Int
-
-	// Beacon parameters
-	genesisTime    time.Time
-	secondsPerSlot time.Duration
-
-	// Local parameters
-	//proposalEventStartBlockMap map[uint64]*big.Int
 }
 
 func newVerifyPdaoProps(c *cli.Context, logger log.ColorLogger) (*verifyPdaoProps, error) {
@@ -86,145 +94,289 @@ func newVerifyPdaoProps(c *cli.Context, logger log.ColorLogger) (*verifyPdaoProp
 	// Get the event interval size
 	intervalSize := big.NewInt(int64(cfg.Geth.EventLogInterval))
 
-	// Get the genesis time from the BC
-	beaconCfg, err := bc.GetEth2Config()
-	if err != nil {
-		return nil, fmt.Errorf("error getting Beacon config: %w", err)
-	}
-
 	// Get the node account
 	account, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, fmt.Errorf("error getting node account: %w", err)
 	}
 
+	// Make a proposal manager
+	propMgr, err := proposals.NewProposalManager(&logger, cfg, rp, bc)
+
 	// Return task
 	return &verifyPdaoProps{
-		c:              c,
-		log:            logger,
-		cfg:            cfg,
-		w:              w,
-		rp:             rp,
-		bc:             bc,
-		gasThreshold:   gasThreshold,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
-		gasLimit:       0,
-		nodeAddress:    account.Address,
+		c:                   c,
+		log:                 &logger,
+		cfg:                 cfg,
+		w:                   w,
+		rp:                  rp,
+		bc:                  bc,
+		gasThreshold:        gasThreshold,
+		maxFee:              maxFee,
+		maxPriorityFee:      priorityFee,
+		gasLimit:            0,
+		nodeAddress:         account.Address,
+		propMgr:             propMgr,
+		lastScannedBlock:    nil,
+		validPropCache:      map[uint64]bool{},
+		rootSubmissionCache: map[uint64]map[uint64]*protocol.RootSubmitted{},
 
-		intervalSize:   intervalSize,
-		genesisTime:    time.Unix(int64(beaconCfg.GenesisTime), 0),
-		secondsPerSlot: time.Duration(beaconCfg.SecondsPerSlot) * time.Second,
-		//proposalEventStartBlockMap: map[uint64]*big.Int{},
+		intervalSize: intervalSize,
 	}, nil
 }
 
-/*
 // Verify pDAO proposals
 func (t *verifyPdaoProps) run(state *state.NetworkState) error {
-
-	// Check for Houston
-	isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !isHoustonDeployed {
-		return nil
-	}
-
 	// Log
-	t.log.Println("Checking for Protocol DAO proposals to verify...")
+	t.log.Println("Checking for Protocol DAO proposals to challenge...")
 
 	// Get the latest state
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
 	}
 
-	// Get node account
-	nodeAccount, err := t.w.GetNodeAccount()
+	// Get any challenges that need to be submitted
+	challenges, err := t.getChallenges(state, opts)
+	if err != nil {
+		return fmt.Errorf("error checking for defendable proposals: %w", err)
+	}
+	if len(challenges) == 0 {
+		return nil
+	}
+
+	// Submit challenges
+	for _, challenge := range challenges {
+		err := t.submitChallenge(challenge)
+		if err != nil {
+			return fmt.Errorf("error submitting challenge against proposal %d, index %d: %w", challenge.proposalID, challenge.challengedIndex, err)
+		}
+	}
+	t.lastScannedBlock = big.NewInt(int64(state.ElBlockNumber))
+
+	return nil
+}
+
+func (t *verifyPdaoProps) getChallenges(state *state.NetworkState, opts *bind.CallOpts) ([]challenge, error) {
+	// Get proposals *not* made by this node that are still in the challenge phase (Pending)
+	eligibleProps := []protocol.ProtocolDaoProposalDetails{}
+	for _, prop := range state.ProtocolDaoProposalDetails {
+		if prop.State == types.ProtocolDaoProposalState_Pending &&
+			prop.ProposerAddress != t.nodeAddress {
+			eligibleProps = append(eligibleProps, prop)
+		} else {
+			// Remove old proposals from the caches once they're out of scope
+			delete(t.validPropCache, prop.ID)
+			delete(t.rootSubmissionCache, prop.ID)
+		}
+	}
+	if len(eligibleProps) == 0 {
+		return nil, nil
+	}
+
+	// Check which ones have a root hash mismatch and need to be processed further
+	mismatchingProps := []protocol.ProtocolDaoProposalDetails{}
+	for _, prop := range eligibleProps {
+		if t.validPropCache[prop.ID] {
+			// Ignore proposals that have already been cleared
+			continue
+		}
+
+		// Get the proposal's network tree root
+		propRoot, err := protocol.GetNode(t.rp, prop.ID, 1, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error getting root node for proposal %d: %w", prop.ID, err)
+		}
+
+		// Get the local tree
+		networkTree, err := t.propMgr.GetNetworkTree(prop.TargetBlock, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error getting network tree for proposal %d: %w", prop.ID, err)
+		}
+		localRoot := networkTree.Nodes[0]
+
+		// Compare
+		if propRoot.Sum == localRoot.Sum && propRoot.Hash == localRoot.Hash {
+			t.log.Printlnf("Proposal %d matches the local tree artifacts, so it does not need to be challenged.", prop.ID)
+			t.validPropCache[prop.ID] = true
+			continue
+		}
+
+		// This proposal has a mismatch and must be challenged
+		t.log.Printlnf("Proposal %d does not match the local tree artifacts and must be challenged.", prop.ID)
+		mismatchingProps = append(mismatchingProps, prop)
+	}
+	if len(mismatchingProps) == 0 {
+		return nil, nil
+	}
+
+	// Get the window of blocks to scan from
+	var startBlock *big.Int
+	endBlock := big.NewInt(int64(state.ElBlockNumber))
+	if t.lastScannedBlock == nil {
+		// Get the slot number the first proposal was created on
+		startTime := mismatchingProps[0].CreatedTime
+		genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
+		secondsPerSlot := time.Second * time.Duration(state.BeaconConfig.SecondsPerSlot)
+		startSlot := uint64(startTime.Sub(genesisTime) / secondsPerSlot)
+
+		// Get the Beacon block for the slot
+		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(startSlot))
+		if err != nil {
+			return nil, fmt.Errorf("error getting Beacon block at slot %d: %w", startSlot, err)
+		}
+		if !exists {
+			return nil, fmt.Errorf("Beacon block at slot %d was missing", startSlot)
+		}
+
+		// Get the EL block for this slot
+		startBlock = big.NewInt(int64(block.ExecutionBlockNumber))
+	} else {
+		startBlock = big.NewInt(0).Add(t.lastScannedBlock, common.Big1)
+	}
+
+	// Make containers for mismatching IDs
+	ids := make([]uint64, len(mismatchingProps))
+	propMap := map[uint64]*protocol.ProtocolDaoProposalDetails{}
+	for i, prop := range mismatchingProps {
+		ids[i] = prop.ID
+		propMap[prop.ID] = &mismatchingProps[i]
+	}
+
+	// Get and cache all root submissions for the proposals
+	rootSubmissionEvents, err := protocol.GetRootSubmittedEvents(t.rp, ids, t.intervalSize, startBlock, endBlock, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error scanning for RootSubmitted events: %w", err)
+	}
+	for _, event := range rootSubmissionEvents {
+		// Add them to the cache
+		propID := event.ProposalID.Uint64()
+		rootIndex := event.Index.Uint64()
+		eventsForProp, exists := t.rootSubmissionCache[propID]
+		if !exists {
+			eventsForProp = map[uint64]*protocol.RootSubmitted{}
+		}
+		eventsForProp[rootIndex] = &event
+		t.rootSubmissionCache[propID] = eventsForProp
+	}
+
+	// For each proposal, crawl down the tree looking at mismatched indices to challenge until arriving at one that hasn't been challenged yet
+	challenges := []challenge{}
+	for _, prop := range mismatchingProps {
+		challenge, err := t.getChallengeForProposal(prop, opts)
+		if err != nil {
+			return nil, err
+		}
+		if challenge != nil {
+			challenges = append(challenges, *challenge)
+		}
+	}
+
+	return challenges, nil
+}
+
+// Get the challenge against a proposal if one can be found
+func (t *verifyPdaoProps) getChallengeForProposal(prop protocol.ProtocolDaoProposalDetails, opts *bind.CallOpts) (*challenge, error) {
+	challengedIndex := uint64(1) // Root
+
+	for {
+		// Get the index of the node to challenge
+		rootSubmissionEvent, exists := t.rootSubmissionCache[prop.ID][challengedIndex]
+		if !exists {
+			return nil, fmt.Errorf("challenge against prop %d, index %d has been responded to but the RootSubmitted event was missing", prop.ID, challengedIndex)
+		}
+		newChallengedIndex, challengedNode, proof, err := t.propMgr.CheckForChallengeableArtifacts(*rootSubmissionEvent)
+		if err != nil {
+			return nil, fmt.Errorf("error checking for challengeable artifacts on prop %d, index %s: %w", prop.ID, rootSubmissionEvent.Index.String(), err)
+		}
+		if newChallengedIndex == 0 {
+			// Do nothing if the prop can't be challenged
+			t.log.Printlnf("Check against proposal %d, index %d showed no challengeable artifacts.", prop.ID, challengedIndex)
+			return nil, nil
+		}
+		if newChallengedIndex == challengedIndex {
+			// This shouldn't ever happen but it does then error out for safety
+			return nil, fmt.Errorf("cycle error: proposal %d had index %d challenged, and the new challengeable artifacts had the same index", prop.ID, challengedIndex)
+		}
+
+		// Check if the index has been challenged yet
+		state, err := protocol.GetChallengeState(t.rp, prop.ID, newChallengedIndex, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error checking challenge state for proposal %d, index %d: %w", prop.ID, challengedIndex, err)
+		}
+		switch state {
+		case types.ChallengeState_Unchallenged:
+			// If it's unchallenged, this is the index to challenge
+			return &challenge{
+				proposalID:      prop.ID,
+				challengedIndex: challengedIndex,
+				challengedNode:  challengedNode,
+				witness:         proof,
+			}, nil
+		case types.ChallengeState_Challenged:
+			// Nothing to do but wait for the proposer to respond
+			t.log.Printlnf("Proposal %d, index %d has already been challenged; waiting for proposer to respond.", prop.ID, newChallengedIndex)
+			return nil, nil
+		case types.ChallengeState_Responded:
+			// Delve deeper into the tree looking for the next index to challenge
+			challengedIndex = newChallengedIndex
+		default:
+			return nil, fmt.Errorf("unexpected state '%d' for challenge against proposal %d, index %d", state, prop.ID, challengedIndex)
+		}
+	}
+}
+
+// Submit a challenge against a proposal
+func (t *verifyPdaoProps) submitChallenge(challenge challenge) error {
+	propID := challenge.proposalID
+	challengedIndex := challenge.challengedIndex
+	t.log.Printlnf("Submitting challenge against proposal %d, index %d...", propID, challengedIndex)
+
+	// Get transactor
+	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (t *verifyPdaoProps) getChallengeableProposals(state *state.NetworkState) ([]dao.ProposalDetails, error) {
-	// Get the proposals that are currently in the challenge window
-	candidates, err := t.getProposalsInChallengeWindow(state)
+	// Get the gas limit
+	gasInfo, err := protocol.EstimateCreateChallengeGas(t.rp, propID, challengedIndex, challenge.challengedNode, challenge.witness, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error checking for candidate proposals: %w", err)
+		return fmt.Errorf("error estimating the gas required to submit challenge against proposal %d, index %d: %w", propID, challengedIndex, err)
 	}
+	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
 
-	// Get the block and pollard for the proposal
-
-}
-*/
-
-func (t *verifyPdaoProps) checkDutiesForProposal(proposalDetails dao.ProposalDetails, headBlock uint64) error {
-	// Get the block to start scanning for new events
-	/*startBlock, exists := t.proposalEventStartBlockMap[proposalDetails.ID]
-	if !exists {
-	}
-	*/
-
-	// Determine the start block for the even scan window based on the time the proposal was created
-	createTime := time.Unix(int64(proposalDetails.CreatedTime), 0)
-	timeSinceGenesis := createTime.Sub(t.genesisTime)
-	slot := uint64(timeSinceGenesis / t.secondsPerSlot)
-	block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(slot))
-	if err != nil {
-		return fmt.Errorf("error getting creation block for proposal %d: error getting beacon block %d: %w", proposalDetails.ID, slot, err)
-	}
-	if !exists {
-		return fmt.Errorf("error getting creation block for proposal %d: beacon block %d does not exist", proposalDetails.ID, slot)
-	}
-
-	startBlock := big.NewInt(int64(block.ExecutionBlockNumber))
-	endBlock := big.NewInt(int64(headBlock))
-
-	// Get the events for this proposal
-	rootSubmittedEvents, err := voting.GetRootSubmittedEvents(t.rp, proposalDetails.ID, t.intervalSize, startBlock, endBlock, nil)
-	if err != nil {
-		return fmt.Errorf("error getting root submitted events: %w", err)
-	}
-	challengeEvents, err := voting.GetChallengeSubmittedEvents(t.rp, proposalDetails.ID, t.intervalSize, startBlock, endBlock, nil)
-	if err != nil {
-		return fmt.Errorf("error getting challenge submitted events: %w", err)
-	}
-
-	// Create lookups of events by index
-	rseLookup := map[*big.Int]voting.RootSubmitted{}
-	ceLookup := map[*big.Int]voting.ChallengeSubmitted{}
-	for _, rse := range rootSubmittedEvents {
-		rseLookup[rse.Index] = rse
-	}
-	for _, ce := range challengeEvents {
-		ceLookup[ce.Index] = ce
-	}
-
-	// Check if this is the node's proposal
-	if proposalDetails.ProposerAddress == t.nodeAddress {
-		err = t.handleOwnProposal(proposalDetails, rseLookup, ceLookup)
+	// Get the max fee
+	maxFee := t.maxFee
+	if maxFee == nil || maxFee.Uint64() == 0 {
+		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
 		if err != nil {
-			return fmt.Errorf("error handling own proposal %d: %w", proposalDetails.ID, err)
+			return err
 		}
-	} else {
-		// TODO: look and see if challenges need to happen
 	}
 
-	// Build the tree for the proposal
+	// Print the gas info
+	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+		return nil
+	}
 
-	// Update the start block cache for this proposal
-	//t.proposalEventStartBlockMap[proposalDetails.ID] = big.NewInt(0).Add(endBlock, common.Big1)
+	opts.GasFeeCap = maxFee
+	opts.GasTipCap = t.maxPriorityFee
+	opts.GasLimit = gas.Uint64()
+
+	// Respond to the challenge
+	hash, err := protocol.CreateChallenge(t.rp, propID, challengedIndex, challenge.challengedNode, challenge.witness, opts)
+	if err != nil {
+		return err
+	}
+
+	// Print TX info and wait for it to be included in a block
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	if err != nil {
+		return err
+	}
+
+	// Log
+	t.log.Println("Successfully submitted challenge.")
+
+	// Return
 	return nil
-}
-
-func (t *verifyPdaoProps) handleOwnProposal(details dao.ProposalDetails, rseLookup map[*big.Int]voting.RootSubmitted, ceLookup map[*big.Int]voting.ChallengeSubmitted) error {
-	return nil
-}
-
-func (t *verifyPdaoProps) getProposalsInChallengeWindow(state *state.NetworkState) ([]dao.ProposalDetails, error) {
-	// TODO
-	return nil, nil
 }

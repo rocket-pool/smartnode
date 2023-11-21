@@ -9,9 +9,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -46,7 +44,6 @@ type NetworkTreeManager struct {
 	log       *log.ColorLogger
 	logPrefix string
 	cfg       *config.RocketPoolConfig
-	rp        *rocketpool.RocketPool
 
 	filenameRegex           *regexp.Regexp
 	latestCompatibleVersion *semver.Version
@@ -54,7 +51,7 @@ type NetworkTreeManager struct {
 }
 
 // Create a new NetworkTreeManager instance
-func NewNetworkTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client) (*NetworkTreeManager, error) {
+func NewNetworkTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig) (*NetworkTreeManager, error) {
 	// Create the snapshot filename regex
 	logPrefix := "[Network Tree]"
 	filenameRegex := regexp.MustCompile(networkVotingTreeFilenamePattern)
@@ -69,7 +66,6 @@ func NewNetworkTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, r
 		log:                     log,
 		logPrefix:               logPrefix,
 		cfg:                     cfg,
-		rp:                      rp,
 		filenameRegex:           filenameRegex,
 		latestCompatibleVersion: latestCompatibleVersion,
 	}

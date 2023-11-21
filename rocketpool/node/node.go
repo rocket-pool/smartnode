@@ -38,6 +38,8 @@ const (
 	ManageFeeRecipientColor      = color.FgHiCyan
 	PromoteMinipoolsColor        = color.FgMagenta
 	ReduceBondAmountColor        = color.FgHiBlue
+	DefendPdaoPropsColor         = color.FgYellow
+	VerifyPdaoPropsColor         = color.FgYellow
 	DistributeMinipoolsColor     = color.FgHiGreen
 	ErrorColor                   = color.FgRed
 	WarningColor                 = color.FgYellow
@@ -145,6 +147,14 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	defendPdaoProps, err := newDefendPdaoProps(c, log.NewColorLogger(DefendPdaoPropsColor))
+	if err != nil {
+		return err
+	}
+	verifyPdaoProps, err := newVerifyPdaoProps(c, log.NewColorLogger(VerifyPdaoPropsColor))
+	if err != nil {
+		return err
+	}
 
 	// Wait group to handle the various threads
 	wg := new(sync.WaitGroup)
@@ -204,6 +214,20 @@ func run(c *cli.Context) error {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
+
+			if state.IsHoustonDeployed {
+				// Run the pDAO proposal defender
+				if err := defendPdaoProps.run(state); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
+				// Run the pDAO proposal verifier
+				if err := verifyPdaoProps.run(state); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+			}
 
 			// Run the minipool stake check
 			if err := stakePrelaunchMinipools.run(state); err != nil {
