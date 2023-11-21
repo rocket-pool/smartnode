@@ -161,7 +161,9 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	}
 	details.QueueLength = totalQueueLength
 	details.PricesBlock = pricesBlock.Uint64()
-	details.LatestReportablePricesBlock = latestReportablePricesBlock.Uint64()
+	if !isHoustonDeployed {
+		details.LatestReportablePricesBlock = latestReportablePricesBlock.Uint64()
+	}
 	details.PricesSubmissionFrequency = pricesSubmissionFrequency.Uint64()
 	details.ETHUtilizationRate = eth.WeiToEth(ethUtilizationRate)
 	details.RETHExchangeRate = eth.WeiToEth(rETHExchangeRate)
