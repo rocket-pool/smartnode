@@ -350,7 +350,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Get the node's credit balance
-	creditBalanceWei, err := node.GetNodeDepositCredit(rp, nodeAccount.Address, nil)
+	creditBalanceWei, err := node.GetNodeCreditAndBalance(rp, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}
