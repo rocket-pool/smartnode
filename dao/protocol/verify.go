@@ -109,7 +109,7 @@ func GetChallengeState(rp *rocketpool.RocketPool, proposalId uint64, index uint6
 }
 
 // Get RootSubmitted event info
-func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalID uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) ([]RootSubmitted, error) {
+func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) ([]RootSubmitted, error) {
 	// Get the contract
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
@@ -117,12 +117,14 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalID uint64, interv
 	}
 
 	// Construct a filter query for relevant logs
-	proposalIdBig := big.NewInt(0).SetUint64(proposalID)
+	idBuffers := make([]common.Hash, len(proposalIDs))
+	for i, id := range proposalIDs {
+		proposalIdBig := big.NewInt(0).SetUint64(id)
+		proposalIdBig.FillBytes(idBuffers[i].Bytes())
+	}
 	rootSubmittedEvent := rocketDAOProtocolVerifier.ABI.Events["RootSubmitted"]
-	proposalIdBytes := [32]byte{}
-	proposalIdBig.FillBytes(proposalIdBytes[:])
 	addressFilter := []common.Address{*rocketDAOProtocolVerifier.Address}
-	topicFilter := [][]common.Hash{{rootSubmittedEvent.ID}, {proposalIdBytes}}
+	topicFilter := [][]common.Hash{{rootSubmittedEvent.ID}, idBuffers}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
@@ -164,7 +166,7 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalID uint64, interv
 }
 
 // Get ChallengeSubmitted event info
-func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalID uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) ([]ChallengeSubmitted, error) {
+func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) ([]ChallengeSubmitted, error) {
 	// Get the contract
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
@@ -172,12 +174,14 @@ func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalID uint64, i
 	}
 
 	// Construct a filter query for relevant logs
-	proposalIdBig := big.NewInt(0).SetUint64(proposalID)
+	idBuffers := make([]common.Hash, len(proposalIDs))
+	for i, id := range proposalIDs {
+		proposalIdBig := big.NewInt(0).SetUint64(id)
+		proposalIdBig.FillBytes(idBuffers[i].Bytes())
+	}
 	challengeSubmittedEvent := rocketDAOProtocolVerifier.ABI.Events["ChallengeSubmitted"]
-	proposalIdBytes := [32]byte{}
-	proposalIdBig.FillBytes(proposalIdBytes[:])
 	addressFilter := []common.Address{*rocketDAOProtocolVerifier.Address}
-	topicFilter := [][]common.Hash{{challengeSubmittedEvent.ID}, {proposalIdBytes}}
+	topicFilter := [][]common.Hash{{challengeSubmittedEvent.ID}, idBuffers}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, endBlock, nil)
