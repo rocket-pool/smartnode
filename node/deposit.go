@@ -37,21 +37,21 @@ func Deposit(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee floa
 }
 
 // Estimate the gas to WithdrawETH
-func EstimateWithdrawEthGas(rp *rocketpool.RocketPool, ethAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateWithdrawEthGas(rp *rocketpool.RocketPool, nodeAccount common.Address, ethAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "withdrawEth", ethAmount)
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "withdrawEth", nodeAccount, ethAmount)
 }
 
 // Withdraw unused Ether that was staked on behalf of the node
-func WithdrawEth(rp *rocketpool.RocketPool, ethAmount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+func WithdrawEth(rp *rocketpool.RocketPool, nodeAccount common.Address, ethAmount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := rocketNodeDeposit.Transact(opts, "withdrawEth", ethAmount)
+	tx, err := rocketNodeDeposit.Transact(opts, "withdrawEth", nodeAccount, ethAmount)
 	if err != nil {
 		return nil, fmt.Errorf("error trying to withdraw ETH: %w", err)
 	}
