@@ -173,7 +173,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-propose-setting",
 				Usage:     "Check whether the node can propose a PDAO setting",
-				UsageText: "rocketpool api pdao can-propose-setting setting-name value",
+				UsageText: "rocketpool api pdao can-propose-setting contract-name setting-name value",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -193,7 +193,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "propose-setting",
 				Usage:     "Propose updating a PDAO setting (use can-propose-setting to get the pollard)",
-				UsageText: "rocketpool api pdao propose-setting setting-name value",
+				UsageText: "rocketpool api pdao propose-setting contract-name setting-name value block-number",
 				Action: func(c *cli.Context) error {
 
 					// Validate args

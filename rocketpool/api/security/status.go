@@ -2,7 +2,6 @@ package security
 
 import (
 	"github.com/rocket-pool/rocketpool-go/dao/security"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -11,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getStatus(c *cli.Context) (*api.SecurityCouncilStatusResponse, error) {
+func getStatus(c *cli.Context) (*api.SecurityStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -30,7 +29,7 @@ func getStatus(c *cli.Context) (*api.SecurityCouncilStatusResponse, error) {
 	}
 
 	// Response
-	response := api.SecurityCouncilStatusResponse{}
+	response := api.SecurityStatusResponse{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -75,7 +74,7 @@ func getStatus(c *cli.Context) (*api.SecurityCouncilStatusResponse, error) {
 
 	// Get total DAO members
 	wg.Go(func() error {
-		memberCount, err := trustednode.GetMemberCount(rp, nil)
+		memberCount, err := security.GetMemberCount(rp, nil)
 		if err == nil {
 			response.TotalMembers = memberCount
 		}

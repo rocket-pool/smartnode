@@ -289,8 +289,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Usage: "Automatically confirm all interactive questions",
 									},
 									cli.StringFlag{
-										Name:  "address, a",
-										Usage: "The address of the entity to kick",
+										Name:  "addresses, a",
+										Usage: "One or more addresses of the entity(s) to kick, separated by commas",
 									},
 								},
 								Action: func(c *cli.Context) error {
@@ -302,6 +302,42 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 									// Run
 									return proposeSecurityCouncilKick(c)
+
+								},
+							},
+
+							{
+								Name:      "replace",
+								Aliases:   []string{"r"},
+								Usage:     "Propose replacing an existing member of the security council with a new member",
+								UsageText: "rocketpool pdao propose security-council replace",
+								Flags: []cli.Flag{
+									cli.BoolFlag{
+										Name:  "yes, y",
+										Usage: "Automatically confirm all interactive questions",
+									},
+									cli.StringFlag{
+										Name:  "existing-address, e",
+										Usage: "The address of the existing member",
+									},
+									cli.StringFlag{
+										Name:  "new-id, ni",
+										Usage: "A descriptive ID of the new entity to invite",
+									},
+									cli.StringFlag{
+										Name:  "new-address, na",
+										Usage: "The address of the new entity to invite",
+									},
+								},
+								Action: func(c *cli.Context) error {
+
+									// Validate args
+									if err := cliutils.ValidateArgCount(c, 0); err != nil {
+										return err
+									}
+
+									// Run
+									return proposeSecurityCouncilReplace(c)
 
 								},
 							},
@@ -1985,13 +2021,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:    "proposals",
 				Aliases: []string{"o"},
-				Usage:   "Manage oracle DAO proposals",
+				Usage:   "Manage Protocol DAO proposals",
 				Subcommands: []cli.Command{
 
 					{
 						Name:      "list",
 						Aliases:   []string{"l"},
-						Usage:     "List the oracle DAO proposals",
+						Usage:     "List the Protocol DAO proposals",
 						UsageText: "rocketpool pdao proposals list",
 						Flags: []cli.Flag{
 							cli.StringFlag{

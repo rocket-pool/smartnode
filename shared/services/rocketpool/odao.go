@@ -66,7 +66,7 @@ func (c *Client) TNDAOProposals() (api.TNDAOProposalsResponse, error) {
 
 // Get a single oracle DAO proposal
 func (c *Client) TNDAOProposal(id uint64) (api.TNDAOProposalResponse, error) {
-	responseBytes, err := c.callAPI("odao proposal-details", string(id))
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao proposal-details %d", id))
 	if err != nil {
 		return api.TNDAOProposalResponse{}, fmt.Errorf("Could not get oracle DAO proposal: %w", err)
 	}
