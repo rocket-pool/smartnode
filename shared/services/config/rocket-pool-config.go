@@ -62,8 +62,9 @@ type RocketPoolConfig struct {
 	ExecutionClient     config.Parameter `yaml:"executionClient,omitempty"`
 
 	// Fallback settings
-	UseFallbackClients config.Parameter `yaml:"useFallbackClients,omitempty"`
-	ReconnectDelay     config.Parameter `yaml:"reconnectDelay,omitempty"`
+	UseFallbackClients   config.Parameter `yaml:"useFallbackClients,omitempty"`
+	ReconnectDelay       config.Parameter `yaml:"reconnectDelay,omitempty"`
+	PrioritizeValidation config.Parameter `yaml:"prioritizeValidation,omitempty"`
 
 	// Consensus client settings
 	ConsensusClientMode     config.Parameter `yaml:"consensusClientMode,omitempty"`
@@ -232,6 +233,17 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: "60s"},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		PrioritizeValidation: config.Parameter{
+			ID:                   "prioritizeValidation",
+			Name:                 "Prioritize Validation",
+			Description:          "If enabled, metrics and wallet operations will go through the Fallback to prioritize resources on this node to the validator.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: true},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
@@ -525,6 +537,7 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 		&cfg.ExecutionClient,
 		&cfg.UseFallbackClients,
 		&cfg.ReconnectDelay,
+		&cfg.PrioritizeValidation,
 		&cfg.ConsensusClientMode,
 		&cfg.ConsensusClient,
 		&cfg.ExternalConsensusClient,
