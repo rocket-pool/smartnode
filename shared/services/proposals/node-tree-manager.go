@@ -18,7 +18,7 @@ import (
 const (
 	nodePathFolderName            string = "node-trees"
 	nodeVotingTreeFilenameFormat  string = "node-tree-%d-%s-%d.json.zst"
-	nodeVotingTreeFilenamePattern string = ".*\\-(?P<block>\\d+)\\-(?<address>0x[0-9a-fA-F]{40})\\-(?P<index>\\d+)\\.json\\.zst"
+	nodeVotingTreeFilenamePattern string = ".*\\-(?P<block>\\d+)\\-(?P<address>0x[0-9a-fA-F]{40})\\-(?P<index>\\d+)\\.json\\.zst"
 )
 
 // ========================

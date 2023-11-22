@@ -1,8 +1,6 @@
 package security
 
 import (
-	"errors"
-
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -280,10 +278,12 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					existingAddress, err1 := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					existingAddress, err := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
 					newID := c.Args().Get(1)
-					newAddress, err2 := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
-					err := errors.Join(err1, err2)
+					newAddress, err := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
@@ -304,10 +304,12 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					existingAddress, err1 := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					existingAddress, err := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
 					newID := c.Args().Get(1)
-					newAddress, err2 := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
-					err := errors.Join(err1, err2)
+					newAddress, err := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
 					if err != nil {
 						return err
 					}

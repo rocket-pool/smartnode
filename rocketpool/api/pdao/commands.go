@@ -1,7 +1,6 @@
 package pdao
 
 import (
-	"errors"
 	"time"
 
 	"github.com/urfave/cli"
@@ -242,10 +241,15 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					node, err1 := cliutils.ValidateBigInt("node", c.Args().Get(0))
-					odao, err2 := cliutils.ValidateBigInt("odao", c.Args().Get(1))
-					pdao, err3 := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
-					err := errors.Join(err1, err2, err3)
+					node, err := cliutils.ValidateBigInt("node", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					odao, err := cliutils.ValidateBigInt("odao", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					pdao, err := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
@@ -266,11 +270,19 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
-					node, err1 := cliutils.ValidateBigInt("node", c.Args().Get(0))
-					odao, err2 := cliutils.ValidateBigInt("odao", c.Args().Get(1))
-					pdao, err3 := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
-					blockNumber, err4 := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
-					err := errors.Join(err1, err2, err3, err4)
+					node, err := cliutils.ValidateBigInt("node", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					odao, err := cliutils.ValidateBigInt("odao", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					pdao, err := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
 					if err != nil {
 						return err
 					}
@@ -293,9 +305,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					invoiceID := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amount, err2 := cliutils.ValidateBigInt("amount", c.Args().Get(2))
-					err := errors.Join(err1, err2)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amount, err := cliutils.ValidateBigInt("amount", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
@@ -317,10 +331,15 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					invoiceID := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amount, err2 := cliutils.ValidateBigInt("amount", c.Args().Get(2))
-					blockNumber, err3 := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
-					err := errors.Join(err1, err2, err3)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amount, err := cliutils.ValidateBigInt("amount", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
 					if err != nil {
 						return err
 					}
@@ -343,12 +362,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					contractName := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amountPerPeriod, err2 := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
-					periodLength, err3 := cliutils.ValidateDuration("period-length", c.Args().Get(3))
-					startTime, err4 := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
-					numberOfPeriods, err5 := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
-					err := errors.Join(err1, err2, err3, err4, err5)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amountPerPeriod, err := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					periodLength, err := cliutils.ValidateDuration("period-length", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					startTime, err := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
+					if err != nil {
+						return err
+					}
+					numberOfPeriods, err := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
 					if err != nil {
 						return err
 					}
@@ -370,13 +400,27 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					contractName := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amountPerPeriod, err2 := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
-					periodLength, err3 := cliutils.ValidateDuration("period-length", c.Args().Get(3))
-					startTime, err4 := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
-					numberOfPeriods, err5 := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
-					blockNumber, err6 := cliutils.ValidateUint32("blockNumber", c.Args().Get(6))
-					err := errors.Join(err1, err2, err3, err4, err5, err6)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amountPerPeriod, err := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					periodLength, err := cliutils.ValidateDuration("period-length", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					startTime, err := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
+					if err != nil {
+						return err
+					}
+					numberOfPeriods, err := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(6))
 					if err != nil {
 						return err
 					}
@@ -399,11 +443,19 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					contractName := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amountPerPeriod, err2 := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
-					periodLength, err3 := cliutils.ValidateDuration("period-length", c.Args().Get(3))
-					numberOfPeriods, err4 := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(4))
-					err := errors.Join(err1, err2, err3, err4)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amountPerPeriod, err := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					periodLength, err := cliutils.ValidateDuration("period-length", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					numberOfPeriods, err := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(4))
 					if err != nil {
 						return err
 					}
@@ -425,12 +477,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					contractName := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amountPerPeriod, err2 := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
-					periodLength, err3 := cliutils.ValidateDuration("period-length", c.Args().Get(3))
-					numberOfPeriods, err4 := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(4))
-					blockNumber, err5 := cliutils.ValidateUint32("blockNumber", c.Args().Get(5))
-					err := errors.Join(err1, err2, err3, err4, err5)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amountPerPeriod, err := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					periodLength, err := cliutils.ValidateDuration("period-length", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					numberOfPeriods, err := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(4))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(5))
 					if err != nil {
 						return err
 					}
@@ -453,8 +516,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					id := c.Args().Get(0)
-					address, err1 := cliutils.ValidateAddress("address", c.Args().Get(1))
-					err := errors.Join(err1)
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
@@ -476,9 +538,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					id := c.Args().Get(0)
-					address, err1 := cliutils.ValidateAddress("address", c.Args().Get(1))
-					blockNumber, err2 := cliutils.ValidateUint32("blockNumber", c.Args().Get(2))
-					err := errors.Join(err1, err2)
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(1))
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
@@ -500,8 +561,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					address, err1 := cliutils.ValidateAddress("address", c.Args().Get(0))
-					err := errors.Join(err1)
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -522,9 +582,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					address, err1 := cliutils.ValidateAddress("address", c.Args().Get(0))
-					blockNumber, err2 := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
-					err := errors.Join(err1, err2)
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
@@ -546,8 +608,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					addresses, err1 := cliutils.ValidateAddresses("address", c.Args().Get(0))
-					err := errors.Join(err1)
+					addresses, err := cliutils.ValidateAddresses("address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -568,9 +629,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					addresses, err1 := cliutils.ValidateAddresses("addresess", c.Args().Get(0))
-					blockNumber, err2 := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
-					err := errors.Join(err1, err2)
+					addresses, err := cliutils.ValidateAddresses("addresess", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
@@ -592,10 +655,12 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					existingAddress, err1 := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					existingAddress, err := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
 					newID := c.Args().Get(1)
-					newAddress, err2 := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
-					err := errors.Join(err1, err2)
+					newAddress, err := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
@@ -616,11 +681,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
-					existingAddress, err1 := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					existingAddress, err := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
 					newID := c.Args().Get(1)
-					newAddress, err2 := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
-					blockNumber, err3 := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
-					err := errors.Join(err1, err2, err3)
+					newAddress, err := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
 					if err != nil {
 						return err
 					}
