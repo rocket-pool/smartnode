@@ -260,12 +260,11 @@ func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
 
 // Save the config
 func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
-	settingsFilePath := filepath.Join(c.configPath, SettingsFile)
-	expandedPath, err := homedir.Expand(settingsFilePath)
+	settingsFileDirectoryPath, err := homedir.Expand(c.configPath)
 	if err != nil {
 		return err
 	}
-	return rp.SaveConfig(cfg, expandedPath)
+	return rp.SaveConfig(cfg, settingsFileDirectoryPath, SettingsFile)
 }
 
 // Remove the upgrade flag file

@@ -32,7 +32,8 @@ func LoadConfigFromFile(path string) (*config.RocketPoolConfig, error) {
 }
 
 // Saves a config and removes the upgrade flag file
-func SaveConfig(cfg *config.RocketPoolConfig, path string) error {
+func SaveConfig(cfg *config.RocketPoolConfig, directory, filename string) error {
+	path := filepath.Join(directory, filename)
 
 	settings := cfg.Serialize()
 	configBytes, err := yaml.Marshal(settings)
@@ -43,7 +44,7 @@ func SaveConfig(cfg *config.RocketPoolConfig, path string) error {
 	// Make a tmp file
 	// The empty string directs CreateTemp to use the OS's $TMPDIR (or GetTempPath) on windows
 	// The * in the second string is replaced with random characters by CreateTemp
-	f, err := os.CreateTemp("", "rp-user-settings-new-*.yml")
+	f, err := os.CreateTemp(directory, ".tmp-"+filename+"-*")
 	if err != nil {
 		if errors.Is(err, fs.ErrExist) {
 			return fmt.Errorf("could not create file to save config to disk... do you need to clean your tmpdir (%s)?: %w", os.TempDir(), err)
@@ -51,12 +52,22 @@ func SaveConfig(cfg *config.RocketPoolConfig, path string) error {
 
 		return fmt.Errorf("could not create file to save config to disk: %w", err)
 	}
-	// Clean up the temporary file
-	// This prevents us from filling up TMPDIR with partially written files on failure
+	// Clean up the temporary files
+	// This prevents us from filling up `directory` with partially written files on failure
 	// If the file is successfully written, it fails with an error since it will be renamed
 	// before it is deleted, which we explicitly ignore / don't care about.
 	defer func() {
-		_ = os.Remove(f.Name())
+		// Clean up tmp files, if any found
+		oldFiles, err := filepath.Glob(filepath.Join(directory, ".tmp-"+filename+"-*"))
+		if err != nil {
+			// Only possible error is ErrBadPattern, which we should catch
+			// during development, since the pattern is a comptime constant.
+			panic(err.Error())
+		}
+
+		for _, match := range oldFiles {
+			os.RemoveAll(match)
+		}
 	}()
 
 	// Save the serialized settings to the temporary file
