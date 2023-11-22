@@ -5,7 +5,6 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -30,29 +29,37 @@ func canProposeLeave(c *cli.Context) (*api.SecurityCanProposeLeaveResponse, erro
 	// Response
 	response := api.SecurityCanProposeLeaveResponse{}
 
-	// Sync
-	var wg errgroup.Group
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
 
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		gasInfo, err := security.EstimateRequestLeaveGas(rp, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
+	// Check if the member exists
+	exists, err := security.GetMemberExists(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+	response.MemberDoesntExist = !exists
 
-	// Wait for data
-	if err := wg.Wait(); err != nil {
+	// Check validity
+	response.CanPropose = !(response.MemberDoesntExist)
+	if !response.CanPropose {
+		return &response, nil
+	}
+
+	// Simulate the tx
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+	gasInfo, err := security.EstimateRequestLeaveGas(rp, opts)
+	if err != nil {
 		return nil, err
 	}
 
 	// Update & return response
-	response.CanPropose = true
+	response.GasInfo = gasInfo
 	return &response, nil
 
 }

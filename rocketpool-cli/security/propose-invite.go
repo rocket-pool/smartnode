@@ -1,15 +1,17 @@
-package pdao
+package security
 
 import (
 	"fmt"
 
+	"github.com/urfave/cli"
+
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/urfave/cli"
 )
 
-func proposeSecurityCouncilInvite(c *cli.Context) error {
+func proposeInvite(c *cli.Context) error {
+
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -43,45 +45,45 @@ func proposeSecurityCouncilInvite(c *cli.Context) error {
 		return err
 	}
 
-	// Check submissions
-	canResponse, err := rp.PDAOCanProposeInviteToSecurityCouncil(id, address)
+	// Check if proposal can be made
+	canPropose, err := rp.SecurityCanProposeInvite(id, address)
 	if err != nil {
 		return err
 	}
-	if !canResponse.CanPropose {
+	if !canPropose.CanPropose {
 		fmt.Println("Cannot propose inviting member:")
-		if canResponse.MemberAlreadyExists {
+		if canPropose.MemberAlreadyExists {
 			fmt.Printf("The node %s is already a member of the security council.\n", address.Hex())
 		}
 		return nil
 	}
 
-	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	// Assign max fees
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to propose inviting %s (%s) to the security council?", id, address.Hex()))) {
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
-	// Submit
-	response, err := rp.PDAOProposeInviteToSecurityCouncil(id, address, canResponse.BlockNumber)
+	// Submit proposal
+	response, err := rp.SecurityProposeInvite(id, address)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Proposing invitation to security council...\n")
+	fmt.Printf("Inviting %s (%s) to the security council...\n", id, address.Hex())
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Println("Proposal successfully created.")
+	fmt.Printf("Successfully submitted an invite proposal with ID %d for node %s.\n", response.ProposalId, address.Hex())
 	return nil
 
 }

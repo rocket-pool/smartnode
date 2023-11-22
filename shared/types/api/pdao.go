@@ -229,10 +229,12 @@ type PDAOProposeRecurringSpendUpdateResponse struct {
 }
 
 type PDAOCanProposeInviteToSecurityCouncilResponse struct {
-	Status      string             `json:"status"`
-	Error       string             `json:"error"`
-	BlockNumber uint32             `json:"blockNumber"`
-	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+	Status              string             `json:"status"`
+	Error               string             `json:"error"`
+	CanPropose          bool               `json:"canPropose"`
+	MemberAlreadyExists bool               `json:"memberAlreadyExists"`
+	BlockNumber         uint32             `json:"blockNumber"`
+	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
 }
 
 type PDAOProposeInviteToSecurityCouncilResponse struct {

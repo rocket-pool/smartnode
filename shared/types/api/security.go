@@ -59,10 +59,11 @@ type SecurityProposeInviteResponse struct {
 }
 
 type SecurityCanProposeLeaveResponse struct {
-	Status     string             `json:"status"`
-	Error      string             `json:"error"`
-	CanPropose bool               `json:"canPropose"`
-	GasInfo    rocketpool.GasInfo `json:"gasInfo"`
+	Status            string             `json:"status"`
+	Error             string             `json:"error"`
+	CanPropose        bool               `json:"canPropose"`
+	MemberDoesntExist bool               `json:"memberDoesntExist"`
+	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
 }
 type SecurityProposeLeaveResponse struct {
 	Status string      `json:"status"`

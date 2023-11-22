@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/odao"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/pdao"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/security"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
@@ -153,6 +154,7 @@ ______           _        _    ______           _
 	odao.RegisterCommands(app, "odao", []string{"o"})
 	pdao.RegisterCommands(app, "pdao", []string{"p"})
 	queue.RegisterCommands(app, "queue", []string{"q"})
+	security.RegisterCommands(app, "security", []string{"c"})
 	service.RegisterCommands(app, "service", []string{"s"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 

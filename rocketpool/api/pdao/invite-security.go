@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -35,6 +36,18 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 
 	// Response
 	response := api.PDAOCanProposeInviteToSecurityCouncilResponse{}
+
+	// Check if the member exists
+	response.MemberAlreadyExists, err = security.GetMemberExists(rp, address, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check validity
+	response.CanPropose = !(response.MemberAlreadyExists)
+	if !response.CanPropose {
+		return &response, nil
+	}
 
 	// Get node account
 	opts, err := w.GetNodeAccountTransactor()

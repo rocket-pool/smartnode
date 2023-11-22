@@ -228,7 +228,7 @@ func (c *Client) SecurityCanProposeReplace(existingAddress common.Address, newID
 }
 
 // Propose replacing someone on the security council with another member
-func (c *Client) SecurityProposeReplaceMember(existingAddress common.Address, newID string, newAddress common.Address) (api.SecurityProposeReplaceResponse, error) {
+func (c *Client) SecurityProposeReplace(existingAddress common.Address, newID string, newAddress common.Address) (api.SecurityProposeReplaceResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("security propose-replace-member %s", existingAddress.Hex()), newID, newAddress.Hex())
 	if err != nil {
 		return api.SecurityProposeReplaceResponse{}, fmt.Errorf("Could not propose replacement of security council member: %w", err)
@@ -388,7 +388,7 @@ func (c *Client) SecurityCanLeave() (api.SecurityCanLeaveResponse, error) {
 }
 
 // Leave the security council (requires an executed leave proposal)
-func (c *Client) SecurityLeave(bondRefundAddress common.Address) (api.SecurityLeaveResponse, error) {
+func (c *Client) SecurityLeave() (api.SecurityLeaveResponse, error) {
 	responseBytes, err := c.callAPI("security leave")
 	if err != nil {
 		return api.SecurityLeaveResponse{}, fmt.Errorf("Could not leave security council: %w", err)
@@ -420,7 +420,7 @@ func (c *Client) SecurityCanProposeSetting(contract string, setting string, valu
 }
 
 // Propose updating a PDAO setting
-func (c *Client) SecurityProposeSetting(contract string, setting string, value string, blockNumber uint32) (api.SecurityProposeSettingResponse, error) {
+func (c *Client) SecurityProposeSetting(contract string, setting string, value string) (api.SecurityProposeSettingResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("security propose-setting %s %s %s", contract, setting, value))
 	if err != nil {
 		return api.SecurityProposeSettingResponse{}, fmt.Errorf("Could not propose security council setting: %w", err)
