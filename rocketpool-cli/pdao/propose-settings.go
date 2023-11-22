@@ -16,251 +16,276 @@ import (
 
 func proposeSettingAuctionIsCreateLotEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.CreateLotEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.CreateLotEnabledSettingPath, trueValue)
 }
 
 func proposeSettingAuctionIsBidOnLotEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.BidOnLotEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.BidOnLotEnabledSettingPath, trueValue)
 }
 
 func proposeSettingAuctionLotMinimumEthValue(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.LotMinimumEthValueSettingPath, trueValue)
+	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.LotMinimumEthValueSettingPath, trueValue)
 }
 
 func proposeSettingAuctionLotMaximumEthValue(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.LotMaximumEthValueSettingPath, trueValue)
+	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.LotMaximumEthValueSettingPath, trueValue)
 }
 
 func proposeSettingAuctionLotDuration(c *cli.Context, value uint64) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.LotDurationSettingPath, trueValue)
+	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.LotDurationSettingPath, trueValue)
 }
 
 func proposeSettingAuctionLotStartingPriceRatio(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.LotStartingPriceRatioSettingPath, trueValue)
+	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.LotStartingPriceRatioSettingPath, trueValue)
 }
 
 func proposeSettingAuctionLotReservePriceRatio(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.LotReservePriceRatioSettingPath, trueValue)
+	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.LotReservePriceRatioSettingPath, trueValue)
 }
 
 func proposeSettingDepositIsDepositingEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.DepositEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.DepositEnabledSettingPath, trueValue)
 }
 
 func proposeSettingDepositAreDepositAssignmentsEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.AssignDepositsEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.AssignDepositsEnabledSettingPath, trueValue)
 }
 
 func proposeSettingDepositMinimumDeposit(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.MinimumDepositSettingPath, trueValue)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.MinimumDepositSettingPath, trueValue)
 }
 
 func proposeSettingDepositMaximumDepositPoolSize(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.MaximumDepositPoolSizeSettingPath, trueValue)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.MaximumDepositPoolSizeSettingPath, trueValue)
 }
 
 func proposeSettingDepositMaximumAssignmentsPerDeposit(c *cli.Context, value uint64) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.MaximumDepositAssignmentsSettingPath, trueValue)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.MaximumDepositAssignmentsSettingPath, trueValue)
 }
 
 func proposeSettingDepositMaximumSocialisedAssignmentsPerDeposit(c *cli.Context, value uint64) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.MaximumSocializedDepositAssignmentsSettingPath, trueValue)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.MaximumSocializedDepositAssignmentsSettingPath, trueValue)
 }
 
 func proposeSettingDepositDepositFee(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.DepositFeeSettingPath, trueValue)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.DepositFeeSettingPath, trueValue)
 }
 
 func proposeSettingMinipoolIsSubmitWithdrawableEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.MinipoolSubmitWithdrawableEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.MinipoolSettingsContractName, protocol.MinipoolSubmitWithdrawableEnabledSettingPath, trueValue)
 }
 
 func proposeSettingMinipoolLaunchTimeout(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.MinipoolLaunchTimeoutSettingPath, trueValue)
+	return proposeSetting(c, protocol.MinipoolSettingsContractName, protocol.MinipoolLaunchTimeoutSettingPath, trueValue)
 }
 
 func proposeSettingMinipoolIsBondReductionEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.BondReductionEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.MinipoolSettingsContractName, protocol.BondReductionEnabledSettingPath, trueValue)
 }
 
 func proposeSettingMinipoolMaximumCount(c *cli.Context, value uint64) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.MaximumMinipoolCountSettingPath, trueValue)
+	return proposeSetting(c, protocol.MinipoolSettingsContractName, protocol.MaximumMinipoolCountSettingPath, trueValue)
 }
 
 func proposeSettingMinipoolUserDistributeWindowStart(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.MinipoolUserDistributeWindowStartSettingPath, trueValue)
+	return proposeSetting(c, protocol.MinipoolSettingsContractName, protocol.MinipoolUserDistributeWindowStartSettingPath, trueValue)
 }
 
 func proposeSettingMinipoolUserDistributeWindowLength(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.MinipoolUserDistributeWindowLengthSettingPath, trueValue)
+	return proposeSetting(c, protocol.MinipoolSettingsContractName, protocol.MinipoolUserDistributeWindowLengthSettingPath, trueValue)
 }
 
 func proposeSettingNetworkOracleDaoConsensusThreshold(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.NodeConsensusThresholdSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NodeConsensusThresholdSettingPath, trueValue)
 }
 
 func proposeSettingNetworkNodePenaltyThreshold(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.NetworkPenaltyThresholdSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkPenaltyThresholdSettingPath, trueValue)
 }
 
 func proposeSettingNetworkPerPenaltyRate(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.NetworkPenaltyPerRateSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkPenaltyPerRateSettingPath, trueValue)
 }
 
 func proposeSettingNetworkIsSubmitBalancesEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.SubmitBalancesEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitBalancesEnabledSettingPath, trueValue)
 }
 
 func proposeSettingNetworkSubmitBalancesFrequency(c *cli.Context, value uint64) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.SubmitBalancesFrequencySettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitBalancesFrequencySettingPath, trueValue)
 }
 
 func proposeSettingNetworkIsSubmitPricesEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.SubmitPricesEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitPricesEnabledSettingPath, trueValue)
 }
 
 func proposeSettingNetworkSubmitPricesFrequency(c *cli.Context, value uint64) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.SubmitPricesFrequencySettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitPricesFrequencySettingPath, trueValue)
 }
 
 func proposeSettingNetworkMinimumNodeFee(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.MinimumNodeFeeSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.MinimumNodeFeeSettingPath, trueValue)
 }
 
 func proposeSettingNetworkTargetNodeFee(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.TargetNodeFeeSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.TargetNodeFeeSettingPath, trueValue)
 }
 
 func proposeSettingNetworkMaximumNodeFee(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.MaximumNodeFeeSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.MaximumNodeFeeSettingPath, trueValue)
 }
 
 func proposeSettingNetworkNodeFeeDemandRange(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.NodeFeeDemandRangeSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NodeFeeDemandRangeSettingPath, trueValue)
 }
 
 func proposeSettingNetworkTargetRethCollateralRate(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.TargetRethCollateralRateSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.TargetRethCollateralRateSettingPath, trueValue)
 }
 
 func proposeSettingNetworkIsSubmitRewardsEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.SubmitRewardsEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitRewardsEnabledSettingPath, trueValue)
 }
 
 func proposeSettingNodeIsRegistrationEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NodeRegistrationEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.NodeRegistrationEnabledSettingPath, trueValue)
 }
 
 func proposeSettingNodeIsSmoothingPoolRegistrationEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.SmoothingPoolRegistrationEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.SmoothingPoolRegistrationEnabledSettingPath, trueValue)
 }
 
 func proposeSettingNodeIsDepositingEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NodeDepositEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.NodeDepositEnabledSettingPath, trueValue)
 }
 
 func proposeSettingNodeAreVacantMinipoolsEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.VacantMinipoolsEnabledSettingPath, trueValue)
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.VacantMinipoolsEnabledSettingPath, trueValue)
 }
 
 func proposeSettingNodeMinimumPerMinipoolStake(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.MinimumPerMinipoolStakeSettingPath, trueValue)
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.MinimumPerMinipoolStakeSettingPath, trueValue)
 }
 
 func proposeSettingNodeMaximumPerMinipoolStake(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.MaximumPerMinipoolStakeSettingPath, trueValue)
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.MaximumPerMinipoolStakeSettingPath, trueValue)
 }
 
 func proposeSettingProposalsVoteTime(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.VoteTimeSettingPath, trueValue)
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.VoteTimeSettingPath, trueValue)
 }
 
 func proposeSettingProposalsVoteDelayTime(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.VoteDelayTimeSettingPath, trueValue)
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.VoteDelayTimeSettingPath, trueValue)
 }
 
 func proposeSettingProposalsExecuteTime(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.ExecuteTimeSettingPath, trueValue)
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.ExecuteTimeSettingPath, trueValue)
 }
 
 func proposeSettingProposalsProposalBond(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.ProposalBondSettingPath, trueValue)
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.ProposalBondSettingPath, trueValue)
 }
 
 func proposeSettingProposalsChallengeBond(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.ChallengeBondSettingPath, trueValue)
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.ChallengeBondSettingPath, trueValue)
 }
 
 func proposeSettingProposalsChallengePeriod(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.ChallengePeriodSettingPath, trueValue)
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.ChallengePeriodSettingPath, trueValue)
 }
 
 func proposeSettingProposalsQuorum(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.ProposalQuorumSettingPath, trueValue)
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.ProposalQuorumSettingPath, trueValue)
 }
 
 func proposeSettingProposalsVetoQuorum(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.ProposalVetoQuorumSettingPath, trueValue)
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.ProposalVetoQuorumSettingPath, trueValue)
 }
 
 func proposeSettingProposalsMaxBlockAge(c *cli.Context, value uint64) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.ProposalMaxBlockAgeSettingPath, trueValue)
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.ProposalMaxBlockAgeSettingPath, trueValue)
 }
 
 func proposeSettingRewardsIntervalTime(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.RewardsClaimIntervalTimeSettingPath, trueValue)
+	return proposeSetting(c, protocol.RewardsSettingsContractName, protocol.RewardsClaimIntervalTimeSettingPath, trueValue)
+}
+
+func proposeSettingSecurityMembersQuorum(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityMembersQuorumSettingPath, trueValue)
+}
+
+func proposeSettingSecurityMembersLeaveTime(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityMembersLeaveTimeSettingPath, trueValue)
+}
+
+func proposeSettingSecurityProposalVoteTime(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityProposalVoteTimeSettingPath, trueValue)
+}
+
+func proposeSettingSecurityProposalExecuteTime(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityProposalExecuteTimeSettingPath, trueValue)
+}
+
+func proposeSettingSecurityProposalActionTime(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityProposalActionTimeSettingPath, trueValue)
 }
 
 // Master general proposal function
-func proposeSetting(c *cli.Context, setting string, value string) error {
+func proposeSetting(c *cli.Context, contract string, setting string, value string) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -279,7 +304,7 @@ func proposeSetting(c *cli.Context, setting string, value string) error {
 	}
 
 	// Check if proposal can be made
-	canPropose, err := rp.PDAOCanProposeSetting(setting, value)
+	canPropose, err := rp.PDAOCanProposeSetting(contract, setting, value)
 	if err != nil {
 		return err
 	}
@@ -306,7 +331,7 @@ func proposeSetting(c *cli.Context, setting string, value string) error {
 	}
 
 	// Submit proposal
-	response, err := rp.PDAOProposeSetting(setting, value, canPropose.BlockNumber)
+	response, err := rp.PDAOProposeSetting(contract, setting, value, canPropose.BlockNumber)
 	if err != nil {
 		return err
 	}

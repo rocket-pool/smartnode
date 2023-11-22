@@ -126,8 +126,8 @@ func (c *Client) PDAOGetSettings() (api.GetPDAOSettingsResponse, error) {
 }
 
 // Check whether the node can vote on a proposal
-func (c *Client) PDAOCanProposeSetting(setting string, value string) (api.CanProposePDAOSettingResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-setting %s %s", setting, value))
+func (c *Client) PDAOCanProposeSetting(contract string, setting string, value string) (api.CanProposePDAOSettingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-setting %s %s %s", contract, setting, value))
 	if err != nil {
 		return api.CanProposePDAOSettingResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-setting: %w", err)
 	}
@@ -142,8 +142,8 @@ func (c *Client) PDAOCanProposeSetting(setting string, value string) (api.CanPro
 }
 
 // Propose updating a PDAO setting (use can-propose-setting to get the pollard)
-func (c *Client) PDAOProposeSetting(setting string, value string, blockNumber uint32) (api.ProposePDAOSettingResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-setting %s %s %d", setting, value, blockNumber))
+func (c *Client) PDAOProposeSetting(contract string, setting string, value string, blockNumber uint32) (api.ProposePDAOSettingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-setting %s %s %s %d", contract, setting, value, blockNumber))
 	if err != nil {
 		return api.ProposePDAOSettingResponse{}, fmt.Errorf("Could not get protocol DAO propose-setting: %w", err)
 	}

@@ -177,14 +177,15 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					settingName := c.Args().Get(0)
-					value := c.Args().Get(1)
+					contractName := c.Args().Get(0)
+					settingName := c.Args().Get(1)
+					value := c.Args().Get(2)
 
 					// Run
-					api.PrintResponse(canProposeSetting(c, settingName, value))
+					api.PrintResponse(canProposeSetting(c, contractName, settingName, value))
 					return nil
 
 				},
@@ -196,18 +197,19 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
-					settingName := c.Args().Get(0)
-					value := c.Args().Get(1)
-					blockNumber, err := cliutils.ValidatePositiveUint32("block-number", c.Args().Get(2))
+					contractName := c.Args().Get(0)
+					settingName := c.Args().Get(1)
+					value := c.Args().Get(2)
+					blockNumber, err := cliutils.ValidatePositiveUint32("block-number", c.Args().Get(3))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(proposeSetting(c, settingName, value, blockNumber))
+					api.PrintResponse(proposeSetting(c, contractName, settingName, value, blockNumber))
 					return nil
 
 				},

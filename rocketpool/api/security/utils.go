@@ -32,7 +32,7 @@ func getProposalIsActionable(rp *rocketpool.RocketPool, nodeAddress common.Addre
 	// Get action window
 	wg.Go(func() error {
 		var err error
-		actionTime, err = psettings.GetSecurityMembersActionTime(rp, nil)
+		actionTime, err = psettings.GetSecurityProposalActionTime(rp, nil)
 		return err
 	})
 
