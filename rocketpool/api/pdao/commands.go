@@ -533,6 +533,102 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "can-propose-kick-multi-from-security-council",
+				Usage:     "Check whether the node can kick multiple members from the security council",
+				UsageText: "rocketpool api pdao can-propose-kick-multi-from-security-council addresses",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					addresses, err1 := cliutils.ValidateAddresses("address", c.Args().Get(0))
+					err := errors.Join(err1)
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeKickMultiFromSecurityCouncil(c, addresses))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-kick-multi-from-security-council",
+				Usage:     "Propose kicking multiple members from the security council",
+				UsageText: "rocketpool api pdao propose-kick-multi-from-security-council addresses block-number",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					addresses, err1 := cliutils.ValidateAddresses("addresess", c.Args().Get(0))
+					blockNumber, err2 := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
+					err := errors.Join(err1, err2)
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeKickMultiFromSecurityCouncil(c, addresses, blockNumber))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-propose-replace-member-of-security-council",
+				Usage:     "Check whether the node can propose replacing someone on the security council with another member",
+				UsageText: "rocketpool api pdao can-propose-replace-member-of-security-council existing-address new-id new-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+						return err
+					}
+					existingAddress, err1 := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					newID := c.Args().Get(1)
+					newAddress, err2 := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
+					err := errors.Join(err1, err2)
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeReplaceMemberOfSecurityCouncil(c, existingAddress, newID, newAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-replace-member-of-security-council",
+				Usage:     "Propose replacing someone on the security council with another member",
+				UsageText: "rocketpool api pdao propose-replace-member-of-security-council existing-address new-id new-address block-number",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
+						return err
+					}
+					existingAddress, err1 := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					newID := c.Args().Get(1)
+					newAddress, err2 := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
+					blockNumber, err3 := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
+					err := errors.Join(err1, err2, err3)
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeReplaceMemberOfSecurityCouncil(c, existingAddress, newID, newAddress, blockNumber))
+					return nil
+
+				},
+			},
 		},
 	})
 }

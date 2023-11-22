@@ -82,6 +82,19 @@ func ValidateAddress(name, value string) (common.Address, error) {
 	return common.HexToAddress(value), nil
 }
 
+// Validate a collection of addresses
+func ValidateAddresses(name, value string) ([]common.Address, error) {
+	elements := strings.Split(value, ",")
+	addresses := make([]common.Address, len(elements))
+	for i, element := range elements {
+		if !common.IsHexAddress(element) {
+			return nil, fmt.Errorf("Invalid address %d in %s: '%s'", i, name, element)
+		}
+		addresses[i] = common.HexToAddress(element)
+	}
+	return addresses, nil
+}
+
 // Validate a wei amount
 func ValidateWeiAmount(name, value string) (*big.Int, error) {
 	val := new(big.Int)

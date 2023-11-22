@@ -255,3 +255,31 @@ type PDAOProposeKickFromSecurityCouncilResponse struct {
 	ProposalId uint64      `json:"proposalId"`
 	TxHash     common.Hash `json:"txHash"`
 }
+
+type PDAOCanProposeKickMultiFromSecurityCouncilResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	BlockNumber uint32             `json:"blockNumber"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOProposeKickMultiFromSecurityCouncilResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+
+type PDAOCanProposeReplaceMemberOfSecurityCouncilResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	BlockNumber uint32             `json:"blockNumber"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOProposeReplaceMemberOfSecurityCouncilResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
