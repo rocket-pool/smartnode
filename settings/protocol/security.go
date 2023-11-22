@@ -62,59 +62,59 @@ func EstimateProposeSecurityMembersLeaveTimeGas(rp *rocketpool.RocketPool, value
 }
 
 // How long a security council proposal can be voted on
-func GetSecurityMembersVoteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+func GetSecurityProposalVoteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	securitySettingsContract, err := getSecuritySettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	value := new(*big.Int)
 	if err := securitySettingsContract.Call(opts, value, "getVoteTime"); err != nil {
-		return 0, fmt.Errorf("error getting security members vote time: %w", err)
+		return 0, fmt.Errorf("error getting security proposal vote time: %w", err)
 	}
 	return time.Second * time.Duration((*value).Uint64()), nil
 }
-func ProposeSecurityMembersVoteTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSecurityProposalVoteTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SecurityProposalVoteTimeSettingPath), SecuritySettingsContractName, SecurityProposalVoteTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeSecurityMembersVoteTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSecurityProposalVoteTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SecurityProposalVoteTimeSettingPath), SecuritySettingsContractName, SecurityProposalVoteTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // How long a security council proposal can be executed after its voting period is finished
-func GetSecurityMembersExecuteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+func GetSecuritProposalExecuteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	securitySettingsContract, err := getSecuritySettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	value := new(*big.Int)
 	if err := securitySettingsContract.Call(opts, value, "getExecuteTime"); err != nil {
-		return 0, fmt.Errorf("error getting security members execute time: %w", err)
+		return 0, fmt.Errorf("error getting security proposal execute time: %w", err)
 	}
 	return time.Second * time.Duration((*value).Uint64()), nil
 }
-func ProposeSecurityMembersExecuteTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSecurityProposalExecuteTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SecurityProposalExecuteTimeSettingPath), SecuritySettingsContractName, SecurityProposalExecuteTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeSecurityMembersExecuteTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSecurityProposalExecuteTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SecurityProposalExecuteTimeSettingPath), SecuritySettingsContractName, SecurityProposalExecuteTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Certain security council proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires.
-func GetSecurityMembersActionTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+func GetSecurityProposalActionTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	securitySettingsContract, err := getSecuritySettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	value := new(*big.Int)
 	if err := securitySettingsContract.Call(opts, value, "getActionTime"); err != nil {
-		return 0, fmt.Errorf("error getting security members action time: %w", err)
+		return 0, fmt.Errorf("error getting security proposal action time: %w", err)
 	}
 	return time.Second * time.Duration((*value).Uint64()), nil
 }
-func ProposeSecurityMembersActionTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeSecurityProposalActionTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SecurityProposalActionTimeSettingPath), SecuritySettingsContractName, SecurityProposalActionTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeSecurityMembersActionTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeSecurityProposalActionTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SecurityProposalActionTimeSettingPath), SecuritySettingsContractName, SecurityProposalActionTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
