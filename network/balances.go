@@ -1,20 +1,14 @@
 package network
 
 import (
-	"context"
 	"fmt"
-	"math"
 	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"gonum.org/v1/gonum/mathext"
 
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
@@ -223,130 +217,6 @@ func GetBalancesUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts
 	}
 
 	return true, eventData, nil
-}
-
-// TODO: will be adjusted/removed
-// Returns a mapping of members and whether they have submitted balances this interval or not
-func GetTrustedNodeLatestBalancesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (map[common.Address]bool, error) {
-	// Get the update frequency
-	updateBalancesFrequency, err := protocol.GetSubmitBalancesFrequency(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	// Get the current block
-	currentBlock, err := rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return nil, err
-	}
-	currentBlockNumber := currentBlock.Number.Uint64()
-	// Get trusted members
-	members, err := trustednode.GetMembers(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-	// Get submission within the current interval
-	fromBlock := currentBlockNumber / updateBalancesFrequency * updateBalancesFrequency
-	submissions, err := GetLatestBalancesSubmissions(rp, fromBlock, intervalSize, opts)
-	if err != nil {
-		return nil, err
-	}
-	// Build and return result table
-	participationTable := make(map[common.Address]bool)
-	for _, member := range members {
-		participationTable[member.Address] = false
-	}
-	for _, submission := range submissions {
-		participationTable[submission] = true
-	}
-	return participationTable, nil
-}
-
-// TODO: will be adjusted/removed
-// Calculates the participation rate of every trusted node on balance submission since the last block that member count changed
-func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (*node.TrustedNodeParticipation, error) {
-	// Get the update frequency
-	updateBalancesFrequency, err := protocol.GetSubmitBalancesFrequency(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	// Get the current block
-	currentBlock, err := rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return nil, err
-	}
-	currentBlockNumber := currentBlock.Number.Uint64()
-	// Get the block of the most recent member join (limiting to 50 intervals)
-	minBlock := (currentBlockNumber/updateBalancesFrequency - 50) * updateBalancesFrequency
-	latestMemberCountChangedBlock, err := trustednode.GetLatestMemberCountChangedBlock(rp, minBlock, intervalSize, opts)
-	if err != nil {
-		return nil, err
-	}
-	// Get the number of current members
-	memberCount, err := trustednode.GetMemberCount(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-	// Start block is the first interval after the latest join
-	startBlock := (latestMemberCountChangedBlock/updateBalancesFrequency + 1) * updateBalancesFrequency
-	// The number of members that have to submit each interval
-	consensus := math.Floor(float64(memberCount)/2 + 1)
-	// Check if any intervals have passed
-	intervalsPassed := uint64(0)
-	if currentBlockNumber > startBlock {
-		// The number of intervals passed
-		intervalsPassed = (currentBlockNumber-startBlock)/updateBalancesFrequency + 1
-	}
-	// How many submissions would we expect per member given a random submission
-	expected := float64(intervalsPassed) * consensus / float64(memberCount)
-	// Get trusted members
-	members, err := trustednode.GetMembers(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-	// Construct the epoch map
-	participationTable := make(map[common.Address][]bool)
-	// Iterate members and sum chi-square
-	submissions := make(map[common.Address]float64)
-	chi := float64(0)
-	for _, member := range members {
-		participationTable[member.Address] = make([]bool, intervalsPassed)
-		actual := 0
-		if intervalsPassed > 0 {
-			blocks, err := GetBalancesSubmissions(rp, member.Address, startBlock, intervalSize, opts)
-			if err != nil {
-				return nil, err
-			}
-			actual = len(*blocks)
-			delta := float64(actual) - expected
-			chi += (delta * delta) / expected
-			// Add to participation table
-			for _, block := range *blocks {
-				// Ignore out of step updates
-				if block%updateBalancesFrequency == 0 {
-					index := block/updateBalancesFrequency - startBlock/updateBalancesFrequency
-					participationTable[member.Address][index] = true
-				}
-			}
-		}
-		// Save actual submission
-		submissions[member.Address] = float64(actual)
-	}
-	// Calculate inverse cumulative density function with members-1 DoF
-	probability := float64(1)
-	if intervalsPassed > 0 {
-		probability = 1 - mathext.GammaIncReg(float64(len(members)-1)/2, chi/2)
-	}
-	// Construct return value
-	participation := node.TrustedNodeParticipation{
-		Probability:         probability,
-		ExpectedSubmissions: expected,
-		ActualSubmissions:   submissions,
-		StartBlock:          startBlock,
-		UpdateFrequency:     updateBalancesFrequency,
-		UpdateCount:         intervalsPassed,
-		Participation:       participationTable,
-	}
-	return &participation, nil
 }
 
 // Get contracts
