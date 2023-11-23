@@ -208,7 +208,7 @@ type SmartnodeConfig struct {
 	flashbotsProtectUrl map[config.Network]string `yaml:"-"`
 
 	// The contract address of the RPL faucet
-	firstHoustonSubmissionTimestamp map[config.Network]string `yaml:"-"`
+	firstHoustonSubmissionTimestamp map[config.Network]uint `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -675,6 +675,12 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
+		firstHoustonSubmissionTimestamp: map[config.Network]uint{
+			config.Network_Mainnet: 0,
+			config.Network_Prater:  0,
+			config.Network_Devnet:  1701831360,
+			config.Network_Holesky: 0,
+		},
 	}
 
 }
@@ -984,7 +990,7 @@ func (cfg *SmartnodeConfig) GetFlashbotsProtectUrl() string {
 	return cfg.flashbotsProtectUrl[cfg.Network.Value.(config.Network)]
 }
 
-func (cfg *SmartnodeConfig) GetFirstHoustonSubmissionTimestamp() string {
+func (cfg *SmartnodeConfig) GetFirstHoustonSubmissionTimestamp() uint {
 	return cfg.firstHoustonSubmissionTimestamp[cfg.Network.Value.(config.Network)]
 }
 
