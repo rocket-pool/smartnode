@@ -12,7 +12,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -139,26 +138,6 @@ func (collector *TrustedNodeCollector) collectSlowMetrics(memberIds map[common.A
 
 	var balancesParticipation map[common.Address]bool
 	var pricesParticipation map[common.Address]bool
-
-	// Get the balances participation data
-	wg.Go(func() error {
-		var err error
-		balancesParticipation, err = network.GetTrustedNodeLatestBalancesParticipation(collector.rp, nil, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting trusted node balances participation data: %w", err)
-		}
-		return nil
-	})
-
-	// Get the prices participation data
-	wg.Go(func() error {
-		var err error
-		pricesParticipation, err = network.GetTrustedNodeLatestPricesParticipation(collector.rp, nil, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting trusted node prices participation data: %w", err)
-		}
-		return nil
-	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {

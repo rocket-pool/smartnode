@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	v120_network "github.com/rocket-pool/rocketpool-go/legacy/v1.2.0/network"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -302,107 +304,246 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	// Log
 	t.log.Println("Checking for RPL price checkpoint...")
 
-	// Get block to submit price for
-	blockNumber := state.NetworkDetails.LatestReportablePricesBlock
+	if state.IsHoustonDeployed {
 
-	// Check if a submission needs to be made
-	pricesBlock := state.NetworkDetails.PricesBlock
-	if blockNumber <= pricesBlock {
-		return nil
-	}
+		// Check the last submission block
+		lastSubmissionBlock := state.NetworkDetails.BalancesBlock.Uint64()
 
-	// Get the time of the block
-	header, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(blockNumber))
-	if err != nil {
-		return err
-	}
-	blockTime := time.Unix(int64(header.Time), 0)
+		// Get the duration in seconds for the interval between submissions
+		submissionIntervalDuration := time.Duration(state.NetworkDetails.PricesSubmissionFrequency * uint64(time.Second))
+		eth2Config := state.BeaconConfig
 
-	// Get the Beacon block corresponding to this time
-	eth2Config := state.BeaconConfig
-	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
-	timeSinceGenesis := blockTime.Sub(genesisTime)
-	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
+		// Get the last prices updated event
+		found, event, err := network.GetPriceUpdatedEvent(t.rp, lastSubmissionBlock, nil)
+		if err != nil {
+			return fmt.Errorf("error getting event for price updated on block %d: %w", lastSubmissionBlock, err)
+		}
+		var nexSubmissionTime time.Time
+		if !found {
+			// The first submission after Houston is deployed won't find an event emitted by this contract
+			// Fetch the first Houston submission slot from the config
+			timestamp, err := strconv.ParseInt(t.cfg.Smartnode.GetFirstHoustonSubmissionTimestamp(), 10, 64)
+			if err != nil {
+				return fmt.Errorf("error getting first houston submission timestamp: %w", err)
+			}
+			nexSubmissionTime = time.Unix(timestamp, 0)
+		} else {
 
-	// Check if the targetEpoch is finalized yet
-	targetEpoch := slotNumber / eth2Config.SlotsPerEpoch
-	beaconHead, err := t.bc.GetBeaconHead()
-	if err != nil {
-		return err
-	}
-	finalizedEpoch := beaconHead.FinalizedEpoch
-	if targetEpoch > finalizedEpoch {
-		t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, targetEpoch, finalizedEpoch)
-		return nil
-	}
+			// Get the last submission reference time
+			lastSubmissionTime := time.Unix(event.SlotTimestamp.Int64(), 0)
 
-	// Check if the process is already running
-	t.lock.Lock()
-	if t.isRunning {
-		t.log.Println("Prices report is already running in the background.")
-		t.lock.Unlock()
-		return nil
-	}
-	t.lock.Unlock()
+			nexSubmissionTime = lastSubmissionTime.Add(submissionIntervalDuration)
+		}
+		if time.Now().Before(nexSubmissionTime) {
+			return nil
+		}
 
-	go func() {
+		// Get the Beacon block corresponding to this time
+		genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
+		timeSinceGenesis := nexSubmissionTime.Sub(genesisTime)
+		slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
+
+		ecBlock := beacon.Eth1Data{}
+
+		// Search for the last existing block, going back one slot if the block is not found.
+		for blockExists := false; !blockExists; slotNumber -= 1 {
+			ecBlock, blockExists, err = t.bc.GetEth1DataForEth2Block(strconv.FormatUint(slotNumber, 10))
+			if err != nil {
+				return err
+			}
+		}
+
+		// Fetch the target block
+		targetBlockHeader, err := t.ec.HeaderByHash(context.Background(), ecBlock.BlockHash)
+		if err != nil {
+			return err
+		}
+
+		blockNumber := targetBlockHeader.Number.Uint64()
+
+		// Check if the targetEpoch is finalized yet
+		targetEpoch := slotNumber / eth2Config.SlotsPerEpoch
+		beaconHead, err := t.bc.GetBeaconHead()
+		if err != nil {
+			return err
+		}
+		finalizedEpoch := beaconHead.FinalizedEpoch
+		if targetEpoch > finalizedEpoch {
+			t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, targetEpoch, finalizedEpoch)
+			return nil
+		}
+
+		// Check if the process is already running
 		t.lock.Lock()
-		t.isRunning = true
+		if t.isRunning {
+			t.log.Println("Prices report is already running in the background.")
+			t.lock.Unlock()
+			return nil
+		}
 		t.lock.Unlock()
-		logPrefix := "[Price Report]"
-		t.log.Printlnf("%s Starting price report in a separate thread.", logPrefix)
 
-		// Log
-		t.log.Printlnf("Getting RPL price for block %d...", blockNumber)
+		go func() {
+			t.lock.Lock()
+			t.isRunning = true
+			t.lock.Unlock()
+			logPrefix := "[Price Report]"
+			t.log.Printlnf("%s Starting price report in a separate thread.", logPrefix)
 
-		// Get RPL price at block
-		rplPrice, err := t.getRplTwap(blockNumber)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
-			return
-		}
+			// Log
+			t.log.Printlnf("Getting RPL price for block %d...", blockNumber)
 
-		// Log
-		t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
+			// Get RPL price at block
+			rplPrice, err := t.getRplTwap(blockNumber)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+				return
+			}
 
-		// Check if we have reported these specific values before
-		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
-			return
-		}
-		if hasSubmittedSpecific {
+			// Log
+			t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
+
+			// Check if we have reported these specific values before
+			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, uint64(nexSubmissionTime.Unix()), rplPrice, true)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+				return
+			}
+			if hasSubmittedSpecific {
+				t.lock.Lock()
+				t.isRunning = false
+				t.lock.Unlock()
+				return
+			}
+
+			// We haven't submitted these values, check if we've submitted any for this block so we can log it
+			hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber, uint64(nexSubmissionTime.Unix()), true)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+				return
+			}
+			if hasSubmitted {
+				t.log.Printlnf("Have previously submitted out-of-date prices for block %d, trying again...", blockNumber)
+			}
+
+			// Log
+			t.log.Println("Submitting RPL price...")
+
+			// Submit RPL price
+			if err := t.submitRplPrice(blockNumber, uint64(nexSubmissionTime.Unix()), rplPrice, true); err != nil {
+				t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
+				return
+			}
+
+			// Log and return
+			t.log.Printlnf("%s Price report complete.", logPrefix)
 			t.lock.Lock()
 			t.isRunning = false
 			t.lock.Unlock()
-			return
+		}()
+	} else { // Houston is not deployed yet
+		// Get block to submit price for
+		blockNumber := state.NetworkDetails.LatestReportablePricesBlock
+
+		// Check if a submission needs to be made
+		pricesBlock := state.NetworkDetails.PricesBlock
+		if blockNumber <= pricesBlock {
+			return nil
 		}
 
-		// We haven't submitted these values, check if we've submitted any for this block so we can log it
-		hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
+		// Get the time of the block
+		header, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(blockNumber))
 		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
-			return
+			return err
 		}
-		if hasSubmitted {
-			t.log.Printlnf("Have previously submitted out-of-date prices for block %d, trying again...", blockNumber)
+		blockTime := time.Unix(int64(header.Time), 0)
+
+		// Get the Beacon block corresponding to this time
+		eth2Config := state.BeaconConfig
+		genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
+		timeSinceGenesis := blockTime.Sub(genesisTime)
+		slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
+
+		// Check if the targetEpoch is finalized yet
+		targetEpoch := slotNumber / eth2Config.SlotsPerEpoch
+		beaconHead, err := t.bc.GetBeaconHead()
+		if err != nil {
+			return err
+		}
+		finalizedEpoch := beaconHead.FinalizedEpoch
+		if targetEpoch > finalizedEpoch {
+			t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, targetEpoch, finalizedEpoch)
+			return nil
 		}
 
-		// Log
-		t.log.Println("Submitting RPL price...")
-
-		// Submit RPL price
-		if err := t.submitRplPrice(blockNumber, rplPrice); err != nil {
-			t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
-			return
-		}
-
-		// Log and return
-		t.log.Printlnf("%s Price report complete.", logPrefix)
+		// Check if the process is already running
 		t.lock.Lock()
-		t.isRunning = false
+		if t.isRunning {
+			t.log.Println("Prices report is already running in the background.")
+			t.lock.Unlock()
+			return nil
+		}
 		t.lock.Unlock()
-	}()
+
+		go func() {
+			t.lock.Lock()
+			t.isRunning = true
+			t.lock.Unlock()
+			logPrefix := "[Price Report]"
+			t.log.Printlnf("%s Starting price report in a separate thread.", logPrefix)
+
+			// Log
+			t.log.Printlnf("Getting RPL price for block %d...", blockNumber)
+
+			// Get RPL price at block
+			rplPrice, err := t.getRplTwap(blockNumber)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+				return
+			}
+
+			// Log
+			t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
+
+			// Check if we have reported these specific values before
+			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, 0, rplPrice, false)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+				return
+			}
+			if hasSubmittedSpecific {
+				t.lock.Lock()
+				t.isRunning = false
+				t.lock.Unlock()
+				return
+			}
+
+			// We haven't submitted these values, check if we've submitted any for this block so we can log it
+			hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber, 0, false)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+				return
+			}
+			if hasSubmitted {
+				t.log.Printlnf("Have previously submitted out-of-date prices for block %d, trying again...", blockNumber)
+			}
+
+			// Log
+			t.log.Println("Submitting RPL price...")
+
+			// Submit RPL price
+			if err := t.submitRplPrice(blockNumber, 0, rplPrice, false); err != nil {
+				t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
+				return
+			}
+
+			// Log and return
+			t.log.Printlnf("%s Price report complete.", logPrefix)
+			t.lock.Lock()
+			t.isRunning = false
+			t.lock.Unlock()
+		}()
+
+	}
 
 	// Return
 	return nil
@@ -418,23 +559,36 @@ func (t *submitRplPrice) handleError(err error) {
 }
 
 // Check whether prices for a block has already been submitted by the node
-func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blockNumber uint64) (bool, error) {
+func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blockNumber uint64, slotTimestamp uint64, isHoustonDeployed bool) (bool, error) {
 
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+
+	slotTimestampBuf := make([]byte, 32)
+	big.NewInt(int64(slotTimestamp)).FillBytes(slotTimestampBuf)
+	if isHoustonDeployed {
+		return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, slotTimestampBuf))
+	}
 	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf))
 
 }
 
 // Check whether specific prices for a block has already been submitted by the node
-func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice *big.Int) (bool, error) {
+func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, slotTimestamp uint64, rplPrice *big.Int, isHoustonDeployed bool) (bool, error) {
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+
+	slotTimestampBuf := make([]byte, 32)
+	big.NewInt(int64(slotTimestamp)).FillBytes(slotTimestampBuf)
 
 	rplPriceBuf := make([]byte, 32)
 	rplPrice.FillBytes(rplPriceBuf)
 
+	if isHoustonDeployed {
+		return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, slotTimestampBuf, rplPriceBuf))
+	}
 	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf))
+
 }
 
 // Get RPL price via TWAP at block
@@ -508,7 +662,7 @@ func (t *submitRplPrice) printMessage(message string) {
 }
 
 // Submit RPL price and total effective RPL stake
-func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) error {
+func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64, rplPrice *big.Int, isHoustonDeployed bool) error {
 
 	// Log
 	t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
@@ -519,10 +673,22 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) e
 		return err
 	}
 
-	// Get the gas limit
-	gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, opts)
-	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
+	var gasInfo rocketpool.GasInfo
+	var rocketNetworkPricesAddress common.Address
+
+	if isHoustonDeployed {
+		// Get the gas limit
+		gasInfo, err = network.EstimateSubmitPricesGas(t.rp, blockNumber, slotTimestamp, rplPrice, opts)
+		if err != nil {
+			return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
+		}
+	} else {
+		// Get the gas limit
+		rocketNetworkPricesAddress = t.cfg.Smartnode.GetV120NetworkPricesAddress()
+		gasInfo, err = v120_network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, opts, &rocketNetworkPricesAddress)
+		if err != nil {
+			return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
+		}
 	}
 
 	// Print the gas info
@@ -536,10 +702,18 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) e
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
+	var hash common.Hash
 	// Submit RPL price
-	hash, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, opts)
-	if err != nil {
-		return err
+	if isHoustonDeployed {
+		hash, err = network.SubmitPrices(t.rp, blockNumber, slotTimestamp, rplPrice, opts)
+		if err != nil {
+			return err
+		}
+	} else {
+		hash, err = v120_network.SubmitPrices(t.rp, blockNumber, rplPrice, opts, &rocketNetworkPricesAddress)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Print TX info and wait for it to be included in a block

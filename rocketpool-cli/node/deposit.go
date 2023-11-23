@@ -180,7 +180,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	useCreditBalance := false
-	fmt.Printf("You currently have %.2f ETH in your credit balance.\n", eth.WeiToEth(canDeposit.CreditBalance))
+	fmt.Printf("You currently have %.2f ETH in your credit balance plus.\n", eth.WeiToEth(canDeposit.CreditBalance))
 	if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
 		if canDeposit.CanUseCredit {
 			useCreditBalance = true

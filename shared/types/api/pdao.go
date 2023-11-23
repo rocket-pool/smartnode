@@ -128,19 +128,19 @@ type GetPDAOSettingsResponse struct {
 	} `json:"minipool"`
 
 	Network struct {
-		OracleDaoConsensusThreshold float64  `json:"oracleDaoConsensusThreshold"`
-		NodePenaltyThreshold        float64  `json:"nodePenaltyThreshold"`
-		PerPenaltyRate              float64  `json:"perPenaltyRate"`
-		IsSubmitBalancesEnabled     bool     `json:"isSubmitBalancesEnabled"`
-		SubmitBalancesFrequency     uint64   `json:"submitBalancesFrequency"`
-		IsSubmitPricesEnabled       bool     `json:"isSubmitPricesEnabled"`
-		SubmitPricesFrequency       uint64   `json:"submitPricesFrequency"`
-		MinimumNodeFee              float64  `json:"minimumNodeFee"`
-		TargetNodeFee               float64  `json:"targetNodeFee"`
-		MaximumNodeFee              float64  `json:"maximumNodeFee"`
-		NodeFeeDemandRange          *big.Int `json:"nodeFeeDemandRange"`
-		TargetRethCollateralRate    float64  `json:"targetRethCollateralRate"`
-		IsSubmitRewardsEnabled      bool     `json:"isSubmitRewardsEnabled"`
+		OracleDaoConsensusThreshold float64       `json:"oracleDaoConsensusThreshold"`
+		NodePenaltyThreshold        float64       `json:"nodePenaltyThreshold"`
+		PerPenaltyRate              float64       `json:"perPenaltyRate"`
+		IsSubmitBalancesEnabled     bool          `json:"isSubmitBalancesEnabled"`
+		SubmitBalancesFrequency     time.Duration `json:"submitBalancesFrequency"`
+		IsSubmitPricesEnabled       bool          `json:"isSubmitPricesEnabled"`
+		SubmitPricesFrequency       time.Duration `json:"submitPricesFrequency"`
+		MinimumNodeFee              float64       `json:"minimumNodeFee"`
+		TargetNodeFee               float64       `json:"targetNodeFee"`
+		MaximumNodeFee              float64       `json:"maximumNodeFee"`
+		NodeFeeDemandRange          *big.Int      `json:"nodeFeeDemandRange"`
+		TargetRethCollateralRate    float64       `json:"targetRethCollateralRate"`
+		IsSubmitRewardsEnabled      bool          `json:"isSubmitRewardsEnabled"`
 	} `json:"network"`
 
 	Node struct {

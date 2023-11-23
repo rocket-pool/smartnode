@@ -165,8 +165,20 @@ type SmartnodeConfig struct {
 	// The contract address of rocketMinipoolFactory from v1.1.0
 	v1_1_0_MinipoolFactoryAddress map[config.Network]string `yaml:"-"`
 
+	// The contract address of rocketNetworkPrices from v1.2.0
+	v1_2_0_NetworkPricesAddress map[config.Network]string `yaml:"-"`
+
+	// The contract address of rocketNetworkBalances from v1.2.0
+	v1_2_0_NetworkBalancesAddress map[config.Network]string `yaml:"-"`
+
 	// Addresses for RocketRewardsPool that have been upgraded during development
 	previousRewardsPoolAddresses map[config.Network][]common.Address `yaml:"-"`
+
+	// Addresses for RocketNetworkPrices that have been upgraded during development
+	previousRocketNetworkPricesAddresses map[config.Network][]common.Address `yaml:"-"`
+
+	// Addresses for RocketNetworkBalances that have been upgraded during development
+	previousRocketNetworkBalancesAddresses map[config.Network][]common.Address `yaml:"-"`
 
 	// The RocketOvmPriceMessenger Optimism address for each network
 	optimismPriceMessengerAddress map[config.Network]string `yaml:"-"`
@@ -194,6 +206,9 @@ type SmartnodeConfig struct {
 
 	// The FlashBots Protect RPC endpoint
 	flashbotsProtectUrl map[config.Network]string `yaml:"-"`
+
+	// The contract address of the RPL faucet
+	firstHoustonSubmissionTimestamp map[config.Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -572,6 +587,32 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Holesky: {},
 		},
 
+		previousRocketNetworkPricesAddresses: map[config.Network][]common.Address{
+			config.Network_Mainnet: {
+				common.HexToAddress("0x751826b107672360b764327631cC5764515fFC37"),
+			},
+			config.Network_Prater: {},
+			config.Network_Devnet: {
+				common.HexToAddress("0xdBe07d7b0B2be5C2EaFe521255245c745422038e"),
+			},
+			config.Network_Holesky: {
+				common.HexToAddress("0x029d946f28f93399a5b0d09c879fc8c94e596aeb"),
+			},
+		},
+
+		previousRocketNetworkBalancesAddresses: map[config.Network][]common.Address{
+			config.Network_Mainnet: {
+				common.HexToAddress("0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4"),
+			},
+			config.Network_Prater: {},
+			config.Network_Devnet: {
+				common.HexToAddress("0x8c7CbeaAe48642Fe5DCbFC4587276D6ac3e4162A"),
+			},
+			config.Network_Holesky: {
+				common.HexToAddress("0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8"),
+			},
+		},
+
 		optimismPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xdddcf2c25d50ec22e67218e873d46938650d03a7",
 			config.Network_Prater:  "0x87E2deCE7d0A080D579f63cbcD7e1629BEcd7E7d",
@@ -872,6 +913,14 @@ func (cfg *SmartnodeConfig) GetV110NetworkPricesAddress() common.Address {
 	return common.HexToAddress(cfg.v1_1_0_NetworkPricesAddress[cfg.Network.Value.(config.Network)])
 }
 
+func (cfg *SmartnodeConfig) GetV120NetworkPricesAddress() common.Address {
+	return common.HexToAddress(cfg.v1_2_0_NetworkPricesAddress[cfg.Network.Value.(config.Network)])
+}
+
+func (cfg *SmartnodeConfig) GetV120NetworkBalancesAddress() common.Address {
+	return common.HexToAddress(cfg.v1_2_0_NetworkBalancesAddress[cfg.Network.Value.(config.Network)])
+}
+
 func (cfg *SmartnodeConfig) GetV110NodeStakingAddress() common.Address {
 	return common.HexToAddress(cfg.v1_1_0_NodeStakingAddress[cfg.Network.Value.(config.Network)])
 }
@@ -892,6 +941,13 @@ func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() []common.Address {
 	return cfg.previousRewardsPoolAddresses[cfg.Network.Value.(config.Network)]
 }
 
+func (cfg *SmartnodeConfig) GetPreviousRocketNetworkPricesAddresses() []common.Address {
+	return cfg.previousRocketNetworkPricesAddresses[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetPreviousRocketNetworkBalancesAddresses() []common.Address {
+	return cfg.previousRocketNetworkBalancesAddresses[cfg.Network.Value.(config.Network)]
+}
 func (cfg *SmartnodeConfig) GetOptimismMessengerAddress() string {
 	return cfg.optimismPriceMessengerAddress[cfg.Network.Value.(config.Network)]
 }
@@ -926,6 +982,10 @@ func (cfg *SmartnodeConfig) GetBalanceBatcherAddress() string {
 
 func (cfg *SmartnodeConfig) GetFlashbotsProtectUrl() string {
 	return cfg.flashbotsProtectUrl[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetFirstHoustonSubmissionTimestamp() string {
+	return cfg.firstHoustonSubmissionTimestamp[cfg.Network.Value.(config.Network)]
 }
 
 func getNetworkOptions() []config.ParameterOption {

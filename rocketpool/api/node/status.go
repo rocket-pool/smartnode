@@ -260,6 +260,25 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		response.RPLWithdrawalBalances = withdrawalBalances
 	}
 
+	if response.IsHoustonDeployed {
+		creditAndBalance, err := node.GetNodeCreditAndBalance(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+		response.CreditAndEthOnBehalfBalance = creditAndBalance
+		usableCreditAndBalance, err := node.GetNodeUsableCreditAndBalance(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+		response.UsableCreditAndEthOnBehalfBalance = usableCreditAndBalance
+		ethBalance, err := node.GetNodeEthBalance(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+		response.EthOnBehalfBalance = ethBalance
+
+	}
+
 	// Get the collateral ratio
 	rplPrice, err := network.GetRPLPrice(rp, nil)
 	if err != nil {

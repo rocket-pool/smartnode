@@ -52,6 +52,9 @@ type NodeStatusResponse struct {
 	EthMatchedLimit                          *big.Int        `json:"ethMatchedLimit"`
 	PendingMatchAmount                       *big.Int        `json:"pendingMatchAmount"`
 	CreditBalance                            *big.Int        `json:"creditBalance"`
+	CreditAndEthOnBehalfBalance              *big.Int        `json:"creditAndEthOnBehalfBalance"`
+	EthOnBehalfBalance                       *big.Int        `json:"ethOnBehalfBalance"`
+	UsableCreditAndEthOnBehalfBalance        *big.Int        `json:"usableCreditAndEthOnBehalfBalance"`
 	MinipoolCounts                           struct {
 		Total               int `json:"total"`
 		Initialized         int `json:"initialized"`
@@ -232,7 +235,19 @@ type SetStakeRplForAllowedResponse struct {
 	Error     string      `json:"error"`
 	SetTxHash common.Hash `json:"setTxHash"`
 }
-
+type CanNodeWithdrawEthResponse struct {
+	Status                        string             `json:"status"`
+	Error                         string             `json:"error"`
+	CanWithdraw                   bool               `json:"canWithdraw"`
+	InsufficientBalance           bool               `json:"insufficientBalance"`
+	HasDifferentWithdrawalAddress bool               `json:"hasDifferentWithdrawalAddress"`
+	GasInfo                       rocketpool.GasInfo `json:"gasInfo"`
+}
+type NodeWithdrawEthResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
 type CanNodeWithdrawRplResponse struct {
 	Status                           string             `json:"status"`
 	Error                            string             `json:"error"`

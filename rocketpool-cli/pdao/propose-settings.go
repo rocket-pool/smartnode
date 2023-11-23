@@ -134,8 +134,8 @@ func proposeSettingNetworkIsSubmitBalancesEnabled(c *cli.Context, value bool) er
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitBalancesEnabledSettingPath, trueValue)
 }
 
-func proposeSettingNetworkSubmitBalancesFrequency(c *cli.Context, value uint64) error {
-	trueValue := fmt.Sprint(value)
+func proposeSettingNetworkSubmitBalancesFrequency(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitBalancesFrequencySettingPath, trueValue)
 }
 
@@ -144,8 +144,8 @@ func proposeSettingNetworkIsSubmitPricesEnabled(c *cli.Context, value bool) erro
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitPricesEnabledSettingPath, trueValue)
 }
 
-func proposeSettingNetworkSubmitPricesFrequency(c *cli.Context, value uint64) error {
-	trueValue := fmt.Sprint(value)
+func proposeSettingNetworkSubmitPricesFrequency(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitPricesFrequencySettingPath, trueValue)
 }
 

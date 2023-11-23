@@ -59,10 +59,19 @@ func getStatus(c *cli.Context) error {
 	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 		fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
 	}
-	fmt.Printf(
-		"The node has %.6f ETH in its credit balance, which can be used to make new minipools.\n",
-		math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
-	)
+	if status.IsHoustonDeployed {
+		fmt.Printf(
+			"The node has %.6f ETH in its credit balance and %.6f ETH staked on its behalf. %.6f can be used to make new minipools.\n",
+			math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
+			math.RoundDown(eth.WeiToEth(status.EthOnBehalfBalance), 6),
+			math.RoundDown(eth.WeiToEth(status.UsableCreditAndEthOnBehalfBalance), 6),
+		)
+	} else {
+		fmt.Printf(
+			"The node has %.6f ETH in its credit balance, which can be used to make new minipools.\n",
+			math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
+		)
+	}
 
 	// Registered node details
 	if status.Registered {
