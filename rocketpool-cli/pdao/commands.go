@@ -1095,7 +1095,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "submit-balances-frequency",
 										Aliases:   []string{"sbf"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesFrequencySettingPath, uintUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesFrequencySettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting network submit-balances-frequency value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
@@ -1109,7 +1109,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -1151,7 +1151,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "submit-prices-frequency",
 										Aliases:   []string{"spf"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesFrequencySettingPath, uintUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesFrequencySettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting network submit-prices-frequency value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
@@ -1165,7 +1165,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
