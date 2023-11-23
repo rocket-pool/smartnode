@@ -52,9 +52,9 @@ type NodeStatusResponse struct {
 	EthMatchedLimit                          *big.Int        `json:"ethMatchedLimit"`
 	PendingMatchAmount                       *big.Int        `json:"pendingMatchAmount"`
 	CreditBalance                            *big.Int        `json:"creditBalance"`
-	CreditAndBalance                         *big.Int        `json:"creditAndBalance"`
-	EthBalance                               *big.Int        `json:"ethBalance"`
-	UsableCreditAndBalance                   *big.Int        `json:"usableCreditAndBalance"`
+	CreditAndEthOnBehalfBalance              *big.Int        `json:"creditAndEthOnBehalfBalance"`
+	EthOnBehalfBalance                       *big.Int        `json:"ethOnBehalfBalance"`
+	UsableCreditAndEthOnBehalfBalance        *big.Int        `json:"usableCreditAndEthOnBehalfBalance"`
 	MinipoolCounts                           struct {
 		Total               int `json:"total"`
 		Initialized         int `json:"initialized"`

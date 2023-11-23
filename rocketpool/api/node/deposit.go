@@ -101,7 +101,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	// Check credit balance
 	if isHoustonDeployed {
 		wg1.Go(func() error {
-			ethBalanceWei, err := node.GetNodeCreditAndBalance(rp, nodeAccount.Address, nil)
+			ethBalanceWei, err := node.GetNodeUsableCreditAndBalance(rp, nodeAccount.Address, nil)
 			if err == nil {
 				response.CreditBalance = ethBalanceWei
 			}

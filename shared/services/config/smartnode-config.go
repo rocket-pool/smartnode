@@ -591,18 +591,26 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet: {
 				common.HexToAddress("0x751826b107672360b764327631cC5764515fFC37"),
 			},
-			config.Network_Prater:  {},
-			config.Network_Devnet:  {},
-			config.Network_Holesky: {},
+			config.Network_Prater: {},
+			config.Network_Devnet: {
+				common.HexToAddress("0xdBe07d7b0B2be5C2EaFe521255245c745422038e"),
+			},
+			config.Network_Holesky: {
+				common.HexToAddress("0x029d946f28f93399a5b0d09c879fc8c94e596aeb"),
+			},
 		},
 
 		previousRocketNetworkBalancesAddresses: map[config.Network][]common.Address{
 			config.Network_Mainnet: {
 				common.HexToAddress("0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4"),
 			},
-			config.Network_Prater:  {},
-			config.Network_Devnet:  {},
-			config.Network_Holesky: {},
+			config.Network_Prater: {},
+			config.Network_Devnet: {
+				common.HexToAddress("0x8c7CbeaAe48642Fe5DCbFC4587276D6ac3e4162A"),
+			},
+			config.Network_Holesky: {
+				common.HexToAddress("0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8"),
+			},
 		},
 
 		optimismPriceMessengerAddress: map[config.Network]string{

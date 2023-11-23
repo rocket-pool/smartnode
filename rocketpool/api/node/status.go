@@ -265,17 +265,17 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-		response.CreditAndBalance = creditAndBalance
+		response.CreditAndEthOnBehalfBalance = creditAndBalance
 		usableCreditAndBalance, err := node.GetNodeUsableCreditAndBalance(rp, nodeAccount.Address, nil)
 		if err != nil {
 			return nil, err
 		}
-		response.UsableCreditAndBalance = usableCreditAndBalance
+		response.UsableCreditAndEthOnBehalfBalance = usableCreditAndBalance
 		ethBalance, err := node.GetNodeEthBalance(rp, nodeAccount.Address, nil)
 		if err != nil {
 			return nil, err
 		}
-		response.EthBalance = ethBalance
+		response.EthOnBehalfBalance = ethBalance
 
 	}
 

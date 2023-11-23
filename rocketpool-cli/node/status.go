@@ -63,8 +63,8 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf(
 			"The node has %.6f ETH in its credit balance and %.6f ETH staked on its behalf. %.6f can be used to make new minipools.\n",
 			math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
-			math.RoundDown(eth.WeiToEth(status.EthBalance), 6),
-			math.RoundDown(eth.WeiToEth(status.UsableCreditAndBalance), 6),
+			math.RoundDown(eth.WeiToEth(status.EthOnBehalfBalance), 6),
+			math.RoundDown(eth.WeiToEth(status.UsableCreditAndEthOnBehalfBalance), 6),
 		)
 	} else {
 		fmt.Printf(

@@ -44,7 +44,7 @@ func nodeWithdrawEth(c *cli.Context) error {
 		}
 
 		// Set amount to maximum withdrawable amount
-		amountWei = status.EthBalance
+		amountWei = status.EthOnBehalfBalance
 
 	} else if c.String("amount") != "" {
 
@@ -64,7 +64,7 @@ func nodeWithdrawEth(c *cli.Context) error {
 		}
 
 		// Get maximum withdrawable amount
-		maxAmount := status.EthBalance
+		maxAmount := status.EthOnBehalfBalance
 		// Prompt for maximum amount
 		if cliutils.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
 			amountWei = maxAmount
