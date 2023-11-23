@@ -82,6 +82,19 @@ func ValidateAddress(name, value string) (common.Address, error) {
 	return common.HexToAddress(value), nil
 }
 
+// Validate a collection of addresses
+func ValidateAddresses(name, value string) ([]common.Address, error) {
+	elements := strings.Split(value, ",")
+	addresses := make([]common.Address, len(elements))
+	for i, element := range elements {
+		if !common.IsHexAddress(element) {
+			return nil, fmt.Errorf("Invalid address %d in %s: '%s'", i, name, element)
+		}
+		addresses[i] = common.HexToAddress(element)
+	}
+	return addresses, nil
+}
+
 // Validate a wei amount
 func ValidateWeiAmount(name, value string) (*big.Int, error) {
 	val := new(big.Int)
@@ -324,10 +337,15 @@ func ValidateDuration(name, value string) (time.Duration, error) {
 
 // Validate a vote direction
 func ValidateVoteDirection(name, value string) (types.VoteDirection, error) {
-	for i, dir := range types.VoteDirections {
-		if value == dir {
-			return types.VoteDirection(i), nil
-		}
+	switch value {
+	case "abstain":
+		return types.VoteDirection_Abstain, nil
+	case "for":
+		return types.VoteDirection_For, nil
+	case "against":
+		return types.VoteDirection_Against, nil
+	case "veto":
+		return types.VoteDirection_AgainstWithVeto, nil
 	}
 	return 0, fmt.Errorf("Invalid %s '%s': not a valid vote direction name", name, value)
 }

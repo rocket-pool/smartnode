@@ -1,4 +1,4 @@
-package pdao
+package security
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func proposeSecurityCouncilKick(c *cli.Context) error {
+func proposeKick(c *cli.Context) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -104,7 +104,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Check submissions
-		canResponse, err := rp.PDAOCanProposeKickFromSecurityCouncil(address)
+		canResponse, err := rp.SecurityCanProposeKick(address)
 		if err != nil {
 			return err
 		}
@@ -122,7 +122,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Submit
-		response, err := rp.PDAOProposeKickFromSecurityCouncil(address, canResponse.BlockNumber)
+		response, err := rp.SecurityProposeKick(address)
 		if err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Check submissions
-		canResponse, err := rp.PDAOCanProposeKickMultiFromSecurityCouncil(addresses)
+		canResponse, err := rp.SecurityCanProposeKickMulti(addresses)
 		if err != nil {
 			return err
 		}
@@ -169,7 +169,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Submit
-		response, err := rp.PDAOProposeKickMultiFromSecurityCouncil(addresses, canResponse.BlockNumber)
+		response, err := rp.SecurityProposeKickMulti(addresses)
 		if err != nil {
 			return err
 		}

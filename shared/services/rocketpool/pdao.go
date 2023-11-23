@@ -3,6 +3,7 @@ package rocketpool
 import (
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -11,6 +12,20 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+func getVoteDirectionString(direction types.VoteDirection) string {
+	switch direction {
+	case types.VoteDirection_Abstain:
+		return "abstain"
+	case types.VoteDirection_For:
+		return "for"
+	case types.VoteDirection_Against:
+		return "against"
+	case types.VoteDirection_AgainstWithVeto:
+		return "veto"
+	}
+	return ""
+}
 
 // Get protocol DAO proposals
 func (c *Client) PDAOProposals() (api.PDAOProposalsResponse, error) {
@@ -46,7 +61,7 @@ func (c *Client) PDAOProposalDetails(proposalID uint64) (api.PDAOProposalRespons
 
 // Check whether the node can vote on a proposal
 func (c *Client) PDAOCanVoteProposal(proposalID uint64, voteDirection types.VoteDirection) (api.CanVoteOnPDAOProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-vote-proposal %d %s", proposalID, types.VoteDirections[voteDirection]))
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-vote-proposal %d %s", proposalID, getVoteDirectionString(voteDirection)))
 	if err != nil {
 		return api.CanVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-vote-proposal: %w", err)
 	}
@@ -60,9 +75,9 @@ func (c *Client) PDAOCanVoteProposal(proposalID uint64, voteDirection types.Vote
 	return response, nil
 }
 
-// Check whether the node can vote on a proposal
+// Vote on a proposal
 func (c *Client) PDAOVoteProposal(proposalID uint64, voteDirection types.VoteDirection) (api.VoteOnPDAOProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao vote-proposal %d %s", proposalID, types.VoteDirections[voteDirection]))
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao vote-proposal %d %s", proposalID, getVoteDirectionString(voteDirection)))
 	if err != nil {
 		return api.VoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO vote-proposal: %w", err)
 	}
@@ -72,6 +87,38 @@ func (c *Client) PDAOVoteProposal(proposalID uint64, voteDirection types.VoteDir
 	}
 	if response.Error != "" {
 		return api.VoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO vote-proposal: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can override the delegate's vote on a proposal
+func (c *Client) PDAOCanOverrideVote(proposalID uint64, voteDirection types.VoteDirection) (api.CanOverrideVoteOnPDAOProposalResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-override-vote %d %s", proposalID, getVoteDirectionString(voteDirection)))
+	if err != nil {
+		return api.CanOverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-override-vote: %w", err)
+	}
+	var response api.CanOverrideVoteOnPDAOProposalResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanOverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not decode protocol DAO can-override-vote response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanOverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-override-vote: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Override the delegate's vote on a proposal
+func (c *Client) PDAOOverrideVote(proposalID uint64, voteDirection types.VoteDirection) (api.OverrideVoteOnPDAOProposalResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao override-vote %d %s", proposalID, getVoteDirectionString(voteDirection)))
+	if err != nil {
+		return api.OverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO override-vote: %w", err)
+	}
+	var response api.OverrideVoteOnPDAOProposalResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.OverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not decode protocol DAO override-vote response: %w", err)
+	}
+	if response.Error != "" {
+		return api.OverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO override-vote: %s", response.Error)
 	}
 	return response, nil
 }
@@ -124,9 +171,9 @@ func (c *Client) PDAOGetSettings() (api.GetPDAOSettingsResponse, error) {
 	return response, nil
 }
 
-// Check whether the node can vote on a proposal
-func (c *Client) PDAOCanProposeSetting(setting string, value string) (api.CanProposePDAOSettingResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-setting %s %s", setting, value))
+// Check whether the node can propose updating a PDAO setting
+func (c *Client) PDAOCanProposeSetting(contract string, setting string, value string) (api.CanProposePDAOSettingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-setting %s %s %s", contract, setting, value))
 	if err != nil {
 		return api.CanProposePDAOSettingResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-setting: %w", err)
 	}
@@ -141,8 +188,8 @@ func (c *Client) PDAOCanProposeSetting(setting string, value string) (api.CanPro
 }
 
 // Propose updating a PDAO setting (use can-propose-setting to get the pollard)
-func (c *Client) PDAOProposeSetting(setting string, value string, blockNumber uint32) (api.ProposePDAOSettingResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-setting %s %s %d", setting, value, blockNumber))
+func (c *Client) PDAOProposeSetting(contract string, setting string, value string, blockNumber uint32) (api.ProposePDAOSettingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-setting %s %s %s %d", contract, setting, value, blockNumber))
 	if err != nil {
 		return api.ProposePDAOSettingResponse{}, fmt.Errorf("Could not get protocol DAO propose-setting: %w", err)
 	}
@@ -302,7 +349,7 @@ func (c *Client) PDAOProposeRecurringSpendUpdate(contractName string, recipient 
 
 // Check whether the node can invite someone to the security council
 func (c *Client) PDAOCanProposeInviteToSecurityCouncil(id string, address common.Address) (api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-invite-to-security-council %s %s", id, address.Hex()))
+	responseBytes, err := c.callAPI("pdao can-propose-invite-to-security-council", id, address.Hex())
 	if err != nil {
 		return api.PDAOCanProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-invite-to-security-council: %w", err)
 	}
@@ -318,7 +365,7 @@ func (c *Client) PDAOCanProposeInviteToSecurityCouncil(id string, address common
 
 // Propose inviting someone to the security council
 func (c *Client) PDAOProposeInviteToSecurityCouncil(id string, address common.Address, blockNumber uint32) (api.PDAOProposeInviteToSecurityCouncilResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-invite-to-security-council %s %s %d", id, address.Hex(), blockNumber))
+	responseBytes, err := c.callAPI("pdao propose-invite-to-security-council", id, address.Hex(), fmt.Sprint(blockNumber))
 	if err != nil {
 		return api.PDAOProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO propose-invite-to-security-council: %w", err)
 	}
@@ -333,17 +380,17 @@ func (c *Client) PDAOProposeInviteToSecurityCouncil(id string, address common.Ad
 }
 
 // Check whether the node can kick someone from the security council
-func (c *Client) PDAOCanProposeKickFromSecurityCouncil(address common.Address) (api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
+func (c *Client) PDAOCanProposeKickFromSecurityCouncil(address common.Address) (api.PDAOCanProposeKickFromSecurityCouncilResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-kick-from-security-council %s", address.Hex()))
 	if err != nil {
-		return api.PDAOCanProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-invite-to-security-council: %w", err)
+		return api.PDAOCanProposeKickFromSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-kick-from-security-council: %w", err)
 	}
-	var response api.PDAOCanProposeInviteToSecurityCouncilResponse
+	var response api.PDAOCanProposeKickFromSecurityCouncilResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOCanProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-invite-to-security-council response: %w", err)
+		return api.PDAOCanProposeKickFromSecurityCouncilResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-kick-from-security-council response: %w", err)
 	}
 	if response.Error != "" {
-		return api.PDAOCanProposeInviteToSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-invite-to-security-council: %s", response.Error)
+		return api.PDAOCanProposeKickFromSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-kick-from-security-council: %s", response.Error)
 	}
 	return response, nil
 }
@@ -360,6 +407,80 @@ func (c *Client) PDAOProposeKickFromSecurityCouncil(address common.Address, bloc
 	}
 	if response.Error != "" {
 		return api.PDAOProposeKickFromSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO propose-kick-from-security-council: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can kick multiple members from the security council
+func (c *Client) PDAOCanProposeKickMultiFromSecurityCouncil(addresses []common.Address) (api.PDAOCanProposeKickMultiFromSecurityCouncilResponse, error) {
+	addressStrings := make([]string, len(addresses))
+	for i, address := range addresses {
+		addressStrings[i] = address.Hex()
+	}
+
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-kick-multi-from-security-council %s", strings.Join(addressStrings, ",")))
+	if err != nil {
+		return api.PDAOCanProposeKickMultiFromSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-kick-multi-from-security-council: %w", err)
+	}
+	var response api.PDAOCanProposeKickMultiFromSecurityCouncilResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanProposeKickMultiFromSecurityCouncilResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-kick-multi-from-security-council response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanProposeKickMultiFromSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-kick-multi-from-security-council: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose kicking multiple members from the security council
+func (c *Client) PDAOProposeKickMultiFromSecurityCouncil(addresses []common.Address, blockNumber uint32) (api.PDAOProposeKickMultiFromSecurityCouncilResponse, error) {
+	addressStrings := make([]string, len(addresses))
+	for i, address := range addresses {
+		addressStrings[i] = address.Hex()
+	}
+
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-kick-multi-from-security-council %s %d", strings.Join(addressStrings, ","), blockNumber))
+	if err != nil {
+		return api.PDAOProposeKickMultiFromSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO propose-kick-multi-from-security-council: %w", err)
+	}
+	var response api.PDAOProposeKickMultiFromSecurityCouncilResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOProposeKickMultiFromSecurityCouncilResponse{}, fmt.Errorf("Could not decode protocol DAO propose-kick-multi-from-security-council response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOProposeKickMultiFromSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO propose-kick-multi-from-security-council: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can propose replacing someone on the security council with another member
+func (c *Client) PDAOCanProposeReplaceMemberOfSecurityCouncil(existingAddress common.Address, newID string, newAddress common.Address) (api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-replace-member-of-security-council %s", existingAddress.Hex()), newID, newAddress.Hex())
+	if err != nil {
+		return api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-replace-member-of-security-council: %w", err)
+	}
+	var response api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-replace-member-of-security-council response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-replace-member-of-security-council: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose replacing someone on the security council with another member
+func (c *Client) PDAOProposeReplaceMemberOfSecurityCouncil(existingAddress common.Address, newID string, newAddress common.Address, blockNumber uint32) (api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-replace-member-of-security-council %s", existingAddress.Hex()), newID, newAddress.Hex(), fmt.Sprint(blockNumber))
+	if err != nil {
+		return api.PDAOProposeReplaceMemberOfSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO propose-replace-member-of-security-council: %w", err)
+	}
+	var response api.PDAOProposeReplaceMemberOfSecurityCouncilResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOProposeReplaceMemberOfSecurityCouncilResponse{}, fmt.Errorf("Could not decode protocol DAO propose-replace-member-of-security-council response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOProposeReplaceMemberOfSecurityCouncilResponse{}, fmt.Errorf("Could not get protocol DAO propose-replace-member-of-security-council: %s", response.Error)
 	}
 	return response, nil
 }

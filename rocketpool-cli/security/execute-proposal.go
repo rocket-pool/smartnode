@@ -1,16 +1,16 @@
-package pdao
+package security
 
 import (
 	"fmt"
 	"strconv"
 
+	"github.com/rocket-pool/rocketpool-go/dao"
 	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -33,16 +33,16 @@ func executeProposal(c *cli.Context) error {
 		return nil
 	}
 
-	// Get protocol DAO proposals
-	proposals, err := rp.PDAOProposals()
+	// Get security council proposals
+	proposals, err := rp.SecurityProposals()
 	if err != nil {
 		return err
 	}
 
 	// Get executable proposals
-	executableProposals := []api.PDAOProposalWithNodeVoteDirection{}
+	executableProposals := []dao.ProposalDetails{}
 	for _, proposal := range proposals.Proposals {
-		if proposal.State == types.ProtocolDaoProposalState_Succeeded {
+		if proposal.State == types.Succeeded {
 			executableProposals = append(executableProposals, proposal)
 		}
 	}
@@ -54,7 +54,7 @@ func executeProposal(c *cli.Context) error {
 	}
 
 	// Get selected proposal
-	var selectedProposals []api.PDAOProposalWithNodeVoteDirection
+	var selectedProposals []dao.ProposalDetails
 	if c.String("proposal") == "all" {
 
 		// Select all proposals
@@ -72,7 +72,7 @@ func executeProposal(c *cli.Context) error {
 		found := false
 		for _, proposal := range executableProposals {
 			if proposal.ID == selectedId {
-				selectedProposals = []api.PDAOProposalWithNodeVoteDirection{proposal}
+				selectedProposals = []dao.ProposalDetails{proposal}
 				found = true
 				break
 			}
@@ -95,7 +95,7 @@ func executeProposal(c *cli.Context) error {
 		if selected == 0 {
 			selectedProposals = executableProposals
 		} else {
-			selectedProposals = []api.PDAOProposalWithNodeVoteDirection{executableProposals[selected-1]}
+			selectedProposals = []dao.ProposalDetails{executableProposals[selected-1]}
 		}
 
 	}
@@ -105,7 +105,7 @@ func executeProposal(c *cli.Context) error {
 	var totalSafeGas uint64 = 0
 	var gasInfo rocketpoolapi.GasInfo
 	for _, proposal := range selectedProposals {
-		canResponse, err := rp.PDAOCanExecuteProposal(proposal.ID)
+		canResponse, err := rp.SecurityCanExecuteProposal(proposal.ID)
 		if err != nil {
 			fmt.Printf("WARNING: Couldn't get gas price for execute transaction (%s)", err)
 			break
@@ -132,7 +132,7 @@ func executeProposal(c *cli.Context) error {
 
 	// Execute proposals
 	for _, proposal := range selectedProposals {
-		response, err := rp.PDAOExecuteProposal(proposal.ID)
+		response, err := rp.SecurityExecuteProposal(proposal.ID)
 		if err != nil {
 			fmt.Printf("Could not execute proposal %d: %s.\n", proposal.ID, err)
 			continue

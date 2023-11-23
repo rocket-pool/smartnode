@@ -1,16 +1,16 @@
-package pdao
+package security
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 
+	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -33,16 +33,22 @@ func voteOnProposal(c *cli.Context) error {
 		return nil
 	}
 
-	// Get oracle DAO proposals
-	proposals, err := rp.PDAOProposals()
+	// Get security council proposals
+	proposals, err := rp.SecurityProposals()
+	if err != nil {
+		return err
+	}
+
+	// Get security council members
+	allMembers, err := rp.SecurityMembers()
 	if err != nil {
 		return err
 	}
 
 	// Get votable proposals
-	votableProposals := []api.PDAOProposalWithNodeVoteDirection{}
+	votableProposals := []dao.ProposalDetails{}
 	for _, proposal := range proposals.Proposals {
-		if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 && proposal.NodeVoteDirection == types.VoteDirection_NoVote {
+		if proposal.State == types.Active && !proposal.MemberVoted {
 			votableProposals = append(votableProposals, proposal)
 		}
 	}
@@ -54,7 +60,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Get selected proposal
-	var selectedProposal api.PDAOProposalWithNodeVoteDirection
+	var selectedProposal dao.ProposalDetails
 	if c.String("proposal") != "" {
 
 		// Get selected proposal ID
@@ -79,19 +85,24 @@ func voteOnProposal(c *cli.Context) error {
 	} else {
 
 		// Prompt for proposal selection
+		var memberID string
 		options := make([]string, len(votableProposals))
 		for pi, proposal := range votableProposals {
+			for _, member := range allMembers.Members {
+				if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
+					memberID = member.ID
+				}
+			}
 			options[pi] = fmt.Sprintf(
-				"proposal %d (message: '%s', payload: %s, phase 1 end block: %d, vp required: %.2f, for: %.2f, against: %.2f, abstained: %.2f, veto: %.2f, proposed by: %s)",
+				"proposal %d (message: '%s', payload: %s, end time: %s, votes required: %.2f, votes for: %.2f, votes against: %.2f, proposed by: %s (%s))",
 				proposal.ID,
 				proposal.Message,
 				proposal.PayloadStr,
-				proposal.Phase1EndBlock,
-				eth.WeiToEth(proposal.VotingPowerRequired),
-				eth.WeiToEth(proposal.VotingPowerFor),
-				eth.WeiToEth(proposal.VotingPowerAgainst),
-				eth.WeiToEth(proposal.VotingPowerAbstained),
-				eth.WeiToEth(proposal.VotingPowerToVeto),
+				cliutils.GetDateTimeString(proposal.EndTime),
+				proposal.VotesRequired,
+				proposal.VotesFor,
+				proposal.VotesAgainst,
+				memberID,
 				proposal.ProposerAddress)
 		}
 		selected, _ := cliutils.Select("Please select a proposal to vote on:", options)
@@ -100,44 +111,41 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Get support status
-	var voteDirection types.VoteDirection
-	var voteDirectionLabel string
-	if c.String("vote-direction") != "" {
-		// Parse vote dirrection
+	var support bool
+	var supportLabel string
+	if c.String("support") != "" {
+
+		// Parse support status
 		var err error
-		voteDirection, err = cliutils.ValidateVoteDirection("vote-direction", c.String("vote-direction"))
+		support, err = cliutils.ValidateBool("support", c.String("support"))
 		if err != nil {
 			return err
 		}
-		voteDirectionLabel = types.VoteDirections[voteDirection]
+
 	} else {
-		// Prompt for vote direction
-		options := []string{
-			"Abstain",
-			"In Favor",
-			"Against",
-			"Veto",
-		}
-		var selected int
-		selected, voteDirectionLabel = cliutils.Select("How would you like to vote on the proposal?", options)
-		voteDirection = types.VoteDirection(selected + 1)
+
+		// Prompt for support status
+		support = cliutils.Confirm("Would you like to vote in support of the proposal?")
+
+	}
+	if support {
+		supportLabel = "in support of"
+	} else {
+		supportLabel = "against"
 	}
 
 	// Check if proposal can be voted on
-	canVote, err := rp.PDAOCanVoteProposal(selectedProposal.ID, voteDirection)
+	canVote, err := rp.SecurityCanVoteOnProposal(selectedProposal.ID)
 	if err != nil {
 		return err
 	}
 	if !canVote.CanVote {
 		fmt.Println("Cannot vote on proposal:")
-		if canVote.InsufficientPower {
-			fmt.Println("You do not have any voting power.")
+		if canVote.JoinedAfterCreated {
+			fmt.Println("You cannot vote on proposals created before you joined the security council.")
 		}
 		return nil
 	}
-
-	// Print the voting power
-	fmt.Printf("\n\nYour current voting power: %.6f\n\n", eth.WeiToEth(canVote.VotingPower))
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, c.Bool("yes"))
@@ -146,13 +154,13 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote '%s' on proposal %d? Your vote cannot be changed later.", voteDirectionLabel, selectedProposal.ID))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Vote on proposal
-	response, err := rp.PDAOVoteProposal(selectedProposal.ID, voteDirection)
+	response, err := rp.SecurityVoteOnProposal(selectedProposal.ID, support)
 	if err != nil {
 		return err
 	}
@@ -164,7 +172,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully voted '%s' for proposal %d.\n", voteDirectionLabel, selectedProposal.ID)
+	fmt.Printf("Successfully voted %s proposal %d.\n", supportLabel, selectedProposal.ID)
 	return nil
 
 }

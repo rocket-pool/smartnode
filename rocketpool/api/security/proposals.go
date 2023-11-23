@@ -1,4 +1,4 @@
-package odao
+package security
 
 import (
 	"github.com/rocket-pool/rocketpool-go/dao"
@@ -8,7 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
+func getProposals(c *cli.Context) (*api.SecurityProposalsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -27,7 +27,7 @@ func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
 	}
 
 	// Response
-	response := api.TNDAOProposalsResponse{}
+	response := api.SecurityProposalsResponse{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -36,7 +36,7 @@ func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
 	}
 
 	// Get proposals
-	proposals, err := dao.GetDAOProposalsWithMember(rp, "rocketDAONodeTrustedProposals", nodeAccount.Address, nil)
+	proposals, err := dao.GetDAOProposalsWithMember(rp, "rocketDAOSecurityProposals", nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
 
 }
 
-func getProposal(c *cli.Context, id uint64) (*api.TNDAOProposalResponse, error) {
+func getProposal(c *cli.Context, id uint64) (*api.SecurityProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -67,7 +67,7 @@ func getProposal(c *cli.Context, id uint64) (*api.TNDAOProposalResponse, error) 
 	}
 
 	// Response
-	response := api.TNDAOProposalResponse{}
+	response := api.SecurityProposalResponse{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()

@@ -5,20 +5,26 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 )
 
+type PDAOProposalWithNodeVoteDirection struct {
+	protocol.ProtocolDaoProposalDetails
+	NodeVoteDirection types.VoteDirection `json:"nodeVoteDirection"`
+}
+
 type PDAOProposalsResponse struct {
-	Status    string                `json:"status"`
-	Error     string                `json:"error"`
-	Proposals []dao.ProposalDetails `json:"proposals"`
+	Status    string                              `json:"status"`
+	Error     string                              `json:"error"`
+	Proposals []PDAOProposalWithNodeVoteDirection `json:"proposals"`
 }
 
 type PDAOProposalResponse struct {
-	Status   string              `json:"status"`
-	Error    string              `json:"error"`
-	Proposal dao.ProposalDetails `json:"proposal"`
+	Status   string                            `json:"status"`
+	Error    string                            `json:"error"`
+	Proposal PDAOProposalWithNodeVoteDirection `json:"proposal"`
 }
 
 type CanCancelPDAOProposalResponse struct {
@@ -48,6 +54,23 @@ type CanVoteOnPDAOProposalResponse struct {
 	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
 }
 type VoteOnPDAOProposalResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type CanOverrideVoteOnPDAOProposalResponse struct {
+	Status            string             `json:"status"`
+	Error             string             `json:"error"`
+	CanVote           bool               `json:"canVote"`
+	DoesNotExist      bool               `json:"doesNotExist"`
+	InvalidState      bool               `json:"invalidState"`
+	InsufficientPower bool               `json:"insufficientPower"`
+	AlreadyVoted      bool               `json:"alreadyVoted"`
+	VotingPower       *big.Int           `json:"votingPower"`
+	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
+}
+type OverrideVoteOnPDAOProposalResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
@@ -229,10 +252,12 @@ type PDAOProposeRecurringSpendUpdateResponse struct {
 }
 
 type PDAOCanProposeInviteToSecurityCouncilResponse struct {
-	Status      string             `json:"status"`
-	Error       string             `json:"error"`
-	BlockNumber uint32             `json:"blockNumber"`
-	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+	Status              string             `json:"status"`
+	Error               string             `json:"error"`
+	CanPropose          bool               `json:"canPropose"`
+	MemberAlreadyExists bool               `json:"memberAlreadyExists"`
+	BlockNumber         uint32             `json:"blockNumber"`
+	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
 }
 
 type PDAOProposeInviteToSecurityCouncilResponse struct {
@@ -250,6 +275,34 @@ type PDAOCanProposeKickFromSecurityCouncilResponse struct {
 }
 
 type PDAOProposeKickFromSecurityCouncilResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+
+type PDAOCanProposeKickMultiFromSecurityCouncilResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	BlockNumber uint32             `json:"blockNumber"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOProposeKickMultiFromSecurityCouncilResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
+}
+
+type PDAOCanProposeReplaceMemberOfSecurityCouncilResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	BlockNumber uint32             `json:"blockNumber"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOProposeReplaceMemberOfSecurityCouncilResponse struct {
 	Status     string      `json:"status"`
 	Error      string      `json:"error"`
 	ProposalId uint64      `json:"proposalId"`

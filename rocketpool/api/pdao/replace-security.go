@@ -12,7 +12,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Address) (*api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
+func canProposeReplaceMemberOfSecurityCouncil(c *cli.Context, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address) (*api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse, error) {
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
 		return nil, err
@@ -35,19 +35,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 	}
 
 	// Response
-	response := api.PDAOCanProposeInviteToSecurityCouncilResponse{}
-
-	// Check if the member exists
-	response.MemberAlreadyExists, err = security.GetMemberExists(rp, address, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check validity
-	response.CanPropose = !(response.MemberAlreadyExists)
-	if !response.CanPropose {
-		return &response, nil
-	}
+	response := api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse{}
 
 	// Get node account
 	opts, err := w.GetNodeAccountTransactor()
@@ -55,13 +43,19 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 		return nil, err
 	}
 
+	// Get the existing member
+	existingID, err := security.GetMemberID(rp, existingMemberAddress, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting ID of existing member: %w", err)
+	}
+
 	// Try proposing
-	message := fmt.Sprintf("invite %s (%s) to the security council", id, address.Hex())
+	message := fmt.Sprintf("replace %s (%s) on the security council with %s (%s)", existingID, existingMemberAddress.Hex(), newMemberID, newMemberAddress.Hex())
 	blockNumber, pollard, err := createPollard(rp, cfg, bc)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateProposeInviteToSecurityCouncilGas(rp, message, id, address, blockNumber, pollard, opts)
+	gasInfo, err := protocol.EstimateProposeReplaceSecurityCouncilMemberGas(rp, message, existingMemberAddress, newMemberID, newMemberAddress, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +66,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 	return &response, nil
 }
 
-func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Address, blockNumber uint32) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
+func proposeReplaceMemberOfSecurityCouncil(c *cli.Context, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
 		return nil, err
@@ -95,12 +89,18 @@ func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Ad
 	}
 
 	// Response
-	response := api.PDAOProposeInviteToSecurityCouncilResponse{}
+	response := api.PDAOProposeReplaceMemberOfSecurityCouncilResponse{}
 
 	// Get node account
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
+	}
+
+	// Get the existing member
+	existingID, err := security.GetMemberID(rp, existingMemberAddress, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting ID of existing member: %w", err)
 	}
 
 	// Override the provided pending TX if requested
@@ -110,12 +110,12 @@ func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Ad
 	}
 
 	// Propose
-	message := fmt.Sprintf("invite %s (%s) to the security council", id, address.Hex())
+	message := fmt.Sprintf("replace %s (%s) on the security council with %s (%s)", existingID, existingMemberAddress.Hex(), newMemberID, newMemberAddress.Hex())
 	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, err
 	}
-	proposalID, hash, err := protocol.ProposeInviteToSecurityCouncil(rp, message, id, address, blockNumber, pollard, opts)
+	proposalID, hash, err := protocol.ProposeReplaceSecurityCouncilMember(rp, message, existingMemberAddress, newMemberID, newMemberAddress, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-func voteOnProposal(c *cli.Context) error {
+func overrideVote(c *cli.Context) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
@@ -42,14 +42,14 @@ func voteOnProposal(c *cli.Context) error {
 	// Get votable proposals
 	votableProposals := []api.PDAOProposalWithNodeVoteDirection{}
 	for _, proposal := range proposals.Proposals {
-		if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 && proposal.NodeVoteDirection == types.VoteDirection_NoVote {
+		if proposal.State == types.ProtocolDaoProposalState_ActivePhase2 && proposal.NodeVoteDirection == types.VoteDirection_NoVote {
 			votableProposals = append(votableProposals, proposal)
 		}
 	}
 
 	// Check for votable proposals
 	if len(votableProposals) == 0 {
-		fmt.Println("No proposals can be voted on.")
+		fmt.Println("No proposals can be overridden.")
 		return nil
 	}
 
@@ -73,7 +73,7 @@ func voteOnProposal(c *cli.Context) error {
 			}
 		}
 		if !found {
-			return fmt.Errorf("Proposal %d can not be voted on.", selectedId)
+			return fmt.Errorf("Proposal %d can not be overridden.", selectedId)
 		}
 
 	} else {
@@ -82,11 +82,11 @@ func voteOnProposal(c *cli.Context) error {
 		options := make([]string, len(votableProposals))
 		for pi, proposal := range votableProposals {
 			options[pi] = fmt.Sprintf(
-				"proposal %d (message: '%s', payload: %s, phase 1 end block: %d, vp required: %.2f, for: %.2f, against: %.2f, abstained: %.2f, veto: %.2f, proposed by: %s)",
+				"proposal %d (message: '%s', payload: %s, phase 2 end block: %d, vp required: %.2f, for: %.2f, against: %.2f, abstained: %.2f, veto: %.2f, proposed by: %s)",
 				proposal.ID,
 				proposal.Message,
 				proposal.PayloadStr,
-				proposal.Phase1EndBlock,
+				proposal.Phase2EndBlock,
 				eth.WeiToEth(proposal.VotingPowerRequired),
 				eth.WeiToEth(proposal.VotingPowerFor),
 				eth.WeiToEth(proposal.VotingPowerAgainst),
@@ -94,7 +94,7 @@ func voteOnProposal(c *cli.Context) error {
 				eth.WeiToEth(proposal.VotingPowerToVeto),
 				proposal.ProposerAddress)
 		}
-		selected, _ := cliutils.Select("Please select a proposal to vote on:", options)
+		selected, _ := cliutils.Select("Please select a proposal to override:", options)
 		selectedProposal = votableProposals[selected]
 
 	}
@@ -129,7 +129,7 @@ func voteOnProposal(c *cli.Context) error {
 		return err
 	}
 	if !canVote.CanVote {
-		fmt.Println("Cannot vote on proposal:")
+		fmt.Println("Cannot override vote on proposal:")
 		if canVote.InsufficientPower {
 			fmt.Println("You do not have any voting power.")
 		}
@@ -146,7 +146,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote '%s' on proposal %d? Your vote cannot be changed later.", voteDirectionLabel, selectedProposal.ID))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to override your delegate's vote with your own vote for '%s' on proposal %d? Your vote cannot be changed later.", voteDirectionLabel, selectedProposal.ID))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -157,14 +157,14 @@ func voteOnProposal(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("Submitting vote...\n")
+	fmt.Printf("Overriding vote...\n")
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully voted '%s' for proposal %d.\n", voteDirectionLabel, selectedProposal.ID)
+	fmt.Printf("Successfully overrode delegate with a vote for '%s' on proposal %d.\n", voteDirectionLabel, selectedProposal.ID)
 	return nil
 
 }

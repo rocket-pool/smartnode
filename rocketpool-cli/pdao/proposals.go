@@ -4,13 +4,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 func filterProposalState(state string, stateFilter string) bool {
@@ -47,18 +47,18 @@ func getProposals(c *cli.Context, stateFilter string) error {
 	}
 
 	// Get proposals by state
-	stateProposals := map[string][]dao.ProposalDetails{}
+	stateProposals := map[string][]api.PDAOProposalWithNodeVoteDirection{}
 	for _, proposal := range allProposals.Proposals {
-		stateName := proposal.State.String()
+		stateName := types.ProtocolDaoProposalStates[proposal.State]
 		if _, ok := stateProposals[stateName]; !ok {
-			stateProposals[stateName] = []dao.ProposalDetails{}
+			stateProposals[stateName] = []api.PDAOProposalWithNodeVoteDirection{}
 		}
 		stateProposals[stateName] = append(stateProposals[stateName], proposal)
 	}
 
 	// Proposal states print order
-	proposalStates := []string{"Pending", "Active", "Succeeded", "Executed", "Cancelled", "Defeated", "Expired"}
-	proposalStateInputs := []string{"pending", "active", "succeeded", "executed", "cancelled", "defeated", "expired"}
+	proposalStates := []string{"Pending", "Active (Phase 1)", "Active (Phase 2)", "Succeeded", "Executed", "Destroyed", "Vetoed", "Quorum not Met", "Defeated", "Expired"}
+	proposalStateInputs := []string{"pending", "phase1", "phase2", "succeeded", "executed", "destroyed", "vetoed", "quorum-not-met", "defeated", "expired"}
 
 	// Print & return
 	count := 0
@@ -101,14 +101,14 @@ func getProposal(c *cli.Context, id uint64) error {
 	}
 	defer rp.Close()
 
-	// Get oracle DAO proposals
+	// Get protocol DAO proposals
 	allProposals, err := rp.PDAOProposals()
 	if err != nil {
 		return err
 	}
 
 	// Find the proposal
-	var proposal *dao.ProposalDetails
+	var proposal *api.PDAOProposalWithNodeVoteDirection
 
 	for i, p := range allProposals.Proposals {
 		if p.ID == id {
@@ -123,40 +123,41 @@ func getProposal(c *cli.Context, id uint64) error {
 	}
 
 	// Main details
-	fmt.Printf("Proposal ID:          %d\n", proposal.ID)
-	fmt.Printf("Message:              %s\n", proposal.Message)
-	fmt.Printf("Payload:              %s\n", proposal.PayloadStr)
-	fmt.Printf("Payload (bytes):      %s\n", hex.EncodeToString(proposal.Payload))
-	fmt.Printf("Proposed by:          %s\n", proposal.ProposerAddress.Hex())
-	fmt.Printf("Created at:           %s\n", cliutils.GetDateTimeString(proposal.CreatedTime))
+	fmt.Printf("Proposal ID:            %d\n", proposal.ID)
+	fmt.Printf("Message:                %s\n", proposal.Message)
+	fmt.Printf("Payload:                %s\n", proposal.PayloadStr)
+	fmt.Printf("Payload (bytes):        %s\n", hex.EncodeToString(proposal.Payload))
+	fmt.Printf("Proposed by:            %s\n", proposal.ProposerAddress.Hex())
+	fmt.Printf("Created at:             %s\n", proposal.CreatedTime.Format(time.RFC822))
 
 	// Start block - pending proposals
-	if proposal.State == types.Pending {
-		fmt.Printf("Starts at:            %s\n", cliutils.GetDateTimeString(proposal.StartTime))
+	if proposal.State == types.ProtocolDaoProposalState_Pending {
+		fmt.Printf("Starts on block:        %d\n", proposal.StartBlock)
 	}
 
 	// End block - active proposals
-	if proposal.State == types.Active {
-		fmt.Printf("Ends at:              %s\n", cliutils.GetDateTimeString(proposal.EndTime))
+	if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 {
+		fmt.Printf("Phase 1 ends on block:  %d\n", proposal.Phase1EndBlock)
+	}
+	if proposal.State == types.ProtocolDaoProposalState_ActivePhase2 {
+		fmt.Printf("Phase 2 ends on block:  %d\n", proposal.Phase2EndBlock)
 	}
 
 	// Expiry block - succeeded proposals
-	if proposal.State == types.Succeeded {
-		fmt.Printf("Expires at:           %s\n", cliutils.GetDateTimeString(proposal.ExpiryTime))
+	if proposal.State == types.ProtocolDaoProposalState_Succeeded {
+		fmt.Printf("Expires on block:       %d\n", proposal.ExpiryBlock)
 	}
 
 	// Vote details
-	fmt.Printf("Votes required:       %.2f\n", proposal.VotesRequired)
-	fmt.Printf("Votes for:            %.2f\n", proposal.VotesFor)
-	fmt.Printf("Votes against:        %.2f\n", proposal.VotesAgainst)
-	if proposal.MemberVoted {
-		if proposal.MemberSupported {
-			fmt.Printf("Node has voted:       for\n")
-		} else {
-			fmt.Printf("Node has voted:       against\n")
-		}
+	fmt.Printf("Voting power required:  %.2f\n", proposal.VotingPowerRequired)
+	fmt.Printf("Voting power for:       %.2f\n", proposal.VotingPowerFor)
+	fmt.Printf("Voting power against:   %.2f\n", proposal.VotingPowerAgainst)
+	fmt.Printf("Voting power abstained: %.2f\n", proposal.VotingPowerAbstained)
+	fmt.Printf("Voting power against:   %.2f\n", proposal.VotingPowerToVeto)
+	if proposal.NodeVoteDirection != types.VoteDirection_NoVote {
+		fmt.Printf("Node has voted:         %s\n", types.VoteDirections[proposal.NodeVoteDirection])
 	} else {
-		fmt.Printf("Node has voted:       no\n")
+		fmt.Printf("Node has voted:         no\n")
 	}
 
 	return nil

@@ -5,14 +5,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
-	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli"
 )
 
-func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Address) (*api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
+func canProposeKickMultiFromSecurityCouncil(c *cli.Context, addresses []common.Address) (*api.PDAOCanProposeKickMultiFromSecurityCouncilResponse, error) {
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
 		return nil, err
@@ -35,19 +34,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 	}
 
 	// Response
-	response := api.PDAOCanProposeInviteToSecurityCouncilResponse{}
-
-	// Check if the member exists
-	response.MemberAlreadyExists, err = security.GetMemberExists(rp, address, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check validity
-	response.CanPropose = !(response.MemberAlreadyExists)
-	if !response.CanPropose {
-		return &response, nil
-	}
+	response := api.PDAOCanProposeKickMultiFromSecurityCouncilResponse{}
 
 	// Get node account
 	opts, err := w.GetNodeAccountTransactor()
@@ -56,12 +43,12 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 	}
 
 	// Try proposing
-	message := fmt.Sprintf("invite %s (%s) to the security council", id, address.Hex())
+	message := "kick multiple members from the security council"
 	blockNumber, pollard, err := createPollard(rp, cfg, bc)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateProposeInviteToSecurityCouncilGas(rp, message, id, address, blockNumber, pollard, opts)
+	gasInfo, err := protocol.EstimateProposeKickMultiFromSecurityCouncilGas(rp, message, addresses, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +59,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 	return &response, nil
 }
 
-func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Address, blockNumber uint32) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
+func proposeKickMultiFromSecurityCouncil(c *cli.Context, addresses []common.Address, blockNumber uint32) (*api.PDAOProposeKickMultiFromSecurityCouncilResponse, error) {
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
 		return nil, err
@@ -95,7 +82,7 @@ func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Ad
 	}
 
 	// Response
-	response := api.PDAOProposeInviteToSecurityCouncilResponse{}
+	response := api.PDAOProposeKickMultiFromSecurityCouncilResponse{}
 
 	// Get node account
 	opts, err := w.GetNodeAccountTransactor()
@@ -110,12 +97,12 @@ func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Ad
 	}
 
 	// Propose
-	message := fmt.Sprintf("invite %s (%s) to the security council", id, address.Hex())
+	message := "kick multiple members from the security council"
 	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, err
 	}
-	proposalID, hash, err := protocol.ProposeInviteToSecurityCouncil(rp, message, id, address, blockNumber, pollard, opts)
+	proposalID, hash, err := protocol.ProposeKickMultiFromSecurityCouncil(rp, message, addresses, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}

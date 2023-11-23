@@ -192,7 +192,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 // Creates a snapshot of the Rocket Pool network, but only for a single node
 // Also gets the total effective RPL stake of the network for convenience since this is required by several node routines
 func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
-	steps := 6
+	steps := 5
 	if calculateTotalEffectiveStake {
 		steps++
 	}
@@ -219,6 +219,9 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	isHoustonDeployed, err := IsHoustonDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
 	if err != nil {
 		return nil, nil, fmt.Errorf("error checking if Houston is deployed: %w", err)
+	}
+	if isHoustonDeployed {
+		steps++
 	}
 
 	// Create the state wrapper
@@ -333,13 +336,15 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	state.logLine("%d/%d - Calculated complete node and user balance shares (total time: %s)", currentStep, steps, time.Since(start))
 	currentStep++
 
-	// Get the protocol DAO proposals
-	state.ProtocolDaoProposalDetails, err = rpstate.GetAllProtocolDaoProposalDetails(rp, contracts)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
+	if isHoustonDeployed {
+		// Get the protocol DAO proposals
+		state.ProtocolDaoProposalDetails, err = rpstate.GetAllProtocolDaoProposalDetails(rp, contracts)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
+		}
+		state.logLine("%d/%d - Retrieved Protocol DAO proposals (total time: %s)", currentStep, steps, time.Since(start))
+		currentStep++
 	}
-	state.logLine("%d/%d - Retrieved Protocol DAO proposals (total time: %s)", currentStep, steps, time.Since(start))
-	currentStep++
 
 	return state, totalEffectiveStake, nil
 }

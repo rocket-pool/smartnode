@@ -1,7 +1,6 @@
 package pdao
 
 import (
-	"errors"
 	"time"
 
 	"github.com/urfave/cli"
@@ -114,6 +113,57 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "can-override-vote",
+				Usage:     "Check whether the node can override their delegate's vote on a proposal",
+				UsageText: "rocketpool api pdao can-override-vote proposal-id vote-direction",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					proposalId, err := cliutils.ValidatePositiveUint("proposal ID", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					voteDir, err := cliutils.ValidateVoteDirection("vote direction", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canOverrideVote(c, proposalId, voteDir))
+					return nil
+
+				},
+			},
+			{
+				Name:      "override-vote",
+				Usage:     "Override the vote of the node's delegate on a proposal",
+				UsageText: "rocketpool api pdao override-vote proposal-id vote-direction",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					proposalId, err := cliutils.ValidatePositiveUint("proposal ID", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					voteDir, err := cliutils.ValidateVoteDirection("vote direction", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(overrideVote(c, proposalId, voteDir))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "can-execute-proposal",
 				Usage:     "Check whether the node can execute a proposal",
 				UsageText: "rocketpool api pdao can-execute-proposal proposal-id",
@@ -173,18 +223,19 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-propose-setting",
 				Usage:     "Check whether the node can propose a PDAO setting",
-				UsageText: "rocketpool api pdao can-propose-setting setting-name value",
+				UsageText: "rocketpool api pdao can-propose-setting contract-name setting-name value",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					settingName := c.Args().Get(0)
-					value := c.Args().Get(1)
+					contractName := c.Args().Get(0)
+					settingName := c.Args().Get(1)
+					value := c.Args().Get(2)
 
 					// Run
-					api.PrintResponse(canProposeSetting(c, settingName, value))
+					api.PrintResponse(canProposeSetting(c, contractName, settingName, value))
 					return nil
 
 				},
@@ -192,22 +243,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "propose-setting",
 				Usage:     "Propose updating a PDAO setting (use can-propose-setting to get the pollard)",
-				UsageText: "rocketpool api pdao propose-setting setting-name value",
+				UsageText: "rocketpool api pdao propose-setting contract-name setting-name value block-number",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
-					settingName := c.Args().Get(0)
-					value := c.Args().Get(1)
-					blockNumber, err := cliutils.ValidatePositiveUint32("block-number", c.Args().Get(2))
+					contractName := c.Args().Get(0)
+					settingName := c.Args().Get(1)
+					value := c.Args().Get(2)
+					blockNumber, err := cliutils.ValidatePositiveUint32("block-number", c.Args().Get(3))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(proposeSetting(c, settingName, value, blockNumber))
+					api.PrintResponse(proposeSetting(c, contractName, settingName, value, blockNumber))
 					return nil
 
 				},
@@ -240,10 +292,15 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					node, err1 := cliutils.ValidateBigInt("node", c.Args().Get(0))
-					odao, err2 := cliutils.ValidateBigInt("odao", c.Args().Get(1))
-					pdao, err3 := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
-					err := errors.Join(err1, err2, err3)
+					node, err := cliutils.ValidateBigInt("node", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					odao, err := cliutils.ValidateBigInt("odao", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					pdao, err := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
@@ -264,11 +321,19 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
-					node, err1 := cliutils.ValidateBigInt("node", c.Args().Get(0))
-					odao, err2 := cliutils.ValidateBigInt("odao", c.Args().Get(1))
-					pdao, err3 := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
-					blockNumber, err4 := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
-					err := errors.Join(err1, err2, err3, err4)
+					node, err := cliutils.ValidateBigInt("node", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					odao, err := cliutils.ValidateBigInt("odao", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					pdao, err := cliutils.ValidateBigInt("pdao", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
 					if err != nil {
 						return err
 					}
@@ -291,9 +356,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					invoiceID := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amount, err2 := cliutils.ValidateBigInt("amount", c.Args().Get(2))
-					err := errors.Join(err1, err2)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amount, err := cliutils.ValidateBigInt("amount", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
@@ -315,10 +382,15 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					invoiceID := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amount, err2 := cliutils.ValidateBigInt("amount", c.Args().Get(2))
-					blockNumber, err3 := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
-					err := errors.Join(err1, err2, err3)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amount, err := cliutils.ValidateBigInt("amount", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
 					if err != nil {
 						return err
 					}
@@ -341,12 +413,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					contractName := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amountPerPeriod, err2 := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
-					periodLength, err3 := cliutils.ValidateDuration("period-length", c.Args().Get(3))
-					startTime, err4 := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
-					numberOfPeriods, err5 := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
-					err := errors.Join(err1, err2, err3, err4, err5)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amountPerPeriod, err := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					periodLength, err := cliutils.ValidateDuration("period-length", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					startTime, err := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
+					if err != nil {
+						return err
+					}
+					numberOfPeriods, err := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
 					if err != nil {
 						return err
 					}
@@ -368,13 +451,27 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					contractName := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amountPerPeriod, err2 := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
-					periodLength, err3 := cliutils.ValidateDuration("period-length", c.Args().Get(3))
-					startTime, err4 := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
-					numberOfPeriods, err5 := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
-					blockNumber, err6 := cliutils.ValidateUint32("blockNumber", c.Args().Get(6))
-					err := errors.Join(err1, err2, err3, err4, err5, err6)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amountPerPeriod, err := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					periodLength, err := cliutils.ValidateDuration("period-length", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					startTime, err := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
+					if err != nil {
+						return err
+					}
+					numberOfPeriods, err := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(6))
 					if err != nil {
 						return err
 					}
@@ -397,11 +494,19 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					contractName := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amountPerPeriod, err2 := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
-					periodLength, err3 := cliutils.ValidateDuration("period-length", c.Args().Get(3))
-					numberOfPeriods, err4 := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(4))
-					err := errors.Join(err1, err2, err3, err4)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amountPerPeriod, err := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					periodLength, err := cliutils.ValidateDuration("period-length", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					numberOfPeriods, err := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(4))
 					if err != nil {
 						return err
 					}
@@ -423,12 +528,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					contractName := c.Args().Get(0)
-					recipient, err1 := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					amountPerPeriod, err2 := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
-					periodLength, err3 := cliutils.ValidateDuration("period-length", c.Args().Get(3))
-					numberOfPeriods, err4 := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(4))
-					blockNumber, err5 := cliutils.ValidateUint32("blockNumber", c.Args().Get(5))
-					err := errors.Join(err1, err2, err3, err4, err5)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amountPerPeriod, err := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					periodLength, err := cliutils.ValidateDuration("period-length", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					numberOfPeriods, err := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(4))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(5))
 					if err != nil {
 						return err
 					}
@@ -451,8 +567,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					id := c.Args().Get(0)
-					address, err1 := cliutils.ValidateAddress("address", c.Args().Get(1))
-					err := errors.Join(err1)
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
@@ -474,9 +589,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					id := c.Args().Get(0)
-					address, err1 := cliutils.ValidateAddress("address", c.Args().Get(1))
-					blockNumber, err2 := cliutils.ValidateUint32("blockNumber", c.Args().Get(2))
-					err := errors.Join(err1, err2)
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(1))
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
@@ -498,8 +612,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					address, err1 := cliutils.ValidateAddress("address", c.Args().Get(0))
-					err := errors.Join(err1)
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -520,15 +633,121 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					address, err1 := cliutils.ValidateAddress("address", c.Args().Get(0))
-					blockNumber, err2 := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
-					err := errors.Join(err1, err2)
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
 
 					// Run
 					api.PrintResponse(proposeKickFromSecurityCouncil(c, address, blockNumber))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-propose-kick-multi-from-security-council",
+				Usage:     "Check whether the node can kick multiple members from the security council",
+				UsageText: "rocketpool api pdao can-propose-kick-multi-from-security-council addresses",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					addresses, err := cliutils.ValidateAddresses("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeKickMultiFromSecurityCouncil(c, addresses))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-kick-multi-from-security-council",
+				Usage:     "Propose kicking multiple members from the security council",
+				UsageText: "rocketpool api pdao propose-kick-multi-from-security-council addresses block-number",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					addresses, err := cliutils.ValidateAddresses("addresess", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeKickMultiFromSecurityCouncil(c, addresses, blockNumber))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-propose-replace-member-of-security-council",
+				Usage:     "Check whether the node can propose replacing someone on the security council with another member",
+				UsageText: "rocketpool api pdao can-propose-replace-member-of-security-council existing-address new-id new-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+						return err
+					}
+					existingAddress, err := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					newID := c.Args().Get(1)
+					newAddress, err := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeReplaceMemberOfSecurityCouncil(c, existingAddress, newID, newAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-replace-member-of-security-council",
+				Usage:     "Propose replacing someone on the security council with another member",
+				UsageText: "rocketpool api pdao propose-replace-member-of-security-council existing-address new-id new-address block-number",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
+						return err
+					}
+					existingAddress, err := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					newID := c.Args().Get(1)
+					newAddress, err := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeReplaceMemberOfSecurityCouncil(c, existingAddress, newID, newAddress, blockNumber))
 					return nil
 
 				},
