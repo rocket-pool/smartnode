@@ -131,7 +131,7 @@ var rocketNetworkBalancesLock sync.Mutex
 func getRocketNetworkBalances(rp *rocketpool.RocketPool, address *common.Address, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNetworkBalancesLock.Lock()
 	defer rocketNetworkBalancesLock.Unlock()
-	if address != nil {
+	if address == nil {
 		return rp.VersionManager.V1_2_0.GetContract("rocketNetworkBalances", opts)
 	}
 	return rp.VersionManager.V1_2_0.GetContractWithAddress("rocketNetworkBalances", *address)

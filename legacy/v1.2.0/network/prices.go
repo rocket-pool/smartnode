@@ -78,7 +78,7 @@ var rocketNetworkPricesLock sync.Mutex
 func getRocketNetworkPrices(rp *rocketpool.RocketPool, address *common.Address, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNetworkPricesLock.Lock()
 	defer rocketNetworkPricesLock.Unlock()
-	if address != nil {
+	if address == nil {
 		return rp.VersionManager.V1_2_0.GetContract("rocketNetworkPrices", opts)
 	}
 	return rp.VersionManager.V1_2_0.GetContractWithAddress("rocketNetworkPrices", *address)
