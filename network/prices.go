@@ -18,6 +18,14 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
+// Info for a price updated event
+type PriceUpdatedEvent struct {
+	BlockNumber   *big.Int `json:"blockNumber"`
+	SlotTimestamp *big.Int `json:"slotTimestamp"`
+	RplPrice      *big.Int `json:"rplPrice"`
+	Time          *big.Int `json:"time"`
+}
+
 // Get the block number which network prices are current for
 func GetPricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
@@ -45,38 +53,25 @@ func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, erro
 }
 
 // Estimate the gas of SubmitPrices
-func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64, rplPrice *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNetworkPrices, err := getRocketNetworkPrices(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNetworkPrices.GetTransactionGasInfo(opts, "submitPrices", big.NewInt(int64(block)), rplPrice)
+	return rocketNetworkPrices.GetTransactionGasInfo(opts, "submitPrices", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), rplPrice)
 }
 
 // Submit network prices and total effective RPL stake for an epoch
-func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func SubmitPrices(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint64, rplPrice *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkPrices, err := getRocketNetworkPrices(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNetworkPrices.Transact(opts, "submitPrices", big.NewInt(int64(block)), rplPrice)
+	tx, err := rocketNetworkPrices.Transact(opts, "submitPrices", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), rplPrice)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error submitting network prices: %w", err)
 	}
 	return tx.Hash(), nil
-}
-
-// Returns the latest block number that oracles should be reporting prices for
-func GetLatestReportablePricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	latestReportableBlock := new(*big.Int)
-	if err := rocketNetworkPrices.Call(opts, latestReportableBlock, "getLatestReportableBlock"); err != nil {
-		return nil, fmt.Errorf("error getting latest reportable block: %w", err)
-	}
-	return *latestReportableBlock, nil
 }
 
 // Returns an array of block numbers for prices submissions the given trusted node has submitted since fromBlock
@@ -133,6 +128,50 @@ func GetLatestPricesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, int
 	return results, nil
 }
 
+// Get the event info for a price update
+func GetPriceUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts *bind.CallOpts) (bool, PriceUpdatedEvent, error) {
+	// Get contracts
+	rocketNetworkPrices, err := getRocketNetworkPrices(rp, opts)
+	if err != nil {
+		return false, PriceUpdatedEvent{}, err
+	}
+
+	// Create the list of addresses to check
+	currentAddress := *rocketNetworkPrices.Address
+	rocketNetworkPricesAddress := []common.Address{currentAddress}
+
+	// Construct a filter query for relevant logs
+	pricesUpdatedEvent := rocketNetworkPrices.ABI.Events["PricesUpdated"]
+	indexBytes := [32]byte{}
+	addressFilter := rocketNetworkPricesAddress
+	topicFilter := [][]common.Hash{{pricesUpdatedEvent.ID}, {indexBytes}}
+
+	// Get the event logs
+	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), big.NewInt(int64(blockNumber)), big.NewInt(int64(blockNumber)), nil)
+	if err != nil {
+		return false, PriceUpdatedEvent{}, err
+	}
+	if len(logs) == 0 {
+		return false, PriceUpdatedEvent{}, nil
+	}
+
+	// Get the log info values
+	values, err := pricesUpdatedEvent.Inputs.Unpack(logs[0].Data)
+	if err != nil {
+		return false, PriceUpdatedEvent{}, fmt.Errorf("error unpacking price updated event data: %w", err)
+	}
+
+	// Convert to a native struct
+	var eventData PriceUpdatedEvent
+	err = pricesUpdatedEvent.Inputs.Copy(&eventData, values)
+	if err != nil {
+		return false, PriceUpdatedEvent{}, fmt.Errorf("error converting price updated event data to struct: %w", err)
+	}
+
+	return true, eventData, nil
+}
+
+// TODO: will be adjusted/removed
 // Returns a mapping of members and whether they have submitted prices this interval or not
 func GetTrustedNodeLatestPricesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (map[common.Address]bool, error) {
 	// Get the update frequency
@@ -168,10 +207,11 @@ func GetTrustedNodeLatestPricesParticipation(rp *rocketpool.RocketPool, interval
 	return participationTable, nil
 }
 
+// TODO: needs adjustments
 // Calculates the participation rate of every trusted node on price submission since the last block that member count changed
 func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (*node.TrustedNodeParticipation, error) {
 	// Get the update frequency
-	updatePricesFrequency, err := protocol.GetSubmitPricesFrequency(rp, opts)
+	updatePricesFrequency, err := protocol.GetSubmitPricesFrequency(rp, opts) //
 	if err != nil {
 		return nil, err
 	}
