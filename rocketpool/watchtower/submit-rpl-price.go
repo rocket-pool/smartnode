@@ -322,11 +322,8 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		if !found {
 			// The first submission after Houston is deployed won't find an event emitted by this contract
 			// Fetch the first Houston submission slot from the config
-			timestamp, err := strconv.ParseInt(t.cfg.Smartnode.GetFirstHoustonSubmissionTimestamp(), 10, 64)
-			if err != nil {
-				return fmt.Errorf("error getting first houston submission timestamp: %w", err)
-			}
-			nexSubmissionTime = time.Unix(timestamp, 0)
+			timestamp := t.cfg.Smartnode.GetFirstHoustonSubmissionTimestamp()
+			nexSubmissionTime = time.Unix(int64(timestamp), 0)
 		} else {
 
 			// Get the last submission reference time
