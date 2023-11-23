@@ -2076,15 +2076,15 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:      "vote",
 						Aliases:   []string{"v"},
 						Usage:     "Vote on a proposal",
-						UsageText: "rocketpool pdao proposals vote [options]",
+						UsageText: "rocketpool pdao proposals vote",
 						Flags: []cli.Flag{
 							cli.StringFlag{
 								Name:  "proposal, p",
 								Usage: "The ID of the proposal to vote on",
 							},
 							cli.StringFlag{
-								Name:  "support, s",
-								Usage: "Whether to support the proposal ('yes' or 'no')",
+								Name:  "vote-direction, v",
+								Usage: "How to vote ('abstain', 'for', 'against', 'veto')",
 							},
 							cli.BoolFlag{
 								Name:  "yes, y",
@@ -2104,11 +2104,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									return err
 								}
 							}
-							if c.String("support") != "" {
-								if _, err := cliutils.ValidateBool("support", c.String("support")); err != nil {
-									return err
-								}
-							}
 
 							// Run
 							return voteOnProposal(c)
@@ -2117,10 +2112,49 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 
 					{
+						Name:      "override-vote",
+						Aliases:   []string{"o"},
+						Usage:     "Override your delegate's vote on a proposal with your own",
+						UsageText: "rocketpool pdao proposals override-vote",
+						Flags: []cli.Flag{
+							cli.StringFlag{
+								Name:  "proposal, p",
+								Usage: "The ID of the proposal to vote on",
+							},
+							cli.StringFlag{
+								Name:  "vote-direction, v",
+								Usage: "How to vote ('abstain', 'for', 'against', 'veto')",
+							},
+							cli.BoolFlag{
+								Name:  "yes, y",
+								Usage: "Automatically confirm vote",
+							},
+						},
+						Action: func(c *cli.Context) error {
+
+							// Validate args
+							if err := cliutils.ValidateArgCount(c, 0); err != nil {
+								return err
+							}
+
+							// Validate flags
+							if c.String("proposal") != "" {
+								if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
+									return err
+								}
+							}
+
+							// Run
+							return overrideVote(c)
+
+						},
+					},
+
+					{
 						Name:      "execute",
 						Aliases:   []string{"x"},
 						Usage:     "Execute a proposal",
-						UsageText: "rocketpool pdao proposals execute [options]",
+						UsageText: "rocketpool pdao proposals execute",
 						Flags: []cli.Flag{
 							cli.StringFlag{
 								Name:  "proposal, p",

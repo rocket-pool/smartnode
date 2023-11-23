@@ -113,6 +113,57 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "can-override-vote",
+				Usage:     "Check whether the node can override their delegate's vote on a proposal",
+				UsageText: "rocketpool api pdao can-override-vote proposal-id vote-direction",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					proposalId, err := cliutils.ValidatePositiveUint("proposal ID", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					voteDir, err := cliutils.ValidateVoteDirection("vote direction", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canOverrideVote(c, proposalId, voteDir))
+					return nil
+
+				},
+			},
+			{
+				Name:      "override-vote",
+				Usage:     "Override the vote of the node's delegate on a proposal",
+				UsageText: "rocketpool api pdao override-vote proposal-id vote-direction",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					proposalId, err := cliutils.ValidatePositiveUint("proposal ID", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					voteDir, err := cliutils.ValidateVoteDirection("vote direction", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(overrideVote(c, proposalId, voteDir))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "can-execute-proposal",
 				Usage:     "Check whether the node can execute a proposal",
 				UsageText: "rocketpool api pdao can-execute-proposal proposal-id",

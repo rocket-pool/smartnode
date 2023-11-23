@@ -11,19 +11,14 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.CanVoteOnPDAOProposalResponse, error) {
+func canOverrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.CanOverrideVoteOnPDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -34,13 +29,9 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 	if err != nil {
 		return nil, err
 	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
 
 	// Response
-	response := api.CanVoteOnPDAOProposalResponse{}
+	response := api.CanOverrideVoteOnPDAOProposalResponse{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -65,7 +56,7 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 	wg.Go(func() error {
 		proposalState, err := protocol.GetProposalState(rp, proposalId, nil)
 		if err == nil {
-			response.InvalidState = (proposalState != types.ProtocolDaoProposalState_ActivePhase1)
+			response.InvalidState = (proposalState != types.ProtocolDaoProposalState_ActivePhase2)
 		}
 		return err
 	})
@@ -104,22 +95,12 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 		return &response, nil
 	}
 
-	// Get the proposal artifacts
-	propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
-	if err != nil {
-		return nil, err
-	}
-	totalDelegatedVP, nodeIndex, proof, err := propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
-	if err != nil {
-		return nil, err
-	}
-
 	// Simulate
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateVoteOnProposalGas(rp, proposalId, voteDirection, totalDelegatedVP, nodeIndex, proof, opts)
+	gasInfo, err := protocol.EstimateOverrideVoteGas(rp, proposalId, voteDirection, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -130,14 +111,10 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 
 }
 
-func voteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.VoteOnPDAOProposalResponse, error) {
+func overrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.OverrideVoteOnPDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -148,38 +125,12 @@ func voteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteD
 	if err != nil {
 		return nil, err
 	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
 
 	// Response
-	response := api.VoteOnPDAOProposalResponse{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
+	response := api.OverrideVoteOnPDAOProposalResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the block used by the proposal
-	proposalBlock, err := protocol.GetProposalBlock(rp, proposalId, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the proposal artifacts
-	propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
-	if err != nil {
-		return nil, err
-	}
-	totalDelegatedVP, nodeIndex, proof, err := propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +142,7 @@ func voteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteD
 	}
 
 	// Vote on proposal
-	hash, err := protocol.VoteOnProposal(rp, proposalId, voteDirection, totalDelegatedVP, nodeIndex, proof, opts)
+	hash, err := protocol.OverrideVote(rp, proposalId, voteDirection, opts)
 	if err != nil {
 		return nil, err
 	}

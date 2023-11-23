@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
 	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -40,9 +40,9 @@ func executeProposal(c *cli.Context) error {
 	}
 
 	// Get executable proposals
-	executableProposals := []dao.ProposalDetails{}
+	executableProposals := []api.PDAOProposalWithNodeVoteDirection{}
 	for _, proposal := range proposals.Proposals {
-		if proposal.State == types.Succeeded {
+		if proposal.State == types.ProtocolDaoProposalState_Succeeded {
 			executableProposals = append(executableProposals, proposal)
 		}
 	}
@@ -54,7 +54,7 @@ func executeProposal(c *cli.Context) error {
 	}
 
 	// Get selected proposal
-	var selectedProposals []dao.ProposalDetails
+	var selectedProposals []api.PDAOProposalWithNodeVoteDirection
 	if c.String("proposal") == "all" {
 
 		// Select all proposals
@@ -72,7 +72,7 @@ func executeProposal(c *cli.Context) error {
 		found := false
 		for _, proposal := range executableProposals {
 			if proposal.ID == selectedId {
-				selectedProposals = []dao.ProposalDetails{proposal}
+				selectedProposals = []api.PDAOProposalWithNodeVoteDirection{proposal}
 				found = true
 				break
 			}
@@ -95,7 +95,7 @@ func executeProposal(c *cli.Context) error {
 		if selected == 0 {
 			selectedProposals = executableProposals
 		} else {
-			selectedProposals = []dao.ProposalDetails{executableProposals[selected-1]}
+			selectedProposals = []api.PDAOProposalWithNodeVoteDirection{executableProposals[selected-1]}
 		}
 
 	}

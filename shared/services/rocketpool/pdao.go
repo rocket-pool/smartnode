@@ -13,6 +13,20 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
+func getVoteDirectionString(direction types.VoteDirection) string {
+	switch direction {
+	case types.VoteDirection_Abstain:
+		return "abstain"
+	case types.VoteDirection_For:
+		return "for"
+	case types.VoteDirection_Against:
+		return "against"
+	case types.VoteDirection_AgainstWithVeto:
+		return "veto"
+	}
+	return ""
+}
+
 // Get protocol DAO proposals
 func (c *Client) PDAOProposals() (api.PDAOProposalsResponse, error) {
 	responseBytes, err := c.callAPI("pdao proposals")
@@ -47,7 +61,7 @@ func (c *Client) PDAOProposalDetails(proposalID uint64) (api.PDAOProposalRespons
 
 // Check whether the node can vote on a proposal
 func (c *Client) PDAOCanVoteProposal(proposalID uint64, voteDirection types.VoteDirection) (api.CanVoteOnPDAOProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-vote-proposal %d %s", proposalID, types.VoteDirections[voteDirection]))
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-vote-proposal %d %s", proposalID, getVoteDirectionString(voteDirection)))
 	if err != nil {
 		return api.CanVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-vote-proposal: %w", err)
 	}
@@ -61,9 +75,9 @@ func (c *Client) PDAOCanVoteProposal(proposalID uint64, voteDirection types.Vote
 	return response, nil
 }
 
-// Check whether the node can vote on a proposal
+// Vote on a proposal
 func (c *Client) PDAOVoteProposal(proposalID uint64, voteDirection types.VoteDirection) (api.VoteOnPDAOProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao vote-proposal %d %s", proposalID, types.VoteDirections[voteDirection]))
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao vote-proposal %d %s", proposalID, getVoteDirectionString(voteDirection)))
 	if err != nil {
 		return api.VoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO vote-proposal: %w", err)
 	}
@@ -73,6 +87,38 @@ func (c *Client) PDAOVoteProposal(proposalID uint64, voteDirection types.VoteDir
 	}
 	if response.Error != "" {
 		return api.VoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO vote-proposal: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can override the delegate's vote on a proposal
+func (c *Client) PDAOCanOverrideVote(proposalID uint64, voteDirection types.VoteDirection) (api.CanOverrideVoteOnPDAOProposalResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-override-vote %d %s", proposalID, getVoteDirectionString(voteDirection)))
+	if err != nil {
+		return api.CanOverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-override-vote: %w", err)
+	}
+	var response api.CanOverrideVoteOnPDAOProposalResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanOverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not decode protocol DAO can-override-vote response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanOverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-override-vote: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Override the delegate's vote on a proposal
+func (c *Client) PDAOOverrideVote(proposalID uint64, voteDirection types.VoteDirection) (api.OverrideVoteOnPDAOProposalResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao override-vote %d %s", proposalID, getVoteDirectionString(voteDirection)))
+	if err != nil {
+		return api.OverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO override-vote: %w", err)
+	}
+	var response api.OverrideVoteOnPDAOProposalResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.OverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not decode protocol DAO override-vote response: %w", err)
+	}
+	if response.Error != "" {
+		return api.OverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO override-vote: %s", response.Error)
 	}
 	return response, nil
 }
