@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -71,7 +72,7 @@ func EstimateProposeSubmitBalancesEnabledGas(rp *rocketpool.RocketPool, value bo
 }
 
 // The frequency in seconds at which network balances should be submitted by trusted nodes
-func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
@@ -80,7 +81,7 @@ func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	if err := networkSettingsContract.Call(opts, value, "getSubmitBalancesFrequency"); err != nil {
 		return 0, fmt.Errorf("error getting network balance submission frequency: %w", err)
 	}
-	return (*value).Uint64(), nil
+	return time.Duration((*value).Uint64()) * time.Second, nil
 }
 func ProposeSubmitBalancesFrequency(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SubmitBalancesFrequencySettingPath), NetworkSettingsContractName, SubmitBalancesFrequencySettingPath, value, blockNumber, treeNodes, opts)
@@ -109,7 +110,7 @@ func EstimateProposeSubmitPricesEnabledGas(rp *rocketpool.RocketPool, value bool
 }
 
 // The frequency in seconds at which network prices should be submitted by trusted nodes
-func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
@@ -118,7 +119,7 @@ func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
 	if err := networkSettingsContract.Call(opts, value, "getSubmitPricesFrequency"); err != nil {
 		return 0, fmt.Errorf("error getting network price submission frequency: %w", err)
 	}
-	return (*value).Uint64(), nil
+	return time.Duration((*value).Uint64()) * time.Second, nil
 }
 func ProposeSubmitPricesFrequency(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SubmitPricesFrequencySettingPath), NetworkSettingsContractName, SubmitPricesFrequencySettingPath, value, blockNumber, treeNodes, opts)
