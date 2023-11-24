@@ -70,17 +70,14 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	response.AccountAddress = nodeAccount.Address
 	response.AccountAddressFormatted = formatResolvedAddress(c, response.AccountAddress)
 
+	// We need the houston deployment state before querying the node info
+	isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
+	if err == nil {
+		response.IsHoustonDeployed = isHoustonDeployed
+	}
+
 	// Sync
 	var wg errgroup.Group
-
-	// Get node trusted status
-	wg.Go(func() error {
-		isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
-		if err == nil {
-			response.IsHoustonDeployed = isHoustonDeployed
-		}
-		return err
-	})
 
 	// Get node trusted status
 	wg.Go(func() error {

@@ -182,7 +182,7 @@ func getStatus(c *cli.Context) error {
 		if status.IsHoustonDeployed {
 			fmt.Printf("%s=== RPL Withdrawal Address ===%s\n", colorGreen, colorReset)
 			if !status.IsRPLWithdrawalAddressSet {
-				fmt.Printf("The node's RPL withdrawal address has not been set. All RPL rewards will be sent to the primary withdrawal address.")
+				fmt.Printf("The node's RPL withdrawal address has not been set. All RPL rewards will be sent to the primary withdrawal address.\n")
 			} else if bytes.Equal(status.AccountAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
 				fmt.Printf("The node's RPL withdrawal address has been explicitly set to the node address itself (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
 			} else if bytes.Equal(status.PrimaryWithdrawalAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
