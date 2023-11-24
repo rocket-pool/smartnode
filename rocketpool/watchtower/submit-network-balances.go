@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	v120_network "github.com/rocket-pool/rocketpool-go/legacy/v1.2.0/network"
 	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -146,25 +147,51 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesSubmissionFrequency * uint64(time.Second))
 		eth2Config := state.BeaconConfig
 
-		var nexSubmissionTime time.Time
+		var nextSubmissionTime time.Time
 		if !found {
 			// The first submission after Houston is deployed won't find an event emitted by this contract
-			// Fetch the first Houston submission slot from the config
-			timestamp := t.cfg.Smartnode.GetFirstHoustonSubmissionTimestamp()
-			if timestamp == 0 {
-				return fmt.Errorf("first Houston submission not defined")
+			// The submission time will be adjusted to align with the reward time
+
+			// Sync
+			var wg errgroup.Group
+			var lastCheckpoint time.Time
+			var rewardsInterval time.Duration
+
+			// Get the start of the rewards checkpoint
+			wg.Go(func() error {
+				lastCheckpoint, err = rewards.GetClaimIntervalTimeStart(t.rp, nil)
+				return err
+			})
+
+			// Get the rewards checkpoint interval
+			wg.Go(func() error {
+				rewardsInterval, err = rewards.GetClaimIntervalTime(t.rp, nil)
+				return err
+			})
+
+			// Wait for data
+			if err := wg.Wait(); err != nil {
+				return err
 			}
-			nexSubmissionTime = time.Unix(int64(timestamp), 0)
+
+			// Find the next checkpoint
+			nextCheckpoint := lastCheckpoint.Add(rewardsInterval)
+			
+			// Calculate the number of submissions between now and the next checkpoint adding one so we have the first submission time that is in the past
+			timeDifference := time.Until(nextCheckpoint)
+			submissionsUntilNextCheckpoint := int(timeDifference/submissionIntervalDuration) + 1
+
+			nextSubmissionTime = nextCheckpoint.Add(-time.Duration(submissionsUntilNextCheckpoint) * submissionIntervalDuration)
 		} else {
 
 			// Get the last submission reference time
 			lastSubmissionTime := time.Unix(event.SlotTimestamp.Int64(), 0)
 
 			// Next submission adds the interval time to the last submission time
-			nexSubmissionTime = lastSubmissionTime.Add(submissionIntervalDuration)
+			nextSubmissionTime = lastSubmissionTime.Add(submissionIntervalDuration)
 		}
 		// Return if the time to submit has not arrived
-		if time.Now().Before(nexSubmissionTime) {
+		if time.Now().Before(nextSubmissionTime) {
 			return nil
 		}
 		// Log
@@ -172,7 +199,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 		// Get the Beacon block corresponding to this time
 		genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
-		timeSinceGenesis := nexSubmissionTime.Sub(genesisTime)
+		timeSinceGenesis := nextSubmissionTime.Sub(genesisTime)
 		slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 
 		ecBlock := beacon.Eth1Data{}
@@ -243,7 +270,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 			t.log.Printlnf("rETH token supply: %s wei", balances.RETHSupply.String())
 
 			// Check if we have reported these specific values before
-			balances.SlotTimestamp = uint64(nexSubmissionTime.Unix())
+			balances.SlotTimestamp = uint64(nextSubmissionTime.Unix())
 			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, balances)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
@@ -270,7 +297,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 			t.log.Println("Submitting balances...")
 
 			// Set the reference timestamp
-			balances.SlotTimestamp = uint64(nexSubmissionTime.Unix())
+			balances.SlotTimestamp = uint64(nextSubmissionTime.Unix())
 
 			// Submit balances
 			if err := t.submitBalances(balances, true); err != nil {
