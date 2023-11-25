@@ -115,7 +115,7 @@ func SubmitBalances(rp *rocketpool.RocketPool, block uint64, slotTimestamp uint6
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), stakingEth, rethSupply)
+	tx, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), big.NewInt(int64(slotTimestamp)), totalEth, stakingEth, rethSupply)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error submitting network balances: %w", err)
 	}
