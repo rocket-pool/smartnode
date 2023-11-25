@@ -176,7 +176,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 			// Find the next checkpoint
 			nextCheckpoint := lastCheckpoint.Add(rewardsInterval)
-			
+
 			// Calculate the number of submissions between now and the next checkpoint adding one so we have the first submission time that is in the past
 			timeDifference := time.Until(nextCheckpoint)
 			submissionsUntilNextCheckpoint := int(timeDifference/submissionIntervalDuration) + 1
@@ -203,12 +203,15 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 
 		ecBlock := beacon.Eth1Data{}
-
 		// Search for the last existing EL block, going back one slot if the block is not found.
-		for blockExists := false; !blockExists; slotNumber -= 1 {
-			ecBlock, blockExists, err = t.bc.GetEth1DataForEth2Block(strconv.FormatUint(slotNumber, 10))
+		for blockExists, searchSlot := false, slotNumber; !blockExists; searchSlot -= 1 {
+			ecBlock, blockExists, err = t.bc.GetEth1DataForEth2Block(strconv.FormatUint(searchSlot, 10))
 			if err != nil {
 				return err
+			}
+			// If we go back more than 32 slots, error out
+			if slotNumber-searchSlot > 32 {
+				return fmt.Errorf("could not find EL block from slot %d", slotNumber)
 			}
 		}
 
