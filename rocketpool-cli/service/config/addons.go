@@ -17,6 +17,7 @@ type AddonsPage struct {
 	masterConfig  *config.RocketPoolConfig
 	gwwPage       *AddonGwwPage
 	gwwButton     *parameterizedFormItem
+	apcupsdPage   *AddonApcupsdPage
 	categoryList  *tview.List
 	addonSubpages []settingsPage
 	content       tview.Primitive
@@ -39,9 +40,17 @@ func NewAddonsPage(home *settingsHome) *AddonsPage {
 
 	// Create the addon subpages
 	addonsPage.gwwPage = NewAddonGwwPage(addonsPage, home.md.Config.GraffitiWallWriter)
+
 	addonSubpages := []settingsPage{
 		addonsPage.gwwPage,
 	}
+
+	// TODO: Make this respond to uncommitted config changes
+	if home.md.Config.EnableMetrics.Value == true {
+		addonsPage.apcupsdPage = NewAddonApcupsdPage(addonsPage, home.md.Config.Apcupsd)
+		addonSubpages = append(addonSubpages, addonsPage.apcupsdPage)
+	}
+
 	addonsPage.addonSubpages = addonSubpages
 
 	// Add the subpages to the main display
