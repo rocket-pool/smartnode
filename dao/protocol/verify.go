@@ -232,6 +232,74 @@ func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64
 	return events, nil
 }
 
+// Estimate the gas of ClaimBondChallenger
+func EstimateClaimBondChallengerGas(rp *rocketpool.RocketPool, proposalID uint64, indices []uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	// Make the args
+	proposalIDBig := big.NewInt(int64(proposalID))
+	indicesBig := make([]*big.Int, len(indices))
+	for i, index := range indices {
+		indicesBig[i] = big.NewInt(int64(index))
+	}
+	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "claimBondChallenger", proposalIDBig, indicesBig)
+}
+
+// Claim any RPL bond refunds or rewards for a proposal, as a challenger
+func ClaimBondChallenger(rp *rocketpool.RocketPool, proposalID uint64, indices []uint64, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	// Make the args
+	proposalIDBig := big.NewInt(int64(proposalID))
+	indicesBig := make([]*big.Int, len(indices))
+	for i, index := range indices {
+		indicesBig[i] = big.NewInt(int64(index))
+	}
+	tx, err := rocketDAOProtocolVerifier.Transact(opts, "claimBondChallenger", proposalIDBig, indicesBig)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return tx.Hash(), nil
+}
+
+// Estimate the gas of ClaimBondProposer
+func EstimateClaimBondProposerGas(rp *rocketpool.RocketPool, proposalID uint64, indices []uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	// Make the args
+	proposalIDBig := big.NewInt(int64(proposalID))
+	indicesBig := make([]*big.Int, len(indices))
+	for i, index := range indices {
+		indicesBig[i] = big.NewInt(int64(index))
+	}
+	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "claimBondProposer", proposalIDBig, indicesBig)
+}
+
+// Claim any RPL bond refunds or rewards for a proposal, as the proposer
+func ClaimBondProposer(rp *rocketpool.RocketPool, proposalID uint64, indices []uint64, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	// Make the args
+	proposalIDBig := big.NewInt(int64(proposalID))
+	indicesBig := make([]*big.Int, len(indices))
+	for i, index := range indices {
+		indicesBig[i] = big.NewInt(int64(index))
+	}
+	tx, err := rocketDAOProtocolVerifier.Transact(opts, "claimBondProposer", proposalIDBig, indicesBig)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return tx.Hash(), nil
+}
+
 // Get contracts
 var rocketDAOProtocolVerifierLock sync.Mutex
 
