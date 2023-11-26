@@ -18,6 +18,11 @@ const (
 	pDaoPropDetailsBatchSize int = 50
 )
 
+type proposalBonds struct {
+	ProposerBond  *big.Int
+	ChallengeBond *big.Int
+}
+
 // Proposal details
 type protocolDaoProposalDetailsRaw struct {
 	ID                   uint64
@@ -42,6 +47,7 @@ type protocolDaoProposalDetailsRaw struct {
 	Payload              []byte
 	PayloadStr           string
 	State                types.ProtocolDaoProposalState
+	ProposalBonds        proposalBonds
 }
 
 // Gets a Protocol DAO proposal's details using the efficient multicall contract
@@ -161,6 +167,7 @@ func addProposalCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VetoQuorum, "getProposalVetoQuorum", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Payload, "getPayload", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.State, "getState", id)
+	mc.AddCall(contracts.RocketDAOProtocolVerifier, &details.ProposalBonds, "getProposalBonds", id)
 	return nil
 }
 
@@ -187,6 +194,8 @@ func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDao
 	details.VetoQuorum = rawDetails.VetoQuorum
 	details.Payload = rawDetails.Payload
 	details.State = rawDetails.State
+	details.ProposerBond = rawDetails.ProposalBonds.ProposerBond
+	details.ChallengeBond = rawDetails.ProposalBonds.ChallengeBond
 
 	var err error
 	details.PayloadStr, err = protocol.GetProposalPayloadString(rp, rawDetails.Payload, opts)

@@ -54,6 +54,8 @@ type ProtocolDaoProposalDetails struct {
 	Payload              []byte                         `json:"payload"`
 	PayloadStr           string                         `json:"payloadStr"`
 	State                types.ProtocolDaoProposalState `json:"state"`
+	ProposerBond         *big.Int                       `json:"proposerBond"`
+	ChallengeBond        *big.Int                       `json:"challengeBond"`
 }
 
 // Get all proposal details
@@ -201,6 +203,11 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 	wg.Go(func() error {
 		var err error
 		prop.State, err = GetProposalState(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.ProposerBond, prop.ChallengeBond, err = GetProposalBonds(rp, proposalId, opts)
 		return err
 	})
 
