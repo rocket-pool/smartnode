@@ -71,6 +71,11 @@ func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, mult
 		})
 	}
 
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return nil, err
+	}
+
 	return votingInfos, nil
 }
 

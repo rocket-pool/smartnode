@@ -11,6 +11,12 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/utils/multicall"
+	"golang.org/x/sync/errgroup"
+)
+
+const (
+	challengeStateBatchSize uint64 = 500
 )
 
 // Structure of the RootSubmitted event
@@ -119,6 +125,76 @@ func GetChallengeState(rp *rocketpool.RocketPool, proposalId uint64, index uint6
 		return types.ChallengeState_Unchallenged, fmt.Errorf("error getting proposal %d / index %d challenge state: %w", proposalId, index, err)
 	}
 	return *state, nil
+}
+
+// Get the proposal bond and challenge bond for a proposal
+func GetProposalBonds(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, *big.Int, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	type response struct {
+		proposalBond  *big.Int
+		challengeBond *big.Int
+	}
+	value := new(response)
+	if err := rocketDAOProtocolVerifier.Call(opts, value, "getProposalBonds", big.NewInt(int64(proposalId))); err != nil {
+		return nil, nil, fmt.Errorf("error getting proposal %d bonds: %w", proposalId, err)
+	}
+	return value.proposalBond, value.challengeBond, nil
+}
+
+// Get the states of multiple challenges using multicall
+// NOTE: wen v2.,,
+func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress common.Address, proposalIds []uint64, challengedIndices []uint64, opts *bind.CallOpts) ([]types.ChallengeState, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	count := uint64(len(proposalIds))
+	if count != uint64(len(challengedIndices)) {
+		return nil, fmt.Errorf("have %d proposal IDs but %d challenge indices", count, len(challengedIndices))
+	}
+
+	// Sync
+	var wg errgroup.Group
+
+	// Run the getters in batches
+	states := make([]types.ChallengeState, count)
+	for i := uint64(0); i < count; i += challengeStateBatchSize {
+		i := i
+		max := i + challengeStateBatchSize
+		if max > count {
+			max = count
+		}
+
+		// Load details
+		wg.Go(func() error {
+			var err error
+			mc, err := multicall.NewMultiCaller(rp.Client, multicallAddress)
+			if err != nil {
+				return err
+			}
+			for j := i; j < max; j++ {
+				propID := big.NewInt(int64(proposalIds[j]))
+				challengedIndex := big.NewInt(int64(challengedIndices[j]))
+				mc.AddCall(rocketDAOProtocolVerifier, &states[j], "getChallengeState", propID, challengedIndex)
+			}
+			_, err = mc.FlexibleCall(true, opts)
+			if err != nil {
+				return fmt.Errorf("error executing multicall: %w", err)
+			}
+			return nil
+		})
+	}
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return nil, err
+	}
+
+	return states, nil
 }
 
 // Get RootSubmitted event info
