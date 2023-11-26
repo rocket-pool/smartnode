@@ -24,10 +24,10 @@ type protocolDaoProposalDetailsRaw struct {
 	ProposerAddress      common.Address
 	TargetBlock          *big.Int
 	Message              string
-	StartBlock           *big.Int
-	Phase1EndBlock       *big.Int
-	Phase2EndBlock       *big.Int
-	ExpiryBlock          *big.Int
+	StartTime            *big.Int
+	Phase1EndTime        *big.Int
+	Phase2EndTime        *big.Int
+	ExpiryTime           *big.Int
 	CreatedTime          *big.Int
 	VotingPowerRequired  *big.Int
 	VotingPowerFor       *big.Int
@@ -144,10 +144,10 @@ func addProposalCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.ProposerAddress, "getProposer", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.TargetBlock, "getProposalBlock", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Message, "getMessage", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.StartBlock, "getStart", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Phase1EndBlock, "getPhase1End", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Phase2EndBlock, "getPhase2End", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.ExpiryBlock, "getExpires", id)
+	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.StartTime, "getStart", id)
+	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Phase1EndTime, "getPhase1End", id)
+	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Phase2EndTime, "getPhase2End", id)
+	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.ExpiryTime, "getExpires", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.CreatedTime, "getCreated", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerRequired, "getVotesRequired", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerFor, "getVotesFor", id)
@@ -170,10 +170,10 @@ func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDao
 	details.ProposerAddress = rawDetails.ProposerAddress
 	details.TargetBlock = uint32(rawDetails.TargetBlock.Uint64())
 	details.Message = rawDetails.Message
-	details.StartBlock = rawDetails.StartBlock.Uint64()
-	details.Phase1EndBlock = rawDetails.Phase1EndBlock.Uint64()
-	details.Phase2EndBlock = rawDetails.Phase2EndBlock.Uint64()
-	details.ExpiryBlock = rawDetails.ExpiryBlock.Uint64()
+	details.VotingStartTime = time.Unix(rawDetails.StartTime.Int64(), 0)
+	details.Phase1EndTime = time.Unix(rawDetails.Phase1EndTime.Int64(), 0)
+	details.Phase2EndTime = time.Unix(rawDetails.Phase2EndTime.Int64(), 0)
+	details.ExpiryTime = time.Unix(rawDetails.ExpiryTime.Int64(), 0)
 	details.CreatedTime = time.Unix(rawDetails.CreatedTime.Int64(), 0)
 	details.VotingPowerRequired = rawDetails.VotingPowerRequired
 	details.VotingPowerFor = rawDetails.VotingPowerFor
