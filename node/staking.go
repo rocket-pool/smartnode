@@ -181,21 +181,21 @@ func SetStakeRPLForAllowed(rp *rocketpool.RocketPool, caller common.Address, all
 }
 
 // Estimate the gas of WithdrawRPL
-func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, nodeAddress common.Address, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNodeStaking.GetTransactionGasInfo(opts, "withdrawRPL", rplAmount)
+	return rocketNodeStaking.GetTransactionGasInfo(opts, "withdrawRPL", nodeAddress, rplAmount)
 }
 
 // Withdraw staked RPL
-func WithdrawRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func WithdrawRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNodeStaking.Transact(opts, "withdrawRPL", rplAmount)
+	tx, err := rocketNodeStaking.Transact(opts, "withdrawRPL", nodeAddress, rplAmount)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error withdrawing staked RPL: %w", err)
 	}
