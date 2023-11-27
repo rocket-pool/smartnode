@@ -411,6 +411,28 @@ func ClaimBondProposer(rp *rocketpool.RocketPool, proposalID uint64, indices []u
 	return tx.Hash(), nil
 }
 
+// Estimate the gas of DefeatProposal
+func EstimateDefeatProposalGas(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketDAOProtocolVerifier.GetTransactionGasInfo(opts, "defeatProposal", big.NewInt(int64(proposalId)), big.NewInt(int64(index)))
+}
+
+// Defeat a proposal if it fails to respond to a challenge within the challenge window, providing the node index that wasn't responded to
+func DefeatProposal(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketDAOProtocolVerifier.Transact(opts, "defeatProposal", big.NewInt(int64(proposalId)), big.NewInt(int64(index)))
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return tx.Hash(), nil
+}
+
 // Get contracts
 var rocketDAOProtocolVerifierLock sync.Mutex
 
