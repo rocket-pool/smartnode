@@ -18,22 +18,18 @@ const (
 	pDaoPropDetailsBatchSize int = 50
 )
 
-type proposalBonds struct {
-	ProposerBond  *big.Int
-	ChallengeBond *big.Int
-}
-
 // Proposal details
 type protocolDaoProposalDetailsRaw struct {
 	ID                   uint64
 	ProposerAddress      common.Address
 	TargetBlock          *big.Int
 	Message              string
-	StartTime            *big.Int
+	CreatedTime          *big.Int
+	ChallengeWindow      *big.Int
+	VotingStartTime      *big.Int
 	Phase1EndTime        *big.Int
 	Phase2EndTime        *big.Int
 	ExpiryTime           *big.Int
-	CreatedTime          *big.Int
 	VotingPowerRequired  *big.Int
 	VotingPowerFor       *big.Int
 	VotingPowerAgainst   *big.Int
@@ -47,7 +43,9 @@ type protocolDaoProposalDetailsRaw struct {
 	Payload              []byte
 	PayloadStr           string
 	State                types.ProtocolDaoProposalState
-	ProposalBonds        proposalBonds
+	ProposalBond         *big.Int
+	ChallengeBond        *big.Int
+	DefeatIndex          *big.Int
 }
 
 // Gets a Protocol DAO proposal's details using the efficient multicall contract
@@ -150,7 +148,7 @@ func addProposalCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.ProposerAddress, "getProposer", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.TargetBlock, "getProposalBlock", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Message, "getMessage", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.StartTime, "getStart", id)
+	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VotingStartTime, "getStart", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Phase1EndTime, "getPhase1End", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Phase2EndTime, "getPhase2End", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.ExpiryTime, "getExpires", id)
@@ -167,7 +165,10 @@ func addProposalCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VetoQuorum, "getProposalVetoQuorum", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Payload, "getPayload", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.State, "getState", id)
-	mc.AddCall(contracts.RocketDAOProtocolVerifier, &details.ProposalBonds, "getProposalBonds", id)
+	mc.AddCall(contracts.RocketDAOProtocolVerifier, &details.DefeatIndex, "getDefeatIndex", id)
+	mc.AddCall(contracts.RocketDAOProtocolVerifier, &details.ProposalBond, "getProposalBond", id)
+	mc.AddCall(contracts.RocketDAOProtocolVerifier, &details.ChallengeBond, "getChallengeBond", id)
+	mc.AddCall(contracts.RocketDAOProtocolVerifier, &details.ChallengeWindow, "getChallengePeriod", id)
 	return nil
 }
 
@@ -177,7 +178,7 @@ func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDao
 	details.ProposerAddress = rawDetails.ProposerAddress
 	details.TargetBlock = uint32(rawDetails.TargetBlock.Uint64())
 	details.Message = rawDetails.Message
-	details.VotingStartTime = time.Unix(rawDetails.StartTime.Int64(), 0)
+	details.VotingStartTime = time.Unix(rawDetails.VotingStartTime.Int64(), 0)
 	details.Phase1EndTime = time.Unix(rawDetails.Phase1EndTime.Int64(), 0)
 	details.Phase2EndTime = time.Unix(rawDetails.Phase2EndTime.Int64(), 0)
 	details.ExpiryTime = time.Unix(rawDetails.ExpiryTime.Int64(), 0)
@@ -194,8 +195,10 @@ func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDao
 	details.VetoQuorum = rawDetails.VetoQuorum
 	details.Payload = rawDetails.Payload
 	details.State = rawDetails.State
-	details.ProposerBond = rawDetails.ProposalBonds.ProposerBond
-	details.ChallengeBond = rawDetails.ProposalBonds.ChallengeBond
+	details.DefeatIndex = rawDetails.DefeatIndex.Uint64()
+	details.ProposalBond = rawDetails.ProposalBond
+	details.ChallengeBond = rawDetails.ChallengeBond
+	details.ChallengeWindow = time.Second * time.Duration(rawDetails.ChallengeWindow.Uint64())
 
 	var err error
 	details.PayloadStr, err = protocol.GetProposalPayloadString(rp, rawDetails.Payload, opts)

@@ -36,11 +36,12 @@ type ProtocolDaoProposalDetails struct {
 	ProposerAddress      common.Address                 `json:"proposerAddress"`
 	TargetBlock          uint32                         `json:"targetBlock"`
 	Message              string                         `json:"message"`
+	CreatedTime          time.Time                      `json:"createdTime"`
+	ChallengeWindow      time.Duration                  `json:"challengeWindow"`
 	VotingStartTime      time.Time                      `json:"startTime"`
 	Phase1EndTime        time.Time                      `json:"phase1EndTime"`
 	Phase2EndTime        time.Time                      `json:"phase2EndTime"`
 	ExpiryTime           time.Time                      `json:"expiryTime"`
-	CreatedTime          time.Time                      `json:"createdTime"`
 	VotingPowerRequired  *big.Int                       `json:"votingPowerRequired"`
 	VotingPowerFor       *big.Int                       `json:"votingPowerFor"`
 	VotingPowerAgainst   *big.Int                       `json:"votingPowerAgainst"`
@@ -54,8 +55,9 @@ type ProtocolDaoProposalDetails struct {
 	Payload              []byte                         `json:"payload"`
 	PayloadStr           string                         `json:"payloadStr"`
 	State                types.ProtocolDaoProposalState `json:"state"`
-	ProposerBond         *big.Int                       `json:"proposerBond"`
+	ProposalBond         *big.Int                       `json:"proposalBond"`
 	ChallengeBond        *big.Int                       `json:"challengeBond"`
+	DefeatIndex          uint64                         `json:"defeatIndex"`
 }
 
 // Get all proposal details
@@ -207,7 +209,22 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 	})
 	wg.Go(func() error {
 		var err error
-		prop.ProposerBond, prop.ChallengeBond, err = GetProposalBonds(rp, proposalId, opts)
+		prop.DefeatIndex, err = GetDefeatIndex(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.ProposalBond, err = GetProposalBond(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.ChallengeBond, err = GetChallengeBond(rp, proposalId, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		prop.ChallengeWindow, err = GetChallengePeriod(rp, proposalId, opts)
 		return err
 	})
 

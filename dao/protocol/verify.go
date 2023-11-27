@@ -127,21 +127,56 @@ func GetChallengeState(rp *rocketpool.RocketPool, proposalId uint64, index uint6
 	return *state, nil
 }
 
-// Get the proposal bond and challenge bond for a proposal
-func GetProposalBonds(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, *big.Int, error) {
+// Get the defeat index for a proposal
+func GetDefeatIndex(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
-		return nil, nil, err
+		return 0, err
 	}
-	type response struct {
-		proposalBond  *big.Int
-		challengeBond *big.Int
+	value := new(*big.Int)
+	if err := rocketDAOProtocolVerifier.Call(opts, value, "getDefeatIndex", big.NewInt(int64(proposalId))); err != nil {
+		return 0, fmt.Errorf("error getting proposal %d defeat index: %w", proposalId, err)
 	}
-	value := new(response)
-	if err := rocketDAOProtocolVerifier.Call(opts, value, "getProposalBonds", big.NewInt(int64(proposalId))); err != nil {
-		return nil, nil, fmt.Errorf("error getting proposal %d bonds: %w", proposalId, err)
+	return (*value).Uint64(), nil
+}
+
+// Get the proposal bond for a proposal
+func GetProposalBond(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
+	if err != nil {
+		return nil, err
 	}
-	return value.proposalBond, value.challengeBond, nil
+	value := new(*big.Int)
+	if err := rocketDAOProtocolVerifier.Call(opts, value, "getProposalBond", big.NewInt(int64(proposalId))); err != nil {
+		return nil, fmt.Errorf("error getting proposal %d proposal bond: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the challenge bond for a proposal
+func GetChallengeBond(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (*big.Int, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolVerifier.Call(opts, value, "getChallengeBond", big.NewInt(int64(proposalId))); err != nil {
+		return nil, fmt.Errorf("error getting proposal %d challenge bond: %w", proposalId, err)
+	}
+	return *value, nil
+}
+
+// Get the challenge period for a proposal
+func GetChallengePeriod(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (time.Duration, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolVerifier.Call(opts, value, "getChallengePeriod", big.NewInt(int64(proposalId))); err != nil {
+		return 0, fmt.Errorf("error getting proposal %d challenge period: %w", proposalId, err)
+	}
+	return time.Second * time.Duration((*value).Uint64()), nil
 }
 
 // Get the states of multiple challenges using multicall
