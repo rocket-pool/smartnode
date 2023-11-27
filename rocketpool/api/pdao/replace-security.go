@@ -14,9 +14,6 @@ import (
 
 func canProposeReplaceMemberOfSecurityCouncil(c *cli.Context, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address) (*api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -68,9 +65,6 @@ func canProposeReplaceMemberOfSecurityCouncil(c *cli.Context, existingMemberAddr
 
 func proposeReplaceMemberOfSecurityCouncil(c *cli.Context, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err

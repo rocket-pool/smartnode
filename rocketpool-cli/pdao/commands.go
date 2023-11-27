@@ -55,6 +55,34 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "claim-bonds",
+				Aliases:   []string{"cb"},
+				Usage:     "Unlock any bonded RPL you have for a proposal or set of challenges, and claim any bond rewards for defending or defeating the proposal",
+				UsageText: "rocketpool pdao proposals claim-bonds proposal-id indices",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "proposal, p",
+						Usage: "The ID of the proposal to claim bonds from (or 'all')",
+					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm all interactive questions",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return claimBonds(c)
+
+				},
+			},
+
+			{
 				Name:    "propose",
 				Aliases: []string{"p"},
 				Usage:   "Make a Protocol DAO proposal",
@@ -2088,7 +2116,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							},
 							cli.BoolFlag{
 								Name:  "yes, y",
-								Usage: "Automatically confirm vote",
+								Usage: "Automatically confirm all interactive questions",
 							},
 						},
 						Action: func(c *cli.Context) error {
@@ -2127,7 +2155,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							},
 							cli.BoolFlag{
 								Name:  "yes, y",
-								Usage: "Automatically confirm vote",
+								Usage: "Automatically confirm all interactive questions",
 							},
 						},
 						Action: func(c *cli.Context) error {
@@ -2160,6 +2188,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Name:  "proposal, p",
 								Usage: "The ID of the proposal to execute (or 'all')",
 							},
+							cli.BoolFlag{
+								Name:  "yes, y",
+								Usage: "Automatically confirm all interactive questions",
+							},
 						},
 						Action: func(c *cli.Context) error {
 
@@ -2177,6 +2209,66 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 							// Run
 							return executeProposal(c)
+
+						},
+					},
+
+					{
+						Name:      "defeat",
+						Aliases:   []string{"t"},
+						Usage:     "Defeat a proposal that still has a tree index in the 'Challenged' state after its challenge window has passed",
+						UsageText: "rocketpool pdao proposals defeat proposal-id challenged-index",
+						Flags: []cli.Flag{
+							cli.BoolFlag{
+								Name:  "yes, y",
+								Usage: "Automatically confirm all interactive questions",
+							},
+						},
+						Action: func(c *cli.Context) error {
+
+							// Validate args
+							if err := cliutils.ValidateArgCount(c, 2); err != nil {
+								return err
+							}
+							proposalId, err := cliutils.ValidatePositiveUint("proposal-id", c.Args().Get(0))
+							if err != nil {
+								return err
+							}
+							index, err := cliutils.ValidatePositiveUint("challenged-index", c.Args().Get(1))
+							if err != nil {
+								return err
+							}
+
+							// Run
+							return defeatProposal(c, proposalId, index)
+
+						},
+					},
+
+					{
+						Name:      "finalize",
+						Aliases:   []string{"f"},
+						Usage:     "Finalize a proposal that has been vetoed by burning the proposer's locked RPL bond",
+						UsageText: "rocketpool pdao proposals finalize proposal-id",
+						Flags: []cli.Flag{
+							cli.BoolFlag{
+								Name:  "yes, y",
+								Usage: "Automatically confirm all interactive questions",
+							},
+						},
+						Action: func(c *cli.Context) error {
+
+							// Validate args
+							if err := cliutils.ValidateArgCount(c, 1); err != nil {
+								return err
+							}
+							proposalId, err := cliutils.ValidatePositiveUint("proposal-id", c.Args().Get(0))
+							if err != nil {
+								return err
+							}
+
+							// Run
+							return finalizeProposal(c, proposalId)
 
 						},
 					},

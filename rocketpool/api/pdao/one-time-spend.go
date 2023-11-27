@@ -14,9 +14,6 @@ import (
 
 func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int) (*api.PDAOCanProposeOneTimeSpendResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -62,9 +59,6 @@ func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.A
 
 func proposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err

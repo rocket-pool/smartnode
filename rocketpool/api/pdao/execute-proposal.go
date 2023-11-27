@@ -3,7 +3,6 @@ package pdao
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
@@ -40,7 +39,7 @@ func canExecuteProposal(c *cli.Context, proposalId uint64) (*api.CanExecutePDAOP
 
 	// Check proposal exists
 	wg.Go(func() error {
-		proposalCount, err := dao.GetProposalCount(rp, nil)
+		proposalCount, err := protocol.GetTotalProposalCount(rp, nil)
 		if err == nil {
 			response.DoesNotExist = (proposalId > proposalCount)
 		}
@@ -49,9 +48,9 @@ func canExecuteProposal(c *cli.Context, proposalId uint64) (*api.CanExecutePDAOP
 
 	// Check proposal state
 	wg.Go(func() error {
-		proposalState, err := dao.GetProposalState(rp, proposalId, nil)
+		proposalState, err := protocol.GetProposalState(rp, proposalId, nil)
 		if err == nil {
-			response.InvalidState = (proposalState != rptypes.Succeeded)
+			response.InvalidState = (proposalState != rptypes.ProtocolDaoProposalState_Succeeded)
 		}
 		return err
 	})
@@ -113,7 +112,7 @@ func executeProposal(c *cli.Context, proposalId uint64) (*api.ExecutePDAOProposa
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Cancel proposal
+	// Execute proposal
 	hash, err := protocol.ExecuteProposal(rp, proposalId, opts)
 	if err != nil {
 		return nil, err

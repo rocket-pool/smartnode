@@ -15,9 +15,6 @@ import (
 
 func canProposeRecurringSpend(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64) (*api.PDAOCanProposeRecurringSpendResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -63,9 +60,6 @@ func canProposeRecurringSpend(c *cli.Context, contractName string, recipient com
 
 func proposeRecurringSpend(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err

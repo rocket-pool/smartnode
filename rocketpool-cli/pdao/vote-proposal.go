@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -82,11 +83,11 @@ func voteOnProposal(c *cli.Context) error {
 		options := make([]string, len(votableProposals))
 		for pi, proposal := range votableProposals {
 			options[pi] = fmt.Sprintf(
-				"proposal %d (message: '%s', payload: %s, phase 1 end block: %d, vp required: %.2f, for: %.2f, against: %.2f, abstained: %.2f, veto: %.2f, proposed by: %s)",
+				"proposal %d (message: '%s', payload: %s, phase 1 end: %d, vp required: %.2f, for: %.2f, against: %.2f, abstained: %.2f, veto: %.2f, proposed by: %s)",
 				proposal.ID,
 				proposal.Message,
 				proposal.PayloadStr,
-				proposal.Phase1EndBlock,
+				proposal.Phase1EndTime.Format(time.RFC822),
 				eth.WeiToEth(proposal.VotingPowerRequired),
 				eth.WeiToEth(proposal.VotingPowerFor),
 				eth.WeiToEth(proposal.VotingPowerAgainst),

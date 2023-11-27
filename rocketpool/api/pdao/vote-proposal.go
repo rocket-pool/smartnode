@@ -17,11 +17,7 @@ import (
 )
 
 func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.CanVoteOnPDAOProposalResponse, error) {
-
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
@@ -127,15 +123,10 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 
 	// Update & return response
 	return &response, nil
-
 }
 
 func voteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.VoteOnPDAOProposalResponse, error) {
-
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
@@ -199,5 +190,4 @@ func voteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteD
 
 	// Return response
 	return &response, nil
-
 }

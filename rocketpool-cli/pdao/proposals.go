@@ -132,20 +132,23 @@ func getProposal(c *cli.Context, id uint64) error {
 
 	// Start block - pending proposals
 	if proposal.State == types.ProtocolDaoProposalState_Pending {
-		fmt.Printf("Starts on block:        %d\n", proposal.StartBlock)
+		fmt.Printf("Voting start:           %s\n", proposal.VotingStartTime.Format(time.RFC822))
+	}
+	if proposal.State == types.ProtocolDaoProposalState_Pending {
+		fmt.Printf("Challenge window ends:  %s\n", proposal.CreatedTime.Add(proposal.ChallengeWindow).Format(time.RFC822))
 	}
 
 	// End block - active proposals
 	if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 {
-		fmt.Printf("Phase 1 ends on block:  %d\n", proposal.Phase1EndBlock)
+		fmt.Printf("Phase 1 end:            %s\n", proposal.Phase1EndTime.Format(time.RFC822))
 	}
 	if proposal.State == types.ProtocolDaoProposalState_ActivePhase2 {
-		fmt.Printf("Phase 2 ends on block:  %d\n", proposal.Phase2EndBlock)
+		fmt.Printf("Phase 2 end:            %s\n", proposal.Phase2EndTime.Format(time.RFC822))
 	}
 
 	// Expiry block - succeeded proposals
 	if proposal.State == types.ProtocolDaoProposalState_Succeeded {
-		fmt.Printf("Expires on block:       %d\n", proposal.ExpiryBlock)
+		fmt.Printf("Expires at:             %s\n", proposal.ExpiryTime.Format(time.RFC822))
 	}
 
 	// Vote details

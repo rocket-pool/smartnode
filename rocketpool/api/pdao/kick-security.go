@@ -13,9 +13,6 @@ import (
 
 func canProposeKickFromSecurityCouncil(c *cli.Context, address common.Address) (*api.PDAOCanProposeKickFromSecurityCouncilResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -61,9 +58,6 @@ func canProposeKickFromSecurityCouncil(c *cli.Context, address common.Address) (
 
 func proposeKickFromSecurityCouncil(c *cli.Context, address common.Address, blockNumber uint32) (*api.PDAOProposeKickFromSecurityCouncilResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err

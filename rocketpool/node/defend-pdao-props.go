@@ -155,8 +155,8 @@ func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 	// Get proposals made by this node that are still in the challenge phase (Pending)
 	eligibleProps := []protocol.ProtocolDaoProposalDetails{}
 	for _, prop := range state.ProtocolDaoProposalDetails {
-		if prop.State == types.ProtocolDaoProposalState_Pending &&
-			prop.ProposerAddress == t.nodeAddress {
+		if prop.ProposerAddress == t.nodeAddress &&
+			time.Until(prop.CreatedTime.Add(prop.ChallengeWindow)) > 0 {
 			eligibleProps = append(eligibleProps, prop)
 		}
 	}
@@ -180,7 +180,7 @@ func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 			return nil, fmt.Errorf("error getting Beacon block at slot %d: %w", startSlot, err)
 		}
 		if !exists {
-			return nil, fmt.Errorf("Beacon block at slot %d was missing", startSlot)
+			return nil, fmt.Errorf("beacon block at slot %d was missing", startSlot)
 		}
 
 		// Get the EL block for this slot

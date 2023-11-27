@@ -14,9 +14,6 @@ import (
 
 func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Address) (*api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -74,9 +71,6 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 
 func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Address, blockNumber uint32) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err

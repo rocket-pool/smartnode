@@ -43,6 +43,7 @@ const (
 	ProcessPenaltiesColor          = color.FgHiMagenta
 	CancelBondsColor               = color.FgGreen
 	CheckSoloMigrationsColor       = color.FgCyan
+	FinalizeProposalsColor         = color.FgMagenta
 	UpdateColor                    = color.FgHiWhite
 )
 
@@ -171,6 +172,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during solo migration check: %w", err)
 	}
+	finalizePdaoProposals, err := newFinalizePdaoProposals(c, log.NewColorLogger(FinalizeProposalsColor))
+	if err != nil {
+		return fmt.Errorf("error creating finalize-pdao-proposals task: %w", err)
+	}
 
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
@@ -278,6 +283,14 @@ func run(c *cli.Context) error {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
+
+				if state.IsHoustonDeployed {
+					// Run the finalize proposals check
+					if err := finalizePdaoProposals.run(state); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+				}
 
 				// Run the minipool scrub check
 				if err := submitScrubMinipools.run(state); err != nil {

@@ -2,10 +2,9 @@ package pdao
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
-	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -15,8 +14,14 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canOverrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.CanOverrideVoteOnPDAOProposalResponse, error) {
+func canDefeatProposal(c *cli.Context, proposalId uint64, index uint64) (*api.PDAOCanDefeatProposalResponse, error) {
 	// Get services
+	if err := services.RequireNodeWallet(c); err != nil {
+		return nil, err
+	}
+	if err := services.RequireRocketStorage(c); err != nil {
+		return nil, err
+	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -27,17 +32,12 @@ func canOverrideVote(c *cli.Context, proposalId uint64, voteDirection types.Vote
 	}
 
 	// Response
-	response := api.CanOverrideVoteOnPDAOProposalResponse{}
+	response := api.PDAOCanDefeatProposalResponse{}
+	var creationTime time.Time
+	var challengeWindow time.Duration
 
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Data
+	// Sync
 	var wg errgroup.Group
-	var proposalBlock uint32
 
 	// Check proposal exists
 	wg.Go(func() error {
@@ -52,24 +52,31 @@ func canOverrideVote(c *cli.Context, proposalId uint64, voteDirection types.Vote
 	wg.Go(func() error {
 		proposalState, err := protocol.GetProposalState(rp, proposalId, nil)
 		if err == nil {
-			response.InvalidState = (proposalState != types.ProtocolDaoProposalState_ActivePhase2)
+			response.AlreadyDefeated = (proposalState == types.ProtocolDaoProposalState_Defeated)
 		}
 		return err
 	})
 
-	// Check if member has already voted
-	wg.Go(func() error {
-		voteDirection, err := protocol.GetAddressVoteDirection(rp, proposalId, nodeAccount.Address, nil)
-		if err == nil {
-			response.AlreadyVoted = (voteDirection != types.VoteDirection_NoVote)
-		}
-		return err
-	})
-
-	// Get the block used by the proposal
+	// Get the proposal creation time
 	wg.Go(func() error {
 		var err error
-		proposalBlock, err = protocol.GetProposalBlock(rp, proposalId, nil)
+		creationTime, err = protocol.GetProposalCreationTime(rp, proposalId, nil)
+		return err
+	})
+
+	// Get the proposal challenge window
+	wg.Go(func() error {
+		var err error
+		challengeWindow, err = protocol.GetChallengePeriod(rp, proposalId, nil)
+		return err
+	})
+
+	// Get the challenge state
+	wg.Go(func() error {
+		state, err := protocol.GetChallengeState(rp, proposalId, index, nil)
+		if err == nil {
+			response.InvalidChallengeState = (state != types.ChallengeState_Challenged)
+		}
 		return err
 	})
 
@@ -78,36 +85,37 @@ func canOverrideVote(c *cli.Context, proposalId uint64, voteDirection types.Vote
 		return nil, err
 	}
 
-	// Check voting power
-	response.VotingPower, err = network.GetVotingPower(rp, nodeAccount.Address, proposalBlock, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check data
-	response.InsufficientPower = (response.VotingPower.Cmp(common.Big0) == 0)
-	response.CanVote = !(response.DoesNotExist || response.InvalidState || response.InsufficientPower || response.AlreadyVoted)
-	if !response.CanVote {
+	// Validate
+	defeatStart := creationTime.Add(challengeWindow)
+	response.StillInChallengeWindow = (time.Until(defeatStart) > 0)
+	response.CanDefeat = !(response.DoesNotExist || response.AlreadyDefeated || response.InvalidChallengeState || response.StillInChallengeWindow)
+	if !response.CanDefeat {
 		return &response, nil
 	}
 
-	// Simulate
+	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateOverrideVoteGas(rp, proposalId, voteDirection, opts)
+	gasInfo, err := protocol.EstimateDefeatProposalGas(rp, proposalId, index, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.GasInfo = gasInfo
 
 	// Update & return response
+	response.GasInfo = gasInfo
 	return &response, nil
 }
 
-func overrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.OverrideVoteOnPDAOProposalResponse, error) {
+func defeatProposal(c *cli.Context, proposalId uint64, index uint64) (*api.PDAODefeatProposalResponse, error) {
 	// Get services
+	if err := services.RequireNodeWallet(c); err != nil {
+		return nil, err
+	}
+	if err := services.RequireRocketStorage(c); err != nil {
+		return nil, err
+	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -118,7 +126,7 @@ func overrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDir
 	}
 
 	// Response
-	response := api.OverrideVoteOnPDAOProposalResponse{}
+	response := api.PDAODefeatProposalResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -132,8 +140,8 @@ func overrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDir
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Vote on proposal
-	hash, err := protocol.OverrideVote(rp, proposalId, voteDirection, opts)
+	// Execute proposal
+	hash, err := protocol.DefeatProposal(rp, proposalId, index, opts)
 	if err != nil {
 		return nil, err
 	}

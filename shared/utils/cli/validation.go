@@ -187,6 +187,24 @@ func ValidatePositiveUint(name, value string) (uint64, error) {
 	return val, nil
 }
 
+// Validate a list of comma-separated positive unsigned integer values
+func ValidatePositiveUints(name, value string) ([]uint64, error) {
+	elements := strings.Split(value, ",")
+	vals := []uint64{}
+	for i, element := range elements {
+		element = strings.TrimSpace(element)
+		val, err := ValidateUint(name, element)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid %s '%s' - element %d (%s) could not be parsed: %w", name, value, i, element, err)
+		}
+		if val == 0 {
+			return nil, fmt.Errorf("Invalid %s '%s' - element %d (%s) must be greater than 0", name, value, i, element)
+		}
+		vals = append(vals, val)
+	}
+	return vals, nil
+}
+
 // Validate a positive 32-bit unsigned integer value
 func ValidatePositiveUint32(name, value string) (uint32, error) {
 	val, err := ValidateUint32(name, value)

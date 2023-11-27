@@ -65,7 +65,7 @@ func executeProposal(c *cli.Context) error {
 		// Get selected proposal ID
 		selectedId, err := strconv.ParseUint(c.String("proposal"), 10, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid proposal ID '%s': %w", c.String("proposal"), err)
+			return fmt.Errorf("invalid proposal ID '%s': %w", c.String("proposal"), err)
 		}
 
 		// Get matching proposal
@@ -78,7 +78,7 @@ func executeProposal(c *cli.Context) error {
 			}
 		}
 		if !found {
-			return fmt.Errorf("Proposal %d can not be executed.", selectedId)
+			return fmt.Errorf("proposal %d can not be executed", selectedId)
 		}
 
 	} else {
@@ -107,7 +107,7 @@ func executeProposal(c *cli.Context) error {
 	for _, proposal := range selectedProposals {
 		canResponse, err := rp.PDAOCanExecuteProposal(proposal.ID)
 		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for execute transaction (%s)", err)
+			fmt.Printf("WARNING: Couldn't get gas price for execute transaction (%s)", err.Error())
 			break
 		} else {
 			gasInfo = canResponse.GasInfo

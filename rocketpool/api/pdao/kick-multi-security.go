@@ -13,9 +13,6 @@ import (
 
 func canProposeKickMultiFromSecurityCouncil(c *cli.Context, addresses []common.Address) (*api.PDAOCanProposeKickMultiFromSecurityCouncilResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -61,9 +58,6 @@ func canProposeKickMultiFromSecurityCouncil(c *cli.Context, addresses []common.A
 
 func proposeKickMultiFromSecurityCouncil(c *cli.Context, addresses []common.Address, blockNumber uint32) (*api.PDAOProposeKickMultiFromSecurityCouncilResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err

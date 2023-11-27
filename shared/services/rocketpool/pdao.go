@@ -484,3 +484,125 @@ func (c *Client) PDAOProposeReplaceMemberOfSecurityCouncil(existingAddress commo
 	}
 	return response, nil
 }
+
+// Get the list of proposals with claimable / rewardable bonds, and the relevant indices for each one
+func (c *Client) PDAOGetClaimableBonds() (api.PDAOGetClaimableBondsResponds, error) {
+	responseBytes, err := c.callAPI("pdao get-claimable-bonds")
+	if err != nil {
+		return api.PDAOGetClaimableBondsResponds{}, fmt.Errorf("Could not get protocol DAO get-claimable-bonds: %w", err)
+	}
+	var response api.PDAOGetClaimableBondsResponds
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOGetClaimableBondsResponds{}, fmt.Errorf("Could not decode protocol DAO get-claimable-bonds response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOGetClaimableBondsResponds{}, fmt.Errorf("Could not get protocol DAO get-claimable-bonds: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can claim / unlock bonds from a proposal
+func (c *Client) PDAOCanClaimBonds(proposalID uint64, indices []uint64) (api.PDAOCanClaimBondsResponse, error) {
+	indicesStrings := make([]string, len(indices))
+	for i, index := range indices {
+		indicesStrings[i] = fmt.Sprint(index)
+	}
+
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-claim-bonds %d %s", proposalID, strings.Join(indicesStrings, ",")))
+	if err != nil {
+		return api.PDAOCanClaimBondsResponse{}, fmt.Errorf("Could not get protocol DAO can-claim-bonds: %w", err)
+	}
+	var response api.PDAOCanClaimBondsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanClaimBondsResponse{}, fmt.Errorf("Could not decode protocol DAO can-claim-bonds response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanClaimBondsResponse{}, fmt.Errorf("Could not get protocol DAO can-claim-bonds: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Claim / unlock bonds from a proposal
+func (c *Client) PDAOClaimBonds(isProposer bool, proposalID uint64, indices []uint64) (api.PDAOClaimBondsResponse, error) {
+	indicesStrings := make([]string, len(indices))
+	for i, index := range indices {
+		indicesStrings[i] = fmt.Sprint(index)
+	}
+
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao claim-bonds %t %d %s", isProposer, proposalID, strings.Join(indicesStrings, ",")))
+	if err != nil {
+		return api.PDAOClaimBondsResponse{}, fmt.Errorf("Could not get protocol DAO claim-bonds: %w", err)
+	}
+	var response api.PDAOClaimBondsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOClaimBondsResponse{}, fmt.Errorf("Could not decode protocol DAO claim-bonds response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOClaimBondsResponse{}, fmt.Errorf("Could not get protocol DAO claim-bonds: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can defeat a proposal
+func (c *Client) PDAOCanDefeatProposal(proposalID uint64, index uint64) (api.PDAOCanDefeatProposalResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-defeat-proposal %d %d", proposalID, index))
+	if err != nil {
+		return api.PDAOCanDefeatProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-defeat-proposal: %w", err)
+	}
+	var response api.PDAOCanDefeatProposalResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanDefeatProposalResponse{}, fmt.Errorf("Could not decode protocol DAO can-defeat-proposal response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanDefeatProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-defeat-proposal: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Defeat a proposal
+func (c *Client) PDAODefeatProposal(proposalID uint64, index uint64) (api.PDAODefeatProposalResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao defeat-proposal %d %d", proposalID, index))
+	if err != nil {
+		return api.PDAODefeatProposalResponse{}, fmt.Errorf("Could not get protocol DAO defeat-proposal: %w", err)
+	}
+	var response api.PDAODefeatProposalResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAODefeatProposalResponse{}, fmt.Errorf("Could not decode protocol DAO defeat-proposal response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAODefeatProposalResponse{}, fmt.Errorf("Could not get protocol DAO defeat-proposal: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can finalize a proposal
+func (c *Client) PDAOCanFinalizeProposal(proposalID uint64) (api.PDAOCanFinalizeProposalResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-finalize-proposal %d", proposalID))
+	if err != nil {
+		return api.PDAOCanFinalizeProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-finalize-proposal: %w", err)
+	}
+	var response api.PDAOCanFinalizeProposalResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanFinalizeProposalResponse{}, fmt.Errorf("Could not decode protocol DAO can-finalize-proposal response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanFinalizeProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-finalize-proposal: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Finalize a proposal
+func (c *Client) PDAOFinalizeProposal(proposalID uint64) (api.PDAOFinalizeProposalResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao finalize-proposal %d", proposalID))
+	if err != nil {
+		return api.PDAOFinalizeProposalResponse{}, fmt.Errorf("Could not get protocol DAO finalize-proposal: %w", err)
+	}
+	var response api.PDAOFinalizeProposalResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOFinalizeProposalResponse{}, fmt.Errorf("Could not decode protocol DAO finalize-proposal response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOFinalizeProposalResponse{}, fmt.Errorf("Could not get protocol DAO finalize-proposal: %s", response.Error)
+	}
+	return response, nil
+}

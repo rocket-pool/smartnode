@@ -590,6 +590,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 					id := c.Args().Get(0)
 					address, err := cliutils.ValidateAddress("address", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
 					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(2))
 					if err != nil {
 						return err
@@ -748,6 +751,173 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(proposeReplaceMemberOfSecurityCouncil(c, existingAddress, newID, newAddress, blockNumber))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "get-claimable-bonds",
+				Usage:     "Get the list of proposals with claimable / rewardable bonds, and the relevant indices for each one",
+				UsageText: "rocketpool api pdao get-claimable-bonds",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getClaimableBonds(c))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-claim-bonds",
+				Usage:     "Check whether the node can claim the bonds and/or rewards from a proposal",
+				UsageText: "rocketpool api pdao can-claim-bonds proposal-id tree-node-indices",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					proposalId, err := cliutils.ValidatePositiveUint("proposal ID", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					indices, err := cliutils.ValidatePositiveUints("indices", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canClaimBonds(c, proposalId, indices))
+					return nil
+
+				},
+			},
+			{
+				Name:      "claim-bonds",
+				Usage:     "Claim the bonds and/or rewards from a proposal",
+				UsageText: "rocketpool api pdao claim-bonds is-proposer proposal-id tree-node-indice",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+						return err
+					}
+					isProposer, err := cliutils.ValidateBool("is-proposer", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					proposalId, err := cliutils.ValidatePositiveUint("proposal-id", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					indices, err := cliutils.ValidatePositiveUints("indices", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(claimBonds(c, isProposer, proposalId, indices))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-defeat-proposal",
+				Usage:     "Check whether a proposal can be defeated with the provided tree index",
+				UsageText: "rocketpool api pdao can-defeat-proposal proposal-id challenged-index",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					proposalId, err := cliutils.ValidatePositiveUint("proposal-id", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					index, err := cliutils.ValidatePositiveUint("challenged-index", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canDefeatProposal(c, proposalId, index))
+					return nil
+
+				},
+			},
+			{
+				Name:      "defeat-proposal",
+				Usage:     "Defeat a proposal if it still has an challenge after voting has started",
+				UsageText: "rocketpool api pdao defeat-proposal proposal-id challenged-index",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					proposalId, err := cliutils.ValidatePositiveUint("proposal-id", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					index, err := cliutils.ValidatePositiveUint("challenged-index", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(defeatProposal(c, proposalId, index))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-finalize-proposal",
+				Usage:     "Check whether a proposal can be finalized after being vetoed",
+				UsageText: "rocketpool api pdao can-finalize-proposal proposal-id",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					proposalId, err := cliutils.ValidatePositiveUint("proposal-id", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canFinalizeProposal(c, proposalId))
+					return nil
+
+				},
+			},
+			{
+				Name:      "finalize-proposal",
+				Usage:     "Finalize a proposal if it's been vetoed by burning the proposer's bond",
+				UsageText: "rocketpool api pdao finalize-proposal proposal-id",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					proposalId, err := cliutils.ValidatePositiveUint("proposal-id", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(finalizeProposal(c, proposalId))
 					return nil
 
 				},
