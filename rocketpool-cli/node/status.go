@@ -199,7 +199,7 @@ func getStatus(c *cli.Context) error {
 			if status.IsRPLLockingAllowed {
 				fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
 			} else {
-				fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
+				fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
 			}
 			fmt.Println("")
 			if status.PendingRPLWithdrawalAddress.Hex() != blankAddress.Hex() {

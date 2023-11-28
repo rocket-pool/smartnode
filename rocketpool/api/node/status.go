@@ -109,10 +109,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	// Check whether RPL locking is allowed for the node
 	wg.Go(func() error {
 		var err error
-		lockingAllowed, err := node.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
-		if err != nil {
-			response.IsRPLWithdrawalAddressSet = lockingAllowed
-		}
+		response.IsRPLLockingAllowed, err = node.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
 		return err
 	})
 
