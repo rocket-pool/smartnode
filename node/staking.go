@@ -158,6 +158,41 @@ func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transact
 	return tx.Hash(), nil
 }
 
+// Estimate the gas of set RPL locking allowed
+func EstimateSetRPLLockingAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeStaking.GetTransactionGasInfo(opts, "setRPLLockingAllowed", caller, allowed)
+}
+
+// Set RPL locking allowed
+func SetRPLLockingAllowed(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNodeStaking.Transact(opts, "setRPLLockingAllowed", caller, allowed)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error setting RPL locking allowed: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
+// Get RPL locking allowed state for a node
+func GetRPLLockedAllowed(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*bool, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*bool)
+	if err := rocketNodeStaking.Call(opts, value, "getRPLLockingAllowed", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node RPL locked: %w", err)
+	}
+	return *value, nil
+}
+
 // Estimate the gas of set stake RPL for allowed
 func EstimateSetStakeRPLForAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
