@@ -111,7 +111,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		var err error
 		lockingAllowed, err := node.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
 		if err != nil {
-			response.IsRPLWithdrawalAddressSet = *lockingAllowed
+			response.IsRPLWithdrawalAddressSet = lockingAllowed
 		}
 		return err
 	})
