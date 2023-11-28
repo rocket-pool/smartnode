@@ -105,12 +105,12 @@ func (configPage *AddonRescueNodePage) createContent() {
 
 }
 
-// Handle all of the form changes when the Use Fallback EC box has changed
+// Handle all of the form changes when the Enabled box has changed
 func (configPage *AddonRescueNodePage) handleEnableChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enabledBox.item)
 
-	// Only add the supporting stuff if external clients are enabled
+	// Only add the supporting stuff if the rescue node is enabled
 	if configPage.addon.GetEnabledParameter().Value == false {
 		return
 	}
