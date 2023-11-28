@@ -181,16 +181,16 @@ func SetRPLLockingAllowed(rp *rocketpool.RocketPool, caller common.Address, allo
 }
 
 // Get RPL locking allowed state for a node
-func GetRPLLockedAllowed(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*bool, error) {
+func GetRPLLockedAllowed(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	value := new(bool)
 	if err := rocketNodeStaking.Call(opts, value, "getRPLLockingAllowed", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting node RPL locked: %w", err)
+		return false, fmt.Errorf("error getting node RPL locked: %w", err)
 	}
-	return value, nil
+	return *value, nil
 }
 
 // Estimate the gas of set stake RPL for allowed
