@@ -28,7 +28,7 @@ type NodeStatusResponse struct {
 	RPLWithdrawalAddressFormatted            string          `json:"rplWithdrawalAddressFormatted"`
 	PendingRPLWithdrawalAddress              common.Address  `json:"pendingRPLWithdrawalAddress"`
 	PendingRPLWithdrawalAddressFormatted     string          `json:"pendingRPLWithdrawalAddressFormatted"`
-	RPLLockingAllowed                        bool            `json:"rplLockingAllowed"`
+	IsRPLLockingAllowed                      bool            `json:"isRPLLockingAllowed"`
 	Registered                               bool            `json:"registered"`
 	Trusted                                  bool            `json:"trusted"`
 	TimezoneLocation                         string          `json:"timezoneLocation"`

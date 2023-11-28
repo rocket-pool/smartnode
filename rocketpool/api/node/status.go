@@ -97,12 +97,21 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.PrimaryWithdrawalAddressFormatted = formatResolvedAddress(c, response.PrimaryWithdrawalAddress)
 			response.PendingPrimaryWithdrawalAddress = details.PendingPrimaryWithdrawalAddress
 			response.PendingPrimaryWithdrawalAddressFormatted = formatResolvedAddress(c, response.PendingPrimaryWithdrawalAddress)
-			response.IsRPLWithdrawalAddressSet = details.IsRPLWithdrawalAddressSet
 			response.RPLWithdrawalAddress = details.RPLWithdrawalAddress
 			response.RPLWithdrawalAddressFormatted = formatResolvedAddress(c, response.RPLWithdrawalAddress)
 			response.PendingRPLWithdrawalAddress = details.PendingRPLWithdrawalAddress
 			response.PendingRPLWithdrawalAddressFormatted = formatResolvedAddress(c, response.PendingRPLWithdrawalAddress)
 			response.TimezoneLocation = details.TimezoneLocation
+		}
+		return err
+	})
+
+	// Check whether RPL locking is allowed for the node
+	wg.Go(func() error {
+		var err error
+		lockingAllowed, err := node.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
+		if err != nil {
+			response.IsRPLWithdrawalAddressSet = *lockingAllowed
 		}
 		return err
 	})
