@@ -439,7 +439,39 @@ func (c *Client) GetNodeStakeRplAllowance() (api.NodeStakeRplAllowanceResponse, 
 	return response, nil
 }
 
-// Checks if the node operate can set RPL stake for allowed
+// Checks if the node operator can set RPL locking allowed
+func (c *Client) CanSetRPLLockingAllowed(allowed bool) (api.CanSetRplLockingAllowedResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-rpl-locking-allowed %t", allowed))
+	if err != nil {
+		return api.CanSetRplLockingAllowedResponse{}, fmt.Errorf("Could not get can set RPL locking allowed: %w", err)
+	}
+	var response api.CanSetRplLockingAllowedResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanSetRplLockingAllowedResponse{}, fmt.Errorf("Could not decode can set RPL locking allowed: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanSetRplLockingAllowedResponse{}, fmt.Errorf("Could not set RPL locking allowed: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Sets the allow state for the node to lock RPL
+func (c *Client) SetRPLLockingAllowed(allowed bool) (api.SetRplLockingAllowedResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node set-rpl-locking-allowed %t", allowed))
+	if err != nil {
+		return api.SetRplLockingAllowedResponse{}, fmt.Errorf("Could not set RPL locking allowed: %w", err)
+	}
+	var response api.SetRplLockingAllowedResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SetRplLockingAllowedResponse{}, fmt.Errorf("Could not decode set RPL locking allowed response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SetRplLockingAllowedResponse{}, fmt.Errorf("Could not set RPL locking allowed: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Checks if the node operator can set RPL stake for allowed
 func (c *Client) CanSetStakeRPLForAllowed(caller common.Address, allowed bool) (api.CanSetStakeRplForAllowedResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-stake-rpl-for-allowed %s %t", caller.Hex(), allowed))
 	if err != nil {

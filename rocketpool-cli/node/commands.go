@@ -204,7 +204,50 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "allow-rpl-locking",
+				Aliases:   []string{"arl"},
+				Usage:     "Allow the node to lock RPL when creating governance proposals/challenges",
+				UsageText: "rocketpool node allow-rpl-locking [options]",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm allowing RPL locking",
+					},
+				},
+				Action: func(c *cli.Context) error {
 
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					return setRPLLockingAllowed(c, true)
+
+				},
+			},
+			{
+				Name:      "deny-rpl-locking",
+				Aliases:   []string{"drl"},
+				Usage:     "Do not allow the node to lock RPL when creating governance proposals/challenges",
+				UsageText: "rocketpool node deny-rpl-locking [options]",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm not allowing RPL locking",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					return setRPLLockingAllowed(c, false)
+
+				},
+			},
 			{
 				Name:      "set-timezone",
 				Aliases:   []string{"t"},

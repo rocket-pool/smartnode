@@ -576,6 +576,53 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "can-set-rpl-locking-allowed",
+				Usage:     "Check whether the node can set the RPL lock allowed status",
+				UsageText: "rocketpool api node can-set-rpl-locking-allowed caller allowed",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					allowedString := c.Args().Get(0)
+					allowed, err := cliutils.ValidateBool("allowed", allowedString)
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canSetRplLockAllowed(c, allowed))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "set-rpl-locking-allowed",
+				Usage:     "Sets the node RPL locking allowed status",
+				UsageText: "rocketpool api node set-rpl-locking-allowed caller allowed",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					allowedString := c.Args().Get(0)
+					allowed, err := cliutils.ValidateBool("allowed", allowedString)
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setRplLockAllowed(c, allowed))
+					return nil
+
+				},
+			},
 
 			{
 				Name:      "can-set-stake-rpl-for-allowed",

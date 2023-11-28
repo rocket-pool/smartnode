@@ -28,6 +28,7 @@ type NodeStatusResponse struct {
 	RPLWithdrawalAddressFormatted            string          `json:"rplWithdrawalAddressFormatted"`
 	PendingRPLWithdrawalAddress              common.Address  `json:"pendingRPLWithdrawalAddress"`
 	PendingRPLWithdrawalAddressFormatted     string          `json:"pendingRPLWithdrawalAddressFormatted"`
+	RPLLockingAllowed                        bool            `json:"rplLockingAllowed"`
 	Registered                               bool            `json:"registered"`
 	Trusted                                  bool            `json:"trusted"`
 	TimezoneLocation                         string          `json:"timezoneLocation"`
@@ -224,6 +225,18 @@ type NodeStakeRplAllowanceResponse struct {
 	Allowance *big.Int `json:"allowance"`
 }
 
+type CanSetRplLockingAllowedResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	CanSet  bool               `json:"canSet"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type SetRplLockingAllowedResponse struct {
+	Status    string      `json:"status"`
+	Error     string      `json:"error"`
+	SetTxHash common.Hash `json:"setTxHash"`
+}
 type CanSetStakeRplForAllowedResponse struct {
 	Status  string             `json:"status"`
 	Error   string             `json:"error"`
