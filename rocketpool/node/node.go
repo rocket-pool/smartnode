@@ -151,9 +151,14 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	verifyPdaoProps, err := newVerifyPdaoProps(c, log.NewColorLogger(VerifyPdaoPropsColor))
-	if err != nil {
-		return err
+	var verifyPdaoProps *verifyPdaoProps
+	// Make sure the user opted into this duty
+	verifyEnabled := cfg.Smartnode.VerifyProposals.Value.(bool)
+	if verifyEnabled {
+		verifyPdaoProps, err = newVerifyPdaoProps(c, log.NewColorLogger(VerifyPdaoPropsColor))
+		if err != nil {
+			return err
+		}
 	}
 
 	// Wait group to handle the various threads
@@ -223,10 +228,12 @@ func run(c *cli.Context) error {
 				time.Sleep(taskCooldown)
 
 				// Run the pDAO proposal verifier
-				if err := verifyPdaoProps.run(state); err != nil {
-					errorLog.Println(err)
+				if verifyPdaoProps != nil {
+					if err := verifyPdaoProps.run(state); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 				}
-				time.Sleep(taskCooldown)
 			}
 
 			// Run the minipool stake check
