@@ -34,6 +34,11 @@ func canSetRplLockAllowed(c *cli.Context, allowed bool) (*api.CanSetRplLockingAl
 	// Response
 	response := api.CanSetRplLockingAllowedResponse{}
 
+	isAllowed, err := node.GetRPLLockedAllowed(rp, account.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get gas estimates
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
@@ -46,7 +51,14 @@ func canSetRplLockAllowed(c *cli.Context, allowed bool) (*api.CanSetRplLockingAl
 	response.GasInfo = gasInfo
 
 	// Update & return response
-	response.CanSet = true
+	response.CanSet = (!isAllowed && allowed) || (isAllowed && !allowed)
+	if !response.CanSet {
+		if allowed {
+			response.Error = "RPL locking is already allowed"
+		} else {
+			response.Error = "RPL locking is already denied"
+		}
+	}
 	return &response, nil
 
 }
