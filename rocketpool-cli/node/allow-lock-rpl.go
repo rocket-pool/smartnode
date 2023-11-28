@@ -58,7 +58,7 @@ func setRPLLockingAllowed(c *cli.Context, allowedToLock bool) error {
 		return err
 	}
 
-	fmt.Printf("Adding address to RPL stake whitelist...\n")
+	fmt.Printf("Submitting the RPL locking transaction...\n")
 	cliutils.PrintTransactionHash(rp, response.SetTxHash)
 	if _, err = rp.WaitForTransaction(response.SetTxHash); err != nil {
 		return err
