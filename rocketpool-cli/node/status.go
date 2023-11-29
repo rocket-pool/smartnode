@@ -203,7 +203,7 @@ func getStatus(c *cli.Context) error {
 			}
 			fmt.Println("")
 			if status.PendingRPLWithdrawalAddress.Hex() != blankAddress.Hex() {
-				fmt.Printf("%sThe node's RPL withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingPrimaryWithdrawalAddressFormatted)
+				fmt.Printf("%sThe node's RPL withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingRPLWithdrawalAddressFormatted)
 				fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
 				fmt.Println("")
 			}
