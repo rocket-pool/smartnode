@@ -97,6 +97,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.PrimaryWithdrawalAddressFormatted = formatResolvedAddress(c, response.PrimaryWithdrawalAddress)
 			response.PendingPrimaryWithdrawalAddress = details.PendingPrimaryWithdrawalAddress
 			response.PendingPrimaryWithdrawalAddressFormatted = formatResolvedAddress(c, response.PendingPrimaryWithdrawalAddress)
+			response.IsRPLWithdrawalAddressSet = details.IsRPLWithdrawalAddressSet
 			response.RPLWithdrawalAddress = details.RPLWithdrawalAddress
 			response.RPLWithdrawalAddressFormatted = formatResolvedAddress(c, response.RPLWithdrawalAddress)
 			response.PendingRPLWithdrawalAddress = details.PendingRPLWithdrawalAddress
