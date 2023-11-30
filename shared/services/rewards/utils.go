@@ -304,12 +304,6 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, expected
 				}
 			}
 
-			// Write the file
-			err = os.WriteFile(rewardsTreePath, writeBytes, 0644)
-			if err != nil {
-				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
-			}
-
 			// Verify if the downloaded file has the expected CID
 			calculatedCid, err := SingleFileDirIPFSCid(writeBytes, rewardsTreePath)
 			if err != nil {
@@ -317,6 +311,12 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, expected
 			}
 			if calculatedCid.String() != expectedCid {
 				return fmt.Errorf("Error comparing CID %s (expected) vs %s (calculated) for downloaded file %s", expectedCid, calculatedCid.String(), rewardsTreePath)
+			}
+
+			// Write the file
+			err = os.WriteFile(rewardsTreePath, writeBytes, 0644)
+			if err != nil {
+				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 			}
 
 			return nil
