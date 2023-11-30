@@ -598,8 +598,9 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 		// Upload the rewards tree file
 		t.printMessage("Uploading to Web3.Storage and submitting results to the contracts...")
 		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
+		// Don't return on error as we're phasing out. Just keep the CID for the submission and users will be able to fetch from different providers
 		if err != nil {
-			return fmt.Errorf("Error uploading Merkle tree to Web3.Storage: %w", err)
+			t.printMessage(fmt.Sprintf("Error uploading Merkle tree to Web3.Storage: %w", err))
 		}
 		t.printMessage(fmt.Sprintf("Uploaded Merkle tree with CID %s", cid))
 

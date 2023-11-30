@@ -272,6 +272,13 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 		fmt.Sprintf(config.PrimaryRewardsFileUrl, cid, ipfsFilename),
 		fmt.Sprintf(config.SecondaryRewardsFileUrl, cid, ipfsFilename),
 		fmt.Sprintf(config.GithubRewardsFileUrl, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsTreeFilename),
+		fmt.Sprintf(config.RescueNodeRewardsFileUrl, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsTreeFilename),
+	}
+
+	rewardsTreeCustomUrl := cfg.Smartnode.RewardsTreeCustomUrl.Value.(string)
+	if len(rewardsTreeCustomUrl) != 0 {
+		splitRewardsTreeCustomUrls := strings.Split(rewardsTreeCustomUrl, ";")
+		urls = append(urls, splitRewardsTreeCustomUrls...)
 	}
 
 	// Attempt downloads

@@ -30,6 +30,7 @@ const (
 	PrimaryRewardsFileUrl              string = "https://%s.ipfs.dweb.link/%s"
 	SecondaryRewardsFileUrl            string = "https://ipfs.io/ipfs/%s/%s"
 	GithubRewardsFileUrl               string = "https://github.com/rocket-pool/rewards-trees/raw/main/%s/%s"
+	RescueNodeRewardsFileUrl           string = "https://rescuenode.com/rewards-trees/%s/%s"
 	FeeRecipientFilename               string = "rp-fee-recipient.txt"
 	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
 )
@@ -78,6 +79,9 @@ type SmartnodeConfig struct {
 
 	// Mode for acquiring Merkle rewards trees
 	RewardsTreeMode config.Parameter `yaml:"rewardsTreeMode,omitempty"`
+
+	// Custom URL to download a rewards tree
+	RewardsTreeCustomUrl config.Parameter `yaml:"rewardsTreeCustomUrl,omitempty"`
 
 	// URL for an EC with archive mode, for manual rewards tree generation
 	ArchiveECUrl config.Parameter `yaml:"archiveEcUrl,omitempty"`
@@ -323,6 +327,18 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			ID:                   "archiveECUrl",
 			Name:                 "Archive-Mode EC URL",
 			Description:          "[orange]**For manual Merkle rewards tree generation only.**[white]\n\nGenerating the Merkle rewards tree files for past rewards intervals typically requires an Execution client with Archive mode enabled, which is usually disabled on your primary and fallback Execution clients to save disk space.\nIf you want to generate your own rewards tree files for intervals from a long time ago, you may enter the URL of an Execution client with Archive access here.\n\nFor a free light client with Archive access, you may use https://www.alchemy.com/supernode.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		RewardsTreeCustomUrl: config.Parameter{
+			ID:                   "rewardsTreeCustomUrl",
+			Name:                 "Rewards tree custom download URLs",
+			Description:          "[orange]**Only used if you want an extra source to download rewards tree files.**[white]\n\nThe smartnode will automatically try to download rewards tree files from multiple sources like IPFS, GitHub, rescuenode.com. Use this field if you want to provide a extra URL for the download (multiple URLs can be provided using ';' as separator).\nUsers don't need to trust any of the file sources as the content will need to match what was voted by the oDAO.",
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
