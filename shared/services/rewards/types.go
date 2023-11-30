@@ -53,6 +53,8 @@ type IRewardsFile interface {
 
 	// Sets the CID of the minipool performance file corresponding to this rewards file
 	SetMinipoolPerformanceFileCID(cid string)
+
+	generateMerkleTree() error
 }
 
 // Rewards per network

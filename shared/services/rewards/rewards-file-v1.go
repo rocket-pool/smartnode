@@ -165,3 +165,8 @@ func (f *RewardsFile_v1) GetMinipoolPerformanceFile() IMinipoolPerformanceFile {
 func (f *RewardsFile_v1) SetMinipoolPerformanceFileCID(cid string) {
 	f.MinipoolPerformanceFileCID = cid
 }
+
+// TODO: check V1 file merkle tree generation
+func (f *RewardsFile_v1) generateMerkleTree() error {
+	return nil
+}

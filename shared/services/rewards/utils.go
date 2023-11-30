@@ -304,17 +304,33 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, expected
 				}
 			}
 
-			// Verify if the downloaded file has the expected CID
-			calculatedCid, err := SingleFileDirIPFSCid(writeBytes, rewardsTreePath)
+			deserializedRewardsFile, err := DeserializeRewardsFile(writeBytes)
 			if err != nil {
-				return fmt.Errorf("Error getting the CID for file %s: %w", rewardsTreePath, err)
+				return fmt.Errorf("Error deserializing file %s: %w", rewardsTreePath, err)
 			}
-			if calculatedCid.String() != expectedCid {
-				return fmt.Errorf("Error comparing CID %s (expected) vs %s (calculated) for downloaded file %s", expectedCid, calculatedCid.String(), rewardsTreePath)
+
+			// Get the original merkle root
+			downloadedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
+
+			// Reconstruct the merkle tree from the file data
+			deserializedRewardsFile.generateMerkleTree()
+
+			// Get the resulting merkle root
+			calculatedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
+
+			// Compare the merkle roots to see if the original is correct
+			if downloadedRoot != calculatedRoot {
+				return fmt.Errorf("the merkle root from the downloaded file %s is not correct", rewardsTreePath)
+			}
+
+			// Serialize again so we're sure to have all the correct proofs that we've generated (instead of verifying every proof on the file)
+			writeBytesVerified, err := deserializedRewardsFile.Serialize()
+			if err != nil {
+				return fmt.Errorf("error serializing file %s: %w", rewardsTreePath, err)
 			}
 
 			// Write the file
-			err = os.WriteFile(rewardsTreePath, writeBytes, 0644)
+			err = os.WriteFile(rewardsTreePath, writeBytesVerified, 0644)
 			if err != nil {
 				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 			}
