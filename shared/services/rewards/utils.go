@@ -250,7 +250,7 @@ func GetELBlockHeaderForTime(targetTime time.Time, rp *rocketpool.RocketPool) (*
 }
 
 // Downloads a single rewards file
-func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid string, isDaemon bool) error {
+func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, expectedCid string, isDaemon bool) error {
 
 	// Determine file name and path
 	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon))
@@ -262,10 +262,9 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 
 	// Create URL list
 	urls := []string{
-		fmt.Sprintf(config.PrimaryRewardsFileUrl, cid, ipfsFilename),
-		fmt.Sprintf(config.SecondaryRewardsFileUrl, cid, ipfsFilename),
+		fmt.Sprintf(config.PrimaryRewardsFileUrl, expectedCid, ipfsFilename),
+		fmt.Sprintf(config.SecondaryRewardsFileUrl, expectedCid, ipfsFilename),
 		fmt.Sprintf(config.GithubRewardsFileUrl, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsTreeFilename),
-		fmt.Sprintf(config.RescueNodeRewardsFileUrl, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsTreeFilename),
 	}
 
 	rewardsTreeCustomUrl := cfg.Smartnode.RewardsTreeCustomUrl.Value.(string)
@@ -310,7 +309,18 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 			if err != nil {
 				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 			}
+
+			// Verify if the downloaded file has the expected CID
+			calculatedCid, err := SingleFileDirIPFSCid(writeBytes, rewardsTreePath)
+			if err != nil {
+				return fmt.Errorf("Error getting the CID for file %s: %w", rewardsTreePath, err)
+			}
+			if calculatedCid.String() != expectedCid {
+				return fmt.Errorf("Error comparing CID %s (expected) vs %s (calculated) for downloaded file %s", expectedCid, calculatedCid.String(), rewardsTreePath)
+			}
+
 			return nil
+
 		}
 	}
 

@@ -30,7 +30,6 @@ const (
 	PrimaryRewardsFileUrl              string = "https://%s.ipfs.dweb.link/%s"
 	SecondaryRewardsFileUrl            string = "https://ipfs.io/ipfs/%s/%s"
 	GithubRewardsFileUrl               string = "https://github.com/rocket-pool/rewards-trees/raw/main/%s/%s"
-	RescueNodeRewardsFileUrl           string = "https://rescuenode.com/rewards-trees/%s/%s"
 	FeeRecipientFilename               string = "rp-fee-recipient.txt"
 	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
 )
