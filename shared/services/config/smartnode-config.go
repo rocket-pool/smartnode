@@ -86,9 +86,6 @@ type SmartnodeConfig struct {
 	// URL for an EC with archive mode, for manual rewards tree generation
 	ArchiveECUrl config.Parameter `yaml:"archiveEcUrl,omitempty"`
 
-	// Token for Oracle DAO members to use when uploading Merkle trees to Web3.Storage
-	Web3StorageApiToken config.Parameter `yaml:"web3StorageApiToken,omitempty"`
-
 	// Manual override for the watchtower's max fee
 	WatchtowerMaxFeeOverride config.Parameter `yaml:"watchtowerMaxFeeOverride,omitempty"`
 
@@ -339,18 +336,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			ID:                   "rewardsTreeCustomUrl",
 			Name:                 "Rewards tree custom download URLs",
 			Description:          "[orange]**Only used if you want an extra source to download rewards tree files.**[white]\n\nThe smartnode will automatically try to download rewards tree files from multiple sources like IPFS, GitHub, rescuenode.com. Use this field if you want to provide a extra URL for the download (multiple URLs can be provided using ';' as separator).\nUsers don't need to trust any of the file sources as the content will need to match what was voted by the oDAO.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
-		},
-
-		Web3StorageApiToken: config.Parameter{
-			ID:                   "web3StorageApiToken",
-			Name:                 "Web3.Storage API Token",
-			Description:          "[orange]**For Oracle DAO members only.**\n\n[white]The API token for your https://web3.storage/ account. This is required in order for you to upload Merkle rewards trees to Web3.Storage at each rewards interval.",
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
@@ -647,7 +632,6 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.DistributeThreshold,
 		&cfg.RewardsTreeMode,
 		&cfg.ArchiveECUrl,
-		&cfg.Web3StorageApiToken,
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPrioFeeOverride,
 		&cfg.UseRollingRecords,

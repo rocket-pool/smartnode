@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"testing/fstest"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -18,12 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
-	bserv "github.com/ipfs/go-blockservice"
 	"github.com/ipfs/go-cid"
-	"github.com/ipfs/go-datastore"
-	dssync "github.com/ipfs/go-datastore/sync"
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
-	"github.com/ipfs/go-merkledag"
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -33,7 +27,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/web3-storage/go-w3s-client/adder"
 )
 
 // Simple container for the zero value so it doesn't have to be recreated over and over
@@ -337,32 +330,12 @@ func GetCidForRewardsFile(rewardsFile IRewardsFile, filename string) (cid.Cid, e
 	encoder, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
 	compressedData := encoder.EncodeAll(data, make([]byte, 0, len(data)))
 
-	// Create an in-memory file and FS
-	mapFile := fstest.MapFile{
-		Data:    compressedData,
-		Mode:    0644,
-		ModTime: time.Now(),
-	}
-	fsMap := fstest.MapFS{filename: &mapFile}
-	file, err := fsMap.Open(filename)
+	c, err := SingleFileDirIPFSCid(compressedData, filename)
 	if err != nil {
-		return cid.Cid{}, fmt.Errorf("error opening memory-mapped file: %w", err)
+		return cid.Cid{}, fmt.Errorf("error getting CID for file %s: %w", filename, err)
 	}
 
-	// Use the web3.storage libraries to chunk the data and get the root CID
-	ds := dssync.MutexWrap(datastore.NewMapDatastore())
-	bsvc := bserv.New(blockstore.NewBlockstore(ds), nil)
-	dag := merkledag.NewDAGService(bsvc)
-	dagFmtr, err := adder.NewAdder(context.Background(), dag)
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("error creating DAG adder: %w", err)
-	}
-	root, err := dagFmtr.Add(file, "", fsMap)
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("error adding rewards file to DAG: %w", err)
-	}
-
-	return root, err
+	return c, err
 }
 
 // Gets the start slot for the given interval
