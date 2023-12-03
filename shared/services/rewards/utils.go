@@ -21,7 +21,6 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/rewards"
-	rprewards "github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/storage"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
@@ -135,6 +134,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 		return
 	}
 	info.MerkleRootValid = true
+	info.MerkleRoot = merkleRootFromFile
 
 	// Get the rewards from it
 	rewards, exists := proofWrapper.GetNodeRewardsInfo(nodeAddress)
@@ -251,7 +251,7 @@ func GetELBlockHeaderForTime(targetTime time.Time, rp *rocketpool.RocketPool) (*
 }
 
 // Downloads a single rewards file
-func DownloadRewardsFile(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, interval uint64, expectedCid string, isDaemon bool) error {
+func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, expectedCid string, expectedRoot common.Hash, isDaemon bool) error {
 
 	// Determine file name and path
 	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon))
@@ -314,13 +314,8 @@ func DownloadRewardsFile(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 				return fmt.Errorf("the merkle root from the downloaded file %s is not correct", rewardsTreePath)
 			}
 
-			// Also verify if the root is the one voted by the oDAO and stored on-chain
-			canonRoot, err := rprewards.MerkleRoots(rp, big.NewInt(int64(deserializedRewardsFile.GetHeader().Index)), nil)
-			if err != nil {
-				return fmt.Errorf("error fetching the canonical merkle root for interval %d: %w", deserializedRewardsFile.GetHeader().Index, err)
-			}
-			if calculatedRoot != string(canonRoot) {
-				return fmt.Errorf("the merkle tree from the downloaded %s file doesn't match the one expected %s for interval %d", calculatedRoot, canonRoot, deserializedRewardsFile.GetHeader().Index)
+			if calculatedRoot != expectedRoot.String() {
+				return fmt.Errorf("the merkle tree from the downloaded %s file doesn't match the one expected %s for interval %d", calculatedRoot, expectedRoot, deserializedRewardsFile.GetHeader().Index)
 			}
 
 			// Serialize again so we're sure to have all the correct proofs that we've generated (instead of verifying every proof on the file)

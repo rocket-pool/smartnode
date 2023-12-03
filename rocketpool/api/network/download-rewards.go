@@ -41,7 +41,7 @@ func downloadRewardsFile(c *cli.Context, interval uint64) (*api.DownloadRewardsF
 	}
 
 	// Download the rewards file
-	err = rewards.DownloadRewardsFile(rp, cfg, interval, intervalInfo.CID, true)
+	err = rewards.DownloadRewardsFile(cfg, interval, intervalInfo.CID, intervalInfo.MerkleRoot, true)
 	if err != nil {
 		return nil, err
 	}

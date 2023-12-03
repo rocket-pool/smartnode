@@ -127,6 +127,7 @@ type IntervalInfo struct {
 	TreeFilePath           string        `json:"treeFilePath"`
 	TreeFileExists         bool          `json:"treeFileExists"`
 	MerkleRootValid        bool          `json:"merkleRootValid"`
+	MerkleRoot             common.Hash   `json:"merkleRoot"`
 	CID                    string        `json:"cid"`
 	StartTime              time.Time     `json:"startTime"`
 	EndTime                time.Time     `json:"endTime"`
