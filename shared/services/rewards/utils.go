@@ -259,12 +259,11 @@ func DownloadRewardsFile(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 		return fmt.Errorf("error expanding rewards tree path: %w", err)
 	}
 	rewardsTreeFilename := filepath.Base(rewardsTreePath)
-	ipfsFilename := rewardsTreeFilename + config.RewardsTreeIpfsExtension
 
 	// Create URL list
 	urls := []string{
-		fmt.Sprintf(config.PrimaryRewardsFileUrl, expectedCid, ipfsFilename),
-		fmt.Sprintf(config.SecondaryRewardsFileUrl, expectedCid, ipfsFilename),
+		fmt.Sprintf(config.PrimaryRewardsFileUrl, expectedCid, rewardsTreeFilename),
+		fmt.Sprintf(config.SecondaryRewardsFileUrl, expectedCid, rewardsTreeFilename),
 		fmt.Sprintf(config.GithubRewardsFileUrl, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsTreeFilename),
 	}
 
@@ -294,18 +293,7 @@ func DownloadRewardsFile(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 				errBuilder.WriteString(fmt.Sprintf("Error reading response bytes from %s: %s\n", url, err.Error()))
 				continue
 			}
-
-			writeBytes := bytes
-			if strings.HasSuffix(url, config.RewardsTreeIpfsExtension) {
-				// Decompress it
-				writeBytes, err = decompressFile(bytes)
-				if err != nil {
-					errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
-					continue
-				}
-			}
-
-			deserializedRewardsFile, err := DeserializeRewardsFile(writeBytes)
+			deserializedRewardsFile, err := DeserializeRewardsFile(bytes)
 			if err != nil {
 				return fmt.Errorf("Error deserializing file %s: %w", rewardsTreePath, err)
 			}

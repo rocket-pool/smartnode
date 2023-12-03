@@ -182,9 +182,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 
 	// Get the expected file paths
 	rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
-	compressedRewardsTreePath := rewardsTreePath + config.RewardsTreeIpfsExtension
 	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
-	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval
 	if t.isExistingFileValid(rewardsTreePath, uint64(intervalsPassed)) {
@@ -215,9 +213,9 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 			return fmt.Errorf("Error deserializing rewards tree file: %w", err)
 		}
 
-		cid, err := rprewards.SingleFileDirIPFSCid(wrapperBytes, compressedRewardsTreePath)
+		cid, err := rprewards.SingleFileDirIPFSCid(wrapperBytes, rewardsTreePath)
 		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
+			return fmt.Errorf("Error getting CID for file %s: %w", rewardsTreePath, err)
 		}
 
 		t.printMessage(fmt.Sprintf("Calculated CID %s", cid))
@@ -233,7 +231,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 
 	// Generate the tree
-	t.generateTree(intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	t.generateTree(intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, minipoolPerformancePath)
 
 	// Done
 	return nil
@@ -287,7 +285,7 @@ func (t *submitRewardsTree_Stateless) isExistingFileValid(rewardsTreePath string
 }
 
 // Kick off the tree generation goroutine
-func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) {
+func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, minipoolPerformancePath string) {
 
 	go func() {
 		t.lock.Lock()
@@ -302,7 +300,7 @@ func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 		}
 
 		// Generate the tree
-		err = t.generateTreeImpl(client, intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+		err = t.generateTreeImpl(client, intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, minipoolPerformancePath)
 		if err != nil {
 			t.handleError(err)
 		}
@@ -315,7 +313,7 @@ func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
+func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, minipoolPerformancePath string) error {
 
 	// Log
 	if uint64(intervalsPassed) > 1 {
@@ -361,9 +359,9 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	if nodeTrusted {
-		minipoolPerformanceCid, err := rprewards.SingleFileDirIPFSCid(minipoolPerformanceBytes, compressedMinipoolPerformancePath)
+		minipoolPerformanceCid, err := rprewards.SingleFileDirIPFSCid(minipoolPerformanceBytes, minipoolPerformancePath)
 		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
+			return fmt.Errorf("Error getting CID for file %s: %w", minipoolPerformancePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated CID %s", minipoolPerformanceCid))
 		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
@@ -386,9 +384,9 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	if nodeTrusted {
-		cid, err := rprewards.SingleFileDirIPFSCid(wrapperBytes, compressedRewardsTreePath)
+		cid, err := rprewards.SingleFileDirIPFSCid(wrapperBytes, rewardsTreePath)
 		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s : %w", compressedRewardsTreePath, err)
+			return fmt.Errorf("Error getting CID for file %s : %w", rewardsTreePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated CID %s", cid))
 
