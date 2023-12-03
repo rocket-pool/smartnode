@@ -101,7 +101,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	// Check credit balance
 	if isHoustonDeployed {
 		wg1.Go(func() error {
-			ethBalanceWei, err := node.GetNodeUsableCreditAndBalance(rp, nodeAccount.Address, nil)
+			ethBalanceWei, err := node.GetNodeCreditAndBalance(rp, nodeAccount.Address, nil)
 			if err == nil {
 				response.CreditBalance = ethBalanceWei
 			}
@@ -297,6 +297,12 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		return nil, err
 	}
 
+	// Check for Houston
+	isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Houston has been deployed: %w", err)
+	}
+
 	// Get eth2 config
 	eth2Config, err := bc.GetEth2Config()
 	if err != nil {
@@ -349,14 +355,38 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		return nil, err
 	}
 
-	// Get the node's credit balance
-	creditBalanceWei, err := node.GetNodeCreditAndBalance(rp, nodeAccount.Address, nil)
+	// Get deposit pool balance
+	depositPoolBalance, err := deposit.GetBalance(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var creditBalanceWei *big.Int
+	if isHoustonDeployed {
+		// Get the node's credit and ETH balance
+		creditBalanceWei, err = node.GetNodeCreditAndBalance(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Get the node's credit
+		creditBalanceWei, err = node.GetNodeDepositCredit(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Check if the deposit pool has enough balance for the initial deposit
+	canUseCredit := (depositPoolBalance.Cmp(eth.EthToWei(1)) >= 0)
+
+	// Check node balance
+	nodeAccountBalance, err := ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get how much credit to use
-	if useCreditBalance {
+	if useCreditBalance && canUseCredit {
 		remainingAmount := big.NewInt(0).Sub(amountWei, creditBalanceWei)
 		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
 			// Send the remaining amount if the credit isn't enough to cover the whole deposit
@@ -364,6 +394,11 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		}
 	} else {
 		opts.Value = amountWei
+	}
+
+	// Check if the node account has enough ETH to be sent
+	if nodeAccountBalance.Cmp(opts.Value) < 0 {
+		return nil, fmt.Errorf("error node account balance not enough to send %d wei", opts.Value)
 	}
 
 	// Create and save a new validator key
