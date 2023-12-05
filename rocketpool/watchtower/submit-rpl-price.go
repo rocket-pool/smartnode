@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -371,14 +370,10 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		timeSinceGenesis := nextSubmissionTime.Sub(genesisTime)
 		slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 
-		ecBlock := beacon.Eth1Data{}
-
-		// Search for the last existing block, going back one slot if the block is not found.
-		for blockExists := false; !blockExists; slotNumber -= 1 {
-			ecBlock, blockExists, err = t.bc.GetEth1DataForEth2Block(strconv.FormatUint(slotNumber, 10))
-			if err != nil {
-				return err
-			}
+		// Search for the last existing EL block, going back up to 32 slots if the block is not found.
+		ecBlock, err := utils.FindLastExistingELBlockFromSlot(t.bc, slotNumber)
+		if err != nil {
+			return err
 		}
 
 		// Fetch the target block
