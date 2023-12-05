@@ -41,6 +41,7 @@ const (
 	ProcessPenaltiesColor          = color.FgHiMagenta
 	CancelBondsColor               = color.FgGreen
 	CheckSoloMigrationsColor       = color.FgCyan
+	FinalizeProposalsColor         = color.FgMagenta
 	UpdateColor                    = color.FgHiWhite
 )
 
@@ -107,6 +108,7 @@ func Run(sp *services.ServiceProvider) error {
 	generateRewardsTree := NewGenerateRewardsTree(sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	cancelBondReductions := NewCancelBondReductions(sp, log.NewColorLogger(CancelBondsColor), errorLog, bondReductionCollector)
 	checkSoloMigrations := NewCheckSoloMigrations(sp, log.NewColorLogger(CheckSoloMigrationsColor), errorLog, soloMigrationCollector)
+	finalizePdaoProposals := NewFinalizePdaoProposals(sp, log.NewColorLogger(FinalizeProposalsColor))
 
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
@@ -209,6 +211,12 @@ func Run(sp *services.ServiceProvider) error {
 
 				// Run the minipool dissolve check
 				if err := dissolveTimedOutMinipools.Run(state); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
+				// Run the finalize proposals check
+				if err := finalizePdaoProposals.Run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)

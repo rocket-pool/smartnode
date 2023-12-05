@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -78,6 +79,15 @@ func ValidateUint(name, value string) (uint64, error) {
 		return 0, fmt.Errorf("Invalid %s '%s'", name, value)
 	}
 	return val, nil
+}
+
+// Validate an unsigned integer value
+func ValidateUint32(name, value string) (uint32, error) {
+	val, err := strconv.ParseUint(value, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("Invalid %s '%s'", name, value)
+	}
+	return uint32(val), nil
 }
 
 // Validate an address
@@ -184,6 +194,36 @@ func ValidateProposalType(name, value string) (string, error) {
 // Validate a positive unsigned integer value
 func ValidatePositiveUint(name, value string) (uint64, error) {
 	val, err := ValidateUint(name, value)
+	if err != nil {
+		return 0, err
+	}
+	if val == 0 {
+		return 0, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
+	}
+	return val, nil
+}
+
+// Validate a list of comma-separated positive unsigned integer values
+func ValidatePositiveUints(name, value string) ([]uint64, error) {
+	elements := strings.Split(value, ",")
+	vals := []uint64{}
+	for i, element := range elements {
+		element = strings.TrimSpace(element)
+		val, err := ValidateUint(name, element)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid %s '%s' - element %d (%s) could not be parsed: %w", name, value, i, element, err)
+		}
+		if val == 0 {
+			return nil, fmt.Errorf("Invalid %s '%s' - element %d (%s) must be greater than 0", name, value, i, element)
+		}
+		vals = append(vals, val)
+	}
+	return vals, nil
+}
+
+// Validate a positive 32-bit unsigned integer value
+func ValidatePositiveUint32(name, value string) (uint32, error) {
+	val, err := ValidateUint32(name, value)
 	if err != nil {
 		return 0, err
 	}
@@ -335,4 +375,28 @@ func ValidateByteArray(name, value string) ([]byte, error) {
 	}
 
 	return bytes, nil
+}
+
+// Validate a duration
+func ValidateDuration(name, value string) (time.Duration, error) {
+	duration, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
+	}
+	return duration, nil
+}
+
+// Validate a vote direction
+func ValidateVoteDirection(name, value string) (types.VoteDirection, error) {
+	switch value {
+	case "abstain":
+		return types.VoteDirection_Abstain, nil
+	case "for":
+		return types.VoteDirection_For, nil
+	case "against":
+		return types.VoteDirection_Against, nil
+	case "veto":
+		return types.VoteDirection_AgainstWithVeto, nil
+	}
+	return 0, fmt.Errorf("Invalid %s '%s': not a valid vote direction name", name, value)
 }

@@ -122,14 +122,17 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== BREAKING CHANGE from v1.9.x to v1.10.x: Port Forwarding ===%s\n", colorGreen, colorReset)
-	fmt.Println("The \"Expose Port\" options for your Execution Client, Consensus Client, MEV-Boost, and Prometheus have changed from the v1.9 series. Instead of being a simple checkbox, they are now a dropdown: \"Closed\" (previously unchecked), \"Open to Localhost\" (will only be accessible via your local machine, useful for people running on the Cloud / a VPS), and \"Open to External Hosts\" (previously checked). If you previously had your ports opened, you will need to go into the `service config` TUI and reopen them with the appropriate dropdown option after upgrading.\n")
+	fmt.Printf("%s=== New Testnet: Holesky ===%s\n", colorGreen, colorReset)
+	fmt.Println("A new test network has been deployed named Holesky! This will replace Prater as the new long-term test network for Rocket Pool node operators. To use it, select the \"Holesky Testnet\" option from the Network dialog in the Smartnode section of `rocketpool service config`.\n")
 
-	fmt.Printf("%s=== Rolling Records ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now has experimental support for Rolling Records, which capture snapshots of the entire Rocket Pool network's attestation performance in real time. This makes generating rewards trees at the end of the interval almost instantaneous, rather than taking hours. To learn more about Rolling Records, please visit the release notes for Smartnode v1.10.0.\n")
+	fmt.Printf("%s=== Prater Deprecation ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Prater test network is now deprecated, as it is being replaced by Holesky. If you are running a Prater node, please exit your minipools to gracefully clean up the network before migration (https://docs.rocketpool.net/guides/node/withdraw.html).\n")
+
+	fmt.Printf("%s=== New Geth Mode: PBSS ===%s\n", colorGreen, colorReset)
+	fmt.Println("Geth has been updated to v1.13, which includes the much-anticipated Path-Based State Scheme (PBSS) storage mode. With PBSS, you never have to manually prune Geth again; it prunes automatically behind the scenes during runtime! To enable it, check the \"Enable PBSS\" box in the Execution Client section of the `rocketpool service config` UI. Note you **will have to resync** Geth after enabling this for it to take effect, and will lose attestations if you don't have a fallback client enabled!\n")
 
 	fmt.Printf("%s=== MEV-Boost Changes ===%s\n", colorGreen, colorReset)
-	fmt.Println("The \"bloXroute Ethical\" relay has been shut down, so we have removed it (and the corresponding \"No Sandwiching\" profiles) from the MEV-Boost relay options. The other relays are still available.")
+	fmt.Println("The \"Blocknative\" relay has been shut down, so we have removed it from the MEV-Boost relay options. The other relays are still available.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
@@ -991,6 +994,11 @@ func pruneExecutionClient(c *cli.Context) error {
 	case cfgtypes.ExecutionClient_Besu:
 		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
 		return nil
+	case cfgtypes.ExecutionClient_Geth:
+		if cfg.Geth.EnablePbss.Value == true {
+			fmt.Println("You have PBSS enabled for Geth. Pruning is no longer required when using PBSS.")
+			return nil
+		}
 	}
 
 	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
@@ -1149,7 +1157,22 @@ func terminateService(c *cli.Context) error {
 }
 
 // View the Rocket Pool service logs
-func serviceLogs(c *cli.Context, serviceNames ...string) error {
+func serviceLogs(c *cli.Context, aliasedNames ...string) error {
+
+	// Handle name aliasing
+	serviceNames := []string{}
+	for _, name := range aliasedNames {
+		trueName := name
+		switch name {
+		case "ec", "el", "execution":
+			trueName = "eth1"
+		case "cc", "cl", "bc", "bn", "beacon", "consensus":
+			trueName = "eth2"
+		case "vc":
+			trueName = "validator"
+		}
+		serviceNames = append(serviceNames, trueName)
+	}
 
 	// Get RP client
 	rp := rocketpool.NewClientFromCtx(c)

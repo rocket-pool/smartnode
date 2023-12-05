@@ -1,10 +1,13 @@
 package rewards
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
@@ -31,6 +34,29 @@ func (f *MinipoolPerformanceFile_v1) SerializeHuman() ([]byte, error) {
 	return json.MarshalIndent(f, "", "\t")
 }
 
+// Deserialize a minipool performance file from bytes
+func (f *MinipoolPerformanceFile_v1) Deserialize(bytes []byte) error {
+	return json.Unmarshal(bytes, &f)
+}
+
+// Get all of the minipool addresses with rewards in this file
+// NOTE: the order of minipool addresses is not guaranteed to be stable, so don't rely on it
+func (f *MinipoolPerformanceFile_v1) GetMinipoolAddresses() []common.Address {
+	addresses := make([]common.Address, len(f.MinipoolPerformance))
+	i := 0
+	for address := range f.MinipoolPerformance {
+		addresses[i] = address
+		i++
+	}
+	return addresses
+}
+
+// Get a minipool's smoothing pool performance if it was present
+func (f *MinipoolPerformanceFile_v1) GetSmoothingPoolPerformance(minipoolAddress common.Address) (sharedtypes.ISmoothingPoolMinipoolPerformance, bool) {
+	perf, exists := f.MinipoolPerformance[minipoolAddress]
+	return perf, exists
+}
+
 // Minipool stats
 type SmoothingPoolMinipoolPerformance_v1 struct {
 	Pubkey                  string   `json:"pubkey"`
@@ -44,10 +70,51 @@ type SmoothingPoolMinipoolPerformance_v1 struct {
 	EthEarned               float64  `json:"ethEarned"`
 }
 
+func (p *SmoothingPoolMinipoolPerformance_v1) GetPubkey() (types.ValidatorPubkey, error) {
+	return types.HexToValidatorPubkey(p.Pubkey)
+}
+func (p *SmoothingPoolMinipoolPerformance_v1) GetSuccessfulAttestationCount() uint64 {
+	return p.SuccessfulAttestations
+}
+func (p *SmoothingPoolMinipoolPerformance_v1) GetMissedAttestationCount() uint64 {
+	return p.MissedAttestations
+}
+func (p *SmoothingPoolMinipoolPerformance_v1) GetMissingAttestationSlots() []uint64 {
+	return p.MissingAttestationSlots
+}
+func (p *SmoothingPoolMinipoolPerformance_v1) GetEthEarned() *big.Int {
+	return eth.EthToWei(p.EthEarned)
+}
+
 // Node operator rewards
 type NodeRewardsInfo_v1 struct {
-	*sharedtypes.NodeRewardsInfo
-	SmoothingPoolEligibilityRate float64 `json:"smoothingPoolEligibilityRate"`
+	RewardNetwork                uint64                    `json:"rewardNetwork"`
+	CollateralRpl                *sharedtypes.QuotedBigInt `json:"collateralRpl"`
+	OracleDaoRpl                 *sharedtypes.QuotedBigInt `json:"oracleDaoRpl"`
+	SmoothingPoolEth             *sharedtypes.QuotedBigInt `json:"smoothingPoolEth"`
+	SmoothingPoolEligibilityRate float64                   `json:"smoothingPoolEligibilityRate"`
+	MerkleData                   []byte                    `json:"-"`
+	MerkleProof                  []string                  `json:"merkleProof"`
+}
+
+func (i *NodeRewardsInfo_v1) GetRewardNetwork() uint64 {
+	return i.RewardNetwork
+}
+func (i *NodeRewardsInfo_v1) GetCollateralRpl() *sharedtypes.QuotedBigInt {
+	return i.CollateralRpl
+}
+func (i *NodeRewardsInfo_v1) GetOracleDaoRpl() *sharedtypes.QuotedBigInt {
+	return i.OracleDaoRpl
+}
+func (i *NodeRewardsInfo_v1) GetSmoothingPoolEth() *sharedtypes.QuotedBigInt {
+	return i.SmoothingPoolEth
+}
+func (n *NodeRewardsInfo_v1) GetMerkleProof() ([]common.Hash, error) {
+	proof := []common.Hash{}
+	for _, proofLevel := range n.MerkleProof {
+		proof = append(proof, common.HexToHash(proofLevel))
+	}
+	return proof, nil
 }
 
 // JSON struct for a complete rewards file
@@ -70,6 +137,18 @@ func (f *RewardsFile_v1) Deserialize(bytes []byte) error {
 // Get the rewards file's header
 func (f *RewardsFile_v1) GetHeader() *sharedtypes.RewardsFileHeader {
 	return f.RewardsFileHeader
+}
+
+// Get all of the node addresses with rewards in this file
+// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
+func (f *RewardsFile_v1) GetNodeAddresses() []common.Address {
+	addresses := make([]common.Address, len(f.NodeRewards))
+	i := 0
+	for address := range f.NodeRewards {
+		addresses[i] = address
+		i++
+	}
+	return addresses
 }
 
 // Get info about a node's rewards

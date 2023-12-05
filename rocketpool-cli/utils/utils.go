@@ -140,7 +140,7 @@ func PrintNetwork(rp *client.Client) error {
 	case cfgtypes.Network_Prater:
 		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", terminal.ColorBlue, terminal.ColorReset)
 	case cfgtypes.Network_Devnet:
-		fmt.Printf("Your Smartnode is currently using the %sPrater Development Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
+		fmt.Printf("Your Smartnode is currently using the %sHolesky Development Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 	case cfgtypes.Network_Holesky:
 		fmt.Printf("Your Smartnode is currently using the %sHolesky Test Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 	default:

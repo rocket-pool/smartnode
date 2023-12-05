@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/wealdtech/go-merkletree"
 )
 
@@ -17,6 +18,16 @@ type IMinipoolPerformanceFile interface {
 
 	// Serialize a minipool performance file into bytes designed for human readability
 	SerializeHuman() ([]byte, error)
+
+	// Deserialize a rewards file from bytes
+	Deserialize([]byte) error
+
+	// Get all of the minipool addresses with rewards in this file
+	// NOTE: the order of minipool addresses is not guaranteed to be stable, so don't rely on it
+	GetMinipoolAddresses() []common.Address
+
+	// Get a minipool's smoothing pool performance if it was present
+	GetSmoothingPoolPerformance(minipoolAddress common.Address) (ISmoothingPoolMinipoolPerformance, bool)
 }
 
 // Interface for version-agnostic rewards files
@@ -29,6 +40,10 @@ type IRewardsFile interface {
 
 	// Get the rewards file's header
 	GetHeader() *RewardsFileHeader
+
+	// Get all of the node addresses with rewards in this file
+	// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
+	GetNodeAddresses() []common.Address
 
 	// Get info about a node's rewards
 	GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool)
@@ -57,6 +72,15 @@ type TotalRewards struct {
 	NodeOperatorSmoothingPoolEth *QuotedBigInt `json:"nodeOperatorSmoothingPoolEth"`
 }
 
+// Minipool stats
+type ISmoothingPoolMinipoolPerformance interface {
+	GetPubkey() (types.ValidatorPubkey, error)
+	GetSuccessfulAttestationCount() uint64
+	GetMissedAttestationCount() uint64
+	GetMissingAttestationSlots() []uint64
+	GetEthEarned() *big.Int
+}
+
 // Interface for version-agnostic node operator rewards
 type INodeRewardsInfo interface {
 	GetRewardNetwork() uint64
@@ -66,34 +90,9 @@ type INodeRewardsInfo interface {
 	GetMerkleProof() ([]common.Hash, error)
 }
 
-// Basic node operator rewards
-type NodeRewardsInfo struct {
-	RewardNetwork    uint64        `json:"rewardNetwork"`
-	CollateralRpl    *QuotedBigInt `json:"collateralRpl"`
-	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl"`
-	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth"`
-	MerkleData       []byte        `json:"-"`
-	MerkleProof      []string      `json:"merkleProof"`
-}
-
-func (i *NodeRewardsInfo) GetRewardNetwork() uint64 {
-	return i.RewardNetwork
-}
-func (i *NodeRewardsInfo) GetCollateralRpl() *QuotedBigInt {
-	return i.CollateralRpl
-}
-func (i *NodeRewardsInfo) GetOracleDaoRpl() *QuotedBigInt {
-	return i.OracleDaoRpl
-}
-func (i *NodeRewardsInfo) GetSmoothingPoolEth() *QuotedBigInt {
-	return i.SmoothingPoolEth
-}
-func (n *NodeRewardsInfo) GetMerkleProof() ([]common.Hash, error) {
-	proof := []common.Hash{}
-	for _, proofLevel := range n.MerkleProof {
-		proof = append(proof, common.HexToHash(proofLevel))
-	}
-	return proof, nil
+// Small struct to test version information for rewards files during deserialization
+type VersionHeader struct {
+	RewardsFileVersion uint64 `json:"rewardsFileVersion,omitempty"`
 }
 
 // General version-agnostic information about a rewards file

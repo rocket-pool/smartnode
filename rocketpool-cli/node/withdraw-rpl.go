@@ -23,6 +23,12 @@ func nodeWithdrawRpl(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check for Houston
+	houston, err := rp.IsHoustonDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
+	}
+
 	// Get withdrawal mount
 	var amountWei *big.Int
 	if c.String("amount") == "max" {
@@ -100,7 +106,11 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		if canWithdraw.WithdrawalDelayActive {
 			fmt.Println("The withdrawal delay period has not passed.")
 		}
-		return nil
+		if houston.IsHoustonDeployed {
+			if canWithdraw.HasDifferentRPLWithdrawalAddress {
+				fmt.Println("The RPL withdrawal address has been set, and is not the node address. RPL can only be withdrawn from the RPL withdrawal address.")
+			}
+		}
 	}
 
 	// Assign max fees

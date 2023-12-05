@@ -161,6 +161,9 @@ func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 		c.node.DistributorAddress,
 		c.node.SmoothingPoolRegistrationState,
 		c.node.SmoothingPoolRegistrationChanged,
+		c.node.TotalCreditAndDonatedBalance,
+		c.node.UsableCreditAndDonatedBalance,
+		c.node.DonatedEthBalance,
 
 		// Other
 		c.odaoMember.Exists,
@@ -212,6 +215,9 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	data.MinimumRplStake = c.node.MinimumRplStake.Get()
 	data.MaximumRplStake = c.node.MaximumRplStake.Get()
 	data.CreditBalance = c.node.Credit.Get()
+	data.CreditAndEthOnBehalfBalance = c.node.TotalCreditAndDonatedBalance.Get()
+	data.UsableCreditAndEthOnBehalfBalance = c.node.UsableCreditAndDonatedBalance.Get()
+	data.EthOnBehalfBalance = c.node.DonatedEthBalance.Get()
 	data.IsFeeDistributorInitialized = c.node.IsFeeDistributorInitialized.Get()
 
 	// Minipool info

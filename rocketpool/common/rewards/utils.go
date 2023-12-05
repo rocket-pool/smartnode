@@ -431,6 +431,26 @@ func DeserializeRewardsFile(bytes []byte) (sharedtypes.IRewardsFile, error) {
 	}
 }
 
+// Deserializes a byte array into a rewards file interface
+func DeserializeMinipoolPerformanceFile(bytes []byte) (sharedtypes.IMinipoolPerformanceFile, error) {
+	var header sharedtypes.VersionHeader
+	err := json.Unmarshal(bytes, &header)
+	if err != nil {
+		return nil, fmt.Errorf("error deserializing version header: %w", err)
+	}
+
+	switch header.RewardsFileVersion {
+	case 1:
+		file := &MinipoolPerformanceFile_v1{}
+		return file, file.Deserialize(bytes)
+	case 2:
+		file := &MinipoolPerformanceFile_v2{}
+		return file, file.Deserialize(bytes)
+	default:
+		return nil, fmt.Errorf("unexpected rewards file version [%d]", header.RewardsFileVersion)
+	}
+}
+
 // Decompresses a rewards file
 func decompressFile(compressedBytes []byte) ([]byte, error) {
 	decoder, err := zstd.NewReader(nil)

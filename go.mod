@@ -31,20 +31,20 @@ require (
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v4 v4.1.1
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20231107170400-396c46e5d7ea
+	github.com/rocket-pool/rocketpool-go v1.10.1-0.20231128040023-4969e77816db
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.12
-	github.com/wealdtech/go-ens/v3 v3.5.5
-	github.com/wealdtech/go-eth2-types/v2 v2.8.1-0.20230131115251-b93cf60cee26
-	github.com/wealdtech/go-eth2-util v1.8.0
-	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.3.0
+	github.com/wealdtech/go-ens/v3 v3.6.0
+	github.com/wealdtech/go-eth2-types/v2 v2.8.2
+	github.com/wealdtech/go-eth2-util v1.8.2
+	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.4.1
 	github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a
 	github.com/web3-storage/go-w3s-client v0.0.7
 	golang.org/x/crypto v0.14.0
 	golang.org/x/sync v0.4.0
-	golang.org/x/term v0.13.0
+	golang.org/x/term v0.15.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -82,7 +82,7 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
-	github.com/herumi/bls-eth-go-binary v1.28.1 // indirect
+	github.com/herumi/bls-eth-go-binary v1.31.0 // indirect
 	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/ipfs-cluster/ipfs-cluster v1.0.3 // indirect
 	github.com/ipfs/bbloom v0.0.4 // indirect
@@ -137,7 +137,7 @@ require (
 	github.com/multiformats/go-multiaddr-fmt v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.2.0 // indirect
 	github.com/multiformats/go-multicodec v0.8.1 // indirect
-	github.com/multiformats/go-multihash v0.2.1 // indirect
+	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-multistream v0.4.1 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -164,7 +164,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 // indirect
-	github.com/wealdtech/go-bytesutil v1.2.0 // indirect
+	github.com/wealdtech/go-bytesutil v1.2.1 // indirect
 	github.com/wealdtech/go-multicodec v1.4.0 // indirect
 	github.com/whyrusleeping/cbor v0.0.0-20171005072247-63513f603b11 // indirect
 	github.com/whyrusleeping/cbor-gen v0.0.0-20220514204315-f29c37e9c44c // indirect
@@ -178,7 +178,7 @@ require (
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/mod v0.13.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect

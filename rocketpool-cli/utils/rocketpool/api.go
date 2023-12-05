@@ -32,7 +32,9 @@ type ApiRequester struct {
 	Network  *NetworkRequester
 	Node     *NodeRequester
 	ODao     *ODaoRequester
+	PDao     *PDaoRequester
 	Queue    *QueueRequester
+	Security *SecurityRequester
 	Service  *ServiceRequester
 	Tx       *TxRequester
 	Wallet   *WalletRequester
@@ -55,6 +57,17 @@ func NewApiRequester(socketPath string) *ApiRequester {
 	}
 
 	apiRequester.Auction = NewAuctionRequester(apiRequester.client)
+	apiRequester.Faucet = NewFaucetRequester(apiRequester.client)
+	apiRequester.Minipool = NewMinipoolRequester(apiRequester.client)
+	apiRequester.Network = NewNetworkRequester(apiRequester.client)
+	apiRequester.Node = NewNodeRequester(apiRequester.client)
+	apiRequester.ODao = NewODaoRequester(apiRequester.client)
+	apiRequester.PDao = NewPDaoRequester(apiRequester.client)
+	apiRequester.Queue = NewQueueRequester(apiRequester.client)
+	apiRequester.Security = NewSecurityRequester(apiRequester.client)
+	apiRequester.Service = NewServiceRequester(apiRequester.client)
+	apiRequester.Tx = NewTxRequester(apiRequester.client)
+	apiRequester.Wallet = NewWalletRequester(apiRequester.client)
 	return apiRequester
 }
 

@@ -53,25 +53,28 @@ type NodeStatusData struct {
 		Rpl   *big.Int `json:"rpl"`
 		Fsrpl *big.Int `json:"fsrpl"`
 	} `json:"rplWithdrawalBalances"`
-	RplStake                       *big.Int       `json:"rplStake"`
-	EffectiveRplStake              *big.Int       `json:"effectiveRplStake"`
-	MinimumRplStake                *big.Int       `json:"minimumRplStake"`
-	MaximumRplStake                *big.Int       `json:"maximumRplStake"`
-	BorrowedCollateralRatio        float64        `json:"borrowedCollateralRatio"`
-	BondedCollateralRatio          float64        `json:"bondedCollateralRatio"`
-	PendingEffectiveRplStake       *big.Int       `json:"pendingEffectiveRplStake"`
-	PendingMinimumRplStake         *big.Int       `json:"pendingMinimumRplStake"`
-	PendingMaximumRplStake         *big.Int       `json:"pendingMaximumRplStake"`
-	PendingBorrowedCollateralRatio float64        `json:"pendingBorrowedCollateralRatio"`
-	PendingBondedCollateralRatio   float64        `json:"pendingBondedCollateralRatio"`
-	VotingDelegate                 common.Address `json:"votingDelegate"`
-	VotingDelegateFormatted        string         `json:"votingDelegateFormatted"`
-	MinipoolLimit                  uint64         `json:"minipoolLimit"`
-	EthMatched                     *big.Int       `json:"ethMatched"`
-	EthMatchedLimit                *big.Int       `json:"ethMatchedLimit"`
-	PendingMatchAmount             *big.Int       `json:"pendingMatchAmount"`
-	CreditBalance                  *big.Int       `json:"creditBalance"`
-	MinipoolCounts                 struct {
+	RplStake                          *big.Int       `json:"rplStake"`
+	EffectiveRplStake                 *big.Int       `json:"effectiveRplStake"`
+	MinimumRplStake                   *big.Int       `json:"minimumRplStake"`
+	MaximumRplStake                   *big.Int       `json:"maximumRplStake"`
+	BorrowedCollateralRatio           float64        `json:"borrowedCollateralRatio"`
+	BondedCollateralRatio             float64        `json:"bondedCollateralRatio"`
+	PendingEffectiveRplStake          *big.Int       `json:"pendingEffectiveRplStake"`
+	PendingMinimumRplStake            *big.Int       `json:"pendingMinimumRplStake"`
+	PendingMaximumRplStake            *big.Int       `json:"pendingMaximumRplStake"`
+	PendingBorrowedCollateralRatio    float64        `json:"pendingBorrowedCollateralRatio"`
+	PendingBondedCollateralRatio      float64        `json:"pendingBondedCollateralRatio"`
+	VotingDelegate                    common.Address `json:"votingDelegate"`
+	VotingDelegateFormatted           string         `json:"votingDelegateFormatted"`
+	MinipoolLimit                     uint64         `json:"minipoolLimit"`
+	EthMatched                        *big.Int       `json:"ethMatched"`
+	EthMatchedLimit                   *big.Int       `json:"ethMatchedLimit"`
+	PendingMatchAmount                *big.Int       `json:"pendingMatchAmount"`
+	CreditBalance                     *big.Int       `json:"creditBalance"`
+	CreditAndEthOnBehalfBalance       *big.Int       `json:"creditAndEthOnBehalfBalance"`
+	EthOnBehalfBalance                *big.Int       `json:"ethOnBehalfBalance"`
+	UsableCreditAndEthOnBehalfBalance *big.Int       `json:"usableCreditAndEthOnBehalfBalance"`
+	MinipoolCounts                    struct {
 		Total           int `json:"total"`
 		Initialized     int `json:"initialized"`
 		Prelaunch       int `json:"prelaunch"`
@@ -111,10 +114,11 @@ type NodeConfirmPrimaryWithdrawalAddressData struct {
 }
 
 type NodeSetRplWithdrawalAddressData struct {
-	CanSet            bool                  `json:"canSet"`
-	AddressAlreadySet bool                  `json:"addressAlreadySet"`
-	PrimaryAlreadySet bool                  `json:"primaryAlreadySet"`
-	TxInfo            *core.TransactionInfo `json:"txInfo"`
+	CanSet                bool                  `json:"canSet"`
+	PrimaryAddressDiffers bool                  `json:"primaryAddressDiffers"`
+	RplAddressDiffers     bool                  `json:"rplAddressDiffers"`
+	RplStake              *big.Int              `json:"rplStake"`
+	TxInfo                *core.TransactionInfo `json:"txInfo"`
 }
 
 type NodeConfirmRplWithdrawalAddressData struct {
@@ -150,11 +154,19 @@ type NodeSetStakeRplForAllowedData struct {
 }
 
 type NodeWithdrawRplData struct {
-	CanWithdraw                  bool                  `json:"canWithdraw"`
-	InsufficientBalance          bool                  `json:"insufficientBalance"`
-	MinipoolsUndercollateralized bool                  `json:"minipoolsUndercollateralized"`
-	WithdrawalDelayActive        bool                  `json:"withdrawalDelayActive"`
-	TxInfo                       *core.TransactionInfo `json:"txInfo"`
+	CanWithdraw                      bool                  `json:"canWithdraw"`
+	InsufficientBalance              bool                  `json:"insufficientBalance"`
+	MinipoolsUndercollateralized     bool                  `json:"minipoolsUndercollateralized"`
+	WithdrawalDelayActive            bool                  `json:"withdrawalDelayActive"`
+	HasDifferentRplWithdrawalAddress bool                  `json:"hasDifferentRPLWithdrawalAddress"`
+	TxInfo                           *core.TransactionInfo `json:"txInfo"`
+}
+
+type NodeWithdrawEthData struct {
+	CanWithdraw                          bool                  `json:"canWithdraw"`
+	InsufficientBalance                  bool                  `json:"insufficientBalance"`
+	HasDifferentPrimaryWithdrawalAddress bool                  `json:"hasDifferentWithdrawalAddress"`
+	TxInfo                               *core.TransactionInfo `json:"txInfo"`
 }
 
 type NodeDepositData struct {

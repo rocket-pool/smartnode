@@ -65,12 +65,12 @@ func (r *ODaoRequester) ExecuteProposal(id uint64) (*api.ApiResponse[api.OracleD
 }
 
 // Vote on a proposal
-func (r *ODaoRequester) Vote(id uint64, support bool) (*api.ApiResponse[api.OracleDaoVoteData], error) {
+func (r *ODaoRequester) Vote(id uint64, support bool) (*api.ApiResponse[api.OracleDaoVoteOnProposalData], error) {
 	args := map[string]string{
 		"id":      fmt.Sprint(id),
 		"support": fmt.Sprint(support),
 	}
-	return sendGetRequest[api.OracleDaoVoteData](r, "proposal/vote", "Vote", args)
+	return sendGetRequest[api.OracleDaoVoteOnProposalData](r, "proposal/vote", "Vote", args)
 }
 
 // Get oracle DAO proposals

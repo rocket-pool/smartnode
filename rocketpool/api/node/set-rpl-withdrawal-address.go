@@ -84,9 +84,10 @@ func (c *nodeSetRplWithdrawalAddressContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *nodeSetRplWithdrawalAddressContext) PrepareData(data *api.NodeSetRplWithdrawalAddressData, opts *bind.TransactOpts) error {
-	data.AddressAlreadySet = c.node.IsRplWithdrawalAddressSet.Get()
-	data.PrimaryAlreadySet = (c.node.PrimaryWithdrawalAddress.Get() != c.nodeAddress)
-	data.CanSet = !(data.AddressAlreadySet || data.PrimaryAlreadySet)
+	isRplWithdrawalAddressSet := c.node.IsRplWithdrawalAddressSet.Get()
+	data.PrimaryAddressDiffers = (c.node.PrimaryWithdrawalAddress.Get() != c.nodeAddress || isRplWithdrawalAddressSet)
+	data.RplAddressDiffers = (isRplWithdrawalAddressSet && c.node.RplWithdrawalAddress.Get() != c.nodeAddress)
+	data.CanSet = !(data.PrimaryAddressDiffers || data.RplAddressDiffers)
 
 	if data.CanSet {
 		txInfo, err := c.node.SetRplWithdrawalAddress(c.address, c.confirm, opts)

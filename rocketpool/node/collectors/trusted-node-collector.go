@@ -2,7 +2,6 @@ package collectors
 
 import (
 	"fmt"
-	"math/big"
 	"strconv"
 	"time"
 
@@ -10,13 +9,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	oracleutils "github.com/rocket-pool/rocketpool-go/utils/oracle"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"golang.org/x/sync/errgroup"
 )
 
 // Represents the collector for the user's trusted node
@@ -97,74 +92,6 @@ func (collector *TrustedNodeCollector) Describe(channel chan<- *prometheus.Desc)
 	channel <- collector.pricesParticipation
 }
 
-// Caches slow to process metrics so it doesn't have to be processed every second
-func (collector *TrustedNodeCollector) collectSlowMetrics(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, memberIds map[common.Address]string) {
-	intervalSize, err := cfg.GetEventLogInterval()
-	if err != nil {
-		collector.logError(fmt.Errorf("error getting event log interval size: %w", err))
-		return
-	}
-
-	pCalc, err := oracleutils.NewTrustedNodeParticipationCalculator(rp)
-	if err != nil {
-		collector.logError(fmt.Errorf("error creating oracle DAO participation calculator: %w", err))
-		return
-	}
-
-	// Create a new cached metrics array to populate
-	collector.cachedMetrics = make([]prometheus.Metric, 0)
-
-	// Sync
-	var wg errgroup.Group
-
-	var balancesParticipation map[common.Address]bool
-	var pricesParticipation map[common.Address]bool
-
-	// Get the balances participation data
-	wg.Go(func() error {
-		var err error
-		balancesParticipation, err = pCalc.GetTrustedNodeLatestBalancesParticipation(rp, big.NewInt(int64(intervalSize)), nil)
-		if err != nil {
-			return fmt.Errorf("Error getting trusted node balances participation data: %w", err)
-		}
-		return nil
-	})
-
-	// Get the prices participation data
-	wg.Go(func() error {
-		var err error
-		pricesParticipation, err = pCalc.GetTrustedNodeLatestPricesParticipation(rp, big.NewInt(int64(intervalSize)), nil)
-		if err != nil {
-			return fmt.Errorf("Error getting trusted node prices participation data: %w", err)
-		}
-		return nil
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		collector.logError(err)
-		return
-	}
-
-	// Balances participation
-	for member, status := range balancesParticipation {
-		value := float64(0)
-		if status {
-			value = 1
-		}
-		collector.cachedMetrics = append(collector.cachedMetrics, prometheus.MustNewConstMetric(collector.balancesParticipation, prometheus.GaugeValue, value, memberIds[member]))
-	}
-
-	// Prices participation
-	for member, status := range pricesParticipation {
-		value := float64(0)
-		if status {
-			value = 1
-		}
-		collector.cachedMetrics = append(collector.cachedMetrics, prometheus.MustNewConstMetric(collector.pricesParticipation, prometheus.GaugeValue, value, memberIds[member]))
-	}
-}
-
 // Collect the latest metric values and pass them to Prometheus
 func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// Services
@@ -203,7 +130,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	}
 
 	// Get the DAO proposals
-	_, oDaoProps, err := pMgr.GetProposals(pMgr.ProposalCount.Formatted(), true, nil)
+	oDaoProps, _, err := pMgr.GetProposals(pMgr.ProposalCount.Formatted(), true, nil)
 	if err != nil {
 		collector.logError(fmt.Errorf("error getting DAO proposals: %w", err))
 		return
@@ -215,12 +142,6 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	for i, member := range state.OracleDaoMemberDetails {
 		addresses[i] = member.Address
 		memberIds[member.Address] = member.ID
-	}
-
-	// Only collect fresh participation metrics from chain every 60 seconds as it updates infrequently and takes longer to collect
-	if time.Since(collector.cacheTime) > (time.Second * 60) {
-		collector.collectSlowMetrics(rp, cfg, memberIds)
-		collector.cacheTime = time.Now()
 	}
 
 	// Get member ETH balances

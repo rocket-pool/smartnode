@@ -36,6 +36,8 @@ const (
 	ManageFeeRecipientColor      = color.FgHiCyan
 	PromoteMinipoolsColor        = color.FgMagenta
 	ReduceBondAmountColor        = color.FgHiBlue
+	DefendPdaoPropsColor         = color.FgYellow
+	VerifyPdaoPropsColor         = color.FgYellow
 	DistributeMinipoolsColor     = color.FgHiGreen
 	ErrorColor                   = color.FgRed
 	WarningColor                 = color.FgYellow
@@ -92,6 +94,8 @@ func Run(sp *services.ServiceProvider) error {
 	promoteMinipools := NewPromoteMinipools(sp, log.NewColorLogger(PromoteMinipoolsColor))
 	downloadRewardsTrees := NewDownloadRewardsTrees(sp, log.NewColorLogger(DownloadRewardsTreesColor))
 	reduceBonds := NewReduceBonds(sp, log.NewColorLogger(ReduceBondAmountColor))
+	defendPdaoProps := NewReduceBonds(sp, log.NewColorLogger(DefendPdaoPropsColor))
+	verifyPdaoProps := NewReduceBonds(sp, log.NewColorLogger(VerifyPdaoPropsColor))
 
 	// Wait group to handle the various threads
 	wg := new(sync.WaitGroup)
@@ -101,6 +105,7 @@ func Run(sp *services.ServiceProvider) error {
 	lastTotalEffectiveStakeTime := time.Unix(0, 0)
 
 	// Run task loop
+	isHoustonDeployedMasterFlag := false
 	go func() {
 		for {
 			// Check the EC status
@@ -137,6 +142,12 @@ func Run(sp *services.ServiceProvider) error {
 			}
 			stateLocker.UpdateState(state, totalEffectiveStake)
 
+			// Check for Houston
+			if !isHoustonDeployedMasterFlag && state.IsHoustonDeployed {
+				printHoustonMessage(&updateLog)
+				isHoustonDeployedMasterFlag = true
+			}
+
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.Run(state); err != nil {
 				errorLog.Println(err)
@@ -148,6 +159,20 @@ func Run(sp *services.ServiceProvider) error {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
+
+			if state.IsHoustonDeployed {
+				// Run the pDAO proposal defender
+				if err := defendPdaoProps.Run(state); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
+				// Run the pDAO proposal verifier
+				if err := verifyPdaoProps.Run(state); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+			}
 
 			// Run the minipool stake check
 			if err := stakePrelaunchMinipools.Run(state); err != nil {
@@ -252,4 +277,27 @@ func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, node
 		return nil, nil, fmt.Errorf("error updating network state: %w", err)
 	}
 	return state, totalEffectiveStake, nil
+}
+
+// Check if Houston has been deployed yet
+func printHoustonMessage(log *log.ColorLogger) {
+	log.Println(`
+*       .
+*      / \
+*     |.'.|
+*     |'.'|
+*   ,'|   |'.
+*  |,-'-|-'-.|
+*   __|_| |         _        _      _____           _
+*  | ___ \|        | |      | |    | ___ \         | |
+*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
+*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
+*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
+*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
+* +---------------------------------------------------+
+* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
+* +---------------------------------------------------+
+*
+* =============== Houston has launched! ===============
+`)
 }

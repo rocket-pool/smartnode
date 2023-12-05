@@ -162,19 +162,6 @@ func (r *NodeRequester) SetSmoothingPoolRegistrationState(optIn bool) (*api.ApiR
 	return sendGetRequest[api.NodeSetStakeRplForAllowedData](r, "set-smoothing-pool-registration-state", "SetSmoothingPoolRegistrationState", args)
 }
 
-// Clear the node's voting snapshot delegate
-func (r *NodeRequester) ClearSnapshotDelegate() (*api.ApiResponse[api.TxInfoData], error) {
-	return sendGetRequest[api.TxInfoData](r, "snapshot-delegate/clear", "ClearSnapshotDelegate", nil)
-}
-
-// Set a voting snapshot delegate for the node
-func (r *NodeRequester) SetSnapshotDelegate(delegate common.Address) (*api.ApiResponse[api.TxInfoData], error) {
-	args := map[string]string{
-		"delegate": delegate.Hex(),
-	}
-	return sendGetRequest[api.TxInfoData](r, "snapshot-delegate/set", "SetSnapshotDelegate", args)
-}
-
 // Sets the allow state of another address staking on behalf of the node
 func (r *NodeRequester) SetStakeRplForAllowed(caller common.Address, allowed bool) (*api.ApiResponse[api.NodeSetStakeRplForAllowedData], error) {
 	args := map[string]string{
@@ -190,6 +177,19 @@ func (r *NodeRequester) SetTimezone(timezoneLocation string) (*api.ApiResponse[a
 		"timezone": timezoneLocation,
 	}
 	return sendGetRequest[api.NodeSetTimezoneData](r, "set-timezone", "SetTimezone", args)
+}
+
+// Clear the node's voting snapshot delegate
+func (r *NodeRequester) ClearSnapshotDelegate() (*api.ApiResponse[api.TxInfoData], error) {
+	return sendGetRequest[api.TxInfoData](r, "snapshot-delegate/clear", "ClearSnapshotDelegate", nil)
+}
+
+// Set a voting snapshot delegate for the node
+func (r *NodeRequester) SetSnapshotDelegate(delegate common.Address) (*api.ApiResponse[api.TxInfoData], error) {
+	args := map[string]string{
+		"delegate": delegate.Hex(),
+	}
+	return sendGetRequest[api.TxInfoData](r, "snapshot-delegate/set", "SetSnapshotDelegate", args)
 }
 
 // Stake RPL against the node
@@ -211,6 +211,14 @@ func (r *NodeRequester) SwapRpl(amount *big.Int) (*api.ApiResponse[api.NodeSwapR
 		"amount": amount.String(),
 	}
 	return sendGetRequest[api.NodeSwapRplData](r, "swap-rpl", "SwapRpl", args)
+}
+
+// Withdraw ETH staked on behalf of the node
+func (r *NodeRequester) WithdrawEth(amount *big.Int) (*api.ApiResponse[api.NodeWithdrawEthData], error) {
+	args := map[string]string{
+		"amount": amount.String(),
+	}
+	return sendGetRequest[api.NodeWithdrawEthData](r, "withdraw-eth", "WithdrawEth", args)
 }
 
 // Withdraw RPL staked against the node

@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	prysmBnTagAmd64PortableTest string = "rocketpool/prysm:v4.1.0-alpha.1-portable"
-	prysmVcTagAmd64PortableTest string = "rocketpool/prysm:v4.1.0-alpha.1-portable"
-	prysmTagArm64PortableTest   string = "rocketpool/prysm:v4.1.0-alpha.1-portable"
-	prysmBnTagAmd64ModernTest   string = "rocketpool/prysm:v4.1.0-alpha.1" //"prysmaticlabs/prysm-beacon-chain:HEAD-58df1f1-debug"
-	prysmVcTagAmd64ModernTest   string = "rocketpool/prysm:v4.1.0-alpha.1" //"prysmaticlabs/prysm-validator:HEAD-58df1f1-debug"
-	prysmTagArm64ModernTest     string = "rocketpool/prysm:v4.1.0-alpha.1"
+	prysmBnTagAmd64PortableTest string = "rocketpool/prysm:0bd2326"
+	prysmVcTagAmd64PortableTest string = "rocketpool/prysm:0bd2326"
+	prysmTagArm64PortableTest   string = "rocketpool/prysm:0bd2326"
+	prysmBnTagAmd64ModernTest   string = "rocketpool/prysm:0bd2326" //"prysmaticlabs/prysm-beacon-chain:HEAD-58df1f1-debug"
+	prysmVcTagAmd64ModernTest   string = "rocketpool/prysm:0bd2326" //"prysmaticlabs/prysm-validator:HEAD-58df1f1-debug"
+	prysmTagArm64ModernTest     string = "rocketpool/prysm:0bd2326"
 
 	prysmBnTagAmd64PortableProd string = "rocketpool/prysm:v4.0.8-portable"
 	prysmVcTagAmd64PortableProd string = "rocketpool/prysm:v4.0.8-portable"

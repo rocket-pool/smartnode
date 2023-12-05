@@ -420,7 +420,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
 			EnvironmentVariables: []string{"ENABLE_MEV_BOOST"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			OverwriteOnUpgrade:   false,
 		},
 	}
 
@@ -988,8 +988,8 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
 	// MEV-Boost
 	if cfg.EnableMevBoost.Value == true {
-		// Disable for Holesky
-		if cfg.Smartnode.Network.Value == config.Network_Holesky {
+		// Disable for Holesky and Holesky accessories
+		if cfg.Smartnode.Network.Value == config.Network_Holesky || cfg.Smartnode.Network.Value == config.Network_Devnet {
 			cfg.EnableMevBoost.Value = false
 		} else {
 			config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)

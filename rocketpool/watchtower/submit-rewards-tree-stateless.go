@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -19,6 +20,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/eth1"
@@ -90,6 +92,23 @@ func (t *SubmitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	// Check if a rewards interval has passed and needs to be calculated
 	startTime := state.NetworkDetails.IntervalStart
 	intervalTime := state.NetworkDetails.IntervalDuration
+
+	// Adjust for the first interval by making the start time the RPL inflation interval start time
+	if startTime == time.Unix(0, 0) {
+		opts := &bind.CallOpts{
+			BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
+		}
+		rpl, err := tokens.NewTokenRpl(t.rp)
+		if err != nil {
+			return fmt.Errorf("error creating RPL token binding: %w", err)
+		}
+		err = t.rp.Query(nil, opts, rpl.InflationIntervalStartTime)
+		if err != nil {
+			return fmt.Errorf("start time is zero, but error getting RPL token inflation interval start time: %w", err)
+		}
+		startTime = rpl.InflationIntervalStartTime.Formatted()
+		t.log.Printlnf("NOTE: rewards pool interval start time is 0, using the inflation interval start time according to the RPL token (%s)", startTime.String())
+	}
 
 	// Calculate the end time, which is the number of intervals that have gone by since the current one's start
 	genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)

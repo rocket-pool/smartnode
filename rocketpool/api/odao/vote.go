@@ -39,7 +39,7 @@ func (f *oracleDaoVoteContextFactory) Create(vars map[string]string) (*oracleDao
 }
 
 func (f *oracleDaoVoteContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*oracleDaoVoteContext, api.OracleDaoVoteData](
+	server.RegisterSingleStageRoute[*oracleDaoVoteContext, api.OracleDaoVoteOnProposalData](
 		router, "proposal/vote", f, f.handler.serviceProvider,
 	)
 }
@@ -103,7 +103,7 @@ func (c *oracleDaoVoteContext) GetState(mc *batch.MultiCaller) {
 	c.prop.GetMemberHasVoted(mc, &c.hasVoted, c.nodeAddress)
 }
 
-func (c *oracleDaoVoteContext) PrepareData(data *api.OracleDaoVoteData, opts *bind.TransactOpts) error {
+func (c *oracleDaoVoteContext) PrepareData(data *api.OracleDaoVoteOnProposalData, opts *bind.TransactOpts) error {
 	data.DoesNotExist = (c.prop.ID > c.dpm.ProposalCount.Formatted())
 	data.InvalidState = (c.prop.State.Formatted() != rptypes.ProposalState_Active)
 	data.AlreadyVoted = c.hasVoted

@@ -100,18 +100,18 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "set-withdrawal-address",
+				Name:      "set-primary-withdrawal-address",
 				Aliases:   []string{"w"},
-				Usage:     "Set the node's withdrawal address",
-				UsageText: "rocketpool node set-withdrawal-address [options] address",
+				Usage:     "Set the node's primary withdrawal address, which will receive all ETH rewards (and RPL if the RPL withdrawal address is not set)",
+				UsageText: "rocketpool node set-primary-withdrawal-address [options] address",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",
-						Usage: "Automatically confirm setting withdrawal address",
+						Usage: "Automatically confirm setting primary withdrawal address",
 					},
 					cli.BoolFlag{
 						Name:  "force",
-						Usage: "Force update the withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
+						Usage: "Force update the primary withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -123,16 +123,16 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					withdrawalAddress := c.Args().Get(0)
 
 					// Run
-					return setWithdrawalAddress(c, withdrawalAddress)
+					return setPrimaryWithdrawalAddress(c, withdrawalAddress)
 
 				},
 			},
 
 			{
-				Name:      "confirm-withdrawal-address",
+				Name:      "confirm-primary-withdrawal-address",
 				Aliases:   []string{"f"},
-				Usage:     "Confirm the node's pending withdrawal address if it has been set back to the node's address itself",
-				UsageText: "rocketpool node confirm-withdrawal-address [options]",
+				Usage:     "Confirm the node's pending primary withdrawal address if it has been set back to the node's address itself",
+				UsageText: "rocketpool node confirm-primary-withdrawal-address [options]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -147,7 +147,60 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return confirmWithdrawalAddress(c)
+					return confirmPrimaryWithdrawalAddress(c)
+
+				},
+			},
+
+			{
+				Name:      "set-rpl-withdrawal-address",
+				Aliases:   []string{"srwa"},
+				Usage:     "Set the node's RPL withdrawal address, which will receive all RPL rewards and staked RPL withdrawals",
+				UsageText: "rocketpool node set-rpl-withdrawal-address [options] address",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm setting rpl withdrawal address",
+					},
+					cli.BoolFlag{
+						Name:  "force",
+						Usage: "Force update the rpl withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					withdrawalAddress := c.Args().Get(0)
+
+					// Run
+					return setRPLWithdrawalAddress(c, withdrawalAddress)
+
+				},
+			},
+
+			{
+				Name:      "confirm-rpl-withdrawal-address",
+				Aliases:   []string{"crwa"},
+				Usage:     "Confirm the node's pending rpl withdrawal address if it has been set back to the node's address itself",
+				UsageText: "rocketpool node confirm-rpl-withdrawal-address [options]",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm withdrawal address",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return confirmRPLWithdrawalAddress(c)
 
 				},
 			},
@@ -357,6 +410,40 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return nodeWithdrawRpl(c)
+
+				},
+			},
+			{
+				Name:      "withdraw-eth",
+				Aliases:   []string{"h"},
+				Usage:     "Withdraw ETH staked on behalf of the node",
+				UsageText: "rocketpool node withdraw-eth [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "amount, a",
+						Usage: "The amount of ETH to withdraw (or 'max')",
+					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm ETH withdrawal",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Validate flags
+					if c.String("amount") != "" && c.String("amount") != "max" {
+						if _, err := cliutils.ValidatePositiveEthAmount("withdrawal amount", c.String("amount")); err != nil {
+							return err
+						}
+					}
+
+					// Run
+					return nodeWithdrawEth(c)
 
 				},
 			},

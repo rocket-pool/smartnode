@@ -10,6 +10,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/smartnode/rocketpool/api/security"
 	"github.com/rocket-pool/smartnode/rocketpool/api/service"
 	"github.com/rocket-pool/smartnode/rocketpool/api/tx"
 	"github.com/rocket-pool/smartnode/rocketpool/common/log"
@@ -21,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/network"
 	"github.com/rocket-pool/smartnode/rocketpool/api/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/odao"
+	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/rocketpool/api/queue"
 	"github.com/rocket-pool/smartnode/rocketpool/api/wallet"
 )
@@ -57,7 +59,9 @@ func NewApiManager(sp *services.ServiceProvider) *ApiManager {
 			network.NewNetworkHandler(sp),
 			node.NewNodeHandler(sp),
 			odao.NewOracleDaoHandler(sp),
+			pdao.NewProtocolDaoHandler(sp),
 			queue.NewQueueHandler(sp),
+			security.NewSecurityCouncilHandler(sp),
 			service.NewServiceHandler(sp),
 			tx.NewTxHandler(sp),
 			wallet.NewWalletHandler(sp),

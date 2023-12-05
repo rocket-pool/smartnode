@@ -45,6 +45,7 @@ func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
 		&nodeStakeRplContextFactory{h},
 		&nodeStatusContextFactory{h},
 		&nodeSwapRplContextFactory{h},
+		&nodeWithdrawEthContextFactory{h},
 		&nodeWithdrawRplContextFactory{h},
 	}
 	return h

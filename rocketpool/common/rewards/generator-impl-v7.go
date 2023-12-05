@@ -80,7 +80,7 @@ func newTreeGeneratorImpl_v7(log *log.ColorLogger, logPrefix string, index uint6
 				},
 				NetworkRewards: map[uint64]*sharedtypes.NetworkRewardsInfo{},
 			},
-			NodeRewards: map[common.Address]*sharedtypes.NodeRewardsInfo{},
+			NodeRewards: map[common.Address]*NodeRewardsInfo_v2{},
 			MinipoolPerformanceFile: MinipoolPerformanceFile_v2{
 				Index:               index,
 				StartTime:           startTime.UTC(),
@@ -120,6 +120,8 @@ func (r *treeGeneratorImpl_v7) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	// Set the network name
 	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
+	r.rewardsFile.MinipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.rewardsFile.MinipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -133,9 +135,14 @@ func (r *treeGeneratorImpl_v7) generateTree(rp *rocketpool.RocketPool, cfg *conf
 
 	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(r.networkState.NodeDetails))
 
-	// Get the minipool count - this will be used for an error epsilon due to division truncation
-	minipoolCount := uint64(len(r.networkState.MinipoolDetails))
-	r.epsilon = big.NewInt(int64(minipoolCount))
+	// Get the max of node count and minipool count - this will be used for an error epsilon due to division truncation
+	nodeCount := len(r.networkState.NodeDetails)
+	minipoolCount := len(r.networkState.MinipoolDetails)
+	if nodeCount > minipoolCount {
+		r.epsilon = big.NewInt(int64(nodeCount))
+	} else {
+		r.epsilon = big.NewInt(int64(minipoolCount))
+	}
 
 	// Calculate the RPL rewards
 	err := r.calculateRplRewards()
@@ -184,6 +191,8 @@ func (r *treeGeneratorImpl_v7) approximateStakerShareOfSmoothingPool(rp *rocketp
 	// Set the network name
 	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
+	r.rewardsFile.MinipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.rewardsFile.MinipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -197,9 +206,14 @@ func (r *treeGeneratorImpl_v7) approximateStakerShareOfSmoothingPool(rp *rocketp
 
 	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(r.networkState.NodeDetails))
 
-	// Get the minipool count - this will be used for an error epsilon due to division truncation
-	minipoolCount := uint64(len(r.networkState.MinipoolDetails))
-	r.epsilon = big.NewInt(int64(minipoolCount))
+	// Get the max of node count and minipool count - this will be used for an error epsilon due to division truncation
+	nodeCount := len(r.networkState.NodeDetails)
+	minipoolCount := len(r.networkState.MinipoolDetails)
+	if nodeCount > minipoolCount {
+		r.epsilon = big.NewInt(int64(nodeCount))
+	} else {
+		r.epsilon = big.NewInt(int64(minipoolCount))
+	}
 
 	// Calculate the ETH rewards
 	err := r.calculateEthRewards(false)
@@ -311,6 +325,9 @@ func (r *treeGeneratorImpl_v7) updateNetworksAndTotals() {
 func (r *treeGeneratorImpl_v7) calculateRplRewards() error {
 	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
 	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
+	if pendingRewards.Cmp(common.Big0) == 0 {
+		return fmt.Errorf("there are no pending RPL rewards, so this interval cannot be used for rewards submission")
+	}
 
 	// Get baseline Protocol DAO rewards
 	pDaoPercent := r.networkState.NetworkDetails.ProtocolDaoRewardsPercent
@@ -359,7 +376,7 @@ func (r *treeGeneratorImpl_v7) calculateRplRewards() error {
 						network = 0
 					}
 
-					rewardsForNode = &sharedtypes.NodeRewardsInfo{
+					rewardsForNode = &NodeRewardsInfo_v2{
 						RewardNetwork:    network,
 						CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
 						OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
@@ -454,7 +471,7 @@ func (r *treeGeneratorImpl_v7) calculateRplRewards() error {
 				network = 0
 			}
 
-			rewardsForNode = &sharedtypes.NodeRewardsInfo{
+			rewardsForNode = &NodeRewardsInfo_v2{
 				RewardNetwork:    network,
 				CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
 				OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
@@ -606,7 +623,7 @@ func (r *treeGeneratorImpl_v7) calculateEthRewards(checkBeaconPerformance bool) 
 					network = 0
 				}
 
-				rewardsForNode = &sharedtypes.NodeRewardsInfo{
+				rewardsForNode = &NodeRewardsInfo_v2{
 					RewardNetwork:    network,
 					CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
 					OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),

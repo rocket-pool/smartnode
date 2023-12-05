@@ -128,7 +128,7 @@ func (c *nodeDepositContext) Initialize() error {
 
 func (c *nodeDepositContext) GetState(mc *batch.MultiCaller) {
 	core.AddQueryablesToMulticall(mc,
-		c.node.Credit,
+		c.node.TotalCreditAndDonatedBalance,
 		c.depositPool.Balance,
 		c.pSettings.Node.IsDepositingEnabled,
 		c.oSettings.Minipool.ScrubPeriod,
@@ -137,7 +137,7 @@ func (c *nodeDepositContext) GetState(mc *batch.MultiCaller) {
 
 func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.TransactOpts) error {
 	// Initial population
-	data.CreditBalance = c.node.Credit.Get()
+	data.CreditBalance = c.node.TotalCreditAndDonatedBalance.Get()
 	data.DepositDisabled = !c.pSettings.Node.IsDepositingEnabled.Get()
 	data.DepositBalance = c.depositPool.Balance.Get()
 	data.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Formatted()

@@ -73,16 +73,9 @@ type OracleDaoProposeInviteData struct {
 type OracleDaoProposeLeaveData struct {
 	CanPropose             bool                  `json:"canPropose"`
 	ProposalCooldownActive bool                  `json:"proposalCooldownActive"`
+	MemberDoesntExist      bool                  `json:"memberDoesntExist"`
 	InsufficientMembers    bool                  `json:"insufficientMembers"`
 	TxInfo                 *core.TransactionInfo `json:"txInfo"`
-}
-
-type OracleDaoProposeReplaceData struct {
-	CanPropose               bool                  `json:"canPropose"`
-	ProposalCooldownActive   bool                  `json:"proposalCooldownActive"`
-	MemberDoesNotExist       bool                  `json:"memberDoesNotExist"`
-	ReplacementAlreadyExists bool                  `json:"replacementAlreadyExists"`
-	TxInfo                   *core.TransactionInfo `json:"txInfo"`
 }
 
 type OracleDaoProposeKickData struct {
@@ -103,7 +96,7 @@ type OracleDaoCancelProposalData struct {
 	TxInfo          *core.TransactionInfo `json:"txInfo"`
 }
 
-type OracleDaoVoteData struct {
+type OracleDaoVoteOnProposalData struct {
 	CanVote            bool                  `json:"canVote"`
 	DoesNotExist       bool                  `json:"doesNotExist"`
 	InvalidState       bool                  `json:"invalidState"`

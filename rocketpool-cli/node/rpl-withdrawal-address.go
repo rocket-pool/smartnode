@@ -14,7 +14,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
+func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
@@ -22,6 +22,16 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Check for Houston
+	houston, err := rp.IsHoustonDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
+	}
+	if !houston.IsHoustonDeployed {
+		fmt.Println("This command cannot be used until Houston has been deployed.")
+		return nil
+	}
 
 	var withdrawalAddress common.Address
 	var withdrawalAddressString string
@@ -41,12 +51,15 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 	}
 
 	// Print the "pending" disclaimer
+	colorReset := "\033[0m"
+	colorRed := "\033[31m"
+	colorYellow := "\033[33m"
 	var confirm bool
-	fmt.Println("You are about to change your withdrawal address. All future ETH & RPL rewards/refunds will be sent there.")
+	fmt.Println("You are about to change your RPL withdrawal address. All future RPL rewards/refunds will be sent there.")
 	if !c.Bool("force") {
 		confirm = false
-		fmt.Println("By default, this will put your new withdrawal address into a \"pending\" state.")
-		fmt.Println("Rocket Pool will continue to use your old withdrawal address until you confirm that you own the new address via the Rocket Pool website.")
+		fmt.Println("By default, this will put your new RPL withdrawal address into a \"pending\" state.")
+		fmt.Println("Rocket Pool will continue to use your old RPL withdrawal address (or your primary withdrawal address if your RPL withdrawal address has not been set) until you confirm that you own the new address via the Rocket Pool website.")
 		fmt.Println("You will need to use a web3-compatible wallet (such as MetaMask) with your new address to confirm it.")
 		fmt.Printf("%sIf you cannot use such a wallet, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.\n\n%s", colorYellow, colorReset)
 	} else {
@@ -56,9 +69,20 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 	}
 
 	// Check if the withdrawal address can be set
-	canResponse, err := rp.CanSetNodeWithdrawalAddress(withdrawalAddress, confirm)
+	canResponse, err := rp.CanSetNodeRPLWithdrawalAddress(withdrawalAddress, confirm)
 	if err != nil {
 		return err
+	}
+
+	// Check if it can be set
+	if !canResponse.CanSet {
+		fmt.Println("Cannot set RPL withdrawal address:")
+		if canResponse.RPLAddressDiffers {
+			fmt.Println("The RPL withdrawal address has already been set to something other than the node address. Setting it can only be called from the RPL withdrawal address.")
+		} else if canResponse.PrimaryAddressDiffers {
+			fmt.Println("The primary withdrawal address has already been set to something other than the node address. Setting the RPL withdrawal address can only be called from the primary withdrawal address.")
+		}
+		return nil
 	}
 
 	if confirm {
@@ -97,7 +121,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 				return err
 			}
 
-			fmt.Printf("Successfully sent the test transaction.\nPlease verify that your withdrawal address received it before confirming it below.\n\n")
+			fmt.Printf("Successfully sent the test transaction.\nPlease verify that your RPL withdrawal address received it before confirming it below.\n\n")
 		}
 	}
 
@@ -108,18 +132,21 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's withdrawal address to %s?", withdrawalAddressString))) {
+	if canResponse.RPLStake.Cmp(common.Big0) == 1 {
+		fmt.Printf("%sNOTE: You currently have %.6f RPL staked. Withdrawing it will *no longer* send it to your primary withdrawal address. It will be sent to the new RPL withdrawal address instead. Please verify you have control over that address before confirming this!%s\n", colorYellow, eth.WeiToEth(canResponse.RPLStake), colorReset)
+	}
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Set node's withdrawal address
-	response, err := rp.SetNodeWithdrawalAddress(withdrawalAddress, confirm)
+	response, err := rp.SetNodeRPLWithdrawalAddress(withdrawalAddress, confirm)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Setting withdrawal address...\n")
+	fmt.Printf("Setting RPL withdrawal address...\n")
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
@@ -133,20 +160,20 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 			stakeUrl = config.Smartnode.GetStakeUrl()
 		}
 		if stakeUrl != "" {
-			fmt.Printf("The node's withdrawal address update to %s is now pending.\n"+
+			fmt.Printf("The node's RPL withdrawal address update to %s is now pending.\n"+
 				"To confirm it, please visit the Rocket Pool website (%s).", withdrawalAddressString, stakeUrl)
 		} else {
-			fmt.Printf("The node's withdrawal address update to %s is now pending.\n"+
+			fmt.Printf("The node's RPL withdrawal address update to %s is now pending.\n"+
 				"To confirm it, please visit the Rocket Pool website.", withdrawalAddressString)
 		}
 	} else {
-		fmt.Printf("The node's withdrawal address was successfully set to %s.\n", withdrawalAddressString)
+		fmt.Printf("The node's RPL withdrawal address was successfully set to %s.\n", withdrawalAddressString)
 	}
 	return nil
 
 }
 
-func confirmWithdrawalAddress(c *cli.Context) error {
+func confirmRPLWithdrawalAddress(c *cli.Context) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
@@ -155,10 +182,26 @@ func confirmWithdrawalAddress(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check for Houston
+	houston, err := rp.IsHoustonDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
+	}
+	if !houston.IsHoustonDeployed {
+		fmt.Println("This command cannot be used until Houston has been deployed.")
+		return nil
+	}
+
 	// Check if the withdrawal address can be confirmed
-	canResponse, err := rp.CanConfirmNodeWithdrawalAddress()
+	canResponse, err := rp.CanConfirmNodeRPLWithdrawalAddress()
 	if err != nil {
 		return err
+	}
+
+	// Check if it can be set
+	if !canResponse.CanSet {
+		fmt.Println("Cannot confirm new RPL withdrawal address: your node address is not the new pending RPL withdrawal address. Confirmation can only be done if it is set to your node address.")
+		return nil
 	}
 
 	// Assign max fees
@@ -168,25 +211,25 @@ func confirmWithdrawalAddress(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to confirm your node's address as the new withdrawal address?")) {
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to confirm your node's address as the new RPL withdrawal address?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Confirm node's withdrawal address
-	response, err := rp.ConfirmNodeWithdrawalAddress()
+	response, err := rp.ConfirmNodeRPLWithdrawalAddress()
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Confirming new withdrawal address...\n")
+	fmt.Printf("Confirming new RPL withdrawal address...\n")
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("The node's withdrawal address was successfully set to the node address.\n")
+	fmt.Printf("The node's RPL withdrawal address was successfully set to the node address.\n")
 	return nil
 
 }

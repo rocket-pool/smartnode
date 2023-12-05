@@ -90,6 +90,8 @@ func (c *nodeWithdrawRplContext) GetState(mc *batch.MultiCaller) {
 		c.node.RplStake,
 		c.node.MinimumRplStake,
 		c.node.RplStakedTime,
+		c.node.IsRplWithdrawalAddressSet,
+		c.node.RplWithdrawalAddress,
 		c.pSettings.Rewards.IntervalTime,
 	)
 }
@@ -106,13 +108,16 @@ func (c *nodeWithdrawRplContext) PrepareData(data *api.NodeWithdrawRplData, opts
 	remainingRplStake := big.NewInt(0).Sub(rplStake, c.amount)
 	rplStakedTime := c.node.RplStakedTime.Formatted()
 	withdrawalDelay := c.pSettings.Rewards.IntervalTime.Formatted()
+	isRplWithdrawalAddressSet := c.node.IsRplWithdrawalAddressSet.Get()
+	hasDifferentRplWithdrawalAddress := isRplWithdrawalAddressSet && c.nodeAddress != c.node.RplWithdrawalAddress.Get()
 
 	data.InsufficientBalance = (c.amount.Cmp(rplStake) > 0)
 	data.MinipoolsUndercollateralized = (remainingRplStake.Cmp(minimumRplStake) < 0)
+	data.HasDifferentRplWithdrawalAddress = hasDifferentRplWithdrawalAddress
 	data.WithdrawalDelayActive = (currentTime.Sub(rplStakedTime) < withdrawalDelay)
 
 	// Update & return response
-	data.CanWithdraw = !(data.InsufficientBalance || data.MinipoolsUndercollateralized || data.WithdrawalDelayActive)
+	data.CanWithdraw = !(data.InsufficientBalance || data.MinipoolsUndercollateralized || data.WithdrawalDelayActive || data.HasDifferentRplWithdrawalAddress)
 
 	if data.CanWithdraw {
 		txInfo, err := c.node.WithdrawRpl(c.amount, opts)
