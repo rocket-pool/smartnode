@@ -23,13 +23,13 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/contracts"
 	"github.com/rocket-pool/smartnode/rocketpool/common/eth1"
 	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/config"
 	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -53,7 +53,7 @@ type SubmitRplPrice struct {
 	errLog    log.ColorLogger
 	cfg       *config.RocketPoolConfig
 	ec        core.ExecutionClient
-	w         *wallet.Wallet
+	w         *wallet.LocalWallet
 	rp        *rocketpool.RocketPool
 	bc        beacon.Client
 	lock      *sync.Mutex
@@ -373,7 +373,7 @@ func (t *SubmitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 	t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
 
 	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
+	opts, err := t.w.GetTransactor()
 	if err != nil {
 		return err
 	}

@@ -7,32 +7,31 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/proposals"
-	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/gas"
+	"github.com/rocket-pool/smartnode/rocketpool/common/log"
+	"github.com/rocket-pool/smartnode/rocketpool/common/proposals"
+	"github.com/rocket-pool/smartnode/rocketpool/common/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool/common/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/wallet"
+	"github.com/rocket-pool/smartnode/shared/config"
 )
 
 type defendableProposal struct {
 	challengeEvent *protocol.ChallengeSubmitted
-	proposal       *protocol.ProtocolDaoProposalDetails
+	proposal       *protocol.ProtocolDaoProposal
 }
 
-type defendPdaoProps struct {
-	c                *cli.Context
+type DefendPdaoProps struct {
+	sp               *services.ServiceProvider
 	log              *log.ColorLogger
 	cfg              *config.RocketPoolConfig
-	w                *wallet.Wallet
+	w                *wallet.LocalWallet
 	rp               *rocketpool.RocketPool
 	bc               beacon.Client
 	gasThreshold     float64
@@ -41,86 +40,45 @@ type defendPdaoProps struct {
 	gasLimit         uint64
 	nodeAddress      common.Address
 	propMgr          *proposals.ProposalManager
+	pdaoMgr          *protocol.ProtocolDaoManager
 	lastScannedBlock *big.Int
 
 	// Smartnode parameters
 	intervalSize *big.Int
 }
 
-func newDefendPdaoProps(c *cli.Context, logger log.ColorLogger) (*defendPdaoProps, error) {
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
-
-	// Get the user-requested max fee
-	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
-	var maxFee *big.Int
-	if maxFeeGwei == 0 {
-		maxFee = nil
-	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
-	}
-
-	// Get the user-requested priority fee
-	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
-	var priorityFee *big.Int
-	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
-	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
-	}
-
-	// Get the event interval size
-	intervalSize := big.NewInt(int64(cfg.Geth.EventLogInterval))
-
-	// Get the node account
-	account, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, fmt.Errorf("error getting node account: %w", err)
-	}
-
-	// Make a proposal manager
-	propMgr, err := proposals.NewProposalManager(&logger, cfg, rp, bc)
-
-	// Return task
-	return &defendPdaoProps{
-		c:                c,
+func NewDefendPdaoProps(sp *services.ServiceProvider, logger log.ColorLogger) *DefendPdaoProps {
+	return &DefendPdaoProps{
+		sp:               sp,
 		log:              &logger,
-		cfg:              cfg,
-		w:                w,
-		rp:               rp,
-		bc:               bc,
-		gasThreshold:     gasThreshold,
-		maxFee:           maxFee,
-		maxPriorityFee:   priorityFee,
-		gasLimit:         0,
-		nodeAddress:      account.Address,
-		propMgr:          propMgr,
 		lastScannedBlock: nil,
-
-		intervalSize: intervalSize,
-	}, nil
+	}
 }
 
 // Defend pDAO proposals
-func (t *defendPdaoProps) run(state *state.NetworkState) error {
+func (t *DefendPdaoProps) Run(state *state.NetworkState) error {
+	// Get services
+	t.cfg = t.sp.GetConfig()
+	t.w = t.sp.GetWallet()
+	t.rp = t.sp.GetRocketPool()
+	t.w = t.sp.GetWallet()
+	t.nodeAddress, _ = t.w.GetAddress()
+	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, t.log)
+	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
+	t.intervalSize = big.NewInt(int64(t.cfg.Geth.EventLogInterval))
+
+	// Bindings
+	propMgr, err := proposals.NewProposalManager(t.log, t.cfg, t.rp, t.bc)
+	if err != nil {
+		return fmt.Errorf("error creating proposal manager: %w", err)
+	}
+	t.propMgr = propMgr
+	pdaoMgr, err := protocol.NewProtocolDaoManager(t.rp)
+	if err != nil {
+		return fmt.Errorf("error creating Protocol DAO manager: %w", err)
+	}
+	t.pdaoMgr = pdaoMgr
+
 	// Log
 	t.log.Println("Checking for Protocol DAO proposal challenges to defend...")
 
@@ -151,12 +109,12 @@ func (t *defendPdaoProps) run(state *state.NetworkState) error {
 }
 
 // Get a list of this node's proposals with open challenges against them
-func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts *bind.CallOpts) ([]defendableProposal, error) {
+func (t *DefendPdaoProps) getDefendableProposals(state *state.NetworkState, opts *bind.CallOpts) ([]defendableProposal, error) {
 	// Get proposals made by this node that are still in the challenge phase (Pending)
-	eligibleProps := []protocol.ProtocolDaoProposalDetails{}
+	eligibleProps := []*protocol.ProtocolDaoProposal{}
 	for _, prop := range state.ProtocolDaoProposalDetails {
-		if prop.ProposerAddress == t.nodeAddress &&
-			time.Until(prop.CreatedTime.Add(prop.ChallengeWindow)) > 0 {
+		if prop.ProposerAddress.Get() == t.nodeAddress &&
+			time.Until(prop.CreatedTime.Formatted().Add(prop.ChallengeWindow.Formatted())) > 0 {
 			eligibleProps = append(eligibleProps, prop)
 		}
 	}
@@ -169,7 +127,7 @@ func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 	endBlock := big.NewInt(int64(state.ElBlockNumber))
 	if t.lastScannedBlock == nil {
 		// Get the slot number the first proposal was created on
-		startTime := eligibleProps[0].CreatedTime
+		startTime := eligibleProps[0].CreatedTime.Formatted()
 		genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
 		secondsPerSlot := time.Second * time.Duration(state.BeaconConfig.SecondsPerSlot)
 		startSlot := uint64(startTime.Sub(genesisTime) / secondsPerSlot)
@@ -191,14 +149,14 @@ func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 
 	// Make containers for eligible IDs
 	ids := make([]uint64, len(eligibleProps))
-	propMap := map[uint64]*protocol.ProtocolDaoProposalDetails{}
+	propMap := map[uint64]*protocol.ProtocolDaoProposal{}
 	for i, prop := range eligibleProps {
 		ids[i] = prop.ID
-		propMap[prop.ID] = &eligibleProps[i]
+		propMap[prop.ID] = eligibleProps[i]
 	}
 
 	// Get any challenges issued for the proposals
-	challengeEvents, err := protocol.GetChallengeSubmittedEvents(t.rp, ids, t.intervalSize, startBlock, endBlock, opts)
+	challengeEvents, err := t.pdaoMgr.GetChallengeSubmittedEvents(ids, t.intervalSize, startBlock, endBlock, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error scanning for ChallengeSubmitted events: %w", err)
 	}
@@ -209,15 +167,20 @@ func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 		// Check if the challenge has been handled yet
 		propID := event.ProposalID.Uint64()
 		index := event.Index.Uint64()
-		state, err := protocol.GetChallengeState(t.rp, propID, index, opts)
+		prop := propMap[propID]
+		var state types.ChallengeState
+		err = t.rp.Query(func(mc *batch.MultiCaller) error {
+			prop.GetChallengeState(mc, &state, index)
+			return nil
+		}, opts)
 		if err != nil {
-			return nil, fmt.Errorf("error checking state of challenge on proposal %d, index %d: %w", propID, index, err)
+			return nil, fmt.Errorf("error checking challenge state for proposal %d, index %d: %w", prop.ID, index, err)
 		}
 		if state == types.ChallengeState_Challenged {
 			t.log.Printlnf("Proposal %d, index %d has been challenged by %s.", propID, index, event.Challenger.Hex())
 			defendableProposals = append(defendableProposals, defendableProposal{
 				challengeEvent: &event,
-				proposal:       propMap[propID],
+				proposal:       prop,
 			})
 		}
 	}
@@ -226,63 +189,57 @@ func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 }
 
 // Submit a response to a challenge against one of this node's proposals
-func (t *defendPdaoProps) defendProposal(prop defendableProposal) error {
+func (t *DefendPdaoProps) defendProposal(prop defendableProposal) error {
 	propID := prop.proposal.ID
 	challengedIndex := prop.challengeEvent.Index.Uint64()
 	t.log.Printlnf("Responding to challenge against proposal %d, index %d...", propID, challengedIndex)
 
 	// Create the response pollard
-	_, pollard, err := t.propMgr.GetArtifactsForChallengeResponse(prop.proposal.TargetBlock, challengedIndex)
+	_, pollard, err := t.propMgr.GetArtifactsForChallengeResponse(prop.proposal.TargetBlock.Formatted(), challengedIndex)
 	if err != nil {
 		return fmt.Errorf("error getting pollard for response to challenge against proposal %d, index %d: %w", propID, challengedIndex, err)
 	}
 
 	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
+	opts, err := t.w.GetTransactor()
 	if err != nil {
 		return err
 	}
 
-	// Get the gas limit
-	gasInfo, err := protocol.EstimateSubmitRootGas(t.rp, propID, challengedIndex, pollard, opts)
+	// Get the tx info
+	txInfo, err := prop.proposal.SubmitRoot(challengedIndex, pollard, opts)
 	if err != nil {
 		return fmt.Errorf("error estimating the gas required to respond to challenge against proposal %d, index %d: %w", propID, challengedIndex, err)
 	}
-	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
+	if txInfo.SimError != "" {
+		return fmt.Errorf("simulating response to challenge against proposal %d, index %d failed: %s", propID, challengedIndex, txInfo.SimError)
+	}
 
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.log)
 		if err != nil {
 			return err
 		}
 	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
 		t.log.Println("NOTICE: Challenge responses bypass the automatic TX gas threshold, responding for safety.")
 	}
 
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = t.maxPriorityFee
-	opts.GasLimit = gas.Uint64()
-
-	// Respond to the challenge
-	hash, err := protocol.SubmitRoot(t.rp, propID, challengedIndex, pollard, opts)
-	if err != nil {
-		return err
-	}
+	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.log, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
 	t.log.Println("Successfully responded to challenge.")
-
-	// Return
 	return nil
 }
