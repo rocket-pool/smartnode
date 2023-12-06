@@ -17,7 +17,7 @@ const DoppelgangerDetectionID string = "doppelgangerDetection"
 const defaultGraffiti string = ""
 const defaultCheckpointSyncProvider string = ""
 const defaultP2pPort uint16 = 9001
-const defaultP2pQuicPort uint16 = 9002
+const defaultP2pQuicPort uint16 = 8001
 const defaultBnApiPort uint16 = 5052
 const defaultOpenBnApiPort string = string(config.RPC_Closed)
 const defaultDoppelgangerDetection bool = true
@@ -37,9 +37,6 @@ type ConsensusCommonConfig struct {
 
 	// The port to use for gossip traffic
 	P2pPort config.Parameter `yaml:"p2pPort,omitempty"`
-
-	// The port to use for gossip traffic using the QUIC protocol
-	P2pQuicPort config.Parameter `yaml:"p2pQuicPort,omitempty"`
 
 	// The port to expose the HTTP API on
 	ApiPort config.Parameter `yaml:"apiPort,omitempty"`
@@ -96,17 +93,6 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
-		P2pQuicPort: config.Parameter{
-			ID:                   P2pQuicPortID,
-			Name:                 "P2P QUIC Port",
-			Description:          "The port to use for P2P (blockchain) traffic using the QUIC protocol.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultP2pQuicPort},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_P2P_QUIC_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
 
 		ApiPort: config.Parameter{
 			ID:                   ApiPortID,
@@ -153,7 +139,6 @@ func (cfg *ConsensusCommonConfig) GetParameters() []*config.Parameter {
 		&cfg.Graffiti,
 		&cfg.CheckpointSyncProvider,
 		&cfg.P2pPort,
-		&cfg.P2pQuicPort,
 		&cfg.ApiPort,
 		&cfg.OpenApiPort,
 		&cfg.DoppelgangerDetection,
