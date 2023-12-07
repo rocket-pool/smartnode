@@ -484,19 +484,6 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		return fmt.Errorf("Error loading user settings: %w", err)
 	}
 
-	// Check for unsupported clients
-	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
-		switch selectedEc {
-		case cfgtypes.ExecutionClient_Obs_Infura:
-			fmt.Printf("%sYou currently have Infura configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge.\nPlease run `rocketpool service config` and select a full Execution client.%s\n", colorRed, colorReset)
-			return nil
-		case cfgtypes.ExecutionClient_Obs_Pocket:
-			fmt.Printf("%sYou currently have Pocket configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge.\nPlease run `rocketpool service config` and select a full Execution client.%s\n", colorRed, colorReset)
-			return nil
-		}
-	}
-
 	// Force all Docker or all Hybrid
 	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External {
 		fmt.Printf("%sYou are using a locally-managed Execution client and an externally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.%s\n", colorRed, colorReset)
