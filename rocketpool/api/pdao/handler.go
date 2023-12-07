@@ -18,6 +18,7 @@ func NewProtocolDaoHandler(serviceProvider *services.ServiceProvider) *ProtocolD
 	}
 	h.factories = []server.IContextFactory{
 		&protocolDaoClaimBondsContextFactory{h},
+		&protocolDaoGetClaimableBondsContextFactory{h},
 	}
 	return h
 }

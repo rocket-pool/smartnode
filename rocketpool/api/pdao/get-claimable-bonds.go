@@ -6,79 +6,99 @@ import (
 	"sort"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
 )
 
-type challengeInfo struct {
-	Challenger common.Address
-	State      types.ChallengeState
+const (
+	challengeStateBatchSize int = 500
+)
+
+// ===============
+// === Factory ===
+// ===============
+
+type protocolDaoGetClaimableBondsContextFactory struct {
+	handler *ProtocolDaoHandler
 }
 
-type proposalInfo struct {
-	*protocol.ProtocolDaoProposalDetails
-	IsProposer bool
-	Challenges map[uint64]*challengeInfo
+func (f *protocolDaoGetClaimableBondsContextFactory) Create(vars map[string]string) (*protocolDaoGetClaimableBondsContext, error) {
+	c := &protocolDaoGetClaimableBondsContext{
+		handler: f.handler,
+	}
+	return c, nil
 }
 
-func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, error) {
-	// Get services
-	w, err := services.GetWallet(c)
+func (f *protocolDaoGetClaimableBondsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*protocolDaoGetClaimableBondsContext, api.ProtocolDaoGetClaimableBondsData](
+		router, "get-claimable-bonds", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type protocolDaoGetClaimableBondsContext struct {
+	handler     *ProtocolDaoHandler
+	rp          *rocketpool.RocketPool
+	cfg         *config.RocketPoolConfig
+	bc          beacon.Client
+	nodeAddress common.Address
+
+	pdaoMgr *protocol.ProtocolDaoManager
+}
+
+func (c *protocolDaoGetClaimableBondsContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.cfg = sp.GetConfig()
+	c.bc = sp.GetBeaconClient()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.PDAOGetClaimableBondsResponds{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
+	// Bindings
+	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating Protocol DAO manager binding: %w", err)
 	}
+	return nil
+}
 
-	// Set up multicall
-	mcAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-	bbAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-	contracts, err := state.NewNetworkContracts(rp, mcAddress, bbAddress, true, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating network contracts: %w", err)
-	}
+func (c *protocolDaoGetClaimableBondsContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.pdaoMgr.ProposalCount,
+	)
+}
 
-	// Get all of the proposals
-	props, err := state.GetAllProtocolDaoProposalDetails(rp, contracts)
+func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoGetClaimableBondsData, opts *bind.TransactOpts) error {
+	// Get the proposals
+	props, err := c.pdaoMgr.GetProposals(c.pdaoMgr.ProposalCount.Formatted(), true, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting pDAO proposal details: %w", err)
-	}
-	if len(props) == 0 {
-		response.ClaimableBonds = []api.BondClaimResult{}
-		return &response, nil
+		return fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
 	}
 
 	// Get some common vars
-	beaconCfg, err := bc.GetEth2Config()
+	beaconCfg, err := c.bc.GetEth2Config()
 	if err != nil {
-		return nil, fmt.Errorf("error getting Beacon config: %w", err)
+		return fmt.Errorf("error getting Beacon config: %w", err)
 	}
-	intervalSize := big.NewInt(int64(cfg.Geth.EventLogInterval))
+	intervalSize := big.NewInt(int64(c.cfg.Geth.EventLogInterval))
 
 	// Get the lists of proposals / challenge indices to check the state for
 	propInfos := map[uint64]*proposalInfo{}
@@ -88,14 +108,15 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 		shouldProcess := false
 		isProposer := false
 
-		if prop.ProposerAddress == nodeAccount.Address {
+		state := prop.State.Formatted()
+		if prop.ProposerAddress.Get() == c.nodeAddress {
 			isProposer = true
-			if prop.State != types.ProtocolDaoProposalState_Defeated &&
-				prop.State >= types.ProtocolDaoProposalState_QuorumNotMet {
+			if state != types.ProtocolDaoProposalState_Defeated &&
+				state >= types.ProtocolDaoProposalState_QuorumNotMet {
 				shouldProcess = true
 			}
 		} else {
-			if prop.State != types.ProtocolDaoProposalState_Pending {
+			if state != types.ProtocolDaoProposalState_Pending {
 				shouldProcess = true
 			}
 		}
@@ -103,24 +124,24 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 		if shouldProcess {
 			// Add it to the map
 			propInfo := &proposalInfo{
-				ProtocolDaoProposalDetails: &props[i],
-				IsProposer:                 isProposer,
-				Challenges:                 map[uint64]*challengeInfo{},
+				ProtocolDaoProposal: props[i],
+				IsProposer:          isProposer,
+				Challenges:          map[uint64]*challengeInfo{},
 			}
 			propInfos[prop.ID] = propInfo
 
 			// Get the events for all challenges against this proposal
-			startBlock, err := getElBlockForTimestamp(bc, beaconCfg, prop.CreatedTime)
+			startBlock, err := getElBlockForTimestamp(c.bc, beaconCfg, prop.CreatedTime.Formatted())
 			if err != nil {
-				return nil, fmt.Errorf("error getting creation block for proposal %d: %w", prop.ID, err)
+				return fmt.Errorf("error getting creation block for proposal %d: %w", prop.ID, err)
 			}
-			endBlock, err := getElBlockForTimestamp(bc, beaconCfg, prop.VotingStartTime) // Start of voting = end of challenge period
+			endBlock, err := getElBlockForTimestamp(c.bc, beaconCfg, prop.VotingStartTime.Formatted()) // Start of voting = end of challenge period
 			if err != nil {
-				return nil, fmt.Errorf("error getting voting start block for proposal %d: %w", prop.ID, err)
+				return fmt.Errorf("error getting voting start block for proposal %d: %w", prop.ID, err)
 			}
-			challengeEvents, err := protocol.GetChallengeSubmittedEvents(rp, []uint64{prop.ID}, intervalSize, startBlock, endBlock, nil)
+			challengeEvents, err := c.pdaoMgr.GetChallengeSubmittedEvents([]uint64{prop.ID}, intervalSize, startBlock, endBlock, nil)
 			if err != nil {
-				return nil, fmt.Errorf("error scanning for proposal %d's ChallengeSubmitted events: %w", prop.ID, err)
+				return fmt.Errorf("error scanning for proposal %d's ChallengeSubmitted events: %w", prop.ID, err)
 			}
 
 			// Add an explicit challenge event to the root to see if the proposal bond is refundable
@@ -144,10 +165,17 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 		}
 	}
 
-	// Get the states of each prop / challenged index
-	states, err := protocol.GetMultiChallengeStatesFast(rp, mcAddress, proposalIDsForStates, challengedIndicesForStates, nil)
+	// Get the states of all challenges
+	states := make([]types.ChallengeState, len(proposalIDsForStates))
+	err = c.rp.BatchQuery(len(proposalIDsForStates), challengeStateBatchSize, func(mc *batch.MultiCaller, i int) error {
+		propID := proposalIDsForStates[i]
+		index := challengedIndicesForStates[i]
+		prop := propInfos[propID]
+		prop.GetChallengeState(mc, &states[i], index)
+		return nil
+	}, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting challenge states: %w", err)
+		return fmt.Errorf("error getting challenge states: %w", err)
 	}
 
 	// Map out the challenge results
@@ -176,8 +204,9 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 
 		// Handle proposals we were the proposer of
 		if claimResult.IsProposer {
-			if propInfo.State == types.ProtocolDaoProposalState_Defeated ||
-				propInfo.State < types.ProtocolDaoProposalState_QuorumNotMet {
+			state := propInfo.State.Formatted()
+			if state == types.ProtocolDaoProposalState_Defeated ||
+				state < types.ProtocolDaoProposalState_QuorumNotMet {
 				// Proposer gets nothing if the challenge was defeated or isn't done yet
 				continue
 			}
@@ -186,11 +215,11 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 					if challengedIndex == 1 {
 						// The proposal bond can be unlocked
 						claimResult.UnlockableIndices = append(claimResult.UnlockableIndices, 1)
-						claimResult.UnlockAmount.Add(claimResult.UnlockAmount, propInfo.ProposalBond)
+						claimResult.UnlockAmount.Add(claimResult.UnlockAmount, propInfo.ProposalBond.Get())
 					} else {
 						// This is a challenged index that can be claimed
 						claimResult.RewardableIndices = append(claimResult.RewardableIndices, challengedIndex)
-						claimResult.RewardAmount.Add(claimResult.RewardAmount, propInfo.ChallengeBond)
+						claimResult.RewardAmount.Add(claimResult.RewardAmount, propInfo.ChallengeBond.Get())
 					}
 				}
 			}
@@ -207,7 +236,7 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 
 				// Make sure the prop and challenge are in the right states
 				if challengeInfo.State != types.ChallengeState_Challenged {
-					if propInfo.State == types.ProtocolDaoProposalState_Defeated {
+					if propInfo.State.Formatted() == types.ProtocolDaoProposalState_Defeated {
 						if challengeInfo.State != types.ChallengeState_Responded {
 							// If the proposal is defeated, a challenge must be in the challenged or responded states
 							continue
@@ -219,14 +248,14 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 				}
 
 				// Increment how many refundable challenges we made
-				isOwnChallenge := (challengeInfo.Challenger == nodeAccount.Address)
+				isOwnChallenge := (challengeInfo.Challenger == c.nodeAddress)
 				if isOwnChallenge {
 					unlockableChallengeCount++
 					claimResult.UnlockableIndices = append(claimResult.UnlockableIndices, challengedIndex)
 				}
 
 				// Check if this challenge contributed to the proposal's defeat
-				if isRewardedIndex(propInfo.DefeatIndex, challengedIndex) {
+				if isRewardedIndex(propInfo.DefeatIndex.Formatted(), challengedIndex) {
 					totalContributingChallenges++
 					if isOwnChallenge {
 						// Reward valid challenges from this node
@@ -239,14 +268,14 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 			// Mark how much RPL can be unlocked
 			if unlockableChallengeCount > 0 {
 				totalUnlock := big.NewInt(unlockableChallengeCount)
-				totalUnlock.Mul(totalUnlock, propInfo.ChallengeBond)
+				totalUnlock.Mul(totalUnlock, propInfo.ChallengeBond.Get())
 				claimResult.UnlockAmount.Add(claimResult.UnlockAmount, totalUnlock)
 			}
 
 			// How much RPL will be rewarded
 			if rewardCount > 0 {
 				totalReward := big.NewInt(rewardCount)
-				totalReward.Mul(totalReward, propInfo.ProposalBond)
+				totalReward.Mul(totalReward, propInfo.ProposalBond.Get())
 				totalReward.Div(totalReward, big.NewInt(totalContributingChallenges))
 				claimResult.RewardAmount.Add(claimResult.RewardAmount, totalReward)
 			}
@@ -265,8 +294,19 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 	})
 
 	// Update the response and return
-	response.ClaimableBonds = claimableBonds
-	return &response, nil
+	data.ClaimableBonds = claimableBonds
+	return nil
+}
+
+type challengeInfo struct {
+	Challenger common.Address
+	State      types.ChallengeState
+}
+
+type proposalInfo struct {
+	*protocol.ProtocolDaoProposal
+	IsProposer bool
+	Challenges map[uint64]*challengeInfo
 }
 
 // Check if a node was part of a proposal's defeat path
