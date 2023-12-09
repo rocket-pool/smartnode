@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/big"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -221,7 +222,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
 			t.log.Printlnf("Error uploading Merkle tree to Web3.Storage: %w", err)
-			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, compressedRewardsTreePath)
+			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, filepath.Base(compressedRewardsTreePath))
 			if err != nil {
 				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
 			}
@@ -374,7 +375,7 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		minipoolPerformanceCid, err := t.uploadFileToWeb3Storage(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
 		if err != nil {
 			t.printMessage(fmt.Sprintf("Error uploading minipool performance file to Web3.Storage: %w", err))
-			c, err := rprewards.GetCIDForSerializedFile(minipoolPerformanceBytes, compressedMinipoolPerformancePath)
+			c, err := rprewards.GetCIDForSerializedFile(minipoolPerformanceBytes, filepath.Base(compressedMinipoolPerformancePath))
 			if err != nil {
 				return fmt.Errorf("error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
 			}
@@ -409,7 +410,7 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
 			t.printMessage(fmt.Sprintf("Error uploading Merkle tree to Web3.Storage: %w", err))
-			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, compressedRewardsTreePath)
+			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, filepath.Base(compressedRewardsTreePath))
 			if err != nil {
 				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
 			}
