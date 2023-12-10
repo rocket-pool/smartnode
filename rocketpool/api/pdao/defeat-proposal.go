@@ -1,152 +1,113 @@
 package pdao
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canDefeatProposal(c *cli.Context, proposalId uint64, index uint64) (*api.PDAOCanDefeatProposalResponse, error) {
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
+// ===============
+// === Factory ===
+// ===============
 
-	// Response
-	response := api.PDAOCanDefeatProposalResponse{}
-	var creationTime time.Time
-	var challengeWindow time.Duration
-
-	// Sync
-	var wg errgroup.Group
-
-	// Check proposal exists
-	wg.Go(func() error {
-		proposalCount, err := protocol.GetTotalProposalCount(rp, nil)
-		if err == nil {
-			response.DoesNotExist = (proposalId > proposalCount)
-		}
-		return err
-	})
-
-	// Check proposal state
-	wg.Go(func() error {
-		proposalState, err := protocol.GetProposalState(rp, proposalId, nil)
-		if err == nil {
-			response.AlreadyDefeated = (proposalState == types.ProtocolDaoProposalState_Defeated)
-		}
-		return err
-	})
-
-	// Get the proposal creation time
-	wg.Go(func() error {
-		var err error
-		creationTime, err = protocol.GetProposalCreationTime(rp, proposalId, nil)
-		return err
-	})
-
-	// Get the proposal challenge window
-	wg.Go(func() error {
-		var err error
-		challengeWindow, err = protocol.GetChallengePeriod(rp, proposalId, nil)
-		return err
-	})
-
-	// Get the challenge state
-	wg.Go(func() error {
-		state, err := protocol.GetChallengeState(rp, proposalId, index, nil)
-		if err == nil {
-			response.InvalidChallengeState = (state != types.ChallengeState_Challenged)
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Validate
-	defeatStart := creationTime.Add(challengeWindow)
-	response.StillInChallengeWindow = (time.Until(defeatStart) > 0)
-	response.CanDefeat = !(response.DoesNotExist || response.AlreadyDefeated || response.InvalidChallengeState || response.StillInChallengeWindow)
-	if !response.CanDefeat {
-		return &response, nil
-	}
-
-	// Get gas estimate
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := protocol.EstimateDefeatProposalGas(rp, proposalId, index, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.GasInfo = gasInfo
-	return &response, nil
+type protocolDaoDefeatProposalContextFactory struct {
+	handler *ProtocolDaoHandler
 }
 
-func defeatProposal(c *cli.Context, proposalId uint64, index uint64) (*api.PDAODefeatProposalResponse, error) {
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
+func (f *protocolDaoDefeatProposalContextFactory) Create(vars map[string]string) (*protocolDaoDefeatProposalContext, error) {
+	c := &protocolDaoDefeatProposalContext{
+		handler: f.handler,
 	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
+	inputErrs := []error{
+		server.ValidateArg("id", vars, input.ValidatePositiveUint, &c.proposalID),
+		server.ValidateArg("index", vars, input.ValidatePositiveUint, &c.index),
 	}
-	w, err := services.GetWallet(c)
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *protocolDaoDefeatProposalContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*protocolDaoDefeatProposalContext, api.ProtocolDaoDefeatProposalData](
+		router, "proposal/defeat", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type protocolDaoDefeatProposalContext struct {
+	handler     *ProtocolDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	proposalID     uint64
+	index          uint64
+	challengeState types.ChallengeState
+	pdaoMgr        *protocol.ProtocolDaoManager
+	proposal       *protocol.ProtocolDaoProposal
+}
+
+func (c *protocolDaoDefeatProposalContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.PDAODefeatProposalResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	// Bindings
+	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.proposal, err = protocol.NewProtocolDaoProposal(c.rp, c.proposalID)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating proposal binding: %w", err)
 	}
+	return nil
+}
 
-	// Execute proposal
-	hash, err := protocol.DefeatProposal(rp, proposalId, index, opts)
-	if err != nil {
-		return nil, err
+func (c *protocolDaoDefeatProposalContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.pdaoMgr.ProposalCount,
+		c.proposal.State,
+		c.proposal.CreatedTime,
+		c.proposal.ChallengeWindow,
+	)
+	c.proposal.GetChallengeState(mc, &c.challengeState, c.index)
+}
+
+func (c *protocolDaoDefeatProposalContext) PrepareData(data *api.ProtocolDaoDefeatProposalData, opts *bind.TransactOpts) error {
+	defeatStart := c.proposal.CreatedTime.Formatted().Add(c.proposal.ChallengeWindow.Formatted())
+	data.StillInChallengeWindow = (time.Until(defeatStart) > 0)
+	data.DoesNotExist = (c.proposalID > c.pdaoMgr.ProposalCount.Formatted())
+	data.AlreadyDefeated = (c.proposal.State.Formatted() == types.ProtocolDaoProposalState_Defeated)
+	data.InvalidChallengeState = (c.challengeState != types.ChallengeState_Challenged)
+	data.CanDefeat = !(data.DoesNotExist || data.StillInChallengeWindow || data.AlreadyDefeated || data.InvalidChallengeState)
+
+	// Get the tx
+	if data.CanDefeat && opts != nil {
+		txInfo, err := c.proposal.Defeat(c.index, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for Defeat: %w", err)
+		}
+		data.TxInfo = txInfo
 	}
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
+	return nil
 }

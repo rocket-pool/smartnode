@@ -1,125 +1,103 @@
 package pdao
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canExecuteProposal(c *cli.Context, proposalId uint64) (*api.CanExecutePDAOProposalResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.CanExecutePDAOProposalResponse{}
-
-	// Sync
-	var wg errgroup.Group
-
-	// Check proposal exists
-	wg.Go(func() error {
-		proposalCount, err := protocol.GetTotalProposalCount(rp, nil)
-		if err == nil {
-			response.DoesNotExist = (proposalId > proposalCount)
-		}
-		return err
-	})
-
-	// Check proposal state
-	wg.Go(func() error {
-		proposalState, err := protocol.GetProposalState(rp, proposalId, nil)
-		if err == nil {
-			response.InvalidState = (proposalState != rptypes.ProtocolDaoProposalState_Succeeded)
-		}
-		return err
-	})
-
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		gasInfo, err := protocol.EstimateExecuteProposalGas(rp, proposalId, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.CanExecute = !(response.DoesNotExist || response.InvalidState)
-	return &response, nil
-
+type protocolDaoExecuteProposalContextFactory struct {
+	handler *ProtocolDaoHandler
 }
 
-func executeProposal(c *cli.Context, proposalId uint64) (*api.ExecutePDAOProposalResponse, error) {
+func (f *protocolDaoExecuteProposalContextFactory) Create(vars map[string]string) (*protocolDaoExecuteProposalContext, error) {
+	c := &protocolDaoExecuteProposalContext{
+		handler: f.handler,
+	}
+	inputErrs := []error{
+		server.ValidateArg("id", vars, input.ValidatePositiveUint, &c.proposalID),
+	}
+	return c, errors.Join(inputErrs...)
+}
 
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+func (f *protocolDaoExecuteProposalContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*protocolDaoExecuteProposalContext, api.ProtocolDaoExecuteProposalData](
+		router, "proposal/execute", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type protocolDaoExecuteProposalContext struct {
+	handler     *ProtocolDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	proposalID uint64
+	pdaoMgr    *protocol.ProtocolDaoManager
+	proposal   *protocol.ProtocolDaoProposal
+}
+
+func (c *protocolDaoExecuteProposalContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rp, err := services.GetRocketPool(c)
+
+	// Bindings
+	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-
-	// Response
-	response := api.ExecutePDAOProposalResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	c.proposal, err = protocol.NewProtocolDaoProposal(c.rp, c.proposalID)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating proposal binding: %w", err)
 	}
+	return nil
+}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+func (c *protocolDaoExecuteProposalContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.pdaoMgr.ProposalCount,
+		c.proposal.State,
+	)
+}
+
+func (c *protocolDaoExecuteProposalContext) PrepareData(data *api.ProtocolDaoExecuteProposalData, opts *bind.TransactOpts) error {
+	data.DoesNotExist = (c.proposalID > c.pdaoMgr.ProposalCount.Formatted())
+	data.InvalidState = (c.proposal.State.Formatted() != types.ProtocolDaoProposalState_Succeeded)
+	data.CanExecute = !(data.DoesNotExist || data.InvalidState)
+
+	// Get the tx
+	if data.CanExecute && opts != nil {
+		txInfo, err := c.proposal.Execute(opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for Execute: %w", err)
+		}
+		data.TxInfo = txInfo
 	}
-
-	// Execute proposal
-	hash, err := protocol.ExecuteProposal(rp, proposalId, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
-
+	return nil
 }

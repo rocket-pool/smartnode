@@ -18,7 +18,12 @@ func NewProtocolDaoHandler(serviceProvider *services.ServiceProvider) *ProtocolD
 	}
 	h.factories = []server.IContextFactory{
 		&protocolDaoClaimBondsContextFactory{h},
+		&protocolDaoDefeatProposalContextFactory{h},
+		&protocolDaoExecuteProposalContextFactory{h},
+		&protocolDaoFinalizeProposalContextFactory{h},
 		&protocolDaoGetClaimableBondsContextFactory{h},
+		&protocolDaoProposeInviteToSecurityCouncilContextFactory{h},
+		&protocolDaoSettingsContextFactory{h},
 	}
 	return h
 }

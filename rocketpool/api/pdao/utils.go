@@ -3,9 +3,9 @@ package pdao
 import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/proposals"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/proposals"
+	"github.com/rocket-pool/smartnode/shared/config"
 )
 
 // Constructs a pollard for the latest finalized block and saves it to disk
