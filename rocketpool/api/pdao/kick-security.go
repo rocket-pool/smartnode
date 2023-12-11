@@ -1,108 +1,124 @@
 package pdao
 
 import (
+	"errors"
 	"fmt"
+	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/rocketpool-go/dao/security"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canProposeKickFromSecurityCouncil(c *cli.Context, address common.Address) (*api.PDAOCanProposeKickFromSecurityCouncilResponse, error) {
-	// Get services
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
+// ===============
+// === Factory ===
+// ===============
 
-	// Response
-	response := api.PDAOCanProposeKickFromSecurityCouncilResponse{}
-
-	// Get node account
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Try proposing
-	message := fmt.Sprintf("kick %s from the security council", address.Hex())
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := protocol.EstimateProposeKickFromSecurityCouncilGas(rp, message, address, blockNumber, pollard, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.BlockNumber = blockNumber
-	response.GasInfo = gasInfo
-	return &response, nil
+type protocolDaoProposeKickFromSecurityCouncilContextFactory struct {
+	handler *ProtocolDaoHandler
 }
 
-func proposeKickFromSecurityCouncil(c *cli.Context, address common.Address, blockNumber uint32) (*api.PDAOProposeKickFromSecurityCouncilResponse, error) {
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
+func (f *protocolDaoProposeKickFromSecurityCouncilContextFactory) Create(vars map[string]string) (*protocolDaoProposeKickFromSecurityCouncilContext, error) {
+	c := &protocolDaoProposeKickFromSecurityCouncilContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
+	inputErrs := []error{
+		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
 	}
-	rp, err := services.GetRocketPool(c)
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *protocolDaoProposeKickFromSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*protocolDaoProposeKickFromSecurityCouncilContext, api.ProtocolDaoProposeKickFromSecurityCouncilData](
+		router, "security/kick", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type protocolDaoProposeKickFromSecurityCouncilContext struct {
+	handler     *ProtocolDaoHandler
+	rp          *rocketpool.RocketPool
+	cfg         *config.RocketPoolConfig
+	bc          beacon.Client
+	nodeAddress common.Address
+
+	address common.Address
+	node    *node.Node
+	pdaoMgr *protocol.ProtocolDaoManager
+	member  *security.SecurityCouncilMember
+}
+
+func (c *protocolDaoProposeKickFromSecurityCouncilContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.cfg = sp.GetConfig()
+	c.bc = sp.GetBeaconClient()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.PDAOProposeKickFromSecurityCouncilResponse{}
-
-	// Get node account
-	opts, err := w.GetNodeAccountTransactor()
+	// Bindings
+	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating node binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-
-	// Propose
-	message := fmt.Sprintf("kick %s from the security council", address.Hex())
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	c.member, err = security.NewSecurityCouncilMember(c.rp, c.address)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating security council member binding: %w", err)
 	}
-	proposalID, hash, err := protocol.ProposeKickFromSecurityCouncil(rp, message, address, blockNumber, pollard, opts)
-	if err != nil {
-		return nil, err
-	}
+	return nil
+}
 
-	// Update & return response
-	response.ProposalId = proposalID
-	response.TxHash = hash
-	return &response, nil
+func (c *protocolDaoProposeKickFromSecurityCouncilContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.member.Exists,
+		c.member.ID,
+		c.pdaoMgr.Settings.Proposals.ProposalBond,
+		c.node.RplLocked,
+		c.node.RplStake,
+	)
+}
+
+func (c *protocolDaoProposeKickFromSecurityCouncilContext) PrepareData(data *api.ProtocolDaoProposeKickFromSecurityCouncilData, opts *bind.TransactOpts) error {
+	data.MemberDoesNotExist = !c.member.Exists.Get()
+	data.StakedRpl = c.node.RplStake.Get()
+	data.LockedRpl = c.node.RplLocked.Get()
+	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()
+	unlockedRpl := big.NewInt(0).Sub(data.StakedRpl, data.LockedRpl)
+	data.InsufficientRpl = (unlockedRpl.Cmp(data.ProposalBond) < 0)
+	data.CanPropose = !(data.MemberDoesNotExist || data.InsufficientRpl)
+
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		blockNumber, pollard, err := createPollard(c.rp, c.cfg, c.bc)
+		message := fmt.Sprintf("kick %s (%s) from the security council", c.member.ID.Get(), c.address.Hex())
+		txInfo, err := c.pdaoMgr.ProposeKickFromSecurityCouncil(message, c.address, blockNumber, pollard, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for ProposeKickFromSecurityCouncil: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
 }

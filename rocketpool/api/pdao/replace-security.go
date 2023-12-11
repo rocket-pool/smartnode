@@ -1,121 +1,135 @@
 package pdao
 
 import (
+	"errors"
 	"fmt"
+	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canProposeReplaceMemberOfSecurityCouncil(c *cli.Context, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address) (*api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse, error) {
-	// Get services
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
+// ===============
+// === Factory ===
+// ===============
 
-	// Response
-	response := api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse{}
-
-	// Get node account
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the existing member
-	existingID, err := security.GetMemberID(rp, existingMemberAddress, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting ID of existing member: %w", err)
-	}
-
-	// Try proposing
-	message := fmt.Sprintf("replace %s (%s) on the security council with %s (%s)", existingID, existingMemberAddress.Hex(), newMemberID, newMemberAddress.Hex())
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := protocol.EstimateProposeReplaceSecurityCouncilMemberGas(rp, message, existingMemberAddress, newMemberID, newMemberAddress, blockNumber, pollard, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.BlockNumber = blockNumber
-	response.GasInfo = gasInfo
-	return &response, nil
+type protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory struct {
+	handler *ProtocolDaoHandler
 }
 
-func proposeReplaceMemberOfSecurityCouncil(c *cli.Context, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
+func (f *protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory) Create(vars map[string]string) (*protocolDaoProposeReplaceMemberOfSecurityCouncilContext, error) {
+	c := &protocolDaoProposeReplaceMemberOfSecurityCouncilContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
+	inputErrs := []error{
+		server.ValidateArg("existing-address", vars, input.ValidateAddress, &c.existingAddress),
+		server.GetStringFromVars("id", vars, &c.newID),
+		server.ValidateArg("new-address", vars, input.ValidateAddress, &c.newAddress),
 	}
-	rp, err := services.GetRocketPool(c)
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*protocolDaoProposeReplaceMemberOfSecurityCouncilContext, api.ProtocolDaoProposeReplaceMemberOfSecurityCouncilData](
+		router, "security/replace", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type protocolDaoProposeReplaceMemberOfSecurityCouncilContext struct {
+	handler     *ProtocolDaoHandler
+	rp          *rocketpool.RocketPool
+	cfg         *config.RocketPoolConfig
+	bc          beacon.Client
+	nodeAddress common.Address
+
+	existingAddress common.Address
+	newID           string
+	newAddress      common.Address
+	node            *node.Node
+	pdaoMgr         *protocol.ProtocolDaoManager
+	existingMember  *security.SecurityCouncilMember
+	newMember       *security.SecurityCouncilMember
+}
+
+func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.cfg = sp.GetConfig()
+	c.bc = sp.GetBeaconClient()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.PDAOProposeReplaceMemberOfSecurityCouncilResponse{}
-
-	// Get node account
-	opts, err := w.GetNodeAccountTransactor()
+	// Bindings
+	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating node binding: %w", err)
 	}
-
-	// Get the existing member
-	existingID, err := security.GetMemberID(rp, existingMemberAddress, nil)
+	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, fmt.Errorf("error getting ID of existing member: %w", err)
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.existingMember, err = security.NewSecurityCouncilMember(c.rp, c.existingAddress)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating security council member binding for %s: %w", c.existingAddress.Hex(), err)
 	}
-
-	// Propose
-	message := fmt.Sprintf("replace %s (%s) on the security council with %s (%s)", existingID, existingMemberAddress.Hex(), newMemberID, newMemberAddress.Hex())
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
+	c.newMember, err = security.NewSecurityCouncilMember(c.rp, c.newAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating security council member binding for %s: %w", c.newAddress.Hex(), err)
 	}
-	proposalID, hash, err := protocol.ProposeReplaceSecurityCouncilMember(rp, message, existingMemberAddress, newMemberID, newMemberAddress, blockNumber, pollard, opts)
-	if err != nil {
-		return nil, err
-	}
+	return nil
+}
 
-	// Update & return response
-	response.ProposalId = proposalID
-	response.TxHash = hash
-	return &response, nil
+func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.existingMember.Exists,
+		c.existingMember.ID,
+		c.newMember.Exists,
+		c.pdaoMgr.Settings.Proposals.ProposalBond,
+		c.node.RplLocked,
+		c.node.RplStake,
+	)
+}
+
+func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) PrepareData(data *api.ProtocolDaoProposeReplaceMemberOfSecurityCouncilData, opts *bind.TransactOpts) error {
+	data.NewMemberAlreadyExists = c.newMember.Exists.Get()
+	data.OldMemberDoesNotExist = !c.existingMember.Exists.Get()
+	data.StakedRpl = c.node.RplStake.Get()
+	data.LockedRpl = c.node.RplLocked.Get()
+	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()
+	unlockedRpl := big.NewInt(0).Sub(data.StakedRpl, data.LockedRpl)
+	data.InsufficientRpl = (unlockedRpl.Cmp(data.ProposalBond) < 0)
+	data.CanPropose = !(data.NewMemberAlreadyExists || data.OldMemberDoesNotExist || data.InsufficientRpl)
+
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		blockNumber, pollard, err := createPollard(c.rp, c.cfg, c.bc)
+		message := fmt.Sprintf("replace %s (%s) on the security council with %s (%s)", c.existingMember.ID.Get(), c.existingAddress.Hex(), c.newID, c.newAddress.Hex())
+		txInfo, err := c.pdaoMgr.ProposeReplaceSecurityCouncilMember(message, c.existingAddress, c.newID, c.newAddress, blockNumber, pollard, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for ProposeReplaceSecurityCouncilMember: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
 }

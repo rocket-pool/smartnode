@@ -400,3 +400,12 @@ func ValidateVoteDirection(name, value string) (types.VoteDirection, error) {
 	}
 	return 0, fmt.Errorf("Invalid %s '%s': not a valid vote direction name", name, value)
 }
+
+// Validate a timestamp using RFC3339
+func ValidateTime(name, value string) (time.Time, error) {
+	val, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
+	}
+	return val, nil
+}

@@ -22,7 +22,12 @@ func NewProtocolDaoHandler(serviceProvider *services.ServiceProvider) *ProtocolD
 		&protocolDaoExecuteProposalContextFactory{h},
 		&protocolDaoFinalizeProposalContextFactory{h},
 		&protocolDaoGetClaimableBondsContextFactory{h},
+		&protocolDaoProposeOneTimeSpendContextFactory{h},
+		&protocolDaoProposeRecurringSpendContextFactory{h},
 		&protocolDaoProposeInviteToSecurityCouncilContextFactory{h},
+		&protocolDaoProposeKickFromSecurityCouncilContextFactory{h},
+		&protocolDaoProposeKickMultiFromSecurityCouncilContextFactory{h},
+		&protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory{h},
 		&protocolDaoSettingsContextFactory{h},
 	}
 	return h

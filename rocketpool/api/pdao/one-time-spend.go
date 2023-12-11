@@ -1,109 +1,119 @@
 package pdao
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int) (*api.PDAOCanProposeOneTimeSpendResponse, error) {
-	// Get services
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
+// ===============
+// === Factory ===
+// ===============
 
-	// Response
-	response := api.PDAOCanProposeOneTimeSpendResponse{}
-
-	// Get node account
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Try proposing
-	message := fmt.Sprintf("one-time spend for invoice %s", invoiceID)
-	blockNumber, pollard, err := createPollard(rp, cfg, bc)
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := protocol.EstimateProposeOneTimeTreasurySpendGas(rp, message, invoiceID, recipient, amount, blockNumber, pollard, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.BlockNumber = blockNumber
-	response.GasInfo = gasInfo
-	return &response, nil
+type protocolDaoProposeOneTimeSpendContextFactory struct {
+	handler *ProtocolDaoHandler
 }
 
-func proposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32) (*api.PDAOProposeOneTimeSpendResponse, error) {
-	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
+func (f *protocolDaoProposeOneTimeSpendContextFactory) Create(vars map[string]string) (*protocolDaoProposeOneTimeSpendContext, error) {
+	c := &protocolDaoProposeOneTimeSpendContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
+	inputErrs := []error{
+		server.GetStringFromVars("invoice-id", vars, &c.invoiceID),
+		server.ValidateArg("recipient", vars, input.ValidateAddress, &c.recipient),
+		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
 	}
-	rp, err := services.GetRocketPool(c)
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *protocolDaoProposeOneTimeSpendContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*protocolDaoProposeOneTimeSpendContext, api.ProtocolDaoGeneralProposeData](
+		router, "one-time-spend", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type protocolDaoProposeOneTimeSpendContext struct {
+	handler     *ProtocolDaoHandler
+	rp          *rocketpool.RocketPool
+	cfg         *config.RocketPoolConfig
+	bc          beacon.Client
+	nodeAddress common.Address
+
+	invoiceID string
+	recipient common.Address
+	amount    *big.Int
+	node      *node.Node
+	pdaoMgr   *protocol.ProtocolDaoManager
+}
+
+func (c *protocolDaoProposeOneTimeSpendContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.cfg = sp.GetConfig()
+	c.bc = sp.GetBeaconClient()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.PDAOProposeOneTimeSpendResponse{}
-
-	// Get node account
-	opts, err := w.GetNodeAccountTransactor()
+	// Bindings
+	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating node binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
+	return nil
+}
 
-	// Propose
-	message := fmt.Sprintf("one-time spend for invoice %s", invoiceID)
-	pollard, err := getPollard(rp, cfg, bc, blockNumber)
-	if err != nil {
-		return nil, err
-	}
-	proposalID, hash, err := protocol.ProposeOneTimeTreasurySpend(rp, message, invoiceID, recipient, amount, blockNumber, pollard, opts)
-	if err != nil {
-		return nil, err
-	}
+func (c *protocolDaoProposeOneTimeSpendContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.pdaoMgr.Settings.Proposals.ProposalBond,
+		c.node.RplLocked,
+		c.node.RplStake,
+	)
+}
 
-	// Update & return response
-	response.ProposalId = proposalID
-	response.TxHash = hash
-	return &response, nil
+func (c *protocolDaoProposeOneTimeSpendContext) PrepareData(data *api.ProtocolDaoGeneralProposeData, opts *bind.TransactOpts) error {
+	data.StakedRpl = c.node.RplStake.Get()
+	data.LockedRpl = c.node.RplLocked.Get()
+	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()
+	unlockedRpl := big.NewInt(0).Sub(data.StakedRpl, data.LockedRpl)
+	data.InsufficientRpl = (unlockedRpl.Cmp(data.ProposalBond) < 0)
+	data.CanPropose = !(data.InsufficientRpl)
+
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		blockNumber, pollard, err := createPollard(c.rp, c.cfg, c.bc)
+		message := fmt.Sprintf("one-time spend for invoice %s", c.invoiceID)
+		txInfo, err := c.pdaoMgr.ProposeOneTimeTreasurySpend(message, c.invoiceID, c.recipient, c.amount, blockNumber, pollard, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for ProposeOneTimeTreasurySpend: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
 }
