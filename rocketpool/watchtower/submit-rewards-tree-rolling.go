@@ -510,7 +510,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 		cid, err := t.uploadFileToWeb3Storage(fileBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
 			// If it fails, get the CID and continue the submission process
-			t.log.Printf("error uploading Merkle tree to Web3.Storage: %w. Calculating CID", err)
+			t.log.Printf("error uploading Merkle tree to Web3.Storage: %s. Calculating CID", err.Error())
 			c, err := rprewards.GetCIDForSerializedFile(fileBytes, filepath.Base(compressedRewardsTreePath))
 			if err != nil {
 				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)

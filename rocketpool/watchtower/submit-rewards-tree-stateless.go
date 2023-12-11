@@ -221,7 +221,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		// Try to upload the file
 		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			t.log.Printlnf("Error uploading Merkle tree to Web3.Storage: %w", err)
+			t.log.Printlnf("Error uploading Merkle tree to Web3.Storage: %s", err.Error())
 			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, filepath.Base(compressedRewardsTreePath))
 			if err != nil {
 				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
