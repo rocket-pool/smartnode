@@ -30,8 +30,14 @@ func getStatus(c *cli.Context) error {
 	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
 	// Print what network we're on
-	err := cliutils.PrintNetwork(rp)
+	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
 	if err != nil {
 		return err
 	}
@@ -40,12 +46,6 @@ func getStatus(c *cli.Context) error {
 	status, err := rp.NodeStatus()
 	if err != nil {
 		return err
-	}
-
-	// Get the config
-	cfg, _, err := rp.LoadConfig()
-	if err != nil {
-		return fmt.Errorf("Error loading configuration: %w", err)
 	}
 
 	// Account address & balances
