@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/a8m/envsubst"
@@ -288,7 +289,7 @@ func (c *Client) IsFirstRun() (bool, error) {
 	return rp.IsFirstRun(expandedPath), nil
 }
 
-// Load the Prometheus template, do an environment variable substitution, and save it
+// Load the Prometheus template, do an template variable substitution, and save it
 func (c *Client) UpdatePrometheusConfiguration(settings map[string]string) error {
 	prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusConfigTemplate))
 	if err != nil {
@@ -300,32 +301,23 @@ func (c *Client) UpdatePrometheusConfiguration(settings map[string]string) error
 		return fmt.Errorf("Error expanding Prometheus config file path: %w", err)
 	}
 
-	// Set the environment variables defined in the user settings for metrics
-	oldValues := map[string]string{}
-	for varName, varValue := range settings {
-		oldValues[varName] = os.Getenv(varName)
-		os.Setenv(varName, varValue)
+	// Parse the template
+	t, err := template.ParseFiles(prometheusTemplatePath)
+	if err != nil {
+		return fmt.Errorf("Error reading Prometheus configuration template: %w", err)
 	}
 
-	// Read and substitute the template
-	contents, err := envsubst.ReadFile(prometheusTemplatePath)
+	// Create the output file
+	runtimeFile, err := os.OpenFile(prometheusConfigPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0664)
 	if err != nil {
-		return fmt.Errorf("Error reading and substituting Prometheus configuration template: %w", err)
+		return fmt.Errorf("Could not open Prometheus config file %s for writing: %w", shellescape.Quote(prometheusConfigPath), err)
 	}
+	defer runtimeFile.Close()
 
-	// Unset the env vars
-	for name, value := range oldValues {
-		os.Setenv(name, value)
-	}
-
-	// Write the actual Prometheus config file
-	err = os.WriteFile(prometheusConfigPath, contents, 0664)
+	// Replace template variables and write the result
+	err = t.Execute(runtimeFile, settings)
 	if err != nil {
-		return fmt.Errorf("Could not write Prometheus config file to %s: %w", shellescape.Quote(prometheusConfigPath), err)
-	}
-	err = os.Chmod(prometheusConfigPath, 0664)
-	if err != nil {
-		return fmt.Errorf("Could not set Prometheus config file permissions: %w", shellescape.Quote(prometheusConfigPath), err)
+		return fmt.Errorf("Error writing and substituting Prometheus configuration template: %w", err)
 	}
 
 	return nil
