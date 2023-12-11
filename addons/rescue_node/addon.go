@@ -138,7 +138,7 @@ func (r *RescueNode) PrintStatusText(nodeAddr common.Address) {
 	// Check the Username
 	usernameNodeAddr, err := r.getCredentialNodeId()
 	if err != nil {
-		fmt.Printf("%s%w%s", colorRed, err, colorReset)
+		fmt.Printf("%s%v%s\n", colorRed, err, colorReset)
 	} else {
 		fmt.Printf("Using a credential issued to %s%s%s.\n", colorBlue, usernameNodeAddr.String(), colorReset)
 		if !bytes.Equal(usernameNodeAddr.Bytes(), nodeAddr.Bytes()) {
@@ -148,7 +148,7 @@ func (r *RescueNode) PrintStatusText(nodeAddr common.Address) {
 
 	credentialDetails, err := r.getCredentialDetails()
 	if err != nil {
-		fmt.Printf("%s%w%s", colorRed, err, colorReset)
+		fmt.Printf("%s%v%s\n", colorRed, err, colorReset)
 	} else {
 		if credentialDetails.solo {
 			fmt.Printf("%s - WARNING: This credential was issued to a solo staker!%s\n", colorYellow, colorReset)
