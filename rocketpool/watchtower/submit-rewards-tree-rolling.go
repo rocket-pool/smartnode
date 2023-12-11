@@ -506,12 +506,20 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 
 		t.log.Printlnf("%s Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", t.logPrefix, currentIndex, rewardsTreePath)
 
-		// Upload the file
+		// Try to upload the file
 		cid, err := t.uploadFileToWeb3Storage(fileBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			return fmt.Errorf("error uploading Merkle tree to Web3.Storage: %w", err)
+			// If it fails, get the CID and continue the submission process
+			t.log.Printf("error uploading Merkle tree to Web3.Storage: %w. Calculating CID", err)
+			c, err := rprewards.GetCIDForSerializedFile(fileBytes, filepath.Base(compressedRewardsTreePath))
+			if err != nil {
+				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
+			}
+			cid = c.String()
+			t.printMessage(fmt.Sprintf("Calculated rewards file CID %s", cid))
+		} else {
+			t.log.Printlnf("%s Uploaded Merkle tree with CID %s", t.logPrefix, cid)
 		}
-		t.log.Printlnf("%s Uploaded Merkle tree with CID %s", t.logPrefix, cid)
 
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, existingRewardsFile.GetHeader(), cid, big.NewInt(int64(intervalsPassed)))
@@ -566,14 +574,22 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 		return fmt.Errorf("Error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
 	}
 
-	// Upload it if this is an Oracle DAO node
+	// Try to upload it if this is an Oracle DAO node
 	if nodeTrusted {
 		t.printMessage("Uploading minipool performance file to Web3.Storage...")
 		minipoolPerformanceCid, err := t.uploadFileToWeb3Storage(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
 		if err != nil {
-			return fmt.Errorf("Error uploading minipool performance file to Web3.Storage: %w", err)
+			// If it fails, get the CID and continue the submission process
+			t.printMessage(fmt.Sprintf("Error uploading minipool performance file to Web3.Storage: %w", err))
+			c, err := rprewards.GetCIDForSerializedFile(minipoolPerformanceBytes, filepath.Base(compressedMinipoolPerformancePath))
+			if err != nil {
+				return fmt.Errorf("error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
+			}
+			minipoolPerformanceCid = c.String()
+			t.printMessage(fmt.Sprintf("Calculated minipool performance file CID %s", minipoolPerformanceCid))
+		} else {
+			t.printMessage(fmt.Sprintf("Uploaded minipool performance file with CID %s", minipoolPerformanceCid))
 		}
-		t.printMessage(fmt.Sprintf("Uploaded minipool performance file with CID %s", minipoolPerformanceCid))
 		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid)
 	} else {
 		t.printMessage("Saved minipool performance file.")
@@ -595,13 +611,21 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 
 	// Only do the upload and submission process if this is an Oracle DAO node
 	if nodeTrusted {
-		// Upload the rewards tree file
+		// Try to upload the rewards tree file
 		t.printMessage("Uploading to Web3.Storage and submitting results to the contracts...")
 		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			return fmt.Errorf("Error uploading Merkle tree to Web3.Storage: %w", err)
+			t.printMessage(fmt.Sprintf("Error uploading Merkle tree to Web3.Storage: %w", err))
+			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, filepath.Base(compressedRewardsTreePath))
+			if err != nil {
+				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
+			}
+			cid = c.String()
+			t.printMessage(fmt.Sprintf("Calculated rewards file CID %s", cid))
+
+		} else {
+			t.printMessage(fmt.Sprintf("Uploaded Merkle tree with CID %s", cid))
 		}
-		t.printMessage(fmt.Sprintf("Uploaded Merkle tree with CID %s", cid))
 
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid, big.NewInt(int64(intervalsPassed)))

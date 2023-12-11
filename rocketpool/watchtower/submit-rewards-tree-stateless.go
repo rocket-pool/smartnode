@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/big"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -217,10 +218,16 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 			return fmt.Errorf("Error deserializing rewards tree file: %w", err)
 		}
 
-		// Upload the file
+		// Try to upload the file
 		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			return fmt.Errorf("Error uploading Merkle tree to Web3.Storage: %w", err)
+			t.log.Printlnf("Error uploading Merkle tree to Web3.Storage: %w", err)
+			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, filepath.Base(compressedRewardsTreePath))
+			if err != nil {
+				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
+			}
+			cid = c.String()
+			t.printMessage(fmt.Sprintf("Calculated rewards file CID %s", cid))
 		}
 		t.log.Printlnf("Uploaded Merkle tree with CID %s", cid)
 
@@ -362,14 +369,21 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		return fmt.Errorf("Error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
 	}
 
-	// Upload it if this is an Oracle DAO node
+	// Try to upload it if this is an Oracle DAO node
 	if nodeTrusted {
 		t.printMessage("Uploading minipool performance file to Web3.Storage...")
 		minipoolPerformanceCid, err := t.uploadFileToWeb3Storage(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
 		if err != nil {
-			return fmt.Errorf("Error uploading minipool performance file to Web3.Storage: %w", err)
+			t.printMessage(fmt.Sprintf("Error uploading minipool performance file to Web3.Storage: %w", err))
+			c, err := rprewards.GetCIDForSerializedFile(minipoolPerformanceBytes, filepath.Base(compressedMinipoolPerformancePath))
+			if err != nil {
+				return fmt.Errorf("error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
+			}
+			minipoolPerformanceCid = c.String()
+			t.printMessage(fmt.Sprintf("Calculated minipool performance file CID %s", minipoolPerformanceCid))
+		} else {
+			t.printMessage(fmt.Sprintf("Uploaded minipool performance file with CID %s", minipoolPerformanceCid))
 		}
-		t.printMessage(fmt.Sprintf("Uploaded minipool performance file with CID %s", minipoolPerformanceCid))
 		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid)
 	} else {
 		t.printMessage("Saved minipool performance file.")
@@ -391,13 +405,20 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 
 	// Only do the upload and submission process if this is an Oracle DAO node
 	if nodeTrusted {
-		// Upload the rewards tree file
+		// Try to upload the rewards tree file
 		t.printMessage("Uploading to Web3.Storage and submitting results to the contracts...")
 		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			return fmt.Errorf("Error uploading Merkle tree to Web3.Storage: %w", err)
+			t.printMessage(fmt.Sprintf("Error uploading Merkle tree to Web3.Storage: %w", err))
+			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, filepath.Base(compressedRewardsTreePath))
+			if err != nil {
+				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
+			}
+			cid = c.String()
+			t.printMessage(fmt.Sprintf("Calculated rewards file CID %s", cid))
+		} else {
+			t.printMessage(fmt.Sprintf("Uploaded Merkle tree with CID %s", cid))
 		}
-		t.printMessage(fmt.Sprintf("Uploaded Merkle tree with CID %s", cid))
 
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid, big.NewInt(int64(intervalsPassed)))
