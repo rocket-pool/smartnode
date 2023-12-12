@@ -2,6 +2,7 @@ package node
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -36,10 +37,37 @@ func getStatus(c *cli.Context) error {
 		return fmt.Errorf("Error loading configuration: %w", err)
 	}
 
+	// Get wallet status
+	walletStatus, err := rp.WalletStatus()
+	if err != nil {
+		return err
+	}
+
+	// Rescue Node Plugin - ensure that we print the rescue node stuff even
+	// when the eth1 node is syncing by deferring it here.
+	//
+	// Since we collected all the data we need for this message, we can safely
+	// defer it and let it execute even if we fail further down, eg because
+	// the EC is still syncing.
+	if walletStatus.WalletInitialized {
+		defer func() {
+			if cfg.RescueNode.GetEnabledParameter().Value.(bool) {
+				fmt.Println()
+
+				cfg.RescueNode.(*rescue_node.RescueNode).PrintStatusText(walletStatus.AccountAddress)
+			}
+		}()
+	}
+
 	// Print what network we're on
 	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
 	if err != nil {
 		return err
+	}
+
+	// rp.NodeStatus() will fail with an error, but we can short-circuit it here.
+	if !walletStatus.WalletInitialized {
+		return errors.New("The node wallet is not initialized.")
 	}
 
 	// Get node status
@@ -284,13 +312,6 @@ func getStatus(c *cli.Context) error {
 
 		} else {
 			fmt.Println("The node does not have any minipools yet.")
-		}
-
-		// Rescue Node Plugin
-		if cfg.RescueNode.GetEnabledParameter().Value.(bool) {
-			fmt.Println()
-
-			cfg.RescueNode.(*rescue_node.RescueNode).PrintStatusText(status.AccountAddress)
 		}
 
 	} else {
