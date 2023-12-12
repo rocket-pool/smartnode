@@ -16,7 +16,6 @@ type standardLayout struct {
 	footer         tview.Primitive
 	form           *Form
 	parameters     map[tview.FormItem]*parameterizedFormItem
-	cfg            cfgtypes.Config
 }
 
 // Creates a new StandardLayout instance, which includes the grid and description box preconstructed.

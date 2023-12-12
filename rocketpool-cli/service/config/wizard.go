@@ -26,14 +26,15 @@ type wizard struct {
 	externalMevModal                *textBoxWizardStep
 	finishedModal                   *choiceWizardStep
 	consensusLocalRandomModal       *choiceWizardStep
-	consensusLocalRandomPrysmModal  *choiceWizardStep
-	consensusLocalPrysmWarning      *choiceWizardStep
-	consensusLocalTekuWarning       *choiceWizardStep
-	externalDoppelgangerModal       *choiceWizardStep
-	executionLocalRandomModal       *choiceWizardStep
-	useFallbackModal                *choiceWizardStep
-	fallbackNormalModal             *textBoxWizardStep
-	fallbackPrysmModal              *textBoxWizardStep
+	//lint:ignore U1000 unused while prysm is a majority client
+	consensusLocalRandomPrysmModal *choiceWizardStep
+	consensusLocalPrysmWarning     *choiceWizardStep
+	consensusLocalTekuWarning      *choiceWizardStep
+	externalDoppelgangerModal      *choiceWizardStep
+	executionLocalRandomModal      *choiceWizardStep
+	useFallbackModal               *choiceWizardStep
+	fallbackNormalModal            *textBoxWizardStep
+	fallbackPrysmModal             *textBoxWizardStep
 
 	// Native mode
 	nativeWelcomeModal     *choiceWizardStep

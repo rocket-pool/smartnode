@@ -9,6 +9,7 @@ import (
 const randomCcPrysmID string = "step-random-cc-prysm"
 const randomCcID string = "step-random-cc"
 
+//lint:ignore U1000 this function is unused but only because of the state of the chain- if it becomes a minority client it will be reinstated
 func createRandomPrysmStep(wiz *wizard, currentStep int, totalSteps int, goodOptions []cfgtypes.ParameterOption) *choiceWizardStep {
 
 	helperText := "You have been randomly assigned to Prysm for your Consensus client.\n\n[orange]NOTE: Prysm currently has a very high representation of the Beacon Chain. For the health of the network and the overall safety of your funds, please consider choosing a client with a lower representation. Please visit https://clientdiversity.org to learn more."

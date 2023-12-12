@@ -6,7 +6,6 @@ import (
 
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared/types/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
@@ -94,12 +93,12 @@ func processConfigAfterQuit(md *mainDisplay) {
 		_, totalAffectedContainers, changeNetworks := md.Config.GetChanges(md.PreviousConfig)
 
 		if md.isUpdate {
-			totalAffectedContainers[cfgtypes.ContainerID_Api] = true
-			totalAffectedContainers[cfgtypes.ContainerID_Node] = true
-			totalAffectedContainers[cfgtypes.ContainerID_Watchtower] = true
+			totalAffectedContainers[config.ContainerID_Api] = true
+			totalAffectedContainers[config.ContainerID_Node] = true
+			totalAffectedContainers[config.ContainerID_Watchtower] = true
 		}
 
-		var containersToRestart []cfgtypes.ContainerID
+		var containersToRestart []config.ContainerID
 		for container := range totalAffectedContainers {
 			containersToRestart = append(containersToRestart, container)
 		}
