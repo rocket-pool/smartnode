@@ -228,6 +228,7 @@ func (c *Client) Close() {
 }
 
 // Load the config
+// Returns the RocketPoolConfig and whether or not it was newly generated
 func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	settingsFilePath := filepath.Join(c.configPath, SettingsFile)
 	expandedPath, err := homedir.Expand(settingsFilePath)
@@ -240,12 +241,13 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 		return nil, false, err
 	}
 
-	isNew := false
-	if cfg == nil {
-		cfg = config.NewRocketPoolConfig(c.configPath, c.daemonPath != "")
-		isNew = true
+	if cfg != nil {
+		// A config was loaded, return it now
+		return cfg, false, nil
 	}
-	return cfg, isNew, nil
+
+	// Config wasn't loaded, but there was no error- we should create one.
+	return config.NewRocketPoolConfig(c.configPath, c.daemonPath != ""), true, nil
 }
 
 // Load the backup config

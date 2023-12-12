@@ -53,8 +53,14 @@ func getSyncProgress(c *cli.Context) error {
 	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
 	// Print what network we're on
-	err := cliutils.PrintNetwork(rp)
+	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
 	if err != nil {
 		return err
 	}
