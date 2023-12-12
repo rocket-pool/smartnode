@@ -294,9 +294,9 @@ func (r *treeGeneratorImpl_v6) updateNetworksAndTotals() {
 
 	// Create the map for each network, including unused ones
 	for network := uint64(0); network <= highestNetworkIndex; network++ {
-		rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[network]
+		_, exists := r.rewardsFile.NetworkRewards[network]
 		if !exists {
-			rewardsForNetwork = &NetworkRewardsInfo{
+			rewardsForNetwork := &NetworkRewardsInfo{
 				CollateralRpl:    NewQuotedBigInt(0),
 				OracleDaoRpl:     NewQuotedBigInt(0),
 				SmoothingPoolEth: NewQuotedBigInt(0),
@@ -1158,7 +1158,7 @@ func (r *treeGeneratorImpl_v6) getMinipoolBondAndNodeFee(details *rpstate.Native
 	previousBond := details.LastBondReductionPrevValue
 	previousFee := details.LastBondReductionPrevNodeFee
 
-	var reductionTimeBig *big.Int = details.LastBondReductionTime
+	var reductionTimeBig = details.LastBondReductionTime
 	if reductionTimeBig.Cmp(r.zero) == 0 {
 		// Never reduced
 		return currentBond, currentFee

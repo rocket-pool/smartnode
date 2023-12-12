@@ -1,8 +1,6 @@
 package collectors
 
 import (
-	"fmt"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -109,9 +107,4 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 		collector.rethContractBalance, prometheus.GaugeValue, rETHBalance)
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalRethSupply, prometheus.GaugeValue, rethFloat)
-}
-
-// Log error messages
-func (collector *PerformanceCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

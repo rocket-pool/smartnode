@@ -42,15 +42,6 @@ type reduceBonds struct {
 	gasLimit       uint64
 }
 
-// Details required to check for bond reduction eligibility
-type minipoolBondReductionDetails struct {
-	Address             common.Address
-	DepositBalance      *big.Int
-	ReduceBondTime      time.Time
-	ReduceBondCancelled bool
-	Status              types.MinipoolStatus
-}
-
 // Create reduce bonds task
 func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error) {
 

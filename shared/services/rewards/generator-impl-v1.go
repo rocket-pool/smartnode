@@ -292,9 +292,9 @@ func (r *treeGeneratorImpl_v1) updateNetworksAndTotals() {
 
 	// Create the map for each network, including unused ones
 	for network := uint64(0); network <= highestNetworkIndex; network++ {
-		rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[network]
+		_, exists := r.rewardsFile.NetworkRewards[network]
 		if !exists {
-			rewardsForNetwork = &NetworkRewardsInfo{
+			rewardsForNetwork := &NetworkRewardsInfo{
 				CollateralRpl:    NewQuotedBigInt(0),
 				OracleDaoRpl:     NewQuotedBigInt(0),
 				SmoothingPoolEth: NewQuotedBigInt(0),

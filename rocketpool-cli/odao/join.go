@@ -71,7 +71,7 @@ func join(c *cli.Context) error {
 				}
 
 				// Prompt for confirmation
-				if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Do you want to let the new RPL contract interact with your legacy RPL?"))) {
+				if !(c.Bool("yes") || cliutils.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -168,7 +168,7 @@ func join(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	rp.PrintMultiTxWarning()
+	rocketpool.PrintMultiTxWarning()
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to join the oracle DAO? Your RPL bond will be locked until you leave.")) {

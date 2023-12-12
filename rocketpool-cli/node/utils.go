@@ -13,15 +13,8 @@ import (
 	"unicode"
 
 	"github.com/goccy/go-json"
-	"github.com/mitchellh/go-homedir"
-	"gopkg.in/yaml.v2"
 
-	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // IPInfo API
@@ -184,8 +177,6 @@ func promptTimezone() string {
 	// Prompt for country
 	country := ""
 	for {
-		time.Now().Zone()
-		timezone = ""
 		country = cliutils.Prompt("Please enter a country / continent from the list above:", "^.+$", "Please enter a country / continent from the list above:")
 
 		exists := false
@@ -245,8 +236,6 @@ func promptTimezone() string {
 	// Prompt for region
 	region := ""
 	for {
-		time.Now().Zone()
-		timezone = ""
 		region = cliutils.Prompt("Please enter a region from the list above:", "^.+$", "Please enter a region from the list above:")
 
 		exists := false
@@ -312,77 +301,5 @@ func promptMinNodeFee(networkCurrentNodeFee, networkMinNodeFee float64) float64 
 		}
 
 	}
-
-}
-
-// Prompt for the password to a solo validator key as part of migration
-func promptForSoloKeyPassword(rp *rocketpool.Client, cfg *config.RocketPoolConfig, pubkey types.ValidatorPubkey) (string, error) {
-
-	// Check for the custom key directory
-	datapath, err := homedir.Expand(cfg.Smartnode.DataPath.Value.(string))
-	if err != nil {
-		return "", fmt.Errorf("error expanding data directory: %w", err)
-	}
-	customKeyDir := filepath.Join(datapath, "custom-keys")
-	info, err := os.Stat(customKeyDir)
-	if os.IsNotExist(err) || !info.IsDir() {
-		return "", nil
-	}
-
-	// Get the custom keystore files
-	files, err := os.ReadDir(customKeyDir)
-	if err != nil {
-		return "", fmt.Errorf("error enumerating custom keystores: %w", err)
-	}
-	if len(files) == 0 {
-		return "", nil
-	}
-
-	// Get the pubkeys for the custom keystores
-	pubkeyPasswords := map[string]string{}
-	for _, file := range files {
-		// Read the file
-		bytes, err := os.ReadFile(filepath.Join(customKeyDir, file.Name()))
-		if err != nil {
-			return "", fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
-		}
-
-		// Deserialize it
-		keystore := api.ValidatorKeystore{}
-		err = json.Unmarshal(bytes, &keystore)
-		if err != nil {
-			return "", fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
-		}
-
-		if keystore.Pubkey == pubkey {
-			// Found it, prompt for the password
-			password := cliutils.PromptPassword(
-				fmt.Sprintf("Please enter the password that the keystore for %s was encrypted with:", pubkey.Hex()), "^.*$", "",
-			)
-
-			formattedPubkey := strings.ToUpper(hexutils.RemovePrefix(pubkey.Hex()))
-			pubkeyPasswords[formattedPubkey] = password
-
-			fmt.Println()
-			break
-		}
-	}
-
-	if len(pubkeyPasswords) == 0 {
-		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into the Smartnode stack, you will need to put its keystore file into custom-keys first")
-	}
-
-	// Store it in the file
-	fileBytes, err := yaml.Marshal(pubkeyPasswords)
-	if err != nil {
-		return "", fmt.Errorf("error serializing keystore passwords file: %w", err)
-	}
-	passwordFile := filepath.Join(datapath, "custom-key-passwords")
-	err = os.WriteFile(passwordFile, fileBytes, 0600)
-	if err != nil {
-		return "", fmt.Errorf("error writing keystore passwords file: %w", err)
-	}
-
-	return passwordFile, nil
 
 }

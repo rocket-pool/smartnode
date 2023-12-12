@@ -735,10 +735,10 @@ func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts
 func (c *StandardHttpClient) postVoluntaryExit(request VoluntaryExitRequest) error {
 	responseBody, status, err := c.postRequest(RequestVoluntaryExitPath, request)
 	if err != nil {
-		return fmt.Errorf("Could not broadcast exit for validator at index %d: %w", request.Message.ValidatorIndex, err)
+		return fmt.Errorf("Could not broadcast exit for validator at index %s: %w", request.Message.ValidatorIndex, err)
 	}
 	if status != http.StatusOK {
-		return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
+		return fmt.Errorf("Could not broadcast exit for validator at index %s: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
 	}
 	return nil
 }
@@ -856,10 +856,10 @@ func (c *StandardHttpClient) postWithdrawalCredentialsChange(request BLSToExecut
 	requestArray := []BLSToExecutionChangeRequest{request} // This route must be wrapped in an array
 	responseBody, status, err := c.postRequest(RequestWithdrawalCredentialsChangePath, requestArray)
 	if err != nil {
-		return fmt.Errorf("Could not broadcast withdrawal credentials change for validator %d: %w", request.Message.ValidatorIndex, err)
+		return fmt.Errorf("Could not broadcast withdrawal credentials change for validator %s: %w", request.Message.ValidatorIndex, err)
 	}
 	if status != http.StatusOK {
-		return fmt.Errorf("Could not broadcast withdrawal credentials change for validator %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
+		return fmt.Errorf("Could not broadcast withdrawal credentials change for validator %s: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
 	}
 	return nil
 }

@@ -1182,7 +1182,7 @@ func (r *treeGeneratorImpl_v7) getMinipoolBondAndNodeFee(details *rpstate.Native
 	previousBond := details.LastBondReductionPrevValue
 	previousFee := details.LastBondReductionPrevNodeFee
 
-	var reductionTimeBig *big.Int = details.LastBondReductionTime
+	var reductionTimeBig = details.LastBondReductionTime
 	if reductionTimeBig.Cmp(common.Big0) == 0 {
 		// Never reduced
 		return currentBond, currentFee

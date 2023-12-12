@@ -478,7 +478,7 @@ func getMinipoolBondAndNodeFee(details *rpstate.NativeMinipoolDetails, blockTime
 		zero = big.NewInt(0)
 	}
 
-	var reductionTimeBig *big.Int = details.LastBondReductionTime
+	var reductionTimeBig = details.LastBondReductionTime
 	if reductionTimeBig.Cmp(zero) == 0 {
 		// Never reduced
 		return currentBond, currentFee

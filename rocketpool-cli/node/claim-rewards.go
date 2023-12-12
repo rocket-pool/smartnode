@@ -344,8 +344,7 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 	} else {
 		// Prompt the user
 		if rplToMaxCollateral <= 0 || availableRpl < rplToMaxCollateral {
-			var collateralString string
-			collateralString = fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% borrowed collateral (%.2f%% bonded collateral)", availableRpl, bestBorrowedCollateral*100, bestBondedCollateral*100)
+			collateralString := fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% borrowed collateral (%.2f%% bonded collateral)", availableRpl, bestBorrowedCollateral*100, bestBondedCollateral*100)
 
 			amountOptions := []string{
 				"None (do not restake any RPL)",

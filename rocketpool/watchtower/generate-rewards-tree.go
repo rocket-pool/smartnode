@@ -175,19 +175,19 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 				t.log.Printlnf("%s Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", generationPrefix, elBlockHeader.Number.Uint64(), archiveEcUrl)
 				ec, err := ethclient.Dial(archiveEcUrl)
 				if err != nil {
-					t.handleError(fmt.Errorf("Error connecting to archive EC: %w", err))
+					t.handleError(fmt.Errorf("%s Error connecting to archive EC: %w", generationPrefix, err))
 					return
 				}
 				client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(t.cfg.Smartnode.GetStorageAddress()))
 				if err != nil {
-					t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", err))
+					t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", generationPrefix, err))
 					return
 				}
 
 				// Get the rETH address from the archive EC
 				address, err = client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
 				if err != nil {
-					t.handleError(fmt.Errorf("%s Error verifying rETH address with Archive EC: %w", err))
+					t.handleError(fmt.Errorf("%s Error verifying rETH address with Archive EC: %w", generationPrefix, err))
 					return
 				}
 			} else {

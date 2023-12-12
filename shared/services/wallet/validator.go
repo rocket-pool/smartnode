@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/rocket-pool/rocketpool-go/types"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2util "github.com/wealdtech/go-eth2-util"
@@ -55,7 +54,7 @@ func (w *Wallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error)
 }
 
 // Get a validator key by public key
-func (w *Wallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+func (w *Wallet) GetValidatorKeyByPubkey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -222,7 +221,7 @@ func (w *Wallet) SaveValidatorKey(key ValidatorKey) error {
 }
 
 // Recover a validator key by public key
-func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error) {
+func (w *Wallet) RecoverValidatorKey(pubkey types.ValidatorPubkey, startIndex uint) (uint, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -268,7 +267,7 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex 
 }
 
 // Test recovery of a validator key by public key
-func (w *Wallet) TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error) {
+func (w *Wallet) TestRecoverValidatorKey(pubkey types.ValidatorPubkey, startIndex uint) (uint, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {

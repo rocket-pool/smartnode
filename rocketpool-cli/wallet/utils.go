@@ -62,7 +62,7 @@ func PromptMnemonic() string {
 		}
 
 		i := 0
-		for mv.Filled() == false {
+		for !mv.Filled() {
 			prompt := fmt.Sprintf("Enter %sWord Number %d%s of your mnemonic:", bold, i+1, unbold)
 			word := cliutils.PromptPassword(prompt, "^[a-zA-Z]+$", "Please enter a single word only.")
 
@@ -180,15 +180,4 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolCo
 
 	return passwordFile, nil
 
-}
-
-// Deletes the custom key password file
-func deleteCustomKeyPasswordFile(passwordFile string) error {
-	_, err := os.Stat(passwordFile)
-	if os.IsNotExist(err) {
-		return nil
-	}
-
-	err = os.Remove(passwordFile)
-	return err
 }

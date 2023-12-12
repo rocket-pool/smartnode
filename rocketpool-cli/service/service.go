@@ -925,25 +925,6 @@ func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *r
 
 }
 
-// Get the time that the container responsible for validator duties exited
-func getValidatorFinishTime(CurrentValidatorClientName string, rp *rocketpool.Client) (time.Time, error) {
-
-	prefix, err := getContainerPrefix(rp)
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	var validatorFinishTime time.Time
-	if CurrentValidatorClientName == "nimbus" {
-		validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + BeaconContainerSuffix)
-	} else {
-		validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + ValidatorContainerSuffix)
-	}
-
-	return validatorFinishTime, err
-
-}
-
 // Extract the image name from a Docker image string
 func getDockerImageName(imageString string) (string, error) {
 

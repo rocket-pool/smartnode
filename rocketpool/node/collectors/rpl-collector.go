@@ -1,8 +1,6 @@
 package collectors
 
 import (
-	"fmt"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -97,9 +95,4 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.totalEffectiveStaked, prometheus.GaugeValue, eth.WeiToEth(totalEffectiveStake))
 	channel <- prometheus.MustNewConstMetric(
 		collector.checkpointTime, prometheus.GaugeValue, nextRewardsTime)
-}
-
-// Log error messages
-func (collector *RplCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }
