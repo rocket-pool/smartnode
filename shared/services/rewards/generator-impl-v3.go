@@ -921,7 +921,7 @@ func (r *treeGeneratorImpl_v3) processEpoch(getDuties bool, epoch uint64) error 
 }
 
 // Handle all of the attestations in the given slot
-func (r *treeGeneratorImpl_v3) checkDutiesForSlot(attestations []beacon.AttestationInfo) error {
+func (r *treeGeneratorImpl_v3) checkDutiesForSlot(attestations []beacon.AttestationInfo) {
 
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
@@ -950,9 +950,6 @@ func (r *treeGeneratorImpl_v3) checkDutiesForSlot(attestations []beacon.Attestat
 			}
 		}
 	}
-
-	return nil
-
 }
 
 // Maps out the attestaion duties for the given epoch

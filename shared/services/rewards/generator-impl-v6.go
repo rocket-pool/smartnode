@@ -813,7 +813,7 @@ func (r *treeGeneratorImpl_v6) processEpoch(getDuties bool, epoch uint64) error 
 }
 
 // Handle all of the attestations in the given slot
-func (r *treeGeneratorImpl_v6) checkDutiesForSlot(attestations []beacon.AttestationInfo, slot uint64) error {
+func (r *treeGeneratorImpl_v6) checkDutiesForSlot(attestations []beacon.AttestationInfo, slot uint64) {
 
 	one := eth.EthToWei(1)
 	validatorReq := eth.EthToWei(32)
@@ -871,9 +871,6 @@ func (r *treeGeneratorImpl_v6) checkDutiesForSlot(attestations []beacon.Attestat
 			r.successfulAttestations++
 		}
 	}
-
-	return nil
-
 }
 
 // Maps out the attestaion duties for the given epoch

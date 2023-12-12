@@ -185,7 +185,7 @@ func runWorker(report bool, stop *bool, targetPrefix *big.Int, nodeAddress []byt
 		salt.FillBytes(saltBytes[:])
 		hasher.Write(nodeAddress)
 		hasher.Write(saltBytes[:])
-		hasher.Read(nodeSalt[:])
+		_, _ = hasher.Read(nodeSalt[:])
 		hasher.Reset()
 
 		// This block is the fast way to do `crypto.CreateAddress2(minipoolManagerAddress, nodeSalt, initHash)`
@@ -198,7 +198,7 @@ func runWorker(report bool, stop *bool, targetPrefix *big.Int, nodeAddress []byt
 		hasher.Write(minipoolManagerAddress.Bytes())
 		hasher.Write(nodeSalt[:])
 		hasher.Write(initHash)
-		hasher.Read(addressResult[:])
+		_, _ = hasher.Read(addressResult[:])
 		hasher.Reset()
 
 		hashInt.SetBytes(addressResult[12:])

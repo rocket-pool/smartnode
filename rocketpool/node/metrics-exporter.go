@@ -98,7 +98,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *colle
 	metricsPath := "/metrics"
 	http.Handle(metricsPath, handler)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
+		_, _ = w.Write([]byte(`<html>
             <head><title>Rocket Pool Metrics Exporter</title></head>
             <body>
             <h1>Rocket Pool Metrics Exporter</h1>

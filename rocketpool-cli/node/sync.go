@@ -80,7 +80,8 @@ func getSyncProgress(c *cli.Context) error {
 			depositContractInfo.BeaconDepositContract)
 		return nil
 	} else {
-		fmt.Println("Your consensus client is on the correct network.\n")
+		fmt.Println("Your consensus client is on the correct network.")
+		fmt.Println()
 	}
 
 	// Get node status

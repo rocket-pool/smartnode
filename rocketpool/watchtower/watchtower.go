@@ -313,7 +313,10 @@ func run(c *cli.Context) error {
 
 			time.Sleep(interval)
 		}
-		wg.Done()
+		// This is unreachable
+		// wg.Done()
+		// TODO: refactor daemonst o use time.Ticker for scheduled tasks and install a signal handler with signal.Notify
+		// to gracefully exit
 	}()
 
 	// Run metrics loop

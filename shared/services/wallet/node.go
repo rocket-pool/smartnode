@@ -139,6 +139,7 @@ func (w *Wallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string,
 		// Use the legacy implementation for Goerli
 		// TODO: remove this if Prater ever goes away!
 		if w.chainID.Cmp(big.NewInt(5)) == 0 {
+			//nolint:staticcheck
 			//lint:ignore SA1019 this function is deprecated but we must call it for prater
 			key, err = key.DeriveNonStandard(n)
 		} else {

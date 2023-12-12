@@ -184,7 +184,10 @@ func (t *submitScrubMinipools) run(state *state.NetworkState) error {
 		t.initializeMinipoolDetails(prelaunchMinipools, opts)
 
 		// Step 1: Verify the Beacon credentials if they exist
-		t.verifyBeaconWithdrawalCredentials(state)
+		err := t.verifyBeaconWithdrawalCredentials(state)
+		if err != nil {
+			t.log.Printlnf("%s Error verifying beacon withdrawal credentials: %v", checkPrefix, err)
+		}
 
 		// If there aren't any minipools left to check, print the final tally and exit
 		if len(t.it.minipools) == 0 {
@@ -196,7 +199,7 @@ func (t *submitScrubMinipools) run(state *state.NetworkState) error {
 		}
 
 		// Get various elements needed to do eth1 prestake and deposit contract searches
-		err := t.getEth1SearchArtifacts(state)
+		err = t.getEth1SearchArtifacts(state)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
 			return

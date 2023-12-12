@@ -151,7 +151,10 @@ func promptTimezone() string {
 		}
 	}
 
-	fmt.Println("You will now be prompted to enter a timezone.\nFor a complete list of valid entries, please use one of the \"TZ database name\" entries listed here:\nhttps://en.wikipedia.org/wiki/List_of_tz_database_time_zones\n")
+	fmt.Println("You will now be prompted to enter a timezone.")
+	fmt.Println("For a complete list of valid entries, please use one of the \"TZ database name\" entries listed here:")
+	fmt.Println("https://en.wikipedia.org/wiki/List_of_tz_database_time_zones")
+	fmt.Println()
 
 	// Handle situations where we couldn't parse any timezone info from the OS
 	if len(countryNames) == 0 {

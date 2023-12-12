@@ -75,14 +75,22 @@ func SyncRatioToPercent(in float64) float64 {
 func getExternalIP() (net.IP, error) {
 	// Try IPv4 first
 	ip4Consensus := externalip.DefaultConsensus(nil, nil)
-	ip4Consensus.UseIPProtocol(4)
+	err := ip4Consensus.UseIPProtocol(4)
+	if err != nil {
+		// This will only happen if we pass something other than 0/4/6 to UseIPProtocol
+		panic(err)
+	}
 	if ip, err := ip4Consensus.ExternalIP(); err == nil {
 		return ip, nil
 	}
 
 	// Try IPv6 as fallback
 	ip6Consensus := externalip.DefaultConsensus(nil, nil)
-	ip6Consensus.UseIPProtocol(6)
+	err = ip6Consensus.UseIPProtocol(6)
+	if err != nil {
+		// This will only happen if we pass something other than 0/4/6 to UseIPProtocol
+		panic(err)
+	}
 	return ip6Consensus.ExternalIP()
 }
 

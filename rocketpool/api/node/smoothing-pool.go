@@ -191,7 +191,10 @@ func setSmoothingPoolStatus(c *cli.Context, status bool) (*api.SetSmoothingPoolR
 			}
 
 			// Restart the VC but don't pay attention to the errors, since a restart error got us here in the first place
-			validator.RestartValidator(cfg, bc, nil, d)
+			err2 = validator.RestartValidator(cfg, bc, nil, d)
+			if err2 != nil {
+				return nil, fmt.Errorf("***WARNING***\nError restarting validator: [%s]\nError setting fee recipient back to your node's distributor: [%w]\nYour node now has the Smoothing Pool as its fee recipient, even though you aren't opted in!\nPlease visit the Rocket Pool Discord server for help with these errors, so it can be set back to your node's distributor.", err.Error(), err2)
+			}
 
 			return nil, fmt.Errorf("Error restarting validator after updating the fee recipient to the Smoothing Pool: [%w]\nYour fee recipient has been set back to your node's distributor contract.\nYou have not been opted into the Smoothing Pool.", err)
 		}
