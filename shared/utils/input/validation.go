@@ -16,6 +16,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
@@ -388,17 +389,11 @@ func ValidateDuration(name, value string) (time.Duration, error) {
 
 // Validate a vote direction
 func ValidateVoteDirection(name, value string) (types.VoteDirection, error) {
-	switch value {
-	case "abstain":
-		return types.VoteDirection_Abstain, nil
-	case "for":
-		return types.VoteDirection_For, nil
-	case "against":
-		return types.VoteDirection_Against, nil
-	case "veto":
-		return types.VoteDirection_AgainstWithVeto, nil
+	val, exists := api.VoteDirectionMap[value]
+	if !exists {
+		return 0, fmt.Errorf("Invalid %s '%s': not a valid vote direction name", name, value)
 	}
-	return 0, fmt.Errorf("Invalid %s '%s': not a valid vote direction name", name, value)
+	return val, nil
 }
 
 // Validate a timestamp using RFC3339

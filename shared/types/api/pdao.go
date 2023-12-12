@@ -9,35 +9,49 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
-type ProtocolDaoProposalDetails struct {
-	ID                   uint64              `json:"id"`
-	ProposerAddress      common.Address      `json:"proposerAddress"`
-	TargetBlock          uint32              `json:"targetBlock"`
-	Message              string              `json:"message"`
-	ChallengeWindow      time.Duration       `json:"challengeWindow"`
-	CreatedTime          time.Time           `json:"createdTime"`
-	VotingStartTime      time.Time           `json:"votingStartTime"`
-	Phase1EndTime        time.Time           `json:"phase1EndTime"`
-	Pjase2EndTime        time.Time           `json:"phase2EndTime"`
-	ExpiryTime           time.Time           `json:"expiryTime"`
-	VotingPowerRequired  *big.Int            `json:"votingPowerRequired"`
-	VotingPowerFor       *big.Int            `json:"votingPowerFor"`
-	VotingPowerAgainst   *big.Int            `json:"votingPowerAgainst"`
-	VotingPowerAbstained *big.Int            `json:"votingPowerAbstained"`
-	VotingPowerToVeto    *big.Int            `json:"votingPowerToVeto"`
-	IsDestroyed          bool                `json:"isDestroyed"`
-	IsFinalized          bool                `json:"isFinalized"`
-	IsExecuted           bool                `json:"isExecuted"`
-	IsVetoed             bool                `json:"isVetoed"`
-	Payload              []byte              `json:"payload"`
-	PayloadStr           string              `json:"payloadStr"`
-	State                types.ProposalState `json:"state"`
-	ProposalBond         *big.Int            `json:"proposalBond"`
-	ChallengeBond        *big.Int            `json:"challengeBond"`
-	DefeatIndex          uint64              `json:"defeatIndex"`
-	NodeVoteDirection    types.VoteDirection `json:"nodeVoteDirection"`
+var VoteDirectionMap = map[string]types.VoteDirection{
+	"abstain": types.VoteDirection_Abstain,
+	"for":     types.VoteDirection_For,
+	"against": types.VoteDirection_Against,
+	"veto":    types.VoteDirection_AgainstWithVeto,
 }
-type ProtocolDaoProposalsResponse struct {
+
+var VoteDirectionNameMap = map[types.VoteDirection]string{
+	types.VoteDirection_Abstain:         "abstain",
+	types.VoteDirection_For:             "for",
+	types.VoteDirection_Against:         "against",
+	types.VoteDirection_AgainstWithVeto: "veto",
+}
+
+type ProtocolDaoProposalDetails struct {
+	ID                   uint64                         `json:"id"`
+	ProposerAddress      common.Address                 `json:"proposerAddress"`
+	TargetBlock          uint32                         `json:"targetBlock"`
+	Message              string                         `json:"message"`
+	ChallengeWindow      time.Duration                  `json:"challengeWindow"`
+	CreatedTime          time.Time                      `json:"createdTime"`
+	VotingStartTime      time.Time                      `json:"votingStartTime"`
+	Phase1EndTime        time.Time                      `json:"phase1EndTime"`
+	Phase2EndTime        time.Time                      `json:"phase2EndTime"`
+	ExpiryTime           time.Time                      `json:"expiryTime"`
+	VotingPowerRequired  *big.Int                       `json:"votingPowerRequired"`
+	VotingPowerFor       *big.Int                       `json:"votingPowerFor"`
+	VotingPowerAgainst   *big.Int                       `json:"votingPowerAgainst"`
+	VotingPowerAbstained *big.Int                       `json:"votingPowerAbstained"`
+	VotingPowerToVeto    *big.Int                       `json:"votingPowerToVeto"`
+	IsDestroyed          bool                           `json:"isDestroyed"`
+	IsFinalized          bool                           `json:"isFinalized"`
+	IsExecuted           bool                           `json:"isExecuted"`
+	IsVetoed             bool                           `json:"isVetoed"`
+	Payload              []byte                         `json:"payload"`
+	PayloadStr           string                         `json:"payloadStr"`
+	State                types.ProtocolDaoProposalState `json:"state"`
+	ProposalBond         *big.Int                       `json:"proposalBond"`
+	ChallengeBond        *big.Int                       `json:"challengeBond"`
+	DefeatIndex          uint64                         `json:"defeatIndex"`
+	NodeVoteDirection    types.VoteDirection            `json:"nodeVoteDirection"`
+}
+type ProtocolDaoProposalsData struct {
 	Proposals []ProtocolDaoProposalDetails `json:"proposals"`
 }
 
@@ -254,4 +268,14 @@ type ProtocolDaoFinalizeProposalData struct {
 	InvalidState     bool                  `json:"invalidState"`
 	AlreadyFinalized bool                  `json:"alreadyFinalized"`
 	TxInfo           *core.TransactionInfo `json:"txInfo"`
+}
+
+type ProtocolDaoProposeRecurringSpendUpdateData struct {
+	CanPropose      bool                  `json:"canPropose"`
+	DoesNotExist    bool                  `json:"doesNotExist"`
+	InsufficientRpl bool                  `json:"insufficientRpl"`
+	StakedRpl       *big.Int              `json:"stakedRpl"`
+	LockedRpl       *big.Int              `json:"lockedRpl"`
+	ProposalBond    *big.Int              `json:"proposalBond"`
+	TxInfo          *core.TransactionInfo `json:"txInfo"`
 }

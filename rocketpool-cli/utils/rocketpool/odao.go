@@ -108,7 +108,7 @@ func (r *ODaoRequester) ProposeSetting(settingName string, value string) (*api.A
 		"setting": settingName,
 		"value":   value,
 	}
-	return sendGetRequest[api.OracleDaoProposeSettingData](r, "propose-setting", "ProposeSetting", args)
+	return sendGetRequest[api.OracleDaoProposeSettingData](r, "setting/propose", "ProposeSetting", args)
 }
 
 // Get oracle DAO settings

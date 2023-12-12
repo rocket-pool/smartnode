@@ -1,144 +1,131 @@
 package pdao
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
-	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canOverrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.CanOverrideVoteOnPDAOProposalResponse, error) {
-	// Get services
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
+// ===============
+// === Factory ===
+// ===============
 
-	// Response
-	response := api.CanOverrideVoteOnPDAOProposalResponse{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Data
-	var wg errgroup.Group
-	var proposalBlock uint32
-
-	// Check proposal exists
-	wg.Go(func() error {
-		proposalCount, err := protocol.GetTotalProposalCount(rp, nil)
-		if err == nil {
-			response.DoesNotExist = (proposalId > proposalCount)
-		}
-		return err
-	})
-
-	// Check proposal state
-	wg.Go(func() error {
-		proposalState, err := protocol.GetProposalState(rp, proposalId, nil)
-		if err == nil {
-			response.InvalidState = (proposalState != types.ProtocolDaoProposalState_ActivePhase2)
-		}
-		return err
-	})
-
-	// Check if member has already voted
-	wg.Go(func() error {
-		voteDirection, err := protocol.GetAddressVoteDirection(rp, proposalId, nodeAccount.Address, nil)
-		if err == nil {
-			response.AlreadyVoted = (voteDirection != types.VoteDirection_NoVote)
-		}
-		return err
-	})
-
-	// Get the block used by the proposal
-	wg.Go(func() error {
-		var err error
-		proposalBlock, err = protocol.GetProposalBlock(rp, proposalId, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Check voting power
-	response.VotingPower, err = network.GetVotingPower(rp, nodeAccount.Address, proposalBlock, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check data
-	response.InsufficientPower = (response.VotingPower.Cmp(common.Big0) == 0)
-	response.CanVote = !(response.DoesNotExist || response.InvalidState || response.InsufficientPower || response.AlreadyVoted)
-	if !response.CanVote {
-		return &response, nil
-	}
-
-	// Simulate
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := protocol.EstimateOverrideVoteGas(rp, proposalId, voteDirection, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.GasInfo = gasInfo
-
-	// Update & return response
-	return &response, nil
+type protocolDaoOverrideVoteOnProposalContextFactory struct {
+	handler *ProtocolDaoHandler
 }
 
-func overrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.OverrideVoteOnPDAOProposalResponse, error) {
-	// Get services
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
+func (f *protocolDaoOverrideVoteOnProposalContextFactory) Create(vars map[string]string) (*protocolDaoOverrideVoteOnProposalContext, error) {
+	c := &protocolDaoOverrideVoteOnProposalContext{
+		handler: f.handler,
 	}
-	rp, err := services.GetRocketPool(c)
+	inputErrs := []error{
+		server.ValidateArg("id", vars, input.ValidatePositiveUint, &c.proposalID),
+		server.ValidateArg("vote", vars, input.ValidateVoteDirection, &c.voteDirection),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *protocolDaoOverrideVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*protocolDaoOverrideVoteOnProposalContext, api.ProtocolDaoOverrideVoteOnProposalData](
+		router, "proposal/override-vote", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type protocolDaoOverrideVoteOnProposalContext struct {
+	handler     *ProtocolDaoHandler
+	cfg         *config.RocketPoolConfig
+	rp          *rocketpool.RocketPool
+	bc          beacon.Client
+	nodeAddress common.Address
+
+	proposalID      uint64
+	voteDirection   types.VoteDirection
+	node            *node.Node
+	existingVoteDir types.VoteDirection
+	pdaoMgr         *protocol.ProtocolDaoManager
+	proposal        *protocol.ProtocolDaoProposal
+}
+
+func (c *protocolDaoOverrideVoteOnProposalContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.cfg = sp.GetConfig()
+	c.rp = sp.GetRocketPool()
+	c.bc = sp.GetBeaconClient()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.OverrideVoteOnPDAOProposalResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	// Bindings
+	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
+	}
+	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+	}
+	c.proposal, err = protocol.NewProtocolDaoProposal(c.rp, c.proposalID)
+	if err != nil {
+		return fmt.Errorf("error creating proposal binding: %w", err)
+	}
+	return nil
+}
+
+func (c *protocolDaoOverrideVoteOnProposalContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.pdaoMgr.ProposalCount,
+		c.proposal.State,
+		c.proposal.TargetBlock,
+	)
+	c.proposal.GetAddressVoteDirection(mc, &c.existingVoteDir, c.nodeAddress)
+}
+
+func (c *protocolDaoOverrideVoteOnProposalContext) PrepareData(data *api.ProtocolDaoOverrideVoteOnProposalData, opts *bind.TransactOpts) error {
+	// Get the voting power for the node as of this proposal
+	err := c.rp.Query(func(mc *batch.MultiCaller) error {
+		c.node.GetVotingPowerAtBlock(mc, &data.VotingPower, c.proposal.TargetBlock.Formatted())
+		return nil
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("error getting node voting power at block %d: %w", c.proposal.TargetBlock.Formatted(), err)
 	}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
+	data.DoesNotExist = (c.proposalID > c.pdaoMgr.ProposalCount.Formatted())
+	data.InvalidState = (c.proposal.State.Formatted() != types.ProtocolDaoProposalState_ActivePhase2)
+	data.AlreadyVoted = (c.existingVoteDir != types.VoteDirection_NoVote)
+	data.InsufficientPower = (data.VotingPower.Cmp(common.Big0) == 0)
+	data.CanVote = !(data.DoesNotExist || data.InvalidState || data.AlreadyVoted || data.InsufficientPower)
 
-	// Vote on proposal
-	hash, err := protocol.OverrideVote(rp, proposalId, voteDirection, opts)
-	if err != nil {
-		return nil, err
+	// Get the tx
+	if data.CanVote && opts != nil {
+		txInfo, err := c.proposal.OverrideVote(c.voteDirection, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for Vote: %w", err)
+		}
+		data.TxInfo = txInfo
 	}
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
+	return nil
 }

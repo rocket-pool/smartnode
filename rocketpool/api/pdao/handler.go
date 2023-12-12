@@ -21,14 +21,21 @@ func NewProtocolDaoHandler(serviceProvider *services.ServiceProvider) *ProtocolD
 		&protocolDaoDefeatProposalContextFactory{h},
 		&protocolDaoExecuteProposalContextFactory{h},
 		&protocolDaoFinalizeProposalContextFactory{h},
+		&protocolDaoOverrideVoteOnProposalContextFactory{h},
+		&protocolDaoVoteOnProposalContextFactory{h},
 		&protocolDaoGetClaimableBondsContextFactory{h},
 		&protocolDaoProposeOneTimeSpendContextFactory{h},
 		&protocolDaoProposeRecurringSpendContextFactory{h},
+		&protocolDaoProposeRecurringSpendUpdateContextFactory{h},
 		&protocolDaoProposeInviteToSecurityCouncilContextFactory{h},
 		&protocolDaoProposeKickFromSecurityCouncilContextFactory{h},
 		&protocolDaoProposeKickMultiFromSecurityCouncilContextFactory{h},
 		&protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory{h},
+		&protocolDaoProposalsContextFactory{h},
+		&protocolDaoRewardsPercentagesContextFactory{h},
+		&protocolDaoProposeRewardsPercentagesContextFactory{h},
 		&protocolDaoSettingsContextFactory{h},
+		&protocolDaoProposeSettingContextFactory{h},
 	}
 	return h
 }

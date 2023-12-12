@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -84,6 +86,29 @@ func (r *PDaoRequester) FinalizeProposal(proposalID uint64) (*api.ApiResponse[ap
 	return sendGetRequest[api.ProtocolDaoFinalizeProposalData](r, "proposal/finalize", "FinalizeProposal", args)
 }
 
+// Override a delegate's vote on a proposal
+func (r *PDaoRequester) OverrideVoteOnProposal(proposalID uint64, voteDirection types.VoteDirection) (*api.ApiResponse[api.ProtocolDaoVoteOnProposalData], error) {
+	args := map[string]string{
+		"id":   fmt.Sprint(proposalID),
+		"vote": api.VoteDirectionNameMap[voteDirection],
+	}
+	return sendGetRequest[api.ProtocolDaoVoteOnProposalData](r, "proposal/override-vote", "OverrideVoteOnProposal", args)
+}
+
+// Vote on a proposal
+func (r *PDaoRequester) VoteOnProposal(proposalID uint64, voteDirection types.VoteDirection) (*api.ApiResponse[api.ProtocolDaoVoteOnProposalData], error) {
+	args := map[string]string{
+		"id":   fmt.Sprint(proposalID),
+		"vote": api.VoteDirectionNameMap[voteDirection],
+	}
+	return sendGetRequest[api.ProtocolDaoVoteOnProposalData](r, "proposal/vote", "VoteOnProposal", args)
+}
+
+// Get the Protocol DAO proposals
+func (r *PDaoRequester) Proposals() (*api.ApiResponse[api.ProtocolDaoProposalsData], error) {
+	return sendGetRequest[api.ProtocolDaoProposalsData](r, "proposals", "Proposals", nil)
+}
+
 // Propose a recurring spend of the Protocol DAO's treasury
 func (r *PDaoRequester) RecurringSpend(contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64) (*api.ApiResponse[api.ProtocolDaoGeneralProposeData], error) {
 	args := map[string]string{
@@ -97,9 +122,31 @@ func (r *PDaoRequester) RecurringSpend(contractName string, recipient common.Add
 	return sendGetRequest[api.ProtocolDaoGeneralProposeData](r, "recurring-spend", "RecurringSpend", args)
 }
 
-// Get the Protocol DAO settings
-func (r *PDaoRequester) Settings() (*api.ApiResponse[api.ProtocolDaoSettingsData], error) {
-	return sendGetRequest[api.ProtocolDaoSettingsData](r, "settings", "Settings", nil)
+// Propose updating an existing recurring spend of the Protocol DAO's treasury
+func (r *PDaoRequester) RecurringSpendUpdate(contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64) (*api.ApiResponse[api.ProtocolDaoGeneralProposeData], error) {
+	args := map[string]string{
+		"contract-name":     contractName,
+		"recipient":         recipient.Hex(),
+		"amount-per-period": amountPerPeriod.String(),
+		"period-length":     periodLength.String(),
+		"num-periods":       fmt.Sprint(numberOfPeriods),
+	}
+	return sendGetRequest[api.ProtocolDaoGeneralProposeData](r, "recurring-spend-update", "RecurringSpendUpdate", args)
+}
+
+// Get the amount of minted RPL (and percentages) provided to node operators, the oDAO, and the pDAO at each rewards period
+func (r *PDaoRequester) RewardsPercentages() (*api.ApiResponse[api.ProtocolDaoRewardsPercentagesData], error) {
+	return sendGetRequest[api.ProtocolDaoRewardsPercentagesData](r, "rewards-percentages", "RewardsPercentages", nil)
+}
+
+// Propose new RPL rewards percentages for node operators, the oDAO, and the pDAO at each rewards period
+func (r *PDaoRequester) ProposeRewardsPercentages(node *big.Int, odao *big.Int, pdao *big.Int) (*api.ApiResponse[api.ProtocolDaoGeneralProposeData], error) {
+	args := map[string]string{
+		"node": node.String(),
+		"odao": odao.String(),
+		"pdao": pdao.String(),
+	}
+	return sendGetRequest[api.ProtocolDaoGeneralProposeData](r, "rewards-percentages/proposee", "ProposeRewardsPercentages", args)
 }
 
 // Propose inviting someone to the security council
@@ -139,4 +186,19 @@ func (r *PDaoRequester) ReplaceMemberOfSecurityCouncil(existingAddress common.Ad
 		"new-address":      newAddress.Hex(),
 	}
 	return sendGetRequest[api.ProtocolDaoProposeReplaceMemberOfSecurityCouncilData](r, "security/replace", "ReplaceMemberOfSecurityCouncil", args)
+}
+
+// Get the Protocol DAO settings
+func (r *PDaoRequester) Settings() (*api.ApiResponse[api.ProtocolDaoSettingsData], error) {
+	return sendGetRequest[api.ProtocolDaoSettingsData](r, "settings", "Settings", nil)
+}
+
+// Propose updating one of the Protocol DAO settings
+func (r *PDaoRequester) ProposeSetting(contractName rocketpool.ContractName, setting string, value string) (*api.ApiResponse[api.ProtocolDaoProposeSettingData], error) {
+	args := map[string]string{
+		"contract": string(contractName),
+		"setting":  setting,
+		"value":    value,
+	}
+	return sendGetRequest[api.ProtocolDaoProposeSettingData](r, "setting/propose", "ProposeSetting", args)
 }

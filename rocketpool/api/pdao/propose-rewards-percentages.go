@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,27 +24,25 @@ import (
 // === Factory ===
 // ===============
 
-type protocolDaoProposeRecurringSpendUpdateContextFactory struct {
+type protocolDaoProposeRewardsPercentagesContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoProposeRecurringSpendUpdateContextFactory) Create(vars map[string]string) (*protocolDaoProposeRecurringSpendUpdateContext, error) {
-	c := &protocolDaoProposeRecurringSpendUpdateContext{
+func (f *protocolDaoProposeRewardsPercentagesContextFactory) Create(vars map[string]string) (*protocolDaoProposeRewardsPercentagesContext, error) {
+	c := &protocolDaoProposeRewardsPercentagesContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.GetStringFromVars("contract-name", vars, &c.contractName),
-		server.ValidateArg("recipient", vars, input.ValidateAddress, &c.recipient),
-		server.ValidateArg("amount-per-period", vars, input.ValidateBigInt, &c.amountPerPeriod),
-		server.ValidateArg("period-length", vars, input.ValidateDuration, &c.periodLength),
-		server.ValidateArg("num-periods", vars, input.ValidatePositiveUint, &c.numberOfPeriods),
+		server.ValidateArg("node", vars, input.ValidateBigInt, &c.nodePercent),
+		server.ValidateArg("odao", vars, input.ValidateBigInt, &c.odaoPercent),
+		server.ValidateArg("pdao", vars, input.ValidateBigInt, &c.pdaoPercent),
 	}
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *protocolDaoProposeRecurringSpendUpdateContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*protocolDaoProposeRecurringSpendUpdateContext, api.ProtocolDaoProposeRecurringSpendUpdateData](
-		router, "recurring-spend-update", f, f.handler.serviceProvider,
+func (f *protocolDaoProposeRewardsPercentagesContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*protocolDaoProposeRewardsPercentagesContext, api.ProtocolDaoGeneralProposeData](
+		router, "rewards-percentages/propose", f, f.handler.serviceProvider,
 	)
 }
 
@@ -53,24 +50,21 @@ func (f *protocolDaoProposeRecurringSpendUpdateContextFactory) RegisterRoute(rou
 // === Context ===
 // ===============
 
-type protocolDaoProposeRecurringSpendUpdateContext struct {
+type protocolDaoProposeRewardsPercentagesContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
 	cfg         *config.RocketPoolConfig
 	bc          beacon.Client
 	nodeAddress common.Address
 
-	contractName    string
-	recipient       common.Address
-	amountPerPeriod *big.Int
-	periodLength    time.Duration
-	numberOfPeriods uint64
-	node            *node.Node
-	pdaoMgr         *protocol.ProtocolDaoManager
-	contractExists  bool
+	nodePercent *big.Int
+	odaoPercent *big.Int
+	pdaoPercent *big.Int
+	node        *node.Node
+	pdaoMgr     *protocol.ProtocolDaoManager
 }
 
-func (c *protocolDaoProposeRecurringSpendUpdateContext) Initialize() error {
+func (c *protocolDaoProposeRewardsPercentagesContext) Initialize() error {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
@@ -95,31 +89,29 @@ func (c *protocolDaoProposeRecurringSpendUpdateContext) Initialize() error {
 	return nil
 }
 
-func (c *protocolDaoProposeRecurringSpendUpdateContext) GetState(mc *batch.MultiCaller) {
+func (c *protocolDaoProposeRewardsPercentagesContext) GetState(mc *batch.MultiCaller) {
 	core.AddQueryablesToMulticall(mc,
 		c.pdaoMgr.Settings.Proposals.ProposalBond,
 		c.node.RplLocked,
 		c.node.RplStake,
 	)
-	c.pdaoMgr.GetContractExists(mc, &c.contractExists, c.contractName)
 }
 
-func (c *protocolDaoProposeRecurringSpendUpdateContext) PrepareData(data *api.ProtocolDaoProposeRecurringSpendUpdateData, opts *bind.TransactOpts) error {
-	data.DoesNotExist = !c.contractExists
+func (c *protocolDaoProposeRewardsPercentagesContext) PrepareData(data *api.ProtocolDaoGeneralProposeData, opts *bind.TransactOpts) error {
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
 	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()
 	unlockedRpl := big.NewInt(0).Sub(data.StakedRpl, data.LockedRpl)
 	data.InsufficientRpl = (unlockedRpl.Cmp(data.ProposalBond) < 0)
-	data.CanPropose = !(data.InsufficientRpl || data.DoesNotExist)
+	data.CanPropose = !(data.InsufficientRpl)
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
 		blockNumber, pollard, err := createPollard(c.rp, c.cfg, c.bc)
-		message := fmt.Sprintf("recurring payment to %s", c.contractName)
-		txInfo, err := c.pdaoMgr.ProposeRecurringTreasurySpendUpdate(message, c.contractName, c.recipient, c.amountPerPeriod, c.periodLength, c.numberOfPeriods, blockNumber, pollard, opts)
+		message := "update RPL rewards distribution"
+		txInfo, err := c.pdaoMgr.ProposeSetRewardsPercentages(message, c.odaoPercent, c.pdaoPercent, c.nodePercent, blockNumber, pollard, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for ProposeRecurringTreasurySpendUpdate: %w", err)
+			return fmt.Errorf("error getting TX info for ProposeSetRewardsPercentages: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
