@@ -890,16 +890,11 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 }
 
 // Get the name of the container responsible for validator duties based on the client name
-// TODO: this is temporary and can change, clean it up when Nimbus supports split mode
 func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *rocketpool.Client) (string, error) {
 
 	prefix, err := getContainerPrefix(rp)
 	if err != nil {
 		return "", err
-	}
-
-	if CurrentValidatorClientName == "nimbus" {
-		return prefix + BeaconContainerSuffix, nil
 	}
 
 	return prefix + ValidatorContainerSuffix, nil
