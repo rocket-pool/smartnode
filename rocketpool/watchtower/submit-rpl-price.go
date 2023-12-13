@@ -154,6 +154,55 @@ const (
 		}
 	]`
 
+	ScrollMessengerAbi string = `[
+		{
+		"inputs": [],
+		"name": "rateStale",
+		"outputs": [
+			{
+			"internalType": "bool",
+			"name": "",
+			"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+		},
+		{
+		"inputs": [
+			{
+			"internalType": "uint256",
+			"name": "_l2GasLimit",
+			"type": "uint256"
+			}
+		],
+		"name": "submitRate",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+		}
+	]`
+
+	ScrollFeeEstimatorAbi string = `[
+		{
+			"inputs": [
+				{
+				"internalType": "uint256",
+				"name": "_l2GasLimit",
+				"type": "uint256"
+				}
+			],
+			"name": "estimateCrossDomainMessageFee",
+			"outputs": [ 
+				{
+				"internalType":"uint256","name":"","type":"uint256"
+				}
+			]
+			,"stateMutability":"view",
+			"type": "function"
+		}
+	]`
+
 	RplTwapPoolAbi string = `[
 		{
 		"inputs": [{
@@ -297,6 +346,13 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	if err != nil {
 		// Error is not fatal for this task so print and continue
 		t.log.Printlnf("Error submitting Base price: %s", err.Error())
+	}
+
+	// Check if Scroll rate is stale and submit
+	err = t.submitScrollPrice()
+	if err != nil {
+		// Error is not fatal for this task so print and continue
+		t.log.Printlnf("Error submitting Scroll price: %s", err.Error())
 	}
 
 	// Log
@@ -1293,6 +1349,172 @@ func (t *submitRplPrice) submitBasePrice() error {
 
 		// Log
 		t.log.Printlnf("Successfully submitted Base price for block %d.", blockNumber)
+
+	}
+
+	return nil
+}
+
+// Checks if Scroll rate is stale and if it's our turn to submit, calls submitRate on the messenger
+func (t *submitRplPrice) submitScrollPrice() error {
+	priceMessengerAddress := t.cfg.Smartnode.GetScrollMessengerAddress()
+
+	if priceMessengerAddress == "" {
+		// No price messenger deployed on the current network
+		return fmt.Errorf("No price messenger address for Scroll")
+	}
+
+	// Get transactor
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return fmt.Errorf("Failed getting transactor: %q", err)
+	}
+
+	// Construct the price messenger contract instance
+	parsed, err := abi.JSON(strings.NewReader(ScrollMessengerAbi))
+	if err != nil {
+		return fmt.Errorf("Failed decoding ABI: %q", err)
+	}
+
+	addr := common.HexToAddress(priceMessengerAddress)
+	priceMessengerContract := bind.NewBoundContract(addr, parsed, t.ec, t.ec, t.ec)
+	priceMessenger := rocketpool.Contract{
+		Contract: priceMessengerContract,
+		Address:  &addr,
+		ABI:      &parsed,
+		Client:   t.ec,
+	}
+
+	// Check if the rate is stale
+	var out []interface{}
+	err = priceMessengerContract.Call(nil, &out, "rateStale")
+
+	if err != nil {
+		return fmt.Errorf("Failed to query rate staleness for Scroll: %q", err)
+	}
+
+	rateStale := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	if !rateStale {
+		// Nothing to do
+		return nil
+	}
+
+	// Get total number of ODAO members
+	count, err := trustednode.GetMemberCount(t.rp, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to get member count: %q", err)
+	}
+
+	// Find out which index we are
+	var index = uint64(0)
+	for i := uint64(0); i < count; i++ {
+		addr, err := trustednode.GetMemberAt(t.rp, i, nil)
+		if err != nil {
+			return fmt.Errorf("Failed to get member at %d: %q", i, err)
+		}
+
+		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+			index = i
+			break
+		}
+	}
+
+	// Get current block number
+	blockNumber, err := t.ec.BlockNumber(context.Background())
+	if err != nil {
+		return fmt.Errorf("Failed to get block number: %q", err)
+	}
+
+	// Calculate whose turn it is to submit
+	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+
+	if index == indexToSubmit {
+		l2GasEstimatorAddress := t.cfg.Smartnode.GetScrollFeeEstimatorAddress()
+		l2GasEstimatorAddr := common.HexToAddress(l2GasEstimatorAddress)
+		// Construct the gas estimator contract instance
+		feeEstimatorParsed, err := abi.JSON(strings.NewReader(ScrollFeeEstimatorAbi))
+		if err != nil {
+			return fmt.Errorf("Failed decoding ABI: %q", err)
+		}
+		l2FeeEstimatorContract := bind.NewBoundContract(l2GasEstimatorAddr, feeEstimatorParsed, t.ec, t.ec, t.ec)
+		l2FeeEstimator := rocketpool.Contract{
+			Contract: l2FeeEstimatorContract,
+			Address:  &addr,
+			ABI:      &feeEstimatorParsed,
+			Client:   t.ec,
+		}
+		// Set a fixed gas limit a bit above the estimated 85,283
+		l2GasLimit := big.NewInt(90000)
+
+		// Query the L2 message fee
+		var out []interface{}
+		err = l2FeeEstimator.Call(nil, &out, "estimateCrossDomainMessageFee", l2GasLimit)
+		if err != nil {
+			return fmt.Errorf("Failed to query rate staleness for Base: %q", err)
+		}
+		messageFee := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+		// Temporary gas calculations until this gets put into a binding
+		input, err := priceMessenger.ABI.Pack("submitRate")
+		if err != nil {
+			return fmt.Errorf("Could not encode input data: %w", err)
+		}
+		// Set the tx value using the fetched message fee
+		opts.Value = messageFee
+
+		// Estimate gas limit
+		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
+			From:     opts.From,
+			To:       priceMessenger.Address,
+			GasPrice: big.NewInt(0), // use 0 gwei for simulation
+			Value:    opts.Value,
+			Data:     input,
+		})
+		if err != nil {
+			return fmt.Errorf("Error estimating gas limit of submitScrollPrice: %w", err)
+		}
+
+		// Get the safe gas limit
+		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
+		if gasLimit > rocketpool.MaxGasLimit {
+			gasLimit = rocketpool.MaxGasLimit
+		}
+		if safeGasLimit > rocketpool.MaxGasLimit {
+			safeGasLimit = rocketpool.MaxGasLimit
+		}
+		gasInfo := rocketpool.GasInfo{
+			EstGasLimit:  gasLimit,
+			SafeGasLimit: safeGasLimit,
+		}
+
+		// Print the gas info
+		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+			return nil
+		}
+
+		// Set the gas settings
+		opts.GasFeeCap = maxFee
+		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
+		opts.GasLimit = gasInfo.SafeGasLimit
+
+		t.log.Println("Submitting rate to Scroll...")
+
+		// Submit rates
+		tx, err := priceMessenger.Transact(opts, "submitRate")
+		if err != nil {
+			return fmt.Errorf("Failed to submit rate: %q", err)
+		}
+
+		// Print TX info and wait for it to be included in a block
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+		if err != nil {
+			return err
+		}
+
+		// Log
+		t.log.Printlnf("Successfully submitted Scroll price for block %d.", blockNumber)
 
 	}
 
