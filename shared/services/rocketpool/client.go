@@ -320,6 +320,12 @@ func (c *Client) UpdatePrometheusConfiguration(config *config.RocketPoolConfig) 
 		return fmt.Errorf("Error writing and substituting Prometheus configuration template: %w", err)
 	}
 
+	// If the file was newly created, 0664 may have been altered by umask, so chmod back to 0664.
+	err = os.Chmod(prometheusConfigPath, 0664)
+	if err != nil {
+		return fmt.Errorf("Could not set Prometheus config file (%s) permissions: %w", shellescape.Quote(prometheusConfigPath), err)
+	}
+
 	return nil
 }
 
