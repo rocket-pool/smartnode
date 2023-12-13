@@ -1361,7 +1361,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 
 	if priceMessengerAddress == "" {
 		// No price messenger deployed on the current network
-		return fmt.Errorf("No price messenger address for Scroll")
+		return nil
 	}
 
 	// Get transactor
@@ -1373,7 +1373,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 	// Construct the price messenger contract instance
 	parsed, err := abi.JSON(strings.NewReader(ScrollMessengerAbi))
 	if err != nil {
-		return fmt.Errorf("Failed decoding ABI: %q", err)
+		return fmt.Errorf("Failed decoding Scroll messenger ABI: %q", err)
 	}
 
 	addr := common.HexToAddress(priceMessengerAddress)
@@ -1435,7 +1435,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 		// Construct the gas estimator contract instance
 		feeEstimatorParsed, err := abi.JSON(strings.NewReader(ScrollFeeEstimatorAbi))
 		if err != nil {
-			return fmt.Errorf("Failed decoding ABI: %q", err)
+			return fmt.Errorf("Failed decoding Scroll fee estimator ABI: %q", err)
 		}
 		l2FeeEstimatorContract := bind.NewBoundContract(l2GasEstimatorAddr, feeEstimatorParsed, t.ec, t.ec, t.ec)
 		l2FeeEstimator := rocketpool.Contract{
@@ -1448,12 +1448,11 @@ func (t *submitRplPrice) submitScrollPrice() error {
 		l2GasLimit := big.NewInt(90000)
 
 		// Query the L2 message fee
-		var out []interface{}
-		err = l2FeeEstimator.Call(nil, &out, "estimateCrossDomainMessageFee", l2GasLimit)
+		var messageFee *big.Int
+		err = l2FeeEstimator.Call(nil, &messageFee, "estimateCrossDomainMessageFee", l2GasLimit)
 		if err != nil {
-			return fmt.Errorf("Failed to query rate staleness for Base: %q", err)
+			return fmt.Errorf("Error getting cross domain message fee for Scroll: %w", err)
 		}
-		messageFee := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 		// Temporary gas calculations until this gets put into a binding
 		input, err := priceMessenger.ABI.Pack("submitRate", l2GasLimit)
@@ -1504,7 +1503,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 		// Submit rates
 		tx, err := priceMessenger.Transact(opts, "submitRate", l2GasLimit)
 		if err != nil {
-			return fmt.Errorf("Failed to submit rate: %q", err)
+			return fmt.Errorf("Failed to submit Scroll rate: %w", err)
 		}
 
 		// Print TX info and wait for it to be included in a block
