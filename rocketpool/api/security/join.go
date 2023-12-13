@@ -2,119 +2,107 @@ package security
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/proposals"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canJoin(c *cli.Context) (*api.SecurityCanJoinResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.SecurityCanJoinResponse{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Data
-	var wg errgroup.Group
-
-	// Check proposal actionable status
-	wg.Go(func() error {
-		proposalActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "invited")
-		if err == nil {
-			response.ProposalExpired = !proposalActionable
-		}
-		return err
-	})
-
-	// Check if already a member
-	wg.Go(func() error {
-		isMember, err := security.GetMemberExists(rp, nodeAccount.Address, nil)
-		if err == nil {
-			response.AlreadyMember = isMember
-		}
-		return err
-	})
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		gasInfo, err := security.EstimateJoinGas(rp, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.CanJoin = !(response.ProposalExpired || response.AlreadyMember)
-	return &response, nil
-
+type securityJoinContextFactory struct {
+	handler *SecurityCouncilHandler
 }
 
-func join(c *cli.Context) (*api.SecurityJoinResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
+func (f *securityJoinContextFactory) Create(vars map[string]string) (*securityJoinContext, error) {
+	c := &securityJoinContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	return c, nil
+}
+
+func (f *securityJoinContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*securityJoinContext, api.SecurityJoinData](
+		router, "join", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type securityJoinContext struct {
+	handler     *SecurityCouncilHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	scMgr     *security.SecurityCouncilManager
+	scMember  *security.SecurityCouncilMember
+	dpm       *proposals.DaoProposalManager
+	pSettings *protocol.ProtocolDaoSettings
+}
+
+func (c *securityJoinContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Bindings
+	var err error
+	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating security council member binding: %w", err)
 	}
-	rp, err := services.GetRocketPool(c)
+	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
-
-	// Response
-	response := api.SecurityJoinResponse{}
-
-	// Join
-	opts, err := w.GetNodeAccountTransactor()
+	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.pSettings = pdaoMgr.Settings
+	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, c.pSettings)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating security council manager binding: %w", err)
 	}
-	hash, err := security.Join(rp, opts)
-	if err != nil {
-		return nil, err
+	return nil
+}
+
+func (c *securityJoinContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.scMember.Exists,
+		c.scMember.InvitedTime,
+		c.pSettings.Security.ProposalActionTime,
+	)
+}
+
+func (c *securityJoinContext) PrepareData(data *api.SecurityJoinData, opts *bind.TransactOpts) error {
+	invitedTime := c.scMember.InvitedTime.Formatted()
+	actionTime := c.pSettings.Security.ProposalActionTime.Formatted()
+	data.ProposalExpired = time.Until(invitedTime.Add(actionTime)) < 0
+	data.AlreadyMember = c.scMember.Exists.Get()
+	data.CanJoin = !(data.ProposalExpired || data.AlreadyMember)
+
+	// Get the tx
+	if data.CanJoin && opts != nil {
+		txInfo, err := c.scMgr.Join(opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for Join: %w", err)
+		}
+		data.TxInfo = txInfo
 	}
-
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
-
+	return nil
 }

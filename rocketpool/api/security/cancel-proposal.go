@@ -112,7 +112,7 @@ func (c *securityCancelProposalContext) PrepareData(data *api.SecurityCancelProp
 	if data.CanCancel && opts != nil {
 		txInfo, err := c.prop.Cancel(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for ClaimBondProposer: %w", err)
+			return fmt.Errorf("error getting TX info for Cancel: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
