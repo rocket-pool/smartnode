@@ -182,8 +182,14 @@ func serviceStatus(c *cli.Context) error {
 	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
 	// Print what network we're on
-	err := cliutils.PrintNetwork(rp)
+	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
 	if err != nil {
 		return err
 	}
@@ -1205,8 +1211,14 @@ func serviceVersion(c *cli.Context) error {
 	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
 	// Print what network we're on
-	err := cliutils.PrintNetwork(rp)
+	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
 	if err != nil {
 		return err
 	}
@@ -1215,15 +1227,6 @@ func serviceVersion(c *cli.Context) error {
 	serviceVersion, err := rp.GetServiceVersion()
 	if err != nil {
 		return err
-	}
-
-	// Get config
-	cfg, isNew, err := rp.LoadConfig()
-	if err != nil {
-		return err
-	}
-	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	// Handle native mode

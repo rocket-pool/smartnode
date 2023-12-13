@@ -1162,6 +1162,10 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	return errors
 }
 
+func (cfg *RocketPoolConfig) GetNetwork() config.Network {
+	return cfg.Smartnode.Network.Value.(config.Network)
+}
+
 // Applies all of the defaults to all of the settings that have them defined
 func (cfg *RocketPoolConfig) applyAllDefaults() error {
 	for _, param := range cfg.GetParameters() {
