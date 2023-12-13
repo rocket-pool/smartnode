@@ -290,7 +290,7 @@ func (c *Client) IsFirstRun() (bool, error) {
 }
 
 // Load the Prometheus template, do an template variable substitution, and save it
-func (c *Client) UpdatePrometheusConfiguration(settings map[string]string) error {
+func (c *Client) UpdatePrometheusConfiguration(config *config.RocketPoolConfig) error {
 	prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusConfigTemplate))
 	if err != nil {
 		return fmt.Errorf("Error expanding Prometheus template path: %w", err)
@@ -315,7 +315,7 @@ func (c *Client) UpdatePrometheusConfiguration(settings map[string]string) error
 	defer runtimeFile.Close()
 
 	// Replace template variables and write the result
-	err = t.Execute(runtimeFile, settings)
+	err = t.Execute(runtimeFile, config)
 	if err != nil {
 		return fmt.Errorf("Error writing and substituting Prometheus configuration template: %w", err)
 	}

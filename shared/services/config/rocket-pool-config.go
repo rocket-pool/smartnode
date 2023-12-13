@@ -815,6 +815,51 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 	return nil
 }
 
+// Gets the hostname portion of the Execution Client's URI.
+// Used by text/template to format prometheus.yml.
+func (cfg *RocketPoolConfig) GetExecutionHostname() (string, error) {
+	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+		return Eth1ContainerName, nil
+	}
+	ecUrl, err := url.Parse(cfg.ExternalExecution.HttpUrl.Value.(string))
+	if err != nil {
+		return "", fmt.Errorf("Invalid External Execution URL %s: %w", cfg.ExternalExecution.HttpUrl.Value.(string), err)
+	}
+
+	return ecUrl.Hostname(), nil
+}
+
+// Gets the hostname portion of the Consensus Client's URI.
+// Used by text/template to format prometheus.yml.
+func (cfg *RocketPoolConfig) GetConsensusHostname() (string, error) {
+	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+		return Eth2ContainerName, nil
+	}
+
+	var rawUrl string
+
+	consensusClient := cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+
+	switch consensusClient {
+	case config.ConsensusClient_Lighthouse:
+		rawUrl = cfg.ExternalLighthouse.HttpUrl.Value.(string)
+	case config.ConsensusClient_Lodestar:
+		rawUrl = cfg.ExternalLodestar.HttpUrl.Value.(string)
+	case config.ConsensusClient_Nimbus:
+		rawUrl = cfg.ExternalNimbus.HttpUrl.Value.(string)
+	case config.ConsensusClient_Prysm:
+		rawUrl = cfg.ExternalPrysm.HttpUrl.Value.(string)
+	case config.ConsensusClient_Teku:
+		rawUrl = cfg.ExternalTeku.HttpUrl.Value.(string)
+	}
+	ccUrl, err := url.Parse(rawUrl)
+	if err != nil {
+		return "", fmt.Errorf("Invalid External Consensus URL %s: %w", rawUrl, err)
+	}
+
+	return ccUrl.Hostname(), nil
+}
+
 // Generates a collection of environment variables based on this config's settings
 func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
