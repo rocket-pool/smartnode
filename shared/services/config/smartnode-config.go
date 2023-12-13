@@ -595,7 +595,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		scrollPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "",
+			config.Network_Mainnet: "0x0f22dc9b9c03757d4676539203d7549c8f22c15c",
 			config.Network_Prater:  "",
 			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
