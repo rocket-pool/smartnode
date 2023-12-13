@@ -1456,7 +1456,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 		messageFee := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 		// Temporary gas calculations until this gets put into a binding
-		input, err := priceMessenger.ABI.Pack("submitRate")
+		input, err := priceMessenger.ABI.Pack("submitRate", l2GasLimit)
 		if err != nil {
 			return fmt.Errorf("Could not encode input data: %w", err)
 		}
@@ -1502,7 +1502,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 		t.log.Println("Submitting rate to Scroll...")
 
 		// Submit rates
-		tx, err := priceMessenger.Transact(opts, "submitRate")
+		tx, err := priceMessenger.Transact(opts, "submitRate", l2GasLimit)
 		if err != nil {
 			return fmt.Errorf("Failed to submit rate: %q", err)
 		}
