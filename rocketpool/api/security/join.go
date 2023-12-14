@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -50,7 +49,6 @@ type securityJoinContext struct {
 
 	scMgr     *security.SecurityCouncilManager
 	scMember  *security.SecurityCouncilMember
-	dpm       *proposals.DaoProposalManager
 	pSettings *protocol.ProtocolDaoSettings
 }
 
@@ -64,10 +62,6 @@ func (c *securityJoinContext) Initialize() error {
 	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {
 		return fmt.Errorf("error creating security council member binding: %w", err)
-	}
-	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
-	if err != nil {
-		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
 	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {

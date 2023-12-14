@@ -82,7 +82,7 @@ func (c *oracleDaoProposalsContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData, opts *bind.TransactOpts) error {
-	_, odaoProps, err := c.dpm.GetProposals(c.dpm.ProposalCount.Formatted(), true, nil)
+	odaoProps, _, err := c.dpm.GetProposals(c.dpm.ProposalCount.Formatted(), true, nil)
 	if err != nil {
 		return fmt.Errorf("error getting proposals: %w", err)
 	}
@@ -119,6 +119,9 @@ func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData
 			odaoProp.GetMemberSupported(mc, &data.Proposals[i].MemberSupported, c.nodeAddress)
 			return nil
 		}, nil)
+		if err != nil {
+			return fmt.Errorf("error getting node vote status on proposals: %w", err)
+		}
 	}
 	return nil
 }

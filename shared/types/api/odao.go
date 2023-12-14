@@ -130,6 +130,7 @@ type OracleDaoLeaveData struct {
 
 type OracleDaoProposeSettingData struct {
 	CanPropose             bool                  `json:"canPropose"`
+	UnknownSetting         bool                  `json:"unknownSetting"`
 	ProposalCooldownActive bool                  `json:"proposalCooldownActive"`
 	TxInfo                 *core.TransactionInfo `json:"txInfo"`
 }

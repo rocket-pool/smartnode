@@ -5,7 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -35,7 +34,7 @@ type SecurityMemberDetails struct {
 	LeftTime    time.Time      `json:"leftTime"`
 }
 type SecurityMembersData struct {
-	Members []security.SecurityCouncilMember `json:"members"`
+	Members []SecurityMemberDetails `json:"members"`
 }
 
 type SecurityProposalDetails struct {
@@ -67,12 +66,6 @@ type SecurityProposeInviteData struct {
 	TxInfo              *core.TransactionInfo `json:"txInfo"`
 }
 
-type SecurityProposeLeaveData struct {
-	CanPropose         bool                  `json:"canPropose"`
-	MemberDoesNotExist bool                  `json:"memberDoesNotExist"`
-	TxInfo             *core.TransactionInfo `json:"txInfo"`
-}
-
 type SecurityProposeKickData struct {
 	CanPropose         bool                  `json:"canPropose"`
 	MemberDoesNotExist bool                  `json:"memberDoesNotExist"`
@@ -94,7 +87,7 @@ type SecurityProposeReplaceData struct {
 
 type SecurityProposeSettingData struct {
 	CanPropose     bool                  `json:"canPropose"`
-	InvalidSetting bool                  `json:"invalidSetting"`
+	UnknownSetting bool                  `json:"unknownSetting"`
 	TxInfo         *core.TransactionInfo `json:"txInfo"`
 }
 

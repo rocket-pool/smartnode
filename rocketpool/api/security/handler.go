@@ -21,6 +21,16 @@ func NewSecurityCouncilHandler(serviceProvider *services.ServiceProvider) *Secur
 		&securityExecuteProposalContextFactory{h},
 		&securityJoinContextFactory{h},
 		&securityLeaveContextFactory{h},
+		&securityMembersContextFactory{h},
+		&securityProposalsContextFactory{h},
+		&securityProposeInviteContextFactory{h},
+		&securityProposeLeaveContextFactory{h},
+		&securityProposeKickContextFactory{h},
+		&securityProposeKickMultiContextFactory{h},
+		&securityProposeReplaceContextFactory{h},
+		&securityProposeSettingContextFactory{h},
+		&securityStatusContextFactory{h},
+		&securityVoteOnProposalContextFactory{h},
 	}
 	return h
 }

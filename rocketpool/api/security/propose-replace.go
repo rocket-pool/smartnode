@@ -1,134 +1,119 @@
 package security
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canProposeReplaceMember(c *cli.Context, existingAddress common.Address, newID string, newAddress common.Address) (*api.SecurityCanProposeReplaceResponse, error) {
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
+// ===============
+// === Factory ===
+// ===============
 
-	// Response
-	response := api.SecurityCanProposeReplaceResponse{}
-
-	// Sync
-	var wg errgroup.Group
-	var oldMemberExists bool
-	var oldMemberID string
-	var newMemberExists bool
-
-	// Check if old member exists
-	wg.Go(func() error {
-		var err error
-		oldMemberExists, err = security.GetMemberExists(rp, existingAddress, nil)
-		return err
-	})
-
-	// Get the member ID
-	wg.Go(func() error {
-		var err error
-		oldMemberID, err = security.GetMemberID(rp, existingAddress, nil)
-		return err
-	})
-
-	// Check if new member exists
-	wg.Go(func() error {
-		var err error
-		newMemberExists, err = security.GetMemberExists(rp, newAddress, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	response.OldMemberDoesntExist = !oldMemberExists
-	response.NewMemberAlreadyExists = newMemberExists
-	response.CanPropose = oldMemberExists && !newMemberExists
-	if !response.CanPropose {
-		return &response, nil
-	}
-
-	// Get gas estimate
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	message := fmt.Sprintf("replace %s (%s) with %s (%s)", oldMemberID, existingAddress.Hex(), newID, newAddress.Hex())
-	gasInfo, err := security.EstimateProposeReplaceGas(rp, message, existingAddress, newID, newAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.GasInfo = gasInfo
-	return &response, nil
+type securityProposeReplaceContextFactory struct {
+	handler *SecurityCouncilHandler
 }
 
-func proposeReplaceMember(c *cli.Context, existingAddress common.Address, newID string, newAddress common.Address) (*api.SecurityProposeInviteResponse, error) {
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
+func (f *securityProposeReplaceContextFactory) Create(vars map[string]string) (*securityProposeReplaceContext, error) {
+	c := &securityProposeReplaceContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
+	inputErrs := []error{
+		server.ValidateArg("existing-address", vars, input.ValidateAddress, &c.existingAddress),
+		server.GetStringFromVars("new-id", vars, &c.newID),
+		server.ValidateArg("new-address", vars, input.ValidateAddress, &c.newAddress),
 	}
-	rp, err := services.GetRocketPool(c)
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *securityProposeReplaceContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*securityProposeReplaceContext, api.SecurityProposeReplaceData](
+		router, "propose-replace", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type securityProposeReplaceContext struct {
+	handler     *SecurityCouncilHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	existingAddress common.Address
+	newID           string
+	newAddress      common.Address
+	scMgr           *security.SecurityCouncilManager
+	existingMember  *security.SecurityCouncilMember
+	newMember       *security.SecurityCouncilMember
+}
+
+func (c *securityProposeReplaceContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireOnSecurityCouncil()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Response
-	response := api.SecurityProposeInviteResponse{}
-
-	// Get the old ID
-	oldMemberID, err := security.GetMemberID(rp, existingAddress, nil)
+	// Bindings
+	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	pSettings := pdaoMgr.Settings
+	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, pSettings)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating security council manager binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	c.existingMember, err = security.NewSecurityCouncilMember(c.rp, c.existingAddress)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating security council member binding for %s: %w", c.existingAddress.Hex(), err)
 	}
-
-	// Submit proposal
-	message := fmt.Sprintf("replace %s (%s) with %s (%s)", oldMemberID, existingAddress.Hex(), newID, newAddress.Hex())
-	proposalId, hash, err := security.ProposeReplace(rp, message, existingAddress, newID, newAddress, opts)
+	c.newMember, err = security.NewSecurityCouncilMember(c.rp, c.newAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating security council member binding for %s: %w", c.newAddress.Hex(), err)
 	}
-	response.ProposalId = proposalId
-	response.TxHash = hash
+	return nil
+}
 
-	// Return response
-	return &response, nil
+func (c *securityProposeReplaceContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.existingMember.Exists,
+		c.existingMember.ID,
+		c.newMember.Exists,
+	)
+}
+
+func (c *securityProposeReplaceContext) PrepareData(data *api.SecurityProposeReplaceData, opts *bind.TransactOpts) error {
+	data.NewMemberAlreadyExists = c.newMember.Exists.Get()
+	data.OldMemberDoesNotExist = !c.newMember.Exists.Get()
+	data.CanPropose = !(data.NewMemberAlreadyExists || data.OldMemberDoesNotExist)
+
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		message := fmt.Sprintf("replace %s (%s) on the security council with %s (%s)", c.existingMember.ID.Get(), c.existingAddress.Hex(), c.newID, c.newAddress.Hex())
+		txInfo, err := c.scMgr.ProposeReplace(message, c.existingAddress, c.newID, c.newAddress, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for ProposeReplace: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
 }

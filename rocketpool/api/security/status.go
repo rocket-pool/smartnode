@@ -1,119 +1,144 @@
 package security
 
 import (
-	"github.com/rocket-pool/rocketpool-go/dao/security"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	"fmt"
+	"time"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/proposals"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/dao/security"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
+
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getStatus(c *cli.Context) (*api.SecurityStatusResponse, error) {
+const (
+	propStateBatchSize int = 200
+)
 
-	// Get services
-	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
+// ===============
+// === Factory ===
+// ===============
+
+type securityStatusContextFactory struct {
+	handler *SecurityCouncilHandler
+}
+
+func (f *securityStatusContextFactory) Create(vars map[string]string) (*securityStatusContext, error) {
+	c := &securityStatusContext{
+		handler: f.handler,
 	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
+	return c, nil
+}
+
+func (f *securityStatusContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*securityStatusContext, api.SecurityStatusData](
+		router, "status", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type securityStatusContext struct {
+	handler     *SecurityCouncilHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	dpm      *proposals.DaoProposalManager
+	pdaoMgr  *protocol.ProtocolDaoManager
+	scMgr    *security.SecurityCouncilManager
+	scMember *security.SecurityCouncilMember
+}
+
+func (c *securityStatusContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Bindings
+	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-	rp, err := services.GetRocketPool(c)
+	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, pdaoMgr.Settings)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating security council manager binding: %w", err)
 	}
-
-	// Response
-	response := api.SecurityStatusResponse{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
+	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating security council member binding for %s: %w", c.nodeAddress.Hex(), err)
 	}
-
-	// Get membership status
-	isMember, err := security.GetMemberExists(rp, nodeAccount.Address, nil)
+	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
-	response.IsMember = isMember
+	return nil
+}
 
-	// Sync
-	var wg errgroup.Group
+func (c *securityStatusContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.scMember.Exists,
+		c.scMember.InvitedTime,
+		c.scMember.LeftTime,
+		c.scMgr.MemberCount,
+		c.dpm.ProposalCount,
+		c.pdaoMgr.Settings.Security.ProposalActionTime,
+	)
+}
 
-	// Get pending executed proposal statuses
-	if isMember {
+func (c *securityStatusContext) PrepareData(data *api.SecurityStatusData, opts *bind.TransactOpts) error {
+	// Get member stats
+	data.IsMember = c.scMember.Exists.Get()
+	if data.IsMember {
+		actionTime := c.pdaoMgr.Settings.Security.ProposalActionTime.Formatted()
+		joinTime := c.scMember.InvitedTime.Formatted()
+		leaveTime := c.scMember.LeftTime.Formatted()
+		data.CanJoin = (time.Until(joinTime.Add(actionTime)) > 0)
+		data.CanLeave = (time.Until(leaveTime.Add(actionTime)) > 0)
+	}
+	data.TotalMembers = c.scMgr.MemberCount.Formatted()
 
-		// Check if node can leave
-		wg.Go(func() error {
-			leaveActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "leave")
-			if err == nil {
-				response.CanLeave = leaveActionable
-			}
-			return err
-		})
-
-	} else {
-
-		// Check if node can join
-		wg.Go(func() error {
-			joinActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "invited")
-			if err == nil {
-				response.CanJoin = joinActionable
-			}
-			return err
-		})
-
+	// Get prop statuses
+	propCount := c.dpm.ProposalCount.Formatted()
+	_, props, err := c.dpm.GetProposals(propCount, false, nil)
+	if err != nil {
+		return fmt.Errorf("error getting proposals: %w", err)
+	}
+	err = c.rp.BatchQuery(int(propCount), propStateBatchSize, func(mc *batch.MultiCaller, i int) error {
+		props[i].State.AddToQuery(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("error getting proposal states: %w", err)
 	}
 
-	// Get total DAO members
-	wg.Go(func() error {
-		memberCount, err := security.GetMemberCount(rp, nil)
-		if err == nil {
-			response.TotalMembers = memberCount
+	data.ProposalCounts.Total = int(propCount)
+	for _, prop := range props {
+		switch prop.State.Formatted() {
+		case rptypes.ProposalState_Active:
+			data.ProposalCounts.Active++
+		case rptypes.ProposalState_Cancelled:
+			data.ProposalCounts.Cancelled++
+		case rptypes.ProposalState_Defeated:
+			data.ProposalCounts.Defeated++
+		case rptypes.ProposalState_Executed:
+			data.ProposalCounts.Executed++
+		case rptypes.ProposalState_Expired:
+			data.ProposalCounts.Expired++
+		case rptypes.ProposalState_Pending:
+			data.ProposalCounts.Pending++
+		case rptypes.ProposalState_Succeeded:
+			data.ProposalCounts.Succeeded++
 		}
-		return err
-	})
-
-	// Get proposal counts
-	wg.Go(func() error {
-		proposalStates, err := getProposalStates(rp)
-		if err == nil {
-			response.ProposalCounts.Total = len(proposalStates)
-			for _, state := range proposalStates {
-				switch state {
-				case rptypes.Pending:
-					response.ProposalCounts.Pending++
-				case rptypes.Active:
-					response.ProposalCounts.Active++
-				case rptypes.Cancelled:
-					response.ProposalCounts.Cancelled++
-				case rptypes.Defeated:
-					response.ProposalCounts.Defeated++
-				case rptypes.Succeeded:
-					response.ProposalCounts.Succeeded++
-				case rptypes.Expired:
-					response.ProposalCounts.Expired++
-				case rptypes.Executed:
-					response.ProposalCounts.Executed++
-				}
-			}
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
 	}
-
-	// Return response
-	return &response, nil
-
+	return nil
 }

@@ -85,7 +85,7 @@ func (c *securityCancelProposalContext) Initialize() error {
 	var success bool
 	c.prop, success = proposals.GetProposalAsSecurity(prop)
 	if !success {
-		return fmt.Errorf("proposal %d is not an security council proposal", c.id)
+		return fmt.Errorf("proposal %d is not a security council proposal", c.id)
 	}
 	return nil
 }

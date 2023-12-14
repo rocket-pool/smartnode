@@ -1,113 +1,109 @@
 package security
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canProposeInvite(c *cli.Context, memberId string, memberAddress common.Address) (*api.SecurityCanProposeInviteResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.SecurityCanProposeInviteResponse{}
-
-	// Sync
-	var wg errgroup.Group
-
-	// Check if member exists
-	wg.Go(func() error {
-		memberExists, err := security.GetMemberExists(rp, memberAddress, nil)
-		if err == nil {
-			response.MemberAlreadyExists = memberExists
-		}
-		return err
-	})
-
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		message := fmt.Sprintf("invite %s (%s)", memberId, memberAddress)
-		gasInfo, err := security.EstimateProposeInviteMemberGas(rp, message, memberId, memberAddress, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.CanPropose = !(response.MemberAlreadyExists)
-	return &response, nil
-
+type securityProposeInviteContextFactory struct {
+	handler *SecurityCouncilHandler
 }
 
-func proposeInvite(c *cli.Context, memberId string, memberAddress common.Address) (*api.SecurityProposeInviteResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
+func (f *securityProposeInviteContextFactory) Create(vars map[string]string) (*securityProposeInviteContext, error) {
+	c := &securityProposeInviteContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	inputErrs := []error{
+		server.ValidateArg("id", vars, input.ValidateDAOMemberID, &c.id),
+		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *securityProposeInviteContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*securityProposeInviteContext, api.SecurityProposeInviteData](
+		router, "propose-invite", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type securityProposeInviteContext struct {
+	handler     *SecurityCouncilHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	id       string
+	address  common.Address
+	scMgr    *security.SecurityCouncilManager
+	scMember *security.SecurityCouncilMember
+}
+
+func (c *securityProposeInviteContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireOnSecurityCouncil()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rp, err := services.GetRocketPool(c)
+
+	// Bindings
+	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating security council member binding: %w", err)
 	}
-
-	// Response
-	response := api.SecurityProposeInviteResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	pSettings := pdaoMgr.Settings
+	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, pSettings)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating security council manager binding: %w", err)
 	}
+	return nil
+}
 
-	// Submit proposal
-	message := fmt.Sprintf("invite %s (%s)", memberId, memberAddress)
-	proposalId, hash, err := security.ProposeInviteMember(rp, message, memberId, memberAddress, opts)
-	if err != nil {
-		return nil, err
+func (c *securityProposeInviteContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.scMember.Exists,
+	)
+}
+
+func (c *securityProposeInviteContext) PrepareData(data *api.SecurityProposeInviteData, opts *bind.TransactOpts) error {
+	data.MemberAlreadyExists = c.scMember.Exists.Get()
+	data.CanPropose = !(data.MemberAlreadyExists)
+
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		message := fmt.Sprintf("invite %s (%s)", c.id, c.address.Hex())
+		txInfo, err := c.scMgr.ProposeInvite(message, c.id, c.address, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for ProposeInvite: %w", err)
+		}
+		data.TxInfo = txInfo
 	}
-	response.ProposalId = proposalId
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
-
+	return nil
 }

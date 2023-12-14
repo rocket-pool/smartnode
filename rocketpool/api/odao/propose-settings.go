@@ -32,6 +32,7 @@ func (f *oracleDaoProposeSettingContextFactory) Create(vars map[string]string) (
 		handler: f.handler,
 	}
 	inputErrs := []error{
+		server.GetStringFromVars("contract", vars, &c.contractNameString),
 		server.GetStringFromVars("setting", vars, &c.setting),
 		server.GetStringFromVars("value", vars, &c.valueString),
 	}
@@ -53,11 +54,12 @@ type oracleDaoProposeSettingContext struct {
 	rp          *rocketpool.RocketPool
 	nodeAddress common.Address
 
-	setting     string
-	valueString string
-	odaoMember  *oracle.OracleDaoMember
-	oSettings   *oracle.OracleDaoSettings
-	odaoMgr     *oracle.OracleDaoManager
+	contractNameString string
+	setting            string
+	valueString        string
+	odaoMember         *oracle.OracleDaoMember
+	oSettings          *oracle.OracleDaoSettings
+	odaoMgr            *oracle.OracleDaoManager
 }
 
 func (c *oracleDaoProposeSettingContext) Initialize() error {
@@ -104,42 +106,59 @@ func (c *oracleDaoProposeSettingContext) PrepareData(data *api.OracleDaoProposeS
 	data.ProposalCooldownActive = isProposalCooldownActive(cooldownTime, c.odaoMember.LastProposalTime.Formatted(), currentTime)
 	data.CanPropose = !(data.ProposalCooldownActive)
 
+	// Make sure the setting exists
+	settings := c.odaoMgr.Settings.GetSettings()
+	category, exists := settings[rocketpool.ContractName(c.contractNameString)]
+	if !exists {
+		data.UnknownSetting = true
+	}
+	data.CanPropose = !(data.ProposalCooldownActive || data.UnknownSetting)
+
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		txInfo, err := c.createProposalTx(opts)
-		if err != nil {
-			return fmt.Errorf("error getting TX info for proposal: %w", err)
+		validSetting, txInfo, parseErr, createErr := c.createProposalTx(category, opts)
+		if parseErr != nil {
+			return parseErr
 		}
-		data.TxInfo = txInfo
+		if createErr != nil {
+			return fmt.Errorf("error getting TX info for ProposeSet: %w", createErr)
+		}
+		if !validSetting {
+			data.UnknownSetting = true
+			data.CanPropose = false
+		} else {
+			data.TxInfo = txInfo
+		}
 	}
 	return nil
 }
 
-func (c *oracleDaoProposeSettingContext) createProposalTx(opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *oracleDaoProposeSettingContext) createProposalTx(category oracle.SettingsCategory, opts *bind.TransactOpts) (bool, *core.TransactionInfo, error, error) {
 	valueName := "value"
-	boolSettings, uintSettings := c.oSettings.GetSettings()
 
 	// Try the bool settings
-	for _, setting := range boolSettings {
+	for _, setting := range category.BoolSettings {
 		if setting.GetPath() == c.setting {
 			value, err := input.ValidateBool(valueName, c.valueString)
 			if err != nil {
-				return nil, fmt.Errorf("error parsing value as bool: %w", err)
+				return false, nil, fmt.Errorf("error parsing value as bool: %w", err), nil
 			}
-			return setting.ProposeSet(value, opts)
+			txInfo, err := setting.ProposeSet(value, opts)
+			return true, txInfo, nil, err
 		}
 	}
 
 	// Try the uint settings
-	for _, setting := range uintSettings {
+	for _, setting := range category.UintSettings {
 		if setting.GetPath() == c.setting {
 			value, err := input.ValidateBigInt(valueName, c.valueString)
 			if err != nil {
-				return nil, fmt.Errorf("error parsing value as *big.Int: %w", err)
+				return false, nil, fmt.Errorf("error parsing value as *big.Int: %w", err), nil
 			}
-			return setting.ProposeSet(value, opts)
+			txInfo, err := setting.ProposeSet(value, opts)
+			return true, txInfo, nil, err
 		}
 	}
 
-	return nil, fmt.Errorf("[%s] is not a valid Oracle DAO setting", c.setting)
+	return false, nil, nil, nil
 }

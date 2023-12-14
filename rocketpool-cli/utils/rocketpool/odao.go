@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -103,10 +104,11 @@ func (r *ODaoRequester) ProposeLeave() (*api.ApiResponse[api.OracleDaoProposeLea
 }
 
 // Propose an Oracle DAO setting update
-func (r *ODaoRequester) ProposeSetting(settingName string, value string) (*api.ApiResponse[api.OracleDaoProposeSettingData], error) {
+func (r *ODaoRequester) ProposeSetting(contractName rocketpool.ContractName, settingName string, value string) (*api.ApiResponse[api.OracleDaoProposeSettingData], error) {
 	args := map[string]string{
-		"setting": settingName,
-		"value":   value,
+		"contract": string(contractName),
+		"setting":  settingName,
+		"value":    value,
 	}
 	return sendGetRequest[api.OracleDaoProposeSettingData](r, "setting/propose", "ProposeSetting", args)
 }

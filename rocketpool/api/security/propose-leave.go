@@ -3,105 +3,72 @@ package security
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
-	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProposeLeave(c *cli.Context) (*api.SecurityCanProposeLeaveResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.SecurityCanProposeLeaveResponse{}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if the member exists
-	exists, err := security.GetMemberExists(rp, nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
-	}
-	response.MemberDoesntExist = !exists
-
-	// Check validity
-	response.CanPropose = !(response.MemberDoesntExist)
-	if !response.CanPropose {
-		return &response, nil
-	}
-
-	// Simulate the tx
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := security.EstimateRequestLeaveGas(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.GasInfo = gasInfo
-	return &response, nil
-
+type securityProposeLeaveContextFactory struct {
+	handler *SecurityCouncilHandler
 }
 
-func proposeLeave(c *cli.Context) (*api.SecurityProposeLeaveResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
+func (f *securityProposeLeaveContextFactory) Create(vars map[string]string) (*securityProposeLeaveContext, error) {
+	c := &securityProposeLeaveContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	return c, nil
+}
+
+func (f *securityProposeLeaveContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessGet[*securityProposeLeaveContext, api.TxInfoData](
+		router, "propose-leave", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type securityProposeLeaveContext struct {
+	handler *SecurityCouncilHandler
+}
+
+func (c *securityProposeLeaveContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	rp := sp.GetRocketPool()
+
+	// Requirements
+	err := sp.RequireOnSecurityCouncil()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rp, err := services.GetRocketPool(c)
+
+	// Bindings
+	pdaoMgr, err := protocol.NewProtocolDaoManager(rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-
-	// Response
-	response := api.SecurityProposeLeaveResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	pSettings := pdaoMgr.Settings
+	scMgr, err := security.NewSecurityCouncilManager(rp, pSettings)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating security council manager binding: %w", err)
 	}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	// Get the tx
+	if opts != nil {
+		txInfo, err := scMgr.RequestLeave(opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for RequestLeave: %w", err)
+		}
+		data.TxInfo = txInfo
 	}
-
-	// Submit proposal
-	hash, err := security.RequestLeave(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
-
+	return nil
 }

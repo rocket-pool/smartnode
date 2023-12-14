@@ -1,123 +1,108 @@
 package security
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func canProposeKick(c *cli.Context, memberAddress common.Address) (*api.SecurityCanProposeKickResponse, error) {
+// ===============
+// === Factory ===
+// ===============
 
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.SecurityCanProposeKickResponse{}
-
-	// Sync
-	var wg errgroup.Group
-
-	// Get gas estimate
-	wg.Go(func() error {
-		opts, err := w.GetNodeAccountTransactor()
-		if err != nil {
-			return err
-		}
-		memberId, err := security.GetMemberID(rp, memberAddress, nil)
-		if err != nil {
-			return err
-		}
-		message := fmt.Sprintf("kick %s (%s)", memberId, memberAddress.Hex())
-		gasInfo, err := security.EstimateProposeKickGas(rp, message, memberAddress, opts)
-		if err == nil {
-			response.GasInfo = gasInfo
-		}
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Update & return response
-	response.CanPropose = true
-	return &response, nil
-
+type securityProposeKickContextFactory struct {
+	handler *SecurityCouncilHandler
 }
 
-func proposeKick(c *cli.Context, memberAddress common.Address) (*api.SecurityProposeKickResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
+func (f *securityProposeKickContextFactory) Create(vars map[string]string) (*securityProposeKickContext, error) {
+	c := &securityProposeKickContext{
+		handler: f.handler,
 	}
-	w, err := services.GetWallet(c)
+	inputErrs := []error{
+		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *securityProposeKickContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*securityProposeKickContext, api.SecurityProposeKickData](
+		router, "propose-kick", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type securityProposeKickContext struct {
+	handler     *SecurityCouncilHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	address common.Address
+	scMgr   *security.SecurityCouncilManager
+	member  *security.SecurityCouncilMember
+}
+
+func (c *securityProposeKickContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireOnSecurityCouncil()
 	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.SecurityProposeKickResponse{}
-
-	// Data
-	var wg errgroup.Group
-	var memberId string
-
-	// Get member details
-	wg.Go(func() error {
-		var err error
-		memberId, err = security.GetMemberID(rp, memberAddress, nil)
 		return err
-	})
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return nil, err
 	}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
+	// Bindings
+	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
+	pSettings := pdaoMgr.Settings
+	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, pSettings)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+		return fmt.Errorf("error creating security council manager binding: %w", err)
 	}
-
-	// Submit proposal
-	message := fmt.Sprintf("kick %s (%s)", memberId, memberAddress.Hex())
-	proposalId, hash, err := security.ProposeKick(rp, message, memberAddress, opts)
+	c.member, err = security.NewSecurityCouncilMember(c.rp, c.address)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating security council member binding for node %s: %w", c.address.Hex(), err)
 	}
-	response.ProposalId = proposalId
-	response.TxHash = hash
+	return nil
+}
 
-	// Return response
-	return &response, nil
+func (c *securityProposeKickContext) GetState(mc *batch.MultiCaller) {
+	core.AddQueryablesToMulticall(mc,
+		c.member.Exists,
+		c.member.ID,
+	)
+}
 
+func (c *securityProposeKickContext) PrepareData(data *api.SecurityProposeKickData, opts *bind.TransactOpts) error {
+	data.MemberDoesNotExist = !c.member.Exists.Get()
+	data.CanPropose = !(data.MemberDoesNotExist)
+
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		message := fmt.Sprintf("kick %s (%s)", c.member.ID.Get(), c.address.Hex())
+		txInfo, err := c.scMgr.ProposeKick(message, c.address, opts)
+		if err != nil {
+			return fmt.Errorf("error getting TX info for ProposeKick: %w", err)
+		}
+		data.TxInfo = txInfo
+	}
+	return nil
 }

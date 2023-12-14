@@ -59,8 +59,12 @@ func (c *securityLeaveContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	err := sp.RequireOnSecurityCouncil()
+	if err != nil {
+		return err
+	}
 	// Bindings
-	var err error
 	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {
 		return fmt.Errorf("error creating security council member binding: %w", err)

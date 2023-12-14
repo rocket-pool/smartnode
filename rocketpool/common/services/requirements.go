@@ -10,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/node"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
@@ -137,6 +138,23 @@ func (sp *ServiceProvider) RequireOnOracleDao() error {
 	return nil
 }
 
+func (sp *ServiceProvider) RequireOnSecurityCouncil() error {
+	if err := sp.RequireNodeAddress(); err != nil {
+		return err
+	}
+	if err := sp.RequireEthClientSynced(); err != nil {
+		return err
+	}
+	nodeTrusted, err := sp.isMemberOfSecurityCouncil()
+	if err != nil {
+		return err
+	}
+	if !nodeTrusted {
+		return errors.New("The node is not a member of the security council. Nodes can only join the security council by invite.")
+	}
+	return nil
+}
+
 // ===============================
 // === Service Synchronization ===
 // ===============================
@@ -241,9 +259,28 @@ func (sp *ServiceProvider) isMemberOfOracleDao() (bool, error) {
 	// Get contract state
 	err = rp.Query(nil, nil, odaoMember.Exists)
 	if err != nil {
-		return false, fmt.Errorf("error getting oDAO member contract status: %w", err)
+		return false, fmt.Errorf("error getting oDAO member status: %w", err)
 	}
 	return odaoMember.Exists.Get(), nil
+}
+
+// Check if the node is a member of the security council
+func (sp *ServiceProvider) isMemberOfSecurityCouncil() (bool, error) {
+	rp := sp.rocketPool
+	address, _ := sp.nodeWallet.GetAddress()
+
+	// Create the bindings
+	scMember, err := security.NewSecurityCouncilMember(rp, address)
+	if err != nil {
+		return false, fmt.Errorf("error creating security council member binding: %w", err)
+	}
+
+	// Get contract state
+	err = rp.Query(nil, nil, scMember.Exists)
+	if err != nil {
+		return false, fmt.Errorf("error getting security council member status: %w", err)
+	}
+	return scMember.Exists.Get(), nil
 }
 
 // Check if the primary and fallback Execution clients are synced

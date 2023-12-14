@@ -35,7 +35,7 @@ func (f *protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory) Create(
 	}
 	inputErrs := []error{
 		server.ValidateArg("existing-address", vars, input.ValidateAddress, &c.existingAddress),
-		server.GetStringFromVars("id", vars, &c.newID),
+		server.GetStringFromVars("new-id", vars, &c.newID),
 		server.ValidateArg("new-address", vars, input.ValidateAddress, &c.newAddress),
 	}
 	return c, errors.Join(inputErrs...)
