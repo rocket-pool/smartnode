@@ -1159,7 +1159,40 @@ func (cfg *RocketPoolConfig) Validate() []string {
 		}
 	}
 
+	// Ensure the selected port numbers are unique. Keeps track of all the errors
+	portMap := make(map[interface{}]bool)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ConsensusCommon.ApiPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ConsensusCommon.P2pPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ExecutionCommon.EnginePort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ExecutionCommon.WsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ExecutionCommon.P2pPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ExecutionCommon.HttpPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.BnMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.EcMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ExporterMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.NodeMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.VcMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.WatchtowerMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Grafana.Port, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.MevBoost.Port, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Prometheus.Port, errors)
+	_, errors = addAndCheckForDuplicate(portMap, cfg.Lighthouse.P2pQuicPort, errors)
+
 	return errors
+}
+
+func addAndCheckForDuplicate(portMap map[interface{}]bool, param config.Parameter, errors []string) (map[interface{}]bool, []string) {
+	port := fmt.Sprintf("%v", param.Value)
+	if port == "" {
+		return portMap, errors
+	}
+	if portMap[port] {
+		return portMap, append(errors, fmt.Sprintf("Port %s for %s is already in use", port, param.Name))
+	} else {
+		portMap[port] = true
+	}
+	return portMap, errors
+
 }
 
 func (cfg *RocketPoolConfig) GetNetwork() config.Network {
