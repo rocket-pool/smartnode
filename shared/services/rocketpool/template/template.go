@@ -28,7 +28,7 @@ func (t Template) Write(data interface{}) error {
 	// Parse the template
 	tmpl, err := template.ParseFiles(t.Src)
 	if err != nil {
-		return fmt.Errorf("Error reading template: %w", err)
+		return fmt.Errorf("Error reading template file %s: %w", shellescape.Quote(t.Src), err)
 	}
 
 	// Replace template variables and write the result

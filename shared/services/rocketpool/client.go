@@ -1088,6 +1088,12 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		return []string{}, fmt.Errorf("error creating runtime folder [%s]: %w", runtimeFolder, err)
 	}
 
+	composePaths := template.ComposePaths{
+		RuntimePath:  runtimeFolder,
+		TemplatePath: templatesFolder,
+		OverridePath: overrideFolder,
+	}
+
 	// Set the environment variables for substitution
 	//
 	// TODO: Instead of substituting the templates with env vars, switch to the text/template package.
@@ -1107,21 +1113,18 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	// Read and substitute the templates
 	deployedContainers := []string{}
 
-	// API
-	contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, config.ApiContainerName+templateSuffix))
-	if err != nil {
-		return []string{}, fmt.Errorf("error reading and substituting API container template: %w", err)
+	for _, containerName := range []string{
+		config.ApiContainerName,
+	} {
+		containers, err := composePaths.File(containerName).Write(cfg)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not create %s container definition: %w", containerName, err)
+		}
+		deployedContainers = append(deployedContainers, containers...)
 	}
-	apiComposePath := filepath.Join(runtimeFolder, config.ApiContainerName+composeFileSuffix)
-	err = os.WriteFile(apiComposePath, contents, 0664)
-	if err != nil {
-		return []string{}, fmt.Errorf("could not write API container file to %s: %w", apiComposePath, err)
-	}
-	deployedContainers = append(deployedContainers, apiComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.ApiContainerName+composeFileSuffix))
 
 	// Node
-	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.NodeContainerName+templateSuffix))
+	contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, config.NodeContainerName+templateSuffix))
 	if err != nil {
 		return []string{}, fmt.Errorf("error reading and substituting node container template: %w", err)
 	}
