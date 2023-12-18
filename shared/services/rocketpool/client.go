@@ -1115,6 +1115,8 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 
 	for _, containerName := range []string{
 		config.ApiContainerName,
+		config.NodeContainerName,
+		config.WatchtowerContainerName,
 	} {
 		containers, err := composePaths.File(containerName).Write(cfg)
 		if err != nil {
@@ -1123,32 +1125,6 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		deployedContainers = append(deployedContainers, containers...)
 	}
 
-	// Node
-	contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, config.NodeContainerName+templateSuffix))
-	if err != nil {
-		return []string{}, fmt.Errorf("error reading and substituting node container template: %w", err)
-	}
-	nodeComposePath := filepath.Join(runtimeFolder, config.NodeContainerName+composeFileSuffix)
-	err = os.WriteFile(nodeComposePath, contents, 0664)
-	if err != nil {
-		return []string{}, fmt.Errorf("could not write node container file to %s: %w", nodeComposePath, err)
-	}
-	deployedContainers = append(deployedContainers, nodeComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.NodeContainerName+composeFileSuffix))
-
-	// Watchtower
-	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.WatchtowerContainerName+templateSuffix))
-	if err != nil {
-		return []string{}, fmt.Errorf("error reading and substituting watchtower container template: %w", err)
-	}
-	watchtowerComposePath := filepath.Join(runtimeFolder, config.WatchtowerContainerName+composeFileSuffix)
-	err = os.WriteFile(watchtowerComposePath, contents, 0664)
-	if err != nil {
-		return []string{}, fmt.Errorf("could not write watchtower container file to %s: %w", watchtowerComposePath, err)
-	}
-	deployedContainers = append(deployedContainers, watchtowerComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.WatchtowerContainerName+composeFileSuffix))
-
 	// Validator
 	// Check if Rescue Node is in-use
 	cc, _ := cfg.GetSelectedConsensusClient()
@@ -1156,7 +1132,7 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	if err != nil {
 		return []string{}, fmt.Errorf("error using Rescue Node: %w", err)
 	}
-	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.ValidatorContainerName+templateSuffix))
+	contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, config.ValidatorContainerName+templateSuffix))
 	if err != nil {
 		return []string{}, fmt.Errorf("error reading and substituting validator container template: %w", err)
 	}
