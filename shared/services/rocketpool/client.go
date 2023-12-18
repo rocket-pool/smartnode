@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/a8m/envsubst"
@@ -30,6 +29,7 @@ import (
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool/template"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -301,32 +301,12 @@ func (c *Client) UpdatePrometheusConfiguration(config *config.RocketPoolConfig) 
 		return fmt.Errorf("Error expanding Prometheus config file path: %w", err)
 	}
 
-	// Parse the template
-	t, err := template.ParseFiles(prometheusTemplatePath)
-	if err != nil {
-		return fmt.Errorf("Error reading Prometheus configuration template: %w", err)
+	t := template.Template{
+		Src: prometheusTemplatePath,
+		Dst: prometheusConfigPath,
 	}
 
-	// Create the output file
-	runtimeFile, err := os.OpenFile(prometheusConfigPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0664)
-	if err != nil {
-		return fmt.Errorf("Could not open Prometheus config file %s for writing: %w", shellescape.Quote(prometheusConfigPath), err)
-	}
-	defer runtimeFile.Close()
-
-	// Replace template variables and write the result
-	err = t.Execute(runtimeFile, config)
-	if err != nil {
-		return fmt.Errorf("Error writing and substituting Prometheus configuration template: %w", err)
-	}
-
-	// If the file was newly created, 0664 may have been altered by umask, so chmod back to 0664.
-	err = os.Chmod(prometheusConfigPath, 0664)
-	if err != nil {
-		return fmt.Errorf("Could not set Prometheus config file (%s) permissions: %w", shellescape.Quote(prometheusConfigPath), err)
-	}
-
-	return nil
+	return t.Write(config)
 }
 
 // Install the Rocket Pool service
