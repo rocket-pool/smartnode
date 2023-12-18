@@ -1,6 +1,12 @@
 package utils
 
-import "github.com/rocket-pool/smartnode/shared/config"
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
+	"github.com/rocket-pool/smartnode/shared/config"
+)
 
 const (
 	MinWatchtowerMaxFee        float64 = 200
@@ -25,4 +31,20 @@ func GetWatchtowerPrioFee(cfg *config.RocketPoolConfig) float64 {
 		return MinWatchtowerPriorityFee
 	}
 	return setting
+}
+
+func FindLastExistingELBlockFromSlot(bc beacon.Client, slotNumber uint64) (beacon.Eth1Data, error) {
+	ecBlock := beacon.Eth1Data{}
+	var err error
+	for blockExists, searchSlot := false, slotNumber; !blockExists; searchSlot -= 1 {
+		ecBlock, blockExists, err = bc.GetEth1DataForEth2Block(strconv.FormatUint(searchSlot, 10))
+		if err != nil {
+			return ecBlock, err
+		}
+		// If we go back more than 32 slots, error out
+		if slotNumber-searchSlot > 32 {
+			return ecBlock, fmt.Errorf("could not find EL block from slot %d", slotNumber)
+		}
+	}
+	return ecBlock, nil
 }

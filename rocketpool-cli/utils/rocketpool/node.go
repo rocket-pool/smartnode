@@ -154,12 +154,20 @@ func (r *NodeRequester) Send(amount *big.Int, token string, recipient common.Add
 	return sendGetRequest[api.NodeSendData](r, "send", "Send", args)
 }
 
+// Sets whether or not the node is allowed to lock RPL for Protocol DAO proposal or challenge bonds
+func (r *NodeRequester) SetRplLockingAllowed(allowed bool) (*api.ApiResponse[api.NodeSetRplLockingAllowedData], error) {
+	args := map[string]string{
+		"allowed": fmt.Sprint(allowed),
+	}
+	return sendGetRequest[api.NodeSetRplLockingAllowedData](r, "set-rpl-locking-allowed", "SetRplLockingAllowed", args)
+}
+
 // Sets the node's Smoothing Pool opt-in status
-func (r *NodeRequester) SetSmoothingPoolRegistrationState(optIn bool) (*api.ApiResponse[api.NodeSetStakeRplForAllowedData], error) {
+func (r *NodeRequester) SetSmoothingPoolRegistrationState(optIn bool) (*api.ApiResponse[api.NodeSetSmoothingPoolRegistrationStatusData], error) {
 	args := map[string]string{
 		"opt-in": fmt.Sprint(optIn),
 	}
-	return sendGetRequest[api.NodeSetStakeRplForAllowedData](r, "set-smoothing-pool-registration-state", "SetSmoothingPoolRegistrationState", args)
+	return sendGetRequest[api.NodeSetSmoothingPoolRegistrationStatusData](r, "set-smoothing-pool-registration-state", "SetSmoothingPoolRegistrationState", args)
 }
 
 // Sets the allow state of another address staking on behalf of the node

@@ -95,7 +95,15 @@ func Run(sp *services.ServiceProvider) error {
 	downloadRewardsTrees := NewDownloadRewardsTrees(sp, log.NewColorLogger(DownloadRewardsTreesColor))
 	reduceBonds := NewReduceBonds(sp, log.NewColorLogger(ReduceBondAmountColor))
 	defendPdaoProps := NewReduceBonds(sp, log.NewColorLogger(DefendPdaoPropsColor))
-	verifyPdaoProps := NewReduceBonds(sp, log.NewColorLogger(VerifyPdaoPropsColor))
+	var verifyPdaoProps *VerifyPdaoProps
+	// Make sure the user opted into this duty
+	verifyEnabled := cfg.Smartnode.VerifyProposals.Value.(bool)
+	if verifyEnabled {
+		verifyPdaoProps = NewVerifyPdaoProps(sp, log.NewColorLogger(VerifyPdaoPropsColor))
+		if err != nil {
+			return err
+		}
+	}
 
 	// Wait group to handle the various threads
 	wg := new(sync.WaitGroup)
@@ -168,10 +176,12 @@ func Run(sp *services.ServiceProvider) error {
 				time.Sleep(taskCooldown)
 
 				// Run the pDAO proposal verifier
-				if err := verifyPdaoProps.Run(state); err != nil {
-					errorLog.Println(err)
+				if verifyPdaoProps != nil {
+					if err := verifyPdaoProps.Run(state); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 				}
-				time.Sleep(taskCooldown)
 			}
 
 			// Run the minipool stake check

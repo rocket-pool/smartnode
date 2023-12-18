@@ -32,6 +32,7 @@ type NodeStatusData struct {
 	RplWithdrawalAddressFormatted            string         `json:"rplWithdrawalAddressFormatted"`
 	PendingRplWithdrawalAddress              common.Address `json:"pendingRplWithdrawalAddress"`
 	PendingRplWithdrawalAddressFormatted     string         `json:"pendingRplWithdrawalAddressFormatted"`
+	IsRplLockingAllowed                      bool           `json:"isRplLockingAllowed"`
 	Registered                               bool           `json:"registered"`
 	Trusted                                  bool           `json:"trusted"`
 	TimezoneLocation                         string         `json:"timezoneLocation"`
@@ -99,6 +100,12 @@ type NodeRegisterData struct {
 	AlreadyRegistered    bool                  `json:"alreadyRegistered"`
 	RegistrationDisabled bool                  `json:"registrationDisabled"`
 	TxInfo               *core.TransactionInfo `json:"txInfo"`
+}
+
+type NodeSetRplLockingAllowedData struct {
+	CanSet              bool                  `json:"canSet"`
+	DifferentRplAddress bool                  `json:"differentRplAddress"`
+	TxInfo              *core.TransactionInfo `json:"txInfo"`
 }
 
 type NodeSetPrimaryWithdrawalAddressData struct {

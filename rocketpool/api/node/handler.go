@@ -37,6 +37,7 @@ func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
 		&nodeSendMessageContextFactory{h},
 		&nodeSendContextFactory{h},
 		&nodeSetPrimaryWithdrawalAddressContextFactory{h},
+		&nodeSetRplLockingAllowedContextFactory{h},
 		&nodeSetRplWithdrawalAddressContextFactory{h},
 		&nodeSetSnapshotDelegateContextFactory{h},
 		&nodeSetSmoothingPoolRegistrationStatusContextFactory{h},

@@ -164,6 +164,7 @@ func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 		c.node.TotalCreditAndDonatedBalance,
 		c.node.UsableCreditAndDonatedBalance,
 		c.node.DonatedEthBalance,
+		c.node.IsRplLockingAllowed,
 
 		// Other
 		c.odaoMember.Exists,
@@ -219,6 +220,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	data.UsableCreditAndEthOnBehalfBalance = c.node.UsableCreditAndDonatedBalance.Get()
 	data.EthOnBehalfBalance = c.node.DonatedEthBalance.Get()
 	data.IsFeeDistributorInitialized = c.node.IsFeeDistributorInitialized.Get()
+	data.IsRplLockingAllowed = c.node.IsRplLockingAllowed.Get()
 
 	// Minipool info
 	mps, err := c.getMinipoolInfo(data)
