@@ -71,7 +71,7 @@ func NewApiRequester(socketPath string) *ApiRequester {
 	return apiRequester
 }
 
-// Submit a minipool request that takes in a list of addresses and returns whatever type is requested
+// Submit a GET request to the API server
 func sendGetRequest[DataType any](r IRequester, method string, requestName string, args map[string]string) (*api.ApiResponse[DataType], error) {
 	if args == nil {
 		args = map[string]string{}
