@@ -12,6 +12,7 @@ import (
 	"github.com/alessio/shellescape"
 	"github.com/pbnjay/memory"
 	"github.com/rocket-pool/smartnode/addons"
+	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	addontypes "github.com/rocket-pool/smartnode/shared/types/addons"
@@ -35,8 +36,8 @@ const (
 	ValidatorContainerName    string = "validator"
 	WatchtowerContainerName   string = "watchtower"
 
-	FeeRecipientFileEnvVar string = "FEE_RECIPIENT_FILE"
 	FeeRecipientEnvVar     string = "FEE_RECIPIENT"
+	FeeRecipientFileEnvVar string = "FEE_RECIPIENT_FILE"
 )
 
 // Defaults
@@ -858,6 +859,261 @@ func (cfg *RocketPoolConfig) GetConsensusHostname() (string, error) {
 	}
 
 	return ccUrl.Hostname(), nil
+}
+
+// Gets the tag of the vc container
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) GetVCContainerTag() (string, error) {
+	cCfg, err := cfg.GetSelectedConsensusClientConfig()
+	if err != nil {
+		return "", err
+	}
+
+	return cCfg.GetValidatorImage(), nil
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) ExecutionClientLocal() bool {
+	return cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) ConsensusClientLocal() bool {
+	return cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) ConsensusClientApiUrl() (string, error) {
+	// Check if Rescue Node is in-use
+	cc, _ := cfg.GetSelectedConsensusClient()
+	overrides, err := cfg.RescueNode.(*rescue_node.RescueNode).GetOverrides(cc)
+	if err != nil {
+		return "", fmt.Errorf("error using Rescue Node: %w", err)
+	}
+	if overrides != nil {
+		// Use the rescue node
+		return overrides.CcApiEndpoint, nil
+	}
+
+	if cfg.ConsensusClientLocal() {
+		// Use the eth2 container
+		return fmt.Sprintf("http://%s:%d", Eth2ContainerName, cfg.ConsensusCommon.ApiPort.Value), nil
+	}
+
+	cCfg, err := cfg.GetSelectedConsensusClientConfig()
+	if err != nil {
+		return "", err
+	}
+
+	// Use the external eth2 client
+	return cCfg.(config.ExternalConsensusConfig).GetApiUrl(), nil
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) ConsensusClientRpcUrl() (string, error) {
+	// Check if Rescue Node is in-use
+	cc, _ := cfg.GetSelectedConsensusClient()
+	if cc != config.ConsensusClient_Prysm {
+		return "", nil
+	}
+
+	overrides, err := cfg.RescueNode.(*rescue_node.RescueNode).GetOverrides(cc)
+	if err != nil {
+		return "", fmt.Errorf("error using Rescue Node: %w", err)
+	}
+	if overrides != nil {
+		// Use the rescue node
+		return overrides.CcRpcEndpoint, nil
+	}
+
+	if cfg.ConsensusClientLocal() {
+		// Use the eth2 container
+		return fmt.Sprintf("%s:%d", Eth2ContainerName, cfg.Prysm.RpcPort.Value), nil
+	}
+
+	// Use the external RPC endpoint
+	return cfg.ExternalPrysm.JsonRpcUrl.Value.(string), nil
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) FallbackCcApiUrl() string {
+	if !cfg.UseFallbackClients.Value.(bool) {
+		return ""
+	}
+
+	cc, _ := cfg.GetSelectedConsensusClient()
+	if cc == config.ConsensusClient_Prysm {
+		return cfg.FallbackPrysm.CcHttpUrl.Value.(string)
+	}
+
+	return cfg.FallbackNormal.CcHttpUrl.Value.(string)
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) FallbackCcRpcUrl() string {
+	if !cfg.UseFallbackClients.Value.(bool) {
+		return ""
+	}
+
+	cc, _ := cfg.GetSelectedConsensusClient()
+	if cc != config.ConsensusClient_Prysm {
+		return ""
+	}
+
+	return cfg.FallbackPrysm.JsonRpcUrl.Value.(string)
+}
+
+// Used by text/template to format validator.yml
+// Only returns the user-entered value, not the prefixed value
+func (cfg *RocketPoolConfig) CustomGraffiti() (string, error) {
+	if cfg.ConsensusClientLocal() {
+		return cfg.ConsensusCommon.Graffiti.Value.(string), nil
+	}
+
+	cc, _ := cfg.GetSelectedConsensusClient()
+	switch cc {
+	case config.ConsensusClient_Lighthouse:
+		return cfg.ExternalLighthouse.Graffiti.Value.(string), nil
+	case config.ConsensusClient_Lodestar:
+		return cfg.ExternalLodestar.Graffiti.Value.(string), nil
+	case config.ConsensusClient_Nimbus:
+		return cfg.ExternalNimbus.Graffiti.Value.(string), nil
+	case config.ConsensusClient_Prysm:
+		return cfg.ExternalPrysm.Graffiti.Value.(string), nil
+	case config.ConsensusClient_Teku:
+		return cfg.ExternalTeku.Graffiti.Value.(string), nil
+	default:
+	}
+	return "", fmt.Errorf("unknown external consensus client [%v] selected", cc)
+}
+
+// Used by text/template to format validator.yml
+// Only returns the the prefix
+func (cfg *RocketPoolConfig) GraffitiPrefix() string {
+	// Graffiti
+	identifier := ""
+	versionString := fmt.Sprintf("v%s", shared.RocketPoolVersion)
+	if len(versionString) < 8 {
+		var ecInitial string
+		if !cfg.ExecutionClientLocal() {
+			ecInitial = "X"
+		} else {
+			ecInitial = strings.ToUpper(cfg.ExecutionClient.Value.(string)[:1])
+		}
+
+		var ccInitial string
+		consensusClient, _ := cfg.GetSelectedConsensusClient()
+		switch consensusClient {
+		case config.ConsensusClient_Lodestar:
+			ccInitial = "S" // Lodestar is special because it conflicts with Lighthouse
+		default:
+			ccInitial = strings.ToUpper(string(consensusClient)[:1])
+		}
+		identifier = fmt.Sprintf("-%s%s", ecInitial, ccInitial)
+	}
+
+	return fmt.Sprintf("RP%s %s", identifier, versionString)
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) Graffiti() (string, error) {
+	prefix := cfg.GraffitiPrefix()
+	customGraffiti, err := cfg.CustomGraffiti()
+	if err != nil {
+		return "", err
+	}
+	if customGraffiti == "" {
+		return prefix, nil
+	}
+	return fmt.Sprintf("%s (%s)", prefix, customGraffiti), nil
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) RocketPoolVersion() string {
+	return shared.RocketPoolVersion
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) VcAdditionalFlags() (string, error) {
+	// Check if Rescue Node is in-use
+	cc, mode := cfg.GetSelectedConsensusClient()
+
+	overrides, err := cfg.RescueNode.(*rescue_node.RescueNode).GetOverrides(cc)
+	if err != nil {
+		return "", fmt.Errorf("error using Rescue Node: %w", err)
+	}
+
+	var addtlFlags string
+	switch mode {
+	case config.Mode_Local:
+		client := cfg.ConsensusClient.Value.(config.ConsensusClient)
+		switch client {
+		case config.ConsensusClient_Lighthouse:
+			addtlFlags = cfg.Lighthouse.AdditionalVcFlags.Value.(string)
+		case config.ConsensusClient_Lodestar:
+			addtlFlags = cfg.Lodestar.AdditionalVcFlags.Value.(string)
+		case config.ConsensusClient_Nimbus:
+			addtlFlags = cfg.Nimbus.AdditionalVcFlags.Value.(string)
+		case config.ConsensusClient_Prysm:
+			addtlFlags = cfg.Prysm.AdditionalVcFlags.Value.(string)
+		case config.ConsensusClient_Teku:
+			addtlFlags = cfg.Teku.AdditionalVcFlags.Value.(string)
+		default:
+			return "", fmt.Errorf("unknown consensus client [%v] selected", client)
+		}
+
+	case config.Mode_External:
+		client := cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+		switch client {
+		case config.ConsensusClient_Lighthouse:
+			addtlFlags = cfg.ExternalLighthouse.AdditionalVcFlags.Value.(string)
+		case config.ConsensusClient_Lodestar:
+			addtlFlags = cfg.ExternalLodestar.AdditionalVcFlags.Value.(string)
+		case config.ConsensusClient_Nimbus:
+			addtlFlags = cfg.ExternalNimbus.AdditionalVcFlags.Value.(string)
+		case config.ConsensusClient_Prysm:
+			addtlFlags = cfg.ExternalPrysm.AdditionalVcFlags.Value.(string)
+		case config.ConsensusClient_Teku:
+			addtlFlags = cfg.ExternalTeku.AdditionalVcFlags.Value.(string)
+		default:
+			return "", fmt.Errorf("unknown external consensus client [%v] selected", client)
+		}
+
+	default:
+		return "", fmt.Errorf("unknown consensus client mode [%v]", mode)
+	}
+
+	first := true
+	out := ""
+	if addtlFlags != "" {
+		first = false
+		out = addtlFlags
+	}
+	if overrides != nil && overrides.VcAdditionalFlags != "" {
+		if !first {
+			out = out + " "
+		}
+		out = out + overrides.VcAdditionalFlags
+	}
+	return out, nil
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) FeeRecipientFile() string {
+	return FeeRecipientFilename
+}
+
+// Used by text/template to format validator.yml
+func (cfg *RocketPoolConfig) MevBoostUrl() string {
+	if !cfg.EnableMevBoost.Value.(bool) {
+		return ""
+	}
+
+	if cfg.MevBoost.Mode.Value == config.Mode_Local {
+		return fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
+	}
+
+	return cfg.MevBoost.ExternalUrl.Value.(string)
 }
 
 // Generates a collection of environment variables based on this config's settings

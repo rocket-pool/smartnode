@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -165,22 +164,27 @@ func (r *RescueNode) PrintStatusText(nodeAddr common.Address) {
 	}
 }
 
-func (r *RescueNode) ApplyValidatorOverrides(cc cfgtypes.ConsensusClient) (func(), error) {
-	nop := func() {}
+type RescueNodeOverrides struct {
+	CcApiEndpoint     string
+	CcRpcEndpoint     string
+	VcAdditionalFlags string
+}
+
+func (r *RescueNode) GetOverrides(cc cfgtypes.ConsensusClient) (*RescueNodeOverrides, error) {
 	if !r.cfg.Enabled.Value.(bool) {
-		return nop, nil
+		return nil, nil
 	}
 
 	username := r.cfg.Username.Value.(string)
 	password := r.cfg.Password.Value.(string)
 
 	if username == "" || password == "" {
-		return nop, fmt.Errorf("Rescue Node can not be enabled without a Username and Password configured.")
+		return nil, fmt.Errorf("Rescue Node can not be enabled without a Username and Password configured.")
 	}
 
 	switch cc {
 	case cfgtypes.ConsensusClient_Unknown:
-		return nop, fmt.Errorf("Unable to generate rescue node URLs for unknown consensus client")
+		return nil, fmt.Errorf("Unable to generate rescue node URLs for unknown consensus client")
 	case cfgtypes.ConsensusClient_Lighthouse,
 		cfgtypes.ConsensusClient_Nimbus,
 		cfgtypes.ConsensusClient_Lodestar,
@@ -188,31 +192,16 @@ func (r *RescueNode) ApplyValidatorOverrides(cc cfgtypes.ConsensusClient) (func(
 
 		rescueURL := fmt.Sprintf("https://%s:%s@%s.rescuenode.com", username, password, cc)
 
-		oldCC := os.Getenv("CC_API_ENDPOINT")
-		cleanup := func() {
-			os.Setenv("CC_API_ENDPOINT", oldCC)
-		}
-		os.Setenv("CC_API_ENDPOINT", rescueURL)
-		return cleanup, nil
+		return &RescueNodeOverrides{
+			CcApiEndpoint: rescueURL,
+		}, nil
 	case cfgtypes.ConsensusClient_Prysm:
-		extraFlags := fmt.Sprintf("--grpc-headers=rprnauth=%s:%s --tls-cert=/etc/ssl/certs/ca-certificates.crt", username, password)
 
-		oldExtraFlags := os.Getenv("VC_ADDITIONAL_FLAGS")
-		if oldExtraFlags != "" {
-			extraFlags = fmt.Sprintf("%s %s", oldExtraFlags, extraFlags)
-		}
-
-		oldCC := os.Getenv("CC_RPC_ENDPOINT")
-
-		cleanup := func() {
-			os.Setenv("CC_RPC_ENDPOINT", oldCC)
-			os.Setenv("VC_ADDITIONAL_FLAGS", oldExtraFlags)
-		}
-		os.Setenv("CC_RPC_ENDPOINT", "prysm-grpc.rescuenode.com:443")
-		os.Setenv("VC_ADDITIONAL_FLAGS", extraFlags)
-
-		return cleanup, nil
+		return &RescueNodeOverrides{
+			CcRpcEndpoint:     "prysm-grpc.rescuenode.com:443",
+			VcAdditionalFlags: fmt.Sprintf("--grpc-headers=rprnauth=%s:%s --tls-cert=/etc/ssl/certs/ca-certificates.crt", username, password),
+		}, nil
 	}
 
-	return nop, nil
+	return nil, nil
 }

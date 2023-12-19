@@ -27,7 +27,6 @@ import (
 	externalip "github.com/glendc/go-external-ip"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
-	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/template"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -1117,6 +1116,7 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		config.ApiContainerName,
 		config.NodeContainerName,
 		config.WatchtowerContainerName,
+		config.ValidatorContainerName,
 	} {
 		containers, err := composePaths.File(containerName).Write(cfg)
 		if err != nil {
@@ -1125,27 +1125,7 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		deployedContainers = append(deployedContainers, containers...)
 	}
 
-	// Validator
-	// Check if Rescue Node is in-use
-	cc, _ := cfg.GetSelectedConsensusClient()
-	cleanup, err := cfg.RescueNode.(*rescue_node.RescueNode).ApplyValidatorOverrides(cc)
-	if err != nil {
-		return []string{}, fmt.Errorf("error using Rescue Node: %w", err)
-	}
-	contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, config.ValidatorContainerName+templateSuffix))
-	if err != nil {
-		return []string{}, fmt.Errorf("error reading and substituting validator container template: %w", err)
-	}
-	validatorComposePath := filepath.Join(runtimeFolder, config.ValidatorContainerName+composeFileSuffix)
-	err = os.WriteFile(validatorComposePath, contents, 0664)
-	if err != nil {
-		return []string{}, fmt.Errorf("could not write validator container file to %s: %w", validatorComposePath, err)
-	}
-	deployedContainers = append(deployedContainers, validatorComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.ValidatorContainerName+composeFileSuffix))
-	// Unset custom env vars from Rescue Node
-	cleanup()
-
+	var contents []byte
 	// Check the EC mode to see if it needs to be deployed
 	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.Eth1ContainerName+templateSuffix))

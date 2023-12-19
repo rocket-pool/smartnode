@@ -625,6 +625,11 @@ func (cfg *ExternalTekuConfig) GetApiUrl() string {
 	return cfg.HttpUrl.Value.(string)
 }
 
+// Get the doppelganger detection from the config
+func (cfg *ExternalLighthouseConfig) GetDoppelgangerDetection() bool {
+	return cfg.DoppelgangerDetection.Value.(bool)
+}
+
 // Get the name of the client
 func (cfg *ExternalLighthouseConfig) GetName() string {
 	return "Lighthouse"
