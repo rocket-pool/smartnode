@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -29,17 +30,17 @@ type protocolDaoProposeRecurringSpendContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoProposeRecurringSpendContextFactory) Create(vars map[string]string) (*protocolDaoProposeRecurringSpendContext, error) {
+func (f *protocolDaoProposeRecurringSpendContextFactory) Create(args url.Values) (*protocolDaoProposeRecurringSpendContext, error) {
 	c := &protocolDaoProposeRecurringSpendContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.GetStringFromVars("contract-name", vars, &c.contractName),
-		server.ValidateArg("recipient", vars, input.ValidateAddress, &c.recipient),
-		server.ValidateArg("amount-per-period", vars, input.ValidateBigInt, &c.amountPerPeriod),
-		server.ValidateArg("period-length", vars, input.ValidateDuration, &c.periodLength),
-		server.ValidateArg("start-time", vars, input.ValidateTime, &c.startTime),
-		server.ValidateArg("num-periods", vars, input.ValidatePositiveUint, &c.numberOfPeriods),
+		server.GetStringFromVars("contract-name", args, &c.contractName),
+		server.ValidateArg("recipient", args, input.ValidateAddress, &c.recipient),
+		server.ValidateArg("amount-per-period", args, input.ValidateBigInt, &c.amountPerPeriod),
+		server.ValidateArg("period-length", args, input.ValidateDuration, &c.periodLength),
+		server.ValidateArg("start-time", args, input.ValidateTime, &c.startTime),
+		server.ValidateArg("num-periods", args, input.ValidatePositiveUint, &c.numberOfPeriods),
 	}
 	return c, errors.Join(inputErrs...)
 }

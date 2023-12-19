@@ -3,6 +3,7 @@ package pdao
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,12 +27,12 @@ type protocolDaoExecuteProposalContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoExecuteProposalContextFactory) Create(vars map[string]string) (*protocolDaoExecuteProposalContext, error) {
+func (f *protocolDaoExecuteProposalContextFactory) Create(args url.Values) (*protocolDaoExecuteProposalContext, error) {
 	c := &protocolDaoExecuteProposalContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("id", vars, input.ValidatePositiveUint, &c.proposalID),
+		server.ValidateArg("id", args, input.ValidatePositiveUint, &c.proposalID),
 	}
 	return c, errors.Join(inputErrs...)
 }

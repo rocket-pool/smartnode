@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,12 +26,12 @@ type nodeSwapRplContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeSwapRplContextFactory) Create(vars map[string]string) (*nodeSwapRplContext, error) {
+func (f *nodeSwapRplContextFactory) Create(args url.Values) (*nodeSwapRplContext, error) {
 	c := &nodeSwapRplContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
+		server.ValidateArg("amount", args, input.ValidateBigInt, &c.amount),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"net/url"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
@@ -16,7 +18,7 @@ type walletForgetPasswordContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletForgetPasswordContextFactory) Create(vars map[string]string) (*walletForgetPasswordContext, error) {
+func (f *walletForgetPasswordContextFactory) Create(args url.Values) (*walletForgetPasswordContext, error) {
 	c := &walletForgetPasswordContext{
 		handler: f.handler,
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -27,14 +28,14 @@ type oracleDaoProposeInviteContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoProposeInviteContextFactory) Create(vars map[string]string) (*oracleDaoProposeInviteContext, error) {
+func (f *oracleDaoProposeInviteContextFactory) Create(args url.Values) (*oracleDaoProposeInviteContext, error) {
 	c := &oracleDaoProposeInviteContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
-		server.ValidateArg("id", vars, input.ValidateDAOMemberID, &c.id),
-		server.GetStringFromVars("url", vars, &c.url),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
+		server.ValidateArg("id", args, input.ValidateDAOMemberID, &c.id),
+		server.GetStringFromVars("url", args, &c.url),
 	}
 	return c, errors.Join(inputErrs...)
 }

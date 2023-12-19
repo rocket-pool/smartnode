@@ -3,6 +3,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,13 +23,13 @@ type nodeResolveEnsContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeResolveEnsContextFactory) Create(vars map[string]string) (*nodeResolveEnsContext, error) {
+func (f *nodeResolveEnsContextFactory) Create(args url.Values) (*nodeResolveEnsContext, error) {
 	c := &nodeResolveEnsContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
-		server.GetStringFromVars("name", vars, &c.name),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
+		server.GetStringFromVars("name", args, &c.name),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -18,7 +19,7 @@ type nodeBalanceContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeBalanceContextFactory) Create(vars map[string]string) (*nodeBalanceContext, error) {
+func (f *nodeBalanceContextFactory) Create(args url.Values) (*nodeBalanceContext, error) {
 	c := &nodeBalanceContext{
 		handler: f.handler,
 	}

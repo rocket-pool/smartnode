@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 	"math/big"
+	"net/url"
 	"sort"
 	"time"
 
@@ -32,7 +33,7 @@ type protocolDaoGetClaimableBondsContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoGetClaimableBondsContextFactory) Create(vars map[string]string) (*protocolDaoGetClaimableBondsContext, error) {
+func (f *protocolDaoGetClaimableBondsContextFactory) Create(args url.Values) (*protocolDaoGetClaimableBondsContext, error) {
 	c := &protocolDaoGetClaimableBondsContext{
 		handler: f.handler,
 	}

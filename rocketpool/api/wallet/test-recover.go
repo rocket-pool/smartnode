@@ -3,6 +3,7 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -22,15 +23,15 @@ type walletTestRecoverContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletTestRecoverContextFactory) Create(vars map[string]string) (*walletTestRecoverContext, error) {
+func (f *walletTestRecoverContextFactory) Create(args url.Values) (*walletTestRecoverContext, error) {
 	c := &walletTestRecoverContext{
 		handler: f.handler,
 	}
-	server.GetOptionalStringFromVars("derivation-path", vars, &c.derivationPath)
+	server.GetOptionalStringFromVars("derivation-path", args, &c.derivationPath)
 	inputErrs := []error{
-		server.ValidateArg("mnemonic", vars, input.ValidateWalletMnemonic, &c.mnemonic),
-		server.ValidateOptionalArg("skip-validator-key-recovery", vars, input.ValidateBool, &c.skipValidatorKeyRecovery, nil),
-		server.ValidateOptionalArg("index", vars, input.ValidateUint, &c.index, nil),
+		server.ValidateArg("mnemonic", args, input.ValidateWalletMnemonic, &c.mnemonic),
+		server.ValidateOptionalArg("skip-validator-key-recovery", args, input.ValidateBool, &c.skipValidatorKeyRecovery, nil),
+		server.ValidateOptionalArg("index", args, input.ValidateUint, &c.index, nil),
 	}
 	return c, errors.Join(inputErrs...)
 }

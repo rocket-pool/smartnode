@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -27,7 +28,7 @@ type minipoolPromoteDetailsContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolPromoteDetailsContextFactory) Create(vars map[string]string) (*minipoolPromoteDetailsContext, error) {
+func (f *minipoolPromoteDetailsContextFactory) Create(args url.Values) (*minipoolPromoteDetailsContext, error) {
 	c := &minipoolPromoteDetailsContext{
 		handler: f.handler,
 	}

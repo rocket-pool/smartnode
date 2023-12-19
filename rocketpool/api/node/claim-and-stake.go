@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,13 +26,13 @@ type nodeClaimAndStakeContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeClaimAndStakeContextFactory) Create(vars map[string]string) (*nodeClaimAndStakeContext, error) {
+func (f *nodeClaimAndStakeContextFactory) Create(args url.Values) (*nodeClaimAndStakeContext, error) {
 	c := &nodeClaimAndStakeContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("indices", vars, input.ValidateBigInts, &c.indices),
-		server.ValidateArg("stake-amount", vars, input.ValidateBigInt, &c.stakeAmount),
+		server.ValidateArg("indices", args, input.ValidateBigInts, &c.indices),
+		server.ValidateArg("stake-amount", args, input.ValidateBigInt, &c.stakeAmount),
 	}
 	return c, errors.Join(inputErrs...)
 }

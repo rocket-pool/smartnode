@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,12 +27,12 @@ type nodeBurnContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeBurnContextFactory) Create(vars map[string]string) (*nodeBurnContext, error) {
+func (f *nodeBurnContextFactory) Create(args url.Values) (*nodeBurnContext, error) {
 	c := &nodeBurnContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("amount", vars, input.ValidatePositiveWeiAmount, &c.amountWei),
+		server.ValidateArg("amount", args, input.ValidatePositiveWeiAmount, &c.amountWei),
 	}
 	return c, errors.Join(inputErrs...)
 }

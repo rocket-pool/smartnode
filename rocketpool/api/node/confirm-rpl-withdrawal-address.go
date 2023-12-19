@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,7 +22,7 @@ type nodeConfirmRplWithdrawalAddressContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeConfirmRplWithdrawalAddressContextFactory) Create(vars map[string]string) (*nodeConfirmRplWithdrawalAddressContext, error) {
+func (f *nodeConfirmRplWithdrawalAddressContextFactory) Create(args url.Values) (*nodeConfirmRplWithdrawalAddressContext, error) {
 	c := &nodeConfirmRplWithdrawalAddressContext{
 		handler: f.handler,
 	}

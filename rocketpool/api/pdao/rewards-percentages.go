@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,7 +22,7 @@ type protocolDaoRewardsPercentagesContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoRewardsPercentagesContextFactory) Create(vars map[string]string) (*protocolDaoRewardsPercentagesContext, error) {
+func (f *protocolDaoRewardsPercentagesContextFactory) Create(args url.Values) (*protocolDaoRewardsPercentagesContext, error) {
 	c := &protocolDaoRewardsPercentagesContext{
 		handler: f.handler,
 	}

@@ -2,6 +2,7 @@ package odao
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,7 +22,7 @@ type oracleDaoMembersContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoMembersContextFactory) Create(vars map[string]string) (*oracleDaoMembersContext, error) {
+func (f *oracleDaoMembersContextFactory) Create(args url.Values) (*oracleDaoMembersContext, error) {
 	c := &oracleDaoMembersContext{
 		handler: f.handler,
 	}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,14 +29,14 @@ type protocolDaoProposeRewardsPercentagesContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoProposeRewardsPercentagesContextFactory) Create(vars map[string]string) (*protocolDaoProposeRewardsPercentagesContext, error) {
+func (f *protocolDaoProposeRewardsPercentagesContextFactory) Create(args url.Values) (*protocolDaoProposeRewardsPercentagesContext, error) {
 	c := &protocolDaoProposeRewardsPercentagesContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("node", vars, input.ValidateBigInt, &c.nodePercent),
-		server.ValidateArg("odao", vars, input.ValidateBigInt, &c.odaoPercent),
-		server.ValidateArg("pdao", vars, input.ValidateBigInt, &c.pdaoPercent),
+		server.ValidateArg("node", args, input.ValidateBigInt, &c.nodePercent),
+		server.ValidateArg("odao", args, input.ValidateBigInt, &c.odaoPercent),
+		server.ValidateArg("pdao", args, input.ValidateBigInt, &c.pdaoPercent),
 	}
 	return c, errors.Join(inputErrs...)
 }

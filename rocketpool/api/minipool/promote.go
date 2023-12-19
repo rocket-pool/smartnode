@@ -3,6 +3,7 @@ package minipool
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,12 +23,12 @@ type minipoolPromoteContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolPromoteContextFactory) Create(vars map[string]string) (*minipoolPromoteContext, error) {
+func (f *minipoolPromoteContextFactory) Create(args url.Values) (*minipoolPromoteContext, error) {
 	c := &minipoolPromoteContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", vars, input.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.minipoolAddresses),
 	}
 	return c, errors.Join(inputErrs...)
 }

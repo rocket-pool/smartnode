@@ -3,6 +3,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,12 +25,12 @@ type nodeSetRplLockingAllowedContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeSetRplLockingAllowedContextFactory) Create(vars map[string]string) (*nodeSetRplLockingAllowedContext, error) {
+func (f *nodeSetRplLockingAllowedContextFactory) Create(args url.Values) (*nodeSetRplLockingAllowedContext, error) {
 	c := &nodeSetRplLockingAllowedContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("allowed", vars, input.ValidateBool, &c.allowed),
+		server.ValidateArg("allowed", args, input.ValidateBool, &c.allowed),
 	}
 	return c, errors.Join(inputErrs...)
 }

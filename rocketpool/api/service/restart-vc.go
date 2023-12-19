@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -18,7 +19,7 @@ type serviceRestartVcContextFactory struct {
 	handler *ServiceHandler
 }
 
-func (f *serviceRestartVcContextFactory) Create(vars map[string]string) (*serviceRestartVcContext, error) {
+func (f *serviceRestartVcContextFactory) Create(args url.Values) (*serviceRestartVcContext, error) {
 	c := &serviceRestartVcContext{
 		handler: f.handler,
 	}

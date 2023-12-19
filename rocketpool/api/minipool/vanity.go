@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,12 +29,12 @@ type minipoolVanityContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolVanityContextFactory) Create(vars map[string]string) (*minipoolVanityContext, error) {
+func (f *minipoolVanityContextFactory) Create(args url.Values) (*minipoolVanityContext, error) {
 	c := &minipoolVanityContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.GetStringFromVars("node-address", vars, &c.nodeAddressStr),
+		server.GetStringFromVars("node-address", args, &c.nodeAddressStr),
 	}
 	return c, errors.Join(inputErrs...)
 }

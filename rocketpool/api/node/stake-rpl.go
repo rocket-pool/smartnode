@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,12 +27,12 @@ type nodeStakeRplContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeStakeRplContextFactory) Create(vars map[string]string) (*nodeStakeRplContext, error) {
+func (f *nodeStakeRplContextFactory) Create(args url.Values) (*nodeStakeRplContext, error) {
 	c := &nodeStakeRplContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
+		server.ValidateArg("amount", args, input.ValidateBigInt, &c.amount),
 	}
 	return c, errors.Join(inputErrs...)
 }

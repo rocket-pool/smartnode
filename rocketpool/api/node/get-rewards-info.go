@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -29,7 +30,7 @@ type nodeGetRewardsInfoContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeGetRewardsInfoContextFactory) Create(vars map[string]string) (*nodeGetRewardsInfoContext, error) {
+func (f *nodeGetRewardsInfoContextFactory) Create(args url.Values) (*nodeGetRewardsInfoContext, error) {
 	c := &nodeGetRewardsInfoContext{
 		handler: f.handler,
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -30,13 +31,13 @@ type minipoolImportKeyContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolImportKeyContextFactory) Create(vars map[string]string) (*minipoolImportKeyContext, error) {
+func (f *minipoolImportKeyContextFactory) Create(args url.Values) (*minipoolImportKeyContext, error) {
 	c := &minipoolImportKeyContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.minipoolAddress),
-		server.ValidateArg("mnemonic", vars, input.ValidateWalletMnemonic, &c.mnemonic),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.minipoolAddress),
+		server.ValidateArg("mnemonic", args, input.ValidateWalletMnemonic, &c.mnemonic),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/goccy/go-json"
 
@@ -27,7 +28,7 @@ type IQuerylessCallContext[DataType any] interface {
 // These will be invoked during route handling to create the unique context for the route.
 type IQuerylessGetContextFactory[ContextType IQuerylessCallContext[DataType], DataType any] interface {
 	// Create the context for the route
-	Create(vars map[string]string) (ContextType, error)
+	Create(args url.Values) (ContextType, error)
 }
 
 // Interface for queryless call context factories that handle POST requests.
@@ -52,8 +53,7 @@ func RegisterQuerylessGet[ContextType IQuerylessCallContext[DataType], DataType 
 		}
 
 		// Create the handler and deal with any input validation errors
-		vars := mux.Vars(r)
-		context, err := factory.Create(vars)
+		context, err := factory.Create(r.URL.Query())
 		if err != nil {
 			handleInputError(w, err)
 			return

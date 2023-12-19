@@ -35,7 +35,7 @@ require (
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/tyler-smith/go-bip39 v1.1.0
-	github.com/urfave/cli v1.22.12
+	github.com/urfave/cli v1.22.14
 	github.com/wealdtech/go-ens/v3 v3.6.0
 	github.com/wealdtech/go-eth2-types/v2 v2.8.2
 	github.com/wealdtech/go-eth2-util v1.8.2

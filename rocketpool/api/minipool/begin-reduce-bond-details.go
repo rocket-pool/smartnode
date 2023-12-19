@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -31,7 +32,7 @@ type minipoolBeginReduceBondDetailsContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolBeginReduceBondDetailsContextFactory) Create(vars map[string]string) (*minipoolBeginReduceBondDetailsContext, error) {
+func (f *minipoolBeginReduceBondDetailsContextFactory) Create(args url.Values) (*minipoolBeginReduceBondDetailsContext, error) {
 	c := &minipoolBeginReduceBondDetailsContext{
 		handler: f.handler,
 	}

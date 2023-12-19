@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -18,7 +19,7 @@ type walletDeletePasswordContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletDeletePasswordContextFactory) Create(vars map[string]string) (*walletDeletePasswordContext, error) {
+func (f *walletDeletePasswordContextFactory) Create(args url.Values) (*walletDeletePasswordContext, error) {
 	c := &walletDeletePasswordContext{
 		handler: f.handler,
 	}

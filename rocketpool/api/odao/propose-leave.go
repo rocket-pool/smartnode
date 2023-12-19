@@ -3,6 +3,7 @@ package odao
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -25,7 +26,7 @@ type oracleDaoProposeLeaveContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoProposeLeaveContextFactory) Create(vars map[string]string) (*oracleDaoProposeLeaveContext, error) {
+func (f *oracleDaoProposeLeaveContextFactory) Create(args url.Values) (*oracleDaoProposeLeaveContext, error) {
 	c := &oracleDaoProposeLeaveContext{
 		handler: f.handler,
 	}

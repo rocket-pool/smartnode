@@ -3,6 +3,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,13 +23,13 @@ type nodeSendMessageContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeSendMessageContextFactory) Create(vars map[string]string) (*nodeSendMessageContext, error) {
+func (f *nodeSendMessageContextFactory) Create(args url.Values) (*nodeSendMessageContext, error) {
 	c := &nodeSendMessageContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
-		server.ValidateArg("message", vars, input.ValidateByteArray, &c.message),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
+		server.ValidateArg("message", args, input.ValidateByteArray, &c.message),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -3,6 +3,7 @@ package network
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -20,12 +21,12 @@ type networkDownloadRewardsContextFactory struct {
 	handler *NetworkHandler
 }
 
-func (f *networkDownloadRewardsContextFactory) Create(vars map[string]string) (*networkDownloadRewardsContext, error) {
+func (f *networkDownloadRewardsContextFactory) Create(args url.Values) (*networkDownloadRewardsContext, error) {
 	c := &networkDownloadRewardsContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("interval", vars, input.ValidateUint, &c.interval),
+		server.ValidateArg("interval", args, input.ValidateUint, &c.interval),
 	}
 	return c, errors.Join(inputErrs...)
 }

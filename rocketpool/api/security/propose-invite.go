@@ -3,6 +3,7 @@ package security
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,13 +27,13 @@ type securityProposeInviteContextFactory struct {
 	handler *SecurityCouncilHandler
 }
 
-func (f *securityProposeInviteContextFactory) Create(vars map[string]string) (*securityProposeInviteContext, error) {
+func (f *securityProposeInviteContextFactory) Create(args url.Values) (*securityProposeInviteContext, error) {
 	c := &securityProposeInviteContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("id", vars, input.ValidateDAOMemberID, &c.id),
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
+		server.ValidateArg("id", args, input.ValidateDAOMemberID, &c.id),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
 	}
 	return c, errors.Join(inputErrs...)
 }

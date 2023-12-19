@@ -3,6 +3,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	_ "time/tzdata"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -22,12 +23,12 @@ type nodeSetTimezoneContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeSetTimezoneContextFactory) Create(vars map[string]string) (*nodeSetTimezoneContext, error) {
+func (f *nodeSetTimezoneContextFactory) Create(args url.Values) (*nodeSetTimezoneContext, error) {
 	c := &nodeSetTimezoneContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("timezone", vars, input.ValidateTimezoneLocation, &c.timezoneLocation),
+		server.ValidateArg("timezone", args, input.ValidateTimezoneLocation, &c.timezoneLocation),
 	}
 	return c, errors.Join(inputErrs...)
 }

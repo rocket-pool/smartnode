@@ -2,6 +2,7 @@ package node
 
 import (
 	"errors"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -21,7 +22,7 @@ type nodeGetSnapshotVotingPowerContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeGetSnapshotVotingPowerContextFactory) Create(vars map[string]string) (*nodeGetSnapshotVotingPowerContext, error) {
+func (f *nodeGetSnapshotVotingPowerContextFactory) Create(args url.Values) (*nodeGetSnapshotVotingPowerContext, error) {
 	c := &nodeGetSnapshotVotingPowerContext{
 		handler: f.handler,
 	}

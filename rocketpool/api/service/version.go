@@ -1,6 +1,8 @@
 package service
 
 import (
+	"net/url"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
@@ -16,7 +18,7 @@ type serviceVersionContextFactory struct {
 	handler *ServiceHandler
 }
 
-func (f *serviceVersionContextFactory) Create(vars map[string]string) (*serviceVersionContext, error) {
+func (f *serviceVersionContextFactory) Create(args url.Values) (*serviceVersionContext, error) {
 	c := &serviceVersionContext{
 		handler: f.handler,
 	}

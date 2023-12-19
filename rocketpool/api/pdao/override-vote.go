@@ -3,6 +3,7 @@ package pdao
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,13 +30,13 @@ type protocolDaoOverrideVoteOnProposalContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoOverrideVoteOnProposalContextFactory) Create(vars map[string]string) (*protocolDaoOverrideVoteOnProposalContext, error) {
+func (f *protocolDaoOverrideVoteOnProposalContextFactory) Create(args url.Values) (*protocolDaoOverrideVoteOnProposalContext, error) {
 	c := &protocolDaoOverrideVoteOnProposalContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("id", vars, input.ValidatePositiveUint, &c.proposalID),
-		server.ValidateArg("vote", vars, input.ValidateVoteDirection, &c.voteDirection),
+		server.ValidateArg("id", args, input.ValidatePositiveUint, &c.proposalID),
+		server.ValidateArg("vote", args, input.ValidateVoteDirection, &c.voteDirection),
 	}
 	return c, errors.Join(inputErrs...)
 }

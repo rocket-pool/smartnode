@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -43,7 +44,7 @@ type nodeStatusContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeStatusContextFactory) Create(vars map[string]string) (*nodeStatusContext, error) {
+func (f *nodeStatusContextFactory) Create(args url.Values) (*nodeStatusContext, error) {
 	c := &nodeStatusContext{
 		handler: f.handler,
 	}

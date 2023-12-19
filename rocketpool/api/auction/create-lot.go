@@ -3,6 +3,7 @@ package auction
 import (
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -26,7 +27,7 @@ type auctionCreateContextFactory struct {
 	handler *AuctionHandler
 }
 
-func (f *auctionCreateContextFactory) Create(vars map[string]string) (*auctionCreateContext, error) {
+func (f *auctionCreateContextFactory) Create(args url.Values) (*auctionCreateContext, error) {
 	c := &auctionCreateContext{
 		handler: f.handler,
 	}

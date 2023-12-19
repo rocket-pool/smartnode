@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -18,7 +19,7 @@ type networkDepositInfoContextFactory struct {
 	handler *NetworkHandler
 }
 
-func (f *networkDepositInfoContextFactory) Create(vars map[string]string) (*networkDepositInfoContext, error) {
+func (f *networkDepositInfoContextFactory) Create(args url.Values) (*networkDepositInfoContext, error) {
 	c := &networkDepositInfoContext{
 		handler: f.handler,
 	}

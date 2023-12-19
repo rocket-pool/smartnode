@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,14 +29,14 @@ type protocolDaoProposeSettingContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoProposeSettingContextFactory) Create(vars map[string]string) (*protocolDaoProposeSettingContext, error) {
+func (f *protocolDaoProposeSettingContextFactory) Create(args url.Values) (*protocolDaoProposeSettingContext, error) {
 	c := &protocolDaoProposeSettingContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.GetStringFromVars("contract", vars, &c.contractNameString),
-		server.GetStringFromVars("setting", vars, &c.setting),
-		server.GetStringFromVars("value", vars, &c.valueString),
+		server.GetStringFromVars("contract", args, &c.contractNameString),
+		server.GetStringFromVars("setting", args, &c.setting),
+		server.GetStringFromVars("value", args, &c.valueString),
 	}
 	return c, errors.Join(inputErrs...)
 }

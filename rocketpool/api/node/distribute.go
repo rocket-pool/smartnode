@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,7 +25,7 @@ type nodeDistributeContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeDistributeContextFactory) Create(vars map[string]string) (*nodeDistributeContext, error) {
+func (f *nodeDistributeContextFactory) Create(args url.Values) (*nodeDistributeContext, error) {
 	c := &nodeDistributeContext{
 		handler: f.handler,
 	}

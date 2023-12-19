@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	_ "time/tzdata"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -23,12 +24,12 @@ type txSignMessageContextFactory struct {
 	handler *TxHandler
 }
 
-func (f *txSignMessageContextFactory) Create(vars map[string]string) (*txSignMessageContext, error) {
+func (f *txSignMessageContextFactory) Create(args url.Values) (*txSignMessageContext, error) {
 	c := &txSignMessageContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("message", vars, input.ValidateByteArray, &c.message),
+		server.ValidateArg("message", args, input.ValidateByteArray, &c.message),
 	}
 	return c, errors.Join(inputErrs...)
 }

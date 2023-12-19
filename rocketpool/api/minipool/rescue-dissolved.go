@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,13 +30,13 @@ type minipoolRescueDissolvedContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolRescueDissolvedContextFactory) Create(vars map[string]string) (*minipoolRescueDissolvedContext, error) {
+func (f *minipoolRescueDissolvedContextFactory) Create(args url.Values) (*minipoolRescueDissolvedContext, error) {
 	c := &minipoolRescueDissolvedContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", vars, input.ValidateAddresses, &c.minipoolAddresses),
-		server.ValidateArg("deposit-amounts", vars, input.ValidateBigInts, &c.depositAmounts),
+		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArg("deposit-amounts", args, input.ValidateBigInts, &c.depositAmounts),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -29,12 +30,12 @@ type nodeWithdrawRplContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeWithdrawRplContextFactory) Create(vars map[string]string) (*nodeWithdrawRplContext, error) {
+func (f *nodeWithdrawRplContextFactory) Create(args url.Values) (*nodeWithdrawRplContext, error) {
 	c := &nodeWithdrawRplContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
+		server.ValidateArg("amount", args, input.ValidateBigInt, &c.amount),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -3,6 +3,7 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -20,7 +21,7 @@ type walletRebuildContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletRebuildContextFactory) Create(vars map[string]string) (*walletRebuildContext, error) {
+func (f *walletRebuildContextFactory) Create(args url.Values) (*walletRebuildContext, error) {
 	c := &walletRebuildContext{
 		handler: f.handler,
 	}

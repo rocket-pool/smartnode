@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -34,7 +35,7 @@ type nodeRewardsContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeRewardsContextFactory) Create(vars map[string]string) (*nodeRewardsContext, error) {
+func (f *nodeRewardsContextFactory) Create(args url.Values) (*nodeRewardsContext, error) {
 	c := &nodeRewardsContext{
 		handler: f.handler,
 	}

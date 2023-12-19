@@ -3,6 +3,7 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -22,15 +23,15 @@ type walletInitializeContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletInitializeContextFactory) Create(vars map[string]string) (*walletInitializeContext, error) {
+func (f *walletInitializeContextFactory) Create(args url.Values) (*walletInitializeContext, error) {
 	c := &walletInitializeContext{
 		handler: f.handler,
 	}
 	server.GetOptionalStringFromVars("derivation-path", vars, &c.derivationPath)
 	inputErrs := []error{
-		server.ValidateOptionalArg("index", vars, input.ValidateUint, &c.index, nil),
-		server.ValidateOptionalArg("password", vars, input.ValidateNodePassword, &c.password, &c.passwordExists),
-		server.ValidateOptionalArg("save-password", vars, input.ValidateBool, &c.savePassword, nil),
+		server.ValidateOptionalArg("index", args, input.ValidateUint, &c.index, nil),
+		server.ValidateOptionalArg("password", args, input.ValidateNodePassword, &c.password, &c.passwordExists),
+		server.ValidateOptionalArg("save-password", args, input.ValidateBool, &c.savePassword, nil),
 	}
 	return c, errors.Join(inputErrs...)
 }

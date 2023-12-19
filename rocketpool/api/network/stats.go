@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -28,7 +29,7 @@ type networkStatsContextFactory struct {
 	handler *NetworkHandler
 }
 
-func (f *networkStatsContextFactory) Create(vars map[string]string) (*networkStatsContext, error) {
+func (f *networkStatsContextFactory) Create(args url.Values) (*networkStatsContext, error) {
 	c := &networkStatsContext{
 		handler: f.handler,
 	}

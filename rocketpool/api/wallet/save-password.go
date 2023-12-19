@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -18,7 +19,7 @@ type walletSavePasswordContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletSavePasswordContextFactory) Create(vars map[string]string) (*walletSavePasswordContext, error) {
+func (f *walletSavePasswordContextFactory) Create(args url.Values) (*walletSavePasswordContext, error) {
 	c := &walletSavePasswordContext{
 		handler: f.handler,
 	}

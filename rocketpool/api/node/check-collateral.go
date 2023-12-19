@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -19,7 +20,7 @@ type nodeCheckCollateralContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeCheckCollateralContextFactory) Create(vars map[string]string) (*nodeCheckCollateralContext, error) {
+func (f *nodeCheckCollateralContextFactory) Create(args url.Values) (*nodeCheckCollateralContext, error) {
 	c := &nodeCheckCollateralContext{
 		handler: f.handler,
 	}

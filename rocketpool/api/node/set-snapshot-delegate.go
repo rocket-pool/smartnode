@@ -3,6 +3,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,12 +22,12 @@ type nodeSetSnapshotDelegateContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeSetSnapshotDelegateContextFactory) Create(vars map[string]string) (*nodeSetSnapshotDelegateContext, error) {
+func (f *nodeSetSnapshotDelegateContextFactory) Create(args url.Values) (*nodeSetSnapshotDelegateContext, error) {
 	c := &nodeSetSnapshotDelegateContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("delegate", vars, input.ValidateAddress, &c.delegate),
+		server.ValidateArg("delegate", args, input.ValidateAddress, &c.delegate),
 	}
 	return c, errors.Join(inputErrs...)
 }

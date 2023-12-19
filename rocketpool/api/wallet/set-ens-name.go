@@ -3,6 +3,7 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -20,12 +21,12 @@ type walletSetEnsNameContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletSetEnsNameContextFactory) Create(vars map[string]string) (*walletSetEnsNameContext, error) {
+func (f *walletSetEnsNameContextFactory) Create(args url.Values) (*walletSetEnsNameContext, error) {
 	c := &walletSetEnsNameContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.GetStringFromVars("name", vars, &c.name),
+		server.GetStringFromVars("name", args, &c.name),
 	}
 	return c, errors.Join(inputErrs...)
 }

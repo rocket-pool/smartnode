@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -18,7 +19,7 @@ type nodeClearSnapshotDelegateContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeClearSnapshotDelegateContextFactory) Create(vars map[string]string) (*nodeClearSnapshotDelegateContext, error) {
+func (f *nodeClearSnapshotDelegateContextFactory) Create(args url.Values) (*nodeClearSnapshotDelegateContext, error) {
 	c := &nodeClearSnapshotDelegateContext{
 		handler: f.handler,
 	}

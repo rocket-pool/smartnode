@@ -3,6 +3,7 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -21,13 +22,13 @@ type walletCreateValidatorKeyContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletCreateValidatorKeyContextFactory) Create(vars map[string]string) (*walletCreateValidatorKeyContext, error) {
+func (f *walletCreateValidatorKeyContextFactory) Create(args url.Values) (*walletCreateValidatorKeyContext, error) {
 	c := &walletCreateValidatorKeyContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("pubkey", vars, input.ValidatePubkey, &c.pubkey),
-		server.ValidateArg("start-index", vars, input.ValidateUint, &c.index),
+		server.ValidateArg("pubkey", args, input.ValidatePubkey, &c.pubkey),
+		server.ValidateArg("start-index", args, input.ValidateUint, &c.index),
 	}
 	return c, errors.Join(inputErrs...)
 }

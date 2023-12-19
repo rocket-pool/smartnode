@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -18,7 +19,7 @@ type networkDelegateContextFactory struct {
 	handler *NetworkHandler
 }
 
-func (f *networkDelegateContextFactory) Create(vars map[string]string) (*networkDelegateContext, error) {
+func (f *networkDelegateContextFactory) Create(args url.Values) (*networkDelegateContext, error) {
 	c := &networkDelegateContext{
 		handler: f.handler,
 	}

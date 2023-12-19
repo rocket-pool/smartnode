@@ -7,6 +7,7 @@ package network
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -24,7 +25,7 @@ type networkProposalContextFactory struct {
 	handler *NetworkHandler
 }
 
-func (f *networkProposalContextFactory) Create(vars map[string]string) (*networkProposalContext, error) {
+func (f *networkProposalContextFactory) Create(args url.Values) (*networkProposalContext, error) {
 	c := &networkProposalContext{
 		handler: f.handler,
 	}

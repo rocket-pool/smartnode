@@ -3,6 +3,7 @@ package security
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -23,14 +24,14 @@ type securityProposeSettingContextFactory struct {
 	handler *SecurityCouncilHandler
 }
 
-func (f *securityProposeSettingContextFactory) Create(vars map[string]string) (*securityProposeSettingContext, error) {
+func (f *securityProposeSettingContextFactory) Create(args url.Values) (*securityProposeSettingContext, error) {
 	c := &securityProposeSettingContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.GetStringFromVars("contract", vars, &c.contractNameString),
-		server.GetStringFromVars("setting", vars, &c.setting),
-		server.GetStringFromVars("value", vars, &c.valueString),
+		server.GetStringFromVars("contract", args, &c.contractNameString),
+		server.GetStringFromVars("setting", args, &c.setting),
+		server.GetStringFromVars("value", args, &c.valueString),
 	}
 	return c, errors.Join(inputErrs...)
 }

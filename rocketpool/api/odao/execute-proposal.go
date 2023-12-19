@@ -3,6 +3,7 @@ package odao
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -27,12 +28,12 @@ type oracleDaoExecuteProposalContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoExecuteProposalContextFactory) Create(vars map[string]string) (*oracleDaoExecuteProposalContext, error) {
+func (f *oracleDaoExecuteProposalContextFactory) Create(args url.Values) (*oracleDaoExecuteProposalContext, error) {
 	c := &oracleDaoExecuteProposalContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("id", vars, input.ValidatePositiveUint, &c.id),
+		server.ValidateArg("id", args, input.ValidatePositiveUint, &c.id),
 	}
 	return c, errors.Join(inputErrs...)
 }

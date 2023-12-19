@@ -3,6 +3,7 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -20,13 +21,13 @@ type walletSetPasswordContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletSetPasswordContextFactory) Create(vars map[string]string) (*walletSetPasswordContext, error) {
+func (f *walletSetPasswordContextFactory) Create(args url.Values) (*walletSetPasswordContext, error) {
 	c := &walletSetPasswordContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("password", vars, input.ValidateNodePassword, &c.password),
-		server.ValidateArg("save", vars, input.ValidateBool, &c.save),
+		server.ValidateArg("password", args, input.ValidateNodePassword, &c.password),
+		server.ValidateArg("save", args, input.ValidateBool, &c.save),
 	}
 	return c, errors.Join(inputErrs...)
 }

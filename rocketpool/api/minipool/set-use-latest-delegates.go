@@ -2,6 +2,7 @@ package minipool
 
 import (
 	"errors"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,13 +22,13 @@ type minipoolSetUseLatestDelegatesContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolSetUseLatestDelegatesContextFactory) Create(vars map[string]string) (*minipoolSetUseLatestDelegatesContext, error) {
+func (f *minipoolSetUseLatestDelegatesContextFactory) Create(args url.Values) (*minipoolSetUseLatestDelegatesContext, error) {
 	c := &minipoolSetUseLatestDelegatesContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", vars, input.ValidateAddresses, &c.minipoolAddresses),
-		server.ValidateArg("setting", vars, input.ValidateBool, &c.setting),
+		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArg("setting", args, input.ValidateBool, &c.setting),
 	}
 	return c, errors.Join(inputErrs...)
 }

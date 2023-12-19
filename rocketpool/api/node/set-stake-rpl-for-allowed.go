@@ -3,6 +3,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,13 +23,13 @@ type nodeSetStakeRplForAllowedContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeSetStakeRplForAllowedContextFactory) Create(vars map[string]string) (*nodeSetStakeRplForAllowedContext, error) {
+func (f *nodeSetStakeRplForAllowedContextFactory) Create(args url.Values) (*nodeSetStakeRplForAllowedContext, error) {
 	c := &nodeSetStakeRplForAllowedContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("caller", vars, input.ValidateAddress, &c.caller),
-		server.ValidateArg("allowed", vars, input.ValidateBool, &c.allowed),
+		server.ValidateArg("caller", args, input.ValidateAddress, &c.caller),
+		server.ValidateArg("allowed", args, input.ValidateBool, &c.allowed),
 	}
 	return c, errors.Join(inputErrs...)
 }

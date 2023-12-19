@@ -3,6 +3,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -25,12 +26,12 @@ type nodeRegisterContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeRegisterContextFactory) Create(vars map[string]string) (*nodeRegisterContext, error) {
+func (f *nodeRegisterContextFactory) Create(args url.Values) (*nodeRegisterContext, error) {
 	c := &nodeRegisterContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("timezone", vars, input.ValidateTimezoneLocation, &c.timezoneLocation),
+		server.ValidateArg("timezone", args, input.ValidateTimezoneLocation, &c.timezoneLocation),
 	}
 	return c, errors.Join(inputErrs...)
 }

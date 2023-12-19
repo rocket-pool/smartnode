@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,12 +27,12 @@ type nodeWithdrawEthContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeWithdrawEthContextFactory) Create(vars map[string]string) (*nodeWithdrawEthContext, error) {
+func (f *nodeWithdrawEthContextFactory) Create(args url.Values) (*nodeWithdrawEthContext, error) {
 	c := &nodeWithdrawEthContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
+		server.ValidateArg("amount", args, input.ValidateBigInt, &c.amount),
 	}
 	return c, errors.Join(inputErrs...)
 }

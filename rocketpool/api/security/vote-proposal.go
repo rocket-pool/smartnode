@@ -3,6 +3,7 @@ package security
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -27,13 +28,13 @@ type securityVoteOnProposalContextFactory struct {
 	handler *SecurityCouncilHandler
 }
 
-func (f *securityVoteOnProposalContextFactory) Create(vars map[string]string) (*securityVoteOnProposalContext, error) {
+func (f *securityVoteOnProposalContextFactory) Create(args url.Values) (*securityVoteOnProposalContext, error) {
 	c := &securityVoteOnProposalContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("id", vars, input.ValidatePositiveUint, &c.id),
-		server.ValidateArg("support", vars, input.ValidateBool, &c.support),
+		server.ValidateArg("id", args, input.ValidatePositiveUint, &c.id),
+		server.ValidateArg("support", args, input.ValidateBool, &c.support),
 	}
 	return c, errors.Join(inputErrs...)
 }

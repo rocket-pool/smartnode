@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -18,7 +19,7 @@ type walletExportContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletExportContextFactory) Create(vars map[string]string) (*walletExportContext, error) {
+func (f *walletExportContextFactory) Create(args url.Values) (*walletExportContext, error) {
 	c := &walletExportContext{
 		handler: f.handler,
 	}

@@ -3,6 +3,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,12 +26,12 @@ type nodeGetSnapshotProposalsContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeGetSnapshotProposalsContextFactory) Create(vars map[string]string) (*nodeGetSnapshotProposalsContext, error) {
+func (f *nodeGetSnapshotProposalsContextFactory) Create(args url.Values) (*nodeGetSnapshotProposalsContext, error) {
 	c := &nodeGetSnapshotProposalsContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("active-only", vars, input.ValidateBool, &c.activeOnly),
+		server.ValidateArg("active-only", args, input.ValidateBool, &c.activeOnly),
 	}
 	return c, errors.Join(inputErrs...)
 }

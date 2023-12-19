@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -44,14 +45,14 @@ type nodeDepositContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeDepositContextFactory) Create(vars map[string]string) (*nodeDepositContext, error) {
+func (f *nodeDepositContextFactory) Create(args url.Values) (*nodeDepositContext, error) {
 	c := &nodeDepositContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
-		server.ValidateArg("min-node-fee", vars, input.ValidateFraction, &c.minNodeFee),
-		server.ValidateArg("salt", vars, input.ValidateBigInt, &c.salt),
+		server.ValidateArg("amount", args, input.ValidateBigInt, &c.amount),
+		server.ValidateArg("min-node-fee", args, input.ValidateFraction, &c.minNodeFee),
+		server.ValidateArg("salt", args, input.ValidateBigInt, &c.salt),
 	}
 	return c, errors.Join(inputErrs...)
 }

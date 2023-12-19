@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -26,12 +27,12 @@ type auctionRecoverContextFactory struct {
 	handler *AuctionHandler
 }
 
-func (f *auctionRecoverContextFactory) Create(vars map[string]string) (*auctionRecoverContext, error) {
+func (f *auctionRecoverContextFactory) Create(args url.Values) (*auctionRecoverContext, error) {
 	c := &auctionRecoverContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("index", vars, input.ValidateUint, &c.lotIndex),
+		server.ValidateArg("index", args, input.ValidateUint, &c.lotIndex),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,12 +27,12 @@ type auctionClaimContextFactory struct {
 	handler *AuctionHandler
 }
 
-func (f *auctionClaimContextFactory) Create(vars map[string]string) (*auctionClaimContext, error) {
+func (f *auctionClaimContextFactory) Create(args url.Values) (*auctionClaimContext, error) {
 	c := &auctionClaimContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("index", vars, input.ValidateUint, &c.lotIndex),
+		server.ValidateArg("index", args, input.ValidateUint, &c.lotIndex),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -25,7 +26,7 @@ type networkPriceContextFactory struct {
 	handler *NetworkHandler
 }
 
-func (f *networkPriceContextFactory) Create(vars map[string]string) (*networkPriceContext, error) {
+func (f *networkPriceContextFactory) Create(args url.Values) (*networkPriceContext, error) {
 	c := &networkPriceContext{
 		handler: f.handler,
 	}

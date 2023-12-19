@@ -74,8 +74,9 @@ func NewApiManager(sp *services.ServiceProvider) *ApiManager {
 	}
 
 	// Register each route
+	smartnodeRouter := router.Host("rocketpool").Subrouter()
 	for _, handler := range mgr.handlers {
-		handler.RegisterRoutes(mgr.router)
+		handler.RegisterRoutes(smartnodeRouter)
 	}
 
 	return mgr

@@ -3,6 +3,7 @@ package tx
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	_ "time/tzdata"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -23,13 +24,13 @@ type txSendMessageContextFactory struct {
 	handler *TxHandler
 }
 
-func (f *txSendMessageContextFactory) Create(vars map[string]string) (*txSendMessageContext, error) {
+func (f *txSendMessageContextFactory) Create(args url.Values) (*txSendMessageContext, error) {
 	c := &txSendMessageContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("message", vars, input.ValidateByteArray, &c.message),
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
+		server.ValidateArg("message", args, input.ValidateByteArray, &c.message),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
 	}
 	return c, errors.Join(inputErrs...)
 }

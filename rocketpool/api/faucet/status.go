@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,7 +27,7 @@ type faucetStatusContextFactory struct {
 	handler *FaucetHandler
 }
 
-func (f *faucetStatusContextFactory) Create(vars map[string]string) (*faucetStatusContext, error) {
+func (f *faucetStatusContextFactory) Create(args url.Values) (*faucetStatusContext, error) {
 	c := &faucetStatusContext{
 		handler: f.handler,
 	}

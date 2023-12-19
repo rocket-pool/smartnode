@@ -2,6 +2,7 @@ package security
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -20,7 +21,7 @@ type securityProposeLeaveContextFactory struct {
 	handler *SecurityCouncilHandler
 }
 
-func (f *securityProposeLeaveContextFactory) Create(vars map[string]string) (*securityProposeLeaveContext, error) {
+func (f *securityProposeLeaveContextFactory) Create(args url.Values) (*securityProposeLeaveContext, error) {
 	c := &securityProposeLeaveContext{
 		handler: f.handler,
 	}

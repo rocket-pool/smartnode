@@ -2,6 +2,7 @@ package security
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,7 +29,7 @@ type securityProposalsContextFactory struct {
 	handler *SecurityCouncilHandler
 }
 
-func (f *securityProposalsContextFactory) Create(vars map[string]string) (*securityProposalsContext, error) {
+func (f *securityProposalsContextFactory) Create(args url.Values) (*securityProposalsContext, error) {
 	c := &securityProposalsContext{
 		handler: f.handler,
 	}

@@ -3,6 +3,7 @@ package security
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,14 +27,14 @@ type securityProposeReplaceContextFactory struct {
 	handler *SecurityCouncilHandler
 }
 
-func (f *securityProposeReplaceContextFactory) Create(vars map[string]string) (*securityProposeReplaceContext, error) {
+func (f *securityProposeReplaceContextFactory) Create(args url.Values) (*securityProposeReplaceContext, error) {
 	c := &securityProposeReplaceContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("existing-address", vars, input.ValidateAddress, &c.existingAddress),
-		server.GetStringFromVars("new-id", vars, &c.newID),
-		server.ValidateArg("new-address", vars, input.ValidateAddress, &c.newAddress),
+		server.ValidateArg("existing-address", args, input.ValidateAddress, &c.existingAddress),
+		server.GetStringFromVars("new-id", args, &c.newID),
+		server.ValidateArg("new-address", args, input.ValidateAddress, &c.newAddress),
 	}
 	return c, errors.Join(inputErrs...)
 }

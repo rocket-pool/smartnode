@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -35,7 +36,7 @@ type minipoolStatusContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolStatusContextFactory) Create(vars map[string]string) (*minipoolStatusContext, error) {
+func (f *minipoolStatusContextFactory) Create(args url.Values) (*minipoolStatusContext, error) {
 	c := &minipoolStatusContext{
 		handler: f.handler,
 	}

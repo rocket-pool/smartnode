@@ -3,6 +3,7 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,16 +27,16 @@ type walletSearchAndRecoverContextFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletSearchAndRecoverContextFactory) Create(vars map[string]string) (*walletSearchAndRecoverContext, error) {
+func (f *walletSearchAndRecoverContextFactory) Create(args url.Values) (*walletSearchAndRecoverContext, error) {
 	c := &walletSearchAndRecoverContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("mnemonic", vars, input.ValidateWalletMnemonic, &c.mnemonic),
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
-		server.ValidateOptionalArg("skip-validator-key-recovery", vars, input.ValidateBool, &c.skipValidatorKeyRecovery, nil),
-		server.ValidateOptionalArg("password", vars, input.ValidateNodePassword, &c.password, &c.passwordExists),
-		server.ValidateOptionalArg("save-password", vars, input.ValidateBool, &c.savePassword, nil),
+		server.ValidateArg("mnemonic", args, input.ValidateWalletMnemonic, &c.mnemonic),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
+		server.ValidateOptionalArg("skip-validator-key-recovery", args, input.ValidateBool, &c.skipValidatorKeyRecovery, nil),
+		server.ValidateOptionalArg("password", args, input.ValidateNodePassword, &c.password, &c.passwordExists),
+		server.ValidateOptionalArg("save-password", args, input.ValidateBool, &c.savePassword, nil),
 	}
 	return c, errors.Join(inputErrs...)
 }

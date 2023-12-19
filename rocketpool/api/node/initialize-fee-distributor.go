@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -22,7 +23,7 @@ type nodeInitializeFeeDistributorContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeInitializeFeeDistributorContextFactory) Create(vars map[string]string) (*nodeInitializeFeeDistributorContext, error) {
+func (f *nodeInitializeFeeDistributorContextFactory) Create(args url.Values) (*nodeInitializeFeeDistributorContext, error) {
 	c := &nodeInitializeFeeDistributorContext{
 		handler: f.handler,
 	}

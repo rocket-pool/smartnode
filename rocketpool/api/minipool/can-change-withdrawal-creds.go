@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,13 +32,13 @@ type minipoolCanChangeCredsContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolCanChangeCredsContextFactory) Create(vars map[string]string) (*minipoolCanChangeCredsContext, error) {
+func (f *minipoolCanChangeCredsContextFactory) Create(args url.Values) (*minipoolCanChangeCredsContext, error) {
 	c := &minipoolCanChangeCredsContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.minipoolAddress),
-		server.ValidateArg("mnemonic", vars, input.ValidateWalletMnemonic, &c.mnemonic),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.minipoolAddress),
+		server.ValidateArg("mnemonic", args, input.ValidateWalletMnemonic, &c.mnemonic),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,12 +27,12 @@ type nodeSetSmoothingPoolRegistrationStatusContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeSetSmoothingPoolRegistrationStatusContextFactory) Create(vars map[string]string) (*nodeSetSmoothingPoolRegistrationStatusContext, error) {
+func (f *nodeSetSmoothingPoolRegistrationStatusContextFactory) Create(args url.Values) (*nodeSetSmoothingPoolRegistrationStatusContext, error) {
 	c := &nodeSetSmoothingPoolRegistrationStatusContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("opt-in", vars, input.ValidateBool, &c.state),
+		server.ValidateArg("opt-in", args, input.ValidateBool, &c.state),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -3,6 +3,7 @@ package pdao
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,13 +27,13 @@ type protocolDaoClaimBondsContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoClaimBondsContextFactory) Create(vars map[string]string) (*protocolDaoClaimBondsContext, error) {
+func (f *protocolDaoClaimBondsContextFactory) Create(args url.Values) (*protocolDaoClaimBondsContext, error) {
 	c := &protocolDaoClaimBondsContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("proposal-id", vars, input.ValidatePositiveUint, &c.proposalID),
-		server.ValidateArg("indices", vars, input.ValidatePositiveUints, &c.indices),
+		server.ValidateArg("proposal-id", args, input.ValidatePositiveUint, &c.proposalID),
+		server.ValidateArg("indices", args, input.ValidatePositiveUints, &c.indices),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -27,13 +28,13 @@ type auctionBidContextFactory struct {
 	handler *AuctionHandler
 }
 
-func (f *auctionBidContextFactory) Create(vars map[string]string) (*auctionBidContext, error) {
+func (f *auctionBidContextFactory) Create(args url.Values) (*auctionBidContext, error) {
 	c := &auctionBidContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("index", vars, input.ValidateUint, &c.lotIndex),
-		server.ValidateArg("amount", vars, input.ValidatePositiveWeiAmount, &c.amountWei),
+		server.ValidateArg("index", args, input.ValidateUint, &c.lotIndex),
+		server.ValidateArg("amount", args, input.ValidatePositiveWeiAmount, &c.amountWei),
 	}
 	return c, errors.Join(inputErrs...)
 }

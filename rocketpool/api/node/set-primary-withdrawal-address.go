@@ -3,6 +3,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,13 +25,13 @@ type nodeSetPrimaryWithdrawalAddressContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeSetPrimaryWithdrawalAddressContextFactory) Create(vars map[string]string) (*nodeSetPrimaryWithdrawalAddressContext, error) {
+func (f *nodeSetPrimaryWithdrawalAddressContextFactory) Create(args url.Values) (*nodeSetPrimaryWithdrawalAddressContext, error) {
 	c := &nodeSetPrimaryWithdrawalAddressContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
-		server.ValidateArg("confirm", vars, input.ValidateBool, &c.confirm),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
+		server.ValidateArg("confirm", args, input.ValidateBool, &c.confirm),
 	}
 	return c, errors.Join(inputErrs...)
 }

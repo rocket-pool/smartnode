@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -22,7 +23,7 @@ type networkTimezoneContextFactory struct {
 	handler *NetworkHandler
 }
 
-func (f *networkTimezoneContextFactory) Create(vars map[string]string) (*networkTimezoneContext, error) {
+func (f *networkTimezoneContextFactory) Create(args url.Values) (*networkTimezoneContext, error) {
 	c := &networkTimezoneContext{
 		handler: f.handler,
 	}

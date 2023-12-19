@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -47,7 +48,7 @@ type IMinipoolCallContext[DataType any] interface {
 // unique context for the route
 type IMinipoolCallContextFactory[ContextType IMinipoolCallContext[DataType], DataType any] interface {
 	// Create the context for the route
-	Create(vars map[string]string) (ContextType, error)
+	Create(args url.Values) (ContextType, error)
 }
 
 // Registers a new route with the router, which will invoke the provided factory to create and execute the context
@@ -60,8 +61,7 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 ) {
 	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
 		// Create the handler and deal with any input validation errors
-		vars := mux.Vars(r)
-		context, err := factory.Create(vars)
+		context, err := factory.Create(r.URL.Query())
 		if err != nil {
 			handleInputError(w, err)
 			return

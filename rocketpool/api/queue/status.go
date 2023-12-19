@@ -2,6 +2,7 @@ package queue
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -23,7 +24,7 @@ type queueStatusContextFactory struct {
 	handler *QueueHandler
 }
 
-func (f *queueStatusContextFactory) Create(vars map[string]string) (*queueStatusContext, error) {
+func (f *queueStatusContextFactory) Create(args url.Values) (*queueStatusContext, error) {
 	c := &queueStatusContext{
 		handler: f.handler,
 	}

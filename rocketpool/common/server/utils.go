@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/goccy/go-json"
 )
@@ -11,7 +12,7 @@ import (
 type ArgValidator[ArgType any] func(string, string) (ArgType, error)
 
 // Validates an argument, ensuring it exists and can be converted to the required type
-func ValidateArg[ArgType any](name string, args map[string]string, impl ArgValidator[ArgType], result_Out *ArgType) error {
+func ValidateArg[ArgType any](name string, args url.Values, impl ArgValidator[ArgType], result_Out *ArgType) error {
 	// Make sure it exists
 	arg, exists := args[name]
 	if !exists {
@@ -19,7 +20,7 @@ func ValidateArg[ArgType any](name string, args map[string]string, impl ArgValid
 	}
 
 	// Run the parser
-	result, err := impl(name, arg)
+	result, err := impl(name, arg[0])
 	if err != nil {
 		return err
 	}
@@ -30,7 +31,7 @@ func ValidateArg[ArgType any](name string, args map[string]string, impl ArgValid
 }
 
 // Validates an optional argument, converting to the required type if it exists
-func ValidateOptionalArg[ArgType any](name string, args map[string]string, impl ArgValidator[ArgType], result_Out *ArgType, exists_Out *bool) error {
+func ValidateOptionalArg[ArgType any](name string, args url.Values, impl ArgValidator[ArgType], result_Out *ArgType, exists_Out *bool) error {
 	// Make sure it exists
 	arg, exists := args[name]
 	if !exists {
@@ -41,7 +42,7 @@ func ValidateOptionalArg[ArgType any](name string, args map[string]string, impl 
 	}
 
 	// Run the parser
-	result, err := impl(name, arg)
+	result, err := impl(name, arg[0])
 	if err != nil {
 		return err
 	}
@@ -55,7 +56,7 @@ func ValidateOptionalArg[ArgType any](name string, args map[string]string, impl 
 }
 
 // Gets a string argument, ensuring that it exists in the provided vars list
-func GetStringFromVars(name string, args map[string]string, result_Out *string) error {
+func GetStringFromVars(name string, args url.Values, result_Out *string) error {
 	// Make sure it exists
 	arg, exists := args[name]
 	if !exists {
@@ -63,12 +64,12 @@ func GetStringFromVars(name string, args map[string]string, result_Out *string) 
 	}
 
 	// Set the result
-	*result_Out = arg
+	*result_Out = arg[0]
 	return nil
 }
 
 // Gets an optional string argument from the provided vars list
-func GetOptionalStringFromVars(name string, args map[string]string, result_Out *string) bool {
+func GetOptionalStringFromVars(name string, args url.Values, result_Out *string) bool {
 	// Make sure it exists
 	arg, exists := args[name]
 	if !exists {
@@ -76,7 +77,7 @@ func GetOptionalStringFromVars(name string, args map[string]string, result_Out *
 	}
 
 	// Set the result
-	*result_Out = arg
+	*result_Out = arg[0]
 	return true
 }
 

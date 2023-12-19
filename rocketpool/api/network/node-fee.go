@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -23,7 +24,7 @@ type networkFeeContextFactory struct {
 	handler *NetworkHandler
 }
 
-func (f *networkFeeContextFactory) Create(vars map[string]string) (*networkFeeContext, error) {
+func (f *networkFeeContextFactory) Create(args url.Values) (*networkFeeContext, error) {
 	c := &networkFeeContext{
 		handler: f.handler,
 	}

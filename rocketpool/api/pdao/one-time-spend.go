@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,14 +29,14 @@ type protocolDaoProposeOneTimeSpendContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoProposeOneTimeSpendContextFactory) Create(vars map[string]string) (*protocolDaoProposeOneTimeSpendContext, error) {
+func (f *protocolDaoProposeOneTimeSpendContextFactory) Create(args url.Values) (*protocolDaoProposeOneTimeSpendContext, error) {
 	c := &protocolDaoProposeOneTimeSpendContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.GetStringFromVars("invoice-id", vars, &c.invoiceID),
-		server.ValidateArg("recipient", vars, input.ValidateAddress, &c.recipient),
-		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
+		server.GetStringFromVars("invoice-id", args, &c.invoiceID),
+		server.ValidateArg("recipient", args, input.ValidateAddress, &c.recipient),
+		server.ValidateArg("amount", args, input.ValidateBigInt, &c.amount),
 	}
 	return c, errors.Join(inputErrs...)
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,12 +30,12 @@ type protocolDaoProposeKickFromSecurityCouncilContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoProposeKickFromSecurityCouncilContextFactory) Create(vars map[string]string) (*protocolDaoProposeKickFromSecurityCouncilContext, error) {
+func (f *protocolDaoProposeKickFromSecurityCouncilContextFactory) Create(args url.Values) (*protocolDaoProposeKickFromSecurityCouncilContext, error) {
 	c := &protocolDaoProposeKickFromSecurityCouncilContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
 	}
 	return c, errors.Join(inputErrs...)
 }

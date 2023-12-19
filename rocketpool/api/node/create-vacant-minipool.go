@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -36,15 +37,15 @@ type nodeCreateVacantMinipoolContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeCreateVacantMinipoolContextFactory) Create(vars map[string]string) (*nodeCreateVacantMinipoolContext, error) {
+func (f *nodeCreateVacantMinipoolContextFactory) Create(args url.Values) (*nodeCreateVacantMinipoolContext, error) {
 	c := &nodeCreateVacantMinipoolContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
-		server.ValidateArg("min-node-fee", vars, input.ValidateFraction, &c.minNodeFee),
-		server.ValidateArg("salt", vars, input.ValidateBigInt, &c.salt),
-		server.ValidateArg("pubkey", vars, input.ValidatePubkey, &c.pubkey),
+		server.ValidateArg("amount", args, input.ValidateBigInt, &c.amount),
+		server.ValidateArg("min-node-fee", args, input.ValidateFraction, &c.minNodeFee),
+		server.ValidateArg("salt", args, input.ValidateBigInt, &c.salt),
+		server.ValidateArg("pubkey", args, input.ValidatePubkey, &c.pubkey),
 	}
 	return c, errors.Join(inputErrs...)
 }

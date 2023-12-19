@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -27,14 +28,14 @@ type nodeSendContextFactory struct {
 	handler *NodeHandler
 }
 
-func (f *nodeSendContextFactory) Create(vars map[string]string) (*nodeSendContext, error) {
+func (f *nodeSendContextFactory) Create(args url.Values) (*nodeSendContext, error) {
 	c := &nodeSendContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("amount", vars, input.ValidateBigInt, &c.amount),
-		server.GetStringFromVars("token", vars, &c.token),
-		server.ValidateArg("recipient", vars, input.ValidateAddress, &c.recipient),
+		server.ValidateArg("amount", args, input.ValidateBigInt, &c.amount),
+		server.GetStringFromVars("token", args, &c.token),
+		server.ValidateArg("recipient", args, input.ValidateAddress, &c.recipient),
 	}
 	return c, errors.Join(inputErrs...)
 }

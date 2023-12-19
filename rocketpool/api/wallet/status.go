@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"net/url"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
@@ -16,7 +18,7 @@ type walletStatusFactory struct {
 	handler *WalletHandler
 }
 
-func (f *walletStatusFactory) Create(vars map[string]string) (*walletStatusContext, error) {
+func (f *walletStatusFactory) Create(args url.Values) (*walletStatusContext, error) {
 	c := &walletStatusContext{
 		handler: f.handler,
 	}

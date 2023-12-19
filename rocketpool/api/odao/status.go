@@ -3,6 +3,7 @@ package odao
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -27,7 +28,7 @@ type oracleDaoStatusContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoStatusContextFactory) Create(vars map[string]string) (*oracleDaoStatusContext, error) {
+func (f *oracleDaoStatusContextFactory) Create(args url.Values) (*oracleDaoStatusContext, error) {
 	c := &oracleDaoStatusContext{
 		handler: f.handler,
 	}

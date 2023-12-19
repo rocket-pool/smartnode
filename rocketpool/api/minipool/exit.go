@@ -3,6 +3,7 @@ package minipool
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
@@ -28,12 +29,12 @@ type minipoolExitContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolExitContextFactory) Create(vars map[string]string) (*minipoolExitContext, error) {
+func (f *minipoolExitContextFactory) Create(args url.Values) (*minipoolExitContext, error) {
 	c := &minipoolExitContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", vars, input.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.minipoolAddresses),
 	}
 	return c, errors.Join(inputErrs...)
 }

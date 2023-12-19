@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -27,14 +28,14 @@ type oracleDaoProposeSettingContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoProposeSettingContextFactory) Create(vars map[string]string) (*oracleDaoProposeSettingContext, error) {
+func (f *oracleDaoProposeSettingContextFactory) Create(args url.Values) (*oracleDaoProposeSettingContext, error) {
 	c := &oracleDaoProposeSettingContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.GetStringFromVars("contract", vars, &c.contractNameString),
-		server.GetStringFromVars("setting", vars, &c.setting),
-		server.GetStringFromVars("value", vars, &c.valueString),
+		server.GetStringFromVars("contract", args, &c.contractNameString),
+		server.GetStringFromVars("setting", args, &c.setting),
+		server.GetStringFromVars("value", args, &c.valueString),
 	}
 	return c, errors.Join(inputErrs...)
 }

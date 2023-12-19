@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -22,7 +23,7 @@ type protocolDaoSettingsContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoSettingsContextFactory) Create(vars map[string]string) (*protocolDaoSettingsContext, error) {
+func (f *protocolDaoSettingsContextFactory) Create(args url.Values) (*protocolDaoSettingsContext, error) {
 	c := &protocolDaoSettingsContext{
 		handler: f.handler,
 	}

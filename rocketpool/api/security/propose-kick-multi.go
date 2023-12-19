@@ -3,6 +3,7 @@ package security
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,12 +26,12 @@ type securityProposeKickMultiContextFactory struct {
 	handler *SecurityCouncilHandler
 }
 
-func (f *securityProposeKickMultiContextFactory) Create(vars map[string]string) (*securityProposeKickMultiContext, error) {
+func (f *securityProposeKickMultiContextFactory) Create(args url.Values) (*securityProposeKickMultiContext, error) {
 	c := &securityProposeKickMultiContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", vars, input.ValidateAddresses, &c.addresses),
+		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.addresses),
 	}
 	return c, errors.Join(inputErrs...)
 }

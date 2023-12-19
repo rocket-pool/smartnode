@@ -3,6 +3,7 @@ package minipool
 import (
 	"errors"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
@@ -23,7 +24,7 @@ type minipoolRefundDetailsContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolRefundDetailsContextFactory) Create(vars map[string]string) (*minipoolRefundDetailsContext, error) {
+func (f *minipoolRefundDetailsContextFactory) Create(args url.Values) (*minipoolRefundDetailsContext, error) {
 	c := &minipoolRefundDetailsContext{
 		handler: f.handler,
 	}

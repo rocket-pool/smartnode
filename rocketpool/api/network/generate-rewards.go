@@ -3,6 +3,7 @@ package network
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -20,12 +21,12 @@ type networkGenerateRewardsContextFactory struct {
 	handler *NetworkHandler
 }
 
-func (f *networkGenerateRewardsContextFactory) Create(vars map[string]string) (*networkGenerateRewardsContext, error) {
+func (f *networkGenerateRewardsContextFactory) Create(args url.Values) (*networkGenerateRewardsContext, error) {
 	c := &networkGenerateRewardsContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("index", vars, input.ValidateUint, &c.index),
+		server.ValidateArg("index", args, input.ValidateUint, &c.index),
 	}
 	return c, errors.Join(inputErrs...)
 }

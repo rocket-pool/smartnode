@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -27,7 +28,7 @@ type oracleDaoJoinContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoJoinContextFactory) Create(vars map[string]string) (*oracleDaoJoinContext, error) {
+func (f *oracleDaoJoinContextFactory) Create(args url.Values) (*oracleDaoJoinContext, error) {
 	c := &oracleDaoJoinContext{
 		handler: f.handler,
 	}

@@ -2,6 +2,7 @@ package security
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,7 +27,7 @@ type securityLeaveContextFactory struct {
 	handler *SecurityCouncilHandler
 }
 
-func (f *securityLeaveContextFactory) Create(vars map[string]string) (*securityLeaveContext, error) {
+func (f *securityLeaveContextFactory) Create(args url.Values) (*securityLeaveContext, error) {
 	c := &securityLeaveContext{
 		handler: f.handler,
 	}

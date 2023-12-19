@@ -3,6 +3,7 @@ package tx
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	_ "time/tzdata"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -22,12 +23,12 @@ type txWaitContextFactory struct {
 	handler *TxHandler
 }
 
-func (f *txWaitContextFactory) Create(vars map[string]string) (*txWaitContext, error) {
+func (f *txWaitContextFactory) Create(args url.Values) (*txWaitContext, error) {
 	c := &txWaitContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("hash", vars, input.ValidateTxHash, &c.hash),
+		server.ValidateArg("hash", args, input.ValidateTxHash, &c.hash),
 	}
 	return c, errors.Join(inputErrs...)
 }

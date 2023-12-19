@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -30,13 +31,13 @@ type oracleDaoProposeKickContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoProposeKickContextFactory) Create(vars map[string]string) (*oracleDaoProposeKickContext, error) {
+func (f *oracleDaoProposeKickContextFactory) Create(args url.Values) (*oracleDaoProposeKickContext, error) {
 	c := &oracleDaoProposeKickContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("address", vars, input.ValidateAddress, &c.address),
-		server.ValidateArg("fineAmount", vars, input.ValidateBigInt, &c.fineAmount),
+		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
+		server.ValidateArg("fineAmount", args, input.ValidateBigInt, &c.fineAmount),
 	}
 	return c, errors.Join(inputErrs...)
 }

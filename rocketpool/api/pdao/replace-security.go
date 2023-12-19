@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,14 +30,14 @@ type protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory) Create(vars map[string]string) (*protocolDaoProposeReplaceMemberOfSecurityCouncilContext, error) {
+func (f *protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory) Create(args url.Values) (*protocolDaoProposeReplaceMemberOfSecurityCouncilContext, error) {
 	c := &protocolDaoProposeReplaceMemberOfSecurityCouncilContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("existing-address", vars, input.ValidateAddress, &c.existingAddress),
-		server.GetStringFromVars("new-id", vars, &c.newID),
-		server.ValidateArg("new-address", vars, input.ValidateAddress, &c.newAddress),
+		server.ValidateArg("existing-address", args, input.ValidateAddress, &c.existingAddress),
+		server.GetStringFromVars("new-id", args, &c.newID),
+		server.ValidateArg("new-address", args, input.ValidateAddress, &c.newAddress),
 	}
 	return c, errors.Join(inputErrs...)
 }

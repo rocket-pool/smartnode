@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -27,12 +28,12 @@ type oracleDaoLeaveContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoLeaveContextFactory) Create(vars map[string]string) (*oracleDaoLeaveContext, error) {
+func (f *oracleDaoLeaveContextFactory) Create(args url.Values) (*oracleDaoLeaveContext, error) {
 	c := &oracleDaoLeaveContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("bondRefundAddress", vars, input.ValidateAddress, &c.bondRefundAddress),
+		server.ValidateArg("bondRefundAddress", args, input.ValidateAddress, &c.bondRefundAddress),
 	}
 	return c, errors.Join(inputErrs...)
 }

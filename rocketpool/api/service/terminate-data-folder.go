@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -24,7 +25,7 @@ type serviceTerminateDataFolderContextFactory struct {
 	handler *ServiceHandler
 }
 
-func (f *serviceTerminateDataFolderContextFactory) Create(vars map[string]string) (*serviceTerminateDataFolderContext, error) {
+func (f *serviceTerminateDataFolderContextFactory) Create(args url.Values) (*serviceTerminateDataFolderContext, error) {
 	c := &serviceTerminateDataFolderContext{
 		handler: f.handler,
 	}
