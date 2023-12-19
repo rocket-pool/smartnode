@@ -585,6 +585,7 @@ func (cfg *ExternalTekuConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.HttpUrl,
 		&cfg.Graffiti,
+		&cfg.DoppelgangerDetection,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
