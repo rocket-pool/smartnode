@@ -722,7 +722,7 @@ func (cfg *RocketPoolConfig) IsDoppelgangerEnabled() (bool, error) {
 		case config.ConsensusClient_Prysm:
 			return cfg.ExternalPrysm.DoppelgangerDetection.Value.(bool), nil
 		case config.ConsensusClient_Teku:
-			return false, nil
+			return cfg.ExternalTeku.DoppelgangerDetection.Value.(bool), nil
 		default:
 			return false, fmt.Errorf("unknown external consensus client [%v] selected", client)
 		}
