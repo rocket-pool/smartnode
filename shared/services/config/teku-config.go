@@ -42,9 +42,7 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 	return &TekuConfig{
 		Title: "Teku Settings",
 
-		UnsupportedCommonParams: []string{
-			DoppelgangerDetectionID,
-		},
+		UnsupportedCommonParams: []string{},
 
 		JvmHeapSize: config.Parameter{
 			ID:                   "jvmHeapSize",
