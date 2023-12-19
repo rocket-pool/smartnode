@@ -27,6 +27,7 @@ import (
 	externalip "github.com/glendc/go-external-ip"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
+	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
@@ -227,6 +228,7 @@ func (c *Client) Close() {
 }
 
 // Load the config
+// Returns the RocketPoolConfig and whether or not it was newly generated
 func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	settingsFilePath := filepath.Join(c.configPath, SettingsFile)
 	expandedPath, err := homedir.Expand(settingsFilePath)
@@ -239,12 +241,13 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 		return nil, false, err
 	}
 
-	isNew := false
-	if cfg == nil {
-		cfg = config.NewRocketPoolConfig(c.configPath, c.daemonPath != "")
-		isNew = true
+	if cfg != nil {
+		// A config was loaded, return it now
+		return cfg, false, nil
 	}
-	return cfg, isNew, nil
+
+	// Config wasn't loaded, but there was no error- we should create one.
+	return config.NewRocketPoolConfig(c.configPath, c.daemonPath != ""), true, nil
 }
 
 // Load the backup config
@@ -260,12 +263,11 @@ func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
 
 // Save the config
 func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
-	settingsFilePath := filepath.Join(c.configPath, SettingsFile)
-	expandedPath, err := homedir.Expand(settingsFilePath)
+	settingsFileDirectoryPath, err := homedir.Expand(c.configPath)
 	if err != nil {
 		return err
 	}
-	return rp.SaveConfig(cfg, expandedPath)
+	return rp.SaveConfig(cfg, settingsFileDirectoryPath, SettingsFile)
 }
 
 // Remove the upgrade flag file
@@ -1068,12 +1070,6 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", fmt.Errorf("error deploying Docker templates: %w", err)
 	}
 
-	// Set up all of the environment variables to pass to the run command
-	env := []string{}
-	for key, value := range settings {
-		env = append(env, fmt.Sprintf("%s=%s", key, shellescape.Quote(value)))
-	}
-
 	// Include all of the relevant docker compose definition files
 	composeFileFlags := []string{}
 	for _, container := range deployedContainers {
@@ -1084,7 +1080,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Return command
-	return fmt.Sprintf("%s docker compose --project-directory %s %s %s", strings.Join(env, " "), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
+	return fmt.Sprintf("docker compose --project-directory %s %s %s", shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
 
 }
 
@@ -1115,6 +1111,9 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	}
 
 	// Set the environment variables for substitution
+	//
+	// TODO: Instead of substituting the templates with env vars, switch to the text/template package.
+	// However, rescue node plugin will also need to be updated, as it relies on this behavior.
 	oldValues := map[string]string{}
 	for varName, varValue := range settings {
 		oldValues[varName] = os.Getenv(varName)
@@ -1170,6 +1169,12 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.WatchtowerContainerName+composeFileSuffix))
 
 	// Validator
+	// Check if Rescue Node is in-use
+	cc, _ := cfg.GetSelectedConsensusClient()
+	cleanup, err := cfg.RescueNode.(*rescue_node.RescueNode).ApplyValidatorOverrides(cc)
+	if err != nil {
+		return []string{}, fmt.Errorf("error using Rescue Node: %w", err)
+	}
 	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.ValidatorContainerName+templateSuffix))
 	if err != nil {
 		return []string{}, fmt.Errorf("error reading and substituting validator container template: %w", err)
@@ -1181,6 +1186,8 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	}
 	deployedContainers = append(deployedContainers, validatorComposePath)
 	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.ValidatorContainerName+composeFileSuffix))
+	// Unset custom env vars from Rescue Node
+	cleanup()
 
 	// Check the EC mode to see if it needs to be deployed
 	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {

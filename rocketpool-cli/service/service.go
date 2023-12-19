@@ -182,8 +182,14 @@ func serviceStatus(c *cli.Context) error {
 	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
 	// Print what network we're on
-	err := cliutils.PrintNetwork(rp)
+	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
 	if err != nil {
 		return err
 	}
@@ -482,19 +488,6 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error loading user settings: %w", err)
-	}
-
-	// Check for unsupported clients
-	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
-		switch selectedEc {
-		case cfgtypes.ExecutionClient_Obs_Infura:
-			fmt.Printf("%sYou currently have Infura configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge.\nPlease run `rocketpool service config` and select a full Execution client.%s\n", colorRed, colorReset)
-			return nil
-		case cfgtypes.ExecutionClient_Obs_Pocket:
-			fmt.Printf("%sYou currently have Pocket configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge.\nPlease run `rocketpool service config` and select a full Execution client.%s\n", colorRed, colorReset)
-			return nil
-		}
 	}
 
 	// Force all Docker or all Hybrid
@@ -903,16 +896,11 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 }
 
 // Get the name of the container responsible for validator duties based on the client name
-// TODO: this is temporary and can change, clean it up when Nimbus supports split mode
 func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *rocketpool.Client) (string, error) {
 
 	prefix, err := getContainerPrefix(rp)
 	if err != nil {
 		return "", err
-	}
-
-	if CurrentValidatorClientName == "nimbus" {
-		return prefix + BeaconContainerSuffix, nil
 	}
 
 	return prefix + ValidatorContainerSuffix, nil
@@ -1223,8 +1211,14 @@ func serviceVersion(c *cli.Context) error {
 	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
 	// Print what network we're on
-	err := cliutils.PrintNetwork(rp)
+	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
 	if err != nil {
 		return err
 	}
@@ -1233,15 +1227,6 @@ func serviceVersion(c *cli.Context) error {
 	serviceVersion, err := rp.GetServiceVersion()
 	if err != nil {
 		return err
-	}
-
-	// Get config
-	cfg, isNew, err := rp.LoadConfig()
-	if err != nil {
-		return err
-	}
-	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	// Handle native mode

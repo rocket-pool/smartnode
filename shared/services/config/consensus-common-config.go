@@ -8,6 +8,7 @@ import (
 const GraffitiID string = "graffiti"
 const CheckpointSyncUrlID string = "checkpointSyncUrl"
 const P2pPortID string = "p2pPort"
+const P2pQuicPortID string = "p2pQuicPort"
 const ApiPortID string = "apiPort"
 const OpenApiPortID string = "openApiPort"
 const DoppelgangerDetectionID string = "doppelgangerDetection"
@@ -16,6 +17,7 @@ const DoppelgangerDetectionID string = "doppelgangerDetection"
 const defaultGraffiti string = ""
 const defaultCheckpointSyncProvider string = ""
 const defaultP2pPort uint16 = 9001
+const defaultP2pQuicPort uint16 = 8001
 const defaultBnApiPort uint16 = 5052
 const defaultOpenBnApiPort string = string(config.RPC_Closed)
 const defaultDoppelgangerDetection bool = true

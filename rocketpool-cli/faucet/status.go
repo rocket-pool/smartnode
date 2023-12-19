@@ -29,7 +29,7 @@ func getStatus(c *cli.Context) error {
 	// Print status & return
 	fmt.Printf("The faucet has a balance of %.6f legacy RPL.\n", math.RoundDown(eth.WeiToEth(status.Balance), 6))
 	if status.WithdrawableAmount.Cmp(big.NewInt(0)) > 0 {
-		fmt.Printf("You can withdraw %.6f legacy RPL (requires a %.6f GoETH fee)!\n", math.RoundDown(eth.WeiToEth(status.WithdrawableAmount), 6), math.RoundDown(eth.WeiToEth(status.WithdrawalFee), 6))
+		fmt.Printf("You can withdraw %.6f legacy RPL (requires a %.6f testnet ETH fee)!\n", math.RoundDown(eth.WeiToEth(status.WithdrawableAmount), 6), math.RoundDown(eth.WeiToEth(status.WithdrawalFee), 6))
 	} else {
 		fmt.Println("You cannot withdraw legacy RPL right now.")
 	}

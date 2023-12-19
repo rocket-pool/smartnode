@@ -123,6 +123,7 @@ type RocketPoolConfig struct {
 
 	// Addons
 	GraffitiWallWriter addontypes.SmartnodeAddon `yaml:"addon-gww,omitempty"`
+	RescueNode         addontypes.SmartnodeAddon `yaml:"addon-rescue-node,omitempty"`
 }
 
 // Load configuration settings from a file
@@ -469,6 +470,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
 	// Addons
 	cfg.GraffitiWallWriter = addons.NewGraffitiWallWriter()
+	cfg.RescueNode = addons.NewRescueNode()
 
 	// Apply the default values for mainnet
 	cfg.Smartnode.Network.Value = cfg.Smartnode.Network.Options[0].Value
@@ -570,6 +572,7 @@ func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 		"native":             cfg.Native,
 		"mevBoost":           cfg.MevBoost,
 		"addons-gww":         cfg.GraffitiWallWriter.GetConfig(),
+		"addons-rescue-node": cfg.RescueNode.GetConfig(),
 	}
 }
 
@@ -1022,6 +1025,8 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
 	// Addons
 	cfg.GraffitiWallWriter.UpdateEnvVars(envVars)
+	// Don't do this- we only want the change to apply to the validator container
+	//cfg.RescueNode.UpdateEnvVars(envVars, consensusClient)
 
 	return envVars
 
@@ -1108,17 +1113,6 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	}
 	*/
 
-	// Force switching of Pocket and Infura
-	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
-		selectedEc := cfg.ExecutionClient.Value.(config.ExecutionClient)
-		switch selectedEc {
-		case config.ExecutionClient_Obs_Infura:
-			errors = append(errors, "You currently have Infura configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge. Please go back and choose a full Execution client.")
-		case config.ExecutionClient_Obs_Pocket:
-			errors = append(errors, "You currently have Pocket configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge. Please go back and choose a full Execution client.")
-		}
-	}
-
 	// Force all Docker or all Hybrid
 	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External {
 		errors = append(errors, "You are using a locally-managed Execution client and an externally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
@@ -1145,7 +1139,64 @@ func (cfg *RocketPoolConfig) Validate() []string {
 		}
 	}
 
+	// Technically not required since native mode doesn't support addons, but defensively check to make sure a native mode
+	// user hasn't tried to configure the rescue node via the TUI
+	if cfg.RescueNode.GetEnabledParameter().Value.(bool) {
+		if cfg.IsNativeMode {
+			errors = append(errors, "Rescue Node add-on is incompatible with native mode.\nYou can still connect manually, visit the rescue node website for more information.")
+		}
+
+		params := cfg.RescueNode.GetConfig().GetParameters()
+		for _, param := range params {
+			if param.Type != config.ParameterType_String {
+				continue
+			}
+
+			if param.Value.(string) == "" {
+				errors = append(errors, "Rescue Node requires both a username and a password.")
+				break
+			}
+		}
+	}
+
+	// Ensure the selected port numbers are unique. Keeps track of all the errors
+	portMap := make(map[interface{}]bool)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ConsensusCommon.ApiPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ConsensusCommon.P2pPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ExecutionCommon.EnginePort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ExecutionCommon.WsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ExecutionCommon.P2pPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ExecutionCommon.HttpPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.BnMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.EcMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ExporterMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.NodeMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.VcMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.WatchtowerMetricsPort, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Grafana.Port, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.MevBoost.Port, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Prometheus.Port, errors)
+	_, errors = addAndCheckForDuplicate(portMap, cfg.Lighthouse.P2pQuicPort, errors)
+
 	return errors
+}
+
+func addAndCheckForDuplicate(portMap map[interface{}]bool, param config.Parameter, errors []string) (map[interface{}]bool, []string) {
+	port := fmt.Sprintf("%v", param.Value)
+	if port == "" {
+		return portMap, errors
+	}
+	if portMap[port] {
+		return portMap, append(errors, fmt.Sprintf("Port %s for %s is already in use", port, param.Name))
+	} else {
+		portMap[port] = true
+	}
+	return portMap, errors
+
+}
+
+func (cfg *RocketPoolConfig) GetNetwork() config.Network {
+	return cfg.Smartnode.Network.Value.(config.Network)
 }
 
 // Applies all of the defaults to all of the settings that have them defined

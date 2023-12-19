@@ -195,6 +195,12 @@ type SmartnodeConfig struct {
 	// The RocketBasePriceMessenger Base address for each network
 	basePriceMessengerAddress map[config.Network]string `yaml:"-"`
 
+	// The RocketScrollPriceMessenger Scroll address for each network
+	scrollPriceMessengerAddress map[config.Network]string `yaml:"-"`
+
+	// The Scroll L2 message fee estimator address for each network
+	scrollFeeEstimatorAddress map[config.Network]string `yaml:"-"`
+
 	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
 	rplTwapPoolAddress map[config.Network]string `yaml:"-"`
 
@@ -645,6 +651,20 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Holesky: "",
 		},
 
+		scrollPriceMessengerAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x0f22dc9b9c03757d4676539203d7549c8f22c15c",
+			config.Network_Prater:  "",
+			config.Network_Devnet:  "",
+			config.Network_Holesky: "",
+		},
+
+		scrollFeeEstimatorAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x0d7E906BD9cAFa154b048cFa766Cc1E54E39AF9B",
+			config.Network_Prater:  "",
+			config.Network_Devnet:  "",
+			config.Network_Holesky: "",
+		},
+
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
 			config.Network_Prater:  "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
@@ -963,6 +983,14 @@ func (cfg *SmartnodeConfig) GetZkSyncEraMessengerAddress() string {
 
 func (cfg *SmartnodeConfig) GetBaseMessengerAddress() string {
 	return cfg.basePriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetScrollMessengerAddress() string {
+	return cfg.scrollPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetScrollFeeEstimatorAddress() string {
+	return cfg.scrollFeeEstimatorAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetRplTwapPoolAddress() string {
