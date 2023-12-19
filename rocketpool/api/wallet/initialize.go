@@ -27,7 +27,7 @@ func (f *walletInitializeContextFactory) Create(args url.Values) (*walletInitial
 	c := &walletInitializeContext{
 		handler: f.handler,
 	}
-	server.GetOptionalStringFromVars("derivation-path", vars, &c.derivationPath)
+	server.GetOptionalStringFromVars("derivation-path", args, &c.derivationPath)
 	inputErrs := []error{
 		server.ValidateOptionalArg("index", args, input.ValidateUint, &c.index, nil),
 		server.ValidateOptionalArg("password", args, input.ValidateNodePassword, &c.password, &c.passwordExists),
