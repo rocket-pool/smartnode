@@ -61,7 +61,7 @@ func proposeRewardsPercentages(c *cli.Context) error {
 			nodeString = cliutils.Prompt("Please enter the new rewards allocation for node operators as a percentage from 0 to 1:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 		}
 	}
-	nodePercent, err := parseFloat(c, "node-percent", nodeString)
+	nodePercent, err := parseFloat(c, "node-percent", nodeString, true)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func proposeRewardsPercentages(c *cli.Context) error {
 			odaoString = cliutils.Prompt("Please enter the new rewards allocation for the Oracle DAO as a percentage from 0 to 1:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 		}
 	}
-	odaoPercent, err := parseFloat(c, "odao-percent", odaoString)
+	odaoPercent, err := parseFloat(c, "odao-percent", odaoString, true)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func proposeRewardsPercentages(c *cli.Context) error {
 			pdaoString = cliutils.Prompt("Please enter the new rewards allocation for the Protocol DAO treasury as a percentage from 0 to 1:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 		}
 	}
-	pdaoPercent, err := parseFloat(c, "pdao-percent", pdaoString)
+	pdaoPercent, err := parseFloat(c, "pdao-percent", pdaoString, true)
 	if err != nil {
 		return err
 	}

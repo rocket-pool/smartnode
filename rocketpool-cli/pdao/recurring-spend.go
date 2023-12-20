@@ -63,7 +63,7 @@ func proposeRecurringSpend(c *cli.Context) error {
 	if rawEnabled {
 		amount, err = cliutils.ValidateBigInt("amount-per-period", amountString)
 	} else {
-		amount, err = parseFloat(c, "amount-per-period", amountString)
+		amount, err = parseFloat(c, "amount-per-period", amountString, false)
 	}
 	if err != nil {
 		return err
