@@ -138,7 +138,7 @@ func (m *NodeTreeManager) LoadFromDisk(blockNumber uint32, rpIndex uint64) (*Nod
 		return nil, nil
 	}
 	if tree == nil {
-		m.logMessage("%s Couldn't load network tree for block %d, node index %d from disk, so it must be regenerated.", m.logPrefix, blockNumber, rpIndex, err.Error())
+		m.logMessage("%s Couldn't load network tree for block %d, node index %d from disk, so it must be regenerated.", m.logPrefix, blockNumber, rpIndex)
 		return nil, nil
 	}
 

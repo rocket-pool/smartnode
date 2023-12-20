@@ -1,12 +1,15 @@
 package proposals
 
 import (
+	"context"
 	"fmt"
+	"math/big"
 	"path/filepath"
 	"regexp"
 	"strconv"
 
 	"github.com/blang/semver/v4"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -90,8 +93,16 @@ func NewVotingInfoSnapshotManager(log *log.ColorLogger, cfg *config.RocketPoolCo
 
 // Create a voting info snapshot from the given block
 func (m *VotingInfoSnapshotManager) CreateVotingInfoSnapshot(blockNumber uint32) (*VotingInfoSnapshot, error) {
+	latestBlock, err := m.rp.Client.BlockNumber(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("error getting latest block number: %w", err)
+	}
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(0).SetUint64(latestBlock),
+	}
+
 	multicallAddress := common.HexToAddress(m.cfg.Smartnode.GetMulticallAddress())
-	infos, err := network.GetNodeInfoSnapshotFast(m.rp, blockNumber, multicallAddress, nil)
+	infos, err := network.GetNodeInfoSnapshotFast(m.rp, blockNumber, multicallAddress, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting voting info for block %d: %w", blockNumber, err)
 	}
@@ -117,7 +128,7 @@ func (m *VotingInfoSnapshotManager) LoadFromDisk(blockNumber uint32) (*VotingInf
 		return nil, nil
 	}
 	if tree == nil {
-		m.logMessage("%s Couldn't load network tree for block %d from disk, so it must be regenerated.", m.logPrefix, blockNumber, err.Error())
+		m.logMessage("%s Couldn't load network tree for block %d from disk, so it must be regenerated.", m.logPrefix, blockNumber)
 		return nil, nil
 	}
 

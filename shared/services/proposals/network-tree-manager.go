@@ -133,7 +133,7 @@ func (m *NetworkTreeManager) LoadFromDisk(blockNumber uint32) (*NetworkVotingTre
 		return nil, nil
 	}
 	if tree == nil {
-		m.logMessage("%s Couldn't load network tree for block %d from disk, so it must be regenerated.", m.logPrefix, blockNumber, err.Error())
+		m.logMessage("%s Couldn't load network tree for block %d from disk, so it must be regenerated.", m.logPrefix, blockNumber)
 		return nil, nil
 	}
 
