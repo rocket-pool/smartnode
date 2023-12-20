@@ -82,7 +82,7 @@ func NewNetworkTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig) (
 }
 
 // Create a network voting tree from a voting info snapshot
-func (m *NetworkTreeManager) CreateNetworkVotingTree(snapshot *VotingInfoSnapshot) *NetworkVotingTree {
+func (m *NetworkTreeManager) CreateNetworkVotingTree(snapshot *VotingInfoSnapshot, depthPerRound uint64) *NetworkVotingTree {
 	// Create a map of the voting power of each node, accounting for delegation
 	votingPower := map[common.Address]*big.Int{}
 	for _, info := range snapshot.Info {
@@ -114,7 +114,7 @@ func (m *NetworkTreeManager) CreateNetworkVotingTree(snapshot *VotingInfoSnapsho
 
 	// Make the tree
 	network := m.cfg.Smartnode.Network.Value.(cfgtypes.Network)
-	tree := CreateTreeFromLeaves(snapshot.BlockNumber, network, leaves, 1)
+	tree := CreateTreeFromLeaves(snapshot.BlockNumber, network, leaves, 1, depthPerRound)
 	return &NetworkVotingTree{
 		VotingTree: tree,
 	}

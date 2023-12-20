@@ -23,6 +23,7 @@ type ProposalManager struct {
 	log       *log.ColorLogger
 	logPrefix string
 	cfg       *config.RocketPoolConfig
+	rp        *rocketpool.RocketPool
 	bc        beacon.Client
 }
 
@@ -57,6 +58,7 @@ func NewProposalManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *
 		log:       log,
 		logPrefix: logPrefix,
 		cfg:       cfg,
+		rp:        rp,
 		bc:        bc,
 	}, nil
 }
@@ -137,8 +139,14 @@ func (m *ProposalManager) GetNetworkTree(blockNumber uint32, snapshot *VotingInf
 		}
 	}
 
+	// Get the depth per round
+	depthPerRound, err := protocol.GetDepthPerRound(m.rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Generate the tree
-	tree = m.networkTreeMgr.CreateNetworkVotingTree(snapshot)
+	tree = m.networkTreeMgr.CreateNetworkVotingTree(snapshot, depthPerRound)
 	err = m.networkTreeMgr.SaveToFile(tree)
 	if err != nil {
 		return nil, fmt.Errorf("error saving tree for block %d: %w", blockNumber, err)
@@ -164,9 +172,15 @@ func (m *ProposalManager) GetNodeTree(blockNumber uint32, nodeIndex uint64, snap
 		}
 	}
 
+	// Get the depth per round
+	depthPerRound, err := protocol.GetDepthPerRound(m.rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Generate the tree
 	treeIndex := getTreeNodeIndexFromRPNodeIndex(snapshot, nodeIndex)
-	tree = m.nodeTreeMgr.CreateNodeVotingTree(snapshot, nodeIndex, treeIndex)
+	tree = m.nodeTreeMgr.CreateNodeVotingTree(snapshot, nodeIndex, treeIndex, depthPerRound)
 	err = m.nodeTreeMgr.SaveToFile(tree)
 	if err != nil {
 		return nil, fmt.Errorf("error saving tree for block %d, node index %d: %w", blockNumber, nodeIndex, err)
