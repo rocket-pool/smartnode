@@ -42,7 +42,7 @@ type protocolDaoProposalDetailsRaw struct {
 	VetoQuorum           *big.Int
 	Payload              []byte
 	PayloadStr           string
-	State                types.ProtocolDaoProposalState
+	State                uint8
 	ProposalBond         *big.Int
 	ChallengeBond        *big.Int
 	DefeatIndex          *big.Int
@@ -194,7 +194,7 @@ func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDao
 	details.IsVetoed = rawDetails.IsVetoed
 	details.VetoQuorum = rawDetails.VetoQuorum
 	details.Payload = rawDetails.Payload
-	details.State = rawDetails.State
+	details.State = types.ProtocolDaoProposalState(rawDetails.State)
 	details.DefeatIndex = rawDetails.DefeatIndex.Uint64()
 	details.ProposalBond = rawDetails.ProposalBond
 	details.ChallengeBond = rawDetails.ChallengeBond

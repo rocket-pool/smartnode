@@ -551,11 +551,11 @@ func GetProposalState(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.C
 	if err != nil {
 		return types.ProtocolDaoProposalState_Pending, err
 	}
-	value := new(types.ProtocolDaoProposalState)
+	value := new(uint8)
 	if err := rocketDAOProtocolProposal.Call(opts, value, "getState", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return types.ProtocolDaoProposalState_Pending, fmt.Errorf("error getting state of proposal %d: %w", proposalId, err)
 	}
-	return *value, nil
+	return types.ProtocolDaoProposalState(*value), nil
 }
 
 // Get the option that the address voted on for the proposal, and whether or not it's voted yet
@@ -564,11 +564,11 @@ func GetAddressVoteDirection(rp *rocketpool.RocketPool, proposalId uint64, addre
 	if err != nil {
 		return types.VoteDirection_NoVote, err
 	}
-	value := new(types.VoteDirection)
+	value := new(uint8)
 	if err := rocketDAOProtocolProposal.Call(opts, value, "getReceiptDirection", big.NewInt(0).SetUint64(proposalId), address); err != nil {
 		return types.VoteDirection_NoVote, fmt.Errorf("error getting voting status of proposal %d by address %s: %w", proposalId, address.Hex(), err)
 	}
-	return *value, nil
+	return types.VoteDirection(*value), nil
 }
 
 // ====================
