@@ -1586,7 +1586,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 									{
 										Name:      "vote-phase1-time",
-										Aliases:   []string{"vt"},
+										Aliases:   []string{"vt1"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.VotePhase1TimeSettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting proposals vote-phase1-time value",
 										Flags: []cli.Flag{
@@ -1614,7 +1614,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 									{
 										Name:      "vote-phase2-time",
-										Aliases:   []string{"vt"},
+										Aliases:   []string{"vt2"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.VotePhase2TimeSettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting proposals vote-phase2-time value",
 										Flags: []cli.Flag{
@@ -1986,7 +1986,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 									{
 										Name:      "proposal-vote-phase1-time",
-										Aliases:   []string{"pvt"},
+										Aliases:   []string{"pvt1"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SecurityProposalVotePhase1TimeSettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting security proposal-vote-phase1-time value",
 										Flags: []cli.Flag{
@@ -2014,7 +2014,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 									{
 										Name:      "proposal-vote-phase2-time",
-										Aliases:   []string{"pvt"},
+										Aliases:   []string{"pvt2"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SecurityProposalVotePhase1TimeSettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting security proposal-vote-phase2-time value",
 										Flags: []cli.Flag{
