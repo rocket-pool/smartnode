@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	depthPerRound uint64 = 2
+	depthPerRound uint64 = 5
 )
 
 type VotingTree struct {
