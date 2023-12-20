@@ -134,6 +134,9 @@ func proposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, pda
 
 	// Submit the proposal
 	proposalID, hash, err := protocol.ProposeSetRewardsPercentage(rp, "update RPL rewards distribution", odao, pdao, node, blockNumber, pollard, opts)
+	if err != nil {
+		return nil, err
+	}
 	response.ProposalId = proposalID
 	response.TxHash = hash
 
