@@ -1985,9 +1985,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									},
 
 									{
-										Name:      "proposal-vote-phase1-time",
-										Aliases:   []string{"pvt1"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SecurityProposalVotePhase1TimeSettingPath, durationUsage),
+										Name:      "proposal-vote-time",
+										Aliases:   []string{"pvt"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SecurityProposalVoteTimeSettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting security proposal-vote-phase1-time value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
@@ -2007,35 +2007,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingSecurityProposalVotePhase1Time(c, value)
-
-										},
-									},
-
-									{
-										Name:      "proposal-vote-phase2-time",
-										Aliases:   []string{"pvt2"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SecurityProposalVotePhase1TimeSettingPath, durationUsage),
-										UsageText: "rocketpool pdao propose setting security proposal-vote-phase2-time value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingSecurityProposalVotePhase2Time(c, value)
+											return proposeSettingSecurityProposalVoteTime(c, value)
 
 										},
 									},

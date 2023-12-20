@@ -274,14 +274,9 @@ func proposeSettingSecurityMembersLeaveTime(c *cli.Context, value time.Duration)
 	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityMembersLeaveTimeSettingPath, trueValue)
 }
 
-func proposeSettingSecurityProposalVotePhase1Time(c *cli.Context, value time.Duration) error {
+func proposeSettingSecurityProposalVoteTime(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityProposalVotePhase1TimeSettingPath, trueValue)
-}
-
-func proposeSettingSecurityProposalVotePhase2Time(c *cli.Context, value time.Duration) error {
-	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityProposalVotePhase2TimeSettingPath, trueValue)
+	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityProposalVoteTimeSettingPath, trueValue)
 }
 
 func proposeSettingSecurityProposalExecuteTime(c *cli.Context, value time.Duration) error {

@@ -699,26 +699,15 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 				return nil, fmt.Errorf("error estimating gas for proposing SecurityMembersLeaveTime: %w", err)
 			}
 
-		// SecurityProposalVotePhase1Time
-		case protocol.SecurityProposalVotePhase1TimeSettingPath:
+		// SecurityProposalVoteTime
+		case protocol.SecurityProposalVoteTimeSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposeSecurityProposalVotePhase1TimeGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasInfo, err = protocol.EstimateProposeSecurityProposalVoteTimeGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
-				return nil, fmt.Errorf("error estimating gas for proposing SecurityProposalVotePhase1Time: %w", err)
-			}
-
-		// SecurityProposalVotePhase2Time
-		case protocol.SecurityProposalVotePhase2TimeSettingPath:
-			newValue, err := cliutils.ValidateBigInt(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			response.GasInfo, err = protocol.EstimateProposeSecurityProposalVotePhase2TimeGas(rp, newValue, blockNumber, pollard, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error estimating gas for proposing SecurityProposalVotePhase2Time: %w", err)
+				return nil, fmt.Errorf("error estimating gas for proposing SecurityProposalVoteTime: %w", err)
 			}
 
 		// SecurityProposalExecuteTime
@@ -1404,24 +1393,13 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 				return nil, fmt.Errorf("error proposing SecurityMembersLeaveTime: %w", err)
 			}
 
-		// SecurityProposalVotePhase1Time
-		case protocol.SecurityProposalVotePhase1TimeSettingPath:
+		// SecurityProposalVoteTime
+		case protocol.SecurityProposalVoteTimeSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			proposalID, hash, err = protocol.ProposeSecurityProposalVotePhase1Time(rp, newValue, blockNumber, pollard, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error proposing SecurityProposalVoteTime: %w", err)
-			}
-
-		// SecurityProposalVotePhase2Time
-		case protocol.SecurityProposalVotePhase2TimeSettingPath:
-			newValue, err := cliutils.ValidateBigInt(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			proposalID, hash, err = protocol.ProposeSecurityProposalVotePhase2Time(rp, newValue, blockNumber, pollard, opts)
+			proposalID, hash, err = protocol.ProposeSecurityProposalVoteTime(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing SecurityProposalVoteTime: %w", err)
 			}
