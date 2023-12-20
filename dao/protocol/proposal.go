@@ -262,7 +262,7 @@ func GetProposalVetoQuorum(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getProposalVetoQuorum", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getProposalVetoQuorum", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting proposal veto quorum for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -288,7 +288,7 @@ func GetProposalProposer(rp *rocketpool.RocketPool, proposalId uint64, opts *bin
 		return common.Address{}, err
 	}
 	value := new(common.Address)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getProposer", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getProposer", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return common.Address{}, fmt.Errorf("error getting proposer for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -301,7 +301,7 @@ func GetProposalMessage(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 		return "", err
 	}
 	value := new(string)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getMessage", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getMessage", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return "", fmt.Errorf("error getting message for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -314,7 +314,7 @@ func GetProposalVotingStartTime(rp *rocketpool.RocketPool, proposalId uint64, op
 		return time.Time{}, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getStart", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getStart", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return time.Time{}, fmt.Errorf("error getting start block for proposal %d: %w", proposalId, err)
 	}
 	return time.Unix((*value).Int64(), 0), nil
@@ -327,7 +327,7 @@ func GetProposalPhase1EndTime(rp *rocketpool.RocketPool, proposalId uint64, opts
 		return time.Time{}, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getPhase1End", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getPhase1End", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return time.Time{}, fmt.Errorf("error getting phase 1 end time for proposal %d: %w", proposalId, err)
 	}
 	return time.Unix((*value).Int64(), 0), nil
@@ -340,7 +340,7 @@ func GetProposalPhase2EndTime(rp *rocketpool.RocketPool, proposalId uint64, opts
 		return time.Time{}, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getPhase2End", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getPhase2End", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return time.Time{}, fmt.Errorf("error getting phase 2 end time for proposal %d: %w", proposalId, err)
 	}
 	return time.Unix((*value).Int64(), 0), nil
@@ -353,7 +353,7 @@ func GetProposalExpiryTime(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 		return time.Time{}, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getExpires", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getExpires", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return time.Time{}, fmt.Errorf("error getting expiry time for proposal %d: %w", proposalId, err)
 	}
 	return time.Unix((*value).Int64(), 0), nil
@@ -366,7 +366,7 @@ func GetProposalCreationTime(rp *rocketpool.RocketPool, proposalId uint64, opts 
 		return time.Time{}, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getCreated", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getCreated", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return time.Time{}, fmt.Errorf("error getting creation time for proposal %d: %w", proposalId, err)
 	}
 	return time.Unix((*value).Int64(), 0), nil
@@ -379,7 +379,7 @@ func GetProposalVotingPowerFor(rp *rocketpool.RocketPool, proposalId uint64, opt
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesFor", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesFor", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting total 'for' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -392,7 +392,7 @@ func GetProposalVotingPowerAgainst(rp *rocketpool.RocketPool, proposalId uint64,
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesAgainst", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesAgainst", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting total 'against' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -405,7 +405,7 @@ func GetProposalVotingPowerVetoed(rp *rocketpool.RocketPool, proposalId uint64, 
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesVeto", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesVeto", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting total 'veto' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -418,7 +418,7 @@ func GetProposalVotingPowerAbstained(rp *rocketpool.RocketPool, proposalId uint6
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesAbstained", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesAbstained", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting total 'abstained' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -431,7 +431,7 @@ func GetProposalVotingPowerRequired(rp *rocketpool.RocketPool, proposalId uint64
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesRequired", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesRequired", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting required voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -444,7 +444,7 @@ func GetProposalIsDestroyed(rp *rocketpool.RocketPool, proposalId uint64, opts *
 		return false, err
 	}
 	value := new(bool)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getDestroyed", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getDestroyed", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return false, fmt.Errorf("error getting destroyed status of proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -457,7 +457,7 @@ func GetProposalIsFinalized(rp *rocketpool.RocketPool, proposalId uint64, opts *
 		return false, err
 	}
 	value := new(bool)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getFinalised", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getFinalised", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return false, fmt.Errorf("error getting finalized status of proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -470,7 +470,7 @@ func GetProposalIsExecuted(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 		return false, err
 	}
 	value := new(bool)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getExecuted", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getExecuted", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return false, fmt.Errorf("error getting executed status of proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -483,7 +483,7 @@ func GetProposalIsVetoed(rp *rocketpool.RocketPool, proposalId uint64, opts *bin
 		return false, err
 	}
 	value := new(bool)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVetoed", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVetoed", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return false, fmt.Errorf("error getting veto status of proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -496,7 +496,7 @@ func GetProposalPayload(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 		return nil, err
 	}
 	value := new([]byte)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getPayload", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getPayload", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting payload of proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -552,7 +552,7 @@ func GetProposalState(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.C
 		return types.ProtocolDaoProposalState_Pending, err
 	}
 	value := new(types.ProtocolDaoProposalState)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getState", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getState", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return types.ProtocolDaoProposalState_Pending, fmt.Errorf("error getting state of proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -565,7 +565,7 @@ func GetAddressVoteDirection(rp *rocketpool.RocketPool, proposalId uint64, addre
 		return types.VoteDirection_NoVote, err
 	}
 	value := new(types.VoteDirection)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getReceiptDirection", proposalId, address); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getReceiptDirection", big.NewInt(0).SetUint64(proposalId), address); err != nil {
 		return types.VoteDirection_NoVote, fmt.Errorf("error getting voting status of proposal %d by address %s: %w", proposalId, address.Hex(), err)
 	}
 	return *value, nil

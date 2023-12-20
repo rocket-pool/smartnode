@@ -144,7 +144,7 @@ func getProposalDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, 
 
 // Get the details of a proposal
 func addProposalCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc *multicall.MultiCaller, details *protocolDaoProposalDetailsRaw, opts *bind.CallOpts) error {
-	id := details.ID
+	id := big.NewInt(0).SetUint64(details.ID)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.ProposerAddress, "getProposer", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.TargetBlock, "getProposalBlock", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Message, "getMessage", id)
