@@ -696,18 +696,18 @@ func ExecuteProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Tr
 
 // Simulate a proposal's execution to verify it won't revert
 func simulateProposalExecution(rp *rocketpool.RocketPool, payload []byte) error {
-	rocketDAOProposal, err := getRocketDAOProposal(rp, nil)
+	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
 	if err != nil {
 		return err
 	}
-	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return err
 	}
 
 	_, err = rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
-		From:     *rocketDAOProposal.Address,
-		To:       rocketDAOProtocolProposal.Address,
+		From:     *rocketDAOProtocolProposal.Address,
+		To:       rocketDAOProtocolProposals.Address,
 		GasPrice: big.NewInt(0),
 		Value:    nil,
 		Data:     payload,
@@ -717,16 +717,9 @@ func simulateProposalExecution(rp *rocketpool.RocketPool, payload []byte) error 
 
 // Get contracts
 var rocketDAOProtocolProposalLock sync.Mutex
-var rocketDAOProposalLock sync.Mutex
 
 func getRocketDAOProtocolProposal(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDAOProtocolProposalLock.Lock()
 	defer rocketDAOProtocolProposalLock.Unlock()
 	return rp.GetContract("rocketDAOProtocolProposal", opts)
-}
-
-func getRocketDAOProposal(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	rocketDAOProposalLock.Lock()
-	defer rocketDAOProposalLock.Unlock()
-	return rp.GetContract("rocketDAOProposal", opts)
 }
