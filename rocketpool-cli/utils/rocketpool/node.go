@@ -32,6 +32,11 @@ func (r *NodeRequester) GetClient() *http.Client {
 	return r.client
 }
 
+// Get the node's ETH balance
+func (r *NodeRequester) Balance() (*api.ApiResponse[api.NodeBalanceData], error) {
+	return sendGetRequest[api.NodeBalanceData](r, "balance", "Balance", nil)
+}
+
 // Burn rETH owned by the node for ETH
 func (r *NodeRequester) Burn(amount *big.Int) (*api.ApiResponse[api.NodeBurnData], error) {
 	args := map[string]string{

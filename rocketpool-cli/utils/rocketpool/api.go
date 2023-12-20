@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	baseUrl         string = "http://node/%s"
+	baseUrl         string = "http://rocketpool/%s"
 	jsonContentType string = "application/json"
 )
 
@@ -101,6 +101,21 @@ func rawGetRequest[DataType any](client *http.Client, path string, params map[st
 	// Run the request
 	resp, err := client.Do(req)
 	return handleResponse[DataType](resp, path, err)
+}
+
+// Submit a POST request to the API server
+func sendPostRequest[DataType any](r IRequester, method string, requestName string, body any) (*api.ApiResponse[DataType], error) {
+	// Serialize the body
+	bytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("error serializing request body for %s %s: %w", r.GetName(), requestName, err)
+	}
+
+	response, err := rawPostRequest[DataType](r.GetClient(), fmt.Sprintf("%s/%s", r.GetRoute(), method), string(bytes))
+	if err != nil {
+		return nil, fmt.Errorf("error during %s %s request: %w", r.GetName(), requestName, err)
+	}
+	return response, nil
 }
 
 // Submit a POST request to the API server

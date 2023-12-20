@@ -9,29 +9,28 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func bidOnLot(c *cli.Context) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get lot details
-	lots, err := rp.AuctionLots()
+	lots, err := rp.Api.Auction.Lots()
 	if err != nil {
 		return err
 	}
 
 	// Get open lots
-	openLots := []api.LotDetails{}
-	for _, lot := range lots.Lots {
+	openLots := []api.AuctionLotDetails{}
+	for _, lot := range lots.Data.Lots {
 		if lot.BiddingAvailable {
 			openLots = append(openLots, lot)
 		}
@@ -44,7 +43,7 @@ func bidOnLot(c *cli.Context) error {
 	}
 
 	// Get selected lot
-	var selectedLot api.LotDetails
+	var selectedLot api.AuctionLotDetails
 	if c.String("lot") != "" {
 
 		// Get selected lot index
@@ -71,7 +70,7 @@ func bidOnLot(c *cli.Context) error {
 		// Prompt for lot selection
 		options := make([]string, len(openLots))
 		for li, lot := range openLots {
-			options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)", lot.Index, math.RoundDown(eth.WeiToEth(lot.RemainingRPLAmount), 6), math.RoundDown(eth.WeiToEth(lot.CurrentPrice), 6))
+			options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)", lot.Index, math.RoundDown(eth.WeiToEth(lot.RemainingRplAmount), 6), math.RoundDown(eth.WeiToEth(lot.CurrentPrice), 6))
 		}
 		selected, _ := utils.Select("Please select a lot to bid on:", options)
 		selectedLot = openLots[selected]
@@ -85,7 +84,7 @@ func bidOnLot(c *cli.Context) error {
 		// Set bid amount to maximum
 		var tmp big.Int
 		var maxAmount big.Int
-		tmp.Mul(selectedLot.RemainingRPLAmount, selectedLot.CurrentPrice)
+		tmp.Mul(selectedLot.RemainingRplAmount, selectedLot.CurrentPrice)
 		maxAmount.Quo(&tmp, eth.EthToWei(1))
 		amountWei = &maxAmount
 
@@ -103,7 +102,7 @@ func bidOnLot(c *cli.Context) error {
 		// Calculate maximum bid amount
 		var tmp big.Int
 		var maxAmount big.Int
-		tmp.Mul(selectedLot.RemainingRPLAmount, selectedLot.CurrentPrice)
+		tmp.Mul(selectedLot.RemainingRplAmount, selectedLot.CurrentPrice)
 		maxAmount.Quo(&tmp, eth.EthToWei(1))
 
 		// Prompt for maximum amount
@@ -124,39 +123,24 @@ func bidOnLot(c *cli.Context) error {
 	}
 
 	// Check lot can be bid on
-	canBid, err := rp.CanBidOnLot(selectedLot.Index, amountWei)
+	response, err := rp.Api.Auction.BidOnLot(selectedLot.Index, amountWei)
 	if err != nil {
 		return fmt.Errorf("Error checking if bidding on lot %d is possible: %w", selectedLot.Index, err)
 	}
-	if !canBid.CanBid {
+	if !response.Data.CanBid {
 		fmt.Println("Cannot bid on lot:")
-		if canBid.BidOnLotDisabled {
+		if response.Data.BidOnLotDisabled {
 			fmt.Println("Bidding on lots is currently disabled.")
 		}
 		return nil
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canBid.GasInfo, rp, c.Bool("yes"))
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Index),
+		"Bidding on lot...",
+	)
 	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || utils.Confirm(fmt.Sprintf("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Index))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Bid on lot
-	response, err := rp.BidOnLot(selectedLot.Index, amountWei)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Bidding on lot...\n")
-	utils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 

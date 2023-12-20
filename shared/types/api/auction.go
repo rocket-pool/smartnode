@@ -23,11 +23,11 @@ type AuctionLotDetails struct {
 	Exists               bool     `json:"exists"`
 	StartBlock           uint64   `json:"startBlock"`
 	EndBlock             uint64   `json:"endBlock"`
-	StartPrice           float64  `json:"startPrice"`
-	ReservePrice         float64  `json:"reservePrice"`
-	PriceAtCurrentBlock  float64  `json:"priceAtCurrentBlock"`
-	PriceByTotalBids     float64  `json:"priceByTotalBids"`
-	CurrentPrice         float64  `json:"currentPrice"`
+	StartPrice           *big.Int `json:"startPrice"`
+	ReservePrice         *big.Int `json:"reservePrice"`
+	PriceAtCurrentBlock  *big.Int `json:"priceAtCurrentBlock"`
+	PriceByTotalBids     *big.Int `json:"priceByTotalBids"`
+	CurrentPrice         *big.Int `json:"currentPrice"`
 	TotalRplAmount       *big.Int `json:"totalRplAmount"`
 	ClaimedRplAmount     *big.Int `json:"claimedRplAmount"`
 	RemainingRplAmount   *big.Int `json:"remainingRplAmount"`

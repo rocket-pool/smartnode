@@ -7,28 +7,27 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	rpsvc "github.com/rocket-pool/smartnode/rocketpool-cli/utils/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/gas/etherchain"
 	"github.com/rocket-pool/smartnode/shared/gas/etherscan"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/urfave/cli"
 )
 
-func AssignMaxFeeAndLimit(gasInfo core.GasInfo, rp *rpsvc.Client, headless bool) error {
-
+func GetMaxFees(c *cli.Context, rp *client.Client, gasInfo core.GasInfo) (*big.Int, *big.Int, error) {
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
+		return nil, nil, fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
 	}
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return nil, nil, fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
-	// Get the current settings from the CLI arguments
-	maxFeeGwei, maxPriorityFeeGwei, gasLimit := rp.GetGasSettings()
-
 	// Get the max fee - prioritize the CLI arguments, default to the config file setting
+	maxFeeGwei := c.GlobalFloat64(flags.MaxFeeFlag)
 	if maxFeeGwei == 0 {
 		maxFee := eth.GweiToWei(cfg.Smartnode.ManualMaxFee.Value.(float64))
 		if maxFee != nil && maxFee.Uint64() != 0 {
@@ -37,6 +36,7 @@ func AssignMaxFeeAndLimit(gasInfo core.GasInfo, rp *rpsvc.Client, headless bool)
 	}
 
 	// Get the priority fee - prioritize the CLI arguments, default to the config file setting
+	maxPriorityFeeGwei := c.GlobalFloat64(flags.MaxPriorityFeeFlag)
 	if maxPriorityFeeGwei == 0 {
 		maxPriorityFee := eth.GweiToWei(cfg.Smartnode.PriorityFee.Value.(float64))
 		if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
@@ -50,23 +50,14 @@ func AssignMaxFeeAndLimit(gasInfo core.GasInfo, rp *rpsvc.Client, headless bool)
 	// Use the requested max fee and priority fee if provided
 	if maxFeeGwei != 0 {
 		fmt.Printf("%sUsing the requested max fee of %.2f gwei (including a max priority fee of %.2f gwei).\n", terminal.ColorYellow, maxFeeGwei, maxPriorityFeeGwei)
-
-		var lowLimit float64
-		var highLimit float64
-		if gasLimit == 0 {
-			lowLimit = maxFeeGwei / eth.WeiPerGwei * float64(gasInfo.EstGasLimit)
-			highLimit = maxFeeGwei / eth.WeiPerGwei * float64(gasInfo.SafeGasLimit)
-		} else {
-			lowLimit = maxFeeGwei / eth.WeiPerGwei * float64(gasLimit)
-			highLimit = lowLimit
-		}
+		lowLimit := maxFeeGwei / eth.WeiPerGwei * float64(gasInfo.EstGasLimit)
+		highLimit := maxFeeGwei / eth.WeiPerGwei * float64(gasInfo.SafeGasLimit)
 		fmt.Printf("Total cost: %.4f to %.4f ETH%s\n", lowLimit, highLimit, terminal.ColorReset)
-
 	} else {
-		if headless {
+		if c.Bool(flags.YesFlag) {
 			maxFeeWei, err := GetHeadlessMaxFeeWei()
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
 			maxFeeGwei = eth.WeiToGwei(maxFeeWei)
 		} else {
@@ -74,7 +65,7 @@ func AssignMaxFeeAndLimit(gasInfo core.GasInfo, rp *rpsvc.Client, headless bool)
 			etherchainData, err := etherchain.GetGasPrices()
 			if err == nil {
 				// Print the Etherchain data and ask for an amount
-				maxFeeGwei = handleEtherchainGasPrices(etherchainData, gasInfo, maxPriorityFeeGwei, gasLimit)
+				maxFeeGwei = handleEtherchainGasPrices(etherchainData, gasInfo, maxPriorityFeeGwei, gasInfo.SafeGasLimit)
 
 			} else {
 				// Fallback to Etherscan
@@ -82,42 +73,31 @@ func AssignMaxFeeAndLimit(gasInfo core.GasInfo, rp *rpsvc.Client, headless bool)
 				etherscanData, err := etherscan.GetGasPrices()
 				if err == nil {
 					// Print the Etherscan data and ask for an amount
-					maxFeeGwei = handleEtherscanGasPrices(etherscanData, gasInfo, maxPriorityFeeGwei, gasLimit)
+					maxFeeGwei = handleEtherscanGasPrices(etherscanData, gasInfo, maxPriorityFeeGwei, gasInfo.SafeGasLimit)
 				} else {
-					return fmt.Errorf("Error getting gas price suggestions: %w", err)
+					return nil, nil, fmt.Errorf("Error getting gas price suggestions: %w", err)
 				}
 			}
 		}
 		fmt.Printf("%sUsing a max fee of %.2f gwei and a priority fee of %.2f gwei.\n%s", terminal.ColorBlue, maxFeeGwei, maxPriorityFeeGwei, terminal.ColorReset)
 	}
 
-	// Use the requested gas limit if provided
-	if gasLimit != 0 {
-		fmt.Printf("Using the requested gas limit of %d units.\n%sNOTE: if you set this too low, your transaction may fail but you will still have to pay the gas fee!%s\n", gasLimit, terminal.ColorYellow, terminal.ColorReset)
-	}
-
 	if maxPriorityFeeGwei > maxFeeGwei {
-		return fmt.Errorf("Priority fee cannot be greater than max fee.")
+		return nil, nil, fmt.Errorf("Priority fee cannot be greater than max fee.")
 	}
 
 	// Verify the node has enough ETH to use this max fee
 	maxFee := eth.GweiToWei(maxFeeGwei)
-	ethRequired := big.NewInt(0)
-	if gasLimit != 0 {
-		ethRequired.Mul(maxFee, big.NewInt(int64(gasLimit)))
-	} else {
-		ethRequired.Mul(maxFee, big.NewInt(int64(gasInfo.SafeGasLimit)))
-	}
-	response, err := rp.GetEthBalance()
+	ethRequired := big.NewInt(0).Mul(maxFee, big.NewInt(int64(gasInfo.SafeGasLimit)))
+	response, err := rp.Api.Node.Balance()
 	if err != nil {
 		fmt.Printf("%sWARNING: couldn't check the ETH balance of the node (%s)\nPlease ensure your node wallet has enough ETH to pay for this transaction.%s\n\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
-	} else if response.Balance.Cmp(ethRequired) < 0 {
-		return fmt.Errorf("Your node has %.6f ETH in its wallet, which is not enough to pay for this transaction with a max fee of %.4f gwei; you require at least %.6f more ETH.", eth.WeiToEth(response.Balance), maxFeeGwei, eth.WeiToEth(big.NewInt(0).Sub(ethRequired, response.Balance)))
+	} else if response.Data.Balance.Cmp(ethRequired) < 0 {
+		return nil, nil, fmt.Errorf("Your node has %.6f ETH in its wallet, which is not enough to pay for this transaction with a max fee of %.4f gwei; you require at least %.6f more ETH.", eth.WeiToEth(response.Data.Balance), maxFeeGwei, eth.WeiToEth(big.NewInt(0).Sub(ethRequired, response.Data.Balance)))
 	}
+	maxPriorityFee := eth.GweiToWei(maxPriorityFeeGwei)
 
-	rp.AssignGasSettings(maxFeeGwei, maxPriorityFeeGwei, gasLimit)
-	return nil
-
+	return maxFee, maxPriorityFee, nil
 }
 
 // Get the suggested max fee for service operations
