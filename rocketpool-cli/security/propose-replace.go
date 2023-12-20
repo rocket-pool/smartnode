@@ -69,7 +69,7 @@ func proposeReplace(c *cli.Context) error {
 	// Get the new ID
 	newID := c.String("new-id")
 	if newID == "" {
-		newID = cliutils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^/S+$", "Invalid ID")
+		newID = cliutils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
 	}
 
 	// Get the new address
