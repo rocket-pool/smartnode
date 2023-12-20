@@ -91,7 +91,8 @@ func getSettings(c *cli.Context) error {
 
 	// Proposals
 	fmt.Println("== Proposal Settings ==")
-	fmt.Printf("\tVoting Window:           %s\n", response.Proposals.VoteTime)
+	fmt.Printf("\tVoting Window (Phase 1): %s\n", response.Proposals.VotePhase1Time)
+	fmt.Printf("\tVoting Window (Phase 2): %s\n", response.Proposals.VotePhase2Time)
 	fmt.Printf("\tVoting Start Delay:      %s\n", response.Proposals.VoteDelayTime)
 	fmt.Printf("\tExecute Window:          %s\n", response.Proposals.ExecuteTime)
 	fmt.Printf("\tBond per Proposal:       %.6f RPL\n", eth.WeiToEth(response.Proposals.ProposalBond))

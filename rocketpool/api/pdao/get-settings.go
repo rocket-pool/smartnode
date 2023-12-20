@@ -292,7 +292,13 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Proposals.VoteTime, err = protocol.GetVoteTime(rp, nil)
+		response.Proposals.VotePhase1Time, err = protocol.GetVotePhase1Time(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Proposals.VotePhase2Time, err = protocol.GetVotePhase2Time(rp, nil)
 		return err
 	})
 
