@@ -32,7 +32,7 @@ func proposeInvite(c *cli.Context) error {
 	// Get the ID
 	id := c.String("id")
 	if id == "" {
-		id = cliutils.Prompt("Please enter an ID for the member you'd like to invite:", "^$", "Invalid ID")
+		id = cliutils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^/S+$", "Invalid ID")
 	}
 
 	// Get the address

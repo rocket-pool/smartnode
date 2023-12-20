@@ -153,7 +153,8 @@ type GetPDAOSettingsResponse struct {
 	} `json:"node"`
 
 	Proposals struct {
-		VoteTime        time.Duration `json:"voteTime"`
+		VotePhase1Time  time.Duration `json:"votePhase1Time"`
+		VotePhase2Time  time.Duration `json:"votePhase2Time"`
 		VoteDelayTime   time.Duration `json:"voteDelayTime"`
 		ExecuteTime     time.Duration `json:"executeTime"`
 		ProposalBond    *big.Int      `json:"proposalBond"`

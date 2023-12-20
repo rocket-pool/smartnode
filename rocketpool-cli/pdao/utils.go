@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -17,7 +18,7 @@ func parseFloat(c *cli.Context, name string, value string) (*big.Int, error) {
 		}
 		return val, nil
 	} else {
-		val, err := cliutils.ValidateFraction(name, value)
+		val, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return nil, err
 		}

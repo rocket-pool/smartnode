@@ -35,7 +35,7 @@ func proposeRecurringSpend(c *cli.Context) error {
 	// Get the contract name
 	contractName := c.String("contract-name")
 	if contractName == "" {
-		contractName = cliutils.Prompt("Please enter a contract name for this recurring payment:", "^$", "Invalid ID")
+		contractName = cliutils.Prompt("Please enter a contract name for this recurring payment:", "^/S+$", "Invalid ID")
 	}
 
 	// Get the recipient
@@ -87,7 +87,7 @@ func proposeRecurringSpend(c *cli.Context) error {
 	// Get the period length
 	periodLengthString := c.String("period-length")
 	if periodLengthString == "" {
-		periodLengthString = cliutils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^$", "Invalid period length")
+		periodLengthString = cliutils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^+$", "Invalid period length")
 	}
 	periodLength, err := cliutils.ValidateDuration("period-length", periodLengthString)
 	if err != nil {
