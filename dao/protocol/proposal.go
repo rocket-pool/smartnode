@@ -379,7 +379,7 @@ func GetProposalVotingPowerFor(rp *rocketpool.RocketPool, proposalId uint64, opt
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesFor", big.NewInt(0).SetUint64(proposalId)); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotingPowerFor", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting total 'for' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -392,7 +392,7 @@ func GetProposalVotingPowerAgainst(rp *rocketpool.RocketPool, proposalId uint64,
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesAgainst", big.NewInt(0).SetUint64(proposalId)); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotingPowerAgainst", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting total 'against' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -405,7 +405,7 @@ func GetProposalVotingPowerVetoed(rp *rocketpool.RocketPool, proposalId uint64, 
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesVeto", big.NewInt(0).SetUint64(proposalId)); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotingPowerVeto", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting total 'veto' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -418,7 +418,7 @@ func GetProposalVotingPowerAbstained(rp *rocketpool.RocketPool, proposalId uint6
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesAbstained", big.NewInt(0).SetUint64(proposalId)); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotingPowerAbstained", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting total 'abstained' voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
@@ -431,7 +431,7 @@ func GetProposalVotingPowerRequired(rp *rocketpool.RocketPool, proposalId uint64
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotesRequired", big.NewInt(0).SetUint64(proposalId)); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getVotingPowerRequired", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return nil, fmt.Errorf("error getting required voting power for proposal %d: %w", proposalId, err)
 	}
 	return *value, nil
