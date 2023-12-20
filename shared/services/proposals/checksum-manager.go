@@ -44,7 +44,7 @@ func NewChecksumManager[ContextType any, DataType IDataType](checksumFilename st
 
 	// Make sure the checksum path exists
 	path := filepath.Dir(checksumFilename)
-	err = os.MkdirAll(path, 0664)
+	err = os.MkdirAll(path, 0775)
 	if err != nil {
 		return nil, fmt.Errorf("error creating folder for checksum table and data: %w", err)
 	}
