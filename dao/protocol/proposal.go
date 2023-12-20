@@ -249,7 +249,7 @@ func GetProposalBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.C
 		return 0, err
 	}
 	value := new(*big.Int)
-	if err := rocketDAOProtocolProposal.Call(opts, value, "getProposalBlock", proposalId); err != nil {
+	if err := rocketDAOProtocolProposal.Call(opts, value, "getProposalBlock", big.NewInt(0).SetUint64(proposalId)); err != nil {
 		return 0, fmt.Errorf("error getting proposal block for proposal %d: %w", proposalId, err)
 	}
 	return uint32((*value).Uint64()), nil
