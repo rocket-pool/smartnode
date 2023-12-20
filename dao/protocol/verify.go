@@ -57,6 +57,19 @@ type challengeSubmittedRaw struct {
 	Timestamp  *big.Int       `json:"timestamp"`
 }
 
+// Get the depth-per-round for voting trees
+func GetDepthPerRound(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := rocketDAOProtocolVerifier.Call(opts, value, "getDepthPerRound"); err != nil {
+		return 0, fmt.Errorf("error getting depth per round: %w", err)
+	}
+	return (*value).Uint64(), nil
+}
+
 // Get the node of a proposal at the given index
 func GetNode(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *bind.CallOpts) (types.VotingTreeNode, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
