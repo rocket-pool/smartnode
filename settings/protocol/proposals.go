@@ -17,7 +17,8 @@ import (
 // Config
 const (
 	ProposalsSettingsContractName  string = "rocketDAOProtocolSettingsProposals"
-	VoteTimeSettingPath            string = "proposal.vote.time"
+	VotePhase1TimeSettingPath      string = "proposal.vote.phase1.time"
+	VotePhase2TimeSettingPath      string = "proposal.vote.phase2.time"
 	VoteDelayTimeSettingPath       string = "proposal.vote.delay.time"
 	ExecuteTimeSettingPath         string = "proposal.execute.time"
 	ProposalBondSettingPath        string = "proposal.bond"
@@ -28,23 +29,42 @@ const (
 	ProposalMaxBlockAgeSettingPath string = "proposal.max.block.age"
 )
 
-// How long a proposal can be voted on before expiring
-func GetVoteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+// How long a proposal can be voted on phase 1
+func GetVotePhase1Time(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	value := new(*big.Int)
-	if err := proposalsSettingsContract.Call(opts, value, "getVoteTime"); err != nil {
+	if err := proposalsSettingsContract.Call(opts, value, "getVotePhase1Time"); err != nil {
 		return 0, fmt.Errorf("error getting vote time: %w", err)
 	}
 	return time.Duration((*value).Uint64()) * time.Second, nil
 }
-func ProposeVoteTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteTimeSettingPath), ProposalsSettingsContractName, VoteTimeSettingPath, value, blockNumber, treeNodes, opts)
+func ProposeVotePhase1Time(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", VotePhase1TimeSettingPath), ProposalsSettingsContractName, VotePhase1TimeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeVoteTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VoteTimeSettingPath), ProposalsSettingsContractName, VoteTimeSettingPath, value, blockNumber, treeNodes, opts)
+func EstimateProposeVotePhase1TimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VotePhase1TimeSettingPath), ProposalsSettingsContractName, VotePhase1TimeSettingPath, value, blockNumber, treeNodes, opts)
+}
+
+// How long a proposal can be voted on phase 2
+func GetVotePhase2Time(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := proposalsSettingsContract.Call(opts, value, "getVotePhase2Time"); err != nil {
+		return 0, fmt.Errorf("error getting vote time: %w", err)
+	}
+	return time.Duration((*value).Uint64()) * time.Second, nil
+}
+func ProposeVotePhase2Time(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", VotePhase2TimeSettingPath), ProposalsSettingsContractName, VotePhase2TimeSettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeVotePhase2TimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VotePhase2TimeSettingPath), ProposalsSettingsContractName, VotePhase2TimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // How long before a proposal can be voted on after its created
