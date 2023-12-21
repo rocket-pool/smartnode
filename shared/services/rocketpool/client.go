@@ -1112,12 +1112,20 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	// Read and substitute the templates
 	deployedContainers := []string{}
 
-	for _, containerName := range []string{
+	// These containers always run
+	toDeploy := []string{
 		config.ApiContainerName,
 		config.NodeContainerName,
 		config.WatchtowerContainerName,
 		config.ValidatorContainerName,
-	} {
+	}
+
+	// Check if we are running the Execution Layer locally
+	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+		toDeploy = append(toDeploy, config.Eth1ContainerName)
+	}
+
+	for _, containerName := range toDeploy {
 		containers, err := composePaths.File(containerName).Write(cfg)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not create %s container definition: %w", containerName, err)
@@ -1126,20 +1134,6 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	}
 
 	var contents []byte
-	// Check the EC mode to see if it needs to be deployed
-	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.Eth1ContainerName+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting execution client container template: %w", err)
-		}
-		eth1ComposePath := filepath.Join(runtimeFolder, config.Eth1ContainerName+composeFileSuffix)
-		err = os.WriteFile(eth1ComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write execution client container file to %s: %w", eth1ComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, eth1ComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.Eth1ContainerName+composeFileSuffix))
-	}
 
 	// Check the Consensus mode
 	if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {

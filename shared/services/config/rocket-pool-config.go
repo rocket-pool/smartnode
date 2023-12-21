@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/alessio/shellescape"
+	externalip "github.com/glendc/go-external-ip"
 	"github.com/pbnjay/memory"
 	"github.com/rocket-pool/smartnode/addons"
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
@@ -125,6 +127,23 @@ type RocketPoolConfig struct {
 	// Addons
 	GraffitiWallWriter addontypes.SmartnodeAddon `yaml:"addon-gww,omitempty"`
 	RescueNode         addontypes.SmartnodeAddon `yaml:"addon-rescue-node,omitempty"`
+}
+
+// Get the external IP address. Try finding an IPv4 address first to:
+// * Improve peer discovery and node performance
+// * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
+func getExternalIP() (net.IP, error) {
+	// Try IPv4 first
+	ip4Consensus := externalip.DefaultConsensus(nil, nil)
+	ip4Consensus.UseIPProtocol(4)
+	if ip, err := ip4Consensus.ExternalIP(); err == nil {
+		return ip, nil
+	}
+
+	// Try IPv6 as fallback
+	ip6Consensus := externalip.DefaultConsensus(nil, nil)
+	ip6Consensus.UseIPProtocol(6)
+	return ip6Consensus.ExternalIP()
 }
 
 // Load configuration settings from a file
@@ -1114,6 +1133,110 @@ func (cfg *RocketPoolConfig) MevBoostUrl() string {
 	}
 
 	return cfg.MevBoost.ExternalUrl.Value.(string)
+}
+
+// Gets the tag of the ec container
+// Used by text/template to format eth1.yml
+func (cfg *RocketPoolConfig) GetECContainerTag() (string, error) {
+	if !cfg.ExecutionClientLocal() {
+		return "", fmt.Errorf("Execution client is external, there is no container tag")
+	}
+
+	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
+	case config.ExecutionClient_Geth:
+		return cfg.Geth.ContainerTag.Value.(string), nil
+	case config.ExecutionClient_Nethermind:
+		return cfg.Nethermind.ContainerTag.Value.(string), nil
+	case config.ExecutionClient_Besu:
+		return cfg.Besu.ContainerTag.Value.(string), nil
+	}
+
+	return "", fmt.Errorf("Unknown Execution Client %s", cfg.ExecutionClient.Value.(string))
+}
+
+// Gets the stop signal of the ec container
+// Used by text/template to format eth1.yml
+func (cfg *RocketPoolConfig) GetECStopSignal() (string, error) {
+	if !cfg.ExecutionClientLocal() {
+		return "", fmt.Errorf("Execution client is external, there is no stop signal")
+	}
+
+	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
+	case config.ExecutionClient_Geth:
+		return gethStopSignal, nil
+	case config.ExecutionClient_Nethermind:
+		return nethermindStopSignal, nil
+	case config.ExecutionClient_Besu:
+		return besuStopSignal, nil
+	}
+
+	return "", fmt.Errorf("Unknown Execution Client %s", cfg.ExecutionClient.Value.(string))
+}
+
+// Gets the stop signal of the ec container
+// Used by text/template to format eth1.yml
+func (cfg *RocketPoolConfig) GetECOpenAPIPorts() string {
+	rpcMode := cfg.ExecutionCommon.OpenRpcPorts.Value.(config.RPCMode)
+	if !rpcMode.Open() {
+		return ""
+	}
+	httpMapping := rpcMode.DockerPortMapping(cfg.ExecutionCommon.HttpPort.Value.(uint16))
+	wsMapping := rpcMode.DockerPortMapping(cfg.ExecutionCommon.WsPort.Value.(uint16))
+	return fmt.Sprintf(", \"%s\", \"%s\"", httpMapping, wsMapping)
+}
+
+// Gets the max peers of the ec container
+// Used by text/template to format eth1.yml
+func (cfg *RocketPoolConfig) GetECMaxPeers() (uint16, error) {
+	if !cfg.ExecutionClientLocal() {
+		return 0, fmt.Errorf("Execution client is external, there is no max peers")
+	}
+
+	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
+	case config.ExecutionClient_Geth:
+		return cfg.Geth.MaxPeers.Value.(uint16), nil
+	case config.ExecutionClient_Nethermind:
+		return cfg.Nethermind.MaxPeers.Value.(uint16), nil
+	case config.ExecutionClient_Besu:
+		return cfg.Besu.MaxPeers.Value.(uint16), nil
+	}
+
+	return 0, fmt.Errorf("Unknown Execution Client %s", cfg.ExecutionClient.Value.(string))
+}
+
+// Used by text/template to format eth1.yml
+func (cfg *RocketPoolConfig) GetECAdditionalFlags() (string, error) {
+	if !cfg.ExecutionClientLocal() {
+		return "", fmt.Errorf("Execution client is external, there are no additional flags")
+	}
+
+	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
+	case config.ExecutionClient_Geth:
+		return cfg.Geth.AdditionalFlags.Value.(string), nil
+	case config.ExecutionClient_Nethermind:
+		return cfg.Nethermind.AdditionalFlags.Value.(string), nil
+	case config.ExecutionClient_Besu:
+		return cfg.Besu.AdditionalFlags.Value.(string), nil
+	}
+
+	return "", fmt.Errorf("Unknown Execution Client %s", cfg.ExecutionClient.Value.(string))
+}
+
+// Used by text/template to format eth1.yml
+func (cfg *RocketPoolConfig) GetExternalIp() string {
+	// Get the external IP address
+	ip, err := getExternalIP()
+	if err != nil {
+		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus or Besu, it may have trouble finding peers:")
+		fmt.Println(err.Error())
+		return ""
+	}
+
+	if ip.To4() == nil {
+		fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
+	}
+
+	return ip.String()
 }
 
 // Generates a collection of environment variables based on this config's settings
