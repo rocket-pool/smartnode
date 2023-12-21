@@ -172,6 +172,11 @@ func (cfg *PrysmConfig) GetValidatorImage() string {
 	return cfg.VcContainerTag.Value.(string)
 }
 
+// Get the Docker container name of the beacon client
+func (cfg *PrysmConfig) GetBeaconNodeImage() string {
+	return cfg.BnContainerTag.Value.(string)
+}
+
 // Get the name of the client
 func (cfg *PrysmConfig) GetName() string {
 	return "Prysm"

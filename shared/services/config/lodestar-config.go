@@ -110,6 +110,11 @@ func (cfg *LodestarConfig) GetValidatorImage() string {
 	return cfg.ContainerTag.Value.(string)
 }
 
+// Get the Docker container name of the beacon client
+func (cfg *LodestarConfig) GetBeaconNodeImage() string {
+	return cfg.ContainerTag.Value.(string)
+}
+
 // Get the name of the client
 func (cfg *LodestarConfig) GetName() string {
 	return "Lodestar"

@@ -128,6 +128,11 @@ func (cfg *LighthouseConfig) GetValidatorImage() string {
 	return cfg.ContainerTag.Value.(string)
 }
 
+// Get the Docker container name of the beacon client
+func (cfg *LighthouseConfig) GetBeaconNodeImage() string {
+	return cfg.ContainerTag.Value.(string)
+}
+
 // Get the name of the client
 func (cfg *LighthouseConfig) GetName() string {
 	return "Lighthouse"

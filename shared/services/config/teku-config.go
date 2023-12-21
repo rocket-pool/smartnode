@@ -154,6 +154,11 @@ func (cfg *TekuConfig) GetValidatorImage() string {
 	return cfg.ContainerTag.Value.(string)
 }
 
+// Get the Docker container name of the beacon client
+func (cfg *TekuConfig) GetBeaconNodeImage() string {
+	return cfg.ContainerTag.Value.(string)
+}
+
 // Get the name of the client
 func (cfg *TekuConfig) GetName() string {
 	return "Teku"

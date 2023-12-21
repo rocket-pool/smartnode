@@ -1125,6 +1125,11 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		toDeploy = append(toDeploy, config.Eth1ContainerName)
 	}
 
+	// Check if we are running the COnsensus Layer locally
+	if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+		toDeploy = append(toDeploy, config.Eth2ContainerName)
+	}
+
 	for _, containerName := range toDeploy {
 		containers, err := composePaths.File(containerName).Write(cfg)
 		if err != nil {
@@ -1134,22 +1139,6 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	}
 
 	var contents []byte
-
-	// Check the Consensus mode
-	if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.Eth2ContainerName+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting consensus client container template: %w", err)
-		}
-		eth2ComposePath := filepath.Join(runtimeFolder, config.Eth2ContainerName+composeFileSuffix)
-		err = os.WriteFile(eth2ComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write consensus client container file to %s: %w", eth2ComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, eth2ComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.Eth2ContainerName+composeFileSuffix))
-	}
-
 	// Check the metrics containers
 	if cfg.EnableMetrics.Value == true {
 		// Grafana

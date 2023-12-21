@@ -600,6 +600,31 @@ func (cfg *ExternalTekuConfig) GetValidatorImage() string {
 	return cfg.ContainerTag.Value.(string)
 }
 
+// Get the Docker container name of the beacon client
+func (cfg *ExternalLighthouseConfig) GetBeaconNodeImage() string {
+	return ""
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *ExternalLodestarConfig) GetBeaconNodeImage() string {
+	return ""
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *ExternalNimbusConfig) GetBeaconNodeImage() string {
+	return ""
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *ExternalPrysmConfig) GetBeaconNodeImage() string {
+	return ""
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *ExternalTekuConfig) GetBeaconNodeImage() string {
+	return ""
+}
+
 // Get the API url from the config
 func (cfg *ExternalLighthouseConfig) GetApiUrl() string {
 	return cfg.HttpUrl.Value.(string)

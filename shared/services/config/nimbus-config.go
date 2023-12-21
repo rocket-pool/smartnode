@@ -165,6 +165,11 @@ func (cfg *NimbusConfig) GetValidatorImage() string {
 	return cfg.VcContainerTag.Value.(string)
 }
 
+// Get the Docker container name of the beacon client
+func (cfg *NimbusConfig) GetBeaconNodeImage() string {
+	return cfg.BnContainerTag.Value.(string)
+}
+
 // Get the name of the client
 func (cfg *NimbusConfig) GetName() string {
 	return "Nimbus"

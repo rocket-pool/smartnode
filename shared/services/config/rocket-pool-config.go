@@ -1239,6 +1239,100 @@ func (cfg *RocketPoolConfig) GetExternalIp() string {
 	return ip.String()
 }
 
+// Gets the tag of the cc container
+// Used by text/template to format eth2.yml
+func (cfg *RocketPoolConfig) GetBeaconContainerTag() (string, error) {
+	cCfg, err := cfg.GetSelectedConsensusClientConfig()
+	if err != nil {
+		return "", err
+	}
+
+	return cCfg.GetBeaconNodeImage(), nil
+}
+
+// Used by text/template to format eth2.yml
+func (cfg *RocketPoolConfig) GetBnOpenPorts() string {
+	// Handle open API ports
+	bnOpenPorts := ""
+	consensusClient := cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+	apiPortMode := cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode)
+	if apiPortMode.Open() {
+		apiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
+		bnOpenPorts += fmt.Sprintf(", \"%s\"", apiPortMode.DockerPortMapping(apiPort))
+	}
+	if consensusClient == config.ConsensusClient_Prysm {
+		prysmRpcPortMode := cfg.Prysm.OpenRpcPort.Value.(config.RPCMode)
+		if prysmRpcPortMode.Open() {
+			prysmRpcPort := cfg.Prysm.RpcPort.Value.(uint16)
+			bnOpenPorts += fmt.Sprintf(", \"%s\"", prysmRpcPortMode.DockerPortMapping(prysmRpcPort))
+		}
+	}
+	return bnOpenPorts
+}
+
+// Used by text/template to format eth2.yml
+func (cfg *RocketPoolConfig) GetEcHttpEndpoint() string {
+	if cfg.ExecutionClientLocal() {
+		return fmt.Sprintf("http://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.HttpPort.Value)
+	}
+
+	return cfg.ExternalExecution.HttpUrl.Value.(string)
+}
+
+// Used by text/template to format eth2.yml
+func (cfg *RocketPoolConfig) GetEcWsEndpoint() string {
+	if cfg.ExecutionClientLocal() {
+		return fmt.Sprintf("ws://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.WsPort.Value)
+	}
+
+	return cfg.ExternalExecution.WsUrl.Value.(string)
+}
+
+// Gets the max peers of the bn container
+// Used by text/template to format eth2.yml
+func (cfg *RocketPoolConfig) GetBNMaxPeers() (uint16, error) {
+	if !cfg.ConsensusClientLocal() {
+		return 0, fmt.Errorf("Consensus client is external, there is no max peers")
+	}
+
+	switch cfg.ConsensusClient.Value.(config.ConsensusClient) {
+	case config.ConsensusClient_Lighthouse:
+		return cfg.Lighthouse.MaxPeers.Value.(uint16), nil
+	case config.ConsensusClient_Lodestar:
+		return cfg.Lodestar.MaxPeers.Value.(uint16), nil
+	case config.ConsensusClient_Nimbus:
+		return cfg.Nimbus.MaxPeers.Value.(uint16), nil
+	case config.ConsensusClient_Teku:
+		return cfg.Teku.MaxPeers.Value.(uint16), nil
+	case config.ConsensusClient_Prysm:
+		return cfg.Prysm.MaxPeers.Value.(uint16), nil
+	}
+
+	return 0, fmt.Errorf("Unknown Consensus Client %s", cfg.ConsensusClient.Value.(string))
+}
+
+// Used by text/template to format eth2.yml
+func (cfg *RocketPoolConfig) GetBNAdditionalFlags() (string, error) {
+	if !cfg.ConsensusClientLocal() {
+		return "", fmt.Errorf("Consensus client is external, there is no max peers")
+	}
+
+	switch cfg.ConsensusClient.Value.(config.ConsensusClient) {
+	case config.ConsensusClient_Lighthouse:
+		return cfg.Lighthouse.AdditionalBnFlags.Value.(string), nil
+	case config.ConsensusClient_Lodestar:
+		return cfg.Lodestar.AdditionalBnFlags.Value.(string), nil
+	case config.ConsensusClient_Nimbus:
+		return cfg.Nimbus.AdditionalBnFlags.Value.(string), nil
+	case config.ConsensusClient_Teku:
+		return cfg.Teku.AdditionalBnFlags.Value.(string), nil
+	case config.ConsensusClient_Prysm:
+		return cfg.Prysm.AdditionalBnFlags.Value.(string), nil
+	}
+
+	return "", fmt.Errorf("Unknown Consensus Client %s", cfg.ConsensusClient.Value.(string))
+}
+
 // Generates a collection of environment variables based on this config's settings
 func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 
