@@ -76,10 +76,13 @@ func GetNode(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *b
 	if err != nil {
 		return types.VotingTreeNode{}, err
 	}
-	node := new(types.VotingTreeNode)
-	if err := rocketDAOProtocolVerifier.Call(opts, node, "getNode", big.NewInt(int64(proposalId)), big.NewInt(int64(index))); err != nil {
+	var out interface{}
+	if err := rocketDAOProtocolVerifier.Call(opts, &out, "getNode", big.NewInt(int64(proposalId)), big.NewInt(int64(index))); err != nil {
 		return types.VotingTreeNode{}, fmt.Errorf("error getting proposal %d / index %d node: %w", proposalId, index, err)
 	}
+	node := new(types.VotingTreeNode)
+
+	node = out.(*types.VotingTreeNode)
 	return *node, nil
 }
 
