@@ -76,8 +76,9 @@ func getProposalsWithNodeVoteDirection(rp *rocketpool.RocketPool, nodeAddress co
 		for pi := psi; pi < pei; pi++ {
 			pi := pi
 			wg.Go(func() error {
-				propID := props[pi].ID
-				voteDir, err := protocol.GetAddressVoteDirection(rp, propID, nodeAddress, nil)
+				prop := props[pi]
+				details[pi].ProtocolDaoProposalDetails = prop
+				voteDir, err := protocol.GetAddressVoteDirection(rp, prop.ID, nodeAddress, nil)
 				if err == nil {
 					details[pi].NodeVoteDirection = voteDir
 				}
