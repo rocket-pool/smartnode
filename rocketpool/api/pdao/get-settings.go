@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -60,13 +59,13 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Auction.LotStartingPriceRatio, err = protocol.GetLotStartingPriceRatio(rp, nil)
+		response.Auction.LotStartingPriceRatio, err = protocol.GetLotStartingPriceRatioRaw(rp, nil)
 		return err
 	})
 
 	wg.Go(func() error {
 		var err error
-		response.Auction.LotReservePriceRatio, err = protocol.GetLotReservePriceRatio(rp, nil)
+		response.Auction.LotReservePriceRatio, err = protocol.GetLotReservePriceRatioRaw(rp, nil)
 		return err
 	})
 
@@ -111,7 +110,7 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 	wg.Go(func() error {
 		depositFee, err := protocol.GetDepositFee(rp, nil)
 		if err == nil {
-			response.Deposit.DepositFee = eth.WeiToEth(depositFee)
+			response.Deposit.DepositFee = depositFee
 		}
 		return err
 	})
@@ -120,7 +119,7 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Inflation.IntervalRate, err = protocol.GetInflationIntervalRate(rp, nil)
+		response.Inflation.IntervalRate, err = protocol.GetInflationIntervalRateRaw(rp, nil)
 		return err
 	})
 
@@ -174,19 +173,19 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Network.OracleDaoConsensusThreshold, err = protocol.GetNodeConsensusThreshold(rp, nil)
+		response.Network.OracleDaoConsensusThreshold, err = protocol.GetNodeConsensusThresholdRaw(rp, nil)
 		return err
 	})
 
 	wg.Go(func() error {
 		var err error
-		response.Network.NodePenaltyThreshold, err = protocol.GetNetworkPenaltyThreshold(rp, nil)
+		response.Network.NodePenaltyThreshold, err = protocol.GetNetworkPenaltyThresholdRaw(rp, nil)
 		return err
 	})
 
 	wg.Go(func() error {
 		var err error
-		response.Network.PerPenaltyRate, err = protocol.GetNetworkPenaltyPerRate(rp, nil)
+		response.Network.PerPenaltyRate, err = protocol.GetNetworkPenaltyPerRateRaw(rp, nil)
 		return err
 	})
 
@@ -216,19 +215,19 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Network.MinimumNodeFee, err = protocol.GetMinimumNodeFee(rp, nil)
+		response.Network.MinimumNodeFee, err = protocol.GetMinimumNodeFeeRaw(rp, nil)
 		return err
 	})
 
 	wg.Go(func() error {
 		var err error
-		response.Network.TargetNodeFee, err = protocol.GetTargetNodeFee(rp, nil)
+		response.Network.TargetNodeFee, err = protocol.GetTargetNodeFeeRaw(rp, nil)
 		return err
 	})
 
 	wg.Go(func() error {
 		var err error
-		response.Network.MaximumNodeFee, err = protocol.GetMaximumNodeFee(rp, nil)
+		response.Network.MaximumNodeFee, err = protocol.GetMaximumNodeFeeRaw(rp, nil)
 		return err
 	})
 
@@ -240,7 +239,7 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Network.TargetRethCollateralRate, err = protocol.GetTargetRethCollateralRate(rp, nil)
+		response.Network.TargetRethCollateralRate, err = protocol.GetTargetRethCollateralRateRaw(rp, nil)
 		return err
 	})
 
@@ -278,13 +277,13 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Node.MinimumPerMinipoolStake, err = protocol.GetMinimumPerMinipoolStake(rp, nil)
+		response.Node.MinimumPerMinipoolStake, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
 		return err
 	})
 
 	wg.Go(func() error {
 		var err error
-		response.Node.MaximumPerMinipoolStake, err = protocol.GetMaximumPerMinipoolStake(rp, nil)
+		response.Node.MaximumPerMinipoolStake, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
 		return err
 	})
 
@@ -334,13 +333,13 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Proposals.Quorum, err = protocol.GetProposalQuorum(rp, nil)
+		response.Proposals.Quorum, err = protocol.GetProposalQuorumRaw(rp, nil)
 		return err
 	})
 
 	wg.Go(func() error {
 		var err error
-		response.Proposals.VetoQuorum, err = protocol.GetProposalVetoQuorum(rp, nil)
+		response.Proposals.VetoQuorum, err = protocol.GetProposalVetoQuorumRaw(rp, nil)
 		return err
 	})
 
@@ -355,6 +354,38 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 	wg.Go(func() error {
 		var err error
 		response.Rewards.IntervalTime, err = protocol.GetRewardsClaimIntervalTime(rp, nil)
+		return err
+	})
+
+	// === Security ===
+
+	wg.Go(func() error {
+		var err error
+		response.Security.MembersQuorum, err = protocol.GetSecurityMembersQuorum(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Security.MembersLeaveTime, err = protocol.GetSecurityMembersLeaveTime(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Security.ProposalVoteTime, err = protocol.GetSecurityProposalVoteTime(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Security.ProposalExecuteTime, err = protocol.GetSecurityProposalExecuteTime(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Security.ProposalActionTime, err = protocol.GetSecurityProposalActionTime(rp, nil)
 		return err
 	})
 

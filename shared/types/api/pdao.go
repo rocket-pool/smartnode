@@ -99,8 +99,8 @@ type GetPDAOSettingsResponse struct {
 		LotMinimumEthValue    *big.Int `json:"lotMinimumEthValue"`
 		LotMaximumEthValue    *big.Int `json:"lotMaximumEthValue"`
 		LotDuration           uint64   `json:"lotDuration"`
-		LotStartingPriceRatio float64  `json:"lotStartingPriceRatio"`
-		LotReservePriceRatio  float64  `json:"lotReservePriceRatio"`
+		LotStartingPriceRatio *big.Int `json:"lotStartingPriceRatio"`
+		LotReservePriceRatio  *big.Int `json:"lotReservePriceRatio"`
 	} `json:"auction"`
 
 	Deposit struct {
@@ -110,11 +110,11 @@ type GetPDAOSettingsResponse struct {
 		MaximumDepositPoolSize                 *big.Int `json:"maximumDepositPoolSize"`
 		MaximumAssignmentsPerDeposit           uint64   `json:"maximumAssignmentsPerDeposit"`
 		MaximumSocialisedAssignmentsPerDeposit uint64   `json:"maximumSocialisedAssignmentsPerDeposit"`
-		DepositFee                             float64  `json:"depositFee"`
+		DepositFee                             *big.Int `json:"depositFee"`
 	} `json:"deposit"`
 
 	Inflation struct {
-		IntervalRate float64   `json:"intervalRate"`
+		IntervalRate *big.Int  `json:"intervalRate"`
 		StartTime    time.Time `json:"startTime"`
 	} `json:"inflation"`
 
@@ -128,28 +128,28 @@ type GetPDAOSettingsResponse struct {
 	} `json:"minipool"`
 
 	Network struct {
-		OracleDaoConsensusThreshold float64       `json:"oracleDaoConsensusThreshold"`
-		NodePenaltyThreshold        float64       `json:"nodePenaltyThreshold"`
-		PerPenaltyRate              float64       `json:"perPenaltyRate"`
+		OracleDaoConsensusThreshold *big.Int      `json:"oracleDaoConsensusThreshold"`
+		NodePenaltyThreshold        *big.Int      `json:"nodePenaltyThreshold"`
+		PerPenaltyRate              *big.Int      `json:"perPenaltyRate"`
 		IsSubmitBalancesEnabled     bool          `json:"isSubmitBalancesEnabled"`
 		SubmitBalancesFrequency     time.Duration `json:"submitBalancesFrequency"`
 		IsSubmitPricesEnabled       bool          `json:"isSubmitPricesEnabled"`
 		SubmitPricesFrequency       time.Duration `json:"submitPricesFrequency"`
-		MinimumNodeFee              float64       `json:"minimumNodeFee"`
-		TargetNodeFee               float64       `json:"targetNodeFee"`
-		MaximumNodeFee              float64       `json:"maximumNodeFee"`
+		MinimumNodeFee              *big.Int      `json:"minimumNodeFee"`
+		TargetNodeFee               *big.Int      `json:"targetNodeFee"`
+		MaximumNodeFee              *big.Int      `json:"maximumNodeFee"`
 		NodeFeeDemandRange          *big.Int      `json:"nodeFeeDemandRange"`
-		TargetRethCollateralRate    float64       `json:"targetRethCollateralRate"`
+		TargetRethCollateralRate    *big.Int      `json:"targetRethCollateralRate"`
 		IsSubmitRewardsEnabled      bool          `json:"isSubmitRewardsEnabled"`
 	} `json:"network"`
 
 	Node struct {
-		IsRegistrationEnabled              bool    `json:"isRegistrationEnabled"`
-		IsSmoothingPoolRegistrationEnabled bool    `json:"isSmoothingPoolRegistrationEnabled"`
-		IsDepositingEnabled                bool    `json:"isDepositingEnabled"`
-		AreVacantMinipoolsEnabled          bool    `json:"areVacantMinipoolsEnabled"`
-		MinimumPerMinipoolStake            float64 `json:"minimumPerMinipoolStake"`
-		MaximumPerMinipoolStake            float64 `json:"maximumPerMinipoolStake"`
+		IsRegistrationEnabled              bool     `json:"isRegistrationEnabled"`
+		IsSmoothingPoolRegistrationEnabled bool     `json:"isSmoothingPoolRegistrationEnabled"`
+		IsDepositingEnabled                bool     `json:"isDepositingEnabled"`
+		AreVacantMinipoolsEnabled          bool     `json:"areVacantMinipoolsEnabled"`
+		MinimumPerMinipoolStake            *big.Int `json:"minimumPerMinipoolStake"`
+		MaximumPerMinipoolStake            *big.Int `json:"maximumPerMinipoolStake"`
 	} `json:"node"`
 
 	Proposals struct {
@@ -160,14 +160,22 @@ type GetPDAOSettingsResponse struct {
 		ProposalBond    *big.Int      `json:"proposalBond"`
 		ChallengeBond   *big.Int      `json:"challengeBond"`
 		ChallengePeriod time.Duration `json:"challengePeriod"`
-		Quorum          float64       `json:"quorum"`
-		VetoQuorum      float64       `json:"vetoQuorum"`
+		Quorum          *big.Int      `json:"quorum"`
+		VetoQuorum      *big.Int      `json:"vetoQuorum"`
 		MaxBlockAge     uint64        `json:"maxBlockAge"`
 	} `json:"proposals"`
 
 	Rewards struct {
 		IntervalTime time.Duration `json:"intervalTime"`
 	} `json:"rewards"`
+
+	Security struct {
+		MembersQuorum       *big.Int      `json:"membersQuorum"`
+		MembersLeaveTime    time.Duration `json:"membersLeaveTime"`
+		ProposalVoteTime    time.Duration `json:"proposalVoteTime"`
+		ProposalExecuteTime time.Duration `json:"proposalExecuteTime"`
+		ProposalActionTime  time.Duration `json:"proposalActionTime"`
+	} `json:"security"`
 }
 
 type CanProposePDAOSettingResponse struct {
