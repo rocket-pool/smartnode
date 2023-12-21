@@ -45,6 +45,19 @@ func GetNodeConsensusThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	}
 	return eth.WeiToEth(*value), nil
 }
+
+// The threshold of trusted nodes that must reach consensus on oracle data to commit it
+func GetNodeConsensusThresholdRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, value, "getNodeConsensusThreshold"); err != nil {
+		return nil, fmt.Errorf("error getting trusted node consensus threshold: %w", err)
+	}
+	return *value, nil
+}
 func ProposeNodeConsensusThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NodeConsensusThresholdSettingPath), NetworkSettingsContractName, NodeConsensusThresholdSettingPath, value, blockNumber, treeNodes, opts)
 }
@@ -140,6 +153,19 @@ func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 	}
 	return eth.WeiToEth(*value), nil
 }
+
+// Minimum node commission rate
+func GetMinimumNodeFeeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, value, "getMinimumNodeFee"); err != nil {
+		return nil, fmt.Errorf("error getting minimum node fee: %w", err)
+	}
+	return *value, nil
+}
 func ProposeMinimumNodeFee(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumNodeFeeSettingPath), NetworkSettingsContractName, MinimumNodeFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
@@ -159,6 +185,19 @@ func GetTargetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, 
 	}
 	return eth.WeiToEth(*value), nil
 }
+
+// Target node commission rate
+func GetTargetNodeFeeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, value, "getTargetNodeFee"); err != nil {
+		return nil, fmt.Errorf("error getting target node fee: %w", err)
+	}
+	return *value, nil
+}
 func ProposeTargetNodeFee(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", TargetNodeFeeSettingPath), NetworkSettingsContractName, TargetNodeFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
@@ -177,6 +216,19 @@ func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 		return 0, fmt.Errorf("error getting maximum node fee: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
+}
+
+// Maximum node commission rate
+func GetMaximumNodeFeeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, value, "getMaximumNodeFee"); err != nil {
+		return nil, fmt.Errorf("error getting maximum node fee: %w", err)
+	}
+	return *value, nil
 }
 func ProposeMaximumNodeFee(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumNodeFeeSettingPath), NetworkSettingsContractName, MaximumNodeFeeSettingPath, value, blockNumber, treeNodes, opts)
@@ -216,6 +268,19 @@ func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	return eth.WeiToEth(*value), nil
 }
+
+// The target collateralization rate for the rETH contract as a fraction
+func GetTargetRethCollateralRateRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, value, "getTargetRethCollateralRate"); err != nil {
+		return nil, fmt.Errorf("error getting target rETH contract collateralization rate: %w", err)
+	}
+	return *value, nil
+}
 func ProposeTargetRethCollateralRate(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", TargetRethCollateralRateSettingPath), NetworkSettingsContractName, TargetRethCollateralRateSettingPath, value, blockNumber, treeNodes, opts)
 }
@@ -235,6 +300,19 @@ func GetNetworkPenaltyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	}
 	return eth.WeiToEth(*value), nil
 }
+
+// The number of oDAO members that have to vote for a penalty expressed as a percentage
+func GetNetworkPenaltyThresholdRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, value, "getNodePenaltyThreshold"); err != nil {
+		return nil, fmt.Errorf("error getting network penalty threshold: %w", err)
+	}
+	return *value, nil
+}
 func ProposeNetworkPenaltyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkPenaltyThresholdSettingPath), NetworkSettingsContractName, NetworkPenaltyThresholdSettingPath, value, blockNumber, treeNodes, opts)
 }
@@ -253,6 +331,19 @@ func GetNetworkPenaltyPerRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 		return 0, fmt.Errorf("error getting network penalty per rate: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
+}
+
+// The amount a node operator is penalised for each penalty as a percentage
+func GetNetworkPenaltyPerRateRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, value, "getPerPenaltyRate"); err != nil {
+		return nil, fmt.Errorf("error getting network penalty per rate: %w", err)
+	}
+	return *value, nil
 }
 func ProposeNetworkPenaltyPerRate(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkPenaltyPerRateSettingPath), NetworkSettingsContractName, NetworkPenaltyPerRateSettingPath, value, blockNumber, treeNodes, opts)

@@ -81,7 +81,7 @@ func EstimateProposeSecurityProposalVoteTimeGas(rp *rocketpool.RocketPool, value
 }
 
 // How long a security council proposal can be executed after its voting period is finished
-func GetSecuritProposalExecuteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+func GetSecurityProposalExecuteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	securitySettingsContract, err := getSecuritySettingsContract(rp, opts)
 	if err != nil {
 		return 0, err

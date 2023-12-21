@@ -174,6 +174,19 @@ func GetProposalQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
 	}
 	return eth.WeiToEth(*value), nil
 }
+
+// The minimum amount of voting power a proposal needs to succeed
+func GetProposalQuorumRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := proposalsSettingsContract.Call(opts, value, "getProposalQuorum"); err != nil {
+		return nil, fmt.Errorf("error getting proposal quorum: %w", err)
+	}
+	return *value, nil
+}
 func ProposeProposalQuorum(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ProposalQuorumSettingPath), ProposalsSettingsContractName, ProposalQuorumSettingPath, value, blockNumber, treeNodes, opts)
 }
@@ -192,6 +205,19 @@ func GetProposalVetoQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 		return 0, fmt.Errorf("error getting proposal veto quorum: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
+}
+
+// The amount of voting power vetoing a proposal require to veto it
+func GetProposalVetoQuorumRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := proposalsSettingsContract.Call(opts, value, "getProposalVetoQuorum"); err != nil {
+		return nil, fmt.Errorf("error getting proposal veto quorum: %w", err)
+	}
+	return *value, nil
 }
 func ProposeProposalVetoQuorum(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ProposalVetoQuorumSettingPath), ProposalsSettingsContractName, ProposalVetoQuorumSettingPath, value, blockNumber, treeNodes, opts)

@@ -133,6 +133,19 @@ func GetLotStartingPriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	}
 	return eth.WeiToEth(*value), nil
 }
+
+// The starting price relative to current ETH price, as a fraction
+func GetLotStartingPriceRatioRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := auctionSettingsContract.Call(opts, value, "getStartingPriceRatio"); err != nil {
+		return nil, fmt.Errorf("error getting lot starting price ratio: %w", err)
+	}
+	return *value, nil
+}
 func ProposeLotStartingPriceRatio(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", LotStartingPriceRatioSettingPath), AuctionSettingsContractName, LotStartingPriceRatioSettingPath, value, blockNumber, treeNodes, opts)
 }
@@ -151,6 +164,19 @@ func GetLotReservePriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (fl
 		return 0, fmt.Errorf("error getting lot reserve price ratio: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
+}
+
+// The reserve price relative to current ETH price, as a fraction
+func GetLotReservePriceRatioRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := auctionSettingsContract.Call(opts, value, "getReservePriceRatio"); err != nil {
+		return nil, fmt.Errorf("error getting lot reserve price ratio: %w", err)
+	}
+	return *value, nil
 }
 func ProposeLotReservePriceRatio(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", LotReservePriceRatioSettingPath), AuctionSettingsContractName, LotReservePriceRatioSettingPath, value, blockNumber, treeNodes, opts)
