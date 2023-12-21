@@ -31,8 +31,8 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tMin ETH per Lot:          %.6f ETH\n", eth.WeiToEth(response.Auction.LotMinimumEthValue))
 	fmt.Printf("\tMax ETH per Lot:          %.6f ETH\n", eth.WeiToEth(response.Auction.LotMaximumEthValue))
 	fmt.Printf("\tLot Duration:             %s\n", time.Unix(int64(response.Auction.LotDuration), 0))
-	fmt.Printf("\tStarting Price Ratio:     %.6f\n", response.Auction.LotStartingPriceRatio)
-	fmt.Printf("\tReserve Price Ratio:      %.6f\n", response.Auction.LotReservePriceRatio)
+	fmt.Printf("\tStarting Price Ratio:     %.2f%%\n", eth.WeiToEth(response.Auction.LotStartingPriceRatio)*100)
+	fmt.Printf("\tReserve Price Ratio:      %.2f%%\n", eth.WeiToEth(response.Auction.LotReservePriceRatio)*100)
 	fmt.Println()
 
 	// Deposit
@@ -48,7 +48,7 @@ func getSettings(c *cli.Context) error {
 
 	// Inflation
 	fmt.Println("== Inflation Settings ==")
-	fmt.Printf("\tInterval Rate:  %.6f\n", response.Inflation.IntervalRate)
+	fmt.Printf("\tInterval Rate:  %.6f\n", eth.WeiToEth(response.Inflation.IntervalRate))
 	fmt.Printf("\tInterval Start: %s\n", response.Inflation.StartTime)
 	fmt.Println()
 
@@ -75,7 +75,7 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tTarget Commission:          %.2f%%\n", eth.WeiToEth(response.Network.TargetNodeFee)*100)
 	fmt.Printf("\tMax Commission:             %.2f%%\n", eth.WeiToEth(response.Network.MaximumNodeFee)*100)
 	fmt.Printf("\tCommission Demand Range:    %.6f ETH\n", eth.WeiToEth(response.Network.NodeFeeDemandRange))
-	fmt.Printf("\trETH Collateral Target:     %.6f\n", response.Network.TargetRethCollateralRate)
+	fmt.Printf("\trETH Collateral Target:     %.2f%%\n", eth.WeiToEth(response.Network.TargetRethCollateralRate)*100)
 	fmt.Printf("\tRewards Submission Enabled: %t\n", response.Network.IsSubmitRewardsEnabled)
 	fmt.Println()
 
