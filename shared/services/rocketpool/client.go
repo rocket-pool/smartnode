@@ -8,7 +8,6 @@ import (
 	"io"
 	"math"
 	"math/big"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -23,7 +22,6 @@ import (
 
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
-	externalip "github.com/glendc/go-external-ip"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -66,23 +64,6 @@ const (
 // and the `%0.2f` token will round up if we're above 99.99%.
 func SyncRatioToPercent(in float64) float64 {
 	return math.Min(99.99, in*100)
-}
-
-// Get the external IP address. Try finding an IPv4 address first to:
-// * Improve peer discovery and node performance
-// * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
-func getExternalIP() (net.IP, error) {
-	// Try IPv4 first
-	ip4Consensus := externalip.DefaultConsensus(nil, nil)
-	ip4Consensus.UseIPProtocol(4)
-	if ip, err := ip4Consensus.ExternalIP(); err == nil {
-		return ip, nil
-	}
-
-	// Try IPv6 as fallback
-	ip6Consensus := externalip.DefaultConsensus(nil, nil)
-	ip6Consensus.UseIPProtocol(6)
-	return ip6Consensus.ExternalIP()
 }
 
 // Rocket Pool client
@@ -1021,27 +1002,8 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
 	}
 
-	// Get the external IP address
-	var externalIP string
-	ip, err := getExternalIP()
-	if err != nil {
-		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus or Besu, it may have trouble finding peers:")
-		fmt.Println(err.Error())
-	} else {
-		if ip.To4() == nil {
-			fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
-		}
-		externalIP = ip.String()
-	}
-
-	// Set up environment variables and deploy the template config files
-	settings := cfg.GenerateEnvironmentVariables()
-	if externalIP != "" {
-		settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
-	}
-
 	// Deploy the templates and run environment variable substitution on them
-	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath, settings)
+	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath)
 	if err != nil {
 		return "", fmt.Errorf("error deploying Docker templates: %w", err)
 	}
@@ -1061,7 +1023,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 }
 
 // Deploys all of the appropriate docker compose template files and provisions them based on the provided configuration
-func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir string, settings map[string]string) ([]string, error) {
+func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir string) ([]string, error) {
 
 	// Check for the folders
 	runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir)
@@ -1091,22 +1053,6 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		TemplatePath: templatesFolder,
 		OverridePath: overrideFolder,
 	}
-
-	// Set the environment variables for substitution
-	//
-	// TODO: Instead of substituting the templates with env vars, switch to the text/template package.
-	// However, rescue node plugin will also need to be updated, as it relies on this behavior.
-	oldValues := map[string]string{}
-	for varName, varValue := range settings {
-		oldValues[varName] = os.Getenv(varName)
-		os.Setenv(varName, varValue)
-	}
-	defer func() {
-		// Unset the env vars
-		for name, value := range oldValues {
-			os.Setenv(name, value)
-		}
-	}()
 
 	// Read and substitute the templates
 	deployedContainers := []string{}
@@ -1174,12 +1120,12 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), rewardsFileDir, colorReset)
 	}
 
-	return c.composeAddons(cfg, rocketpoolDir, settings, deployedContainers)
+	return c.composeAddons(cfg, rocketpoolDir, deployedContainers)
 
 }
 
 // Handle composing for addons
-func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir string, settings map[string]string, deployedContainers []string) ([]string, error) {
+func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir string, deployedContainers []string) ([]string, error) {
 
 	// GWW
 	if cfg.GraffitiWallWriter.GetEnabledParameter().Value == true {
