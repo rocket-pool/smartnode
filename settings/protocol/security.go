@@ -68,7 +68,7 @@ func GetSecurityProposalVoteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 		return 0, err
 	}
 	value := new(*big.Int)
-	if err := securitySettingsContract.Call(opts, value, "getVotePhase1Time"); err != nil {
+	if err := securitySettingsContract.Call(opts, value, "getVoteTime"); err != nil {
 		return 0, fmt.Errorf("error getting security proposal vote time: %w", err)
 	}
 	return time.Second * time.Duration((*value).Uint64()), nil
