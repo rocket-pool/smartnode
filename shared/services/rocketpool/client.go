@@ -1125,7 +1125,7 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		toDeploy = append(toDeploy, config.Eth1ContainerName)
 	}
 
-	// Check if we are running the COnsensus Layer locally
+	// Check if we are running the Consensus Layer locally
 	if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		toDeploy = append(toDeploy, config.Eth2ContainerName)
 	}
@@ -1139,28 +1139,17 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		)
 	}
 
+	// Check if we are running the Mev-Boost container locally
+	if cfg.EnableMevBoost.Value == true && cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+		toDeploy = append(toDeploy, config.MevBoostContainerName)
+	}
+
 	for _, containerName := range toDeploy {
 		containers, err := composePaths.File(containerName).Write(cfg)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not create %s container definition: %w", containerName, err)
 		}
 		deployedContainers = append(deployedContainers, containers...)
-	}
-
-	var contents []byte
-	// Check MEV-Boost
-	if cfg.EnableMevBoost.Value == true && cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting MEV-Boost container template: %w", err)
-		}
-		mevBoostComposePath := filepath.Join(runtimeFolder, config.MevBoostContainerName+composeFileSuffix)
-		err = os.WriteFile(mevBoostComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write MEV-Boost container file to %s: %w", mevBoostComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, mevBoostComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.MevBoostContainerName+composeFileSuffix))
 	}
 
 	// Create the custom keys dir

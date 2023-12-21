@@ -1357,7 +1357,17 @@ func (cfg *RocketPoolConfig) GetPrometheusOpenPorts() string {
 	if !portMode.Open() {
 		return ""
 	}
-	return portMode.DockerPortMapping(fmt.Sprintf("\"%s\"", cfg.Prometheus.Port.Value.(uint16)))
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Prometheus.Port.Value.(uint16)))
+}
+
+// Used by text/template to format mev-boost.yml
+func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
+	portMode := cfg.MevBoost.OpenRpcPort.Value.(config.RPCMode)
+	if !portMode.Open() {
+		return ""
+	}
+	port := cfg.MevBoost.Port.Value.(uint16)
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
 }
 
 // Generates a collection of environment variables based on this config's settings
