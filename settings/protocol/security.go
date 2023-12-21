@@ -15,13 +15,12 @@ import (
 
 // Config
 const (
-	SecuritySettingsContractName              string = "rocketDAOProtocolSettingsSecurity"
-	SecurityMembersQuorumSettingPath          string = "members.quorum"
-	SecurityMembersLeaveTimeSettingPath       string = "members.leave.time"
-	SecurityProposalVotePhase1TimeSettingPath string = "proposal.vote.phase1.time"
-	SecurityProposalVotePhase2TimeSettingPath string = "proposal.vote.phase2.time"
-	SecurityProposalExecuteTimeSettingPath    string = "proposal.execute.time"
-	SecurityProposalActionTimeSettingPath     string = "proposal.action.time"
+	SecuritySettingsContractName           string = "rocketDAOProtocolSettingsSecurity"
+	SecurityMembersQuorumSettingPath       string = "members.quorum"
+	SecurityMembersLeaveTimeSettingPath    string = "members.leave.time"
+	SecurityProposalVoteTimeSettingPath    string = "proposal.vote.time"
+	SecurityProposalExecuteTimeSettingPath string = "proposal.execute.time"
+	SecurityProposalActionTimeSettingPath  string = "proposal.action.time"
 )
 
 // Security council member quorum threshold that must be met for proposals to pass
@@ -63,7 +62,7 @@ func EstimateProposeSecurityMembersLeaveTimeGas(rp *rocketpool.RocketPool, value
 }
 
 // How long a security council proposal can be voted on (phase2)
-func GetSecurityProposalVotePhase1Time(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+func GetSecurityProposalVoteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	securitySettingsContract, err := getSecuritySettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
@@ -74,30 +73,11 @@ func GetSecurityProposalVotePhase1Time(rp *rocketpool.RocketPool, opts *bind.Cal
 	}
 	return time.Second * time.Duration((*value).Uint64()), nil
 }
-func ProposeSecurityProposalVotePhase1Time(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SecurityProposalVotePhase1TimeSettingPath), SecuritySettingsContractName, SecurityProposalVotePhase1TimeSettingPath, value, blockNumber, treeNodes, opts)
+func ProposeSecurityProposalVoteTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SecurityProposalVoteTimeSettingPath), SecuritySettingsContractName, SecurityProposalVoteTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeSecurityProposalVotePhase1TimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SecurityProposalVotePhase1TimeSettingPath), SecuritySettingsContractName, SecurityProposalVotePhase1TimeSettingPath, value, blockNumber, treeNodes, opts)
-}
-
-// How long a security council proposal can be voted on
-func GetSecurityProposalVotePhase2Time(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
-	securitySettingsContract, err := getSecuritySettingsContract(rp, opts)
-	if err != nil {
-		return 0, err
-	}
-	value := new(*big.Int)
-	if err := securitySettingsContract.Call(opts, value, "getVotePhase2Time"); err != nil {
-		return 0, fmt.Errorf("error getting security proposal vote time: %w", err)
-	}
-	return time.Second * time.Duration((*value).Uint64()), nil
-}
-func ProposeSecurityProposalVotePhase2Time(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", SecurityProposalVotePhase2TimeSettingPath), SecuritySettingsContractName, SecurityProposalVotePhase1TimeSettingPath, value, blockNumber, treeNodes, opts)
-}
-func EstimateProposeSecurityProposalVotePhase2TimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SecurityProposalVotePhase2TimeSettingPath), SecuritySettingsContractName, SecurityProposalVotePhase1TimeSettingPath, value, blockNumber, treeNodes, opts)
+func EstimateProposeSecurityProposalVoteTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", SecurityProposalVoteTimeSettingPath), SecuritySettingsContractName, SecurityProposalVoteTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // How long a security council proposal can be executed after its voting period is finished
