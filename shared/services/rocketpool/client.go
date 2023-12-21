@@ -17,7 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/a8m/envsubst"
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
@@ -1184,27 +1183,24 @@ func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir strin
 
 	// GWW
 	if cfg.GraffitiWallWriter.GetEnabledParameter().Value == true {
-		runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir, "addons", "gww")
-		templatesFolder := filepath.Join(rocketpoolDir, templatesDir, "addons", "gww")
-		overrideFolder := filepath.Join(rocketpoolDir, overrideDir, "addons", "gww")
+
+		composePaths := template.ComposePaths{
+			RuntimePath:  filepath.Join(rocketpoolDir, runtimeDir, "addons", "gww"),
+			TemplatePath: filepath.Join(rocketpoolDir, templatesDir, "addons", "gww"),
+			OverridePath: filepath.Join(rocketpoolDir, overrideDir, "addons", "gww"),
+		}
 
 		// Make the addon folder
-		err := os.MkdirAll(runtimeFolder, 0775)
+		err := os.MkdirAll(composePaths.RuntimePath, 0775)
 		if err != nil {
-			return []string{}, fmt.Errorf("error creating addon runtime folder (%s): %w", runtimeFolder, err)
+			return []string{}, fmt.Errorf("error creating addon runtime folder (%s): %w", composePaths.RuntimePath, err)
 		}
 
-		contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+templateSuffix))
+		containers, err := composePaths.File(graffiti_wall_writer.GraffitiWallWriterContainerName).Write(cfg)
 		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting GWW addon container template: %w", err)
+			return []string{}, fmt.Errorf("could not create gww container definition: %w", err)
 		}
-		composePath := filepath.Join(runtimeFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+composeFileSuffix)
-		err = os.WriteFile(composePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write GWW addon container file to %s: %w", composePath, err)
-		}
-		deployedContainers = append(deployedContainers, composePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+composeFileSuffix))
+		deployedContainers = append(deployedContainers, containers...)
 	}
 
 	return deployedContainers, nil
