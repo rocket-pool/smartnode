@@ -105,6 +105,7 @@ func GetProposals(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]ProtocolDao
 func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (ProtocolDaoProposalDetails, error) {
 	var wg errgroup.Group
 	var prop ProtocolDaoProposalDetails
+	prop.ID = proposalId
 
 	// Load data
 	wg.Go(func() error {
@@ -504,13 +505,13 @@ func GetProposalPayload(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 
 // Get a proposal's payload as a human-readable string
 func GetProposalPayloadString(rp *rocketpool.RocketPool, payload []byte, opts *bind.CallOpts) (string, error) {
-	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
 	if err != nil {
 		return "", err
 	}
 
 	// Get proposal DAO contract ABI
-	daoContractAbi := rocketDAOProtocolProposal.ABI
+	daoContractAbi := rocketDAOProtocolProposals.ABI
 
 	// Get proposal payload method
 	method, err := daoContractAbi.MethodById(payload)
