@@ -1333,6 +1333,33 @@ func (cfg *RocketPoolConfig) GetBNAdditionalFlags() (string, error) {
 	return "", fmt.Errorf("Unknown Consensus Client %s", cfg.ConsensusClient.Value.(string))
 }
 
+// Used by text/template to format exporter.yml
+func (cfg *RocketPoolConfig) GetExporterAdditionalFlags() []string {
+	flags := strings.Trim(cfg.Exporter.AdditionalFlags.Value.(string), " ")
+	if flags == "" {
+		return nil
+	}
+	return strings.Split(flags, " ")
+}
+
+// Used by text/template to format prometheus.yml
+func (cfg *RocketPoolConfig) GetPrometheusAdditionalFlags() []string {
+	flags := strings.Trim(cfg.Prometheus.AdditionalFlags.Value.(string), " ")
+	if flags == "" {
+		return nil
+	}
+	return strings.Split(flags, " ")
+}
+
+// Used by text/template to format prometheus.yml
+func (cfg *RocketPoolConfig) GetPrometheusOpenPorts() string {
+	portMode := cfg.Prometheus.OpenPort.Value.(config.RPCMode)
+	if !portMode.Open() {
+		return ""
+	}
+	return portMode.DockerPortMapping(fmt.Sprintf("\"%s\"", cfg.Prometheus.Port.Value.(uint16)))
+}
+
 // Generates a collection of environment variables based on this config's settings
 func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 

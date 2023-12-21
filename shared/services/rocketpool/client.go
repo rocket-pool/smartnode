@@ -1130,6 +1130,15 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		toDeploy = append(toDeploy, config.Eth2ContainerName)
 	}
 
+	// Check the metrics containers
+	if cfg.EnableMetrics.Value == true {
+		toDeploy = append(toDeploy,
+			config.GrafanaContainerName,
+			config.ExporterContainerName,
+			config.PrometheusContainerName,
+		)
+	}
+
 	for _, containerName := range toDeploy {
 		containers, err := composePaths.File(containerName).Write(cfg)
 		if err != nil {
@@ -1139,48 +1148,6 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	}
 
 	var contents []byte
-	// Check the metrics containers
-	if cfg.EnableMetrics.Value == true {
-		// Grafana
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.GrafanaContainerName+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting Grafana container template: %w", err)
-		}
-		grafanaComposePath := filepath.Join(runtimeFolder, config.GrafanaContainerName+composeFileSuffix)
-		err = os.WriteFile(grafanaComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write Grafana container file to %s: %w", grafanaComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, grafanaComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.GrafanaContainerName+composeFileSuffix))
-
-		// Node exporter
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.ExporterContainerName+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting Node Exporter container template: %w", err)
-		}
-		exporterComposePath := filepath.Join(runtimeFolder, config.ExporterContainerName+composeFileSuffix)
-		err = os.WriteFile(exporterComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write Node Exporter container file to %s: %w", exporterComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, exporterComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.ExporterContainerName+composeFileSuffix))
-
-		// Prometheus
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.PrometheusContainerName+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting Prometheus container template: %w", err)
-		}
-		prometheusComposePath := filepath.Join(runtimeFolder, config.PrometheusContainerName+composeFileSuffix)
-		err = os.WriteFile(prometheusComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write Prometheus container file to %s: %w", prometheusComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, prometheusComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.PrometheusContainerName+composeFileSuffix))
-	}
-
 	// Check MEV-Boost
 	if cfg.EnableMevBoost.Value == true && cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
