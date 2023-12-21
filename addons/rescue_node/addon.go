@@ -77,10 +77,6 @@ func (r *RescueNode) GetEnabledParameter() *cfgtypes.Parameter {
 	return &r.cfg.Enabled
 }
 
-func (r *RescueNode) UpdateEnvVars(envVars map[string]string) error {
-	return nil
-}
-
 func (r *RescueNode) getCredentialDetails() (*credentialDetails, error) {
 	if !r.cfg.Enabled.Value.(bool) {
 		panic("getCredentialDetails() should not be called without checking if RN plugin is enabled")

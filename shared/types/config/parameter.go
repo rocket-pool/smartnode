@@ -18,7 +18,6 @@ type Parameter struct {
 	Regex                 string                  `yaml:"regex,omitempty"`
 	Advanced              bool                    `yaml:"advanced,omitempty"`
 	AffectsContainers     []ContainerID           `yaml:"affectsContainers,omitempty"`
-	EnvironmentVariables  []string                `yaml:"environmentVariables,omitempty"`
 	CanBeBlank            bool                    `yaml:"canBeBlank,omitempty"`
 	OverwriteOnUpgrade    bool                    `yaml:"overwriteOnUpgrade,omitempty"`
 	Options               []ParameterOption       `yaml:"options,omitempty"`
@@ -160,17 +159,6 @@ func (param *Parameter) UpdateDescription(network Network) {
 		newDesc, exists := param.DescriptionsByNetwork[network]
 		if exists {
 			param.Description = newDesc
-		}
-	}
-}
-
-// Add the parameters to the collection of environment variabes
-func AddParametersToEnvVars(params []*Parameter, envVars map[string]string) {
-	for _, param := range params {
-		for _, envVar := range param.EnvironmentVariables {
-			if envVar != "" {
-				envVars[envVar] = fmt.Sprint(param.Value)
-			}
 		}
 	}
 }

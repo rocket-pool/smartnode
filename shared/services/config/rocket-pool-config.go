@@ -37,9 +37,6 @@ const (
 	PrometheusContainerName   string = "prometheus"
 	ValidatorContainerName    string = "validator"
 	WatchtowerContainerName   string = "watchtower"
-
-	FeeRecipientEnvVar     string = "FEE_RECIPIENT"
-	FeeRecipientFileEnvVar string = "FEE_RECIPIENT_FILE"
 )
 
 // Defaults
@@ -197,28 +194,26 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		IsNativeMode:        isNativeMode,
 
 		ExecutionClientMode: config.Parameter{
-			ID:                   "executionClientMode",
-			Name:                 "Execution Client Mode",
-			Description:          "Choose which mode to use for your Execution client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
-			Type:                 config.ParameterType_Choice,
-			Default:              map[config.Network]interface{}{},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-			Options:              clientModes,
+			ID:                 "executionClientMode",
+			Name:               "Execution Client Mode",
+			Description:        "Choose which mode to use for your Execution client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+			Options:            clientModes,
 		},
 
 		ExecutionClient: config.Parameter{
-			ID:                   "executionClient",
-			Name:                 "Execution Client",
-			Description:          "Select which Execution client you would like to run.",
-			Type:                 config.ParameterType_Choice,
-			Default:              map[config.Network]interface{}{config.Network_All: config.ExecutionClient_Geth},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "executionClient",
+			Name:               "Execution Client",
+			Description:        "Select which Execution client you would like to run.",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: config.ExecutionClient_Geth},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
 				Name:        "Geth",
 				Description: "Geth is one of the three original implementations of the Ethereum protocol. It is written in Go, fully open source and licensed under the GNU LGPL v3.",
@@ -235,52 +230,48 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		},
 
 		UseFallbackClients: config.Parameter{
-			ID:                   "useFallbackClients",
-			Name:                 "Use Fallback Clients",
-			Description:          "Enable this if you would like to specify a fallback Execution and Consensus Client, which will temporarily be used by the Smartnode and your Validator Client if your primary Execution / Consensus client pair ever go offline (e.g. if you switch, prune, or resync your clients).",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Node, config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "useFallbackClients",
+			Name:               "Use Fallback Clients",
+			Description:        "Enable this if you would like to specify a fallback Execution and Consensus Client, which will temporarily be used by the Smartnode and your Validator Client if your primary Execution / Consensus client pair ever go offline (e.g. if you switch, prune, or resync your clients).",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Node, config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		ReconnectDelay: config.Parameter{
-			ID:                   "reconnectDelay",
-			Name:                 "Reconnect Delay",
-			Description:          "The delay to wait after your primary Execution or Consensus clients fail before trying to reconnect to them. An example format is \"10h20m30s\" - this would make it 10 hours, 20 minutes, and 30 seconds.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: "60s"},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "reconnectDelay",
+			Name:               "Reconnect Delay",
+			Description:        "The delay to wait after your primary Execution or Consensus clients fail before trying to reconnect to them. An example format is \"10h20m30s\" - this would make it 10 hours, 20 minutes, and 30 seconds.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: "60s"},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		ConsensusClientMode: config.Parameter{
-			ID:                   "consensusClientMode",
-			Name:                 "Consensus Client Mode",
-			Description:          "Choose which mode to use for your Consensus client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
-			Type:                 config.ParameterType_Choice,
-			Default:              map[config.Network]interface{}{config.Network_All: config.Mode_Local},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Validator, config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-			Options:              clientModes,
+			ID:                 "consensusClientMode",
+			Name:               "Consensus Client Mode",
+			Description:        "Choose which mode to use for your Consensus client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: config.Mode_Local},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Validator, config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+			Options:            clientModes,
 		},
 
 		ConsensusClient: config.Parameter{
-			ID:                   "consensusClient",
-			Name:                 "Consensus Client",
-			Description:          "Select which Consensus client you would like to use.",
-			Type:                 config.ParameterType_Choice,
-			Default:              map[config.Network]interface{}{config.Network_All: config.ConsensusClient_Nimbus},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "consensusClient",
+			Name:               "Consensus Client",
+			Description:        "Select which Consensus client you would like to use.",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: config.ConsensusClient_Nimbus},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
 				Name:        "Lighthouse",
 				Description: "Lighthouse is a Consensus client with a heavy focus on speed and security. The team behind it, Sigma Prime, is an information security and software engineering firm who have funded Lighthouse along with the Ethereum Foundation, Consensys, and private individuals. Lighthouse is built in Rust and offered under an Apache 2.0 License.",
@@ -305,15 +296,14 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		},
 
 		ExternalConsensusClient: config.Parameter{
-			ID:                   "externalConsensusClient",
-			Name:                 "Consensus Client",
-			Description:          "Select which Consensus client your externally managed client is.",
-			Type:                 config.ParameterType_Choice,
-			Default:              map[config.Network]interface{}{config.Network_All: config.ConsensusClient_Lighthouse},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "externalConsensusClient",
+			Name:               "Consensus Client",
+			Description:        "Select which Consensus client your externally managed client is.",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: config.ConsensusClient_Lighthouse},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
 				Name:        "Lighthouse",
 				Description: "Select this if you will use Lighthouse as your Consensus client.",
@@ -338,123 +328,113 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		},
 
 		EnableMetrics: config.Parameter{
-			ID:                   "enableMetrics",
-			Name:                 "Enable Metrics",
-			Description:          "Enable the Smartnode's performance and status metrics system. This will provide you with the node operator's Grafana dashboard.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: true},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter},
-			EnvironmentVariables: []string{"ENABLE_METRICS"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "enableMetrics",
+			Name:               "Enable Metrics",
+			Description:        "Enable the Smartnode's performance and status metrics system. This will provide you with the node operator's Grafana dashboard.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: true},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		EnableODaoMetrics: config.Parameter{
-			ID:                   "enableODaoMetrics",
-			Name:                 "Enable Oracle DAO Metrics",
-			Description:          "Enable the tracking of Oracle DAO performance metrics, such as prices and balances submission participation.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
-			EnvironmentVariables: []string{"ENABLE_ODAO_METRICS"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "enableODaoMetrics",
+			Name:               "Enable Oracle DAO Metrics",
+			Description:        "Enable the tracking of Oracle DAO performance metrics, such as prices and balances submission participation.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		EnableBitflyNodeMetrics: config.Parameter{
-			ID:                   "enableBitflyNodeMetrics",
-			Name:                 "Enable Beaconcha.in Node Metrics",
-			Description:          "Enable the Beaconcha.in node metrics integration. This will allow you to track your node's metrics from your phone using the Beaconcha.in App.\n\nFor more information on setting up an account and the app, please visit https://beaconcha.in/mobile.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"ENABLE_BITFLY_NODE_METRICS"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "enableBitflyNodeMetrics",
+			Name:               "Enable Beaconcha.in Node Metrics",
+			Description:        "Enable the Beaconcha.in node metrics integration. This will allow you to track your node's metrics from your phone using the Beaconcha.in App.\n\nFor more information on setting up an account and the app, please visit https://beaconcha.in/mobile.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		EcMetricsPort: config.Parameter{
-			ID:                   "ecMetricsPort",
-			Name:                 "Execution Client Metrics Port",
-			Description:          "The port your Execution client should expose its metrics on.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultEcMetricsPort},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Prometheus},
-			EnvironmentVariables: []string{"EC_METRICS_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "ecMetricsPort",
+			Name:               "Execution Client Metrics Port",
+			Description:        "The port your Execution client should expose its metrics on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultEcMetricsPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Prometheus},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		BnMetricsPort: config.Parameter{
-			ID:                   "bnMetricsPort",
-			Name:                 "Beacon Node Metrics Port",
-			Description:          "The port your Consensus client's Beacon Node should expose its metrics on.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultBnMetricsPort},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Prometheus},
-			EnvironmentVariables: []string{"BN_METRICS_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "bnMetricsPort",
+			Name:               "Beacon Node Metrics Port",
+			Description:        "The port your Consensus client's Beacon Node should expose its metrics on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultBnMetricsPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Prometheus},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		VcMetricsPort: config.Parameter{
-			ID:                   "vcMetricsPort",
-			Name:                 "Validator Client Metrics Port",
-			Description:          "The port your validator client should expose its metrics on.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultVcMetricsPort},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Prometheus},
-			EnvironmentVariables: []string{"VC_METRICS_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "vcMetricsPort",
+			Name:               "Validator Client Metrics Port",
+			Description:        "The port your validator client should expose its metrics on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultVcMetricsPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Prometheus},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		NodeMetricsPort: config.Parameter{
-			ID:                   "nodeMetricsPort",
-			Name:                 "Node Metrics Port",
-			Description:          "The port your Node container should expose its metrics on.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultNodeMetricsPort},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus},
-			EnvironmentVariables: []string{"NODE_METRICS_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "nodeMetricsPort",
+			Name:               "Node Metrics Port",
+			Description:        "The port your Node container should expose its metrics on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultNodeMetricsPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		ExporterMetricsPort: config.Parameter{
-			ID:                   "exporterMetricsPort",
-			Name:                 "Exporter Metrics Port",
-			Description:          "The port that Prometheus's Node Exporter should expose its metrics on.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultExporterMetricsPort},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Exporter, config.ContainerID_Prometheus},
-			EnvironmentVariables: []string{"EXPORTER_METRICS_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "exporterMetricsPort",
+			Name:               "Exporter Metrics Port",
+			Description:        "The port that Prometheus's Node Exporter should expose its metrics on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultExporterMetricsPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Exporter, config.ContainerID_Prometheus},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		WatchtowerMetricsPort: config.Parameter{
-			ID:                   "watchtowerMetricsPort",
-			Name:                 "Watchtower Metrics Port",
-			Description:          "The port your Watchtower container should expose its metrics on.\nThis is only relevant for Oracle Nodes.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultWatchtowerMetricsPort},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower, config.ContainerID_Prometheus},
-			EnvironmentVariables: []string{"WATCHTOWER_METRICS_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "watchtowerMetricsPort",
+			Name:               "Watchtower Metrics Port",
+			Description:        "The port your Watchtower container should expose its metrics on.\nThis is only relevant for Oracle Nodes.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultWatchtowerMetricsPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower, config.ContainerID_Prometheus},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		EnableMevBoost: config.Parameter{
-			ID:                   "enableMevBoost",
-			Name:                 "Enable MEV-Boost",
-			Description:          "Enable MEV-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract MEV opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n[orange]NOTE: This toggle is temporary during the early Merge days while relays are still being created. It will be removed in the future.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: true},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
-			EnvironmentVariables: []string{"ENABLE_MEV_BOOST"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			ID:                 "enableMevBoost",
+			Name:               "Enable MEV-Boost",
+			Description:        "Enable MEV-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract MEV opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n[orange]NOTE: This toggle is temporary during the early Merge days while relays are still being created. It will be removed in the future.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: true},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 	}
 
@@ -1368,221 +1348,6 @@ func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
 	}
 	port := cfg.MevBoost.Port.Value.(uint16)
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
-}
-
-// Generates a collection of environment variables based on this config's settings
-func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
-
-	envVars := map[string]string{}
-
-	// Basic variables and root parameters
-	envVars["SMARTNODE_IMAGE"] = cfg.Smartnode.GetSmartnodeContainerTag()
-	envVars["ROCKETPOOL_FOLDER"] = cfg.RocketPoolDirectory
-	envVars["RETH_ADDRESS"] = cfg.Smartnode.GetRethAddress().Hex()
-	envVars[FeeRecipientFileEnvVar] = FeeRecipientFilename // If this is running, we're in Docker mode by definition so use the Docker fee recipient filename
-	config.AddParametersToEnvVars(cfg.Smartnode.GetParameters(), envVars)
-	config.AddParametersToEnvVars(cfg.GetParameters(), envVars)
-
-	// EC parameters
-	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
-		envVars["EC_CLIENT"] = fmt.Sprint(cfg.ExecutionClient.Value)
-		envVars["EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.HttpPort.Value)
-		envVars["EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.WsPort.Value)
-		envVars["EC_ENGINE_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.EnginePort.Value)
-		envVars["EC_ENGINE_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.EnginePort.Value)
-
-		// Handle open API ports
-		rpcMode := cfg.ExecutionCommon.OpenRpcPorts.Value.(config.RPCMode)
-		if rpcMode.Open() {
-			httpMapping := rpcMode.DockerPortMapping(cfg.ExecutionCommon.HttpPort.Value.(uint16))
-			wsMapping := rpcMode.DockerPortMapping(cfg.ExecutionCommon.WsPort.Value.(uint16))
-			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%s\", \"%s\"", httpMapping, wsMapping)
-		}
-
-		// Common params
-		config.AddParametersToEnvVars(cfg.ExecutionCommon.GetParameters(), envVars)
-
-		// Client-specific params
-		switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
-		case config.ExecutionClient_Geth:
-			config.AddParametersToEnvVars(cfg.Geth.GetParameters(), envVars)
-			envVars["EC_STOP_SIGNAL"] = gethStopSignal
-		case config.ExecutionClient_Nethermind:
-			config.AddParametersToEnvVars(cfg.Nethermind.GetParameters(), envVars)
-			envVars["EC_STOP_SIGNAL"] = nethermindStopSignal
-		case config.ExecutionClient_Besu:
-			config.AddParametersToEnvVars(cfg.Besu.GetParameters(), envVars)
-			envVars["EC_STOP_SIGNAL"] = besuStopSignal
-		}
-	} else {
-		envVars["EC_CLIENT"] = "X" // X is for external / unknown
-		config.AddParametersToEnvVars(cfg.ExternalExecution.GetParameters(), envVars)
-	}
-	// Get the hostname of the Execution client, necessary for Prometheus to work in hybrid mode
-	ecUrl, err := url.Parse(envVars["EC_HTTP_ENDPOINT"])
-	if err == nil && ecUrl != nil {
-		envVars["EC_HOSTNAME"] = ecUrl.Hostname()
-	}
-
-	// CC parameters
-	var consensusClient config.ConsensusClient
-	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
-		consensusClient = cfg.ConsensusClient.Value.(config.ConsensusClient)
-		envVars["CC_API_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth2ContainerName, cfg.ConsensusCommon.ApiPort.Value)
-
-		// Handle open API ports
-		bnOpenPorts := ""
-		apiPortMode := cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode)
-		if apiPortMode.Open() {
-			apiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%s\"", apiPortMode.DockerPortMapping(apiPort))
-		}
-		if consensusClient == config.ConsensusClient_Prysm {
-			prysmRpcPortMode := cfg.Prysm.OpenRpcPort.Value.(config.RPCMode)
-			if prysmRpcPortMode.Open() {
-				prysmRpcPort := cfg.Prysm.RpcPort.Value.(uint16)
-				bnOpenPorts += fmt.Sprintf(", \"%s\"", prysmRpcPortMode.DockerPortMapping(prysmRpcPort))
-			}
-		}
-
-		envVars["BN_OPEN_PORTS"] = bnOpenPorts
-
-		// Common params
-		config.AddParametersToEnvVars(cfg.ConsensusCommon.GetParameters(), envVars)
-
-		// Client-specific params
-		switch consensusClient {
-		case config.ConsensusClient_Lighthouse:
-			config.AddParametersToEnvVars(cfg.Lighthouse.GetParameters(), envVars)
-		case config.ConsensusClient_Lodestar:
-			config.AddParametersToEnvVars(cfg.Lodestar.GetParameters(), envVars)
-		case config.ConsensusClient_Nimbus:
-			config.AddParametersToEnvVars(cfg.Nimbus.GetParameters(), envVars)
-		case config.ConsensusClient_Prysm:
-			config.AddParametersToEnvVars(cfg.Prysm.GetParameters(), envVars)
-			envVars["CC_RPC_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth2ContainerName, cfg.Prysm.RpcPort.Value)
-		case config.ConsensusClient_Teku:
-			config.AddParametersToEnvVars(cfg.Teku.GetParameters(), envVars)
-		}
-	} else {
-		consensusClient = cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
-
-		switch consensusClient {
-		case config.ConsensusClient_Lighthouse:
-			config.AddParametersToEnvVars(cfg.ExternalLighthouse.GetParameters(), envVars)
-		case config.ConsensusClient_Lodestar:
-			config.AddParametersToEnvVars(cfg.ExternalLodestar.GetParameters(), envVars)
-		case config.ConsensusClient_Nimbus:
-			config.AddParametersToEnvVars(cfg.ExternalNimbus.GetParameters(), envVars)
-		case config.ConsensusClient_Prysm:
-			config.AddParametersToEnvVars(cfg.ExternalPrysm.GetParameters(), envVars)
-		case config.ConsensusClient_Teku:
-			config.AddParametersToEnvVars(cfg.ExternalTeku.GetParameters(), envVars)
-		}
-	}
-	envVars["CC_CLIENT"] = fmt.Sprint(consensusClient)
-
-	// Graffiti
-	identifier := ""
-	versionString := fmt.Sprintf("v%s", shared.RocketPoolVersion)
-	envVars["ROCKET_POOL_VERSION"] = versionString
-	if len(versionString) < 8 {
-		ecInitial := strings.ToUpper(string(envVars["EC_CLIENT"][0]))
-
-		var ccInitial string
-		switch consensusClient {
-		case config.ConsensusClient_Lodestar:
-			ccInitial = "S" // Lodestar is special because it conflicts with Lighthouse
-		default:
-			ccInitial = strings.ToUpper(string(envVars["CC_CLIENT"][0]))
-		}
-		identifier = fmt.Sprintf("-%s%s", ecInitial, ccInitial)
-	}
-
-	graffitiPrefix := fmt.Sprintf("RP%s %s", identifier, versionString)
-	envVars["GRAFFITI_PREFIX"] = graffitiPrefix
-
-	customGraffiti := envVars[CustomGraffitiEnvVar]
-	if customGraffiti == "" {
-		envVars["GRAFFITI"] = graffitiPrefix
-	} else {
-		envVars["GRAFFITI"] = fmt.Sprintf("%s (%s)", graffitiPrefix, customGraffiti)
-	}
-
-	// Get the hostname of the Consensus client, necessary for Prometheus to work in hybrid mode
-	ccUrl, err := url.Parse(envVars["CC_API_ENDPOINT"])
-	if err == nil && ccUrl != nil {
-		envVars["CC_HOSTNAME"] = ccUrl.Hostname()
-	}
-
-	// Fallback parameters
-	if cfg.UseFallbackClients.Value == true {
-		switch consensusClient {
-		case config.ConsensusClient_Prysm:
-			config.AddParametersToEnvVars(cfg.FallbackPrysm.GetParameters(), envVars)
-		default:
-			config.AddParametersToEnvVars(cfg.FallbackNormal.GetParameters(), envVars)
-		}
-	}
-
-	// Metrics
-	if cfg.EnableMetrics.Value == true {
-		config.AddParametersToEnvVars(cfg.Exporter.GetParameters(), envVars)
-		config.AddParametersToEnvVars(cfg.Prometheus.GetParameters(), envVars)
-		config.AddParametersToEnvVars(cfg.Grafana.GetParameters(), envVars)
-
-		if cfg.Exporter.RootFs.Value == true {
-			envVars["EXPORTER_ROOTFS_COMMAND"] = ", \"--path.rootfs=/rootfs\""
-			envVars["EXPORTER_ROOTFS_VOLUME"] = ", \"/:/rootfs:ro\""
-		}
-
-		portMode := cfg.Prometheus.OpenPort.Value.(config.RPCMode)
-		if portMode.Open() {
-			envVars["PROMETHEUS_OPEN_PORTS"] = fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Prometheus.Port.Value.(uint16)))
-		}
-
-		// Additional metrics flags
-		if cfg.Exporter.AdditionalFlags.Value.(string) != "" {
-			envVars["EXPORTER_ADDITIONAL_FLAGS"] = fmt.Sprintf(", \"%s\"", cfg.Exporter.AdditionalFlags.Value.(string))
-		}
-		if cfg.Prometheus.AdditionalFlags.Value.(string) != "" {
-			envVars["PROMETHEUS_ADDITIONAL_FLAGS"] = fmt.Sprintf(", \"%s\"", cfg.Prometheus.AdditionalFlags.Value.(string))
-		}
-	}
-
-	// Bitfly Node Metrics
-	if cfg.EnableBitflyNodeMetrics.Value == true {
-		config.AddParametersToEnvVars(cfg.BitflyNodeMetrics.GetParameters(), envVars)
-	}
-
-	// MEV-Boost
-	if cfg.EnableMevBoost.Value == true {
-		// Disable for Holesky
-		if cfg.Smartnode.Network.Value == config.Network_Holesky {
-			cfg.EnableMevBoost.Value = false
-		} else {
-			config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)
-			if cfg.MevBoost.Mode.Value == config.Mode_Local {
-				envVars[mevBoostRelaysEnvVar] = cfg.MevBoost.GetRelayString()
-				envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
-
-				// Handle open API port
-				portMode := cfg.MevBoost.OpenRpcPort.Value.(config.RPCMode)
-				if portMode.Open() {
-					port := cfg.MevBoost.Port.Value.(uint16)
-					envVars["MEV_BOOST_OPEN_API_PORT"] = fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
-				}
-			}
-		}
-	}
-
-	// Addons
-	cfg.GraffitiWallWriter.UpdateEnvVars(envVars)
-	// Don't do this- we only want the change to apply to the validator container
-	//cfg.RescueNode.UpdateEnvVars(envVars, consensusClient)
-
-	return envVars
-
 }
 
 // The the title for the config
