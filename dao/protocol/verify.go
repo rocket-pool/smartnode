@@ -133,11 +133,12 @@ func GetChallengeState(rp *rocketpool.RocketPool, proposalId uint64, index uint6
 	if err != nil {
 		return types.ChallengeState_Unchallenged, err
 	}
-	state := new(types.ChallengeState)
+	state := uint8(0)
 	if err := rocketDAOProtocolVerifier.Call(opts, state, "getChallengeState", big.NewInt(int64(proposalId)), big.NewInt(int64(index))); err != nil {
 		return types.ChallengeState_Unchallenged, fmt.Errorf("error getting proposal %d / index %d challenge state: %w", proposalId, index, err)
 	}
-	return *state, nil
+	challengeState := types.ChallengeState(state)
+	return challengeState, nil
 }
 
 // Get the defeat index for a proposal
