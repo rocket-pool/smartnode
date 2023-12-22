@@ -227,6 +227,11 @@ func getStatus(c *cli.Context) error {
 			}
 			if status.IsRPLLockingAllowed {
 				fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
+				if status.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
+					fmt.Printf("There are currently %.6f RPL locked.\n",
+						math.RoundDown(eth.WeiToEth(status.NodeRPLLocked), 6))
+				}
+
 			} else {
 				fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
 			}

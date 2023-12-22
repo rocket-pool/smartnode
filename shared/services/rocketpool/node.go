@@ -40,6 +40,7 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.RPL)
 	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.RETH)
 	utils.ZeroIfNil(&response.PrimaryWithdrawalBalances.FixedSupplyRPL)
+	utils.ZeroIfNil(&response.NodeRPLLocked)
 	utils.ZeroIfNil(&response.RPLWithdrawalBalances.ETH)
 	utils.ZeroIfNil(&response.RPLWithdrawalBalances.RPL)
 	utils.ZeroIfNil(&response.RPLWithdrawalBalances.RETH)

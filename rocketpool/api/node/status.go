@@ -107,12 +107,21 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
-	// Check whether RPL locking is allowed for the node
-	wg.Go(func() error {
-		var err error
-		response.IsRPLLockingAllowed, err = node.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
-		return err
-	})
+	if response.IsHoustonDeployed {
+		// Check whether RPL locking is allowed for the node
+		wg.Go(func() error {
+			var err error
+			response.IsRPLLockingAllowed, err = node.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
+			return err
+		})
+
+		// Get the node's locked RPL
+		wg.Go(func() error {
+			var err error
+			response.NodeRPLLocked, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
+			return err
+		})
+	}
 
 	// Get node account balances
 	wg.Go(func() error {
