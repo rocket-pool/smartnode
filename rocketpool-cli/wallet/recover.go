@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 func recoverWallet(c *cli.Context) error {
@@ -52,6 +53,18 @@ func recoverWallet(c *cli.Context) error {
 		}
 	}
 
+	// Handle validator key recovery skipping
+	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
+	if !skipValidatorKeyRecovery && !ready {
+		fmt.Printf("%sEth Clients are not available.%s Validator keys cannot be recovered until they are synced and ready.\n", colorYellow, colorReset)
+		fmt.Println("You can recover them later with 'rocketpool wallet rebuild'")
+		if !cliutils.Confirm("Would you like to skip recovering the validator keys, and recover the node wallet only?") {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+		skipValidatorKeyRecovery = true
+	}
+
 	// Prompt for mnemonic
 	var mnemonic string
 	if c.String("mnemonic") != "" {
@@ -60,9 +73,6 @@ func recoverWallet(c *cli.Context) error {
 		mnemonic = PromptMnemonic()
 	}
 	mnemonic = strings.TrimSpace(mnemonic)
-
-	// Handle validator key recovery skipping
-	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
 
 	// Check for custom keys
 	if !skipValidatorKeyRecovery {
@@ -95,9 +105,6 @@ func recoverWallet(c *cli.Context) error {
 		fmt.Printf("Searching for the derivation path and index for wallet %s...\nNOTE: this may take several minutes depending on how large your wallet's index is.\n", address.Hex())
 
 		if !skipValidatorKeyRecovery {
-			if !ready {
-				return fmt.Errorf("unable to recover validator keys without synced and ready clients")
-			}
 			fmt.Println("Recovering node wallet and validator keys...")
 		} else {
 			fmt.Println("Ignoring validator keys, searching for wallet only...")
@@ -142,9 +149,6 @@ func recoverWallet(c *cli.Context) error {
 		fmt.Println()
 
 		if !skipValidatorKeyRecovery {
-			if !ready {
-				return fmt.Errorf("unable to recover validator keys without synced and ready clients")
-			}
 			fmt.Println("Recovering node wallet and validator keys...")
 		} else {
 			fmt.Println("Recovering node wallet only (ignoring validator keys)...")
