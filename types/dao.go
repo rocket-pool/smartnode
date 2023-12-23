@@ -82,8 +82,8 @@ type NodeVotingInfo struct {
 
 // A node of the voting Merkle Tree (not a Rocket Pool node)
 type VotingTreeNode struct {
-	Sum  *big.Int    `abi:"sum" json:"sum"`
-	Hash common.Hash `abi:"hash" json:"hash"`
+	Sum  *big.Int    `json:"sum"`
+	Hash common.Hash `json:"hash"`
 }
 
 // String conversion

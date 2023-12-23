@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"sync"
@@ -77,17 +76,10 @@ func GetNode(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *b
 	if err != nil {
 		return types.VotingTreeNode{}, err
 	}
-	var out interface{}
-	if err := rocketDAOProtocolVerifier.Call(opts, &out, "getNode", big.NewInt(int64(proposalId)), big.NewInt(int64(index))); err != nil {
+	node := new(types.VotingTreeNode)
+	if err := rocketDAOProtocolVerifier.Call(opts, node, "getNode", big.NewInt(int64(proposalId)), big.NewInt(int64(index))); err != nil {
 		return types.VotingTreeNode{}, fmt.Errorf("error getting proposal %d / index %d node: %w", proposalId, index, err)
 	}
-	serializedOut, err := json.Marshal(out)
-	if err != nil {
-		return types.VotingTreeNode{}, err
-	}
-	node := new(types.VotingTreeNode)
-
-	json.Unmarshal(serializedOut, node)
 	return *node, nil
 }
 
