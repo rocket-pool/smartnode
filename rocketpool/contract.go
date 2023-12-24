@@ -45,12 +45,6 @@ func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, 
 	return c.Contract.Call(opts, &results, method, params...)
 }
 
-// Call a contract method
-func (c *Contract) Call2(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	var results []interface{}
-	return c.Contract.Call(opts, &results, method, params...)
-}
-
 // Get Gas Limit for transaction
 func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string, params ...interface{}) (GasInfo, error) {
 

@@ -76,11 +76,22 @@ func GetNode(rp *rocketpool.RocketPool, proposalId uint64, index uint64, opts *b
 	if err != nil {
 		return types.VotingTreeNode{}, err
 	}
-	node := new(types.VotingTreeNode)
-	if err := rocketDAOProtocolVerifier.Call(opts, node, "getNode", big.NewInt(int64(proposalId)), big.NewInt(int64(index))); err != nil {
+	// define a struct to unmarshall the VotingTreeNode data from the smart contract call
+	res := new(struct {
+		Sum  *big.Int `json:"sum"`
+		Hash [32]byte `json:"hash"`
+	})
+	err = rocketDAOProtocolVerifier.Call(opts, &res, "getNode", big.NewInt(int64(proposalId)), big.NewInt(int64(index)))
+	if err != nil {
 		return types.VotingTreeNode{}, fmt.Errorf("error getting proposal %d / index %d node: %w", proposalId, index, err)
 	}
-	return *node, nil
+	// convert the [32]byte field into a common.Hash
+	node := types.VotingTreeNode{
+		Sum:  res.Sum,
+		Hash: common.BytesToHash(res.Hash[:]),
+	}
+
+	return node, nil
 }
 
 // Estimate the gas of CreateChallenge
