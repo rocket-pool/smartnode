@@ -208,7 +208,7 @@ func (t *verifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 		localRoot := networkTree.Nodes[0]
 
 		// Compare
-		if propRoot.Sum == localRoot.Sum && propRoot.Hash == localRoot.Hash {
+		if propRoot.Sum.Cmp(localRoot.Sum) == 0 && propRoot.Hash == localRoot.Hash {
 			t.log.Printlnf("Proposal %d matches the local tree artifacts, so it does not need to be challenged.", prop.ID)
 			t.validPropCache[prop.ID] = true
 			continue
