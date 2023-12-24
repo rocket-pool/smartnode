@@ -296,9 +296,9 @@ func (r *treeGeneratorImpl_v2) updateNetworksAndTotals() {
 
 	// Create the map for each network, including unused ones
 	for network := uint64(0); network <= highestNetworkIndex; network++ {
-		rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[network]
+		_, exists := r.rewardsFile.NetworkRewards[network]
 		if !exists {
-			rewardsForNetwork = &NetworkRewardsInfo{
+			rewardsForNetwork := &NetworkRewardsInfo{
 				CollateralRpl:    NewQuotedBigInt(0),
 				OracleDaoRpl:     NewQuotedBigInt(0),
 				SmoothingPoolEth: NewQuotedBigInt(0),
@@ -925,7 +925,7 @@ func (r *treeGeneratorImpl_v2) processEpoch(getDuties bool, epoch uint64) error 
 }
 
 // Handle all of the attestations in the given slot
-func (r *treeGeneratorImpl_v2) checkDutiesForSlot(attestations []beacon.AttestationInfo) error {
+func (r *treeGeneratorImpl_v2) checkDutiesForSlot(attestations []beacon.AttestationInfo) {
 
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
@@ -954,9 +954,6 @@ func (r *treeGeneratorImpl_v2) checkDutiesForSlot(attestations []beacon.Attestat
 			}
 		}
 	}
-
-	return nil
-
 }
 
 // Maps out the attestaion duties for the given epoch

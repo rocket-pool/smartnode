@@ -1,8 +1,6 @@
 package collectors
 
 import (
-	"fmt"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -100,9 +98,4 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.effectiveMinipoolCapacity, prometheus.GaugeValue, effectiveFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.queueLength, prometheus.GaugeValue, queueLength)
-}
-
-// Log error messages
-func (collector *DemandCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

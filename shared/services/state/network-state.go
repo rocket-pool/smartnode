@@ -134,7 +134,10 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 
 	// Calculate avg node fees and distributor shares
 	for _, details := range state.NodeDetails {
-		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		err = rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		if err != nil {
+			return nil, fmt.Errorf("error calculating average fee and distributor shares: %w", err)
+		}
 	}
 
 	// Oracle DAO member details
@@ -268,7 +271,10 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 
 	// Calculate avg node fees and distributor shares
 	for _, details := range state.NodeDetails {
-		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		err = rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		if err != nil {
+			return nil, nil, fmt.Errorf("error calculating average fee and distributor shares: %w", err)
+		}
 	}
 
 	// Get the total network effective RPL stake

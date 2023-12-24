@@ -474,7 +474,10 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
 	// Apply the default values for mainnet
 	cfg.Smartnode.Network.Value = cfg.Smartnode.Network.Options[0].Value
-	cfg.applyAllDefaults()
+	err := cfg.applyAllDefaults()
+	if err != nil {
+		panic(err)
+	}
 
 	return cfg
 }
@@ -1022,7 +1025,9 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 	}
 
 	// Addons
-	cfg.GraffitiWallWriter.UpdateEnvVars(envVars)
+	// Ignore errors. Addon will simply not function.
+	_ = cfg.GraffitiWallWriter.UpdateEnvVars(envVars)
+
 	// Don't do this- we only want the change to apply to the validator container
 	//cfg.RescueNode.UpdateEnvVars(envVars, consensusClient)
 

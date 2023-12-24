@@ -130,13 +130,16 @@ ______           _        _    ______           _
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
 	fmt.Printf("%s=== New Testnet: Holesky ===%s\n", colorGreen, colorReset)
-	fmt.Println("A new test network has been deployed named Holesky! This will replace Prater as the new long-term test network for Rocket Pool node operators. To use it, select the \"Holesky Testnet\" option from the Network dialog in the Smartnode section of `rocketpool service config`.\n")
+	fmt.Println("A new test network has been deployed named Holesky! This will replace Prater as the new long-term test network for Rocket Pool node operators. To use it, select the \"Holesky Testnet\" option from the Network dialog in the Smartnode section of `rocketpool service config`.")
+	fmt.Println()
 
 	fmt.Printf("%s=== Prater Deprecation ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Prater test network is now deprecated, as it is being replaced by Holesky. If you are running a Prater node, please exit your minipools to gracefully clean up the network before migration (https://docs.rocketpool.net/guides/node/withdraw.html).\n")
+	fmt.Println("The Prater test network is now deprecated, as it is being replaced by Holesky. If you are running a Prater node, please exit your minipools to gracefully clean up the network before migration (https://docs.rocketpool.net/guides/node/withdraw.html).")
+	fmt.Println()
 
 	fmt.Printf("%s=== New Geth Mode: PBSS ===%s\n", colorGreen, colorReset)
-	fmt.Println("Geth has been updated to v1.13, which includes the much-anticipated Path-Based State Scheme (PBSS) storage mode. With PBSS, you never have to manually prune Geth again; it prunes automatically behind the scenes during runtime! To enable it, check the \"Enable PBSS\" box in the Execution Client section of the `rocketpool service config` UI. Note you **will have to resync** Geth after enabling this for it to take effect, and will lose attestations if you don't have a fallback client enabled!\n")
+	fmt.Println("Geth has been updated to v1.13, which includes the much-anticipated Path-Based State Scheme (PBSS) storage mode. With PBSS, you never have to manually prune Geth again; it prunes automatically behind the scenes during runtime! To enable it, check the \"Enable PBSS\" box in the Execution Client section of the `rocketpool service config` UI. Note you **will have to resync** Geth after enabling this for it to take effect, and will lose attestations if you don't have a fallback client enabled!")
+	fmt.Println()
 
 	fmt.Printf("%s=== MEV-Boost Changes ===%s\n", colorGreen, colorReset)
 	fmt.Println("The \"Blocknative\" relay has been shut down, so we have removed it from the MEV-Boost relay options. The other relays are still available.")
@@ -323,8 +326,12 @@ func configureService(c *cli.Context) error {
 			for _, container := range md.ContainersToRestart {
 				fullName := fmt.Sprintf("%s_%s", prefix, container)
 				fmt.Printf("Stopping %s... ", fullName)
-				rp.StopContainer(fullName)
-				fmt.Print("done!\n")
+				_, err := rp.StopContainer(fullName)
+				if err != nil {
+					fmt.Printf("Error while stopping container %s: %v\n", fullName, err)
+				} else {
+					fmt.Print("done!\n")
+				}
 			}
 
 			fmt.Println()
@@ -512,7 +519,10 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 			if err != nil {
 				return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
 			}
-			rp.SaveConfig(cfg)
+			err = rp.SaveConfig(cfg)
+			if err != nil {
+				return fmt.Errorf("error saving configuration: %w", err)
+			}
 			fmt.Printf("%sUpdated settings successfully.%s\n", colorGreen, colorReset)
 		} else {
 			fmt.Println("Cancelled.")
@@ -547,8 +557,10 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 			fmt.Printf("%sWARNING: couldn't verify that the validator container can be safely restarted:\n\t%s\n", colorYellow, err.Error())
 			fmt.Println("If you are changing to a different ETH2 client, it may resubmit an attestation you have already submitted.")
 			fmt.Println("This will slash your validator!")
-			fmt.Println("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.\n")
-			fmt.Println("**If you did NOT change clients, you can safely ignore this warning.**\n")
+			fmt.Println("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.")
+			fmt.Println()
+			fmt.Println("**If you did NOT change clients, you can safely ignore this warning.**")
+			fmt.Println()
 			if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
 				fmt.Println("Cancelled.")
 				return nil
@@ -619,7 +631,6 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 // Versions prior to v1.9.0 had Nimbus in single mode instead of split mode, so handle the conversion to ensure the user doesn't get slashed
 func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolConfig) (bool, error) {
 
-	previousVersion := "0.0.0"
 	backupCfg, err := rp.LoadBackupConfig()
 	if err != nil {
 		fmt.Printf("%sWARNING: Couldn't determine previous Smartnode version from backup settings: %s%s\n", colorYellow, err.Error(), colorReset)
@@ -630,9 +641,9 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 			return false, nil
 		}
 		return true, nil
-	} else if backupCfg != nil {
-		previousVersion = backupCfg.Version
-	} else {
+	}
+
+	if backupCfg == nil {
 		fmt.Printf("%sWARNING: Couldn't determine previous Smartnode version from backup settings because the backup configuration didn't exist.%s\n", colorYellow, colorReset)
 		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smartnode v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
 		fmt.Println()
@@ -642,6 +653,8 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 		}
 		return true, nil
 	}
+
+	previousVersion := backupCfg.Version
 
 	oldVersion, err := version.NewVersion(strings.TrimPrefix(previousVersion, "v"))
 	if err != nil {
@@ -907,25 +920,6 @@ func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *r
 
 }
 
-// Get the time that the container responsible for validator duties exited
-func getValidatorFinishTime(CurrentValidatorClientName string, rp *rocketpool.Client) (time.Time, error) {
-
-	prefix, err := getContainerPrefix(rp)
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	var validatorFinishTime time.Time
-	if CurrentValidatorClientName == "nimbus" {
-		validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + BeaconContainerSuffix)
-	} else {
-		validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + ValidatorContainerSuffix)
-	}
-
-	return validatorFinishTime, err
-
-}
-
 // Extract the image name from a Docker image string
 func getDockerImageName(imageString string) (string, error) {
 
@@ -980,16 +974,19 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	// Sanity checks
 	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External {
-		fmt.Println("You are using an externally managed Execution client.\nThe Smartnode cannot prune it for you.")
+		fmt.Println("You are using an externally managed Execution client.")
+		fmt.Println("The Smartnode cannot prune it for you.")
 		return nil
 	}
 	if cfg.IsNativeMode {
-		fmt.Println("You are using Native Mode.\nThe Smartnode cannot prune your Execution client for you, you'll have to do it manually.")
+		fmt.Println("You are using Native Mode.")
+		fmt.Println("The Smartnode cannot prune your Execution client for you, you'll have to do it manually.")
 	}
 	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 	switch selectedEc {
 	case cfgtypes.ExecutionClient_Besu:
-		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
+		fmt.Println("You are using Besu as your Execution client.")
+		fmt.Println("Besu does not need pruning.")
 		return nil
 	case cfgtypes.ExecutionClient_Geth:
 		if cfg.Geth.EnablePbss.Value == true {
@@ -999,7 +996,8 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
-	fmt.Println("Once pruning is complete, your execution client will restart automatically.\n")
+	fmt.Println("Once pruning is complete, your execution client will restart automatically.")
+	fmt.Println()
 
 	if selectedEc == cfgtypes.ExecutionClient_Geth {
 		if cfg.UseFallbackClients.Value == false {
@@ -1569,7 +1567,8 @@ func exportEcData(c *cli.Context, targetDir string) error {
 
 	fmt.Println("This will export your execution client's chain data to an external directory, such as a portable hard drive.")
 	fmt.Println("If your execution client is running, it will be shut down.")
-	fmt.Println("Once the export is complete, your execution client will restart automatically.\n")
+	fmt.Println("Once the export is complete, your execution client will restart automatically.")
+	fmt.Println()
 
 	// Get the container prefix
 	prefix, err := getContainerPrefix(rp)
@@ -1692,7 +1691,8 @@ func importEcData(c *cli.Context, sourceDir string) error {
 
 	fmt.Println("This will import execution layer chain data that you previously exported into your execution client.")
 	fmt.Println("If your execution client is running, it will be shut down.")
-	fmt.Println("Once the import is complete, your execution client will restart automatically.\n")
+	fmt.Println("Once the import is complete, your execution client will restart automatically.")
+	fmt.Println()
 
 	// Get the volume to import into
 	executionContainerName := prefix + ExecutionContainerSuffix

@@ -47,14 +47,14 @@ func (mv *MnemonicValidator) Filled() bool {
 
 func (mv *MnemonicValidator) Finalize() (string, error) {
 
-	if mv.Filled() == false {
+	if !mv.Filled() {
 		return "", errors.New("Not enough words were entered.")
 	}
 
 	mnemonic := strings.Join(mv.mnemonic, " ")
-	if bip39.IsMnemonicValid(mnemonic) {
-		return mnemonic, nil
+	if !bip39.IsMnemonicValid(mnemonic) {
+		return "", errors.New("Invalid mnemonic")
 	}
 
-	return "", errors.New("Invalid mnemonic")
+	return mnemonic, nil
 }

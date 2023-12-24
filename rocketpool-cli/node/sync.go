@@ -3,7 +3,6 @@ package node
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/urfave/cli"
 
@@ -11,9 +10,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
-// Settings
-var ethClientRecentBlockThreshold, _ = time.ParseDuration("5m")
 
 func printClientStatus(status *api.ClientStatus, name string) {
 
@@ -84,7 +80,8 @@ func getSyncProgress(c *cli.Context) error {
 			depositContractInfo.BeaconDepositContract)
 		return nil
 	} else {
-		fmt.Println("Your consensus client is on the correct network.\n")
+		fmt.Println("Your consensus client is on the correct network.")
+		fmt.Println()
 	}
 
 	// Get node status

@@ -13,7 +13,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
@@ -44,7 +43,6 @@ var (
 	rocketPool         *rocketpool.RocketPool
 	rplFaucet          *contracts.RPLFaucet
 	snapshotDelegation *contracts.SnapshotDelegation
-	beaconClient       beacon.Client
 	docker             *client.Client
 
 	initCfg                sync.Once
@@ -53,10 +51,8 @@ var (
 	initECManager          sync.Once
 	initBCManager          sync.Once
 	initRocketPool         sync.Once
-	initOneInchOracle      sync.Once
 	initRplFaucet          sync.Once
 	initSnapshotDelegation sync.Once
-	initBeaconClient       sync.Once
 	initDocker             sync.Once
 )
 

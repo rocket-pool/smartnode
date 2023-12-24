@@ -42,7 +42,8 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
-	fmt.Println("Your eth2 client is on the correct network.\n")
+	fmt.Println("Your eth2 client is on the correct network.")
+	fmt.Println()
 
 	// Check if the fee distributor has been initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
@@ -50,7 +51,8 @@ func nodeDeposit(c *cli.Context) error {
 		return err
 	}
 	if !isInitializedResponse.IsInitialized {
-		fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
+		fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.")
+		fmt.Println("Please run `rocketpool node initialize-fee-distributor` to initialize it first.")
 		return nil
 	}
 

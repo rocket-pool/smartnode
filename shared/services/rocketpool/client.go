@@ -75,14 +75,22 @@ func SyncRatioToPercent(in float64) float64 {
 func getExternalIP() (net.IP, error) {
 	// Try IPv4 first
 	ip4Consensus := externalip.DefaultConsensus(nil, nil)
-	ip4Consensus.UseIPProtocol(4)
+	err := ip4Consensus.UseIPProtocol(4)
+	if err != nil {
+		// This will only happen if we pass something other than 0/4/6 to UseIPProtocol
+		panic(err)
+	}
 	if ip, err := ip4Consensus.ExternalIP(); err == nil {
 		return ip, nil
 	}
 
 	// Try IPv6 as fallback
 	ip6Consensus := externalip.DefaultConsensus(nil, nil)
-	ip6Consensus.UseIPProtocol(6)
+	err = ip6Consensus.UseIPProtocol(6)
+	if err != nil {
+		// This will only happen if we pass something other than 0/4/6 to UseIPProtocol
+		panic(err)
+	}
 	return ip6Consensus.ExternalIP()
 }
 
@@ -325,7 +333,7 @@ func (c *Client) UpdatePrometheusConfiguration(settings map[string]string) error
 	}
 	err = os.Chmod(prometheusConfigPath, 0664)
 	if err != nil {
-		return fmt.Errorf("Could not set Prometheus config file permissions: %w", shellescape.Quote(prometheusConfigPath), err)
+		return fmt.Errorf("Could not set Prometheus config file %s permissions: %w", shellescape.Quote(prometheusConfigPath), err)
 	}
 
 	return nil
@@ -425,7 +433,7 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 
 	// Get installation script flags
 	flags := []string{
-		"-v", fmt.Sprintf("%s", shellescape.Quote(version)),
+		"-v", shellescape.Quote(version),
 	}
 
 	// Download the installer package
@@ -590,7 +598,7 @@ func (c *Client) PrintServiceStatus(composeFiles []string) error {
 func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNames ...string) error {
 	sanitizedStrings := make([]string, len(serviceNames))
 	for i, serviceName := range serviceNames {
-		sanitizedStrings[i] = fmt.Sprintf("%s", shellescape.Quote(serviceName))
+		sanitizedStrings[i] = shellescape.Quote(serviceName)
 	}
 	cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")))
 	if err != nil {
@@ -1350,44 +1358,6 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
 	} else {
 		cmd = fmt.Sprintf("%s --settings %s %s %s %s %s api %s",
-			c.daemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
-			ignoreSyncCheckFlag,
-			forceFallbackECFlag,
-			c.getGasOpts(),
-			c.getCustomNonce(),
-			args)
-	}
-
-	// Run the command
-	return c.runApiCall(cmd)
-}
-
-// Call the Rocket Pool API with some custom environment variables
-func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, otherArgs ...string) ([]byte, error) {
-	// Sanitize and parse the args
-	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)
-
-	// Create the command to run
-	var cmd string
-	if c.daemonPath == "" {
-		envArgs := ""
-		for key, value := range envVars {
-			os.Setenv(key, shellescape.Quote(value))
-			envArgs += fmt.Sprintf("-e %s ", key)
-		}
-		containerName, err := c.getAPIContainerName()
-		if err != nil {
-			return []byte{}, err
-		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s %s api %s", envArgs, shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
-	} else {
-		envArgs := ""
-		for key, value := range envVars {
-			envArgs += fmt.Sprintf("%s=%s ", key, shellescape.Quote(value))
-		}
-		cmd = fmt.Sprintf("%s %s --settings %s %s %s %s %s api %s",
-			envArgs,
 			c.daemonPath,
 			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
 			ignoreSyncCheckFlag,

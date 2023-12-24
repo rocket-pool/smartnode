@@ -261,7 +261,7 @@ func (c *Client) NodeSwapRpl(amountWei *big.Int) (api.NodeSwapRplSwapResponse, e
 
 // Get a node's legacy RPL allowance for swapping on the new RPL contract
 func (c *Client) GetNodeSwapRplAllowance() (api.NodeSwapRplAllowanceResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl-allowance"))
+	responseBytes, err := c.callAPI("node swap-rpl-allowance")
 	if err != nil {
 		return api.NodeSwapRplAllowanceResponse{}, fmt.Errorf("Could not get node swap RPL allowance: %w", err)
 	}
@@ -357,7 +357,7 @@ func (c *Client) NodeStakeRpl(amountWei *big.Int) (api.NodeStakeRplStakeResponse
 
 // Get a node's RPL allowance for the staking contract
 func (c *Client) GetNodeStakeRplAllowance() (api.NodeStakeRplAllowanceResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl-allowance"))
+	responseBytes, err := c.callAPI("node stake-rpl-allowance")
 	if err != nil {
 		return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not get node stake RPL allowance: %w", err)
 	}

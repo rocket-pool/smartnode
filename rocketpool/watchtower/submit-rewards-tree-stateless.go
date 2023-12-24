@@ -374,7 +374,7 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		t.printMessage("Uploading minipool performance file to Web3.Storage...")
 		minipoolPerformanceCid, err := t.uploadFileToWeb3Storage(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
 		if err != nil {
-			t.printMessage(fmt.Sprintf("Error uploading minipool performance file to Web3.Storage: %w", err))
+			t.printMessage(fmt.Sprintf("Error uploading minipool performance file to Web3.Storage: %v", err))
 			c, err := rprewards.GetCIDForSerializedFile(minipoolPerformanceBytes, filepath.Base(compressedMinipoolPerformancePath))
 			if err != nil {
 				return fmt.Errorf("error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
@@ -409,7 +409,7 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		t.printMessage("Uploading to Web3.Storage and submitting results to the contracts...")
 		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			t.printMessage(fmt.Sprintf("Error uploading Merkle tree to Web3.Storage: %w", err))
+			t.printMessage(fmt.Sprintf("Error uploading Merkle tree to Web3.Storage: %v", err))
 			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, filepath.Base(compressedRewardsTreePath))
 			if err != nil {
 				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
@@ -559,7 +559,10 @@ func (t *submitRewardsTree_Stateless) uploadFileToWeb3Storage(wrapperBytes []byt
 	}
 
 	// Rewind it to the start
-	compressedFile.Seek(0, 0)
+	_, err = compressedFile.Seek(0, 0)
+	if err != nil {
+		return "", fmt.Errorf("Error seeking to beginning of %s: %w", compressedPath, err)
+	}
 
 	// Upload it
 	cid, err := w3sClient.Put(context.Background(), compressedFile)

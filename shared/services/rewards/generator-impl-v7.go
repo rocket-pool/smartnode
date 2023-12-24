@@ -837,7 +837,7 @@ func (r *treeGeneratorImpl_v7) processEpoch(getDuties bool, epoch uint64) error 
 }
 
 // Handle all of the attestations in the given slot
-func (r *treeGeneratorImpl_v7) checkDutiesForSlot(attestations []beacon.AttestationInfo, slot uint64) error {
+func (r *treeGeneratorImpl_v7) checkDutiesForSlot(attestations []beacon.AttestationInfo, slot uint64) {
 
 	one := eth.EthToWei(1)
 	validatorReq := eth.EthToWei(32)
@@ -895,9 +895,6 @@ func (r *treeGeneratorImpl_v7) checkDutiesForSlot(attestations []beacon.Attestat
 			r.successfulAttestations++
 		}
 	}
-
-	return nil
-
 }
 
 // Maps out the attestaion duties for the given epoch
@@ -1182,7 +1179,7 @@ func (r *treeGeneratorImpl_v7) getMinipoolBondAndNodeFee(details *rpstate.Native
 	previousBond := details.LastBondReductionPrevValue
 	previousFee := details.LastBondReductionPrevNodeFee
 
-	var reductionTimeBig *big.Int = details.LastBondReductionTime
+	var reductionTimeBig = details.LastBondReductionTime
 	if reductionTimeBig.Cmp(common.Big0) == 0 {
 		// Never reduced
 		return currentBond, currentFee

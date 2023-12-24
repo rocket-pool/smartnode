@@ -14,12 +14,6 @@ const (
 	ValidatorKeyPath string = "m/12381/3600/%d/0/0"
 )
 
-// BLS signing root with domain
-type signingRoot struct {
-	ObjectRoot []byte `ssz-size:"32"`
-	Domain     []byte `ssz-size:"32"`
-}
-
 // Initialize BLS support
 var initBLS sync.Once
 

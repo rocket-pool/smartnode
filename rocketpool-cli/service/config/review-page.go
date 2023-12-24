@@ -73,7 +73,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 			builder.WriteString("<No changes>")
 		} else {
 			builder.WriteString("The following containers must be restarted for these changes to take effect:")
-			for container, _ := range totalAffectedContainers {
+			for container := range totalAffectedContainers {
 				builder.WriteString(fmt.Sprintf("\n\t%v", container))
 				containersToRestart = append(containersToRestart, container)
 			}

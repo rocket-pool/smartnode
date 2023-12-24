@@ -66,7 +66,7 @@ func (c *Client) TNDAOProposals() (api.TNDAOProposalsResponse, error) {
 
 // Get a single oracle DAO proposal
 func (c *Client) TNDAOProposal(id uint64) (api.TNDAOProposalResponse, error) {
-	responseBytes, err := c.callAPI("odao proposal-details", string(id))
+	responseBytes, err := c.callAPI("odao proposal-details", fmt.Sprint(id))
 	if err != nil {
 		return api.TNDAOProposalResponse{}, fmt.Errorf("Could not get oracle DAO proposal: %w", err)
 	}
@@ -800,7 +800,7 @@ func (c *Client) ProposeTNDAOSettingBondReductionWindowLength(windowLength uint6
 
 // Get the member settings
 func (c *Client) GetTNDAOMemberSettings() (api.GetTNDAOMemberSettingsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("odao get-member-settings"))
+	responseBytes, err := c.callAPI("odao get-member-settings")
 	if err != nil {
 		return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %w", err)
 	}
@@ -822,7 +822,7 @@ func (c *Client) GetTNDAOMemberSettings() (api.GetTNDAOMemberSettingsResponse, e
 
 // Get the proposal settings
 func (c *Client) GetTNDAOProposalSettings() (api.GetTNDAOProposalSettingsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("odao get-proposal-settings"))
+	responseBytes, err := c.callAPI("odao get-proposal-settings")
 	if err != nil {
 		return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not get oracle DAO proposal settings: %w", err)
 	}
@@ -838,7 +838,7 @@ func (c *Client) GetTNDAOProposalSettings() (api.GetTNDAOProposalSettingsRespons
 
 // Get the proposal settings
 func (c *Client) GetTNDAOMinipoolSettings() (api.GetTNDAOMinipoolSettingsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("odao get-minipool-settings"))
+	responseBytes, err := c.callAPI("odao get-minipool-settings")
 	if err != nil {
 		return api.GetTNDAOMinipoolSettingsResponse{}, fmt.Errorf("Could not get oracle DAO minipool settings: %w", err)
 	}

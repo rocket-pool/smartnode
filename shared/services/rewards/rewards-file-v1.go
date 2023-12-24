@@ -108,9 +108,9 @@ func (i *NodeRewardsInfo_v1) GetOracleDaoRpl() *QuotedBigInt {
 func (i *NodeRewardsInfo_v1) GetSmoothingPoolEth() *QuotedBigInt {
 	return i.SmoothingPoolEth
 }
-func (n *NodeRewardsInfo_v1) GetMerkleProof() ([]common.Hash, error) {
+func (i *NodeRewardsInfo_v1) GetMerkleProof() ([]common.Hash, error) {
 	proof := []common.Hash{}
-	for _, proofLevel := range n.MerkleProof {
+	for _, proofLevel := range i.MerkleProof {
 		proof = append(proof, common.HexToHash(proofLevel))
 	}
 	return proof, nil
