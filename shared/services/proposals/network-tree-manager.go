@@ -211,6 +211,6 @@ func (m *NetworkTreeManager) getBlockNumberFromFilename(filename string) (uint32
 // Log a message to the logger
 func (m *NetworkTreeManager) logMessage(message string, args ...any) {
 	if m.log != nil {
-		m.log.Printlnf(message, args)
+		m.log.Printlnf(message, args...)
 	}
 }
