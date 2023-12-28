@@ -1231,20 +1231,20 @@ func (cfg *RocketPoolConfig) GetBeaconContainerTag() (string, error) {
 }
 
 // Used by text/template to format eth2.yml
-func (cfg *RocketPoolConfig) GetBnOpenPorts() string {
+func (cfg *RocketPoolConfig) GetBnOpenPorts() []string {
 	// Handle open API ports
-	bnOpenPorts := ""
+	bnOpenPorts := make([]string, 0)
 	consensusClient := cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
 	apiPortMode := cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode)
 	if apiPortMode.Open() {
 		apiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
-		bnOpenPorts += fmt.Sprintf(", \"%s\"", apiPortMode.DockerPortMapping(apiPort))
+		bnOpenPorts = append(bnOpenPorts, apiPortMode.DockerPortMapping(apiPort))
 	}
 	if consensusClient == config.ConsensusClient_Prysm {
 		prysmRpcPortMode := cfg.Prysm.OpenRpcPort.Value.(config.RPCMode)
 		if prysmRpcPortMode.Open() {
 			prysmRpcPort := cfg.Prysm.RpcPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%s\"", prysmRpcPortMode.DockerPortMapping(prysmRpcPort))
+			bnOpenPorts = append(bnOpenPorts, prysmRpcPortMode.DockerPortMapping(prysmRpcPort))
 		}
 	}
 	return bnOpenPorts
