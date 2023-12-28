@@ -162,3 +162,9 @@ func (param *Parameter) UpdateDescription(network Network) {
 		}
 	}
 }
+
+// Get the Value of the Parameter as a string.
+// Required for fmt.Sprint (and therefore text/template) to print the parameter correctly.
+func (param *Parameter) String() string {
+	return fmt.Sprint(param.Value)
+}
