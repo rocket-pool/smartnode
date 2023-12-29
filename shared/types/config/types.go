@@ -113,6 +113,7 @@ type Config interface {
 
 // Interface for common Consensus configurations
 type ConsensusConfig interface {
+	GetBeaconNodeImage() string
 	GetValidatorImage() string
 	GetName() string
 }

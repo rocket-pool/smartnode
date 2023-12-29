@@ -523,7 +523,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	// Update the Prometheus template with the assigned ports
 	metricsEnabled := cfg.EnableMetrics.Value.(bool)
 	if metricsEnabled {
-		err := rp.UpdatePrometheusConfiguration(cfg.GenerateEnvironmentVariables())
+		err := rp.UpdatePrometheusConfiguration(cfg)
 		if err != nil {
 			return err
 		}
