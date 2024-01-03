@@ -113,6 +113,9 @@ type ExternalTekuConfig struct {
 
 	// Custom command line flags for the VC
 	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
+
+	// Toggle for enabling doppelganger detection
+	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
 }
 
 // Generates a new ExternalExecutionConfig configuration
@@ -121,27 +124,25 @@ func NewExternalExecutionConfig(cfg *RocketPoolConfig) *ExternalExecutionConfig 
 		Title: "External Execution Client Settings",
 
 		HttpUrl: config.Parameter{
-			ID:                   "httpUrl",
-			Name:                 "HTTP URL",
-			Description:          "The URL of the HTTP RPC endpoint for your external Execution client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead, for example 'http://192.168.1.100:8545'.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{"EC_HTTP_ENDPOINT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "httpUrl",
+			Name:               "HTTP URL",
+			Description:        "The URL of the HTTP RPC endpoint for your external Execution client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead, for example 'http://192.168.1.100:8545'.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		WsUrl: config.Parameter{
-			ID:                   "wsUrl",
-			Name:                 "Websocket URL",
-			Description:          "The URL of the Websocket RPC endpoint for your external Execution client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead, for example 'http://192.168.1.100:8546'.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{"EC_WS_ENDPOINT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "wsUrl",
+			Name:               "Websocket URL",
+			Description:        "The URL of the Websocket RPC endpoint for your external Execution client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead, for example 'http://192.168.1.100:8546'.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 	}
 }
@@ -152,40 +153,37 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 		Title: "External Lighthouse Settings",
 
 		HttpUrl: config.Parameter{
-			ID:                   "httpUrl",
-			Name:                 "HTTP URL",
-			Description:          "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
-			EnvironmentVariables: []string{"CC_API_ENDPOINT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "httpUrl",
+			Name:               "HTTP URL",
+			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		Graffiti: config.Parameter{
-			ID:                   GraffitiID,
-			Name:                 "Custom Graffiti",
-			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultGraffiti},
-			MaxLength:            16,
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{CustomGraffitiEnvVar},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 GraffitiID,
+			Name:               "Custom Graffiti",
+			Description:        "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultGraffiti},
+			MaxLength:          16,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 
 		DoppelgangerDetection: config.Parameter{
-			ID:                   DoppelgangerDetectionID,
-			Name:                 "Enable Doppelgänger Detection",
-			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultDoppelgangerDetection},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 DoppelgangerDetectionID,
+			Name:               "Enable Doppelgänger Detection",
+			Description:        "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultDoppelgangerDetection},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		ContainerTag: config.Parameter{
@@ -199,22 +197,20 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 				config.Network_Devnet:  getLighthouseTagTest(),
 				config.Network_Holesky: getLighthouseTagTest(),
 			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		AdditionalVcFlags: config.Parameter{
-			ID:                   "additionalVcFlags",
-			Name:                 "Additional Validator Client Flags",
-			Description:          "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalVcFlags",
+			Name:               "Additional Validator Client Flags",
+			Description:        "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 	}
 }
@@ -225,40 +221,37 @@ func NewExternalLodestarConfig(cfg *RocketPoolConfig) *ExternalLodestarConfig {
 		Title: "External Lodestar Settings",
 
 		HttpUrl: config.Parameter{
-			ID:                   "httpUrl",
-			Name:                 "HTTP URL",
-			Description:          "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
-			EnvironmentVariables: []string{"CC_API_ENDPOINT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "httpUrl",
+			Name:               "HTTP URL",
+			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		Graffiti: config.Parameter{
-			ID:                   GraffitiID,
-			Name:                 "Custom Graffiti",
-			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultGraffiti},
-			MaxLength:            16,
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{CustomGraffitiEnvVar},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 GraffitiID,
+			Name:               "Custom Graffiti",
+			Description:        "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultGraffiti},
+			MaxLength:          16,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 
 		DoppelgangerDetection: config.Parameter{
-			ID:                   DoppelgangerDetectionID,
-			Name:                 "Enable Doppelgänger Detection",
-			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultDoppelgangerDetection},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 DoppelgangerDetectionID,
+			Name:               "Enable Doppelgänger Detection",
+			Description:        "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultDoppelgangerDetection},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		ContainerTag: config.Parameter{
@@ -272,22 +265,20 @@ func NewExternalLodestarConfig(cfg *RocketPoolConfig) *ExternalLodestarConfig {
 				config.Network_Devnet:  lodestarTagTest,
 				config.Network_Holesky: lodestarTagTest,
 			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		AdditionalVcFlags: config.Parameter{
-			ID:                   "additionalVcFlags",
-			Name:                 "Additional Validator Client Flags",
-			Description:          "Additional custom command line flags you want to pass Lodestar's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalVcFlags",
+			Name:               "Additional Validator Client Flags",
+			Description:        "Additional custom command line flags you want to pass Lodestar's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 	}
 }
@@ -299,40 +290,37 @@ func NewExternalNimbusConfig(cfg *RocketPoolConfig) *ExternalNimbusConfig {
 		Title: "External Nimbus Settings",
 
 		HttpUrl: config.Parameter{
-			ID:                   "httpUrl",
-			Name:                 "HTTP URL",
-			Description:          "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
-			EnvironmentVariables: []string{"CC_API_ENDPOINT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "httpUrl",
+			Name:               "HTTP URL",
+			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		Graffiti: config.Parameter{
-			ID:                   GraffitiID,
-			Name:                 "Custom Graffiti",
-			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultGraffiti},
-			MaxLength:            16,
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"CUSTOM_GRAFFITI"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 GraffitiID,
+			Name:               "Custom Graffiti",
+			Description:        "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultGraffiti},
+			MaxLength:          16,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 
 		DoppelgangerDetection: config.Parameter{
-			ID:                   DoppelgangerDetectionID,
-			Name:                 "Enable Doppelgänger Detection",
-			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultDoppelgangerDetection},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 DoppelgangerDetectionID,
+			Name:               "Enable Doppelgänger Detection",
+			Description:        "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultDoppelgangerDetection},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		ContainerTag: config.Parameter{
@@ -346,22 +334,20 @@ func NewExternalNimbusConfig(cfg *RocketPoolConfig) *ExternalNimbusConfig {
 				config.Network_Devnet:  nimbusVcTagTest,
 				config.Network_Holesky: nimbusVcTagTest,
 			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		AdditionalVcFlags: config.Parameter{
-			ID:                   "additionalVcFlags",
-			Name:                 "Additional Validator Client Flags",
-			Description:          "Additional custom command line flags you want to pass Nimbus's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalVcFlags",
+			Name:               "Additional Validator Client Flags",
+			Description:        "Additional custom command line flags you want to pass Nimbus's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 	}
 }
@@ -372,40 +358,105 @@ func NewExternalPrysmConfig(cfg *RocketPoolConfig) *ExternalPrysmConfig {
 		Title: "External Prysm Settings",
 
 		HttpUrl: config.Parameter{
-			ID:                   "httpUrl",
-			Name:                 "HTTP URL",
-			Description:          "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
-			EnvironmentVariables: []string{"CC_API_ENDPOINT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "httpUrl",
+			Name:               "HTTP URL",
+			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		JsonRpcUrl: config.Parameter{
-			ID:                   "jsonRpcUrl",
-			Name:                 "gRPC URL",
-			Description:          "The URL of the gRPC API endpoint for your external client. Prysm's validator client will need this in order to connect to it.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
-			EnvironmentVariables: []string{"CC_RPC_ENDPOINT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "jsonRpcUrl",
+			Name:               "gRPC URL",
+			Description:        "The URL of the gRPC API endpoint for your external client. Prysm's validator client will need this in order to connect to it.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		Graffiti: config.Parameter{
-			ID:                   GraffitiID,
-			Name:                 "Custom Graffiti",
-			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultGraffiti},
-			MaxLength:            16,
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{CustomGraffitiEnvVar},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 GraffitiID,
+			Name:               "Custom Graffiti",
+			Description:        "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultGraffiti},
+			MaxLength:          16,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		DoppelgangerDetection: config.Parameter{
+			ID:                 DoppelgangerDetectionID,
+			Name:               "Enable Doppelgänger Detection",
+			Description:        "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultDoppelgangerDetection},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		ContainerTag: config.Parameter{
+			ID:          "containerTag",
+			Name:        "Container Tag",
+			Description: "The tag name of the Prysm validator container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
+			Type:        config.ParameterType_String,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: prysmVcProd,
+				config.Network_Prater:  prysmVcTest,
+				config.Network_Devnet:  prysmVcTest,
+				config.Network_Holesky: prysmVcTest,
+			},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
+		},
+
+		AdditionalVcFlags: config.Parameter{
+			ID:                 "additionalVcFlags",
+			Name:               "Additional Validator Client Flags",
+			Description:        "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+	}
+}
+
+// Generates a new ExternalTekuClient configuration
+func NewExternalTekuConfig(cfg *RocketPoolConfig) *ExternalTekuConfig {
+	return &ExternalTekuConfig{
+		Title: "External Teku Settings",
+
+		HttpUrl: config.Parameter{
+			ID:                 "httpUrl",
+			Name:               "HTTP URL",
+			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		Graffiti: config.Parameter{
+			ID:                 GraffitiID,
+			Name:               "Custom Graffiti",
+			Description:        "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultGraffiti},
+			MaxLength:          16,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 
 		DoppelgangerDetection: config.Parameter{
@@ -417,67 +468,6 @@ func NewExternalPrysmConfig(cfg *RocketPoolConfig) *ExternalPrysmConfig {
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
-		ContainerTag: config.Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the Prysm validator container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: getPrysmVcProdTag(),
-				config.Network_Prater:  getPrysmVcTestTag(),
-				config.Network_Devnet:  getPrysmVcTestTag(),
-				config.Network_Holesky: getPrysmVcTestTag(),
-			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
-		},
-
-		AdditionalVcFlags: config.Parameter{
-			ID:                   "additionalVcFlags",
-			Name:                 "Additional Validator Client Flags",
-			Description:          "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
-		},
-	}
-}
-
-// Generates a new ExternalTekuClient configuration
-func NewExternalTekuConfig(cfg *RocketPoolConfig) *ExternalTekuConfig {
-	return &ExternalTekuConfig{
-		Title: "External Teku Settings",
-
-		HttpUrl: config.Parameter{
-			ID:                   "httpUrl",
-			Name:                 "HTTP URL",
-			Description:          "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
-			EnvironmentVariables: []string{"CC_API_ENDPOINT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
-		Graffiti: config.Parameter{
-			ID:                   GraffitiID,
-			Name:                 "Custom Graffiti",
-			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultGraffiti},
-			MaxLength:            16,
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{CustomGraffitiEnvVar},
-			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
 
@@ -492,22 +482,20 @@ func NewExternalTekuConfig(cfg *RocketPoolConfig) *ExternalTekuConfig {
 				config.Network_Devnet:  tekuTagTest,
 				config.Network_Holesky: tekuTagTest,
 			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		AdditionalVcFlags: config.Parameter{
-			ID:                   "additionalVcFlags",
-			Name:                 "Additional Validator Client Flags",
-			Description:          "Additional custom command line flags you want to pass Teku's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalVcFlags",
+			Name:               "Additional Validator Client Flags",
+			Description:        "Additional custom command line flags you want to pass Teku's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 	}
 }
@@ -570,6 +558,7 @@ func (cfg *ExternalTekuConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.HttpUrl,
 		&cfg.Graffiti,
+		&cfg.DoppelgangerDetection,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
@@ -600,6 +589,31 @@ func (cfg *ExternalTekuConfig) GetValidatorImage() string {
 	return cfg.ContainerTag.Value.(string)
 }
 
+// Get the Docker container name of the beacon client
+func (cfg *ExternalLighthouseConfig) GetBeaconNodeImage() string {
+	return ""
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *ExternalLodestarConfig) GetBeaconNodeImage() string {
+	return ""
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *ExternalNimbusConfig) GetBeaconNodeImage() string {
+	return ""
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *ExternalPrysmConfig) GetBeaconNodeImage() string {
+	return ""
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *ExternalTekuConfig) GetBeaconNodeImage() string {
+	return ""
+}
+
 // Get the API url from the config
 func (cfg *ExternalLighthouseConfig) GetApiUrl() string {
 	return cfg.HttpUrl.Value.(string)
@@ -623,6 +637,11 @@ func (cfg *ExternalPrysmConfig) GetApiUrl() string {
 // Get the API url from the config
 func (cfg *ExternalTekuConfig) GetApiUrl() string {
 	return cfg.HttpUrl.Value.(string)
+}
+
+// Get the doppelganger detection from the config
+func (cfg *ExternalLighthouseConfig) GetDoppelgangerDetection() bool {
+	return cfg.DoppelgangerDetection.Value.(bool)
 }
 
 // Get the name of the client

@@ -63,8 +63,6 @@ const (
 	ExecutionClient_Geth       ExecutionClient = "geth"
 	ExecutionClient_Nethermind ExecutionClient = "nethermind"
 	ExecutionClient_Besu       ExecutionClient = "besu"
-	ExecutionClient_Obs_Infura ExecutionClient = "infura"
-	ExecutionClient_Obs_Pocket ExecutionClient = "pocket"
 )
 
 // Enum to describe the Consensus client options
@@ -115,6 +113,7 @@ type Config interface {
 
 // Interface for common Consensus configurations
 type ConsensusConfig interface {
+	GetBeaconNodeImage() string
 	GetValidatorImage() string
 	GetName() string
 }

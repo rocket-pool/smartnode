@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	lodestarTagTest         string = "chainsafe/lodestar:v1.11.3"
-	lodestarTagProd         string = "chainsafe/lodestar:v1.11.3"
+	lodestarTagTest         string = "chainsafe/lodestar:v1.12.1"
+	lodestarTagProd         string = "chainsafe/lodestar:v1.12.1"
 	defaultLodestarMaxPeers uint16 = 50
 )
 
@@ -36,15 +36,14 @@ func NewLodestarConfig(cfg *RocketPoolConfig) *LodestarConfig {
 		Title: "Lodestar Settings",
 
 		MaxPeers: config.Parameter{
-			ID:                   "maxPeers",
-			Name:                 "Max Peers",
-			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultLodestarMaxPeers},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_MAX_PEERS"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "maxPeers",
+			Name:               "Max Peers",
+			Description:        "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultLodestarMaxPeers},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		ContainerTag: config.Parameter{
@@ -58,34 +57,31 @@ func NewLodestarConfig(cfg *RocketPoolConfig) *LodestarConfig {
 				config.Network_Devnet:  lodestarTagTest,
 				config.Network_Holesky: lodestarTagTest,
 			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
-			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		AdditionalBnFlags: config.Parameter{
-			ID:                   "additionalBnFlags",
-			Name:                 "Additional Beacon Client Flags",
-			Description:          "Additional custom command line flags you want to pass Lodestar's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalBnFlags",
+			Name:               "Additional Beacon Client Flags",
+			Description:        "Additional custom command line flags you want to pass Lodestar's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 
 		AdditionalVcFlags: config.Parameter{
-			ID:                   "additionalVcFlags",
-			Name:                 "Additional Validator Client Flags",
-			Description:          "Additional custom command line flags you want to pass Lodestar's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalVcFlags",
+			Name:               "Additional Validator Client Flags",
+			Description:        "Additional custom command line flags you want to pass Lodestar's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 	}
 }
@@ -107,6 +103,11 @@ func (cfg *LodestarConfig) GetUnsupportedCommonParams() []string {
 
 // Get the Docker container name of the validator client
 func (cfg *LodestarConfig) GetValidatorImage() string {
+	return cfg.ContainerTag.Value.(string)
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *LodestarConfig) GetBeaconNodeImage() string {
 	return cfg.ContainerTag.Value.(string)
 }
 

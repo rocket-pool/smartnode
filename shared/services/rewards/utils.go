@@ -339,14 +339,8 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, expected
 
 }
 
-// Get the IPFS CID for a blob of data
-func GetCidForRewardsFile(rewardsFile IRewardsFile, filename string) (cid.Cid, error) {
-	// Encode the rewards file in JSON
-	data, err := rewardsFile.Serialize()
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("error serializing rewards file: %w", err)
-	}
-
+// Get CID for a serialized file
+func GetCIDForSerializedFile(data []byte, filename string) (cid.Cid, error) {
 	// Compress the data
 	encoder, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
 	compressedData := encoder.EncodeAll(data, make([]byte, 0, len(data)))
@@ -357,6 +351,17 @@ func GetCidForRewardsFile(rewardsFile IRewardsFile, filename string) (cid.Cid, e
 	}
 
 	return c, err
+}
+
+// Get the IPFS CID for a blob of data
+func GetCidForRewardsFile(rewardsFile IRewardsFile, filename string) (cid.Cid, error) {
+	// Encode the rewards file in JSON
+	data, err := rewardsFile.Serialize()
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("error serializing rewards file: %w", err)
+	}
+
+	return GetCIDForSerializedFile(data, filename)
 }
 
 // Gets the start slot for the given interval

@@ -35,7 +35,7 @@ func withdrawRpl(c *cli.Context) error {
 			fmt.Println("You don't have any allowance remaining for the withdrawal period")
 		}
 		if canWithdraw.InsufficientNodeBalance {
-			fmt.Println("You don't have enough GoETH to pay the faucet withdrawal fee")
+			fmt.Println("You don't have enough testnet ETH to pay the faucet withdrawal fee")
 		}
 		return nil
 	}
