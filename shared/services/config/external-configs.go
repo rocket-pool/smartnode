@@ -460,15 +460,14 @@ func NewExternalTekuConfig(cfg *RocketPoolConfig) *ExternalTekuConfig {
 		},
 
 		DoppelgangerDetection: config.Parameter{
-			ID:                   DoppelgangerDetectionID,
-			Name:                 "Enable Doppelgänger Detection",
-			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultDoppelgangerDetection},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 DoppelgangerDetectionID,
+			Name:               "Enable Doppelgänger Detection",
+			Description:        "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultDoppelgangerDetection},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		ContainerTag: config.Parameter{
