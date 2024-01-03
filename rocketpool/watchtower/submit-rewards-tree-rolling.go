@@ -491,7 +491,9 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 
 	// Get the expected file paths
 	rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
+	compressedRewardsTreePath := rewardsTreePath + config.RewardsTreeIpfsExtension
 	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
+	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval
 	if !mustRegenerate {
@@ -502,7 +504,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 
 		t.log.Printlnf("%s Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", t.logPrefix, currentIndex, rewardsTreePath)
 
-		cid, err := rprewards.SingleFileDirIPFSCid(fileBytes, rewardsTreePath)
+		cid, err := rprewards.SingleFileDirIPFSCid(fileBytes, rewardsTreePath, "compressed rewards tree")
 		if err != nil {
 			return fmt.Errorf("error submitting rewards snapshot: %w", err)
 		}
@@ -519,7 +521,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 	}
 
 	// Generate the tree
-	err = t.generateTree(client, state, intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, minipoolPerformancePath)
+	err = t.generateTree(client, state, intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
 	if err != nil {
 		return fmt.Errorf("error generating rewards tree: %w", err)
 	}
@@ -528,7 +530,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, minipoolPerformancePath string) error {
+func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
 
 	// Log
 	if intervalsPassed > 1 {
@@ -562,9 +564,9 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	}
 
 	if nodeTrusted {
-		minipoolPerformanceCid, err := rprewards.SingleFileDirIPFSCid(minipoolPerformanceBytes, minipoolPerformancePath)
+		minipoolPerformanceCid, err := rprewards.SingleFileDirIPFSCid(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
 		if err != nil {
-			return fmt.Errorf("Error getting the CID for file %s: %w", minipoolPerformancePath, err)
+			return fmt.Errorf("Error getting the CID for file %s: %w", compressedMinipoolPerformancePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated CID %s", minipoolPerformanceCid))
 		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
@@ -587,9 +589,9 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	}
 
 	if nodeTrusted {
-		cid, err := rprewards.SingleFileDirIPFSCid(wrapperBytes, rewardsTreePath)
+		cid, err := rprewards.SingleFileDirIPFSCid(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", rewardsTreePath, err)
+			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated CID %s", cid))
 		// Submit to the contracts

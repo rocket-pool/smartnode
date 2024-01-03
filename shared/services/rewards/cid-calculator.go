@@ -3,6 +3,8 @@ package rewards
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"os"
 
 	blockservice "github.com/ipfs/boxo/blockservice"
 	blockstore "github.com/ipfs/boxo/blockstore"
@@ -15,9 +17,26 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/sync"
+	"github.com/klauspost/compress/zstd"
 )
 
-func SingleFileDirIPFSCid(data []byte, filename string) (cid.Cid, error) {
+func SingleFileDirIPFSCid(data []byte, filename string, description string) (cid.Cid, error) {
+	// Compress the file
+	encoder, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	compressedBytes := encoder.EncodeAll(data, make([]byte, 0, len(data)))
+
+	// Create the compressed file
+	compressedFile, err := os.Create(filename)
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("Error creating %s file [%s]: %w", description, filename, err)
+	}
+	defer compressedFile.Close()
+
+	// Write the compressed data to the file
+	_, err = compressedFile.Write(compressedBytes)
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("Error writing %s to %s: %w", description, filename, err)
+	}
 
 	ds := sync.MutexWrap(datastore.NewMapDatastore())
 	bsvc := blockservice.New(blockstore.NewBlockstore(ds), nil)
@@ -26,7 +45,7 @@ func SingleFileDirIPFSCid(data []byte, filename string) (cid.Cid, error) {
 
 	// Create the root node, an empty directory
 	rootNode := unixfs.EmptyDirNode()
-	err := rootNode.SetCidBuilder(cidBuilder)
+	err = rootNode.SetCidBuilder(cidBuilder)
 	if err != nil {
 		return cid.Cid{}, err
 	}
@@ -35,8 +54,8 @@ func SingleFileDirIPFSCid(data []byte, filename string) (cid.Cid, error) {
 		return cid.Cid{}, err
 	}
 
-	// Create a chunker-reader from the data
-	chnk, err := chunker.FromString(bytes.NewReader(data), "size-1048576")
+	// Create a chunker-reader from the compressed data
+	chnk, err := chunker.FromString(bytes.NewReader(compressedBytes), "size-1048576")
 	if err != nil {
 		return cid.Cid{}, err
 	}

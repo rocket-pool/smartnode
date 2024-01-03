@@ -20,6 +20,7 @@ const (
 	SnapshotID                         string = "rocketpool-dao.eth"
 	RewardsTreeFilenameFormat          string = "rp-rewards-%s-%d.json"
 	MinipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d.json"
+	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
 	DaemonDataPath                     string = "/.rocketpool/data"
 	WatchtowerFolder                   string = "watchtower"
