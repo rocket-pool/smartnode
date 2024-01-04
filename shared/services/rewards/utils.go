@@ -259,18 +259,21 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, expected
 		return fmt.Errorf("error expanding rewards tree path: %w", err)
 	}
 	rewardsTreeFilename := filepath.Base(rewardsTreePath)
+	ipfsFilename := rewardsTreeFilename + config.RewardsTreeIpfsExtension
 
 	// Create URL list
 	urls := []string{
-		fmt.Sprintf(config.PrimaryRewardsFileUrl, expectedCid, rewardsTreeFilename),
-		fmt.Sprintf(config.SecondaryRewardsFileUrl, expectedCid, rewardsTreeFilename),
+		fmt.Sprintf(config.PrimaryRewardsFileUrl, expectedCid, ipfsFilename),
+		fmt.Sprintf(config.SecondaryRewardsFileUrl, expectedCid, ipfsFilename),
 		fmt.Sprintf(config.GithubRewardsFileUrl, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsTreeFilename),
 	}
 
 	rewardsTreeCustomUrl := cfg.Smartnode.RewardsTreeCustomUrl.Value.(string)
 	if len(rewardsTreeCustomUrl) != 0 {
 		splitRewardsTreeCustomUrls := strings.Split(rewardsTreeCustomUrl, ";")
-		urls = append(urls, splitRewardsTreeCustomUrls...)
+		for _, customUrl := range splitRewardsTreeCustomUrls {
+			urls = append(urls, fmt.Sprintf(customUrl, rewardsTreeFilename))
+		}
 	}
 
 	// Attempt downloads
