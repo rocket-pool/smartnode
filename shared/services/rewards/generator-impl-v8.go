@@ -26,6 +26,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+var six = big.NewInt(6)
+
 // Implementation for tree generator ruleset v8
 type treeGeneratorImpl_v8 struct {
 	networkState           *state.NetworkState
@@ -319,6 +321,55 @@ func (r *treeGeneratorImpl_v8) updateNetworksAndTotals() {
 
 }
 
+func (r *treeGeneratorImpl_v8) calculateNodeRplRewards(
+	collateralRewards *big.Int,
+	nodeEffectiveStake *big.Int,
+	totalEffectiveRplStake *big.Int,
+	nodeWeight *big.Int,
+	totalNodeWeight *big.Int,
+) *big.Int {
+
+	if nodeEffectiveStake.Sign() <= 0 || nodeWeight.Sign() <= 0 {
+		return big.NewInt(0)
+	}
+
+	// C is in the closed range [1, 6]
+	// C := min(6, interval - 18 + 1)
+	c := int64(6)
+	interval := int64(r.networkState.NetworkDetails.RewardIndex)
+
+	if c > (interval - 18 + 1) {
+		c = interval - 18 + 1
+	}
+
+	if c <= 0 {
+		c = 1
+	}
+
+	bigC := big.NewInt(c)
+
+	// (collateralRewards * C * nodeWeight / (totalNodeWeight * 6)) + (collateralRewards * (6 - C) * nodeEffectiveStake / (totalEffectiveRplStake * 6))
+	// First, (collateralRewards * C * nodeWeight / (totalNodeWeight * 6))
+	rpip30Rewards := big.NewInt(0).Mul(collateralRewards, nodeWeight)
+	rpip30Rewards.Mul(rpip30Rewards, bigC)
+	rpip30Rewards.Quo(rpip30Rewards, big.NewInt(0).Mul(totalNodeWeight, six))
+
+	// Once C hits 6 we can exit early as an optimization
+	if c == 6 {
+		return rpip30Rewards
+	}
+
+	// Second, (collateralRewards * (6 - C) * nodeEffectiveStake / (totalEffectiveRplStake * 6))
+	oldRewards := big.NewInt(6)
+	oldRewards.Sub(oldRewards, bigC)
+	oldRewards.Mul(oldRewards, collateralRewards)
+	oldRewards.Mul(oldRewards, nodeEffectiveStake)
+	oldRewards.Quo(oldRewards, big.NewInt(0).Mul(totalEffectiveRplStake, six))
+
+	// Add them together
+	return rpip30Rewards.Add(rpip30Rewards, oldRewards)
+}
+
 // Calculates the RPL rewards for the given interval
 func (r *treeGeneratorImpl_v8) calculateRplRewards() error {
 	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
@@ -347,20 +398,32 @@ func (r *treeGeneratorImpl_v8) calculateRplRewards() error {
 		return fmt.Errorf("error calculating effective RPL stakes: %w", err)
 	}
 
+	// Calculate the RPIP-30 weight of each node, scaling by their participation in this interval
+	nodeWeights, totalNodeWeight, err := r.networkState.CalculateNodeWeights()
+	if err != nil {
+		return fmt.Errorf("error calculating node weights: %w", err)
+	}
+
 	// Operate normally if any node has rewards
-	if totalNodeEffectiveStake.Cmp(common.Big0) > 0 {
+	if totalNodeEffectiveStake.Sign() > 0 && totalNodeWeight.Sign() > 0 {
+		// Make sure to record totalNodeWeight in the rewards file
+		quotedTotalNodeWeight := NewQuotedBigInt(0)
+		quotedTotalNodeWeight.Set(totalNodeWeight)
+		r.rewardsFile.TotalRewards.TotalNodeWeight = quotedTotalNodeWeight
+
 		r.log.Printlnf("%s Calculating individual collateral rewards...", r.logPrefix)
 		for i, nodeDetails := range r.networkState.NodeDetails {
-			// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
-			nodeRplRewards := big.NewInt(0)
-			effectiveStake := trueNodeEffectiveStakes[nodeDetails.NodeAddress]
-			if effectiveStake.Cmp(common.Big0) > 0 {
-				nodeRplRewards.Mul(effectiveStake, totalNodeRewards)
-				nodeRplRewards.Div(nodeRplRewards, totalNodeEffectiveStake)
-			}
+			// Get how much RPL goes to this node
+			nodeRplRewards := r.calculateNodeRplRewards(
+				totalNodeRewards,
+				trueNodeEffectiveStakes[nodeDetails.NodeAddress],
+				totalNodeEffectiveStake,
+				nodeWeights[nodeDetails.NodeAddress],
+				totalNodeWeight,
+			)
 
 			// If there are pending rewards, add it to the map
-			if nodeRplRewards.Cmp(common.Big0) == 1 {
+			if nodeRplRewards.Sign() == 1 {
 				rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeDetails.NodeAddress]
 				if !exists {
 					// Get the network the rewards should go to
