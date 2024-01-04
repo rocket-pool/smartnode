@@ -293,7 +293,23 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, expected
 				errBuilder.WriteString(fmt.Sprintf("Error reading response bytes from %s: %s\n", url, err.Error()))
 				continue
 			}
-			deserializedRewardsFile, err := DeserializeRewardsFile(bytes)
+			writeBytes := bytes
+			if strings.HasSuffix(url, config.RewardsTreeIpfsExtension) {
+				// Decompress it
+				writeBytes, err = decompressFile(bytes)
+				if err != nil {
+					errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
+					continue
+				}
+			}
+
+			// Write the file
+			err = os.WriteFile(rewardsTreePath, writeBytes, 0644)
+			if err != nil {
+				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
+			}
+
+			deserializedRewardsFile, err := DeserializeRewardsFile(writeBytes)
 			if err != nil {
 				return fmt.Errorf("Error deserializing file %s: %w", rewardsTreePath, err)
 			}
