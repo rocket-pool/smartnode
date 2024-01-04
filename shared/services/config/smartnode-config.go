@@ -330,7 +330,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		RewardsTreeCustomUrl: config.Parameter{
 			ID:                 "rewardsTreeCustomUrl",
 			Name:               "Rewards tree custom download URLs",
-			Description:        "[orange]**Only used if you want an extra source to download rewards tree files.**[white]\n\nThe smartnode will automatically try to download rewards tree files from sources like IPFS, and GitHub. Use this field if you want to provide a extra URL for the download (multiple URLs can be provided using ';' as separator).\nUsers don't need to trust any of the file sources as the content will need to match what was voted by the oDAO.",
+			Description:        "[orange]**Only used if you want an extra source to download rewards tree files.**[white]\n\nThe smartnode will automatically try to download rewards tree files from sources like IPFS and GitHub. Use this field if you want to provide a extra URL for the download (multiple URLs can be provided using ';' as separator).\nUsers don't need to trust any of the file sources as the content will need to match what was voted by the oDAO.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
