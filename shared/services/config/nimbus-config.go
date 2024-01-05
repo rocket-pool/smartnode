@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	// Prater
-	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v23.11.0"
-	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v23.11.0"
+	// Testnet
+	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v24.1.0"
+	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v24.1.0"
 
 	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v23.11.0"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v23.11.0"
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v24.1.0"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v24.1.0"
 
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
