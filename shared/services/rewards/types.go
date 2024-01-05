@@ -70,6 +70,7 @@ type TotalRewards struct {
 	TotalSmoothingPoolEth        *QuotedBigInt `json:"totalSmoothingPoolEth"`
 	PoolStakerSmoothingPoolEth   *QuotedBigInt `json:"poolStakerSmoothingPoolEth"`
 	NodeOperatorSmoothingPoolEth *QuotedBigInt `json:"nodeOperatorSmoothingPoolEth"`
+	TotalNodeWeight              *QuotedBigInt `json:"totalNodeWeight"`
 }
 
 // Minipool stats

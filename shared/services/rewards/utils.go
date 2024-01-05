@@ -426,6 +426,9 @@ func DeserializeRewardsFile(bytes []byte) (IRewardsFile, error) {
 	case 2:
 		file := &RewardsFile_v2{}
 		return file, file.Deserialize(bytes)
+	case 3:
+		file := &RewardsFile_v3{}
+		return file, file.Deserialize(bytes)
 	default:
 		return nil, fmt.Errorf("unexpected rewards file version [%d]", header.RewardsFileVersion)
 	}
@@ -445,6 +448,9 @@ func DeserializeMinipoolPerformanceFile(bytes []byte) (IMinipoolPerformanceFile,
 		return file, file.Deserialize(bytes)
 	case 2:
 		file := &MinipoolPerformanceFile_v2{}
+		return file, file.Deserialize(bytes)
+	case 3:
+		file := &MinipoolPerformanceFile_v3{}
 		return file, file.Deserialize(bytes)
 	default:
 		return nil, fmt.Errorf("unexpected rewards file version [%d]", header.RewardsFileVersion)
