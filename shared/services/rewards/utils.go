@@ -289,69 +289,68 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, expected
 		if resp.StatusCode != http.StatusOK {
 			errBuilder.WriteString(fmt.Sprintf("Downloading %s failed with status %s\n", url, resp.Status))
 			continue
-		} else {
-			// If we got here, we have a successful download
-			bytes, err := io.ReadAll(resp.Body)
+		}
+		// If we got here, we have a successful download
+		bytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			errBuilder.WriteString(fmt.Sprintf("Error reading response bytes from %s: %s\n", url, err.Error()))
+			continue
+		}
+		writeBytes := bytes
+		if strings.HasSuffix(url, config.RewardsTreeIpfsExtension) {
+			// Decompress it
+			writeBytes, err = decompressFile(bytes)
 			if err != nil {
-				errBuilder.WriteString(fmt.Sprintf("Error reading response bytes from %s: %s\n", url, err.Error()))
+				errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
 				continue
 			}
-			writeBytes := bytes
-			if strings.HasSuffix(url, config.RewardsTreeIpfsExtension) {
-				// Decompress it
-				writeBytes, err = decompressFile(bytes)
-				if err != nil {
-					errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
-					continue
-				}
-			}
-
-			// Write the file
-			err = os.WriteFile(rewardsTreePath, writeBytes, 0644)
-			if err != nil {
-				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
-			}
-
-			deserializedRewardsFile, err := DeserializeRewardsFile(writeBytes)
-			if err != nil {
-				return fmt.Errorf("Error deserializing file %s: %w", rewardsTreePath, err)
-			}
-
-			// Get the original merkle root
-			downloadedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
-			// Clear the merkle root so we have a safer comparison after calculating it again
-			deserializedRewardsFile.GetHeader().MerkleRoot = ""
-
-			// Reconstruct the merkle tree from the file data, this should overwrite the stored Merkle Root with a new one
-			deserializedRewardsFile.generateMerkleTree()
-
-			// Get the resulting merkle root
-			calculatedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
-
-			// Compare the merkle roots to see if the original is correct
-			if downloadedRoot != calculatedRoot {
-				return fmt.Errorf("the merkle root from the downloaded file %s is not correct", rewardsTreePath)
-			}
-
-			if calculatedRoot != expectedRoot.String() {
-				return fmt.Errorf("the merkle tree from the downloaded %s file doesn't match the one expected %s for interval %d", calculatedRoot, expectedRoot, deserializedRewardsFile.GetHeader().Index)
-			}
-
-			// Serialize again so we're sure to have all the correct proofs that we've generated (instead of verifying every proof on the file)
-			writeBytesVerified, err := deserializedRewardsFile.Serialize()
-			if err != nil {
-				return fmt.Errorf("error serializing file %s: %w", rewardsTreePath, err)
-			}
-
-			// Write the file
-			err = os.WriteFile(rewardsTreePath, writeBytesVerified, 0644)
-			if err != nil {
-				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
-			}
-
-			return nil
-
 		}
+
+		// Write the file
+		err = os.WriteFile(rewardsTreePath, writeBytes, 0644)
+		if err != nil {
+			return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
+		}
+
+		deserializedRewardsFile, err := DeserializeRewardsFile(writeBytes)
+		if err != nil {
+			return fmt.Errorf("Error deserializing file %s: %w", rewardsTreePath, err)
+		}
+
+		// Get the original merkle root
+		downloadedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
+		// Clear the merkle root so we have a safer comparison after calculating it again
+		deserializedRewardsFile.GetHeader().MerkleRoot = ""
+
+		// Reconstruct the merkle tree from the file data, this should overwrite the stored Merkle Root with a new one
+		deserializedRewardsFile.generateMerkleTree()
+
+		// Get the resulting merkle root
+		calculatedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
+
+		// Compare the merkle roots to see if the original is correct
+		if !strings.EqualFold(downloadedRoot, calculatedRoot) {
+			return fmt.Errorf("the merkle root from the downloaded file %s is not correct", rewardsTreePath)
+		}
+
+		if !strings.EqualFold(calculatedRoot, expectedRoot.String()) {
+			return fmt.Errorf("the merkle tree from the downloaded %s file doesn't match the one expected %s for interval %d", calculatedRoot, expectedRoot, deserializedRewardsFile.GetHeader().Index)
+		}
+
+		// Serialize again so we're sure to have all the correct proofs that we've generated (instead of verifying every proof on the file)
+		writeBytesVerified, err := deserializedRewardsFile.Serialize()
+		if err != nil {
+			return fmt.Errorf("error serializing file %s: %w", rewardsTreePath, err)
+		}
+
+		// Write the file
+		err = os.WriteFile(rewardsTreePath, writeBytesVerified, 0644)
+		if err != nil {
+			return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
+		}
+
+		return nil
+
 	}
 
 	return fmt.Errorf(errBuilder.String())
