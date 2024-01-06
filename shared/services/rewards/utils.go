@@ -250,9 +250,11 @@ func GetELBlockHeaderForTime(targetTime time.Time, rp *rocketpool.RocketPool) (*
 	}
 }
 
-// Downloads a single rewards file
-func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, expectedCid string, expectedRoot common.Hash, isDaemon bool) error {
-
+// Downloads the rewards file for this interval
+func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemon bool) error {
+	interval := i.Index
+	expectedCid := i.CID
+	expectedRoot := i.MerkleRoot
 	// Determine file name and path
 	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon))
 	if err != nil {
