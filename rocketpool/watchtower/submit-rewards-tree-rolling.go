@@ -506,7 +506,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 
 		cid, err := rprewards.SingleFileDirIPFSCid(fileBytes, rewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			return fmt.Errorf("error submitting rewards snapshot: %w", err)
+			return fmt.Errorf("error getting CID for file %s: %w", rewardsTreePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated CID %s", cid))
 
