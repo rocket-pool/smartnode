@@ -22,6 +22,15 @@ const (
 	threadLimit int = 6
 )
 
+var two = big.NewInt(2)
+var oneHundred = big.NewInt(100)
+
+var oneEth = big.NewInt(1e18)
+var oneHundredEth = big.NewInt(0).Mul(oneHundred, oneEth)
+var fifteenEth = big.NewInt(0).Mul(big.NewInt(15), oneEth)
+var _13_6137_Eth = big.NewInt(0).Mul(big.NewInt(136137), big.NewInt(1e14))
+var _13_Eth = big.NewInt(0).Mul(big.NewInt(13), oneEth)
+
 type NetworkState struct {
 	// Network version
 	IsHoustonDeployed bool
@@ -347,6 +356,133 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	}
 
 	return state, totalEffectiveStake, nil
+}
+
+func (s *NetworkState) getNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *big.Int) *big.Int {
+	rplPrice := s.NetworkDetails.RplPrice
+
+	// stakedRplValueInEth := nodeStake * ratio / 1 Eth
+	stakedRplValueInEth := big.NewInt(0)
+	stakedRplValueInEth.Mul(nodeStake, rplPrice)
+	stakedRplValueInEth.Quo(stakedRplValueInEth, oneEth)
+
+	// percentOfBorrowedEth := stakedRplValueInEth * 100 Eth / eligibleBorrowedEth
+	percentOfBorrowedEth := big.NewInt(0)
+	percentOfBorrowedEth.Mul(stakedRplValueInEth, oneHundredEth)
+	percentOfBorrowedEth.Quo(percentOfBorrowedEth, eligibleBorrowedEth)
+
+	// If at or under 15%, return 100 * stakedRplValueInEth
+	if percentOfBorrowedEth.Cmp(fifteenEth) <= 0 {
+		stakedRplValueInEth.Mul(stakedRplValueInEth, oneHundred)
+		return stakedRplValueInEth
+	}
+
+	// Otherwise, return ((13.6137 Eth + 2 * ln(percentOfBorrowedEth - 13 Eth)) * eligibleBorrowedEth) / 1 Eth
+	lnArgs := big.NewInt(0).Sub(percentOfBorrowedEth, _13_Eth)
+	return big.NewInt(0).Quo(
+		big.NewInt(0).Mul(
+			big.NewInt(0).Add(
+				_13_6137_Eth,
+				big.NewInt(0).Mul(
+					two,
+					ethNaturalLog(lnArgs),
+				),
+			),
+			eligibleBorrowedEth,
+		),
+		oneEth,
+	)
+}
+
+// Starting in v8, RPL stake is phased out and replaced with weight.
+// scaleByParticipation and allowRplForUnstartedValidators are hard-coded true here, since
+// only v8 cares about weight.
+func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big.Int, error) {
+	weights := make(map[common.Address]*big.Int, len(s.NodeDetails))
+	totalWeight := big.NewInt(0)
+	intervalDurationBig := big.NewInt(int64(s.NetworkDetails.IntervalDuration.Seconds()))
+	genesisTime := time.Unix(int64(s.BeaconConfig.GenesisTime), 0)
+	slotOffset := time.Duration(s.BeaconSlotNumber*s.BeaconConfig.SecondsPerSlot) * time.Second
+	slotTime := genesisTime.Add(slotOffset)
+
+	nodeCount := uint64(len(s.NodeDetails))
+	weightSlice := make([]*big.Int, nodeCount)
+
+	// Get the weight for each node
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+	for i, node := range s.NodeDetails {
+		i := i
+		node := node
+		wg.Go(func() error {
+			eligibleBorrowedEth := big.NewInt(0)
+			for _, mpd := range s.MinipoolDetailsByNode[node.NodeAddress] {
+				// It must exist and be staking
+				if !mpd.Exists || mpd.Status != types.Staking {
+					continue
+				}
+
+				// Doesn't exist on Beacon yet
+				validatorStatus, exists := s.ValidatorDetails[mpd.Pubkey]
+				if !exists {
+					//s.logLine("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
+					continue
+				}
+
+				intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
+				// Already exited
+				if validatorStatus.ExitEpoch <= intervalEndEpoch {
+					//s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
+					continue
+				}
+				// It's eligible, so add up the borrowed and bonded amounts
+				eligibleBorrowedEth.Add(eligibleBorrowedEth, mpd.UserDepositBalance)
+			}
+
+			// minCollateral := borrowedEth * minCollateralFraction / ratio
+			// NOTE: minCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
+			minCollateral := big.NewInt(0).Mul(eligibleBorrowedEth, s.NetworkDetails.MinCollateralFraction)
+			minCollateral.Div(minCollateral, s.NetworkDetails.RplPrice)
+
+			// Calculate the weight
+			nodeWeight := big.NewInt(0)
+			if node.RplStake.Cmp(minCollateral) == -1 || eligibleBorrowedEth.Sign() <= 0 {
+				weightSlice[i] = nodeWeight
+				return nil
+			}
+
+			nodeWeight.Set(s.getNodeWeight(eligibleBorrowedEth, node.RplStake))
+
+			// Scale the node weight by the participation in the current interval
+			// Get the timestamp of the node's registration
+			regTimeBig := node.RegistrationTime
+			regTime := time.Unix(regTimeBig.Int64(), 0)
+
+			// Get the actual node weight, scaled based on participation
+			eligibleDuration := slotTime.Sub(regTime)
+			if eligibleDuration < s.NetworkDetails.IntervalDuration {
+				eligibleSeconds := big.NewInt(int64(eligibleDuration / time.Second))
+				nodeWeight.Mul(nodeWeight, eligibleSeconds)
+				nodeWeight.Div(nodeWeight, intervalDurationBig)
+			}
+
+			weightSlice[i] = nodeWeight
+			return nil
+		})
+	}
+
+	if err := wg.Wait(); err != nil {
+		return nil, nil, err
+	}
+
+	// Tally everything up and make the node stake map
+	for i, nodeWeight := range weightSlice {
+		node := s.NodeDetails[i]
+		weights[node.NodeAddress] = nodeWeight
+		totalWeight.Add(totalWeight, nodeWeight)
+	}
+
+	return weights, totalWeight, nil
 }
 
 // Calculate the true effective stakes of all nodes in the state, using the validator status

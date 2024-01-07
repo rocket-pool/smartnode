@@ -15,7 +15,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
@@ -311,7 +310,7 @@ func deployDefaultFeeRecipientFile(c *cli.Context) error {
 		var defaultFeeRecipientFileContents string
 		if cfg.IsNativeMode {
 			// Native mode needs an environment variable definition
-			defaultFeeRecipientFileContents = fmt.Sprintf("%s=%s", config.FeeRecipientEnvVar, cfg.Smartnode.GetRethAddress().Hex())
+			defaultFeeRecipientFileContents = fmt.Sprintf("FEE_RECIPIENT=%s", cfg.Smartnode.GetRethAddress().Hex())
 		} else {
 			// Docker and Hybrid just need the address itself
 			defaultFeeRecipientFileContents = cfg.Smartnode.GetRethAddress().Hex()

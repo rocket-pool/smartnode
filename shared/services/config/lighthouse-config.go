@@ -42,26 +42,24 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 		Title: "Lighthouse Settings",
 
 		MaxPeers: config.Parameter{
-			ID:                   "maxPeers",
-			Name:                 "Max Peers",
-			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultLhMaxPeers},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_MAX_PEERS"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "maxPeers",
+			Name:               "Max Peers",
+			Description:        "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultLhMaxPeers},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 		P2pQuicPort: config.Parameter{
-			ID:                   P2pQuicPortID,
-			Name:                 "P2P QUIC Port",
-			Description:          "The port to use for P2P (blockchain) traffic using the QUIC protocol.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultP2pQuicPort},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_P2P_QUIC_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 P2pQuicPortID,
+			Name:               "P2P QUIC Port",
+			Description:        "The port to use for P2P (blockchain) traffic using the QUIC protocol.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultP2pQuicPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		ContainerTag: config.Parameter{
@@ -75,34 +73,31 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 				config.Network_Devnet:  getLighthouseTagTest(),
 				config.Network_Holesky: getLighthouseTagTest(),
 			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
-			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		AdditionalBnFlags: config.Parameter{
-			ID:                   "additionalBnFlags",
-			Name:                 "Additional Beacon Client Flags",
-			Description:          "Additional custom command line flags you want to pass Lighthouse's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalBnFlags",
+			Name:               "Additional Beacon Client Flags",
+			Description:        "Additional custom command line flags you want to pass Lighthouse's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 
 		AdditionalVcFlags: config.Parameter{
-			ID:                   "additionalVcFlags",
-			Name:                 "Additional Validator Client Flags",
-			Description:          "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalVcFlags",
+			Name:               "Additional Validator Client Flags",
+			Description:        "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 	}
 }
@@ -125,6 +120,11 @@ func (cfg *LighthouseConfig) GetUnsupportedCommonParams() []string {
 
 // Get the Docker container name of the validator client
 func (cfg *LighthouseConfig) GetValidatorImage() string {
+	return cfg.ContainerTag.Value.(string)
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *LighthouseConfig) GetBeaconNodeImage() string {
 	return cfg.ContainerTag.Value.(string)
 }
 

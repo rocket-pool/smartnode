@@ -3,7 +3,6 @@ module github.com/rocket-pool/smartnode
 go 1.19
 
 require (
-	github.com/a8m/envsubst v1.4.2
 	github.com/alessio/shellescape v1.4.1
 	github.com/blang/semver/v4 v4.0.0
 	github.com/btcsuite/btcd v0.23.4
