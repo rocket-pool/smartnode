@@ -37,9 +37,6 @@ type NethermindConfig struct {
 	// Nethermind's memory for pruning
 	PruneMemSize config.Parameter `yaml:"pruneMemSize,omitempty"`
 
-	// Flag for downloading complete chain history instead of starting from Beacon deployment
-	DownloadCompleteHistory config.Parameter `yaml:"downloadCompleteHistory,omitempty"`
-
 	// Additional modules to enable on the primary JSON RPC endpoint
 	AdditionalModules config.Parameter `yaml:"additionalModules,omitempty"`
 
@@ -98,17 +95,6 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			Description:        "The amount of RAM (in MB) you want to dedicate to Nethermind for its in-memory pruning system. Higher values mean less writes to your SSD and slower overall database growth.\n\nThe default value for this will be calculated dynamically based on your system's available RAM, but you can adjust it manually.",
 			Type:               config.ParameterType_Uint,
 			Default:            map[config.Network]interface{}{config.Network_All: calculateNethermindPruneMemSize()},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
-			CanBeBlank:         false,
-			OverwriteOnUpgrade: false,
-		},
-
-		DownloadCompleteHistory: config.Parameter{
-			ID:                 "downloadCompleteHistory",
-			Name:               "Download Complete History",
-			Description:        "***For Mainnet Only - No Effect on Prater or Holesky***\n\nBy default, Nethermind will only download chain information from the block that the Beacon Chain was deployed on. This will use less disk space, but other Ethereum nodes won't be able to connect to your node and fully sync from scratch.\n\nIf you prefer to use the old behavior and have Nethermind download the complete chain history, enable this setting.\n\n[orange]NOTE: You may need to resync Nethermind for this change to take effect with `rocketpool service resync-eth1`.",
-			Type:               config.ParameterType_Bool,
-			Default:            map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -221,7 +207,6 @@ func (cfg *NethermindConfig) GetParameters() []*config.Parameter {
 		&cfg.CacheSize,
 		&cfg.MaxPeers,
 		&cfg.PruneMemSize,
-		&cfg.DownloadCompleteHistory,
 		&cfg.AdditionalModules,
 		&cfg.AdditionalUrls,
 		&cfg.ContainerTag,
