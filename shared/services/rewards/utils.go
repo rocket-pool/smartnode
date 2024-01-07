@@ -89,15 +89,10 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.Index = interval
 	var event rewards.RewardsEvent
 
-	if cfg.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Prater && interval < 6 {
-		// Use the hardcoded prehistoric lookup for early Prater intervals
-		event = praterPrehistoryIntervalEvents[interval]
-	} else {
-		// Get the event details for this interval
-		event, err = GetRewardSnapshotEvent(rp, cfg, interval, opts)
-		if err != nil {
-			return
-		}
+	// Get the event details for this interval
+	event, err = GetRewardSnapshotEvent(rp, cfg, interval, opts)
+	if err != nil {
+		return
 	}
 
 	info.CID = event.MerkleTreeCID
@@ -306,12 +301,6 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 				errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
 				continue
 			}
-		}
-
-		// Write the file
-		err = os.WriteFile(rewardsTreePath, writeBytes, 0644)
-		if err != nil {
-			return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 		}
 
 		deserializedRewardsFile, err := DeserializeRewardsFile(writeBytes)
