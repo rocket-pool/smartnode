@@ -316,10 +316,10 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			}},
 		},
 
-		ArchiveECUrl: config.Parameter{
-			ID:                 "archiveECUrl",
-			Name:               "Archive-Mode EC URL",
-			Description:        "[orange]**For manual Merkle rewards tree generation only.**[white]\n\nGenerating the Merkle rewards tree files for past rewards intervals typically requires an Execution client with Archive mode enabled, which is usually disabled on your primary and fallback Execution clients to save disk space.\nIf you want to generate your own rewards tree files for intervals from a long time ago, you may enter the URL of an Execution client with Archive access here.\n\nFor a free light client with Archive access, you may use https://www.alchemy.com/supernode.",
+		RewardsTreeCustomUrl: config.Parameter{
+			ID:                 "rewardsTreeCustomUrl",
+			Name:               "Rewards Tree Custom Download URLs",
+			Description:        "[orange]**Only used if you want an extra source to download rewards tree files.**[white]\n\nThe smartnode will automatically try to download rewards tree files from sources like IPFS and GitHub. Use this field if you want to provide an extra URL for the download (multiple URLs can be provided using ';' as separator).\nUsers don't need to trust any of the file sources as the content will be verified against the on-chain results from the oDAO.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
@@ -327,10 +327,10 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: false,
 		},
 
-		RewardsTreeCustomUrl: config.Parameter{
-			ID:                 "rewardsTreeCustomUrl",
-			Name:               "Rewards tree custom download URLs",
-			Description:        "[orange]**Only used if you want an extra source to download rewards tree files.**[white]\n\nThe smartnode will automatically try to download rewards tree files from sources like IPFS and GitHub. Use this field if you want to provide an extra URL for the download (multiple URLs can be provided using ';' as separator).\nUsers don't need to trust any of the file sources as the content will be verified against the on-chain results from the oDAO.",
+		ArchiveECUrl: config.Parameter{
+			ID:                 "archiveECUrl",
+			Name:               "Archive-Mode EC URL",
+			Description:        "[orange]**For manual Merkle rewards tree generation only.**[white]\n\nGenerating the Merkle rewards tree files for past rewards intervals typically requires an Execution client with Archive mode enabled, which is usually disabled on your primary and fallback Execution clients to save disk space.\nIf you want to generate your own rewards tree files for intervals from a long time ago, you may enter the URL of an Execution client with Archive access here.\n\nFor a free light client with Archive access, you may use https://www.alchemy.com/supernode.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
@@ -633,6 +633,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.AutoTxGasThreshold,
 		&cfg.DistributeThreshold,
 		&cfg.RewardsTreeMode,
+		&cfg.RewardsTreeCustomUrl,
 		&cfg.ArchiveECUrl,
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPrioFeeOverride,
