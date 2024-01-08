@@ -15,6 +15,7 @@ type FaucetStatusData struct {
 }
 
 type FaucetWithdrawRplData struct {
+	Amount                    *big.Int              `json:"amount"`
 	CanWithdraw               bool                  `json:"canWithdraw"`
 	InsufficientFaucetBalance bool                  `json:"insufficientFaucetBalance"`
 	InsufficientAllowance     bool                  `json:"insufficientAllowance"`

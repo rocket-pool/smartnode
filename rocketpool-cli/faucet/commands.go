@@ -1,34 +1,30 @@
 package faucet
 
 import (
-	"github.com/urfave/cli"
-
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/urfave/cli/v2"
 )
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Access the legacy RPL faucet",
-		Subcommands: []cli.Command{
-
+		Subcommands: []*cli.Command{
 			{
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get the faucet's status",
 				UsageText: "rocketpool faucet status",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return getStatus(c)
-
 				},
 			},
 
@@ -38,15 +34,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Withdraw legacy RPL from the faucet",
 				UsageText: "rocketpool faucet withdraw-rpl",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return withdrawRpl(c)
-
 				},
 			},
 		},

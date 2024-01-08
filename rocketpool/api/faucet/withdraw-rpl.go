@@ -86,17 +86,19 @@ func (c *faucetWithdrawContext) PrepareData(data *api.FaucetWithdrawRplData, opt
 	data.InsufficientNodeBalance = (nodeAccountBalance.Cmp(c.f.WithdrawalFee.Get()) < 0)
 	data.CanWithdraw = !(data.InsufficientFaucetBalance || data.InsufficientAllowance || data.InsufficientNodeBalance)
 
+	// Get withdrawal amount
+	var amount *big.Int
+	balance := c.f.Balance.Get()
+	if balance.Cmp(c.allowance) > 0 {
+		amount = c.allowance
+	} else {
+		amount = balance
+	}
+	data.Amount = amount
+
+	// Get the TX
 	if data.CanWithdraw && opts != nil {
 		opts.Value = c.f.WithdrawalFee.Get()
-
-		// Get withdrawal amount
-		var amount *big.Int
-		balance := c.f.Balance.Get()
-		if balance.Cmp(c.allowance) > 0 {
-			amount = c.allowance
-		} else {
-			amount = balance
-		}
 
 		txInfo, err := c.f.Withdraw(amount, opts)
 		if err != nil {

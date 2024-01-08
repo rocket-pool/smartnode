@@ -4,68 +4,50 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func withdrawRpl(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Check RPL can be withdrawn
-	canWithdraw, err := rp.CanFaucetWithdrawRpl()
+	response, err := rp.Api.Faucet.WithdrawRpl()
 	if err != nil {
 		return err
 	}
-	if !canWithdraw.CanWithdraw {
+	if !response.Data.CanWithdraw {
 		fmt.Println("Cannot withdraw legacy RPL from the faucet:")
-		if canWithdraw.InsufficientFaucetBalance {
+		if response.Data.InsufficientFaucetBalance {
 			fmt.Println("The faucet does not have any legacy RPL for withdrawal")
 		}
-		if canWithdraw.InsufficientAllowance {
+		if response.Data.InsufficientAllowance {
 			fmt.Println("You don't have any allowance remaining for the withdrawal period")
 		}
-		if canWithdraw.InsufficientNodeBalance {
+		if response.Data.InsufficientNodeBalance {
 			fmt.Println("You don't have enough GoETH to pay the faucet withdrawal fee")
 		}
 		return nil
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, c.Bool("yes"))
+	// Run the TX
+	amount := math.RoundDown(eth.WeiToEth(response.Data.Amount), 6)
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf("Are you sure you want to withdraw %.6f legacy RPL from the faucet?", amount),
+		"Withdrawing legacy RPL...",
+	)
 	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to withdraw legacy RPL from the faucet?")) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Withdraw RPL
-	response, err := rp.FaucetWithdrawRpl()
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Withdrawing legacy RPL...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully withdrew %.6f legacy RPL from the faucet.\n", math.RoundDown(eth.WeiToEth(response.Amount), 6))
+	fmt.Printf("Successfully withdrew %.6f legacy RPL from the faucet.\n", amount)
 	return nil
-
 }
