@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 	"github.com/tyler-smith/go-bip39"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -32,7 +32,7 @@ const (
 
 // Validate command argument count
 func ValidateArgCount(c *cli.Context, count int) error {
-	if len(c.Args()) != count {
+	if c.Args().Len() != count {
 		return fmt.Errorf("Incorrect argument count; usage: %s", c.Command.UsageText)
 	}
 	return nil

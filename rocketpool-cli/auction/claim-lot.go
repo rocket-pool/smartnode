@@ -96,5 +96,4 @@ func claimFromLot(c *cli.Context) error {
 	// Log & return
 	fmt.Println("Successfully claimed from all selected lots.")
 	return nil
-
 }

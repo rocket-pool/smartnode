@@ -4,7 +4,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // Register commands
@@ -14,22 +14,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage Rocket Pool RPL auctions",
 		Subcommands: []*cli.Command{
-
 			{
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get RPL auction status",
 				UsageText: "rocketpool auction status",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return getStatus(c)
-
 				},
 			},
 
@@ -39,15 +36,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Get RPL lots for auction",
 				UsageText: "rocketpool auction lots",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return getLots(c)
-
 				},
 			},
 
@@ -57,15 +52,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Create a new lot",
 				UsageText: "rocketpool auction create-lot",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return createLot(c)
-
 				},
 			},
 
@@ -93,18 +86,18 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
 					if c.String("lot") != "" {
-						if _, err := cliutils.ValidateUint("lot ID", c.String("lot")); err != nil {
+						if _, err := input.ValidateUint("lot ID", c.String("lot")); err != nil {
 							return err
 						}
 					}
 					if c.String("amount") != "" && c.String("amount") != "max" {
-						if _, err := cliutils.ValidatePositiveEthAmount("bid amount", c.String("amount")); err != nil {
+						if _, err := input.ValidatePositiveEthAmount("bid amount", c.String("amount")); err != nil {
 							return err
 						}
 					}
@@ -128,7 +121,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -143,28 +136,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Recover unclaimed RPL from a lot (returning it to the auction contract)",
 				UsageText: "rocketpool auction recover-lot [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "lot, l",
-						Usage: "The lot to recover unclaimed RPL from (lot ID or 'all')",
+					&cli.StringFlag{
+						Name:    recoverLotsFlag,
+						Aliases: []string{"l"},
+						Usage:   "A comma-separated list of lot indices to recover RPL from (or 'all' to recover from all available lots)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
-					}
-
-					// Validate flags
-					if c.String("lot") != "" && c.String("lot") != "all" {
-						if _, err := cliutils.ValidateUint("lot ID", c.String("lot")); err != nil {
-							return err
-						}
 					}
 
 					// Run
 					return recoverRplFromLot(c)
-
 				},
 			},
 		},

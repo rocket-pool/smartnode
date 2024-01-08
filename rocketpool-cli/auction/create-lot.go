@@ -3,64 +3,48 @@ package auction
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 )
 
 func createLot(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Check lot can be created
-	canCreate, err := rp.CanCreateLot()
+	response, err := rp.Api.Auction.CreateLot()
 	if err != nil {
 		return fmt.Errorf("Error checking if creating lot is possible: %w", err)
 	}
-	if !canCreate.CanCreate {
+	if !response.Data.CanCreate {
 		fmt.Println("Cannot create lot:")
-		if canCreate.InsufficientBalance {
+		if response.Data.InsufficientBalance {
 			fmt.Println("The auction contract does not have a sufficient RPL balance to create a lot.")
 		}
-		if canCreate.CreateLotDisabled {
+		if response.Data.CreateLotDisabled {
 			fmt.Println("Lot creation is currently disabled.")
 		}
 		return nil
 	}
+	if response.Data.TxInfo.SimError != "" {
+		return fmt.Errorf("error simulating create lot: %s", response.Data.TxInfo.SimError)
+	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canCreate.GasInfo, rp, c.Bool("yes"))
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		"Are you sure you want to create this lot?",
+		"Creating lot...",
+	)
 	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to create this lot?")) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Create lot
-	response, err := rp.CreateLot()
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Creating lot...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully created a new lot with ID %d.\n", response.LotId)
+	fmt.Println("Successfully created a new lot.")
 	return nil
-
 }
