@@ -1,32 +1,31 @@
 package minipool
 
 import (
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Manage the node's minipools",
-		Subcommands: []cli.Command{
-
+		Subcommands: []*cli.Command{
 			{
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get a list of the node's minipools",
 				UsageText: "rocketpool minipool status",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "include-finalized, f",
-						Usage: "Include finalized minipools in the list (default is to hide them).",
+					&cli.BoolFlag{
+						Name:    statusIncludeFinalizedFlag,
+						Aliases: []string{"f"},
+						Usage:   "Include finalized minipools in the list (default is to hide them).",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
@@ -34,7 +33,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return getStatus(c)
-
 				},
 			},
 
@@ -44,28 +42,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Stake a minipool after the scrub check, moving it from prelaunch to staking.",
 				UsageText: "rocketpool minipool stake [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to stake (address or 'all')",
+					&cli.StringFlag{
+						Name:    stakeMinipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "A comma-separated list of addresses for minipools to stake (or 'all' to stake all available minipools)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
-					}
-
 					// Run
 					return stakeMinipools(c)
-
 				},
 			},
 
@@ -75,7 +65,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Convert the withdrawal credentials for a migrated solo validator from the old 0x00 value to the minipool address. Required to complete the migration process.",
 				UsageText: "rocketpool minipool set-withdrawal-creds minipool-address [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "mnemonic, m",
 						Usage: "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
 					},
@@ -102,15 +92,15 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Import the externally-derived key for a minipool that was previously a solo validator, so the Smartnode's VC manages it instead of your externally-managed VC.",
 				UsageText: "rocketpool minipool import-key minipool-address [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "mnemonic, m",
 						Usage: "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
 					},
-					cli.BoolFlag{
+					&cli.BoolFlag{
 						Name:  "no-restart",
 						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
 					},
-					cli.BoolFlag{
+					&cli.BoolFlag{
 						Name:  "yes, y",
 						Usage: "Automatically confirm all interactive questions",
 					},
@@ -137,7 +127,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Promote a vacant minipool after the scrub check, completing a solo validator migration.",
 				UsageText: "rocketpool minipool promote [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to promote (address or 'all')",
 					},
@@ -168,7 +158,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Refund ETH belonging to the node from minipools",
 				UsageText: "rocketpool minipool refund [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to refund from (address or 'all')",
 					},
@@ -199,7 +189,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Begins the ETH bond reduction process for a minipool, taking it from 16 ETH down to 8 ETH (begins conversion of a 16 ETH minipool to an LEB8)",
 				UsageText: "rocketpool minipool begin-bond-reduction [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to begin the bond reduction for (address or 'all')",
 					},
@@ -230,7 +220,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Manually completes the ETH bond reduction process for a minipool from 16 ETH down to 8 ETH once it is eligible. Please run `begin-bond-reduction` first to start this process.",
 				UsageText: "rocketpool minipool reduce-bond [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to reduce the bond for (address or 'all')",
 					},
@@ -261,11 +251,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Distribute a minipool's ETH balance between your withdrawal address and the rETH holders.",
 				UsageText: "rocketpool minipool distribute-balance [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to distribute the balance of (address or 'all')",
 					},
-					cli.Float64Flag{
+					&cli.Float64Flag{
 						Name:  "threshold, t",
 						Usage: "Filter on a minimum amount of ETH that can be distributed - minipools below this amount won't be shown",
 					},
@@ -329,11 +319,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Exit staking minipools from the beacon chain",
 				UsageText: "rocketpool minipool exit [options]",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
+					&cli.BoolFlag{
 						Name:  "yes, y",
 						Usage: "Automatically confirm exiting minipool/s",
 					},
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to exit (address or 'all')",
 					},
@@ -364,11 +354,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Withdraw any remaining balance from a minipool and close it",
 				UsageText: "rocketpool minipool close [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to close (address or 'all')",
 					},
-					cli.BoolFlag{
+					&cli.BoolFlag{
 						Name:  "confirm-slashing",
 						Usage: "Reserved for acknowledging situations where you've been slashed by the Beacon Chain, and closing a minipool will result in the complete loss of the ETH bond and your RPL collateral. DO NOT use this flag unless you have been explicitly instructed to do so.",
 					},
@@ -399,7 +389,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Upgrade a minipool's delegate contract to the latest version",
 				UsageText: "rocketpool minipool delegate-upgrade [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to upgrade (address or 'all')",
 					},
@@ -430,7 +420,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Roll a minipool's delegate contract back to its previous version",
 				UsageText: "rocketpool minipool delegate-rollback [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to rollback (address or 'all')",
 					},
@@ -461,7 +451,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Use this to enable or disable the \"use-latest-delegate\" flag on one or more minipools. If enabled, the minipool will ignore its current delegate contract and always use whatever the latest delegate is.",
 				UsageText: "rocketpool minipool set-use-latest-delegate [options] true/false",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to configure the use-latest setting on (address or 'all')",
 					},
@@ -496,23 +486,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Search for a custom vanity minipool address",
 				UsageText: "rocketpool minipool find-vanity-address [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "prefix, p",
 						Usage: "The prefix of the address to search for (must start with 0x)",
 					},
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "salt, s",
 						Usage: "The salt to start searching from (must start with 0x)",
 					},
-					cli.IntFlag{
+					&cli.IntFlag{
 						Name:  "threads, t",
 						Usage: "The number of threads to use for searching (defaults to your CPU thread count)",
 					},
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "node-address, n",
 						Usage: "The node address to search for (leave blank to use the local node)",
 					},
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "amount, a",
 						Usage: "The bond amount to be used for the minipool, in ETH (impacts vanity address generation)",
 					},
@@ -538,11 +528,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Manually deposit ETH into the Beacon deposit contract for a dissolved minipool, activating it on the Beacon Chain so it can be exited.",
 				UsageText: "rocketpool minipool rescue-dissolved [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "minipool, m",
 						Usage: "The minipool/s to rescue (address, starting with 0x)",
 					},
-					cli.StringFlag{
+					&cli.StringFlag{
 						Name:  "amount, a",
 						Usage: "The amount of ETH to deposit into the minipool",
 					},

@@ -1,37 +1,39 @@
 package minipool
 
 import (
-	"bytes"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+)
+
+const (
+	stakeMinipoolsFlag string = "minipools"
 )
 
 func stakeMinipools(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get minipool statuses
-	status, err := rp.MinipoolStatus()
+	status, err := rp.Api.Minipool.Status()
 	if err != nil {
 		return err
 	}
 
 	// Get stakeable minipools
 	stakeableMinipools := []api.MinipoolDetails{}
-	for _, minipool := range status.Minipools {
+	for _, minipool := range status.Data.Minipools {
 		if minipool.CanStake {
 			stakeableMinipools = append(stakeableMinipools, minipool)
 		}
@@ -44,50 +46,22 @@ func stakeMinipools(c *cli.Context) error {
 	}
 
 	// Get selected minipools
-	var selectedMinipools []api.MinipoolDetails
-	if c.String("minipool") == "" {
-
-		// Prompt for minipool selection
-		options := make([]string, len(stakeableMinipools)+1)
-		options[0] = "All available minipools"
-		for mi, minipool := range stakeableMinipools {
-			options[mi+1] = fmt.Sprintf("%s (%s until dissolved)", minipool.Address.Hex(), minipool.TimeUntilDissolve)
-		}
-		selected, _ := cliutils.Select("Please select a minipool to stake:", options)
-
-		// Get minipools
-		if selected == 0 {
-			selectedMinipools = stakeableMinipools
-		} else {
-			selectedMinipools = []api.MinipoolDetails{stakeableMinipools[selected-1]}
-		}
-
-	} else {
-
-		// Get matching minipools
-		if c.String("minipool") == "all" {
-			selectedMinipools = stakeableMinipools
-		} else {
-			selectedAddress := common.HexToAddress(c.String("minipool"))
-			for _, minipool := range stakeableMinipools {
-				if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
-					selectedMinipools = []api.MinipoolDetails{minipool}
-					break
-				}
-			}
-			if selectedMinipools == nil {
-				return fmt.Errorf("The minipool %s is not available to stake.", selectedAddress.Hex())
-			}
-		}
-
+	options := make([]utils.SelectionOption[api.MinipoolDetails], len(stakeableMinipools))
+	for i, mp := range stakeableMinipools {
+		option := &options[i]
+		option.Element = &mp
+		option.ID = fmt.Sprint(mp.Address)
+		option.Display = fmt.Sprintf("%s (%s until dissolved)", mp.Address.Hex(), mp.TimeUntilDissolve)
+	}
+	selectedMinipools, err := utils.GetMultiselectIndices[api.MinipoolDetails](c, stakeMinipoolsFlag, options, "Please select a minipool to stake:")
+	if err != nil {
+		return fmt.Errorf("error determining minipool selection: %w", err)
 	}
 
-	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
-	var gasInfo rocketpoolapi.GasInfo
+	// Validation
+	txs := make([]*core.TransactionInfo, len(selectedMinipools))
 	for _, minipool := range selectedMinipools {
-		canResponse, err := rp.CanStakeMinipool(minipool.Address)
+		response, err := rp.Api.Minipool.Stake(minipool.Address)
 		if err != nil {
 			fmt.Printf("WARNING: Couldn't get gas price for stake transaction (%s)", err)
 			break
