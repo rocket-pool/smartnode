@@ -7,3 +7,7 @@ type TxSignMessageData struct {
 type TxSignTxData struct {
 	SignedTx string `json:"signedTx"`
 }
+
+type TxBatchSignTxData struct {
+	SignedTxs []string `json:"signedTxs"`
+}

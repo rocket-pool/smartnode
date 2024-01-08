@@ -6,13 +6,18 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
+)
+
+const (
+	bidLotFlag    string = "lot"
+	bidAmountFlag string = "amount"
 )
 
 func bidOnLot(c *cli.Context) error {
@@ -133,6 +138,9 @@ func bidOnLot(c *cli.Context) error {
 			fmt.Println("Bidding on lots is currently disabled.")
 		}
 		return nil
+	}
+	if response.Data.TxInfo.SimError != "" {
+		return fmt.Errorf("error simulating bid on lot %d: %s", selectedLot.Index, response.Data.TxInfo.SimError)
 	}
 
 	// Run the TX

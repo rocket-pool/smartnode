@@ -33,10 +33,6 @@ type BatchTxData struct {
 	TxHashes []common.Hash `json:"txHashes"`
 }
 
-type SignedTxData struct {
-	TxBytes []byte `json:"txBytes"`
-}
-
 type SubmitTxBody struct {
 	Submission     *core.TransactionSubmission `json:"submission"`
 	Nonce          *big.Int                    `json:"nonce,omitempty"`

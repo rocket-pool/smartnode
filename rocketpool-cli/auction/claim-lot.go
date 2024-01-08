@@ -2,37 +2,38 @@ package auction
 
 import (
 	"fmt"
-	"strconv"
 
-	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func claimFromLot(c *cli.Context) error {
+const (
+	claimLotsFlag string = "lots"
+)
 
+func claimFromLot(c *cli.Context) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get lot details
-	lots, err := rp.AuctionLots()
+	lots, err := rp.Api.Auction.Lots()
 	if err != nil {
 		return err
 	}
 
 	// Get claimable lots
-	claimableLots := []api.LotDetails{}
-	for _, lot := range lots.Lots {
+	claimableLots := []api.AuctionLotDetails{}
+	for _, lot := range lots.Data.Lots {
 		if lot.ClaimAvailable {
 			claimableLots = append(claimableLots, lot)
 		}
@@ -45,98 +46,55 @@ func claimFromLot(c *cli.Context) error {
 	}
 
 	// Get selected lots
-	var selectedLots []api.LotDetails
-	if c.String("lot") == "all" {
+	options := make([]utils.SelectionOption[api.AuctionLotDetails], len(claimableLots))
+	for i, lot := range claimableLots {
+		option := &options[i]
+		option.Element = &lot
+		option.ID = fmt.Sprint(lot.Index)
+		option.Display = fmt.Sprintf("lot %d (%.6f ETH bid @ %.6f ETH per RPL)", lot.Index, math.RoundDown(eth.WeiToEth(lot.NodeBidAmount), 6), math.RoundDown(eth.WeiToEth(lot.CurrentPrice), 6))
+	}
+	selectedLots, err := utils.GetMultiselectIndices[api.AuctionLotDetails](c, claimLotsFlag, options, "Please select a lot to claim RPL from:")
+	if err != nil {
+		return fmt.Errorf("error determining lot selection: %w", err)
+	}
 
-		// Select all claimable lots
-		selectedLots = claimableLots
-
-	} else if c.String("lot") != "" {
-
-		// Get selected lot index
-		selectedIndex, err := strconv.ParseUint(c.String("lot"), 10, 64)
+	// Validation
+	txs := make([]*core.TransactionInfo, len(selectedLots))
+	for i, lot := range selectedLots {
+		response, err := rp.Api.Auction.ClaimFromLot(lot.Index)
 		if err != nil {
-			return fmt.Errorf("Invalid lot ID '%s': %w", c.String("lot"), err)
+			return fmt.Errorf("error checking if claiming lot %d is possible: %w", lot.Index, err)
 		}
-
-		// Get matching lot
-		found := false
-		for _, lot := range claimableLots {
-			if lot.Index == selectedIndex {
-				selectedLots = []api.LotDetails{lot}
-				found = true
-				break
+		if !response.Data.CanClaim {
+			fmt.Printf("Cannot claim lot %d:\n", lot.Index)
+			if response.Data.DoesNotExist {
+				fmt.Println("The lot does not exist.")
 			}
+			if response.Data.NoBidFromAddress {
+				fmt.Println("The lot currently doesn't have a bid from your node.")
+			}
+			if response.Data.NotCleared {
+				fmt.Println("The lot is not cleared yet.")
+			}
+			return nil
 		}
-		if !found {
-			return fmt.Errorf("Lot %d is not available for RPL claims.", selectedIndex)
+		if response.Data.TxInfo.SimError != "" {
+			return fmt.Errorf("error simulating claim of lot %d: %s", lot.Index, response.Data.TxInfo.SimError)
 		}
-
-	} else {
-
-		// Prompt for lot selection
-		options := make([]string, len(claimableLots)+1)
-		options[0] = "All available lots"
-		for li, lot := range claimableLots {
-			options[li+1] = fmt.Sprintf("lot %d (%.6f ETH bid @ %.6f ETH per RPL)", lot.Index, math.RoundDown(eth.WeiToEth(lot.AddressBidAmount), 6), math.RoundDown(eth.WeiToEth(lot.CurrentPrice), 6))
-		}
-		selected, _ := cliutils.Select("Please select a lot to claim RPL from:", options)
-
-		// Get lots
-		if selected == 0 {
-			selectedLots = claimableLots
-		} else {
-			selectedLots = []api.LotDetails{claimableLots[selected-1]}
-		}
-
+		txs[i] = response.Data.TxInfo
 	}
 
-	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
-	var gasInfo rocketpoolapi.GasInfo
-	for _, lot := range selectedLots {
-		canResponse, err := rp.CanClaimFromLot(lot.Index)
-		if err != nil {
-			return fmt.Errorf("Error checking if claiming lot %d is possible: %w", lot.Index, err)
-		}
-		gasInfo = canResponse.GasInfo
-		totalGas += canResponse.GasInfo.EstGasLimit
-		totalSafeGas += canResponse.GasInfo.SafeGasLimit
-	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
-
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Claim RPL from lots
+	err = tx.HandleTxBatch(c, rp, txs,
+		fmt.Sprintf("Are you sure you want to claim %d lots?", len(selectedLots)),
+		"Claiming lots...",
+	)
 	if err != nil {
 		return err
 	}
 
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to claim %d lots?", len(selectedLots)))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Claim RPL from lots
-	for _, lot := range selectedLots {
-		response, err := rp.ClaimFromLot(lot.Index)
-		if err != nil {
-			fmt.Printf("Could not claim RPL from lot %d: %s.\n", lot.Index, err)
-			continue
-		}
-
-		fmt.Printf("Claiming from lot %d...\n", lot.Index)
-		cliutils.PrintTransactionHash(rp, response.TxHash)
-		if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-			fmt.Printf("Could not claim RPL from lot %d: %s.\n", lot.Index, err)
-		} else {
-			fmt.Printf("Successfully claimed RPL from lot %d.\n", lot.Index)
-		}
-	}
-
-	// Return
+	// Log & return
+	fmt.Println("Successfully claimed from all selected lots.")
 	return nil
 
 }

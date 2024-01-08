@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/gas/etherchain"
 	"github.com/rocket-pool/smartnode/shared/gas/etherscan"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func GetMaxFees(c *cli.Context, rp *client.Client, gasInfo core.GasInfo) (*big.Int, *big.Int, error) {
@@ -27,7 +27,7 @@ func GetMaxFees(c *cli.Context, rp *client.Client, gasInfo core.GasInfo) (*big.I
 	}
 
 	// Get the max fee - prioritize the CLI arguments, default to the config file setting
-	maxFeeGwei := c.GlobalFloat64(flags.MaxFeeFlag)
+	maxFeeGwei := c.Float64(flags.MaxFeeFlag)
 	if maxFeeGwei == 0 {
 		maxFee := eth.GweiToWei(cfg.Smartnode.ManualMaxFee.Value.(float64))
 		if maxFee != nil && maxFee.Uint64() != 0 {
@@ -36,7 +36,7 @@ func GetMaxFees(c *cli.Context, rp *client.Client, gasInfo core.GasInfo) (*big.I
 	}
 
 	// Get the priority fee - prioritize the CLI arguments, default to the config file setting
-	maxPriorityFeeGwei := c.GlobalFloat64(flags.MaxPriorityFeeFlag)
+	maxPriorityFeeGwei := c.Float64(flags.MaxPriorityFeeFlag)
 	if maxPriorityFeeGwei == 0 {
 		maxPriorityFee := eth.GweiToWei(cfg.Smartnode.PriorityFee.Value.(float64))
 		if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {

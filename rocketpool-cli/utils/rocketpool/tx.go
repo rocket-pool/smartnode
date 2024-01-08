@@ -69,6 +69,28 @@ func (r *TxRequester) SubmitTx(txSubmission *core.TransactionSubmission, nonce *
 	return sendPostRequest[api.TxData](r, "submit-tx", "SubmitTx", body)
 }
 
+// Use the node private key to sign a batch of transactions without submitting them
+func (r *TxRequester) SignTxBatch(txSubmissions []*core.TransactionSubmission, firstNonce *big.Int, maxFee *big.Int, maxPriorityFee *big.Int) (*api.ApiResponse[api.TxBatchSignTxData], error) {
+	body := api.BatchSubmitTxsBody{
+		Submissions:    txSubmissions,
+		FirstNonce:     firstNonce,
+		MaxFee:         maxFee,
+		MaxPriorityFee: maxPriorityFee,
+	}
+	return sendPostRequest[api.TxBatchSignTxData](r, "batch-sign-tx", "SignTxBatch", body)
+}
+
+// Submit a batch of transactions
+func (r *TxRequester) SubmitTxBatch(txSubmissions []*core.TransactionSubmission, firstNonce *big.Int, maxFee *big.Int, maxPriorityFee *big.Int) (*api.ApiResponse[api.BatchTxData], error) {
+	body := api.BatchSubmitTxsBody{
+		Submissions:    txSubmissions,
+		FirstNonce:     firstNonce,
+		MaxFee:         maxFee,
+		MaxPriorityFee: maxPriorityFee,
+	}
+	return sendPostRequest[api.BatchTxData](r, "batch-submit-tx", "SubmitTxBatch", body)
+}
+
 // Wait for a transaction
 func (r *TxRequester) WaitForTransaction(txHash common.Hash) (*api.ApiResponse[api.SuccessData], error) {
 	args := map[string]string{

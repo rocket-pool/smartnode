@@ -7,7 +7,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // Config
@@ -51,11 +51,11 @@ type Client struct {
 // Only use this function from commands that may work if the Daemon service doesn't exist
 // Most users should call NewClientFromCtx(c).WithStatus() or NewClientFromCtx(c).WithReady()
 func NewClientFromCtx(c *cli.Context) *Client {
-	socketPath := os.ExpandEnv(c.GlobalString("api-socket-path"))
+	socketPath := os.ExpandEnv(c.String("api-socket-path"))
 	client := &Client{
-		configPath: os.ExpandEnv(c.GlobalString("config-path")),
-		daemonPath: os.ExpandEnv(c.GlobalString("daemon-path")),
-		debugPrint: c.GlobalBool("debug"),
+		configPath: os.ExpandEnv(c.String("config-path")),
+		daemonPath: os.ExpandEnv(c.String("daemon-path")),
+		debugPrint: c.Bool("debug"),
 
 		Api: rocketpool.NewApiRequester(socketPath),
 	}

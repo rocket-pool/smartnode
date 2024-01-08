@@ -13,54 +13,76 @@ import (
 
 // Print a TX's details to the console.
 func PrintTransactionHash(rp *client.Client, hash common.Hash) {
-
 	finalMessage := "Waiting for the transaction to be included in a block... you may wait here for it, or press CTRL+C to exit and return to the terminal.\n\n"
 	printTransactionHashImpl(rp, hash, finalMessage)
-
 }
 
 // Print a TX's details to the console, but inform the user NOT to cancel it.
 func PrintTransactionHashNoCancel(rp *client.Client, hash common.Hash) {
-
 	finalMessage := "Waiting for the transaction to be included in a block... **DO NOT EXIT!** This transaction is one of several that must be completed.\n\n"
 	printTransactionHashImpl(rp, hash, finalMessage)
+}
 
+// Print a batch of transaction hashes to the console.
+func PrintTransactionBatchHashes(rp *client.Client, hashes []common.Hash) {
+	finalMessage := "Waiting for the transactions to be included in one or more blocks... you may wait here for them, or press CTRL+C to exit and return to the terminal.\n\n"
+
+	// Print the hashes
+	fmt.Println("Transactions have been submitted with the following hashes:")
+	hashStrings := make([]string, len(hashes))
+	for i, hash := range hashes {
+		hashString := hash.String()
+		hashStrings[i] = hashString
+		fmt.Println(hashString)
+	}
+	fmt.Println()
+
+	txWatchUrl := getTxWatchUrl(rp)
+	if txWatchUrl != "" {
+		fmt.Println("You may follow their progress by visiting the following URLs in sequence:")
+		for _, hash := range hashStrings {
+			fmt.Printf("%s/%s\n", txWatchUrl, hash)
+		}
+	}
+	fmt.Println()
+
+	fmt.Print(finalMessage)
 }
 
 // Print a warning to the console if the user set a custom nonce, but this operation involves multiple transactions
 func PrintMultiTransactionNonceWarning() {
-
 	fmt.Printf("%sNOTE: You have specified the `nonce` flag to indicate a custom nonce for this transaction.\n"+
 		"However, this operation requires multiple transactions.\n"+
 		"Rocket Pool will use your custom value as a basis, and increment it for each additional transaction.\n"+
 		"If you have multiple pending transactions, this MAY OVERRIDE more than the one that you specified.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
-
 }
 
 // Implementation of PrintTransactionHash and PrintTransactionHashNoCancel
 func printTransactionHashImpl(rp *client.Client, hash common.Hash, finalMessage string) {
-
-	cfg, isNew, err := rp.LoadConfig()
-	if err != nil {
-		fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable (%s).\n", err)
-		return
-	}
-
-	if isNew {
-		fmt.Print("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
-		return
-	}
-
-	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
+	txWatchUrl := getTxWatchUrl(rp)
 	hashString := hash.String()
-
 	fmt.Printf("Transaction has been submitted with hash %s.\n", hashString)
 	if txWatchUrl != "" {
 		fmt.Printf("You may follow its progress by visiting:\n")
 		fmt.Printf("%s/%s\n\n", txWatchUrl, hashString)
 	}
 	fmt.Print(finalMessage)
+}
 
+// Get the URL for watching the transaction in a block explorer
+func getTxWatchUrl(rp *client.Client) string {
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable (%s).\n", err)
+		return ""
+	}
+
+	if isNew {
+		fmt.Print("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return ""
+	}
+
+	return cfg.Smartnode.GetTxWatchUrl()
 }
 
 // Convert a Unix datetime to a string, or `---` if it's zero
