@@ -508,7 +508,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 		if err != nil {
 			return fmt.Errorf("error getting CID for file %s: %w", rewardsTreePath, err)
 		}
-		t.printMessage(fmt.Sprintf("Calculated CID %s", cid))
+		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, existingRewardsFile.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
@@ -568,7 +568,7 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 		if err != nil {
 			return fmt.Errorf("Error getting the CID for file %s: %w", compressedMinipoolPerformancePath, err)
 		}
-		t.printMessage(fmt.Sprintf("Calculated CID %s", minipoolPerformanceCid))
+		t.printMessage(fmt.Sprintf("Calculated minipool performance CID: %s", minipoolPerformanceCid))
 		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
 	} else {
 		t.printMessage("Saved minipool performance file.")
@@ -593,7 +593,7 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 		if err != nil {
 			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
-		t.printMessage(fmt.Sprintf("Calculated CID %s", cid))
+		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
