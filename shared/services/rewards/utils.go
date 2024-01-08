@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"testing/fstest"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -18,12 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
-	bserv "github.com/ipfs/go-blockservice"
 	"github.com/ipfs/go-cid"
-	"github.com/ipfs/go-datastore"
-	dssync "github.com/ipfs/go-datastore/sync"
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
-	"github.com/ipfs/go-merkledag"
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -33,7 +27,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/web3-storage/go-w3s-client/adder"
 )
 
 // Simple container for the zero value so it doesn't have to be recreated over and over
@@ -96,21 +89,17 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.Index = interval
 	var event rewards.RewardsEvent
 
-	if cfg.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Prater && interval < 6 {
-		// Use the hardcoded prehistoric lookup for early Prater intervals
-		event = praterPrehistoryIntervalEvents[interval]
-	} else {
-		// Get the event details for this interval
-		event, err = GetRewardSnapshotEvent(rp, cfg, interval, opts)
-		if err != nil {
-			return
-		}
+	// Get the event details for this interval
+	event, err = GetRewardSnapshotEvent(rp, cfg, interval, opts)
+	if err != nil {
+		return
 	}
 
 	info.CID = event.MerkleTreeCID
 	info.StartTime = event.IntervalStartTime
 	info.EndTime = event.IntervalEndTime
 	merkleRootCanon := event.MerkleRoot
+	info.MerkleRoot = merkleRootCanon
 
 	// Check if the tree file exists
 	info.TreeFilePath = cfg.Smartnode.GetRewardsTreePath(interval, true)
@@ -256,9 +245,11 @@ func GetELBlockHeaderForTime(targetTime time.Time, rp *rocketpool.RocketPool) (*
 	}
 }
 
-// Downloads a single rewards file
-func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid string, isDaemon bool) error {
-
+// Downloads the rewards file for this interval
+func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemon bool) error {
+	interval := i.Index
+	expectedCid := i.CID
+	expectedRoot := i.MerkleRoot
 	// Determine file name and path
 	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon))
 	if err != nil {
@@ -269,9 +260,19 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 
 	// Create URL list
 	urls := []string{
-		fmt.Sprintf(config.PrimaryRewardsFileUrl, cid, ipfsFilename),
-		fmt.Sprintf(config.SecondaryRewardsFileUrl, cid, ipfsFilename),
+		fmt.Sprintf(config.PrimaryRewardsFileUrl, expectedCid, ipfsFilename),
+		fmt.Sprintf(config.SecondaryRewardsFileUrl, expectedCid, ipfsFilename),
 		fmt.Sprintf(config.GithubRewardsFileUrl, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsTreeFilename),
+	}
+
+	rewardsTreeCustomUrl := cfg.Smartnode.RewardsTreeCustomUrl.Value.(string)
+	rewardsTreeCustomUrl = strings.TrimSpace(rewardsTreeCustomUrl)
+	if len(rewardsTreeCustomUrl) != 0 {
+		splitRewardsTreeCustomUrls := strings.Split(rewardsTreeCustomUrl, ";")
+		for _, customUrl := range splitRewardsTreeCustomUrls {
+			customUrl = strings.TrimSpace(customUrl)
+			urls = append(urls, fmt.Sprintf(customUrl, rewardsTreeFilename))
+		}
 	}
 
 	// Attempt downloads
@@ -287,69 +288,67 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 		if resp.StatusCode != http.StatusOK {
 			errBuilder.WriteString(fmt.Sprintf("Downloading %s failed with status %s\n", url, resp.Status))
 			continue
-		} else {
-			// If we got here, we have a successful download
-			bytes, err := io.ReadAll(resp.Body)
+		}
+		// If we got here, we have a successful download
+		bytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			errBuilder.WriteString(fmt.Sprintf("Error reading response bytes from %s: %s\n", url, err.Error()))
+			continue
+		}
+		writeBytes := bytes
+		if strings.HasSuffix(url, config.RewardsTreeIpfsExtension) {
+			// Decompress it
+			writeBytes, err = decompressFile(bytes)
 			if err != nil {
-				errBuilder.WriteString(fmt.Sprintf("Error reading response bytes from %s: %s\n", url, err.Error()))
+				errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
 				continue
 			}
-
-			writeBytes := bytes
-			if strings.HasSuffix(url, config.RewardsTreeIpfsExtension) {
-				// Decompress it
-				writeBytes, err = decompressFile(bytes)
-				if err != nil {
-					errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
-					continue
-				}
-			}
-
-			// Write the file
-			err = os.WriteFile(rewardsTreePath, writeBytes, 0644)
-			if err != nil {
-				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
-			}
-			return nil
 		}
+
+		deserializedRewardsFile, err := DeserializeRewardsFile(writeBytes)
+		if err != nil {
+			return fmt.Errorf("Error deserializing file %s: %w", rewardsTreePath, err)
+		}
+
+		// Get the original merkle root
+		downloadedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
+
+		// Clear the merkle root so we have a safer comparison after calculating it again
+		deserializedRewardsFile.GetHeader().MerkleRoot = ""
+
+		// Reconstruct the merkle tree from the file data, this should overwrite the stored Merkle Root with a new one
+		deserializedRewardsFile.generateMerkleTree()
+
+		// Get the resulting merkle root
+		calculatedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
+
+		// Compare the merkle roots to see if the original is correct
+		if !strings.EqualFold(downloadedRoot, calculatedRoot) {
+			return fmt.Errorf("the merkle root from %s does not match the root generated by its tree data (had %s, but generated %s)", url, downloadedRoot, calculatedRoot)
+		}
+
+		// Make sure the calculated root matches the canonical one
+		if !strings.EqualFold(calculatedRoot, expectedRoot.Hex()) {
+			return fmt.Errorf("the merkle root from %s does not match the canonical one (had %s, but generated %s)", url, calculatedRoot, expectedRoot.Hex())
+		}
+
+		// Serialize again so we're sure to have all the correct proofs that we've generated (instead of verifying every proof on the file)
+		writeBytesVerified, err := deserializedRewardsFile.Serialize()
+		if err != nil {
+			return fmt.Errorf("error serializing file %s: %w", rewardsTreePath, err)
+		}
+
+		// Write the file
+		err = os.WriteFile(rewardsTreePath, writeBytesVerified, 0644)
+		if err != nil {
+			return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
+		}
+
+		return nil
+
 	}
 
 	return fmt.Errorf(errBuilder.String())
-
-}
-
-// Get CID for a serialized file
-func GetCIDForSerializedFile(data []byte, filename string) (cid.Cid, error) {
-	// Compress the data
-	encoder, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-	compressedData := encoder.EncodeAll(data, make([]byte, 0, len(data)))
-
-	// Create an in-memory file and FS
-	mapFile := fstest.MapFile{
-		Data:    compressedData,
-		Mode:    0644,
-		ModTime: time.Now(),
-	}
-	fsMap := fstest.MapFS{filename: &mapFile}
-	file, err := fsMap.Open(filename)
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("error opening memory-mapped file: %w", err)
-	}
-
-	// Use the web3.storage libraries to chunk the data and get the root CID
-	ds := dssync.MutexWrap(datastore.NewMapDatastore())
-	bsvc := bserv.New(blockstore.NewBlockstore(ds), nil)
-	dag := merkledag.NewDAGService(bsvc)
-	dagFmtr, err := adder.NewAdder(context.Background(), dag)
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("error creating DAG adder: %w", err)
-	}
-	root, err := dagFmtr.Add(file, "", fsMap)
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("error adding rewards file to DAG: %w", err)
-	}
-
-	return root, err
 
 }
 
@@ -361,8 +360,12 @@ func GetCidForRewardsFile(rewardsFile IRewardsFile, filename string) (cid.Cid, e
 		return cid.Cid{}, fmt.Errorf("error serializing rewards file: %w", err)
 	}
 
-	return GetCIDForSerializedFile(data, filename)
+	c, err := SingleFileDirIPFSCid(data, filename, "compressed rewards file")
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("error getting CID for file %s: %w", filename, err)
+	}
 
+	return c, nil
 }
 
 // Gets the start slot for the given interval

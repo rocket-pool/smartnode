@@ -1,6 +1,8 @@
 package rewards
 
 import (
+	"encoding/hex"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -8,6 +10,8 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/wealdtech/go-merkletree"
+	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
 // Holds information
@@ -164,4 +168,73 @@ func (f *RewardsFile_v1) GetMinipoolPerformanceFile() IMinipoolPerformanceFile {
 // Sets the CID of the minipool performance file corresponding to this rewards file
 func (f *RewardsFile_v1) SetMinipoolPerformanceFileCID(cid string) {
 	f.MinipoolPerformanceFileCID = cid
+}
+
+// Generates a merkle tree from the provided rewards map
+func (f *RewardsFile_v1) generateMerkleTree() error {
+	// Generate the leaf data for each node
+	totalData := make([][]byte, 0, len(f.NodeRewards))
+	for address, rewardsForNode := range f.NodeRewards {
+		// Ignore nodes that didn't receive any rewards
+		if rewardsForNode.CollateralRpl.Cmp(common.Big0) == 0 && rewardsForNode.OracleDaoRpl.Cmp(common.Big0) == 0 && rewardsForNode.SmoothingPoolEth.Cmp(common.Big0) == 0 {
+			continue
+		}
+
+		// Node data is address[20] :: network[32] :: RPL[32] :: ETH[32]
+		nodeData := make([]byte, 0, 20+32*3)
+
+		// Node address
+		addressBytes := address.Bytes()
+		nodeData = append(nodeData, addressBytes...)
+
+		// Node network
+		network := big.NewInt(0).SetUint64(rewardsForNode.RewardNetwork)
+		networkBytes := make([]byte, 32)
+		network.FillBytes(networkBytes)
+		nodeData = append(nodeData, networkBytes...)
+
+		// RPL rewards
+		rplRewards := big.NewInt(0)
+		rplRewards.Add(&rewardsForNode.CollateralRpl.Int, &rewardsForNode.OracleDaoRpl.Int)
+		rplRewardsBytes := make([]byte, 32)
+		rplRewards.FillBytes(rplRewardsBytes)
+		nodeData = append(nodeData, rplRewardsBytes...)
+
+		// ETH rewards
+		ethRewardsBytes := make([]byte, 32)
+		rewardsForNode.SmoothingPoolEth.FillBytes(ethRewardsBytes)
+		nodeData = append(nodeData, ethRewardsBytes...)
+
+		// Assign it to the node rewards tracker and add it to the leaf data slice
+		rewardsForNode.MerkleData = nodeData
+		totalData = append(totalData, nodeData)
+	}
+
+	// Generate the tree
+	tree, err := merkletree.NewUsing(totalData, keccak256.New(), false, true)
+	if err != nil {
+		return fmt.Errorf("error generating Merkle Tree: %w", err)
+	}
+
+	// Generate the proofs for each node
+	for address, rewardsForNode := range f.NodeRewards {
+		// Get the proof
+		proof, err := tree.GenerateProof(rewardsForNode.MerkleData, 0)
+		if err != nil {
+			return fmt.Errorf("error generating proof for node %s: %w", address.Hex(), err)
+		}
+
+		// Convert the proof into hex strings
+		proofStrings := make([]string, len(proof.Hashes))
+		for i, hash := range proof.Hashes {
+			proofStrings[i] = fmt.Sprintf("0x%s", hex.EncodeToString(hash))
+		}
+
+		// Assign the hex strings to the node rewards struct
+		rewardsForNode.MerkleProof = proofStrings
+	}
+
+	f.MerkleTree = tree
+	f.MerkleRoot = common.BytesToHash(tree.Root()).Hex()
+	return nil
 }
