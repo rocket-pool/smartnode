@@ -99,6 +99,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.StartTime = event.IntervalStartTime
 	info.EndTime = event.IntervalEndTime
 	merkleRootCanon := event.MerkleRoot
+	info.MerkleRoot = merkleRootCanon
 
 	// Check if the tree file exists
 	info.TreeFilePath = cfg.Smartnode.GetRewardsTreePath(interval, true)
@@ -129,7 +130,6 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 		return
 	}
 	info.MerkleRootValid = true
-	info.MerkleRoot = merkleRootFromFile
 
 	// Get the rewards from it
 	rewards, exists := proofWrapper.GetNodeRewardsInfo(nodeAddress)
