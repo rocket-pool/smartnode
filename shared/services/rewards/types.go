@@ -54,6 +54,7 @@ type IRewardsFile interface {
 	// Sets the CID of the minipool performance file corresponding to this rewards file
 	SetMinipoolPerformanceFileCID(cid string)
 
+	// Generate the Merkle Tree and its root from the rewards file's proofs
 	generateMerkleTree() error
 }
 

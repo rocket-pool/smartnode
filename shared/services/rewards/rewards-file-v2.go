@@ -169,7 +169,6 @@ func (f *RewardsFile_v2) SetMinipoolPerformanceFileCID(cid string) {
 
 // Generates a merkle tree from the provided rewards map
 func (f *RewardsFile_v2) generateMerkleTree() error {
-
 	// Generate the leaf data for each node
 	totalData := make([][]byte, 0, len(f.NodeRewards))
 	for address, rewardsForNode := range f.NodeRewards {
@@ -235,5 +234,4 @@ func (f *RewardsFile_v2) generateMerkleTree() error {
 	f.MerkleTree = tree
 	f.MerkleRoot = common.BytesToHash(tree.Root()).Hex()
 	return nil
-
 }
