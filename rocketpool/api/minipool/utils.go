@@ -13,6 +13,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
+const (
+	minipoolAddressBatchSize int = 100
+)
+
 // Get transaction info for an operation on all of the provided minipools, using the common minipool API (for version-agnostic functions)
 func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses []common.Address, data *api.BatchTxInfoData, txCreator func(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) error {
 	// Requirements

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -35,13 +34,9 @@ func (r *PDaoRequester) GetClient() *http.Client {
 
 // Claim / unlock bonds from a proposal
 func (r *PDaoRequester) ClaimBonds(proposalID uint64, indices []uint64) (*api.ApiResponse[api.ProtocolDaoClaimBondsData], error) {
-	indicesStrings := make([]string, len(indices))
-	for i, index := range indices {
-		indicesStrings[i] = fmt.Sprint(index)
-	}
 	args := map[string]string{
 		"proposal-id": fmt.Sprint(proposalID),
-		"indices":     strings.Join(indicesStrings, ","),
+		"indices":     makeBatchArg(indices),
 	}
 	return sendGetRequest[api.ProtocolDaoClaimBondsData](r, "claim-bonds", "ClaimBonds", args)
 }
@@ -168,12 +163,8 @@ func (r *PDaoRequester) KickFromSecurityCouncil(address common.Address) (*api.Ap
 
 // Propose kicking multiple members from the security council
 func (r *PDaoRequester) KickMultiFromSecurityCouncil(addresses []common.Address) (*api.ApiResponse[api.ProtocolDaoProposeKickMultiFromSecurityCouncilData], error) {
-	addressStrings := make([]string, len(addresses))
-	for i, address := range addresses {
-		addressStrings[i] = address.Hex()
-	}
 	args := map[string]string{
-		"addresses": strings.Join(addressStrings, ","),
+		"addresses": makeBatchArg(addresses),
 	}
 	return sendGetRequest[api.ProtocolDaoProposeKickMultiFromSecurityCouncilData](r, "security/kick-multi", "KickMultiFromSecurityCouncil", args)
 }

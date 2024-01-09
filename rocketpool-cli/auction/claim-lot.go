@@ -58,30 +58,37 @@ func claimFromLot(c *cli.Context) error {
 		return fmt.Errorf("error determining lot selection: %w", err)
 	}
 
+	// Build the TXs
+	indices := make([]uint64, len(selectedLots))
+	for i, lot := range selectedLots {
+		indices[i] = lot.Index
+	}
+	response, err := rp.Api.Auction.ClaimFromLots(indices)
+	if err != nil {
+		return fmt.Errorf("error during TX generation: %w", err)
+	}
+
 	// Validation
 	txs := make([]*core.TransactionInfo, len(selectedLots))
 	for i, lot := range selectedLots {
-		response, err := rp.Api.Auction.ClaimFromLot(lot.Index)
-		if err != nil {
-			return fmt.Errorf("error checking if claiming lot %d is possible: %w", lot.Index, err)
-		}
-		if !response.Data.CanClaim {
+		data := response.Data.Batch[i]
+		if !data.CanClaim {
 			fmt.Printf("Cannot claim lot %d:\n", lot.Index)
-			if response.Data.DoesNotExist {
+			if data.DoesNotExist {
 				fmt.Println("The lot does not exist.")
 			}
-			if response.Data.NoBidFromAddress {
+			if data.NoBidFromAddress {
 				fmt.Println("The lot currently doesn't have a bid from your node.")
 			}
-			if response.Data.NotCleared {
+			if data.NotCleared {
 				fmt.Println("The lot is not cleared yet.")
 			}
 			return nil
 		}
-		if response.Data.TxInfo.SimError != "" {
-			return fmt.Errorf("error simulating claim of lot %d: %s", lot.Index, response.Data.TxInfo.SimError)
+		if data.TxInfo.SimError != "" {
+			return fmt.Errorf("error simulating claim of lot %d: %s", lot.Index, data.TxInfo.SimError)
 		}
-		txs[i] = response.Data.TxInfo
+		txs[i] = data.TxInfo
 	}
 
 	// Claim RPL from lots

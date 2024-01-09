@@ -31,7 +31,7 @@ func (f *minipoolStakeContextFactory) Create(args url.Values) (*minipoolStakeCon
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArgBatch("addresses", args, minipoolAddressBatchSize, input.ValidateAddress, &c.minipoolAddresses),
 	}
 	return c, errors.Join(inputErrs...)
 }

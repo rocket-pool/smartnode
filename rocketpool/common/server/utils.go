@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/goccy/go-json"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // Function for validating an argument (wraps the old CLI validators)
@@ -23,6 +24,30 @@ func ValidateArg[ArgType any](name string, args url.Values, impl ArgValidator[Ar
 	result, err := impl(name, arg[0])
 	if err != nil {
 		return err
+	}
+
+	// Set the result
+	*result_Out = result
+	return nil
+}
+
+// Validates an argument representing a batch of inputs, ensuring it exists and the inputs can be converted to the required type
+func ValidateArgBatch[ArgType any](name string, args url.Values, batchLimit int, impl ArgValidator[ArgType], result_Out *[]ArgType) error {
+	// Make sure it exists
+	arg, exists := args[name]
+	if !exists {
+		return fmt.Errorf("missing argument '%s'", name)
+	}
+
+	// Run the parser
+	result, err := input.ValidateBatch[ArgType](name, arg[0], impl)
+	if err != nil {
+		return err
+	}
+
+	// Make sure there aren't too many entries
+	if len(result) > batchLimit {
+		return fmt.Errorf("too many inputs in arg %s (provided %d, max = %d)", name, len(result), batchLimit)
 	}
 
 	// Set the result

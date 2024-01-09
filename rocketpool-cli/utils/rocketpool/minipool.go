@@ -206,13 +206,9 @@ func (r *MinipoolRequester) GetVanityArtifacts(nodeAddress common.Address) (*api
 
 // Submit a minipool request that takes in a list of addresses and returns whatever type is requested
 func sendMultiMinipoolRequest[DataType any](r *MinipoolRequester, method string, requestName string, addresses []common.Address, args map[string]string) (*api.ApiResponse[DataType], error) {
-	addressStrings := make([]string, len(addresses))
-	for i, address := range addresses {
-		addressStrings[i] = address.Hex()
-	}
 	if args == nil {
 		args = map[string]string{}
 	}
-	args["addresses"] = strings.Join(addressStrings, ",")
+	args["addresses"] = makeBatchArg(addresses)
 	return sendGetRequest[DataType](r, method, requestName, args)
 }

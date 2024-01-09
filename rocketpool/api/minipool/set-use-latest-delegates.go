@@ -27,7 +27,7 @@ func (f *minipoolSetUseLatestDelegatesContextFactory) Create(args url.Values) (*
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArgBatch("addresses", args, minipoolAddressBatchSize, input.ValidateAddress, &c.minipoolAddresses),
 		server.ValidateArg("setting", args, input.ValidateBool, &c.setting),
 	}
 	return c, errors.Join(inputErrs...)

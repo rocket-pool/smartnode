@@ -38,6 +38,21 @@ func ValidateArgCount(c *cli.Context, count int) error {
 	return nil
 }
 
+// Validate a comma-delimited batch of inputs
+func ValidateBatch[ReturnType any](name string, value string, validate func(string, string) (ReturnType, error)) ([]ReturnType, error) {
+	elements := strings.Split(value, ",")
+	results := make([]ReturnType, len(elements))
+	for i, element := range elements {
+		element = strings.TrimSpace(element)
+		result, err := validate(name, element)
+		if err != nil {
+			return nil, fmt.Errorf("invalid element at index %d in %s: %w", i, name, err)
+		}
+		results[i] = result
+	}
+	return results, nil
+}
+
 // Validate a big int
 func ValidateBigInt(name, value string) (*big.Int, error) {
 	val, success := big.NewInt(0).SetString(value, 0)
@@ -45,20 +60,6 @@ func ValidateBigInt(name, value string) (*big.Int, error) {
 		return nil, fmt.Errorf("Invalid %s '%s'", name, value)
 	}
 	return val, nil
-}
-
-// Validate an array of big ints
-func ValidateBigInts(name, value string) ([]*big.Int, error) {
-	elements := strings.Split(value, ",")
-	ints := make([]*big.Int, len(elements))
-	for i, element := range elements {
-		val, success := big.NewInt(0).SetString(element, 0)
-		if !success {
-			return nil, fmt.Errorf("Invalid int %d in %s '%s'", i, name, value)
-		}
-		ints = append(ints, val)
-	}
-	return ints, nil
 }
 
 // Validate a boolean value
@@ -97,19 +98,6 @@ func ValidateAddress(name, value string) (common.Address, error) {
 		return common.Address{}, fmt.Errorf("Invalid %s '%s'", name, value)
 	}
 	return common.HexToAddress(value), nil
-}
-
-// Validate a collection of addresses
-func ValidateAddresses(name, value string) ([]common.Address, error) {
-	elements := strings.Split(value, ",")
-	addresses := make([]common.Address, len(elements))
-	for i, element := range elements {
-		if !common.IsHexAddress(element) {
-			return nil, fmt.Errorf("Invalid address %d in %s: '%s'", i, name, element)
-		}
-		addresses[i] = common.HexToAddress(element)
-	}
-	return addresses, nil
 }
 
 // Validate a wei amount
@@ -202,24 +190,6 @@ func ValidatePositiveUint(name, value string) (uint64, error) {
 		return 0, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
 	}
 	return val, nil
-}
-
-// Validate a list of comma-separated positive unsigned integer values
-func ValidatePositiveUints(name, value string) ([]uint64, error) {
-	elements := strings.Split(value, ",")
-	vals := []uint64{}
-	for i, element := range elements {
-		element = strings.TrimSpace(element)
-		val, err := ValidateUint(name, element)
-		if err != nil {
-			return nil, fmt.Errorf("Invalid %s '%s' - element %d (%s) could not be parsed: %w", name, value, i, element, err)
-		}
-		if val == 0 {
-			return nil, fmt.Errorf("Invalid %s '%s' - element %d (%s) must be greater than 0", name, value, i, element)
-		}
-		vals = append(vals, val)
-	}
-	return vals, nil
 }
 
 // Validate a positive 32-bit unsigned integer value

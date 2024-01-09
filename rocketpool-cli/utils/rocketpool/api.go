@@ -7,8 +7,10 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -154,4 +156,27 @@ func handleResponse[DataType any](resp *http.Response, path string, err error) (
 	}
 
 	return &parsedResponse, nil
+}
+
+// Types that can be batched into a comma-delmited string
+type BatchInputType interface {
+	uint64 | common.Address
+}
+
+// Converts an array of inputs into a comma-delimited string
+func makeBatchArg[DataType BatchInputType](input []DataType) string {
+	results := make([]string, len(input))
+
+	// Figure out how to stringify the input
+	switch typedInput := any(&input).(type) {
+	case *[]uint64:
+		for i, index := range *typedInput {
+			results[i] = strconv.FormatUint(index, 10)
+		}
+	case *[]common.Address:
+		for i, address := range *typedInput {
+			results[i] = address.Hex()
+		}
+	}
+	return strings.Join(results, ",")
 }

@@ -35,8 +35,8 @@ func (f *minipoolRescueDissolvedContextFactory) Create(args url.Values) (*minipo
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.minipoolAddresses),
-		server.ValidateArg("deposit-amounts", args, input.ValidateBigInts, &c.depositAmounts),
+		server.ValidateArgBatch("addresses", args, minipoolAddressBatchSize, input.ValidateAddress, &c.minipoolAddresses),
+		server.ValidateArgBatch("deposit-amounts", args, minipoolAddressBatchSize, input.ValidateBigInt, &c.depositAmounts),
 	}
 	return c, errors.Join(inputErrs...)
 }

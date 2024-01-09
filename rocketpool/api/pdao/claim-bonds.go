@@ -19,6 +19,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
+const (
+	claimBatchLimit int = 100
+)
+
 // ===============
 // === Factory ===
 // ===============
@@ -33,7 +37,7 @@ func (f *protocolDaoClaimBondsContextFactory) Create(args url.Values) (*protocol
 	}
 	inputErrs := []error{
 		server.ValidateArg("proposal-id", args, input.ValidatePositiveUint, &c.proposalID),
-		server.ValidateArg("indices", args, input.ValidatePositiveUints, &c.indices),
+		server.ValidateArgBatch("indices", args, claimBatchLimit, input.ValidatePositiveUint, &c.indices),
 	}
 	return c, errors.Join(inputErrs...)
 }

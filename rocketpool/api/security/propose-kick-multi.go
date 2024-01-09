@@ -18,6 +18,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
+const (
+	kickBatchSize int = 100
+)
+
 // ===============
 // === Factory ===
 // ===============
@@ -31,7 +35,7 @@ func (f *securityProposeKickMultiContextFactory) Create(args url.Values) (*secur
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.addresses),
+		server.ValidateArgBatch("addresses", args, kickBatchSize, input.ValidateAddress, &c.addresses),
 	}
 	return c, errors.Join(inputErrs...)
 }

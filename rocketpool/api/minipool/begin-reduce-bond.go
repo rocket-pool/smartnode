@@ -30,7 +30,7 @@ func (f *minipoolBeginReduceBondContextFactory) Create(args url.Values) (*minipo
 	}
 	inputErrs := []error{
 		server.ValidateArg("new-bond-amount", args, input.ValidateBigInt, &c.newBondAmountWei),
-		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.minipoolAddresses),
+		server.ValidateArgBatch("addresses", args, minipoolAddressBatchSize, input.ValidateAddress, &c.minipoolAddresses),
 	}
 	return c, errors.Join(inputErrs...)
 }

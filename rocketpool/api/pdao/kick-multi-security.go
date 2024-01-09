@@ -22,6 +22,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
+const (
+	kickBatchSize int = 100
+)
+
 // ===============
 // === Factory ===
 // ===============
@@ -35,7 +39,7 @@ func (f *protocolDaoProposeKickMultiFromSecurityCouncilContextFactory) Create(ar
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("addresses", args, input.ValidateAddresses, &c.addresses),
+		server.ValidateArgBatch("addresses", args, kickBatchSize, input.ValidateAddress, &c.addresses),
 	}
 	return c, errors.Join(inputErrs...)
 }

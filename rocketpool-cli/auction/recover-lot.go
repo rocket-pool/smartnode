@@ -58,25 +58,32 @@ func recoverRplFromLot(c *cli.Context) error {
 		return fmt.Errorf("error determining lot selection: %w", err)
 	}
 
+	// Build the TXs
+	indices := make([]uint64, len(selectedLots))
+	for i, lot := range selectedLots {
+		indices[i] = lot.Index
+	}
+	response, err := rp.Api.Auction.RecoverUnclaimedRplFromLots(indices)
+	if err != nil {
+		return fmt.Errorf("error during TX generation: %w", err)
+	}
+
 	// Validation
 	txs := make([]*core.TransactionInfo, len(selectedLots))
-	for _, lot := range selectedLots {
-		response, err := rp.Api.Auction.RecoverUnclaimedRplFromLot(lot.Index)
-		if err != nil {
-			return fmt.Errorf("Error checking if recovering lot %d is possible: %w", lot.Index, err)
-		}
-		if !response.Data.CanRecover {
+	for i, lot := range selectedLots {
+		data := response.Data.Batch[i]
+		if !data.CanRecover {
 			fmt.Printf("Cannot recover lot %d:\n", lot.Index)
-			if response.Data.DoesNotExist {
+			if data.DoesNotExist {
 				fmt.Println("The lot does not exist.")
 			}
-			if response.Data.BiddingNotEnded {
+			if data.BiddingNotEnded {
 				fmt.Println("Bidding on the lot has not ended yet.")
 			}
-			if response.Data.NoUnclaimedRpl {
+			if data.NoUnclaimedRpl {
 				fmt.Println("The lot does not have any unclaimed RPL.")
 			}
-			if response.Data.RplAlreadyRecovered {
+			if data.RplAlreadyRecovered {
 				fmt.Println("The lot's RPL has already been recovered.")
 			}
 			return nil

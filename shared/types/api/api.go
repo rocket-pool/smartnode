@@ -17,6 +17,10 @@ type SuccessData struct {
 	Success bool `json:"success"`
 }
 
+type DataBatch[DataType any] struct {
+	Batch []DataType `json:"batch"`
+}
+
 type TxInfoData struct {
 	TxInfo *core.TransactionInfo `json:"txInfo"`
 }

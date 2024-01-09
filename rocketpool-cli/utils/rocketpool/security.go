@@ -3,7 +3,6 @@ package rocketpool
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -99,12 +98,8 @@ func (r *SecurityRequester) ProposeKick(address common.Address) (*api.ApiRespons
 
 // Kick multiple members of the security council
 func (r *SecurityRequester) ProposeKickMulti(addresses []common.Address) (*api.ApiResponse[api.SecurityProposeKickMultiData], error) {
-	addressStrings := make([]string, len(addresses))
-	for i, address := range addresses {
-		addressStrings[i] = address.Hex()
-	}
 	args := map[string]string{
-		"addresses": strings.Join(addressStrings, ","),
+		"addresses": makeBatchArg(addresses),
 	}
 	return sendGetRequest[api.SecurityProposeKickMultiData](r, "propose-kick-multi", "ProposeKickMulti", args)
 }

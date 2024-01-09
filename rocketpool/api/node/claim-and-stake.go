@@ -18,6 +18,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
+const (
+	claimAndStakeBatchLimit int = 100
+)
+
 // ===============
 // === Factory ===
 // ===============
@@ -31,7 +35,7 @@ func (f *nodeClaimAndStakeContextFactory) Create(args url.Values) (*nodeClaimAnd
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("indices", args, input.ValidateBigInts, &c.indices),
+		server.ValidateArgBatch("indices", args, claimAndStakeBatchLimit, input.ValidateBigInt, &c.indices),
 		server.ValidateArg("stake-amount", args, input.ValidateBigInt, &c.stakeAmount),
 	}
 	return c, errors.Join(inputErrs...)
