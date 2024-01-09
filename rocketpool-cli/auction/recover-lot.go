@@ -88,6 +88,10 @@ func recoverRplFromLot(c *cli.Context) error {
 			}
 			return nil
 		}
+		if data.TxInfo.SimError != "" {
+			return fmt.Errorf("error simulating recover of lot %d: %s", lot.Index, data.TxInfo.SimError)
+		}
+		txs[i] = data.TxInfo
 	}
 
 	// Claim RPL from lots

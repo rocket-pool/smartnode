@@ -3,14 +3,14 @@ package minipool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
-	"github.com/rocket-pool/smartnode/shared/services/gas"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 const (
@@ -58,54 +58,38 @@ func stakeMinipools(c *cli.Context) error {
 		return fmt.Errorf("error determining minipool selection: %w", err)
 	}
 
+	// Build the TXs
+	addresses := make([]common.Address, len(selectedMinipools))
+	for i, lot := range selectedMinipools {
+		addresses[i] = lot.Address
+	}
+	response, err := rp.Api.Minipool.Stake(addresses)
+	if err != nil {
+		return fmt.Errorf("error during TX generation: %w", err)
+	}
+
 	// Validation
 	txs := make([]*core.TransactionInfo, len(selectedMinipools))
-	for _, minipool := range selectedMinipools {
-		response, err := rp.Api.Minipool.Stake(minipool.Address)
-		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for stake transaction (%s)", err)
-			break
-		} else {
-			gasInfo = canResponse.GasInfo
-			totalGas += canResponse.GasInfo.EstGasLimit
-			totalSafeGas += canResponse.GasInfo.SafeGasLimit
+	for i, minipool := range selectedMinipools {
+		txInfo := response.Data.TxInfos[i]
+		if txInfo.SimError != "" {
+			return fmt.Errorf("error simulating stake for minipool %s: %s", minipool.Address.Hex(), txInfo.SimError)
 		}
-	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
-
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
+		txs[i] = txInfo
 	}
 
 	fmt.Println("\nNOTE: Your validator container will be restarted after this process so it loads the new validator key.\n")
 
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake %d minipools?", len(selectedMinipools)))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
 	// Stake minipools
-	for _, minipool := range selectedMinipools {
-		response, err := rp.StakeMinipool(minipool.Address)
-		if err != nil {
-			fmt.Printf("Could not stake minipool %s: %s.\n", minipool.Address.Hex(), err)
-			continue
-		}
-
-		fmt.Printf("Staking minipool %s...\n", minipool.Address.Hex())
-		cliutils.PrintTransactionHash(rp, response.TxHash)
-		if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-			fmt.Printf("Could not stake minipool %s: %s.\n", minipool.Address.Hex(), err)
-		} else {
-			fmt.Printf("Successfully staked minipool %s.\n", minipool.Address.Hex())
-		}
+	err = tx.HandleTxBatch(c, rp, txs,
+		fmt.Sprintf("Are you sure you want to stake %d minipools?", len(selectedMinipools)),
+		"Staking minipools...",
+	)
+	if err != nil {
+		return err
 	}
 
-	// Return
+	// Log & return
+	fmt.Println("Successfully staked all selected minipools.")
 	return nil
-
 }
