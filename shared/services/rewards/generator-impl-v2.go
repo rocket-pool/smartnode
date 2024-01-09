@@ -2,7 +2,6 @@ package rewards
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"sort"
@@ -23,8 +22,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/wealdtech/go-merkletree"
-	"github.com/wealdtech/go-merkletree/keccak256"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -152,7 +149,7 @@ func (r *treeGeneratorImpl_v2) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.updateNetworksAndTotals()
 
 	// Generate the Merkle Tree
-	err = r.generateMerkleTree()
+	err = r.rewardsFile.generateMerkleTree()
 	if err != nil {
 		return nil, fmt.Errorf("Error generating Merkle tree: %w", err)
 	}
@@ -209,78 +206,6 @@ func (r *treeGeneratorImpl_v2) approximateStakerShareOfSmoothingPool(rp *rocketp
 	}
 
 	return &r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Int, nil
-}
-
-// Generates a merkle tree from the provided rewards map
-func (r *treeGeneratorImpl_v2) generateMerkleTree() error {
-
-	// Generate the leaf data for each node
-	totalData := make([][]byte, 0, len(r.rewardsFile.NodeRewards))
-	for address, rewardsForNode := range r.rewardsFile.NodeRewards {
-		// Ignore nodes that didn't receive any rewards
-		zero := big.NewInt(0)
-		if rewardsForNode.CollateralRpl.Cmp(zero) == 0 && rewardsForNode.OracleDaoRpl.Cmp(zero) == 0 && rewardsForNode.SmoothingPoolEth.Cmp(zero) == 0 {
-			continue
-		}
-
-		// Node data is address[20] :: network[32] :: RPL[32] :: ETH[32]
-		nodeData := make([]byte, 0, 20+32*3)
-
-		// Node address
-		addressBytes := address.Bytes()
-		nodeData = append(nodeData, addressBytes...)
-
-		// Node network
-		network := big.NewInt(0).SetUint64(rewardsForNode.RewardNetwork)
-		networkBytes := make([]byte, 32)
-		network.FillBytes(networkBytes)
-		nodeData = append(nodeData, networkBytes...)
-
-		// RPL rewards
-		rplRewards := big.NewInt(0)
-		rplRewards.Add(&rewardsForNode.CollateralRpl.Int, &rewardsForNode.OracleDaoRpl.Int)
-		rplRewardsBytes := make([]byte, 32)
-		rplRewards.FillBytes(rplRewardsBytes)
-		nodeData = append(nodeData, rplRewardsBytes...)
-
-		// ETH rewards
-		ethRewardsBytes := make([]byte, 32)
-		rewardsForNode.SmoothingPoolEth.FillBytes(ethRewardsBytes)
-		nodeData = append(nodeData, ethRewardsBytes...)
-
-		// Assign it to the node rewards tracker and add it to the leaf data slice
-		rewardsForNode.MerkleData = nodeData
-		totalData = append(totalData, nodeData)
-	}
-
-	// Generate the tree
-	tree, err := merkletree.NewUsing(totalData, keccak256.New(), false, true)
-	if err != nil {
-		return fmt.Errorf("error generating Merkle Tree: %w", err)
-	}
-
-	// Generate the proofs for each node
-	for address, rewardsForNode := range r.rewardsFile.NodeRewards {
-		// Get the proof
-		proof, err := tree.GenerateProof(rewardsForNode.MerkleData, 0)
-		if err != nil {
-			return fmt.Errorf("error generating proof for node %s: %w", address.Hex(), err)
-		}
-
-		// Convert the proof into hex strings
-		proofStrings := make([]string, len(proof.Hashes))
-		for i, hash := range proof.Hashes {
-			proofStrings[i] = fmt.Sprintf("0x%s", hex.EncodeToString(hash))
-		}
-
-		// Assign the hex strings to the node rewards struct
-		rewardsForNode.MerkleProof = proofStrings
-	}
-
-	r.rewardsFile.MerkleTree = tree
-	r.rewardsFile.MerkleRoot = common.BytesToHash(tree.Root()).Hex()
-	return nil
-
 }
 
 // Calculates the per-network distribution amounts and the total reward amounts

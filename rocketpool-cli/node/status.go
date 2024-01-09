@@ -300,18 +300,12 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf(
 				"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
 			fmt.Printf(
-				"It can earn rewards on up to %.6f RPL (150%% of bonded ETH).\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
+				"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of %.6f RPL (150%% of bonded ETH). Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
 			if rplTooLow {
 				fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.MinimumRplStake, status.RplStake)), 6), colorReset)
 			}
 		}
 		fmt.Println()
-
-		if status.PendingEffectiveRplStake.Cmp(status.EffectiveRplStake) != 0 {
-			fmt.Printf("Of this stake, %.6f RPL is eligible for RPL staking rewards.\n", math.RoundDown(eth.WeiToEth(status.PendingEffectiveRplStake), 6))
-			fmt.Println("Eligibility is determined by the number of minipools you have in the *active* state on the Beacon Chain:\n- Validators in the Beacon Chain queue that have not been activated yet are not eligible.\n- Validators that have been exited are not eligible.")
-			fmt.Println()
-		}
 
 		remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
 		remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)

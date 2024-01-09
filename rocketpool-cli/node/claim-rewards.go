@@ -75,7 +75,7 @@ func nodeClaimRewards(c *cli.Context) error {
 		// Download the files
 		for _, missingInterval := range missingIntervals {
 			fmt.Printf("Downloading interval %d file... ", missingInterval.Index)
-			err := rprewards.DownloadRewardsFile(cfg, missingInterval.Index, missingInterval.CID, false)
+			err := missingInterval.DownloadRewardsFile(cfg, false)
 			if err != nil {
 				fmt.Println()
 				return err
@@ -84,7 +84,7 @@ func nodeClaimRewards(c *cli.Context) error {
 		}
 		for _, invalidInterval := range invalidIntervals {
 			fmt.Printf("Downloading interval %d file... ", invalidInterval.Index)
-			err := rprewards.DownloadRewardsFile(cfg, invalidInterval.Index, invalidInterval.CID, false)
+			err := invalidInterval.DownloadRewardsFile(cfg, false)
 			if err != nil {
 				fmt.Println()
 				return err

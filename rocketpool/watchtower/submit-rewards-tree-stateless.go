@@ -7,7 +7,6 @@ import (
 	"math"
 	"math/big"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -16,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -34,7 +32,6 @@ import (
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli"
-	"github.com/web3-storage/go-w3s-client"
 )
 
 // Submit rewards Merkle Tree task
@@ -218,21 +215,15 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 			return fmt.Errorf("Error deserializing rewards tree file: %w", err)
 		}
 
-		// Try to upload the file
-		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
+		cid, err := rprewards.SingleFileDirIPFSCid(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			t.log.Printlnf("Error uploading Merkle tree to Web3.Storage: %s", err.Error())
-			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, filepath.Base(compressedRewardsTreePath))
-			if err != nil {
-				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
-			}
-			cid = c.String()
-			t.printMessage(fmt.Sprintf("Calculated rewards file CID %s", cid))
+			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
-		t.log.Printlnf("Uploaded Merkle tree with CID %s", cid)
+
+		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper.GetHeader(), cid, big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
@@ -369,22 +360,13 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		return fmt.Errorf("Error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
 	}
 
-	// Try to upload it if this is an Oracle DAO node
 	if nodeTrusted {
-		t.printMessage("Uploading minipool performance file to Web3.Storage...")
-		minipoolPerformanceCid, err := t.uploadFileToWeb3Storage(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
+		minipoolPerformanceCid, err := rprewards.SingleFileDirIPFSCid(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
 		if err != nil {
-			t.printMessage(fmt.Sprintf("Error uploading minipool performance file to Web3.Storage: %w", err))
-			c, err := rprewards.GetCIDForSerializedFile(minipoolPerformanceBytes, filepath.Base(compressedMinipoolPerformancePath))
-			if err != nil {
-				return fmt.Errorf("error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
-			}
-			minipoolPerformanceCid = c.String()
-			t.printMessage(fmt.Sprintf("Calculated minipool performance file CID %s", minipoolPerformanceCid))
-		} else {
-			t.printMessage(fmt.Sprintf("Uploaded minipool performance file with CID %s", minipoolPerformanceCid))
+			return fmt.Errorf("Error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
 		}
-		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid)
+		t.printMessage(fmt.Sprintf("Calculated minipool performance CID: %s", minipoolPerformanceCid))
+		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
 	} else {
 		t.printMessage("Saved minipool performance file.")
 		rewardsFile.SetMinipoolPerformanceFileCID("---")
@@ -403,25 +385,15 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		return fmt.Errorf("Error saving rewards tree file to %s: %w", rewardsTreePath, err)
 	}
 
-	// Only do the upload and submission process if this is an Oracle DAO node
 	if nodeTrusted {
-		// Try to upload the rewards tree file
-		t.printMessage("Uploading to Web3.Storage and submitting results to the contracts...")
-		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
+		cid, err := rprewards.SingleFileDirIPFSCid(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			t.printMessage(fmt.Sprintf("Error uploading Merkle tree to Web3.Storage: %w", err))
-			c, err := rprewards.GetCIDForSerializedFile(wrapperBytes, filepath.Base(compressedRewardsTreePath))
-			if err != nil {
-				return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
-			}
-			cid = c.String()
-			t.printMessage(fmt.Sprintf("Calculated rewards file CID %s", cid))
-		} else {
-			t.printMessage(fmt.Sprintf("Uploaded Merkle tree with CID %s", cid))
+			return fmt.Errorf("Error getting CID for file %s : %w", rewardsTreePath, err)
 		}
+		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid, big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
@@ -524,51 +496,6 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 
 	// Return
 	return nil
-}
-
-// Compress and upload a file to Web3.Storage and get the CID for it
-func (t *submitRewardsTree_Stateless) uploadFileToWeb3Storage(wrapperBytes []byte, compressedPath string, description string) (string, error) {
-
-	// Get the API token
-	apiToken := t.cfg.Smartnode.Web3StorageApiToken.Value.(string)
-	if apiToken == "" {
-		return "", fmt.Errorf("***ERROR***\nYou have not configured your Web3.Storage API token yet, so you cannot submit Merkle rewards trees.\nPlease get an API token from https://web3.storage and enter it in the Smartnode section of the `service config` TUI (or use `--smartnode-web3StorageApiToken` if you configure your system headlessly).")
-	}
-
-	// Create the client
-	w3sClient, err := w3s.NewClient(w3s.WithToken(apiToken))
-	if err != nil {
-		return "", fmt.Errorf("Error creating new Web3.Storage client: %w", err)
-	}
-
-	// Compress the file
-	encoder, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-	compressedBytes := encoder.EncodeAll(wrapperBytes, make([]byte, 0, len(wrapperBytes)))
-
-	// Create the compressed tree file
-	compressedFile, err := os.Create(compressedPath)
-	if err != nil {
-		return "", fmt.Errorf("Error creating %s file [%s]: %w", description, compressedPath, err)
-	}
-	defer compressedFile.Close()
-
-	// Write the compressed data to the file
-	_, err = compressedFile.Write(compressedBytes)
-	if err != nil {
-		return "", fmt.Errorf("Error writing %s to %s: %w", description, compressedPath, err)
-	}
-
-	// Rewind it to the start
-	compressedFile.Seek(0, 0)
-
-	// Upload it
-	cid, err := w3sClient.Put(context.Background(), compressedFile)
-	if err != nil {
-		return "", fmt.Errorf("Error uploading %s: %w", description, err)
-	}
-
-	return cid.String(), nil
-
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time

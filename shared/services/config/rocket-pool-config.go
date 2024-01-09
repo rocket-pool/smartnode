@@ -997,7 +997,7 @@ func (cfg *RocketPoolConfig) GraffitiPrefix() string {
 		if !cfg.ExecutionClientLocal() {
 			ecInitial = "X"
 		} else {
-			ecInitial = strings.ToUpper(cfg.ExecutionClient.Value.(string)[:1])
+			ecInitial = strings.ToUpper(string(cfg.ExecutionClient.Value.(config.ExecutionClient))[:1])
 		}
 
 		var ccInitial string
@@ -1131,7 +1131,7 @@ func (cfg *RocketPoolConfig) GetECContainerTag() (string, error) {
 		return cfg.Besu.ContainerTag.Value.(string), nil
 	}
 
-	return "", fmt.Errorf("Unknown Execution Client %s", cfg.ExecutionClient.Value.(string))
+	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
 }
 
 // Gets the stop signal of the ec container
@@ -1150,7 +1150,7 @@ func (cfg *RocketPoolConfig) GetECStopSignal() (string, error) {
 		return besuStopSignal, nil
 	}
 
-	return "", fmt.Errorf("Unknown Execution Client %s", cfg.ExecutionClient.Value.(string))
+	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
 }
 
 // Gets the stop signal of the ec container
@@ -1181,7 +1181,7 @@ func (cfg *RocketPoolConfig) GetECMaxPeers() (uint16, error) {
 		return cfg.Besu.MaxPeers.Value.(uint16), nil
 	}
 
-	return 0, fmt.Errorf("Unknown Execution Client %s", cfg.ExecutionClient.Value.(string))
+	return 0, fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
 }
 
 // Used by text/template to format eth1.yml
@@ -1199,7 +1199,7 @@ func (cfg *RocketPoolConfig) GetECAdditionalFlags() (string, error) {
 		return cfg.Besu.AdditionalFlags.Value.(string), nil
 	}
 
-	return "", fmt.Errorf("Unknown Execution Client %s", cfg.ExecutionClient.Value.(string))
+	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
 }
 
 // Used by text/template to format eth1.yml
@@ -1288,7 +1288,7 @@ func (cfg *RocketPoolConfig) GetBNMaxPeers() (uint16, error) {
 		return cfg.Prysm.MaxPeers.Value.(uint16), nil
 	}
 
-	return 0, fmt.Errorf("Unknown Consensus Client %s", cfg.ConsensusClient.Value.(string))
+	return 0, fmt.Errorf("Unknown Consensus Client %s", string(cfg.ConsensusClient.Value.(config.ConsensusClient)))
 }
 
 // Used by text/template to format eth2.yml
@@ -1310,7 +1310,7 @@ func (cfg *RocketPoolConfig) GetBNAdditionalFlags() (string, error) {
 		return cfg.Prysm.AdditionalBnFlags.Value.(string), nil
 	}
 
-	return "", fmt.Errorf("Unknown Consensus Client %s", cfg.ConsensusClient.Value.(string))
+	return "", fmt.Errorf("Unknown Consensus Client %s", string(cfg.ConsensusClient.Value.(config.ConsensusClient)))
 }
 
 // Used by text/template to format exporter.yml
