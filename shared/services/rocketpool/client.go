@@ -1018,7 +1018,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Return command
-	return fmt.Sprintf("docker compose --project-directory %s %s %s", shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
+	return fmt.Sprintf("COMPOSE_PROJECT_NAME=%s docker compose --project-directory %s %s %s", cfg.Smartnode.ProjectName.Value.(string), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
 
 }
 
