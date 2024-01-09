@@ -997,7 +997,7 @@ func (cfg *RocketPoolConfig) GraffitiPrefix() string {
 		if !cfg.ExecutionClientLocal() {
 			ecInitial = "X"
 		} else {
-			ecInitial = strings.ToUpper(cfg.ExecutionClient.Value.(string)[:1])
+			ecInitial = strings.ToUpper(string(cfg.ExecutionClient.Value.(config.ExecutionClient))[:1])
 		}
 
 		var ccInitial string
