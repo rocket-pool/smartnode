@@ -82,9 +82,9 @@ func (c *networkFeeContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *networkFeeContext) PrepareData(data *api.NetworkNodeFeeData, opts *bind.TransactOpts) error {
-	data.NodeFee = c.networkMgr.NodeFee.Formatted()
-	data.MinNodeFee = c.pSettings.Network.MinimumNodeFee.Formatted()
-	data.TargetNodeFee = c.pSettings.Network.TargetNodeFee.Formatted()
-	data.MaxNodeFee = c.pSettings.Network.MaximumNodeFee.Formatted()
+	data.NodeFee = c.networkMgr.NodeFee.Raw()
+	data.MinNodeFee = c.pSettings.Network.MinimumNodeFee.Raw()
+	data.TargetNodeFee = c.pSettings.Network.TargetNodeFee.Raw()
+	data.MaxNodeFee = c.pSettings.Network.MaximumNodeFee.Raw()
 	return nil
 }

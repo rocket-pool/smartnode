@@ -8,10 +8,10 @@ import (
 )
 
 type NetworkNodeFeeData struct {
-	NodeFee       float64 `json:"nodeFee"`
-	MinNodeFee    float64 `json:"minNodeFee"`
-	TargetNodeFee float64 `json:"targetNodeFee"`
-	MaxNodeFee    float64 `json:"maxNodeFee"`
+	NodeFee       *big.Int `json:"nodeFee"`
+	MinNodeFee    *big.Int `json:"minNodeFee"`
+	TargetNodeFee *big.Int `json:"targetNodeFee"`
+	MaxNodeFee    *big.Int `json:"maxNodeFee"`
 }
 
 type NetworkRplPriceData struct {

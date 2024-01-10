@@ -179,6 +179,8 @@ func GetSnapshotProposals(cfg *config.RocketPoolConfig, address common.Address, 
 			Scores:  rawProp.Scores,
 			Quorum:  rawProp.Quorum,
 			Link:    rawProp.Link,
+			Start:   time.Unix(rawProp.Start, 0),
+			End:     time.Unix(rawProp.End, 0),
 		}
 		props[i] = newProp
 		propMap[rawProp.Id] = newProp

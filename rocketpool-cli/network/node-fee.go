@@ -3,31 +3,28 @@ package network
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/urfave/cli/v2"
 )
 
 func getNodeFee(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get node fee
-	response, err := rp.NodeFee()
+	response, err := rp.Api.Network.NodeFee()
 	if err != nil {
 		return err
 	}
 
 	// Print & return
-	fmt.Printf("The current network node commission rate is %f%%.\n", response.NodeFee*100)
-	fmt.Printf("Minimum node commission rate: %f%%\n", response.MinNodeFee*100)
-	fmt.Printf("Target node commission rate:  %f%%\n", response.TargetNodeFee*100)
-	fmt.Printf("Maximum node commission rate: %f%%\n", response.MaxNodeFee*100)
+	fmt.Printf("The current network node commission rate is %.2f%%.\n", eth.WeiToEth(response.Data.NodeFee)*100)
+	fmt.Printf("Minimum node commission rate: %.2f%%\n", eth.WeiToEth(response.Data.MinNodeFee)*100)
+	fmt.Printf("Target node commission rate:  %.2f%%\n", eth.WeiToEth(response.Data.TargetNodeFee)*100)
+	fmt.Printf("Maximum node commission rate: %.2f%%\n", eth.WeiToEth(response.Data.MaxNodeFee)*100)
 	return nil
-
 }

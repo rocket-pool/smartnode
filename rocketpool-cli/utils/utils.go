@@ -87,8 +87,13 @@ func getTxWatchUrl(rp *client.Client) string {
 
 // Convert a Unix datetime to a string, or `---` if it's zero
 func GetDateTimeString(dateTime uint64) string {
-	timeString := time.Unix(int64(dateTime), 0).Format(time.RFC822)
-	if dateTime == 0 {
+	return GetDateTimeStringOfTime(time.Unix(int64(dateTime), 0))
+}
+
+// Convert a Unix datetime to a string, or `---` if it's zero
+func GetDateTimeStringOfTime(dateTime time.Time) string {
+	timeString := dateTime.Format(time.RFC822)
+	if dateTime == time.Unix(0, 0) {
 		timeString = "---"
 	}
 	return timeString

@@ -63,6 +63,14 @@ func (r *NetworkRequester) NodeFee() (*api.ApiResponse[api.NetworkNodeFeeData], 
 	return sendGetRequest[api.NetworkNodeFeeData](r, "node-fee", "NodeFee", nil)
 }
 
+// Get information about whether or not a rewards file can be regenerated, and whether or not one already exists
+func (r *NetworkRequester) RewardsFileInfo(index uint64) (*api.ApiResponse[api.NetworkRewardsFileData], error) {
+	args := map[string]string{
+		"index": fmt.Sprint(index),
+	}
+	return sendGetRequest[api.NetworkRewardsFileData](r, "rewards-file-info", "RewardsFileInfo", args)
+}
+
 // Get network RPL price
 func (r *NetworkRequester) RplPrice() (*api.ApiResponse[api.NetworkRplPriceData], error) {
 	return sendGetRequest[api.NetworkRplPriceData](r, "rpl-price", "RplPrice", nil)

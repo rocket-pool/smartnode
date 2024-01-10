@@ -3,64 +3,58 @@ package network
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-)
-
-const (
-	colorBlue string = "\033[36m"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/urfave/cli/v2"
 )
 
 func getStats(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get network stats
-	response, err := rp.NetworkStats()
+	response, err := rp.Api.Network.Stats()
 	if err != nil {
 		return err
 	}
-	activeMinipools := response.InitializedMinipoolCount +
-		response.PrelaunchMinipoolCount +
-		response.StakingMinipoolCount +
-		response.WithdrawableMinipoolCount +
-		response.DissolvedMinipoolCount
+	activeMinipools := response.Data.InitializedMinipoolCount +
+		response.Data.PrelaunchMinipoolCount +
+		response.Data.StakingMinipoolCount +
+		response.Data.WithdrawableMinipoolCount +
+		response.Data.DissolvedMinipoolCount
 
 	// Print & return
-	fmt.Printf("%s========== General Stats ==========%s\n", colorGreen, colorReset)
-	fmt.Printf("Total Value Locked:      %f ETH\n", response.TotalValueLocked)
-	fmt.Printf("Staking Pool Balance:    %f ETH\n", response.DepositPoolBalance)
-	fmt.Printf("Minipool Queue Demand:   %f ETH\n", response.MinipoolCapacity)
-	fmt.Printf("Staking Pool ETH Used:   %f%%\n\n", response.StakerUtilization*100)
+	fmt.Printf("%s========== General Stats ==========%s\n", terminal.ColorGreen, terminal.ColorReset)
+	fmt.Printf("Total Value Locked:      %.6f ETH\n", eth.WeiToEth(response.Data.TotalValueLocked))
+	fmt.Printf("Staking Pool Balance:    %.6f ETH\n", eth.WeiToEth(response.Data.DepositPoolBalance))
+	fmt.Printf("Minipool Queue Demand:   %.6f ETH\n", eth.WeiToEth(response.Data.MinipoolCapacity))
+	fmt.Printf("Staking Pool ETH Used:   %.2f%%\n\n", eth.WeiToEth(response.Data.StakerUtilization)*100)
 
-	fmt.Printf("%s============== Nodes ==============%s\n", colorGreen, colorReset)
-	fmt.Printf("Current Commission Rate: %f%%\n", response.NodeFee*100)
-	fmt.Printf("Node Count:              %d\n", response.NodeCount)
+	fmt.Printf("%s============== Nodes ==============%s\n", terminal.ColorGreen, terminal.ColorReset)
+	fmt.Printf("Current Commission Rate: %.2f%%\n", eth.WeiToEth(response.Data.NodeFee)*100)
+	fmt.Printf("Node Count:              %d\n", response.Data.NodeCount)
 	fmt.Printf("Active Minipools:        %d\n", activeMinipools)
-	fmt.Printf("    Initialized:         %d\n", response.InitializedMinipoolCount)
-	fmt.Printf("    Prelaunch:           %d\n", response.PrelaunchMinipoolCount)
-	fmt.Printf("    Staking:             %d\n", response.StakingMinipoolCount)
-	fmt.Printf("    Withdrawable:        %d\n", response.WithdrawableMinipoolCount)
-	fmt.Printf("    Dissolved:           %d\n", response.DissolvedMinipoolCount)
-	fmt.Printf("Finalized Minipools:      %d\n\n", response.FinalizedMinipoolCount)
+	fmt.Printf("    Initialized:         %d\n", response.Data.InitializedMinipoolCount)
+	fmt.Printf("    Prelaunch:           %d\n", response.Data.PrelaunchMinipoolCount)
+	fmt.Printf("    Staking:             %d\n", response.Data.StakingMinipoolCount)
+	fmt.Printf("    Withdrawable:        %d\n", response.Data.WithdrawableMinipoolCount)
+	fmt.Printf("    Dissolved:           %d\n", response.Data.DissolvedMinipoolCount)
+	fmt.Printf("Finalized Minipools:     %d\n\n", response.Data.FinalizedMinipoolCount)
 
-	fmt.Printf("%s========== Smoothing Pool =========%s\n", colorGreen, colorReset)
-	fmt.Printf("Contract Address:        %s%s%s\n", colorBlue, response.SmoothingPoolAddress.Hex(), colorReset)
-	fmt.Printf("Nodes Opted in:          %d\n", response.SmoothingPoolNodes)
-	fmt.Printf("Pending Balance:         %f\n\n", response.SmoothingPoolBalance)
+	fmt.Printf("%s========== Smoothing Pool =========%s\n", terminal.ColorGreen, terminal.ColorReset)
+	fmt.Printf("Contract Address:        %s%s%s\n", terminal.ColorBlue, response.Data.SmoothingPoolAddress.Hex(), terminal.ColorReset)
+	fmt.Printf("Nodes Opted in:          %d\n", response.Data.SmoothingPoolNodes)
+	fmt.Printf("Pending Balance:         %.6f\n\n", eth.WeiToEth(response.Data.SmoothingPoolBalance))
 
-	fmt.Printf("%s============== Tokens =============%s\n", colorGreen, colorReset)
-	fmt.Printf("rETH Price (ETH / rETH): %f ETH\n", response.RethPrice)
-	fmt.Printf("RPL Price (ETH / RPL):   %f ETH\n", response.RplPrice)
-	fmt.Printf("Total RPL staked:        %f RPL\n", response.TotalRplStaked)
-	fmt.Printf("Effective RPL staked:    %f RPL\n", response.EffectiveRplStaked)
+	fmt.Printf("%s============== Tokens =============%s\n", terminal.ColorGreen, terminal.ColorReset)
+	fmt.Printf("rETH Price (ETH / rETH): %.6f ETH\n", eth.WeiToEth(response.Data.RethPrice))
+	fmt.Printf("RPL Price (ETH / RPL):   %.6f ETH\n", eth.WeiToEth(response.Data.RplPrice))
+	fmt.Printf("Total RPL staked:        %.6f RPL\n", eth.WeiToEth(response.Data.TotalRplStaked))
+	fmt.Printf("Effective RPL staked:    %.6f RPL\n", eth.WeiToEth(response.Data.EffectiveRplStaked))
 
 	return nil
-
 }

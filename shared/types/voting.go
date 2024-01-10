@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 type ProposalState string
 
 const (
@@ -11,6 +13,8 @@ const (
 type SnapshotProposal struct {
 	Title         string        `json:"title"`
 	State         ProposalState `json:"state"`
+	Start         time.Time     `json:"start"`
+	End           time.Time     `json:"end"`
 	Choices       []string      `json:"choices"`
 	Scores        []float64     `json:"scores"`
 	Quorum        float64       `json:"quorum"`
