@@ -150,7 +150,7 @@ func (r *MinipoolRequester) GetReduceBondDetails() (*api.ApiResponse[api.Minipoo
 }
 
 // Reduce bond on minipools
-func (r *MinipoolRequester) ReduceBond(addresses []common.Address, newBondAmount *big.Int) (*api.ApiResponse[api.BatchTxInfoData], error) {
+func (r *MinipoolRequester) ReduceBond(addresses []common.Address) (*api.ApiResponse[api.BatchTxInfoData], error) {
 	return sendMultiMinipoolRequest[api.BatchTxInfoData](r, "reduce-bond", "ReduceBond", addresses, nil)
 }
 
@@ -197,9 +197,9 @@ func (r *MinipoolRequester) Status() (*api.ApiResponse[api.MinipoolStatusData], 
 }
 
 // Get the artifacts necessary for vanity address searching
-func (r *MinipoolRequester) GetVanityArtifacts(nodeAddress common.Address) (*api.ApiResponse[api.MinipoolVanityArtifactsData], error) {
+func (r *MinipoolRequester) GetVanityArtifacts(nodeAddressStr string) (*api.ApiResponse[api.MinipoolVanityArtifactsData], error) {
 	args := map[string]string{
-		"node-address": nodeAddress.Hex(),
+		"node-address": nodeAddressStr,
 	}
 	return sendGetRequest[api.MinipoolVanityArtifactsData](r, "vanity-artifacts", "GetVanityArtifacts", args)
 }

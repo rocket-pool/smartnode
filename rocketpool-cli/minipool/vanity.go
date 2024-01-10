@@ -11,26 +11,30 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+)
+
+const (
+	vanityPrefixFlag  string = "prefix"
+	vanitySaltFlag    string = "salt"
+	vanityThreadsFlag string = "threads"
+	vanityAddressFlag string = "node-address"
 )
 
 func findVanitySalt(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get the target prefix
-	prefix := c.String("prefix")
+	prefix := c.String(vanityPrefixFlag)
 	if prefix == "" {
-		prefix = cliutils.Prompt("Please specify the address prefix you would like to search for (must start with 0x):", "^0x[0-9a-fA-F]+$", "Invalid hex string")
+		prefix = utils.Prompt("Please specify the address prefix you would like to search for (must start with 0x):", "^0x[0-9a-fA-F]+$", "Invalid hex string")
 	}
 	if !strings.HasPrefix(prefix, "0x") {
 		return fmt.Errorf("Prefix must start with 0x.")
@@ -41,7 +45,7 @@ func findVanitySalt(c *cli.Context) error {
 	}
 
 	// Get the starting salt
-	saltString := c.String("salt")
+	saltString := c.String(vanitySaltFlag)
 	var salt *big.Int
 	if saltString == "" {
 		salt = big.NewInt(0)
@@ -53,7 +57,7 @@ func findVanitySalt(c *cli.Context) error {
 	}
 
 	// Get the core count
-	threads := c.Int("threads")
+	threads := c.Int(vanityThreadsFlag)
 	if threads == 0 {
 		threads = runtime.GOMAXPROCS(0)
 	} else if threads < 0 {
@@ -63,46 +67,21 @@ func findVanitySalt(c *cli.Context) error {
 	}
 
 	// Get the node address
-	nodeAddressStr := c.String("node-address")
+	nodeAddressStr := c.String(vanityAddressFlag)
 	if nodeAddressStr == "" {
 		nodeAddressStr = "0"
 	}
 
-	// Get deposit amount
-	var amount float64
-	if c.String("amount") != "" {
-		// Parse amount
-		if amount, err = cliutils.ValidatePositiveEthAmount("deposit", c.String("amount")); err != nil {
-			return err
-		}
-	} else {
-		// Get deposit amount options
-		amountOptions := []string{
-			"8 ETH",
-			"16 ETH",
-		}
-
-		// Prompt for amount
-		selected, _ := cliutils.Select("Please choose a deposit type to search for:", amountOptions)
-		switch selected {
-		case 0:
-			amount = 8
-		case 1:
-			amount = 16
-		}
-	}
-	amountWei := eth.EthToWei(amount)
-
 	// Get the vanity generation artifacts
-	vanityArtifacts, err := rp.GetVanityArtifacts(amountWei, nodeAddressStr)
+	vanityArtifacts, err := rp.Api.Minipool.GetVanityArtifacts(nodeAddressStr)
 	if err != nil {
 		return err
 	}
 
 	// Set up some variables
-	nodeAddress := vanityArtifacts.NodeAddress.Bytes()
-	minipoolFactoryAddress := vanityArtifacts.MinipoolFactoryAddress
-	initHash := vanityArtifacts.InitHash.Bytes()
+	nodeAddress := vanityArtifacts.Data.NodeAddress.Bytes()
+	minipoolFactoryAddress := vanityArtifacts.Data.MinipoolFactoryAddress
+	initHash := vanityArtifacts.Data.InitHash.Bytes()
 	shiftAmount := uint(42 - len(prefix))
 
 	// Run the search

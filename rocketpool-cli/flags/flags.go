@@ -7,4 +7,6 @@ const (
 	MaxFeeFlag         string = "max-fee"
 	MaxPriorityFeeFlag string = "max-priority-fee"
 	YesFlag            string = "yes"
+	NoRestartFlag      string = "no-restart"
+	MnemonicFlag       string = "mnemonic"
 )

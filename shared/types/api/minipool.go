@@ -14,6 +14,7 @@ import (
 type MinipoolDetails struct {
 	Address         common.Address        `json:"address"`
 	ValidatorPubkey types.ValidatorPubkey `json:"validatorPubkey"`
+	Version         uint8                 `json:"version"`
 	Status          struct {
 		Status      types.MinipoolStatus `json:"status"`
 		StatusBlock uint64               `json:"statusBlock"`
@@ -179,6 +180,8 @@ type MinipoolVanityArtifactsData struct {
 
 type MinipoolBeginReduceBondDetails struct {
 	Address               common.Address             `json:"address"`
+	NodeDepositBalance    *big.Int                   `json:"nodeDepositBalance"`
+	NodeFee               *big.Int                   `json:"nodeFee"`
 	MinipoolVersionTooLow bool                       `json:"minipoolVersionTooLow"`
 	Balance               uint64                     `json:"balance"`
 	BalanceTooLow         bool                       `json:"balanceTooLow"`
@@ -187,15 +190,22 @@ type MinipoolBeginReduceBondDetails struct {
 	BeaconState           sharedtypes.ValidatorState `json:"beaconState"`
 	InvalidElState        bool                       `json:"invalidElState"`
 	InvalidBeaconState    bool                       `json:"invalidBeaconState"`
+	AlreadyCancelled      bool                       `json:"alreadyCancelled"`
+	NodeDepositTooLow     bool                       `json:"nodeDepositTooLow"`
 	CanReduce             bool                       `json:"canReduce"`
 }
 type MinipoolBeginReduceBondDetailsData struct {
-	BondReductionDisabled bool                             `json:"bondReductionDisabled"`
-	Details               []MinipoolBeginReduceBondDetails `json:"details"`
+	BondReductionDisabled       bool                             `json:"bondReductionDisabled"`
+	IsFeeDistributorInitialized bool                             `json:"isFeeDistributorInitialized"`
+	BondReductionWindowStart    time.Duration                    `json:"bondReductionWindowStart"`
+	BondReductionWindowLength   time.Duration                    `json:"bondReductionWindowLength"`
+	Details                     []MinipoolBeginReduceBondDetails `json:"details"`
 }
 
 type MinipoolReduceBondDetails struct {
 	Address               common.Address             `json:"address"`
+	NodeDepositBalance    *big.Int                   `json:"nodeDepositBalance"`
+	NodeFee               *big.Int                   `json:"nodeFee"`
 	MinipoolVersionTooLow bool                       `json:"minipoolVersionTooLow"`
 	Balance               uint64                     `json:"balance"`
 	BalanceTooLow         bool                       `json:"balanceTooLow"`
@@ -203,11 +213,15 @@ type MinipoolReduceBondDetails struct {
 	BeaconState           sharedtypes.ValidatorState `json:"beaconState"`
 	InvalidElState        bool                       `json:"invalidElState"`
 	InvalidBeaconState    bool                       `json:"invalidBeaconState"`
+	AlreadyCancelled      bool                       `json:"alreadyCancelled"`
 	CanReduce             bool                       `json:"canReduce"`
 }
 type MinipoolReduceBondDetailsData struct {
-	BondReductionDisabled bool                        `json:"bondReductionDisabled"`
-	Details               []MinipoolReduceBondDetails `json:"details"`
+	BondReductionDisabled       bool                        `json:"bondReductionDisabled"`
+	IsFeeDistributorInitialized bool                        `json:"isFeeDistributorInitialized"`
+	BondReductionWindowStart    time.Duration               `json:"bondReductionWindowStart"`
+	BondReductionWindowLength   time.Duration               `json:"bondReductionWindowLength"`
+	Details                     []MinipoolReduceBondDetails `json:"details"`
 }
 
 type MinipoolRescueDissolvedDetails struct {

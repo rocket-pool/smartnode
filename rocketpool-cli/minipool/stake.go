@@ -13,12 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-const (
-	stakeMinipoolsFlag string = "minipools"
-)
-
 func stakeMinipools(c *cli.Context) error {
-
 	// Get RP client
 	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -53,7 +48,7 @@ func stakeMinipools(c *cli.Context) error {
 		option.ID = fmt.Sprint(mp.Address)
 		option.Display = fmt.Sprintf("%s (%s until dissolved)", mp.Address.Hex(), mp.TimeUntilDissolve)
 	}
-	selectedMinipools, err := utils.GetMultiselectIndices[api.MinipoolDetails](c, stakeMinipoolsFlag, options, "Please select a minipool to stake:")
+	selectedMinipools, err := utils.GetMultiselectIndices(c, minipoolsFlag, options, "Please select a minipool to stake:")
 	if err != nil {
 		return fmt.Errorf("error determining minipool selection: %w", err)
 	}
@@ -80,7 +75,7 @@ func stakeMinipools(c *cli.Context) error {
 
 	fmt.Println("\nNOTE: Your validator container will be restarted after this process so it loads the new validator key.\n")
 
-	// Stake minipools
+	// Run the TXs
 	err = tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to stake %d minipools?", len(selectedMinipools)),
 		"Staking minipools...",

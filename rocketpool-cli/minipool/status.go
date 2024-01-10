@@ -9,10 +9,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -69,7 +69,7 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Return if all minipools are finalized and they are hidden
-	if len(status.Data.Minipools) == len(finalisedMinipools) && !c.Bool("include-finalized") {
+	if len(status.Data.Minipools) == len(finalisedMinipools) && !c.Bool(statusIncludeFinalizedFlag) {
 		fmt.Println("All of this node's minipools have been finalized.\nTo show finalized minipools, re-run this command with the `-f` flag.")
 		return nil
 	}
@@ -89,7 +89,7 @@ func getStatus(c *cli.Context) error {
 
 		// Minipools
 		for _, minipool := range minipools {
-			if !minipool.Finalised || c.Bool("include-finalized") {
+			if !minipool.Finalised || c.Bool(statusIncludeFinalizedFlag) {
 				printMinipoolDetails(minipool, status.Data.LatestDelegate)
 			}
 		}
@@ -98,7 +98,7 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Handle finalized minipools
-	if c.Bool("include-finalized") {
+	if c.Bool(statusIncludeFinalizedFlag) {
 		fmt.Printf("%d finalized minipool(s):\n", len(finalisedMinipools))
 		fmt.Println("")
 
@@ -201,9 +201,9 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 	} else {
 		fmt.Printf("Use latest delegate:   no\n")
 	}
-	fmt.Printf("Delegate address:      %s\n", cliutils.GetPrettyAddress(minipool.Delegate))
-	fmt.Printf("Rollback delegate:     %s\n", cliutils.GetPrettyAddress(minipool.PreviousDelegate))
-	fmt.Printf("Effective delegate:    %s\n", cliutils.GetPrettyAddress(minipool.EffectiveDelegate))
+	fmt.Printf("Delegate address:      %s\n", utils.GetPrettyAddress(minipool.Delegate))
+	fmt.Printf("Rollback delegate:     %s\n", utils.GetPrettyAddress(minipool.PreviousDelegate))
+	fmt.Printf("Effective delegate:    %s\n", utils.GetPrettyAddress(minipool.EffectiveDelegate))
 
 	if minipool.EffectiveDelegate != latestDelegate {
 		fmt.Printf("%s*Minipool can be upgraded to delegate %s!%s\n", terminal.ColorYellow, latestDelegate.Hex(), terminal.ColorReset)

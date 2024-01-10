@@ -9,36 +9,40 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
+const (
+	rescueMinipoolFlag string = "minipool"
+	rescueAmountFlag   string = "amount"
+)
+
 func rescueDissolved(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
-	defer rp.Close()
-
-	// Get minipool statuses
-	details, err := rp.GetMinipoolRescueDissolvedDetailsForNode()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("This command will allow you to manually deposit the remaining ETH for any dissolved minipools, activating them so you can exit them and retrieve your minipool's funds.\nPlease read our guide at https://docs.rocketpool.net/guides/node/rescue-dissolved.html to fully read about the process before continuing.\n")
 
+	// Get minipool statuses
+	details, err := rp.Api.Minipool.GetRescueDissolvedDetails()
+	if err != nil {
+		return err
+	}
+
 	// Validate the amount
 	var depositAmount *big.Int
-	if c.String("amount") != "" {
+	if c.String(rescueAmountFlag) != "" {
 		depositAmountEth, err := strconv.ParseFloat(c.String("amount"), 64)
 		if err != nil {
 			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
@@ -49,18 +53,18 @@ func rescueDissolved(c *cli.Context) error {
 		depositAmount = eth.EthToWei(depositAmountEth)
 	}
 
+	// Categorize minipools
 	rescuableMinipools := []api.MinipoolRescueDissolvedDetails{}
 	versionTooLowMinipools := []api.MinipoolRescueDissolvedDetails{}
 	balanceCompletedMinipools := []api.MinipoolRescueDissolvedDetails{}
 	invalidBeaconStateMinipools := []api.MinipoolRescueDissolvedDetails{}
-
 	fullDepositAmount := eth.EthToWei(32)
-	for _, mp := range details.Details {
+	for _, mp := range details.Data.Details {
 		if mp.IsFinalized {
 			// Ignore minipools that are already closed
 			continue
 		}
-		if mp.MinipoolState != types.Dissolved {
+		if mp.MinipoolState != types.MinipoolStatus_Dissolved {
 			// Ignore minipools that are aren't dissolved
 			continue
 		}
@@ -72,7 +76,7 @@ func rescueDissolved(c *cli.Context) error {
 			balanceCompletedMinipools = append(balanceCompletedMinipools, mp)
 			continue
 		}
-		if mp.BeaconState != beacon.ValidatorState_PendingInitialized {
+		if mp.BeaconState != sharedtypes.ValidatorState_PendingInitialized {
 			invalidBeaconStateMinipools = append(invalidBeaconStateMinipools, mp)
 			continue
 		}
@@ -83,25 +87,25 @@ func rescueDissolved(c *cli.Context) error {
 
 	// Print ineligible ones
 	if len(versionTooLowMinipools) > 0 {
-		fmt.Printf("%sWARNING: The following minipools are using an old delegate and cannot be safely rescued:\n", colorYellow)
+		fmt.Printf("%sWARNING: The following minipools are using an old delegate and cannot be safely rescued:\n", terminal.ColorYellow)
 		for _, mp := range versionTooLowMinipools {
 			fmt.Printf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` before rescuing them.%s\n\n", colorReset)
+		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` before rescuing them.%s\n\n", terminal.ColorReset)
 	}
 	if len(balanceCompletedMinipools) > 0 {
-		fmt.Printf("%NOTE: The following minipools already have 32 ETH or more deposited:\n", colorYellow)
+		fmt.Printf("%NOTE: The following minipools already have 32 ETH or more deposited:\n", terminal.ColorYellow)
 		for _, mp := range balanceCompletedMinipools {
 			fmt.Printf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nThese minipools don't need to be rescued.%s\n\n", colorReset)
+		fmt.Printf("\nThese minipools don't need to be rescued.%s\n\n", terminal.ColorReset)
 	}
 	if len(invalidBeaconStateMinipools) > 0 {
-		fmt.Printf("%NOTE: The following minipools have an invalid state on the Beacon Chain (expected 'initialized_pending'):\n", colorYellow)
+		fmt.Printf("%NOTE: The following minipools have an invalid state on the Beacon Chain (expected 'initialized_pending'):\n", terminal.ColorYellow)
 		for _, mp := range invalidBeaconStateMinipools {
 			fmt.Printf("\t%s (%s)\n", mp.Address, mp.BeaconState)
 		}
-		fmt.Printf("\nThese minipools cannot currently be rescued.%s\n\n", colorReset)
+		fmt.Printf("\nThese minipools cannot currently be rescued.%s\n\n", terminal.ColorReset)
 	}
 
 	// Check for rescuable minipools
@@ -110,14 +114,13 @@ func rescueDissolved(c *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("%sNOTE: the amounts required for completion below use the validator balances according to the Beacon Chain.\nIf you have recently sent a rescue deposit to this minipool, please wait until it has been registered with the Beacon Chain for these remaining amounts to be accurate.%s\n\n", colorYellow, colorReset)
+	fmt.Printf("%sNOTE: the amounts required for completion below use the validator balances according to the Beacon Chain.\nIf you have recently sent a rescue deposit to this minipool, please wait until it has been registered with the Beacon Chain for these remaining amounts to be accurate.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 
 	// Get selected minipools
 	var selectedMinipool *api.MinipoolRescueDissolvedDetails
 	var rescueAmount *big.Int
 	var rescueAmountFloat float64
-	if c.String("minipool") == "" {
-
+	if c.String(rescueMinipoolFlag) == "" {
 		// Prompt for minipool selection
 		options := make([]string, len(rescuableMinipools))
 		rescueAmounts := make([]*big.Int, len(rescuableMinipools))
@@ -130,17 +133,15 @@ func rescueDissolved(c *cli.Context) error {
 			rescueAmountFloats[mi] = math.RoundDown(eth.WeiToEth(localRescueAmount), 6)
 			options[mi] = fmt.Sprintf("%s (requires %.6f more ETH)", minipool.Address.Hex(), rescueAmountFloats[mi])
 		}
-		selected, _ := cliutils.Select("Please select a minipool to refund ETH from:", options)
+		selected, _ := utils.Select("Please select a minipool to refund ETH from:", options)
 
 		// Get minipool
 		selectedMinipool = &rescuableMinipools[selected]
 		rescueAmount = rescueAmounts[selected]
 		rescueAmountFloat = rescueAmountFloats[selected]
-
 	} else {
-
 		// Get matching minipool
-		selectedAddress := common.HexToAddress(c.String("minipool"))
+		selectedAddress := common.HexToAddress(c.String(rescueMinipoolFlag))
 		for i, minipool := range rescuableMinipools {
 			if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
 				selectedMinipool = &rescuableMinipools[i]
@@ -153,22 +154,19 @@ func rescueDissolved(c *cli.Context) error {
 		if selectedMinipool == nil {
 			return fmt.Errorf("The minipool %s is not available for rescue.", selectedAddress.Hex())
 		}
-
 	}
-
 	fmt.Println()
 
 	// Get the amount to deposit
 	var depositAmountFloat float64
-	if c.String("amount") == "" {
-
+	if c.String(rescueAmountFlag) == "" {
 		// Prompt for amount selection
 		options := []string{
 			fmt.Sprintf("All %.6f ETH required to complete the minipool", rescueAmountFloat),
 			"1 ETH",
 			"A custom amount",
 		}
-		selected, _ := cliutils.Select("Please select an amount of ETH to deposit:", options)
+		selected, _ := utils.Select("Please select an amount of ETH to deposit:", options)
 
 		switch selected {
 		case 0:
@@ -178,12 +176,11 @@ func rescueDissolved(c *cli.Context) error {
 			depositAmount = eth.EthToWei(1)
 			depositAmountFloat = 1
 		}
-
 	}
 
 	// Prompt for custom amount
 	if depositAmount == nil {
-		inputAmount := cliutils.Prompt("Please enter an amount of ETH to deposit:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+		inputAmount := utils.Prompt("Please enter an amount of ETH to deposit:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 		depositAmountEth, err := strconv.ParseFloat(inputAmount, 64)
 		if err != nil {
 			return fmt.Errorf("Invalid deposit amount '%s': %w", inputAmount, err)
@@ -195,33 +192,28 @@ func rescueDissolved(c *cli.Context) error {
 		depositAmountFloat = depositAmountEth
 	}
 
-	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(selectedMinipool.GasInfo, rp, c.Bool("yes"))
+	// Build the TX
+	response, err := rp.Api.Minipool.RescueDissolved([]common.Address{selectedMinipool.Address}, []*big.Int{depositAmount})
 	if err != nil {
-		return err
+		return fmt.Errorf("error during TX generation: %w", err)
 	}
 
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex()))) {
-		fmt.Println("Cancelled.")
-		return nil
+	// Validation
+	txInfo := response.Data.TxInfos[0]
+	if txInfo.SimError != "" {
+		return fmt.Errorf("error simulating rescue for minipool %s: %s", selectedMinipool.Address.Hex(), txInfo.SimError)
 	}
 
-	// Refund minipool
-	response, err := rp.RescueDissolvedMinipool(selectedMinipool.Address, depositAmount)
+	// Rescue minipool
+	err = tx.HandleTx(c, rp, txInfo,
+		fmt.Sprintf("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex()),
+		fmt.Sprintf("Depositing ETH to rescue minipool %s...\n", selectedMinipool.Address.Hex()),
+	)
 	if err != nil {
-		return fmt.Errorf("Could not rescue minipool %s: %s.\n", selectedMinipool.Address.Hex(), err.Error())
+		return fmt.Errorf("could not rescue minipool %s: %s\n", selectedMinipool.Address.Hex(), err.Error())
 	}
 
-	fmt.Printf("Depositing ETH to rescue minipool %s...\n", selectedMinipool.Address.Hex())
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-		return fmt.Errorf("Could not rescue minipool %s: %s.\n", selectedMinipool.Address.Hex(), err.Error())
-	} else {
-		fmt.Printf("Successfully deposited to minipool %s.\nPlease watch its status on a chain explorer such as https://beaconcha.in; it may take up to 24 hours for this deposit to be seen by the chain.\n", selectedMinipool.Address.Hex())
-	}
-
-	// Return
+	// Log & return
+	fmt.Printf("Successfully deposited to minipool %s.\nPlease watch its status on a chain explorer such as https://beaconcha.in; it may take up to 24 hours for this deposit to be seen by the chain.\n", selectedMinipool.Address.Hex())
 	return nil
-
 }

@@ -4,27 +4,26 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/migration"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/migration"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func setWithdrawalCreds(c *cli.Context, minipoolAddress common.Address) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	fmt.Printf("This will convert the withdrawal credentials for minipool %s's validator from the old 0x00 (BLS) value to the minipool address. This is meant for solo validator conversion **only**.\n\n", minipoolAddress.Hex())
 
 	// Get the mnemonic
 	mnemonic := ""
-	if c.IsSet("mnemonic") {
-		mnemonic = c.String("mnemonic")
+	if c.IsSet(flags.MnemonicFlag) {
+		mnemonic = c.String(flags.MnemonicFlag)
 	} else {
 		mnemonic = wallet.PromptMnemonic()
 	}

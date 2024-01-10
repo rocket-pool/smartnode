@@ -3,7 +3,8 @@ package minipool
 import (
 	"github.com/urfave/cli/v2"
 
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // Register commands
@@ -27,7 +28,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -43,14 +44,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool stake [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    stakeMinipoolsFlag,
+						Name:    minipoolsFlag,
 						Aliases: []string{"m"},
 						Usage:   "A comma-separated list of addresses for minipools to stake (or 'all' to stake all available minipools)",
 					},
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -66,24 +67,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool set-withdrawal-creds minipool-address [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "mnemonic, m",
-						Usage: "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
+						Name:    flags.MnemonicFlag,
+						Aliases: []string{"m"},
+						Usage:   "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := input.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					address, err := cliutils.ValidateAddress("minipool-address", c.Args().Get(0))
+					address, err := input.ValidateAddress("minipool-address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Run
 					return setWithdrawalCreds(c, address)
-
 				},
 			},
 			{
@@ -93,32 +93,32 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool import-key minipool-address [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "mnemonic, m",
-						Usage: "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
+						Name:    flags.MnemonicFlag,
+						Aliases: []string{"m"},
+						Usage:   "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
 					},
 					&cli.BoolFlag{
-						Name:  "no-restart",
+						Name:  flags.NoRestartFlag,
 						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
 					},
 					&cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm all interactive questions",
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm all interactive questions",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := input.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					address, err := cliutils.ValidateAddress("minipool-address", c.Args().Get(0))
+					address, err := input.ValidateAddress("minipool-address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Run
 					return importKey(c, address)
-
 				},
 			},
 			{
@@ -128,27 +128,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool promote [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to promote (address or 'all')",
+						Name:    minipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "The comma-separated addresses of the minipools to promote (or 'all' for every available minipool)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
 					}
 
 					// Run
 					return promoteMinipools(c)
-
 				},
 			},
 
@@ -159,27 +151,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool refund [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to refund from (address or 'all')",
+						Name:    minipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "The comma-separated addresses of the minipools to refund (or 'all' for every available minipool)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
 					}
 
 					// Run
 					return refundMinipools(c)
-
 				},
 			},
 
@@ -190,27 +174,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool begin-bond-reduction [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to begin the bond reduction for (address or 'all')",
+						Name:    minipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "The comma-separated addresses of the minipools to begin the bond reduction for (or 'all' for every available minipool)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
 					}
 
 					// Run
 					return beginReduceBondAmount(c)
-
 				},
 			},
 
@@ -221,27 +197,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool reduce-bond [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to reduce the bond for (address or 'all')",
+						Name:    minipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "The comma-separated addresses of the minipools to reduce the bond for (or 'all' for every available minipool)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
 					}
 
 					// Run
 					return reduceBondAmount(c)
-
 				},
 			},
 
@@ -252,31 +220,24 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool distribute-balance [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to distribute the balance of (address or 'all')",
+						Name:    minipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "The comma-separated addresses of the minipools to distribute the balance of (or 'all' for every available minipool)",
 					},
 					&cli.Float64Flag{
-						Name:  "threshold, t",
-						Usage: "Filter on a minimum amount of ETH that can be distributed - minipools below this amount won't be shown",
+						Name:    distributeThresholdFlag,
+						Aliases: []string{"t"},
+						Usage:   "Filter on a minimum amount of ETH that can be distributed - minipools below this amount won't be shown",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
 					}
 
 					// Run
 					return distributeBalance(c)
-
 				},
 			},
 
@@ -320,31 +281,24 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool exit [options]",
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm exiting minipool/s",
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm exiting minipools",
 					},
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to exit (address or 'all')",
+						Name:    minipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "The comma-separated addresses of the minipools to exit (or 'all' to exit every available minipool)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
 					}
 
 					// Run
 					return exitMinipools(c)
-
 				},
 			},
 
@@ -355,31 +309,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool close [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to close (address or 'all')",
+						Name:    minipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "The comma-separated addresses of the minipools to close (or 'all' to close every available minipool)",
 					},
 					&cli.BoolFlag{
-						Name:  "confirm-slashing",
+						Name:  closeConfirmFlag,
 						Usage: "Reserved for acknowledging situations where you've been slashed by the Beacon Chain, and closing a minipool will result in the complete loss of the ETH bond and your RPL collateral. DO NOT use this flag unless you have been explicitly instructed to do so.",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
 					}
 
 					// Run
 					return closeMinipools(c)
-
 				},
 			},
 
@@ -390,27 +336,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool delegate-upgrade [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to upgrade (address or 'all')",
+						Name:    minipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "The comma-separated addresses of the minipools to upgrade (or 'all' to upgrade every available minipool)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
-					}
-
 					// Run
-					return delegateUpgradeMinipools(c)
-
+					return upgradeDelegates(c)
 				},
 			},
 
@@ -421,27 +359,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool delegate-rollback [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to rollback (address or 'all')",
+						Name:    minipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "The comma-separated addresses of the minipools to rollback (or 'all' to rollback every available minipool)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
-					}
-
 					// Run
-					return delegateRollbackMinipools(c)
-
+					return rollbackDelegates(c)
 				},
 			},
 
@@ -452,31 +382,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool set-use-latest-delegate [options] true/false",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to configure the use-latest setting on (address or 'all')",
+						Name:    minipoolsFlag,
+						Aliases: []string{"m"},
+						Usage:   "The comma-separated addresses of the minipools to set the use-latest setting for (or 'all' to set it on every available minipool)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := input.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					setting, err := cliutils.ValidateBool("setting", c.Args().Get(0))
+					setting, err := input.ValidateBool("setting", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
-					}
-
 					// Run
-					return setUseLatestDelegateMinipools(c, setting)
-
+					return setUseLatestDelegates(c, setting)
 				},
 			},
 
@@ -487,38 +409,34 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool find-vanity-address [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "prefix, p",
-						Usage: "The prefix of the address to search for (must start with 0x)",
+						Name:    vanityPrefixFlag,
+						Aliases: []string{"p"},
+						Usage:   "The prefix of the address to search for (must start with 0x)",
 					},
 					&cli.StringFlag{
-						Name:  "salt, s",
-						Usage: "The salt to start searching from (must start with 0x)",
+						Name:    vanitySaltFlag,
+						Aliases: []string{"s"},
+						Usage:   "The salt to start searching from (must start with 0x)",
 					},
 					&cli.IntFlag{
-						Name:  "threads, t",
-						Usage: "The number of threads to use for searching (defaults to your CPU thread count)",
+						Name:    vanityThreadsFlag,
+						Aliases: []string{"t"},
+						Usage:   "The number of threads to use for searching (defaults to your CPU thread count)",
 					},
 					&cli.StringFlag{
-						Name:  "node-address, n",
-						Usage: "The node address to search for (leave blank to use the local node)",
-					},
-					&cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The bond amount to be used for the minipool, in ETH (impacts vanity address generation)",
+						Name:    vanityAddressFlag,
+						Aliases: []string{"n"},
+						Usage:   "The node address to search for (leave blank to use the local node)",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
-					// Validate flags
-
 					// Run
 					return findVanitySalt(c)
-
 				},
 			},
 
@@ -529,31 +447,31 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool rescue-dissolved [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to rescue (address, starting with 0x)",
+						Name:    rescueMinipoolFlag,
+						Aliases: []string{"m"},
+						Usage:   "The minipool/s to rescue (address, starting with 0x)",
 					},
 					&cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of ETH to deposit into the minipool",
+						Name:    rescueAmountFlag,
+						Aliases: []string{"a"},
+						Usage:   "The amount of ETH to deposit into the minipool",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
-					if c.String("minipool") != "" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
+					if c.String(rescueMinipoolFlag) != "" {
+						if _, err := input.ValidateAddress("minipool address", c.String("minipool")); err != nil {
 							return err
 						}
 					}
 
 					// Run
 					return rescueDissolved(c)
-
 				},
 			},
 		},

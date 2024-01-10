@@ -4,18 +4,16 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func refundMinipools(c *cli.Context) error {
+func upgradeDelegates(c *cli.Context) error {
 	// Get RP client
 	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -28,29 +26,29 @@ func refundMinipools(c *cli.Context) error {
 		return err
 	}
 
-	// Get refundable minipools
-	refundableMinipools := []api.MinipoolDetails{}
-	for _, minipool := range status.Data.Minipools {
-		if minipool.RefundAvailable {
-			refundableMinipools = append(refundableMinipools, minipool)
+	// Get upgradeable minipools
+	upgradeableMinipools := []api.MinipoolDetails{}
+	for _, mp := range status.Data.Minipools {
+		if mp.Delegate != status.Data.LatestDelegate && !mp.UseLatestDelegate {
+			upgradeableMinipools = append(upgradeableMinipools, mp)
 		}
 	}
 
-	// Check for refundable minipools
-	if len(refundableMinipools) == 0 {
-		fmt.Println("No minipools have refunds available.")
+	// Check for upgradeable minipools
+	if len(upgradeableMinipools) == 0 {
+		fmt.Println("No minipools are eligible for delegate upgrades.")
 		return nil
 	}
 
 	// Get selected minipools
-	options := make([]utils.SelectionOption[api.MinipoolDetails], len(refundableMinipools))
-	for i, mp := range refundableMinipools {
+	options := make([]utils.SelectionOption[api.MinipoolDetails], len(upgradeableMinipools))
+	for i, mp := range upgradeableMinipools {
 		option := &options[i]
 		option.Element = &mp
 		option.ID = fmt.Sprint(mp.Address)
-		option.Display = fmt.Sprintf("%s (%.6f ETH to claim)", mp.Address.Hex(), math.RoundDown(eth.WeiToEth(mp.Node.RefundBalance), 6))
+		option.Display = fmt.Sprintf("%s (using delegate %s)", mp.Address.Hex(), mp.Delegate.Hex())
 	}
-	selectedMinipools, err := utils.GetMultiselectIndices(c, minipoolsFlag, options, "Please select a minipool to refund ETH from:")
+	selectedMinipools, err := utils.GetMultiselectIndices(c, minipoolsFlag, options, "Please select a minipool to upgrade:")
 	if err != nil {
 		return fmt.Errorf("error determining minipool selection: %w", err)
 	}
@@ -60,7 +58,7 @@ func refundMinipools(c *cli.Context) error {
 	for i, lot := range selectedMinipools {
 		addresses[i] = lot.Address
 	}
-	response, err := rp.Api.Minipool.Refund(addresses)
+	response, err := rp.Api.Minipool.UpgradeDelegates(addresses)
 	if err != nil {
 		return fmt.Errorf("error during TX generation: %w", err)
 	}
@@ -70,21 +68,23 @@ func refundMinipools(c *cli.Context) error {
 	for i, minipool := range selectedMinipools {
 		txInfo := response.Data.TxInfos[i]
 		if txInfo.SimError != "" {
-			return fmt.Errorf("error simulating refund for minipool %s: %s", minipool.Address.Hex(), txInfo.SimError)
+			return fmt.Errorf("error simulating delegate upgrade for minipool %s: %s", minipool.Address.Hex(), txInfo.SimError)
 		}
 		txs[i] = txInfo
 	}
 
+	fmt.Printf("Minipools will upgrade to delegate contract %s.\n", status.Data.LatestDelegate.Hex())
+
 	// Run the TXs
 	err = tx.HandleTxBatch(c, rp, txs,
-		fmt.Sprintf("Are you sure you want to refund %d minipools?", len(selectedMinipools)),
-		"Refunding minipools...",
+		fmt.Sprintf("Are you sure you want to upgrade %d minipools?", len(selectedMinipools)),
+		"Upgrading minipools...",
 	)
 	if err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Println("Successfully refunded ETH from all selected minipools.")
+	fmt.Println("Successfully upgraded all selected minipools.")
 	return nil
 }

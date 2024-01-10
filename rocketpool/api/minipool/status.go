@@ -217,6 +217,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 			Address: mpCommonDetails.Address,
 		}
 		mpDetails.ValidatorPubkey = pubkey
+		mpDetails.Version = mpCommonDetails.Version
 		mpDetails.Status.Status = mpCommonDetails.Status.Formatted()
 		mpDetails.Status.StatusBlock = mpCommonDetails.StatusBlock.Formatted()
 		mpDetails.Status.StatusTime = mpCommonDetails.StatusTime.Formatted()

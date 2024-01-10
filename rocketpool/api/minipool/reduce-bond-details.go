@@ -53,6 +53,7 @@ type minipoolReduceBondDetailsContext struct {
 	rp      *rocketpool.RocketPool
 	bc      beacon.Client
 
+	node      *node.Node
 	pSettings *protocol.ProtocolDaoSettings
 	oSettings *oracle.OracleDaoSettings
 }
@@ -61,6 +62,7 @@ func (c *minipoolReduceBondDetailsContext) Initialize() error {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
+	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
 	err := errors.Join(
@@ -72,6 +74,10 @@ func (c *minipoolReduceBondDetailsContext) Initialize() error {
 	}
 
 	// Bindings
+	c.node, err = node.NewNode(c.rp, nodeAddress)
+	if err != nil {
+		return fmt.Errorf("error creating node binding: %w", err)
+	}
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating pDAO manager binding: %w", err)
@@ -87,18 +93,24 @@ func (c *minipoolReduceBondDetailsContext) Initialize() error {
 
 func (c *minipoolReduceBondDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
 	core.AddQueryablesToMulticall(mc,
+		c.node.IsFeeDistributorInitialized,
 		c.pSettings.Minipool.IsBondReductionEnabled,
 		c.oSettings.Minipool.BondReductionWindowStart,
 		c.oSettings.Minipool.BondReductionWindowLength,
 	)
 }
 
-func (c *minipoolReduceBondDetailsContext) CheckState(node *node.Node, response *api.MinipoolReduceBondDetailsData) bool {
-	response.BondReductionDisabled = !c.pSettings.Minipool.IsBondReductionEnabled.Get()
-	return !response.BondReductionDisabled
+func (c *minipoolReduceBondDetailsContext) CheckState(node *node.Node, data *api.MinipoolReduceBondDetailsData) bool {
+	data.BondReductionDisabled = !c.pSettings.Minipool.IsBondReductionEnabled.Get()
+	return !data.BondReductionDisabled
 }
 
 func (c *minipoolReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+	mpCommon := mp.Common()
+	core.AddQueryablesToMulticall(mc,
+		mpCommon.NodeDepositBalance,
+		mpCommon.NodeFee,
+	)
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
 		core.AddQueryablesToMulticall(mc,
@@ -106,11 +118,17 @@ func (c *minipoolReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCal
 			mpv3.Status,
 			mpv3.Pubkey,
 			mpv3.ReduceBondTime,
+			mpv3.IsBondReduceCancelled,
 		)
 	}
 }
 
 func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolReduceBondDetailsData) error {
+	// General vars
+	data.IsFeeDistributorInitialized = c.node.IsFeeDistributorInitialized.Get()
+	data.BondReductionWindowStart = c.oSettings.Minipool.BondReductionWindowStart.Formatted()
+	data.BondReductionWindowLength = c.oSettings.Minipool.BondReductionWindowLength.Formatted()
+
 	// Get the latest block header
 	header, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
@@ -123,32 +141,10 @@ func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Addres
 	detailsMap := map[types.ValidatorPubkey]int{}
 	details := make([]api.MinipoolReduceBondDetails, len(addresses))
 	for i, mp := range mps {
-		mpCommon := mp.Common()
-		mpDetails := api.MinipoolReduceBondDetails{
-			Address: mpCommon.Address,
-		}
-
-		mpv3, success := minipool.GetMinipoolAsV3(mp)
-		if !success {
-			mpDetails.MinipoolVersionTooLow = true
-		} else if mpCommon.Status.Formatted() != types.MinipoolStatus_Staking || mpCommon.IsFinalised.Get() {
-			mpDetails.InvalidElState = true
-		} else {
-			reductionStart := mpv3.ReduceBondTime.Formatted()
-			timeSinceBondReductionStart := currentTime.Sub(reductionStart)
-			windowStart := c.oSettings.Minipool.BondReductionWindowStart.Formatted()
-			windowEnd := windowStart + c.oSettings.Minipool.BondReductionWindowLength.Formatted()
-
-			if timeSinceBondReductionStart < windowStart || timeSinceBondReductionStart > windowEnd {
-				mpDetails.OutOfWindow = true
-			} else {
-				pubkey := mpCommon.Pubkey.Get()
-				pubkeys = append(pubkeys, pubkey)
-				detailsMap[pubkey] = i
-			}
-		}
-
-		details[i] = mpDetails
+		details[i] = c.getMinipoolDetails(mp, currentTime)
+		pubkey := mp.Common().Pubkey.Get()
+		pubkeys = append(pubkeys, pubkey)
+		detailsMap[pubkey] = i
 	}
 
 	// Get the statuses on Beacon
@@ -173,9 +169,44 @@ func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Addres
 		threshold := uint64(32000000000)
 		mpDetails.BalanceTooLow = mpDetails.Balance < threshold
 
-		mpDetails.CanReduce = !(data.BondReductionDisabled || mpDetails.MinipoolVersionTooLow || mpDetails.OutOfWindow || mpDetails.BalanceTooLow || mpDetails.InvalidBeaconState)
+		mpDetails.CanReduce = !(data.BondReductionDisabled || mpDetails.MinipoolVersionTooLow || mpDetails.OutOfWindow || mpDetails.BalanceTooLow || mpDetails.InvalidBeaconState || mpDetails.AlreadyCancelled)
 	}
 
 	data.Details = details
 	return nil
+}
+
+func (c *minipoolReduceBondDetailsContext) getMinipoolDetails(mp minipool.IMinipool, currentTime time.Time) api.MinipoolReduceBondDetails {
+	mpCommon := mp.Common()
+	mpDetails := api.MinipoolReduceBondDetails{
+		Address: mpCommon.Address,
+	}
+	mpDetails.NodeDepositBalance = mpCommon.NodeDepositBalance.Get()
+	mpDetails.NodeFee = mpCommon.NodeFee.Raw()
+
+	mpv3, success := minipool.GetMinipoolAsV3(mp)
+	if !success {
+		mpDetails.MinipoolVersionTooLow = true
+		return mpDetails
+	}
+	if mpCommon.Status.Formatted() != types.MinipoolStatus_Staking || mpCommon.IsFinalised.Get() {
+		mpDetails.InvalidElState = true
+		return mpDetails
+	}
+	if mpv3.IsBondReduceCancelled.Get() {
+		mpDetails.AlreadyCancelled = true
+		return mpDetails
+	}
+
+	reductionStart := mpv3.ReduceBondTime.Formatted()
+	timeSinceBondReductionStart := currentTime.Sub(reductionStart)
+	windowStart := c.oSettings.Minipool.BondReductionWindowStart.Formatted()
+	windowEnd := windowStart + c.oSettings.Minipool.BondReductionWindowLength.Formatted()
+
+	if timeSinceBondReductionStart < windowStart || timeSinceBondReductionStart > windowEnd {
+		mpDetails.OutOfWindow = true
+		return mpDetails
+	}
+
+	return mpDetails
 }

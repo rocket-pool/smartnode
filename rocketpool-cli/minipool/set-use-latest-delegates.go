@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func promoteMinipools(c *cli.Context) error {
+func setUseLatestDelegates(c *cli.Context, setting bool) error {
 	// Get RP client
 	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -26,29 +26,35 @@ func promoteMinipools(c *cli.Context) error {
 		return err
 	}
 
-	// Get promotable minipools
-	promotableMinipools := []api.MinipoolDetails{}
-	for _, minipool := range status.Data.Minipools {
-		if minipool.CanPromote {
-			promotableMinipools = append(promotableMinipools, minipool)
+	// Get eligible settableMinipools
+	settableMinipools := []api.MinipoolDetails{}
+	for _, mp := range status.Data.Minipools {
+		if mp.UseLatestDelegate != setting && !mp.Finalised {
+			settableMinipools = append(settableMinipools, mp)
 		}
 	}
 
-	// Check for promotable minipools
-	if len(promotableMinipools) == 0 {
-		fmt.Println("No minipools can be promoted.")
+	// Check for initialized minipools
+	if len(settableMinipools) == 0 {
+		fmt.Printf("No minipools can have their use-latest-delegate flag set to %t.\n", setting)
 		return nil
 	}
 
 	// Get selected minipools
-	options := make([]utils.SelectionOption[api.MinipoolDetails], len(promotableMinipools))
-	for i, mp := range promotableMinipools {
+	options := make([]utils.SelectionOption[api.MinipoolDetails], len(settableMinipools))
+	for i, mp := range settableMinipools {
 		option := &options[i]
 		option.Element = &mp
 		option.ID = fmt.Sprint(mp.Address)
-		option.Display = fmt.Sprintf("%s (%s until dissolved)", mp.Address.Hex(), mp.TimeUntilDissolve)
+		option.Display = fmt.Sprintf("%s (using delegate %s)", mp.Address.Hex(), mp.Delegate.Hex())
 	}
-	selectedMinipools, err := utils.GetMultiselectIndices(c, minipoolsFlag, options, "Please select a minipool to promote:")
+	var action string
+	if setting {
+		action = "enabled"
+	} else {
+		action = "disable"
+	}
+	selectedMinipools, err := utils.GetMultiselectIndices(c, minipoolsFlag, options, fmt.Sprintf("Please select a minipool to %s the flag for:", action))
 	if err != nil {
 		return fmt.Errorf("error determining minipool selection: %w", err)
 	}
@@ -58,7 +64,7 @@ func promoteMinipools(c *cli.Context) error {
 	for i, lot := range selectedMinipools {
 		addresses[i] = lot.Address
 	}
-	response, err := rp.Api.Minipool.Promote(addresses)
+	response, err := rp.Api.Minipool.SetUseLatestDelegates(addresses, setting)
 	if err != nil {
 		return fmt.Errorf("error during TX generation: %w", err)
 	}
@@ -68,21 +74,21 @@ func promoteMinipools(c *cli.Context) error {
 	for i, minipool := range selectedMinipools {
 		txInfo := response.Data.TxInfos[i]
 		if txInfo.SimError != "" {
-			return fmt.Errorf("error simulating promote for minipool %s: %s", minipool.Address.Hex(), txInfo.SimError)
+			return fmt.Errorf("error simulating set-use-latest-delegate for minipool %s: %s", minipool.Address.Hex(), txInfo.SimError)
 		}
 		txs[i] = txInfo
 	}
 
 	// Run the TXs
 	err = tx.HandleTxBatch(c, rp, txs,
-		fmt.Sprintf("Are you sure you want to promote %d minipools?", len(selectedMinipools)),
-		"Promoting minipools...",
+		fmt.Sprintf("Are you sure you want to change the auto-upgrade setting for %d minipools to %t?", len(selectedMinipools), setting),
+		"Upgrading minipools...",
 	)
 	if err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Println("Successfully promoted all selected minipools.")
+	fmt.Println("Successfully updated the setting for all selected minipools.")
 	return nil
 }
