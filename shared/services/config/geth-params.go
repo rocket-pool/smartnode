@@ -8,8 +8,8 @@ import (
 
 // Constants
 const (
-	gethTagProd          string = "ethereum/client-go:v1.13.8"
-	gethTagTest          string = "ethereum/client-go:v1.13.8"
+	gethTagProd          string = "ethereum/client-go:v1.13.9"
+	gethTagTest          string = "ethereum/client-go:v1.13.9"
 	gethEventLogInterval int    = 1000
 	gethStopSignal       string = "SIGTERM"
 )
