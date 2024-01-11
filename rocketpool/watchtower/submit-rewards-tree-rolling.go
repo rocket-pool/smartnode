@@ -504,9 +504,9 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 
 		t.log.Printlnf("%s Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", t.logPrefix, currentIndex, rewardsTreePath)
 
-		cid, err := rprewards.SingleFileDirIPFSCid(fileBytes, rewardsTreePath, "compressed rewards tree")
+		cid, err := rprewards.SingleFileDirIPFSCid(fileBytes, compressedRewardsTreePath, "compressed rewards tree")
 		if err != nil {
-			return fmt.Errorf("error getting CID for file %s: %w", rewardsTreePath, err)
+			return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
