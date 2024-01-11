@@ -205,17 +205,14 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, rewardsTreePath)
 
 		// Deserialize the file
-		wrapperBytes, err := os.ReadFile(rewardsTreePath)
+		localRewardsFile, err := rprewards.ReadLocalRewardsFile(rewardsTreePath)
 		if err != nil {
 			return fmt.Errorf("Error reading rewards tree file: %w", err)
 		}
 
-		proofWrapper, err := rprewards.DeserializeRewardsFile(wrapperBytes)
-		if err != nil {
-			return fmt.Errorf("Error deserializing rewards tree file: %w", err)
-		}
+		proofWrapper := localRewardsFile.Repr()
 
-		cid, err := rprewards.SingleFileDirIPFSCid(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
+		cid, err := localRewardsFile.CompressedCid()
 		if err != nil {
 			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
@@ -257,32 +254,32 @@ func (t *submitRewardsTree_Stateless) printMessage(message string) {
 func (t *submitRewardsTree_Stateless) isExistingFileValid(rewardsTreePath string, intervalsPassed uint64) bool {
 
 	_, err := os.Stat(rewardsTreePath)
-	if !os.IsNotExist(err) {
-		// The file already exists, attempt to read it
-		fileBytes, err := os.ReadFile(rewardsTreePath)
-		if err != nil {
-			t.log.Printlnf("WARNING: failed to read %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
-			return false
-		}
-
-		proofWrapper, err := rprewards.DeserializeRewardsFile(fileBytes)
-		if err != nil {
-			t.log.Printlnf("WARNING: failed to deserialize %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
-			return false
-		}
-
-		// Compare the number of intervals in it with the current number of intervals
-		header := proofWrapper.GetHeader()
-		if header.IntervalsPassed != intervalsPassed {
-			t.log.Printlnf("Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n", header.Index, header.IntervalsPassed, intervalsPassed)
-			return false
-		}
-
-		// File's good and it has the same number of intervals passed, so use it
-		return true
+	if os.IsNotExist(err) {
+		return false
 	}
 
-	return false
+	// The file already exists, attempt to read it
+	localRewardsFile, err := rprewards.ReadLocalRewardsFile(rewardsTreePath)
+	if err != nil {
+		t.log.Printlnf("WARNING: failed to read %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
+		return false
+	}
+
+	proofWrapper := localRewardsFile.Repr()
+	if err != nil {
+		t.log.Printlnf("WARNING: failed to deserialize %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
+		return false
+	}
+
+	// Compare the number of intervals in it with the current number of intervals
+	header := proofWrapper.GetHeader()
+	if header.IntervalsPassed != intervalsPassed {
+		t.log.Printlnf("Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n", header.Index, header.IntervalsPassed, intervalsPassed)
+		return false
+	}
+
+	// File's good and it has the same number of intervals passed, so use it
+	return true
 
 }
 
@@ -349,19 +346,19 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	// Serialize the minipool performance file
-	minipoolPerformanceBytes, err := rewardsFile.GetMinipoolPerformanceFile().Serialize()
-	if err != nil {
-		return fmt.Errorf("Error serializing minipool performance file into JSON: %w", err)
-	}
+	localMinipoolPerformanceFile := rprewards.NewLocalFile[rprewards.IMinipoolPerformanceFile](
+		rewardsFile.GetMinipoolPerformanceFile(),
+		minipoolPerformancePath,
+	)
 
 	// Write it to disk
-	err = os.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
+	err = localMinipoolPerformanceFile.Write()
 	if err != nil {
 		return fmt.Errorf("Error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
 	}
 
 	if nodeTrusted {
-		minipoolPerformanceCid, err := rprewards.SingleFileDirIPFSCid(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
+		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CompressedCid()
 		if err != nil {
 			return fmt.Errorf("Error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
 		}
@@ -373,20 +370,20 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	// Serialize the rewards tree to JSON
-	wrapperBytes, err := rewardsFile.Serialize()
-	if err != nil {
-		return fmt.Errorf("Error serializing proof wrapper into JSON: %w", err)
-	}
+	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
+		rewardsFile,
+		rewardsTreePath,
+	)
 	t.printMessage("Generation complete! Saving tree...")
 
 	// Write the rewards tree to disk
-	err = os.WriteFile(rewardsTreePath, wrapperBytes, 0644)
+	err = localRewardsFile.Write()
 	if err != nil {
 		return fmt.Errorf("Error saving rewards tree file to %s: %w", rewardsTreePath, err)
 	}
 
 	if nodeTrusted {
-		cid, err := rprewards.SingleFileDirIPFSCid(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
+		cid, err := localRewardsFile.CompressedCid()
 		if err != nil {
 			return fmt.Errorf("Error getting CID for file %s : %w", rewardsTreePath, err)
 		}

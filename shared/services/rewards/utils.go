@@ -17,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
-	"github.com/ipfs/go-cid"
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -112,16 +111,13 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.TreeFileExists = true
 
 	// Unmarshal it
-	fileBytes, err := os.ReadFile(info.TreeFilePath)
+	localRewardsFile, err := ReadLocalRewardsFile(info.TreeFilePath)
 	if err != nil {
 		err = fmt.Errorf("error reading %s: %w", info.TreeFilePath, err)
 		return
 	}
-	proofWrapper, err := DeserializeRewardsFile(fileBytes)
-	if err != nil {
-		err = fmt.Errorf("error deserializing %s: %w", info.TreeFilePath, err)
-		return
-	}
+
+	proofWrapper := localRewardsFile.Repr()
 
 	// Make sure the Merkle root has the expected value
 	merkleRootFromFile := common.HexToHash(proofWrapper.GetHeader().MerkleRoot)
@@ -333,13 +329,11 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 		}
 
 		// Serialize again so we're sure to have all the correct proofs that we've generated (instead of verifying every proof on the file)
-		writeBytesVerified, err := deserializedRewardsFile.Serialize()
-		if err != nil {
-			return fmt.Errorf("error serializing file %s: %w", rewardsTreePath, err)
-		}
-
-		// Write the file
-		err = os.WriteFile(rewardsTreePath, writeBytesVerified, 0644)
+		localRewardsFile := NewLocalFile[IRewardsFile](
+			deserializedRewardsFile,
+			rewardsTreePath,
+		)
+		err = localRewardsFile.Write()
 		if err != nil {
 			return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 		}
@@ -350,22 +344,6 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 
 	return fmt.Errorf(errBuilder.String())
 
-}
-
-// Get the IPFS CID for a blob of data
-func GetCidForRewardsFile(rewardsFile IRewardsFile, filename string) (cid.Cid, error) {
-	// Encode the rewards file in JSON
-	data, err := rewardsFile.Serialize()
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("error serializing rewards file: %w", err)
-	}
-
-	c, err := SingleFileDirIPFSCid(data, filename, "compressed rewards file")
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("error getting CID for file %s: %w", filename, err)
-	}
-
-	return c, nil
 }
 
 // Gets the start slot for the given interval
