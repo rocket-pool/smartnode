@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	version    string = "1.5.0"
+	version    string = "1.5.1"
 	colorReset string = "\033[0m"
 	colorRed   string = "\033[31m"
 )
