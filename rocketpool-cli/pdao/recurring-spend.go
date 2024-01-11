@@ -70,14 +70,13 @@ func proposeRecurringSpend(c *cli.Context) error {
 	}
 
 	// Get the start time
-	startTimeString := c.String("start-time")
-	fmt.Printf("string string: %s", startTimeString)
-	if startTimeString == "" {
-		startTimeString = cliutils.Prompt("Please enter the time that the recurring payment will start (as a UNIX timestamp):", "^[0-9]+$", "Invalid start time")
-	}
-	startTimeUnix, err := cliutils.ValidateUint("start-time", startTimeString)
-	if err != nil {
-		return err
+	startTimeUnix := c.Uint64("start-time")
+	if !c.IsSet("start-time") {
+		startTimeString := cliutils.Prompt("Please enter the time that the recurring payment will start (as a UNIX timestamp):", "^[0-9]+$", "Invalid start time")
+		startTimeUnix, err = cliutils.ValidateUint("start-time", startTimeString)
+		if err != nil {
+			return err
+		}
 	}
 	startTime := time.Unix(int64(startTimeUnix), 0)
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("The provided timestamp corresponds to %s - is this correct?", startTime.UTC().String()))) {
@@ -88,7 +87,7 @@ func proposeRecurringSpend(c *cli.Context) error {
 	// Get the period length
 	periodLengthString := c.String("period-length")
 	if periodLengthString == "" {
-		periodLengthString = cliutils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^+$", "Invalid period length")
+		periodLengthString = cliutils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^.+$", "Invalid period length")
 	}
 	periodLength, err := cliutils.ValidateDuration("period-length", periodLengthString)
 	if err != nil {
@@ -96,13 +95,13 @@ func proposeRecurringSpend(c *cli.Context) error {
 	}
 
 	// Get the number of periods
-	numPeriodsString := c.String("number-of-periods")
-	if numPeriodsString == "" {
-		numPeriodsString = cliutils.Prompt("Please enter the total number of payment periods:", "^[0-9]+$", "Invalid number of periods")
-	}
-	numPeriods, err := cliutils.ValidateUint("number-of-periods", numPeriodsString)
-	if err != nil {
-		return err
+	numPeriods := c.Uint64("number-of-periods")
+	if !c.IsSet("number-of-periods") {
+		numPeriodsString := cliutils.Prompt("Please enter the total number of payment periods:", "^[0-9]+$", "Invalid number of periods")
+		numPeriods, err = cliutils.ValidateUint("number-of-periods", numPeriodsString)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Check submissions

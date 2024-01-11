@@ -51,9 +51,9 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 	amountString := c.String("amount-per-period")
 	if amountString == "" {
 		if rawEnabled {
-			amountString = cliutils.Prompt("Please enter an amount of RPL to send to %s per period as a wei amount:", "^[0-9]+$", "Invalid amount")
+			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
 		} else {
-			amountString = cliutils.Prompt("Please enter an amount of RPL to send to %s per period:", "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
+			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
 		}
 	}
 
@@ -71,7 +71,7 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 	// Get the period length
 	periodLengthString := c.String("period-length")
 	if periodLengthString == "" {
-		periodLengthString = cliutils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^\\S+$", "Invalid period length")
+		periodLengthString = cliutils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^.+$", "Invalid period length")
 	}
 	periodLength, err := cliutils.ValidateDuration("period-length", periodLengthString)
 	if err != nil {
@@ -79,13 +79,13 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 	}
 
 	// Get the number of periods
-	numPeriodsString := c.String("number-of-periods")
-	if numPeriodsString == "" {
-		numPeriodsString = cliutils.Prompt("Please enter the total number of payment periods:", "^[0-9]+$", "Invalid number of periods")
-	}
-	numPeriods, err := cliutils.ValidateUint("number-of-periods", numPeriodsString)
-	if err != nil {
-		return err
+	numPeriods := c.Uint64("number-of-periods")
+	if !c.IsSet("number-of-periods") {
+		numPeriodsString := cliutils.Prompt("Please enter the total number of payment periods:", "^[0-9]+$", "Invalid number of periods")
+		numPeriods, err = cliutils.ValidateUint("number-of-periods", numPeriodsString)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Check submissions
