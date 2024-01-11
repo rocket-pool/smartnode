@@ -11,7 +11,7 @@ const (
 	prysmVcProd             string = "rocketpool/prysm:v4.1.1"
 	defaultPrysmRpcPort     uint16 = 5053
 	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
-	defaultPrysmMaxPeers    uint16 = 45
+	defaultPrysmMaxPeers    uint16 = 70
 )
 
 // Configuration for Prysm
