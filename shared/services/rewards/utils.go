@@ -117,7 +117,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 		return
 	}
 
-	proofWrapper := localRewardsFile.Repr()
+	proofWrapper := localRewardsFile.Impl()
 
 	// Make sure the Merkle root has the expected value
 	merkleRootFromFile := common.HexToHash(proofWrapper.GetHeader().MerkleRoot)

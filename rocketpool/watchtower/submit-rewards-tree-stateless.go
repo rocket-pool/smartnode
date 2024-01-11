@@ -187,7 +187,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval
-	if t.isExistingFileValid(rewardsTreePath, uint64(intervalsPassed)) {
+	if t.isExistingRewardsFileValid(rewardsTreePath, uint64(intervalsPassed)) {
 		if !nodeTrusted {
 			t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s.", currentIndex, rewardsTreePath)
 			return nil
@@ -210,9 +210,10 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 			return fmt.Errorf("Error reading rewards tree file: %w", err)
 		}
 
-		proofWrapper := localRewardsFile.Repr()
+		proofWrapper := localRewardsFile.Impl()
 
-		cid, err := localRewardsFile.CompressedCid()
+		// Save the compressed file and get the CID for it
+		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
 			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
@@ -251,7 +252,7 @@ func (t *submitRewardsTree_Stateless) printMessage(message string) {
 }
 
 // Checks to see if an existing rewards file is still valid
-func (t *submitRewardsTree_Stateless) isExistingFileValid(rewardsTreePath string, intervalsPassed uint64) bool {
+func (t *submitRewardsTree_Stateless) isExistingRewardsFileValid(rewardsTreePath string, intervalsPassed uint64) bool {
 
 	_, err := os.Stat(rewardsTreePath)
 	if os.IsNotExist(err) {
@@ -265,13 +266,8 @@ func (t *submitRewardsTree_Stateless) isExistingFileValid(rewardsTreePath string
 		return false
 	}
 
-	proofWrapper := localRewardsFile.Repr()
-	if err != nil {
-		t.log.Printlnf("WARNING: failed to deserialize %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
-		return false
-	}
-
 	// Compare the number of intervals in it with the current number of intervals
+	proofWrapper := localRewardsFile.Impl()
 	header := proofWrapper.GetHeader()
 	if header.IntervalsPassed != intervalsPassed {
 		t.log.Printlnf("Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n", header.Index, header.IntervalsPassed, intervalsPassed)
@@ -358,7 +354,7 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	if nodeTrusted {
-		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CompressedCid()
+		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
 		if err != nil {
 			return fmt.Errorf("Error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
 		}
@@ -383,7 +379,8 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	if nodeTrusted {
-		cid, err := localRewardsFile.CompressedCid()
+		// Save the compressed file and get the CID for it
+		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
 			return fmt.Errorf("Error getting CID for file %s : %w", rewardsTreePath, err)
 		}

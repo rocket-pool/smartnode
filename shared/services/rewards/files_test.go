@@ -31,7 +31,7 @@ func TestFilesFromTree(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	minipoolPerformanceFile := localRewardsFile.Repr().GetMinipoolPerformanceFile()
+	minipoolPerformanceFile := localRewardsFile.Impl().GetMinipoolPerformanceFile()
 	localMinipoolPerformanceFile := NewLocalFile[IMinipoolPerformanceFile](
 		minipoolPerformanceFile,
 		path.Join(dir, "performance.json"),
@@ -48,10 +48,10 @@ func TestFilesFromTree(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if localRewardsFile.Repr().GetHeader().RulesetVersion != f.RewardsFileHeader.RulesetVersion {
+	if localRewardsFile.Impl().GetHeader().RulesetVersion != f.RewardsFileHeader.RulesetVersion {
 		t.Fatalf(
 			"expected parsed version %d to match serialized version %d\n",
-			localRewardsFile.Repr().GetHeader().RulesetVersion,
+			localRewardsFile.Impl().GetHeader().RulesetVersion,
 			f.RewardsFileHeader.RulesetVersion,
 		)
 	}
@@ -83,18 +83,18 @@ func TestCompressionAndCids(t *testing.T) {
 		path.Join(dir, "rewards.json"),
 	)
 
-	minipoolPerformanceFile := localRewardsFile.Repr().GetMinipoolPerformanceFile()
+	minipoolPerformanceFile := localRewardsFile.Impl().GetMinipoolPerformanceFile()
 	localMinipoolPerformanceFile := NewLocalFile[IMinipoolPerformanceFile](
 		minipoolPerformanceFile,
 		path.Join(dir, "performance.json"),
 	)
 
-	rewardsCid, err := localRewardsFile.CompressedCid()
+	rewardsCid, err := localRewardsFile.CreateCompressedFileAndCid()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	performanceCid, err := localMinipoolPerformanceFile.CompressedCid()
+	performanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,20 +149,20 @@ func TestCompressionAndCids(t *testing.T) {
 	}
 
 	// Make sure values were preserved in the round trip
-	if localRewardsFile.Repr().GetHeader().RulesetVersion != parsedRewards.GetHeader().RulesetVersion {
+	if localRewardsFile.Impl().GetHeader().RulesetVersion != parsedRewards.GetHeader().RulesetVersion {
 		t.Fatalf(
 			"expected parsed version %d to match serialized version %d\n",
-			localRewardsFile.Repr().GetHeader().RulesetVersion,
+			localRewardsFile.Impl().GetHeader().RulesetVersion,
 			parsedRewards.GetHeader().RulesetVersion,
 		)
 	}
 
-	if localRewardsFile.Repr().GetMinipoolPerformanceFile().(*MinipoolPerformanceFile_v3).RulesetVersion !=
+	if localRewardsFile.Impl().GetMinipoolPerformanceFile().(*MinipoolPerformanceFile_v3).RulesetVersion !=
 		parsedPerformance.(*MinipoolPerformanceFile_v3).RulesetVersion {
 
 		t.Fatalf(
 			"expected parsed version %d to match serialized version %d\n",
-			localRewardsFile.Repr().GetMinipoolPerformanceFile().(*MinipoolPerformanceFile_v3).RulesetVersion,
+			localRewardsFile.Impl().GetMinipoolPerformanceFile().(*MinipoolPerformanceFile_v3).RulesetVersion,
 			parsedPerformance.(*MinipoolPerformanceFile_v3).RulesetVersion,
 		)
 	}

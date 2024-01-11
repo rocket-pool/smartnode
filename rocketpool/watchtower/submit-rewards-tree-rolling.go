@@ -248,7 +248,7 @@ func (t *submitRewardsTree_Rolling) run(headState *state.NetworkState) error {
 		// Run updates and submissions as required
 		if isRewardsReadyForReport {
 			// Check if there's an existing file for this interval, and try submitting that
-			existingRewardsFile, valid, mustRegenerate := t.isExistingFileValid(headState.NetworkDetails.RewardIndex, intervalsPassed, nodeAddress, isInOdao)
+			existingRewardsFile, valid, mustRegenerate := t.isExistingRewardsFileValid(headState.NetworkDetails.RewardIndex, intervalsPassed, nodeAddress, isInOdao)
 			if existingRewardsFile != nil {
 				if valid && !mustRegenerate {
 					// We already have a valid file and submission
@@ -389,7 +389,7 @@ func (t *submitRewardsTree_Rolling) getTrueRewardsIntervalSubmissionSlot(targetS
 }
 
 // Checks to see if an existing rewards file is still valid and whether or not it should be regenerated or just resubmitted
-func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardIndex uint64, intervalsPassed uint64, nodeAddress common.Address, isInOdao bool) (*rprewards.LocalRewardsFile, bool, bool) {
+func (t *submitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint64, intervalsPassed uint64, nodeAddress common.Address, isInOdao bool) (*rprewards.LocalRewardsFile, bool, bool) {
 	rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(rewardIndex, true)
 
 	// Check if the rewards file exists
@@ -409,12 +409,12 @@ func (t *submitRewardsTree_Rolling) isExistingFileValid(rewardIndex uint64, inte
 		return nil, false, true
 	}
 
-	proofWrapper := localRewardsFile.Repr()
+	proofWrapper := localRewardsFile.Impl()
 	header := proofWrapper.GetHeader()
 
 	if isInOdao {
-		// Get the CID for it
-		cid, err := localRewardsFile.CompressedCid()
+		// Save the compressed file and get the CID for it
+		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
 			t.log.Printlnf("%s WARNING: failed to get CID for %s: %s; regenerating file...\n", t.logPrefix, rewardsTreePath, err.Error())
 			return nil, false, true
@@ -498,14 +498,15 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 
 		t.log.Printlnf("%s Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", t.logPrefix, currentIndex, rewardsTreePath)
 
-		cid, err := existingRewardsFile.CompressedCid()
+		// Save the compressed file and get the CID for it
+		cid, err := existingRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
 			return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, existingRewardsFile.Repr().GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, existingRewardsFile.Impl().GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("error submitting rewards snapshot: %w", err)
 		}
@@ -556,7 +557,7 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	}
 
 	if nodeTrusted {
-		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CompressedCid()
+		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
 		if err != nil {
 			return fmt.Errorf("Error getting the CID for file %s: %w", compressedMinipoolPerformancePath, err)
 		}
@@ -581,7 +582,7 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	}
 
 	if nodeTrusted {
-		cid, err := localRewardsFile.CompressedCid()
+		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
 			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}

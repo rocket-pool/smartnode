@@ -10,7 +10,41 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
+// Reads an existing RewardsFile from disk and wraps it in a LocalFile
+func ReadLocalRewardsFile(path string) (*LocalRewardsFile, error) {
+	fileBytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading rewards file from %s: %w", path, err)
+	}
+
+	// Unmarshal it
+	proofWrapper, err := DeserializeRewardsFile(fileBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling rewards file from %s: %w", path, err)
+	}
+
+	return NewLocalFile[IRewardsFile](proofWrapper, path), nil
+}
+
+// Reads an existing MinipoolPerformanceFile from disk and wraps it in a LocalFile
+func ReadLocalMinipoolPerformanceFile(path string) (*LocalMinipoolPerformanceFile, error) {
+	fileBytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading rewards file from %s: %w", path, err)
+	}
+
+	// Unmarshal it
+	minipoolPerformance, err := DeserializeMinipoolPerformanceFile(fileBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling rewards file from %s: %w", path, err)
+	}
+
+	return NewLocalFile[IMinipoolPerformanceFile](minipoolPerformance, path), nil
+}
+
+// Interface for local rewards or minipool performance files
 type ILocalFile interface {
+	// Converts the underlying interface to a byte slice
 	Serialize() ([]byte, error)
 }
 
@@ -21,6 +55,7 @@ type LocalFile[T ILocalFile] struct {
 	fullPath string
 }
 
+// Type aliases
 type LocalRewardsFile = LocalFile[IRewardsFile]
 type LocalMinipoolPerformanceFile = LocalFile[IMinipoolPerformanceFile]
 
@@ -33,40 +68,8 @@ func NewLocalFile[T ILocalFile](ilf T, fullpath string) *LocalFile[T] {
 	}
 }
 
-// Reads an existing RewardsFile from disk and wraps it in a LocalFile
-func ReadLocalRewardsFile(path string) (*LocalFile[IRewardsFile], error) {
-	fileBytes, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("Error reading rewards file from %s: %w", path, err)
-	}
-
-	// Unmarshal it
-	proofWrapper, err := DeserializeRewardsFile(fileBytes)
-	if err != nil {
-		return nil, fmt.Errorf("Error unmarshaling rewards file from %s: %w", path, err)
-	}
-
-	return NewLocalFile[IRewardsFile](proofWrapper, path), nil
-}
-
-// Reads an existing MinipoolPerformanceFile from disk and wraps it in a LocalFile
-func ReadLocalMinipoolPerformanceFile(path string) (*LocalFile[IMinipoolPerformanceFile], error) {
-	fileBytes, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("Error reading rewards file from %s: %w", path, err)
-	}
-
-	// Unmarshal it
-	minipoolPerformance, err := DeserializeMinipoolPerformanceFile(fileBytes)
-	if err != nil {
-		return nil, fmt.Errorf("Error unmarshaling rewards file from %s: %w", path, err)
-	}
-
-	return NewLocalFile[IMinipoolPerformanceFile](minipoolPerformance, path), nil
-}
-
 // Returns the underlying interface, IRewardsFile for rewards file, IMinipoolPerformanceFile for performance, etc.
-func (lf *LocalFile[T]) Repr() T {
+func (lf *LocalFile[T]) Impl() T {
 	return lf.f
 }
 
@@ -75,16 +78,16 @@ func (lf *LocalFile[T]) Serialize() ([]byte, error) {
 	return lf.f.Serialize()
 }
 
-// Writes the file to disk
+// Serializes the file and writes it to disk
 func (lf *LocalFile[T]) Write() error {
 	data, err := lf.Serialize()
 	if err != nil {
-		return fmt.Errorf("Error serializing file: %w", err)
+		return fmt.Errorf("error serializing file: %w", err)
 	}
 
 	err = os.WriteFile(lf.fullPath, data, 0644)
 	if err != nil {
-		return fmt.Errorf("Error writing file to %s: %w", lf.fullPath, err)
+		return fmt.Errorf("error writing file to %s: %w", lf.fullPath, err)
 	}
 	return nil
 }
@@ -95,11 +98,11 @@ func (lf *LocalFile[T]) Write() error {
 //
 // N.B. This function will also save the compressed file to disk so it can
 // later be uploaded to ipfs
-func (lf *LocalFile[T]) CompressedCid() (cid.Cid, error) {
+func (lf *LocalFile[T]) CreateCompressedFileAndCid() (cid.Cid, error) {
 	// Serialize
 	data, err := lf.Serialize()
 	if err != nil {
-		return cid.Cid{}, fmt.Errorf("Error serializing file: %w", err)
+		return cid.Cid{}, fmt.Errorf("error serializing file: %w", err)
 	}
 
 	// Compress
@@ -109,14 +112,14 @@ func (lf *LocalFile[T]) CompressedCid() (cid.Cid, error) {
 	filename := lf.fullPath + config.RewardsTreeIpfsExtension
 	c, err := singleFileDirIPFSCid(compressedBytes, filepath.Base(filename))
 	if err != nil {
-		return cid.Cid{}, fmt.Errorf("Error calculating CID: %w", err)
+		return cid.Cid{}, fmt.Errorf("error calculating CID: %w", err)
 	}
 
 	// Write to disk
 	// Take care to write to `filename` since it has the .zst extension added
 	err = os.WriteFile(filename, compressedBytes, 0644)
 	if err != nil {
-		return cid.Cid{}, fmt.Errorf("Error writing file to %s: %w", lf.fullPath, err)
+		return cid.Cid{}, fmt.Errorf("error writing file to %s: %w", lf.fullPath, err)
 	}
 	return c, nil
 }
