@@ -52,9 +52,9 @@ func proposeRecurringSpend(c *cli.Context) error {
 	amountString := c.String("amount-per-period")
 	if amountString == "" {
 		if rawEnabled {
-			amountString = cliutils.Prompt("Please enter an amount of RPL to send to %s per period as a wei amount:", "^[0-9]+$", "Invalid amount")
+			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
 		} else {
-			amountString = cliutils.Prompt("Please enter an amount of RPL to send to %s per period:", "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
+			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
 		}
 	}
 
@@ -71,6 +71,7 @@ func proposeRecurringSpend(c *cli.Context) error {
 
 	// Get the start time
 	startTimeString := c.String("start-time")
+	fmt.Printf("string string: %s", startTimeString)
 	if startTimeString == "" {
 		startTimeString = cliutils.Prompt("Please enter the time that the recurring payment will start (as a UNIX timestamp):", "^[0-9]+$", "Invalid start time")
 	}
