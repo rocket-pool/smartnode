@@ -1234,7 +1234,7 @@ func (cfg *RocketPoolConfig) GetBeaconContainerTag() (string, error) {
 func (cfg *RocketPoolConfig) GetBnOpenPorts() []string {
 	// Handle open API ports
 	bnOpenPorts := make([]string, 0)
-	consensusClient := cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+	consensusClient := cfg.ConsensusClient.Value.(config.ConsensusClient)
 	apiPortMode := cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode)
 	if apiPortMode.Open() {
 		apiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
