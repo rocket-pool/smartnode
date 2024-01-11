@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
+	"path/filepath"
 
 	blockservice "github.com/ipfs/boxo/blockservice"
 	blockstore "github.com/ipfs/boxo/blockstore"
@@ -17,47 +17,37 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/sync"
-	"github.com/klauspost/compress/zstd"
 )
 
-func SingleFileDirIPFSCid(data []byte, filename string, description string) (cid.Cid, error) {
-	// Compress the file
-	encoder, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-	compressedBytes := encoder.EncodeAll(data, make([]byte, 0, len(data)))
-
-	// Create the compressed file
-	compressedFile, err := os.Create(filename)
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("Error creating %s file [%s]: %w", description, filename, err)
-	}
-	defer compressedFile.Close()
-
-	// Write the compressed data to the file
-	_, err = compressedFile.Write(compressedBytes)
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("Error writing %s to %s: %w", description, filename, err)
-	}
-
+// Computes the CID for an arbitrary bytestring with a given filename
+// by adding the file to an empty directory at the root level of the IPFS node.
+//
+// Only the last segment of the filename will be used, ie, `/home/alice/foo.zip`
+// will be stripped to `foo.zip`.
+func singleFileDirIPFSCid(data []byte, filename string) (cid.Cid, error) {
 	ds := sync.MutexWrap(datastore.NewMapDatastore())
 	bsvc := blockservice.New(blockstore.NewBlockstore(ds), nil)
 	dag := merkledag.NewDAGService(bsvc)
 	cidBuilder := merkledag.V1CidPrefix()
 
+	// Strip the leading path segments to get the file name
+	filename = filepath.Base(filename)
+
 	// Create the root node, an empty directory
 	rootNode := unixfs.EmptyDirNode()
-	err = rootNode.SetCidBuilder(cidBuilder)
+	err := rootNode.SetCidBuilder(cidBuilder)
 	if err != nil {
-		return cid.Cid{}, err
+		return cid.Cid{}, fmt.Errorf("error creating the CID builder: %w", err)
 	}
 	root, err := mfs.NewRoot(context.Background(), dag, rootNode, nil)
 	if err != nil {
-		return cid.Cid{}, err
+		return cid.Cid{}, fmt.Errorf("error setting new MFS root: %w", err)
 	}
 
 	// Create a chunker-reader from the compressed data
-	chnk, err := chunker.FromString(bytes.NewReader(compressedBytes), "size-1048576")
+	chnk, err := chunker.FromString(bytes.NewReader(data), "size-1048576")
 	if err != nil {
-		return cid.Cid{}, err
+		return cid.Cid{}, fmt.Errorf("error creating chunker-reader from compressed bytes: %w", err)
 	}
 	// Create a DAG builder using the same settings as web3storage
 	params := helpers.DagBuilderParams{
@@ -68,25 +58,25 @@ func SingleFileDirIPFSCid(data []byte, filename string, description string) (cid
 	}
 	ufsBuilder, err := params.New(chnk)
 	if err != nil {
-		return cid.Cid{}, err
+		return cid.Cid{}, fmt.Errorf("error creating params from chunk: %w", err)
 	}
 
 	// Create the node for the file in the DAG
 	node, err := balanced.Layout(ufsBuilder)
 	if err != nil {
-		return cid.Cid{}, err
+		return cid.Cid{}, fmt.Errorf("error creating DAG layout: %w", err)
 	}
 
 	// Add the file to the root directory
 	err = mfs.PutNode(root, filename, node)
 	if err != nil {
-		return cid.Cid{}, err
+		return cid.Cid{}, fmt.Errorf("error adding node to DAG: %w", err)
 	}
 
 	// Add the file to the dag
 	_, err = mfs.NewFile(filename, node, nil, dag)
 	if err != nil {
-		return cid.Cid{}, err
+		return cid.Cid{}, fmt.Errorf("error adding compressed file to DAG: %w", err)
 	}
 
 	// Finalize the dag and get the cid
@@ -94,19 +84,22 @@ func SingleFileDirIPFSCid(data []byte, filename string, description string) (cid
 
 	err = rootDir.Flush()
 	if err != nil {
-		return cid.Cid{}, err
+		return cid.Cid{}, fmt.Errorf("error flushing DAG root dir: %w", err)
 	}
 
 	err = root.Close()
 	if err != nil {
-		return cid.Cid{}, err
+		return cid.Cid{}, fmt.Errorf("error closing DAG root: %w", err)
 	}
 
 	rootDirNode, err := rootDir.GetNode()
 	if err != nil {
-		return cid.Cid{}, err
+		return cid.Cid{}, fmt.Errorf("error getting DAG root node: %w", err)
 	}
 
-	ufsBuilder.Add(rootDirNode)
+	err = ufsBuilder.Add(rootDirNode)
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("error adding DAG root to UFS builder: %w", err)
+	}
 	return rootDirNode.Cid(), nil
 }

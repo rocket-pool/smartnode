@@ -189,6 +189,9 @@ type SmartnodeConfig struct {
 	// The RocketArbitumPriceMessenger Arbitrum address for each network
 	arbitrumPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
+	// The RocketArbitumPriceMessengerV2 Arbitrum address for each network
+	arbitrumPriceMessengerAddressV2 map[config.Network]string `yaml:"-"`
+
 	// The RocketZkSyncPriceMessenger zkSyncEra address for each network
 	zkSyncEraPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
@@ -619,6 +622,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Holesky: "",
 		},
 
+		arbitrumPriceMessengerAddressV2: map[config.Network]string{
+			config.Network_Mainnet: "0x312FcFB03eC9B1Ea38CB7BFCd26ee7bC3b505aB1",
+			config.Network_Prater:  "",
+			config.Network_Devnet:  "",
+			config.Network_Holesky: "",
+		},
+
 		zkSyncEraPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8",
 			config.Network_Prater:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
@@ -957,6 +967,10 @@ func (cfg *SmartnodeConfig) GetPolygonMessengerAddress() string {
 
 func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
 	return cfg.arbitrumPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetArbitrumMessengerAddressV2() string {
+	return cfg.arbitrumPriceMessengerAddressV2[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetZkSyncEraMessengerAddress() string {

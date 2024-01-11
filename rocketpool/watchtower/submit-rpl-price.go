@@ -330,11 +330,18 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		t.log.Printlnf("Error submitting Polygon price: %s", err.Error())
 	}
 
-	// Check if Arbitrum rate is stale and submit
-	err = t.submitArbitrumPrice()
+	// Check if Arbitrum rate is stale and submit. This messenger will be deprecated soon.
+	err = t.submitArbitrumPrice(t.cfg.Smartnode.GetArbitrumMessengerAddress())
 	if err != nil {
 		// Error is not fatal for this task so print and continue
-		t.log.Printlnf("Error submitting Arbitrum price: %s", err.Error())
+		t.log.Printlnf("Error submitting Arbitrum V1 price: %s", err.Error())
+	}
+
+	// Temporarily submit to both Arbitrum messengers until the first one sunsets
+	err = t.submitArbitrumPrice(t.cfg.Smartnode.GetArbitrumMessengerAddressV2())
+	if err != nil {
+		// Error is not fatal for this task so print and continue
+		t.log.Printlnf("Error submitting Arbitrum price to messenger v2: %s", err.Error())
 	}
 
 	// Check if zkSync rate is stale and submit
@@ -1090,9 +1097,7 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 }
 
 // Checks if Arbitrum rate is stale and if it's our turn to submit, calls submitRate on the messenger
-func (t *submitRplPrice) submitArbitrumPrice() error {
-	priceMessengerAddress := t.cfg.Smartnode.GetArbitrumMessengerAddress()
-
+func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error {
 	if priceMessengerAddress == "" {
 		// No price messenger deployed on the current network
 		return nil
@@ -1232,7 +1237,7 @@ func (t *submitRplPrice) submitArbitrumPrice() error {
 		opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 		opts.GasLimit = gasInfo.SafeGasLimit
 
-		t.log.Println("Submitting rate to Arbitrum...")
+		t.log.Println("Submitting rate to Arbitrum %s...", priceMessengerAddress)
 
 		// Submit rates
 		tx, err := priceMessenger.Transact(opts, "submitRate", maxSubmissionCost, arbitrumGasLimit, arbitrumMaxFeePerGas)
@@ -1247,7 +1252,7 @@ func (t *submitRplPrice) submitArbitrumPrice() error {
 		}
 
 		// Log
-		t.log.Printlnf("Successfully submitted Arbitrum price for block %d.", blockNumber)
+		t.log.Printlnf("Successfully submitted Arbitrum price for block %d - messenger %s.", blockNumber, priceMessengerAddress)
 
 	}
 
