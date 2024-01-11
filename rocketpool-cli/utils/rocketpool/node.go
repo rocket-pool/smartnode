@@ -122,12 +122,12 @@ func (r *NodeRequester) Register(timezoneLocation string) (*api.ApiResponse[api.
 }
 
 // Resolves an ENS name or reserve resolves an address
-func (r *NodeRequester) ResolveEns(address common.Address, name string) (*api.ApiResponse[api.TxInfoData], error) {
+func (r *NodeRequester) ResolveEns(address common.Address, name string) (*api.ApiResponse[api.NodeResolveEnsData], error) {
 	args := map[string]string{
 		"address": address.Hex(),
 		"name":    name,
 	}
-	return sendGetRequest[api.TxInfoData](r, "resolve-ens", "ResolveEns", args)
+	return sendGetRequest[api.NodeResolveEnsData](r, "resolve-ens", "ResolveEns", args)
 }
 
 // Get node rewards status

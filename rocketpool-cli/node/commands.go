@@ -1,18 +1,19 @@
 package node
 
 import (
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Manage the node",
-		Subcommands: []cli.Command{
+		Subcommands: []*cli.Command{
 
 			{
 				Name:      "status",
@@ -20,7 +21,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Get the node's status",
 				UsageText: "rocketpool node status",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
@@ -28,7 +28,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return getStatus(c)
-
 				},
 			},
 
@@ -56,28 +55,27 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Register the node with Rocket Pool",
 				UsageText: "rocketpool node register [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "timezone, t",
-						Usage: "The timezone location to register the node with (in the format 'Country/City')",
+					&cli.StringFlag{
+						Name:    registerTimezoneFlag,
+						Aliases: []string{"t"},
+						Usage:   "The timezone location to register the node with (in the format 'Country/City')",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
-					if c.String("timezone") != "" {
-						if _, err := cliutils.ValidateTimezoneLocation("timezone location", c.String("timezone")); err != nil {
+					if c.String(registerTimezoneFlag) != "" {
+						if _, err := cliutils.ValidateTimezoneLocation("timezone location", c.String(registerTimezoneFlag)); err != nil {
 							return err
 						}
 					}
 
 					// Run
 					return registerNode(c)
-
 				},
 			},
 
@@ -87,7 +85,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Get the time and your expected RPL rewards of the next checkpoint",
 				UsageText: "rocketpool node rewards",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
@@ -95,7 +92,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return getRewards(c)
-
 				},
 			},
 
@@ -105,17 +101,17 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Set the node's primary withdrawal address, which will receive all ETH rewards (and RPL if the RPL withdrawal address is not set)",
 				UsageText: "rocketpool node set-primary-withdrawal-address [options] address",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm setting primary withdrawal address",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm setting primary withdrawal address",
 					},
-					cli.BoolFlag{
-						Name:  "force",
+					&cli.BoolFlag{
+						Name:  setPrimaryWithdrawalAddressForceFlag,
 						Usage: "Force update the primary withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
@@ -124,7 +120,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return setPrimaryWithdrawalAddress(c, withdrawalAddress)
-
 				},
 			},
 

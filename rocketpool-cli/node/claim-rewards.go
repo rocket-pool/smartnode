@@ -17,10 +17,6 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-const (
-	colorBlue string = "\033[36m"
-)
-
 func nodeClaimRewards(c *cli.Context) error {
 
 	// Get RP client

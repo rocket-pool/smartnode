@@ -49,12 +49,12 @@ func bidOnLot(c *cli.Context) error {
 
 	// Get selected lot
 	var selectedLot api.AuctionLotDetails
-	if c.String("lot") != "" {
+	if c.String(bidLotFlag) != "" {
 
 		// Get selected lot index
-		selectedIndex, err := strconv.ParseUint(c.String("lot"), 10, 64)
+		selectedIndex, err := strconv.ParseUint(c.String(bidLotFlag), 10, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid lot ID '%s': %w", c.String("lot"), err)
+			return fmt.Errorf("invalid lot ID '%s': %w", c.String(bidLotFlag), err)
 		}
 
 		// Get matching lot
@@ -67,7 +67,7 @@ func bidOnLot(c *cli.Context) error {
 			}
 		}
 		if !found {
-			return fmt.Errorf("Lot %d is not available for bidding.", selectedIndex)
+			return fmt.Errorf("lot %d is not available for bidding", selectedIndex)
 		}
 
 	} else {
@@ -84,7 +84,7 @@ func bidOnLot(c *cli.Context) error {
 
 	// Get bid amount
 	var amountWei *big.Int
-	if c.String("amount") == "max" {
+	if c.String(bidAmountFlag) == "max" {
 
 		// Set bid amount to maximum
 		var tmp big.Int
@@ -93,12 +93,12 @@ func bidOnLot(c *cli.Context) error {
 		maxAmount.Quo(&tmp, eth.EthToWei(1))
 		amountWei = &maxAmount
 
-	} else if c.String("amount") != "" {
+	} else if c.String(bidAmountFlag) != "" {
 
 		// Parse amount
-		bidAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+		bidAmount, err := strconv.ParseFloat(c.String(bidAmountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid bid amount '%s': %w", c.String("amount"), err)
+			return fmt.Errorf("invalid bid amount '%s': %w", c.String(bidAmountFlag), err)
 		}
 		amountWei = eth.EthToWei(bidAmount)
 
@@ -119,7 +119,7 @@ func bidOnLot(c *cli.Context) error {
 			inputAmount := utils.Prompt("Please enter an amount of ETH to bid:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 			bidAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
-				return fmt.Errorf("Invalid bid amount '%s': %w", inputAmount, err)
+				return fmt.Errorf("invalid bid amount '%s': %w", inputAmount, err)
 			}
 			amountWei = eth.EthToWei(bidAmount)
 
@@ -130,7 +130,7 @@ func bidOnLot(c *cli.Context) error {
 	// Check lot can be bid on
 	response, err := rp.Api.Auction.BidOnLot(selectedLot.Index, amountWei)
 	if err != nil {
-		return fmt.Errorf("Error checking if bidding on lot %d is possible: %w", selectedLot.Index, err)
+		return fmt.Errorf("error checking if bidding on lot %d is possible: %w", selectedLot.Index, err)
 	}
 	if !response.Data.CanBid {
 		fmt.Println("Cannot bid on lot:")
