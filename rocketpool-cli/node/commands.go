@@ -152,17 +152,17 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Set the node's RPL withdrawal address, which will receive all RPL rewards and staked RPL withdrawals",
 				UsageText: "rocketpool node set-rpl-withdrawal-address [options] address",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm setting rpl withdrawal address",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm setting RPL withdrawal address",
 					},
-					cli.BoolFlag{
-						Name:  "force",
-						Usage: "Force update the rpl withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
+					&cli.BoolFlag{
+						Name:  setRplWithdrawalAddressForceFlag,
+						Usage: "Force update the RPL withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
@@ -170,32 +170,30 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					withdrawalAddress := c.Args().Get(0)
 
 					// Run
-					return setRPLWithdrawalAddress(c, withdrawalAddress)
-
+					return setRplWithdrawalAddress(c, withdrawalAddress)
 				},
 			},
 
 			{
 				Name:      "confirm-rpl-withdrawal-address",
 				Aliases:   []string{"crwa"},
-				Usage:     "Confirm the node's pending rpl withdrawal address if it has been set back to the node's address itself",
+				Usage:     "Confirm the node's pending RPL withdrawal address if it has been set back to the node's address itself",
 				UsageText: "rocketpool node confirm-rpl-withdrawal-address [options]",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm withdrawal address",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm withdrawal address",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
-					return confirmRPLWithdrawalAddress(c)
-
+					return confirmRplWithdrawalAddress(c)
 				},
 			},
 			{
