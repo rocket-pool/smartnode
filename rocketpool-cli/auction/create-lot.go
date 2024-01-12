@@ -38,6 +38,7 @@ func createLot(c *cli.Context) error {
 	// Run the TX
 	err = tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to create this lot?",
+		"create lot",
 		"Creating lot...",
 	)
 	if err != nil {

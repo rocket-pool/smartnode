@@ -65,17 +65,17 @@ func promoteMinipools(c *cli.Context) error {
 
 	// Validation
 	txs := make([]*core.TransactionInfo, len(selectedMinipools))
-	for i, minipool := range selectedMinipools {
+	for i := range selectedMinipools {
 		txInfo := response.Data.TxInfos[i]
-		if txInfo.SimError != "" {
-			return fmt.Errorf("error simulating promote for minipool %s: %s", minipool.Address.Hex(), txInfo.SimError)
-		}
 		txs[i] = txInfo
 	}
 
 	// Run the TXs
 	err = tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to promote %d minipools?", len(selectedMinipools)),
+		func(i int) string {
+			return fmt.Sprintf("promoting minipool %s", selectedMinipools[i].Address.Hex())
+		},
 		"Promoting minipools...",
 	)
 	if err != nil {

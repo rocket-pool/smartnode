@@ -65,11 +65,8 @@ func stakeMinipools(c *cli.Context) error {
 
 	// Validation
 	txs := make([]*core.TransactionInfo, len(selectedMinipools))
-	for i, minipool := range selectedMinipools {
+	for i := range selectedMinipools {
 		txInfo := response.Data.TxInfos[i]
-		if txInfo.SimError != "" {
-			return fmt.Errorf("error simulating stake for minipool %s: %s", minipool.Address.Hex(), txInfo.SimError)
-		}
 		txs[i] = txInfo
 	}
 
@@ -78,6 +75,9 @@ func stakeMinipools(c *cli.Context) error {
 	// Run the TXs
 	err = tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to stake %d minipools?", len(selectedMinipools)),
+		func(i int) string {
+			return fmt.Sprintf("stake of minipool %s", selectedMinipools[i].Address.Hex())
+		},
 		"Staking minipools...",
 	)
 	if err != nil {

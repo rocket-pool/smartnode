@@ -71,18 +71,18 @@ func setUseLatestDelegates(c *cli.Context, setting bool) error {
 
 	// Validation
 	txs := make([]*core.TransactionInfo, len(selectedMinipools))
-	for i, minipool := range selectedMinipools {
+	for i := range selectedMinipools {
 		txInfo := response.Data.TxInfos[i]
-		if txInfo.SimError != "" {
-			return fmt.Errorf("error simulating set-use-latest-delegate for minipool %s: %s", minipool.Address.Hex(), txInfo.SimError)
-		}
 		txs[i] = txInfo
 	}
 
 	// Run the TXs
 	err = tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to change the auto-upgrade setting for %d minipools to %t?", len(selectedMinipools), setting),
-		"Upgrading minipools...",
+		func(i int) string {
+			return fmt.Sprintf("toggling auto-upgrades for minipool %s", selectedMinipools[i].Address.Hex())
+		},
+		"Toggling auto-upgrade for minipools...",
 	)
 	if err != nil {
 		return err

@@ -88,15 +88,15 @@ func recoverRplFromLot(c *cli.Context) error {
 			}
 			return nil
 		}
-		if data.TxInfo.SimError != "" {
-			return fmt.Errorf("error simulating recover of lot %d: %s", lot.Index, data.TxInfo.SimError)
-		}
 		txs[i] = data.TxInfo
 	}
 
 	// Claim RPL from lots
 	err = tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to recover %d lots?", len(selectedLots)),
+		func(i int) string {
+			return fmt.Sprintf("recovery of lot %d", selectedLots[i].Index)
+		},
 		"Recovering lots...",
 	)
 	if err != nil {

@@ -120,9 +120,6 @@ func beginReduceBondAmount(c *cli.Context) error {
 	txs := make([]*core.TransactionInfo, len(selectedMinipools))
 	for i, minipool := range selectedMinipools {
 		txInfo := response.Data.TxInfos[i]
-		if txInfo.SimError != "" {
-			return fmt.Errorf("error simulating begin-bond-reduction for minipool %s: %s", minipool.Address.Hex(), txInfo.SimError)
-		}
 		txs[i] = txInfo
 		totalMatchRequest.Add(totalMatchRequest, minipool.MatchRequest)
 	}
@@ -142,6 +139,9 @@ func beginReduceBondAmount(c *cli.Context) error {
 	// Run the TXs
 	err = tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to begin bond reduction for %d minipools from 16 ETH to 8 ETH?", len(selectedMinipools)),
+		func(i int) string {
+			return fmt.Sprintf("begin-bond-reduce for minipool %s", selectedMinipools[i].Address.Hex())
+		},
 		"Beginning bond reduction for minipools...",
 	)
 	if err != nil {

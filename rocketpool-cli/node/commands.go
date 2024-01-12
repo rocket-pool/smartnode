@@ -129,13 +129,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Confirm the node's pending primary withdrawal address if it has been set back to the node's address itself",
 				UsageText: "rocketpool node confirm-primary-withdrawal-address [options]",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm withdrawal address",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm withdrawal address",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
@@ -143,7 +143,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return confirmPrimaryWithdrawalAddress(c)
-
 				},
 			},
 

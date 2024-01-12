@@ -78,6 +78,9 @@ func refundMinipools(c *cli.Context) error {
 	// Run the TXs
 	err = tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to refund %d minipools?", len(selectedMinipools)),
+		func(i int) string {
+			return fmt.Sprintf("refund on minipool %s", selectedMinipools[i].Address.Hex())
+		},
 		"Refunding minipools...",
 	)
 	if err != nil {

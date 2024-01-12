@@ -41,6 +41,7 @@ func withdrawRpl(c *cli.Context) error {
 	amount := math.RoundDown(eth.WeiToEth(response.Data.Amount), 6)
 	err = tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to withdraw %.6f legacy RPL from the faucet?", amount),
+		"withdraw of legacy RPL",
 		"Withdrawing legacy RPL...",
 	)
 	if err != nil {

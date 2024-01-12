@@ -3,54 +3,42 @@ package node
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 )
 
 func confirmPrimaryWithdrawalAddress(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Check if the withdrawal address can be confirmed
-	canResponse, err := rp.CanConfirmNodePrimaryWithdrawalAddress()
+	response, err := rp.Api.Node.ConfirmPrimaryWithdrawalAddress()
 	if err != nil {
 		return err
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to confirm your node's address as the new primary withdrawal address?")) {
-		fmt.Println("Cancelled.")
+	// Verify
+	if !response.Data.CanConfirm {
+		fmt.Println("Cannot confirm withdrawal address as the node address:")
+		if response.Data.IncorrectPendingAddress {
+			fmt.Println("The node's pending withdrawal address must be set to the node address.")
+		}
 		return nil
 	}
 
-	// Confirm node's withdrawal address
-	response, err := rp.ConfirmNodePrimaryWithdrawalAddress()
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Confirming new primary withdrawal address...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-		return err
-	}
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		"Are you sure you want to confirm your node's address as the new primary withdrawal address?",
+		"withdrawal address confirmation",
+		"Confirming new primary withdrawal address...",
+	)
 
 	// Log & return
 	fmt.Printf("The node's primary withdrawal address was successfully set to the node address.\n")
 	return nil
-
 }

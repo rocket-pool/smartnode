@@ -198,15 +198,11 @@ func rescueDissolved(c *cli.Context) error {
 		return fmt.Errorf("error during TX generation: %w", err)
 	}
 
-	// Validation
-	txInfo := response.Data.TxInfos[0]
-	if txInfo.SimError != "" {
-		return fmt.Errorf("error simulating rescue for minipool %s: %s", selectedMinipool.Address.Hex(), txInfo.SimError)
-	}
-
 	// Rescue minipool
+	txInfo := response.Data.TxInfos[0]
 	err = tx.HandleTx(c, rp, txInfo,
 		fmt.Sprintf("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex()),
+		fmt.Sprintf("rescue of minipool %s", selectedMinipool.Address.Hex()),
 		fmt.Sprintf("Depositing ETH to rescue minipool %s...\n", selectedMinipool.Address.Hex()),
 	)
 	if err != nil {

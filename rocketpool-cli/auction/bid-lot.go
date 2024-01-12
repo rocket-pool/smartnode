@@ -139,14 +139,12 @@ func bidOnLot(c *cli.Context) error {
 		}
 		return nil
 	}
-	if response.Data.TxInfo.SimError != "" {
-		return fmt.Errorf("error simulating bid on lot %d: %s", selectedLot.Index, response.Data.TxInfo.SimError)
-	}
 
 	// Run the TX
 	err = tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Index),
-		"Bidding on lot...",
+		fmt.Sprintf("bid on lot %d", selectedLot.Index),
+		fmt.Sprintf("Bidding on lot %d...", selectedLot.Index),
 	)
 	if err != nil {
 		return err

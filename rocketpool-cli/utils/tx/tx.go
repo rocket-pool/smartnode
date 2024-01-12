@@ -17,7 +17,12 @@ import (
 )
 
 // Handle a transaction, either printing its details, signing it, or submitting it and waiting for it to be included
-func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, confirmMessage string, submissionMessage string) error {
+func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, confirmMessage string, identifier string, submissionMessage string) error {
+	// Make sure the TX was successful
+	if txInfo.SimError != "" {
+		return fmt.Errorf("simulating %s failed: %s", identifier, txInfo.SimError)
+	}
+
 	// Print the TX data if requested
 	if c.Bool(flags.PrintTxDataFlag) {
 		fmt.Println("TX Data:")
@@ -50,8 +55,9 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, c
 		if err != nil {
 			return fmt.Errorf("error signing transaction: %w", err)
 		}
-		fmt.Println("Signed transaction:")
+		fmt.Printf("Signed transaction (%s):\n", identifier)
 		fmt.Println(response.Data.SignedTx)
+		fmt.Println()
 		return nil
 	}
 
@@ -77,7 +83,14 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, c
 }
 
 // Handle a batch of transactions, either printing their details, signing them, or submitting them and waiting for them to be included
-func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.TransactionInfo, confirmMessage string, submissionMessage string) error {
+func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.TransactionInfo, confirmMessage string, identifierFunc func(int) string, submissionMessage string) error {
+	// Make sure the TXs were successful
+	for i, txInfo := range txInfos {
+		if txInfo.SimError != "" {
+			return fmt.Errorf("simulating %s failed: %s", identifierFunc(i), txInfo.SimError)
+		}
+	}
+
 	// Print the TX data if requested
 	if c.Bool(flags.PrintTxDataFlag) {
 		for i, info := range txInfos {
@@ -124,8 +137,9 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.Transactio
 		}
 
 		for i, tx := range response.Data.SignedTxs {
-			fmt.Printf("Signed transaction %d:\n", i)
+			fmt.Printf("Signed transaction (%s):\n", identifierFunc(i))
 			fmt.Println(tx)
+			fmt.Println()
 		}
 		return nil
 	}
@@ -145,18 +159,19 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.Transactio
 
 	// Wait for them
 	utils.PrintTransactionBatchHashes(rp, response.Data.TxHashes)
-	return waitForTransactions(rp, response.Data.TxHashes)
+	return waitForTransactions(rp, response.Data.TxHashes, identifierFunc)
 }
 
 // Wait for a batch of transactions to get included in blocks
-func waitForTransactions(rp *client.Client, hashes []common.Hash) error {
+func waitForTransactions(rp *client.Client, hashes []common.Hash, identifierFunc func(int) string) error {
 	var wg errgroup.Group
 	var lock sync.Mutex
 	total := len(hashes)
 	successCount := 0
 
 	// Create waiters for each TX
-	for _, hash := range hashes {
+	for i, hash := range hashes {
+		i := i
 		hash := hash
 		wg.Go(func() error {
 			if _, err := rp.Api.Tx.WaitForTransaction(hash); err != nil {
@@ -164,7 +179,7 @@ func waitForTransactions(rp *client.Client, hashes []common.Hash) error {
 			}
 			lock.Lock()
 			successCount++
-			fmt.Printf("Transaction %s complete (%d/%d)\n", hash.Hex(), successCount, total)
+			fmt.Printf("TX %s (%s) complete (%d/%d)\n", hash.Hex(), identifierFunc(i), successCount, total)
 			lock.Unlock()
 			return nil
 		})

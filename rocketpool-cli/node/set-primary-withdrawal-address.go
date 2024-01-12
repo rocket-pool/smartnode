@@ -11,7 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/shared/services/gas"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -46,12 +46,12 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 	// Print the "pending" disclaimer
 	var confirm bool
 	fmt.Println("You are about to change your primary withdrawal address. All future ETH rewards/refunds will be sent there.\nIf you haven't set your RPL withdrawal address, RPL rewards will be sent there as well.")
-	if !c.Bool("force") {
+	if !c.Bool(setPrimaryWithdrawalAddressForceFlag) {
 		confirm = false
 		fmt.Println("By default, this will put your new primary withdrawal address into a \"pending\" state.")
 		fmt.Println("Rocket Pool will continue to use your old primary withdrawal address until you confirm that you own the new address via the Rocket Pool website.")
 		fmt.Println("You will need to use a web3-compatible wallet (such as MetaMask) with your new address to confirm it.")
-		fmt.Printf("%sIf you cannot use such a wallet, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.\n\n%s", terminal.ColorYellow, terminal.ColorReset)
+		fmt.Printf("%sIf you cannot use such a wallet, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--%s\" flag.\n\n%s", terminal.ColorYellow, setPrimaryWithdrawalAddressForceFlag, terminal.ColorReset)
 	} else {
 		confirm = true
 		fmt.Printf("%sYou have specified the \"--%s\" option, so your new address will take effect immediately.\n", terminal.ColorRed, setPrimaryWithdrawalAddressForceFlag)
@@ -78,61 +78,38 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 				return err
 			}
 
-			// TODO
-			//if sendResponse.Data.CanSend
-
-			// Assign max fees
-			err = gas.AssignMaxFeeAndLimit(sendResponse.Data.TxInfo, rp, c.Bool("yes"))
-			if err != nil {
-				return err
-			}
-
-			if !cliutils.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString)) {
-				fmt.Println("Cancelled.")
+			// Make sure they can send the proper amount
+			if !sendResponse.Data.CanSend {
+				fmt.Println("Cannot send test transaction:")
+				if sendResponse.Data.InsufficientBalance {
+					fmt.Println("You do not have %.6f ETH in your node wallet.", testAmount)
+				}
 				return nil
 			}
 
-			sendResponse, err := rp.NodeSend(amountWei, "eth", withdrawalAddress)
+			// Run the TX
+			err = tx.HandleTx(c, rp, sendResponse.Data.TxInfo,
+				fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString),
+				fmt.Sprintf("sending ETH to %s", withdrawalAddressString),
+				fmt.Sprintf("Sending ETH to %s...\n", withdrawalAddressString),
+			)
 			if err != nil {
 				return err
 			}
 
-			fmt.Printf("Sending ETH to %s...\n", withdrawalAddressString)
-			cliutils.PrintTransactionHash(rp, sendResponse.TxHash)
-			if _, err = rp.WaitForTransaction(sendResponse.TxHash); err != nil {
-				return err
-			}
-
-			fmt.Printf("Successfully sent the test transaction.\nPlease verify that your primary withdrawal address received it before confirming it below.\n\n")
+			fmt.Println("Successfully sent the test transaction.\nPlease verify that your primary withdrawal address received it before confirming it below.\n")
 		}
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(setResponse.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's primary withdrawal address to %s?", withdrawalAddressString))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Set node's withdrawal address
-	response, err := rp.SetNodePrimaryWithdrawalAddress(withdrawalAddress, confirm)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Setting withdrawal address...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-		return err
-	}
+	// Run the TX
+	err = tx.HandleTx(c, rp, setResponse.Data.TxInfo,
+		fmt.Sprintf("Are you sure you want to set your node's primary withdrawal address to %s?", withdrawalAddressString),
+		"setting node's primary withdrawal address",
+		fmt.Sprintf("Setting primary withdrawal address to %s...", withdrawalAddressString),
+	)
 
 	// Log & return
-	if !c.Bool("force") {
+	if !c.Bool(setPrimaryWithdrawalAddressForceFlag) {
 		stakeUrl := ""
 		config, _, err := rp.LoadConfig()
 		if err == nil {
@@ -149,5 +126,4 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 		fmt.Printf("The node's primary withdrawal address was successfully set to %s.\n", withdrawalAddressString)
 	}
 	return nil
-
 }

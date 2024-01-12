@@ -85,15 +85,15 @@ func claimFromLot(c *cli.Context) error {
 			}
 			return nil
 		}
-		if data.TxInfo.SimError != "" {
-			return fmt.Errorf("error simulating claim of lot %d: %s", lot.Index, data.TxInfo.SimError)
-		}
 		txs[i] = data.TxInfo
 	}
 
 	// Claim RPL from lots
 	err = tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to claim %d lots?", len(selectedLots)),
+		func(i int) string {
+			return fmt.Sprintf("claim of lot %d", selectedLots[i].Index)
+		},
 		"Claiming lots...",
 	)
 	if err != nil {

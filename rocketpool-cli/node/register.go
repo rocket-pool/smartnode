@@ -43,13 +43,11 @@ func registerNode(c *cli.Context) error {
 		}
 		return nil
 	}
-	if response.Data.TxInfo.SimError != "" {
-		return fmt.Errorf("error simulating registration: %s", response.Data.TxInfo.SimError)
-	}
 
 	// Run the TX
 	err = tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to register this node?",
+		"node registration",
 		"Registering node...",
 	)
 	if err != nil {
