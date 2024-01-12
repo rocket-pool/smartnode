@@ -34,7 +34,7 @@ func (f *nodeSetTimezoneContextFactory) Create(args url.Values) (*nodeSetTimezon
 }
 
 func (f *nodeSetTimezoneContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*nodeSetTimezoneContext, api.NodeSetTimezoneData](
+	server.RegisterQuerylessGet[*nodeSetTimezoneContext, api.TxInfoData](
 		router, "set-timezone", f, f.handler.serviceProvider,
 	)
 }
@@ -49,7 +49,7 @@ type nodeSetTimezoneContext struct {
 	timezoneLocation string
 }
 
-func (c *nodeSetTimezoneContext) PrepareData(data *api.NodeSetTimezoneData, opts *bind.TransactOpts) error {
+func (c *nodeSetTimezoneContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
@@ -66,7 +66,6 @@ func (c *nodeSetTimezoneContext) PrepareData(data *api.NodeSetTimezoneData, opts
 		return fmt.Errorf("error creating node binding: %w", err)
 	}
 
-	data.CanSet = true
 	data.TxInfo, err = node.SetTimezoneLocation(c.timezoneLocation, opts)
 	if err != nil {
 		return fmt.Errorf("error getting TX info for SetTimezoneLocation: %w", err)

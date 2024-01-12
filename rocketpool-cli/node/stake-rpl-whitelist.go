@@ -5,131 +5,70 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-func addAddressToStakeRplWhitelist(c *cli.Context, addressOrENS string) error {
-
+func setStakeRplForAllowed(c *cli.Context, addressOrEns string, allowed bool) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	var address common.Address
 	var addressString string
-	if strings.Contains(addressOrENS, ".") {
-		response, err := rp.ResolveEnsName(addressOrENS)
+	if strings.Contains(addressOrEns, ".") {
+		response, err := rp.Api.Node.ResolveEns(common.Address{}, addressOrEns)
 		if err != nil {
 			return err
 		}
-		address = response.Address
-		addressString = fmt.Sprintf("%s (%s)", addressOrENS, address.Hex())
+		address = response.Data.Address
+		addressString = fmt.Sprintf("%s (%s)", addressOrEns, address.Hex())
 	} else {
-		address, err = cliutils.ValidateAddress("address", addressOrENS)
+		address, err = cliutils.ValidateAddress("address", addressOrEns)
 		if err != nil {
 			return err
 		}
 		addressString = address.Hex()
 	}
 
-	// Get the gas estimate
-	canResponse, err := rp.CanSetStakeRPLForAllowed(address, true)
+	// Build the TX
+	response, err := rp.Api.Node.SetStakeRplForAllowed(address, allowed)
 	if err != nil {
 		return err
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to allow %s to stake RPL for your node?", addressString))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Set the allow status
-	response, err := rp.SetStakeRPLForAllowed(address, true)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Adding address to RPL stake whitelist...\n")
-	cliutils.PrintTransactionHash(rp, response.SetTxHash)
-	if _, err = rp.WaitForTransaction(response.SetTxHash); err != nil {
-		return err
-	}
-
-	// Log & return
-	fmt.Printf("Successfully added %s to your node's RPL staking whitelist.\n", addressString)
-	return nil
-}
-
-func removeAddressFromStakeRplWhitelist(c *cli.Context, addressOrENS string) error {
-
-	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
-	defer rp.Close()
-
-	var address common.Address
-	var addressString string
-	if strings.Contains(addressOrENS, ".") {
-		response, err := rp.ResolveEnsName(addressOrENS)
-		if err != nil {
-			return err
-		}
-		address = response.Address
-		addressString = fmt.Sprintf("%s (%s)", addressOrENS, address.Hex())
+	// Run the TX
+	var confirmMsg string
+	var identifierMsg string
+	var submitMsg string
+	if allowed {
+		confirmMsg = fmt.Sprintf("Are you sure you want to allow %s to stake RPL for your node?", addressString)
+		identifierMsg = "adding address to RPL stake whitelist"
+		submitMsg = "Adding address to RPL stake whitelist..."
 	} else {
-		address, err = cliutils.ValidateAddress("address", addressOrENS)
-		if err != nil {
-			return err
-		}
-		addressString = address.Hex()
+		confirmMsg = fmt.Sprintf("Are you sure you want to remove %s from your RPL staking whitelist?", addressString)
+		identifierMsg = "removing address from RPL stake whitelist"
+		submitMsg = "Removing address from RPL stake whitelist..."
 	}
-
-	// Get the gas estimate
-	canResponse, err := rp.CanSetStakeRPLForAllowed(address, false)
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		confirmMsg,
+		identifierMsg,
+		submitMsg,
+	)
 	if err != nil {
-		return err
-	}
-
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to remove %s from your RPL staking whitelist?", addressString))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Set the allow status
-	response, err := rp.SetStakeRPLForAllowed(address, false)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Removing address from RPL stake whitelist...\n")
-	cliutils.PrintTransactionHash(rp, response.SetTxHash)
-	if _, err = rp.WaitForTransaction(response.SetTxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully removed %s from your node's RPL staking whitelist.\n", addressString)
+	if allowed {
+		fmt.Printf("Successfully added %s to your node's RPL staking whitelist.\n", addressString)
+	} else {
+		fmt.Printf("Successfully removed %s from your node's RPL staking whitelist.\n", addressString)
+	}
 	return nil
 }

@@ -196,70 +196,72 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					return confirmRplWithdrawalAddress(c)
 				},
 			},
+
 			{
 				Name:      "allow-rpl-locking",
 				Aliases:   []string{"arl"},
 				Usage:     "Allow the node to lock RPL when creating governance proposals/challenges",
 				UsageText: "rocketpool node allow-rpl-locking [options]",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm allowing RPL locking",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm allowing RPL locking",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
-					// Run
-					return setRPLLockingAllowed(c, true)
 
+					// Run
+					return setRplLockingAllowed(c, true)
 				},
 			},
+
 			{
 				Name:      "deny-rpl-locking",
 				Aliases:   []string{"drl"},
 				Usage:     "Do not allow the node to lock RPL when creating governance proposals/challenges",
 				UsageText: "rocketpool node deny-rpl-locking [options]",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm not allowing RPL locking",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm disabling of RPL locking",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 					// Run
-					return setRPLLockingAllowed(c, false)
-
+					return setRplLockingAllowed(c, false)
 				},
 			},
+
 			{
 				Name:      "set-timezone",
 				Aliases:   []string{"t"},
 				Usage:     "Set the node's timezone location",
 				UsageText: "rocketpool node set-timezone [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "timezone, t",
-						Usage: "The timezone location to set for the node (in the format 'Country/City')",
+					&cli.StringFlag{
+						Name:    timezoneFlag,
+						Aliases: []string{"t"},
+						Usage:   "The timezone location to set for the node (in the format 'Country/City')",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
-					if c.String("timezone") != "" {
+					if c.String(timezoneFlag) != "" {
 						if _, err := cliutils.ValidateTimezoneLocation("timezone location", c.String("timezone")); err != nil {
 							return err
 						}
@@ -267,7 +269,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return setTimezoneLocation(c)
-
 				},
 			},
 
@@ -277,28 +278,27 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Swap old RPL for new RPL",
 				UsageText: "rocketpool node swap-rpl [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of old RPL to swap (or 'all')",
+					&cli.StringFlag{
+						Name:    amountFlag,
+						Aliases: []string{"a"},
+						Usage:   "The amount of old RPL to swap (or 'all')",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
-					if c.String("amount") != "" && c.String("amount") != "all" {
-						if _, err := cliutils.ValidatePositiveEthAmount("swap amount", c.String("amount")); err != nil {
+					if c.String(amountFlag) != "" && c.String(amountFlag) != "all" {
+						if _, err := cliutils.ValidatePositiveEthAmount("swap amount", c.String(amountFlag)); err != nil {
 							return err
 						}
 					}
 
 					// Run
 					return nodeSwapRpl(c)
-
 				},
 			},
 
@@ -308,41 +308,42 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Stake RPL against the node",
 				UsageText: "rocketpool node stake-rpl [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of RPL to stake (also accepts 'min8' / 'max8' for 8-ETH minipools, 'min16' / 'max16' for 16-ETH minipools, or 'all' for all of your RPL)",
+					&cli.StringFlag{
+						Name:    amountFlag,
+						Aliases: []string{"a"},
+						Usage:   "The amount of RPL to stake (also accepts 'min8' / 'max8' for 8-ETH minipools, 'min16' / 'max16' for 16-ETH minipools, or 'all' for all of your RPL)",
 					},
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm RPL stake",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm RPL stake",
 					},
-					cli.BoolFlag{
-						Name:  "swap, s",
-						Usage: "Automatically confirm swapping old RPL before staking",
+					&cli.BoolFlag{
+						Name:    swapFlag,
+						Aliases: []string{"s"},
+						Usage:   "Automatically confirm swapping legacy RPL before staking",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
-					if c.String("amount") != "" &&
-						c.String("amount") != "min8" &&
-						c.String("amount") != "max8" &&
-						c.String("amount") != "min16" &&
-						c.String("amount") != "max16" &&
-						c.String("amount") != "all" {
-						if _, err := cliutils.ValidatePositiveEthAmount("stake amount", c.String("amount")); err != nil {
+					if c.String(amountFlag) != "" &&
+						c.String(amountFlag) != "min8" &&
+						c.String(amountFlag) != "max8" &&
+						c.String(amountFlag) != "min16" &&
+						c.String(amountFlag) != "max16" &&
+						c.String(amountFlag) != "all" {
+						if _, err := cliutils.ValidatePositiveEthAmount("stake amount", c.String(amountFlag)); err != nil {
 							return err
 						}
 					}
 
 					// Run
 					return nodeStakeRpl(c)
-
 				},
 			},
 
@@ -352,17 +353,15 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Adds an address to your node's RPL staking whitelist, so it can stake RPL on behalf of your node.",
 				UsageText: "rocketpool node add-address-to-stake-rpl-whitelist address",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 
-					addressOrENS := c.Args().Get(0)
+					addressOrEns := c.Args().Get(0)
 
 					// Run
-					return addAddressToStakeRplWhitelist(c, addressOrENS)
-
+					return setStakeRplForAllowed(c, addressOrEns, true)
 				},
 			},
 
@@ -378,10 +377,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 
-					addressOrENS := c.Args().Get(0)
+					addressOrEns := c.Args().Get(0)
 
 					// Run
-					return removeAddressFromStakeRplWhitelist(c, addressOrENS)
+					return setStakeRplForAllowed(c, addressOrEns, false)
 
 				},
 			},

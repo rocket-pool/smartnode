@@ -185,11 +185,11 @@ func (r *NodeRequester) SetStakeRplForAllowed(caller common.Address, allowed boo
 }
 
 // Set the node's timezone location
-func (r *NodeRequester) SetTimezone(timezoneLocation string) (*api.ApiResponse[api.NodeSetTimezoneData], error) {
+func (r *NodeRequester) SetTimezone(timezoneLocation string) (*api.ApiResponse[api.TxInfoData], error) {
 	args := map[string]string{
 		"timezone": timezoneLocation,
 	}
-	return sendGetRequest[api.NodeSetTimezoneData](r, "set-timezone", "SetTimezone", args)
+	return sendGetRequest[api.TxInfoData](r, "set-timezone", "SetTimezone", args)
 }
 
 // Clear the node's voting snapshot delegate

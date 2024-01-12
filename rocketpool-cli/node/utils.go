@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,18 +15,29 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/mitchellh/go-homedir"
+	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
 
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-// IPInfo API
-const IPInfoURL = "https://ipinfo.io/json/"
+const (
+	amountFlag string = "amount"
+
+	// IPInfo API
+	IPInfoURL = "https://ipinfo.io/json/"
+)
 
 // IPInfo response
 type ipInfoResponse struct {
@@ -385,4 +397,63 @@ func promptForSoloKeyPassword(rp *rocketpool.Client, cfg *config.RocketPoolConfi
 
 	return passwordFile, nil
 
+}
+
+func swapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
+	// Get the TX
+	response, err := rp.Api.Node.SwapRpl(amountWei)
+	if err != nil {
+		return err
+	}
+
+	// Verify
+	if !response.Data.CanSwap {
+		fmt.Println("Cannot swap RPL:")
+		if response.Data.InsufficientBalance {
+			fmt.Println("The node's legacy RPL balance is insufficient.")
+		}
+		return nil
+	}
+
+	// Handle boosting the allowance
+	if response.Data.Allowance.Cmp(amountWei) < 0 {
+		fmt.Println("Before swapping legacy RPL for new RPL, you must first give the new RPL contract approval to interact with your legacy RPL.")
+		fmt.Println("This only needs to be done once for your node.")
+
+		// If a custom nonce is set, print the multi-transaction warning
+		customNonce := c.Uint64(flags.NonceFlag)
+		if customNonce != 0 {
+			utils.PrintMultiTransactionNonceWarning()
+		}
+
+		// Run the approve TX
+		err = tx.HandleTx(c, rp, response.Data.ApproveTxInfo,
+			"Do you want to let the new RPL contract interact with your legacy RPL?",
+			"approving RPL for swapping",
+			"Approving legacy RPL for swapping...",
+		)
+		if err != nil {
+			return err
+		}
+
+		// If a custom nonce is set, increment it for the next transaction
+		fmt.Println("Successfully approved access to legacy RPL.")
+		if customNonce != 0 {
+			c.Set(flags.NonceFlag, strconv.FormatUint(customNonce+1, 10))
+		}
+	}
+
+	// Run the swap TX
+	err = tx.HandleTx(c, rp, response.Data.SwapTxInfo,
+		fmt.Sprintf("Are you sure you want to swap %.6f legacy RPL for new RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)),
+		"swapping legacy RPL for new RPL",
+		"Swapping legacy RPL for new RPL...",
+	)
+	if err != nil {
+		return err
+	}
+
+	// Log & return
+	fmt.Printf("Successfully swapped %.6f legacy RPL for new RPL.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
+	return nil
 }

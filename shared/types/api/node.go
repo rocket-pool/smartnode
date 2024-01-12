@@ -134,11 +134,6 @@ type NodeConfirmRplWithdrawalAddressData struct {
 	TxInfo                  *core.TransactionInfo `json:"txInfo"`
 }
 
-type NodeSetTimezoneData struct {
-	CanSet bool                  `json:"canSet"`
-	TxInfo *core.TransactionInfo `json:"txInfo"`
-}
-
 type NodeSwapRplData struct {
 	CanSwap             bool                  `json:"canSwap"`
 	InsufficientBalance bool                  `json:"insufficientBalance"`
