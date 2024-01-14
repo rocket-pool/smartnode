@@ -53,6 +53,9 @@ type IRewardsFile interface {
 
 	// Sets the CID of the minipool performance file corresponding to this rewards file
 	SetMinipoolPerformanceFileCID(cid string)
+
+	// Generate the Merkle Tree and its root from the rewards file's proofs
+	GenerateMerkleTree() error
 }
 
 // Rewards per network
@@ -70,6 +73,7 @@ type TotalRewards struct {
 	TotalSmoothingPoolEth        *QuotedBigInt `json:"totalSmoothingPoolEth"`
 	PoolStakerSmoothingPoolEth   *QuotedBigInt `json:"poolStakerSmoothingPoolEth"`
 	NodeOperatorSmoothingPoolEth *QuotedBigInt `json:"nodeOperatorSmoothingPoolEth"`
+	TotalNodeWeight              *QuotedBigInt `json:"totalNodeWeight"`
 }
 
 // Minipool stats
@@ -125,6 +129,7 @@ type IntervalInfo struct {
 	TreeFilePath           string        `json:"treeFilePath"`
 	TreeFileExists         bool          `json:"treeFileExists"`
 	MerkleRootValid        bool          `json:"merkleRootValid"`
+	MerkleRoot             common.Hash   `json:"merkleRoot"`
 	CID                    string        `json:"cid"`
 	StartTime              time.Time     `json:"startTime"`
 	EndTime                time.Time     `json:"endTime"`

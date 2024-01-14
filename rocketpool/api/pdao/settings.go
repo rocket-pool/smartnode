@@ -81,7 +81,7 @@ func (c *protocolDaoSettingsContext) PrepareData(data *api.ProtocolDaoSettingsDa
 	data.Deposit.MaximumSocialisedAssignmentsPerDeposit = c.pSettings.Deposit.MaximumSocialisedAssignmentsPerDeposit.Formatted()
 	data.Deposit.DepositFee = c.pSettings.Deposit.DepositFee.Raw()
 
-	data.Inflation.IntervalRate = c.pSettings.Inflation.IntervalRate.Formatted()
+	data.Inflation.IntervalRate = c.pSettings.Inflation.IntervalRate.Raw()
 	data.Inflation.StartTime = c.pSettings.Inflation.StartTime.Formatted()
 
 	data.Minipool.IsSubmitWithdrawableEnabled = c.pSettings.Minipool.IsSubmitWithdrawableEnabled.Get()
@@ -112,7 +112,8 @@ func (c *protocolDaoSettingsContext) PrepareData(data *api.ProtocolDaoSettingsDa
 	data.Node.MinimumPerMinipoolStake = c.pSettings.Node.MinimumPerMinipoolStake.Raw()
 	data.Node.MaximumPerMinipoolStake = c.pSettings.Node.MaximumPerMinipoolStake.Raw()
 
-	data.Proposals.VoteTime = c.pSettings.Proposals.VoteTime.Formatted()
+	data.Proposals.VotePhase1Time = c.pSettings.Proposals.VotePhase1Time.Formatted()
+	data.Proposals.VotePhase2Time = c.pSettings.Proposals.VotePhase2Time.Formatted()
 	data.Proposals.VoteDelayTime = c.pSettings.Proposals.VoteDelayTime.Formatted()
 	data.Proposals.ExecuteTime = c.pSettings.Proposals.ExecuteTime.Formatted()
 	data.Proposals.ProposalBond = c.pSettings.Proposals.ProposalBond.Get()

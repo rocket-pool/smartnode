@@ -35,7 +35,7 @@ func proposeRecurringSpend(c *cli.Context) error {
 	// Get the contract name
 	contractName := c.String("contract-name")
 	if contractName == "" {
-		contractName = cliutils.Prompt("Please enter a contract name for this recurring payment:", "^$", "Invalid ID")
+		contractName = cliutils.Prompt("Please enter a contract name for this recurring payment:", "^\\S+$", "Invalid ID")
 	}
 
 	// Get the recipient
@@ -52,9 +52,9 @@ func proposeRecurringSpend(c *cli.Context) error {
 	amountString := c.String("amount-per-period")
 	if amountString == "" {
 		if rawEnabled {
-			amountString = cliutils.Prompt("Please enter an amount of RPL to send to %s per period as a wei amount:", "^[0-9]+$", "Invalid amount")
+			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
 		} else {
-			amountString = cliutils.Prompt("Please enter an amount of RPL to send to %s per period:", "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
+			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
 		}
 	}
 
@@ -63,20 +63,20 @@ func proposeRecurringSpend(c *cli.Context) error {
 	if rawEnabled {
 		amount, err = cliutils.ValidateBigInt("amount-per-period", amountString)
 	} else {
-		amount, err = parseFloat(c, "amount-per-period", amountString)
+		amount, err = parseFloat(c, "amount-per-period", amountString, false)
 	}
 	if err != nil {
 		return err
 	}
 
 	// Get the start time
-	startTimeString := c.String("start-time")
-	if startTimeString == "" {
-		startTimeString = cliutils.Prompt("Please enter the time that the recurring payment will start (as a UNIX timestamp):", "^[0-9]+$", "Invalid start time")
-	}
-	startTimeUnix, err := cliutils.ValidateUint("start-time", startTimeString)
-	if err != nil {
-		return err
+	startTimeUnix := c.Uint64("start-time")
+	if !c.IsSet("start-time") {
+		startTimeString := cliutils.Prompt("Please enter the time that the recurring payment will start (as a UNIX timestamp):", "^[0-9]+$", "Invalid start time")
+		startTimeUnix, err = cliutils.ValidateUint("start-time", startTimeString)
+		if err != nil {
+			return err
+		}
 	}
 	startTime := time.Unix(int64(startTimeUnix), 0)
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("The provided timestamp corresponds to %s - is this correct?", startTime.UTC().String()))) {
@@ -87,7 +87,7 @@ func proposeRecurringSpend(c *cli.Context) error {
 	// Get the period length
 	periodLengthString := c.String("period-length")
 	if periodLengthString == "" {
-		periodLengthString = cliutils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^$", "Invalid period length")
+		periodLengthString = cliutils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^.+$", "Invalid period length")
 	}
 	periodLength, err := cliutils.ValidateDuration("period-length", periodLengthString)
 	if err != nil {
@@ -95,13 +95,13 @@ func proposeRecurringSpend(c *cli.Context) error {
 	}
 
 	// Get the number of periods
-	numPeriodsString := c.String("number-of-periods")
-	if numPeriodsString == "" {
-		numPeriodsString = cliutils.Prompt("Please enter the total number of payment periods:", "^[0-9]+$", "Invalid number of periods")
-	}
-	numPeriods, err := cliutils.ValidateUint("number-of-periods", numPeriodsString)
-	if err != nil {
-		return err
+	numPeriods := c.Uint64("number-of-periods")
+	if !c.IsSet("number-of-periods") {
+		numPeriodsString := cliutils.Prompt("Please enter the total number of payment periods:", "^[0-9]+$", "Invalid number of periods")
+		numPeriods, err = cliutils.ValidateUint("number-of-periods", numPeriodsString)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Check submissions

@@ -56,7 +56,7 @@ type protocolDaoDefeatProposalContext struct {
 
 	proposalID     uint64
 	index          uint64
-	challengeState types.ChallengeState
+	challengeState func() types.ChallengeState
 	pdaoMgr        *protocol.ProtocolDaoManager
 	proposal       *protocol.ProtocolDaoProposal
 }
@@ -91,7 +91,7 @@ func (c *protocolDaoDefeatProposalContext) GetState(mc *batch.MultiCaller) {
 		c.proposal.CreatedTime,
 		c.proposal.ChallengeWindow,
 	)
-	c.proposal.GetChallengeState(mc, &c.challengeState, c.index)
+	c.challengeState = c.proposal.GetChallengeState(mc, c.index)
 }
 
 func (c *protocolDaoDefeatProposalContext) PrepareData(data *api.ProtocolDaoDefeatProposalData, opts *bind.TransactOpts) error {
@@ -99,7 +99,7 @@ func (c *protocolDaoDefeatProposalContext) PrepareData(data *api.ProtocolDaoDefe
 	data.StillInChallengeWindow = (time.Until(defeatStart) > 0)
 	data.DoesNotExist = (c.proposalID > c.pdaoMgr.ProposalCount.Formatted())
 	data.AlreadyDefeated = (c.proposal.State.Formatted() == types.ProtocolDaoProposalState_Defeated)
-	data.InvalidChallengeState = (c.challengeState != types.ChallengeState_Challenged)
+	data.InvalidChallengeState = (c.challengeState() != types.ChallengeState_Challenged)
 	data.CanDefeat = !(data.DoesNotExist || data.StillInChallengeWindow || data.AlreadyDefeated || data.InvalidChallengeState)
 
 	// Get the tx

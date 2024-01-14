@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/config"
@@ -128,14 +129,18 @@ func (c *protocolDaoProposalsContext) PrepareData(data *api.ProtocolDaoProposals
 	}
 
 	// Get the node's vote directions
+	nodeVoteDirs := make([]func() types.VoteDirection, len(props))
 	if c.node.Exists.Get() {
 		err = c.rp.BatchQuery(len(props), nodeVoteBatchSize, func(mc *batch.MultiCaller, i int) error {
-			props[i].GetAddressVoteDirection(mc, &returnProps[i].NodeVoteDirection, c.nodeAddress)
+			nodeVoteDirs[i] = props[i].GetAddressVoteDirection(mc, c.nodeAddress)
 			return nil
 		}, nil)
 		if err != nil {
 			return fmt.Errorf("error getting node %s votes: %w", c.nodeAddress.Hex(), err)
 		}
+	}
+	for i := range returnProps {
+		returnProps[i].NodeVoteDirection = nodeVoteDirs[i]()
 	}
 
 	// Return

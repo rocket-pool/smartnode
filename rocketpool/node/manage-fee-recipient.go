@@ -202,5 +202,5 @@ func (t *ManageFeeRecipient) getFeeRecipientFileContents(feeRecipient common.Add
 	}
 
 	// Native mode
-	return fmt.Sprintf("%s=%s", config.FeeRecipientEnvVar, feeRecipient.Hex())
+	return fmt.Sprintf("FEE_RECIPIENT=%s", feeRecipient.Hex())
 }

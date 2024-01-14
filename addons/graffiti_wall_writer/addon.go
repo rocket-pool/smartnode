@@ -45,10 +45,3 @@ func (gww *GraffitiWallWriter) GetEnabledParameter() *cfgtypes.Parameter {
 func (gww *GraffitiWallWriter) GetContainerTag() string {
 	return containerTag
 }
-
-func (gww *GraffitiWallWriter) UpdateEnvVars(envVars map[string]string) error {
-	if gww.cfg.Enabled.Value == true {
-		cfgtypes.AddParametersToEnvVars(gww.cfg.GetParameters(), envVars)
-	}
-	return nil
-}

@@ -31,8 +31,8 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tMin ETH per Lot:          %.6f ETH\n", eth.WeiToEth(response.Auction.LotMinimumEthValue))
 	fmt.Printf("\tMax ETH per Lot:          %.6f ETH\n", eth.WeiToEth(response.Auction.LotMaximumEthValue))
 	fmt.Printf("\tLot Duration:             %s\n", time.Unix(int64(response.Auction.LotDuration), 0))
-	fmt.Printf("\tStarting Price Ratio:     %.6f\n", response.Auction.LotStartingPriceRatio)
-	fmt.Printf("\tReserve Price Ratio:      %.6f\n", response.Auction.LotReservePriceRatio)
+	fmt.Printf("\tStarting Price Ratio:     %.2f%%\n", eth.WeiToEth(response.Auction.LotStartingPriceRatio)*100)
+	fmt.Printf("\tReserve Price Ratio:      %.2f%%\n", eth.WeiToEth(response.Auction.LotReservePriceRatio)*100)
 	fmt.Println()
 
 	// Deposit
@@ -43,12 +43,12 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tMax Deposit Pool Size:              %.6f ETH\n", eth.WeiToEth(response.Deposit.MaximumDepositPoolSize))
 	fmt.Printf("\tMax Total Assigns Per Deposit:      %d\n", response.Deposit.MaximumAssignmentsPerDeposit)
 	fmt.Printf("\tMax Socialized Assigns Per Deposit: %d\n", response.Deposit.MaximumSocialisedAssignmentsPerDeposit)
-	fmt.Printf("\tDeposit Fee:                        %.2f%%\n", response.Deposit.DepositFee*100)
+	fmt.Printf("\tDeposit Fee:                        %.2f%%\n", eth.WeiToEth(response.Deposit.DepositFee)*100)
 	fmt.Println()
 
 	// Inflation
 	fmt.Println("== Inflation Settings ==")
-	fmt.Printf("\tInterval Rate:  %.6f\n", response.Inflation.IntervalRate)
+	fmt.Printf("\tInterval Rate:  %.6f\n", eth.WeiToEth(response.Inflation.IntervalRate))
 	fmt.Printf("\tInterval Start: %s\n", response.Inflation.StartTime)
 	fmt.Println()
 
@@ -64,18 +64,18 @@ func getSettings(c *cli.Context) error {
 
 	// Network
 	fmt.Println("== Network Settings ==")
-	fmt.Printf("\toDAO Consensus Quorum:      %.2f%%\n", response.Network.OracleDaoConsensusThreshold*100)
-	fmt.Printf("\tNode Penalty Quorum:        %.2f%%\n", response.Network.NodePenaltyThreshold*100)
-	fmt.Printf("\tPenalty Size:               %.2f%%\n", response.Network.PerPenaltyRate*100)
+	fmt.Printf("\toDAO Consensus Quorum:      %.2f%%\n", eth.WeiToEth(response.Network.OracleDaoConsensusThreshold)*100)
+	fmt.Printf("\tNode Penalty Quorum:        %.2f%%\n", eth.WeiToEth(response.Network.NodePenaltyThreshold)*100)
+	fmt.Printf("\tPenalty Size:               %.2f%%\n", eth.WeiToEth(response.Network.PerPenaltyRate)*100)
 	fmt.Printf("\tBalance Submission Enabled: %t\n", response.Network.IsSubmitBalancesEnabled)
 	fmt.Printf("\tBalance Submission Freq:    %s\n", response.Network.SubmitBalancesFrequency)
 	fmt.Printf("\tPrice Submission Enabled:   %t\n", response.Network.IsSubmitPricesEnabled)
 	fmt.Printf("\tPrice Submission Freq:      %s\n", response.Network.SubmitPricesFrequency)
-	fmt.Printf("\tMin Commission:             %.2f%%\n", response.Network.MinimumNodeFee*100)
-	fmt.Printf("\tTarget Commission:          %.2f%%\n", response.Network.TargetNodeFee*100)
-	fmt.Printf("\tMax Commission:             %.2f%%\n", response.Network.MaximumNodeFee*100)
+	fmt.Printf("\tMin Commission:             %.2f%%\n", eth.WeiToEth(response.Network.MinimumNodeFee)*100)
+	fmt.Printf("\tTarget Commission:          %.2f%%\n", eth.WeiToEth(response.Network.TargetNodeFee)*100)
+	fmt.Printf("\tMax Commission:             %.2f%%\n", eth.WeiToEth(response.Network.MaximumNodeFee)*100)
 	fmt.Printf("\tCommission Demand Range:    %.6f ETH\n", eth.WeiToEth(response.Network.NodeFeeDemandRange))
-	fmt.Printf("\trETH Collateral Target:     %.6f\n", response.Network.TargetRethCollateralRate)
+	fmt.Printf("\trETH Collateral Target:     %.2f%%\n", eth.WeiToEth(response.Network.TargetRethCollateralRate)*100)
 	fmt.Printf("\tRewards Submission Enabled: %t\n", response.Network.IsSubmitRewardsEnabled)
 	fmt.Println()
 
@@ -85,26 +85,36 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tSmoothing Pool Opt-In Enabled: %t\n", response.Node.IsSmoothingPoolRegistrationEnabled)
 	fmt.Printf("\tNode Deposits Enabled:         %t\n", response.Node.IsDepositingEnabled)
 	fmt.Printf("\tVacant Minipools Enabled:      %t\n", response.Node.AreVacantMinipoolsEnabled)
-	fmt.Printf("\tMin Stake per Minipool:        %.2f%%\n", response.Node.MinimumPerMinipoolStake*100)
-	fmt.Printf("\tMax Stake per Minipool:        %.2f%%\n", response.Node.MaximumPerMinipoolStake*100)
+	fmt.Printf("\tMin Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MinimumPerMinipoolStake)*100)
+	fmt.Printf("\tMax Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MaximumPerMinipoolStake)*100)
 	fmt.Println()
 
 	// Proposals
 	fmt.Println("== Proposal Settings ==")
-	fmt.Printf("\tVoting Window:           %s\n", response.Proposals.VoteTime)
+	fmt.Printf("\tVoting Window (Phase 1): %s\n", response.Proposals.VotePhase1Time)
+	fmt.Printf("\tVoting Window (Phase 2): %s\n", response.Proposals.VotePhase2Time)
 	fmt.Printf("\tVoting Start Delay:      %s\n", response.Proposals.VoteDelayTime)
 	fmt.Printf("\tExecute Window:          %s\n", response.Proposals.ExecuteTime)
 	fmt.Printf("\tBond per Proposal:       %.6f RPL\n", eth.WeiToEth(response.Proposals.ProposalBond))
 	fmt.Printf("\tBond per Challenge:      %.6f RPL\n", eth.WeiToEth(response.Proposals.ChallengeBond))
 	fmt.Printf("\tChallenge Response Time: %s\n", response.Proposals.ChallengePeriod)
-	fmt.Printf("\tQuorum:                  %.2f%%\n", response.Proposals.Quorum*100)
-	fmt.Printf("\tVeto Quorum:             %.2f%%\n", response.Proposals.VetoQuorum*100)
+	fmt.Printf("\tQuorum:                  %.2f%%\n", eth.WeiToEth(response.Proposals.Quorum)*100)
+	fmt.Printf("\tVeto Quorum:             %.2f%%\n", eth.WeiToEth(response.Proposals.VetoQuorum)*100)
 	fmt.Printf("\tTarget Block Age Limit:  %d Blocks\n", response.Proposals.MaxBlockAge)
 	fmt.Println()
 
 	// Rewards
 	fmt.Println("== Rewards Settings ==")
 	fmt.Printf("\tInterval Length: %s\n", response.Rewards.IntervalTime)
+	fmt.Println()
+
+	// Security
+	fmt.Println("== Security Settings ==")
+	fmt.Printf("\tMember Quorum:         %.2f%%\n", eth.WeiToEth(response.Security.MembersQuorum)*100)
+	fmt.Printf("\tMember Leave Time:     %s\n", response.Security.MembersLeaveTime)
+	fmt.Printf("\tProposal Vote Time:    %s\n", response.Security.ProposalVoteTime)
+	fmt.Printf("\tProposal Execute Time: %s\n", response.Security.ProposalExecuteTime)
+	fmt.Printf("\tProposal Action Time:  %s\n", response.Security.ProposalActionTime)
 
 	return nil
 }

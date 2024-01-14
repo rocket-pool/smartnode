@@ -12,21 +12,18 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-const (
-	depthPerRound uint64 = 2
-)
-
 type VotingTree struct {
 	SmartnodeVersion string                  `json:"smartnodeVersion"`
 	Network          cfgtypes.Network        `json:"network"`
 	BlockNumber      uint32                  `json:"blockNumber"`
 	Depth            uint64                  `json:"depth"`
 	VirtualRootIndex uint64                  `json:"virtualRootIndex"`
+	DepthPerRound    uint64                  `json:"depthPerRound"`
 	Nodes            []*types.VotingTreeNode `json:"nodes"`
 }
 
 // Creates a new NetworkVotingPowerTree instance from leaf nodes.
-func CreateTreeFromLeaves(blockNumber uint32, network cfgtypes.Network, leaves []*types.VotingTreeNode, virtualRootIndex uint64) *VotingTree {
+func CreateTreeFromLeaves(blockNumber uint32, network cfgtypes.Network, leaves []*types.VotingTreeNode, virtualRootIndex uint64, depthPerRound uint64) *VotingTree {
 	// Determine the total number of nodes from the leaf count
 	originalPower := math.Log2(float64(len(leaves)))
 	ceilingPower := int(math.Ceil(originalPower))
@@ -71,6 +68,7 @@ func CreateTreeFromLeaves(blockNumber uint32, network cfgtypes.Network, leaves [
 		Network:          network,
 		Nodes:            nodes,
 		Depth:            uint64(ceilingPower),
+		DepthPerRound:    depthPerRound,
 		VirtualRootIndex: virtualRootIndex,
 	}
 }
@@ -108,7 +106,7 @@ func (t *VotingTree) CheckForChallengeableArtifacts(virtualRootIndex uint64, pro
 			}
 
 			// Create a new tree from the proposed pollard
-			proposedSubtree := CreateTreeFromLeaves(t.BlockNumber, t.Network, pollardPtrs, virtualRootIndex)
+			proposedSubtree := CreateTreeFromLeaves(t.BlockNumber, t.Network, pollardPtrs, virtualRootIndex, t.DepthPerRound)
 			challengedNode, proof := proposedSubtree.getArtifactsForChallenge(virtualIndex)
 			return virtualIndex, challengedNode, proof, nil
 		}
@@ -156,7 +154,7 @@ func (t *VotingTree) generatePollard(virtualRootIndex uint64) (*types.VotingTree
 	rootNode := t.Nodes[index-1] // 0-indexed
 
 	rootLevel := uint64(math.Floor(math.Log2(float64(index)))) // The level of the root node
-	absoluteDepth := rootLevel + depthPerRound                 // The actual level in the tree that this pollard must come from
+	absoluteDepth := rootLevel + t.DepthPerRound               // The actual level in the tree that this pollard must come from
 	if absoluteDepth > t.Depth {
 		absoluteDepth = t.Depth // Clamp it to the level of the leaf nodes
 	}

@@ -6,8 +6,8 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:23.10.0"
-	besuTagProd          string = "hyperledger/besu:23.10.0"
+	besuTagTest          string = "hyperledger/besu:24.1.0"
+	besuTagProd          string = "hyperledger/besu:24.1.0"
 	besuEventLogInterval int    = 1000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"
@@ -60,39 +60,36 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 		EventLogInterval: besuEventLogInterval,
 
 		JvmHeapSize: config.Parameter{
-			ID:                   "jvmHeapSize",
-			Name:                 "JVM Heap Size",
-			Description:          "The max amount of RAM, in MB, that Besu's JVM should limit itself to. Setting this lower will cause Besu to use less RAM, though it will always use more than this limit.\n\nUse 0 for automatic allocation.",
-			Type:                 config.ParameterType_Uint,
-			Default:              map[config.Network]interface{}{config.Network_All: uint64(0)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
-			EnvironmentVariables: []string{"BESU_JVM_HEAP_SIZE"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "jvmHeapSize",
+			Name:               "JVM Heap Size",
+			Description:        "The max amount of RAM, in MB, that Besu's JVM should limit itself to. Setting this lower will cause Besu to use less RAM, though it will always use more than this limit.\n\nUse 0 for automatic allocation.",
+			Type:               config.ParameterType_Uint,
+			Default:            map[config.Network]interface{}{config.Network_All: uint64(0)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		MaxPeers: config.Parameter{
-			ID:                   "maxPeers",
-			Name:                 "Max Peers",
-			Description:          "The maximum number of peers Besu should connect to. This can be lowered to improve performance on low-power systems or constrained networks. We recommend keeping it at 12 or higher.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: besuMaxPeers},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
-			EnvironmentVariables: []string{"EC_MAX_PEERS"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "maxPeers",
+			Name:               "Max Peers",
+			Description:        "The maximum number of peers Besu should connect to. This can be lowered to improve performance on low-power systems or constrained networks. We recommend keeping it at 12 or higher.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: besuMaxPeers},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		MaxBackLayers: config.Parameter{
-			ID:                   "maxBackLayers",
-			Name:                 "Historical Block Replay Limit",
-			Description:          "Besu has the ability to revisit the state of any historical block on the chain by \"replaying\" all of the previous blocks to get back to the target. This limit controls how many blocks you can replay - in other words, how far back Besu can go in time. Normal Execution client processing will be paused while a replay is in progress.\n\n[orange]NOTE: If you try to replay a state from a long time ago, it may take Besu several minutes to rebuild the state!",
-			Type:                 config.ParameterType_Uint,
-			Default:              map[config.Network]interface{}{config.Network_All: uint64(512)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
-			EnvironmentVariables: []string{"BESU_MAX_BACK_LAYERS"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "maxBackLayers",
+			Name:               "Historical Block Replay Limit",
+			Description:        "Besu has the ability to revisit the state of any historical block on the chain by \"replaying\" all of the previous blocks to get back to the target. This limit controls how many blocks you can replay - in other words, how far back Besu can go in time. Normal Execution client processing will be paused while a replay is in progress.\n\n[orange]NOTE: If you try to replay a state from a long time ago, it may take Besu several minutes to rebuild the state!",
+			Type:               config.ParameterType_Uint,
+			Default:            map[config.Network]interface{}{config.Network_All: uint64(512)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		ContainerTag: config.Parameter{
@@ -106,22 +103,20 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 				config.Network_Devnet:  besuTagTest,
 				config.Network_Holesky: besuTagTest,
 			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
-			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		AdditionalFlags: config.Parameter{
-			ID:                   "additionalFlags",
-			Name:                 "Additional Flags",
-			Description:          "Additional custom command line flags you want to pass to Besu, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
-			EnvironmentVariables: []string{"EC_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalFlags",
+			Name:               "Additional Flags",
+			Description:        "Additional custom command line flags you want to pass to Besu, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 	}
 }

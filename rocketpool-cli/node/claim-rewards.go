@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/rocketpool/common/rewards"
 	"github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -68,7 +69,7 @@ func nodeClaimRewards(c *cli.Context) error {
 		// Download the files
 		for _, missingInterval := range missingIntervals {
 			fmt.Printf("Downloading interval %d file... ", missingInterval.Index)
-			err := rp.Api.Network.DownloadRewardsFile(cfg, missingInterval.Index, missingInterval.CID, false)
+			err := rewards.DownloadRewardsFile(cfg, &missingInterval, false)
 			if err != nil {
 				fmt.Println()
 				return err
@@ -77,7 +78,7 @@ func nodeClaimRewards(c *cli.Context) error {
 		}
 		for _, invalidInterval := range invalidIntervals {
 			fmt.Printf("Downloading interval %d file... ", invalidInterval.Index)
-			err := rp.Api.Network.DownloadRewardsFile(cfg, invalidInterval.Index, invalidInterval.CID, false)
+			err := rewards.DownloadRewardsFile(cfg, &invalidInterval, false)
 			if err != nil {
 				fmt.Println()
 				return err

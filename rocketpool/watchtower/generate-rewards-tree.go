@@ -233,28 +233,24 @@ func (t *GenerateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 	// Create the JSON files
 	rewardsFile.SetMinipoolPerformanceFileCID("---")
 	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
-	minipoolPerformanceBytes, err := rewardsFile.GetMinipoolPerformanceFile().Serialize()
-	if err != nil {
-		t.handleError(fmt.Errorf("%s Error serializing minipool performance file into JSON: %w", generationPrefix, err))
-		return
-	}
-	wrapperBytes, err := rewardsFile.Serialize()
-	if err != nil {
-		t.handleError(fmt.Errorf("%s Error serializing proof wrapper into JSON: %w", generationPrefix, err))
-		return
-	}
+	localMinipoolPerformanceFile := rprewards.NewLocalFile[rprewards.IMinipoolPerformanceFile](
+		rewardsFile.GetMinipoolPerformanceFile(),
+		t.cfg.Smartnode.GetMinipoolPerformancePath(index, true),
+	)
+	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
+		rewardsFile,
+		t.cfg.Smartnode.GetRewardsTreePath(index, true),
+	)
 
 	// Write the files
-	path := t.cfg.Smartnode.GetRewardsTreePath(index, true)
-	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(index, true)
-	err = os.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
+	err = localMinipoolPerformanceFile.Write()
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error saving minipool performance file to %s: %w", generationPrefix, minipoolPerformancePath, err))
+		t.handleError(fmt.Errorf("%s error saving minipool performance file: %w", generationPrefix, err))
 		return
 	}
-	err = os.WriteFile(path, wrapperBytes, 0644)
+	err = localRewardsFile.Write()
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error saving rewards file to %s: %w", generationPrefix, path, err))
+		t.handleError(fmt.Errorf("%s error saving rewards file: %w", generationPrefix, err))
 		return
 	}
 

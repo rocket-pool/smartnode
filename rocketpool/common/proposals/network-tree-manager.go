@@ -82,7 +82,7 @@ func NewNetworkTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig) (
 }
 
 // Create a network voting tree from a voting info snapshot
-func (m *NetworkTreeManager) CreateNetworkVotingTree(snapshot *VotingInfoSnapshot) *NetworkVotingTree {
+func (m *NetworkTreeManager) CreateNetworkVotingTree(snapshot *VotingInfoSnapshot, depthPerRound uint64) *NetworkVotingTree {
 	// Create a map of the voting power of each node, accounting for delegation
 	votingPower := map[common.Address]*big.Int{}
 	for _, info := range snapshot.Info {
@@ -114,7 +114,7 @@ func (m *NetworkTreeManager) CreateNetworkVotingTree(snapshot *VotingInfoSnapsho
 
 	// Make the tree
 	network := m.cfg.Smartnode.Network.Value.(cfgtypes.Network)
-	tree := CreateTreeFromLeaves(snapshot.BlockNumber, network, leaves, 1)
+	tree := CreateTreeFromLeaves(snapshot.BlockNumber, network, leaves, 1, depthPerRound)
 	return &NetworkVotingTree{
 		VotingTree: tree,
 	}
@@ -133,7 +133,7 @@ func (m *NetworkTreeManager) LoadFromDisk(blockNumber uint32) (*NetworkVotingTre
 		return nil, nil
 	}
 	if tree == nil {
-		m.logMessage("%s Couldn't load network tree for block %d from disk, so it must be regenerated.", m.logPrefix, blockNumber, err.Error())
+		m.logMessage("%s Couldn't load network tree for block %d from disk, so it must be regenerated.", m.logPrefix, blockNumber)
 		return nil, nil
 	}
 
@@ -211,6 +211,6 @@ func (m *NetworkTreeManager) getBlockNumberFromFilename(filename string) (uint32
 // Log a message to the logger
 func (m *NetworkTreeManager) logMessage(message string, args ...any) {
 	if m.log != nil {
-		m.log.Printlnf(message, args)
+		m.log.Printlnf(message, args...)
 	}
 }

@@ -12,12 +12,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/a8m/envsubst"
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
 	"github.com/fatih/color"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client/template"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/docker"
@@ -506,35 +506,10 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
 	}
 
-	// Get the external IP address
-	var externalIP string
-	ip, err := getExternalIP()
-	if err != nil {
-		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus or Besu, it may have trouble finding peers:")
-		fmt.Println(err.Error())
-	} else {
-		if ip.To4() == nil {
-			fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
-		}
-		externalIP = ip.String()
-	}
-
-	// Set up environment variables and deploy the template config files
-	settings := cfg.GenerateEnvironmentVariables()
-	if externalIP != "" {
-		settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
-	}
-
 	// Deploy the templates and run environment variable substitution on them
-	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath, settings)
+	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath)
 	if err != nil {
 		return "", fmt.Errorf("error deploying Docker templates: %w", err)
-	}
-
-	// Set up all of the environment variables to pass to the run command
-	env := []string{}
-	for key, value := range settings {
-		env = append(env, fmt.Sprintf("%s=%s", key, shellescape.Quote(value)))
 	}
 
 	// Include all of the relevant docker compose definition files
@@ -547,13 +522,12 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Return command
-	return fmt.Sprintf("%s docker compose --project-directory %s %s %s", strings.Join(env, " "), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
+	return fmt.Sprintf("COMPOSE_PROJECT_NAME=%s docker compose --project-directory %s %s %s", cfg.Smartnode.ProjectName.Value.(string), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
 
 }
 
 // Deploys all of the appropriate docker compose template files and provisions them based on the provided configuration
-func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir string, settings map[string]string) ([]string, error) {
-
+func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir string) ([]string, error) {
 	// Check for the folders
 	runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir)
 	templatesFolder := filepath.Join(rocketpoolDir, templatesDir)
@@ -577,146 +551,52 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		return []string{}, fmt.Errorf("error creating runtime folder [%s]: %w", runtimeFolder, err)
 	}
 
-	// Set the environment variables for substitution
-	oldValues := map[string]string{}
-	for varName, varValue := range settings {
-		oldValues[varName] = os.Getenv(varName)
-		os.Setenv(varName, varValue)
+	composePaths := template.ComposePaths{
+		RuntimePath:  runtimeFolder,
+		TemplatePath: templatesFolder,
+		OverridePath: overrideFolder,
 	}
-	defer func() {
-		// Unset the env vars
-		for name, value := range oldValues {
-			os.Setenv(name, value)
-		}
-	}()
 
 	// Read and substitute the templates
 	deployedContainers := []string{}
 
-	// Node
-	contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_Node)+templateSuffix))
-	if err != nil {
-		return []string{}, fmt.Errorf("error reading and substituting node container template: %w", err)
+	// These containers always run
+	toDeploy := []docker.ContainerName{
+		docker.ContainerName_Node,
+		docker.ContainerName_Watchtower,
+		docker.ContainerName_ValidatorClient,
 	}
-	nodeComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_Node)+composeFileSuffix)
-	err = os.WriteFile(nodeComposePath, contents, 0664)
-	if err != nil {
-		return []string{}, fmt.Errorf("could not write node container file to %s: %w", nodeComposePath, err)
-	}
-	deployedContainers = append(deployedContainers, nodeComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_Node)+composeFileSuffix))
 
-	// Watchtower
-	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_Watchtower)+templateSuffix))
-	if err != nil {
-		return []string{}, fmt.Errorf("error reading and substituting watchtower container template: %w", err)
-	}
-	watchtowerComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_Watchtower)+composeFileSuffix)
-	err = os.WriteFile(watchtowerComposePath, contents, 0664)
-	if err != nil {
-		return []string{}, fmt.Errorf("could not write watchtower container file to %s: %w", watchtowerComposePath, err)
-	}
-	deployedContainers = append(deployedContainers, watchtowerComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_Watchtower)+composeFileSuffix))
-
-	// Validator
-	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_ValidatorClient)+templateSuffix))
-	if err != nil {
-		return []string{}, fmt.Errorf("error reading and substituting validator container template: %w", err)
-	}
-	validatorComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_ValidatorClient)+composeFileSuffix)
-	err = os.WriteFile(validatorComposePath, contents, 0664)
-	if err != nil {
-		return []string{}, fmt.Errorf("could not write validator container file to %s: %w", validatorComposePath, err)
-	}
-	deployedContainers = append(deployedContainers, validatorComposePath)
-	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_ValidatorClient)+composeFileSuffix))
-
-	// Check the EC mode to see if it needs to be deployed
+	// Check if we are running the Execution Layer locally
 	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_ExecutionClient)+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting execution client container template: %w", err)
-		}
-		eth1ComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_ExecutionClient)+composeFileSuffix)
-		err = os.WriteFile(eth1ComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write execution client container file to %s: %w", eth1ComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, eth1ComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_ExecutionClient)+composeFileSuffix))
+		toDeploy = append(toDeploy, docker.ContainerName_ExecutionClient)
 	}
 
-	// Check the Consensus mode
+	// Check if we are running the Consensus Layer locally
 	if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_BeaconNode)+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting consensus client container template: %w", err)
-		}
-		eth2ComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_BeaconNode)+composeFileSuffix)
-		err = os.WriteFile(eth2ComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write consensus client container file to %s: %w", eth2ComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, eth2ComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_BeaconNode)+composeFileSuffix))
+		toDeploy = append(toDeploy, docker.ContainerName_BeaconNode)
 	}
 
 	// Check the metrics containers
 	if cfg.EnableMetrics.Value == true {
-		// Grafana
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_Grafana)+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting Grafana container template: %w", err)
-		}
-		grafanaComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_Grafana)+composeFileSuffix)
-		err = os.WriteFile(grafanaComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write Grafana container file to %s: %w", grafanaComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, grafanaComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_Grafana)+composeFileSuffix))
-
-		// Node exporter
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_Exporter)+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting Node Exporter container template: %w", err)
-		}
-		exporterComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_Exporter)+composeFileSuffix)
-		err = os.WriteFile(exporterComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write Node Exporter container file to %s: %w", exporterComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, exporterComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_Exporter)+composeFileSuffix))
-
-		// Prometheus
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_Prometheus)+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting Prometheus container template: %w", err)
-		}
-		prometheusComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_Prometheus)+composeFileSuffix)
-		err = os.WriteFile(prometheusComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write Prometheus container file to %s: %w", prometheusComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, prometheusComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_Prometheus)+composeFileSuffix))
+		toDeploy = append(toDeploy,
+			docker.ContainerName_Grafana,
+			docker.ContainerName_Exporter,
+			docker.ContainerName_Prometheus,
+		)
 	}
 
-	// Check MEV-Boost
+	// Check if we are running the Mev-Boost container locally
 	if cfg.EnableMevBoost.Value == true && cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, string(docker.ContainerName_MevBoost)+templateSuffix))
+		toDeploy = append(toDeploy, docker.ContainerName_MevBoost)
+	}
+
+	for _, containerName := range toDeploy {
+		containers, err := composePaths.File(string(containerName)).Write(cfg)
 		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting MEV-Boost container template: %w", err)
+			return []string{}, fmt.Errorf("could not create %s container definition: %w", containerName, err)
 		}
-		mevBoostComposePath := filepath.Join(runtimeFolder, string(docker.ContainerName_MevBoost)+composeFileSuffix)
-		err = os.WriteFile(mevBoostComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write MEV-Boost container file to %s: %w", mevBoostComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, mevBoostComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, string(docker.ContainerName_MevBoost)+composeFileSuffix))
+		deployedContainers = append(deployedContainers, containers...)
 	}
 
 	// Create the custom keys dir
@@ -742,38 +622,32 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", terminal.ColorYellow, err.Error(), rewardsFileDir, terminal.ColorReset)
 	}
 
-	return c.composeAddons(cfg, rocketpoolDir, settings, deployedContainers)
-
+	return c.composeAddons(cfg, rocketpoolDir, deployedContainers)
 }
 
 // Handle composing for addons
-func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir string, settings map[string]string, deployedContainers []string) ([]string, error) {
-
+func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir string, deployedContainers []string) ([]string, error) {
 	// GWW
 	if cfg.GraffitiWallWriter.GetEnabledParameter().Value == true {
-		runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir, "addons", "gww")
-		templatesFolder := filepath.Join(rocketpoolDir, templatesDir, "addons", "gww")
-		overrideFolder := filepath.Join(rocketpoolDir, overrideDir, "addons", "gww")
+
+		composePaths := template.ComposePaths{
+			RuntimePath:  filepath.Join(rocketpoolDir, runtimeDir, "addons", "gww"),
+			TemplatePath: filepath.Join(rocketpoolDir, templatesDir, "addons", "gww"),
+			OverridePath: filepath.Join(rocketpoolDir, overrideDir, "addons", "gww"),
+		}
 
 		// Make the addon folder
-		err := os.MkdirAll(runtimeFolder, 0775)
+		err := os.MkdirAll(composePaths.RuntimePath, 0775)
 		if err != nil {
-			return []string{}, fmt.Errorf("error creating addon runtime folder (%s): %w", runtimeFolder, err)
+			return []string{}, fmt.Errorf("error creating addon runtime folder (%s): %w", composePaths.RuntimePath, err)
 		}
 
-		contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+templateSuffix))
+		containers, err := composePaths.File(graffiti_wall_writer.GraffitiWallWriterContainerName).Write(cfg)
 		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting GWW addon container template: %w", err)
+			return []string{}, fmt.Errorf("could not create gww container definition: %w", err)
 		}
-		composePath := filepath.Join(runtimeFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+composeFileSuffix)
-		err = os.WriteFile(composePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write GWW addon container file to %s: %w", composePath, err)
-		}
-		deployedContainers = append(deployedContainers, composePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+composeFileSuffix))
+		deployedContainers = append(deployedContainers, containers...)
 	}
 
 	return deployedContainers, nil
-
 }

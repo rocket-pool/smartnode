@@ -167,12 +167,12 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 	}
 
 	// Get the states of all challenges
-	states := make([]types.ChallengeState, len(proposalIDsForStates))
+	states := make([]func() types.ChallengeState, len(proposalIDsForStates))
 	err = c.rp.BatchQuery(len(proposalIDsForStates), challengeStateBatchSize, func(mc *batch.MultiCaller, i int) error {
 		propID := proposalIDsForStates[i]
 		index := challengedIndicesForStates[i]
 		prop := propInfos[propID]
-		prop.GetChallengeState(mc, &states[i], index)
+		states[i] = prop.GetChallengeState(mc, index)
 		return nil
 	}, nil)
 	if err != nil {
@@ -186,7 +186,7 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 
 		challengedIndex := challengedIndicesForStates[i]
 		state := states[i]
-		propInfo.Challenges[challengedIndex].State = state
+		propInfo.Challenges[challengedIndex].State = state()
 	}
 
 	// Go through each challenge to see if it's refundable

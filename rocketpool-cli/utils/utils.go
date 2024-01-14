@@ -151,16 +151,11 @@ func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress
 }
 
 // Prints what network you're currently on
-func PrintNetwork(rp *client.Client) error {
-	cfg, isNew, err := rp.LoadConfig()
-	if err != nil {
-		return fmt.Errorf("Error loading global config: %w", err)
-	}
+func PrintNetwork(currentNetwork cfgtypes.Network, isNew bool) error {
 	if isNew {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
-	currentNetwork := cfg.Smartnode.Network.Value.(cfgtypes.Network)
 	switch currentNetwork {
 	case cfgtypes.Network_Mainnet:
 		fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", terminal.ColorGreen, terminal.ColorReset)

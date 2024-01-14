@@ -439,6 +439,13 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 		arbitrumMessenger, err = contracts.NewArbitrumMessenger(common.HexToAddress(arbitrumMessengerAddress), ec)
 		errs = append(errs, err)
 	}
+	arbitrumMessengerV2Address := cfg.Smartnode.GetArbitrumMessengerAddressV2()
+	var arbitrumMessengerV2 *contracts.ArbitrumMessenger
+	if arbitrumMessengerV2Address != "" {
+		var err error
+		arbitrumMessengerV2, err = contracts.NewArbitrumMessenger(common.HexToAddress(arbitrumMessengerV2Address), ec)
+		errs = append(errs, err)
+	}
 	zksyncEraMessengerAddress := cfg.Smartnode.GetZkSyncEraMessengerAddress()
 	var zkSyncEraMessenger *contracts.ZkSyncEraMessenger
 	if zksyncEraMessengerAddress != "" {
@@ -453,6 +460,13 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 		baseMessenger, err = contracts.NewOptimismMessenger(common.HexToAddress(baseMessengerAddress), ec)
 		errs = append(errs, err)
 	}
+	scrollMessengerAddress := cfg.Smartnode.GetScrollMessengerAddress()
+	var scrollMessenger *contracts.ScrollMessenger
+	if scrollMessengerAddress != "" {
+		var err error
+		scrollMessenger, err = contracts.NewScrollMessenger(common.HexToAddress(scrollMessengerAddress), ec)
+		errs = append(errs, err)
+	}
 	if err := errors.Join(errs...); err != nil {
 		return err
 	}
@@ -461,8 +475,10 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 	if optimismMessenger == nil &&
 		polygonMessenger == nil &&
 		arbitrumMessenger == nil &&
+		arbitrumMessengerV2 == nil &&
 		zkSyncEraMessenger == nil &&
-		baseMessenger == nil {
+		baseMessenger == nil &&
+		scrollMessenger == nil {
 		return nil
 	}
 
@@ -479,8 +495,10 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 	var optimismStale bool
 	var polygonStale bool
 	var arbitrumStale bool
+	var arbitrumV2Stale bool
 	var zkSyncEraStale bool
 	var baseStale bool
+	var scrollStale bool
 	err = rp.Query(func(mc *batch.MultiCaller) error {
 		if optimismMessenger != nil {
 			optimismMessenger.IsRateStale(mc, &optimismStale)
@@ -491,18 +509,24 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 		if arbitrumMessenger != nil {
 			arbitrumMessenger.IsRateStale(mc, &arbitrumStale)
 		}
+		if arbitrumMessengerV2 != nil {
+			arbitrumMessengerV2.IsRateStale(mc, &arbitrumV2Stale)
+		}
 		if zkSyncEraMessenger != nil {
 			zkSyncEraMessenger.IsRateStale(mc, &zkSyncEraStale)
 		}
 		if baseMessenger != nil {
 			baseMessenger.IsRateStale(mc, &baseStale)
 		}
+		if scrollMessenger != nil {
+			scrollMessenger.IsRateStale(mc, &scrollStale)
+		}
 		return nil
 	}, callOpts)
 	if err != nil {
 		return fmt.Errorf("error checking if rates are stale: %w", err)
 	}
-	if !(optimismStale || polygonStale || arbitrumStale || zkSyncEraStale || baseStale) {
+	if !(optimismStale || polygonStale || arbitrumStale || arbitrumV2Stale || zkSyncEraStale || baseStale || scrollStale) {
 		return nil
 	}
 
@@ -528,13 +552,19 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 			errs = append(errs, t.updatePolygon(cfg, rp, polygonMessenger, blockNumber, opts))
 		}
 		if arbitrumStale {
-			errs = append(errs, t.updateArbitrum(cfg, rp, arbitrumMessenger, blockNumber, opts))
+			errs = append(errs, t.updateArbitrum(cfg, rp, arbitrumMessenger, "V1", blockNumber, opts))
+		}
+		if arbitrumV2Stale {
+			errs = append(errs, t.updateArbitrum(cfg, rp, arbitrumMessengerV2, "V2", blockNumber, opts))
 		}
 		if zkSyncEraStale {
 			errs = append(errs, t.updateZkSyncEra(cfg, rp, zkSyncEraMessenger, blockNumber, opts))
 		}
 		if baseStale {
 			errs = append(errs, t.updateBase(cfg, rp, baseMessenger, blockNumber, opts))
+		}
+		if scrollStale {
+			errs = append(errs, t.updateScroll(cfg, rp, ec, scrollMessenger, blockNumber, opts))
 		}
 		return errors.Join(errs...)
 	}
@@ -608,7 +638,7 @@ func (t *SubmitRplPrice) updatePolygon(cfg *config.RocketPoolConfig, rp *rocketp
 }
 
 // Submit a price update to Arbitrum
-func (t *SubmitRplPrice) updateArbitrum(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, arbitrumMessenger *contracts.ArbitrumMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateArbitrum(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, arbitrumMessenger *contracts.ArbitrumMessenger, version string, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.log.Println("Submitting rate to Arbitrum...")
 
 	// Get the current network recommended max fee
@@ -639,10 +669,10 @@ func (t *SubmitRplPrice) updateArbitrum(cfg *config.RocketPoolConfig, rp *rocket
 	// Get the TX info
 	txInfo, err := arbitrumMessenger.SubmitRate(maxSubmissionCost, arbitrumGasLimit, arbitrumMaxFeePerGas, opts)
 	if err != nil {
-		return fmt.Errorf("error getting tx for Arbitrum price update: %w", err)
+		return fmt.Errorf("error getting tx for Arbitrum %s price update: %w", version, err)
 	}
 	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating tx for Arbitrum price update failed: %s", txInfo.SimError)
+		return fmt.Errorf("simulating tx for Arbitrum %s price update failed: %s", version, txInfo.SimError)
 	}
 
 	// Print the gas info
@@ -663,7 +693,7 @@ func (t *SubmitRplPrice) updateArbitrum(cfg *config.RocketPoolConfig, rp *rocket
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted Arbitrum price for block %d.", blockNumber)
+	t.log.Printlnf("Successfully submitted Arbitrum %s price for block %d.", version, blockNumber)
 	return nil
 }
 
@@ -749,5 +779,58 @@ func (t *SubmitRplPrice) updateBase(cfg *config.RocketPoolConfig, rp *rocketpool
 
 	// Log
 	t.log.Printlnf("Successfully submitted Base price for block %d.", blockNumber)
+	return nil
+}
+
+// Submit a price update to Scroll
+func (t *SubmitRplPrice) updateScroll(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec core.ExecutionClient, scrollMessenger *contracts.ScrollMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+	t.log.Println("Submitting rate to Scroll...")
+	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
+
+	l2GasEstimatorAddress := t.cfg.Smartnode.GetScrollFeeEstimatorAddress()
+	l2GasEstimatorAddr := common.HexToAddress(l2GasEstimatorAddress)
+	scrollEstimator := contracts.NewScrollFeeEstimator(l2GasEstimatorAddr, ec)
+
+	// Set a fixed gas limit a bit above the estimated 85,283
+	l2GasLimit := big.NewInt(90000)
+
+	// Query the L2 message fee
+	var messageFee *big.Int
+	err := rp.Query(func(mc *batch.MultiCaller) error {
+		scrollEstimator.EstimateCrossDomainMessageFee(l2GasLimit, &messageFee)
+		return nil
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("Error getting cross domain message fee for Scroll: %w", err)
+	}
+	opts.Value = messageFee
+
+	// Get the TX info
+	txInfo, err := scrollMessenger.SubmitRate(l2GasLimit, opts)
+	if err != nil {
+		return fmt.Errorf("error getting tx for scroll price update: %w", err)
+	}
+	if txInfo.SimError != "" {
+		return fmt.Errorf("simulating tx for scroll price update failed: %s", txInfo.SimError)
+	}
+
+	// Print the gas info
+	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+		return nil
+	}
+
+	// Set the gas settings
+	opts.GasFeeCap = maxFee
+	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(cfg))
+	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+
+	// Print TX info and wait for it to be included in a block
+	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
+	if err != nil {
+		return err
+	}
+
+	// Log
+	t.log.Printlnf("Successfully submitted Scroll price for block %d.", blockNumber)
 	return nil
 }

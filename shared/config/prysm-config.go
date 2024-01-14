@@ -1,30 +1,17 @@
 package config
 
 import (
-	"fmt"
-	"runtime"
-
 	"github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/sys"
 )
 
 const (
-	prysmBnTagAmd64PortableTest string = "rocketpool/prysm:0bd2326"
-	prysmVcTagAmd64PortableTest string = "rocketpool/prysm:0bd2326"
-	prysmTagArm64PortableTest   string = "rocketpool/prysm:0bd2326"
-	prysmBnTagAmd64ModernTest   string = "rocketpool/prysm:0bd2326" //"prysmaticlabs/prysm-beacon-chain:HEAD-58df1f1-debug"
-	prysmVcTagAmd64ModernTest   string = "rocketpool/prysm:0bd2326" //"prysmaticlabs/prysm-validator:HEAD-58df1f1-debug"
-	prysmTagArm64ModernTest     string = "rocketpool/prysm:0bd2326"
-
-	prysmBnTagAmd64PortableProd string = "rocketpool/prysm:v4.0.8-portable"
-	prysmVcTagAmd64PortableProd string = "rocketpool/prysm:v4.0.8-portable"
-	prysmTagArm64PortableProd   string = "rocketpool/prysm:v4.0.8-portable"
-	prysmBnTagAmd64ModernProd   string = "rocketpool/prysm:v4.0.8" //"prysmaticlabs/prysm-beacon-chain:HEAD-58df1f1-debug"
-	prysmVcTagAmd64ModernProd   string = "rocketpool/prysm:v4.0.8" //"prysmaticlabs/prysm-validator:HEAD-58df1f1-debug"
-	prysmTagArm64ModernProd     string = "rocketpool/prysm:v4.0.8"
-	defaultPrysmRpcPort         uint16 = 5053
-	defaultPrysmOpenRpcPort     string = string(config.RPC_Closed)
-	defaultPrysmMaxPeers        uint16 = 45
+	prysmBnTest             string = "rocketpool/prysm:v4.2.0"
+	prysmBnProd             string = "rocketpool/prysm:v4.2.0"
+	prysmVcTest             string = "rocketpool/prysm:v4.2.0"
+	prysmVcProd             string = "rocketpool/prysm:v4.2.0"
+	defaultPrysmRpcPort     uint16 = 5053
+	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
+	defaultPrysmMaxPeers    uint16 = 70
 )
 
 // Configuration for Prysm
@@ -66,40 +53,37 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 		UnsupportedCommonParams: []string{},
 
 		MaxPeers: config.Parameter{
-			ID:                   "maxPeers",
-			Name:                 "Max Peers",
-			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultPrysmMaxPeers},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_MAX_PEERS"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "maxPeers",
+			Name:               "Max Peers",
+			Description:        "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultPrysmMaxPeers},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		RpcPort: config.Parameter{
-			ID:                   "rpcPort",
-			Name:                 "RPC Port",
-			Description:          "The port Prysm should run its JSON-RPC API on.",
-			Type:                 config.ParameterType_Uint16,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultPrysmRpcPort},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
-			EnvironmentVariables: []string{"BN_RPC_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "rpcPort",
+			Name:               "RPC Port",
+			Description:        "The port Prysm should run its JSON-RPC API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultPrysmRpcPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		OpenRpcPort: config.Parameter{
-			ID:                   "openRpcPort",
-			Name:                 "Expose RPC Port",
-			Description:          "Expose Prysm's JSON-RPC port to other processes on your machine, or to your local network so other machines can access it too.",
-			Type:                 config.ParameterType_Choice,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultPrysmOpenRpcPort},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_OPEN_RPC_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-			Options:              rpcPortModes,
+			ID:                 "openRpcPort",
+			Name:               "Expose RPC Port",
+			Description:        "Expose Prysm's JSON-RPC port to other processes on your machine, or to your local network so other machines can access it too.",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultPrysmOpenRpcPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+			Options:            rpcPortModes,
 		},
 
 		BnContainerTag: config.Parameter{
@@ -108,15 +92,14 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Description: "The tag name of the Prysm Beacon Node container you want to use on Docker Hub.",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: getPrysmBnProdTag(),
-				config.Network_Prater:  getPrysmBnTestTag(),
-				config.Network_Devnet:  getPrysmBnTestTag(),
-				config.Network_Holesky: getPrysmBnTestTag(),
+				config.Network_Mainnet: prysmBnProd,
+				config.Network_Prater:  prysmBnTest,
+				config.Network_Devnet:  prysmBnTest,
+				config.Network_Holesky: prysmBnTest,
 			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		VcContainerTag: config.Parameter{
@@ -125,128 +108,37 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Description: "The tag name of the Prysm Validator Client container you want to use on Docker Hub.",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: getPrysmVcProdTag(),
-				config.Network_Prater:  getPrysmVcTestTag(),
-				config.Network_Devnet:  getPrysmVcTestTag(),
-				config.Network_Holesky: getPrysmVcTestTag(),
+				config.Network_Mainnet: prysmVcProd,
+				config.Network_Prater:  prysmVcTest,
+				config.Network_Devnet:  prysmVcTest,
+				config.Network_Holesky: prysmVcTest,
 			},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		AdditionalBnFlags: config.Parameter{
-			ID:                   "additionalBnFlags",
-			Name:                 "Additional Beacon Node Flags",
-			Description:          "Additional custom command line flags you want to pass Prysm's Beacon Node, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalBnFlags",
+			Name:               "Additional Beacon Node Flags",
+			Description:        "Additional custom command line flags you want to pass Prysm's Beacon Node, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 
 		AdditionalVcFlags: config.Parameter{
-			ID:                   "additionalVcFlags",
-			Name:                 "Additional Validator Client Flags",
-			Description:          "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
-			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			ID:                 "additionalVcFlags",
+			Name:               "Additional Validator Client Flags",
+			Description:        "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
-	}
-}
-
-// Get the container tag for the Prysm BN based on the current architecture
-func getPrysmBnProdTag() string {
-	missingFeatures := sys.GetMissingModernCpuFeatures()
-	if len(missingFeatures) > 0 {
-		if runtime.GOARCH == "arm64" {
-			return prysmTagArm64PortableProd
-		} else if runtime.GOARCH == "amd64" {
-			return prysmBnTagAmd64PortableProd
-		} else {
-			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
-		}
-	} else {
-		if runtime.GOARCH == "arm64" {
-			return prysmTagArm64ModernProd
-		} else if runtime.GOARCH == "amd64" {
-			return prysmBnTagAmd64ModernProd
-		} else {
-			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
-		}
-	}
-}
-
-// Get the container tag for the Prysm BN based on the current architecture
-func getPrysmBnTestTag() string {
-	missingFeatures := sys.GetMissingModernCpuFeatures()
-	if len(missingFeatures) > 0 {
-		if runtime.GOARCH == "arm64" {
-			return prysmTagArm64PortableTest
-		} else if runtime.GOARCH == "amd64" {
-			return prysmBnTagAmd64PortableTest
-		} else {
-			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
-		}
-	} else {
-		if runtime.GOARCH == "arm64" {
-			return prysmTagArm64ModernTest
-		} else if runtime.GOARCH == "amd64" {
-			return prysmBnTagAmd64ModernTest
-		} else {
-			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
-		}
-	}
-}
-
-// Get the container tag for the Prysm VC based on the current architecture
-func getPrysmVcProdTag() string {
-	missingFeatures := sys.GetMissingModernCpuFeatures()
-	if len(missingFeatures) > 0 {
-		if runtime.GOARCH == "arm64" {
-			return prysmTagArm64PortableProd
-		} else if runtime.GOARCH == "amd64" {
-			return prysmVcTagAmd64PortableProd
-		} else {
-			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
-		}
-	} else {
-		if runtime.GOARCH == "arm64" {
-			return prysmTagArm64ModernProd
-		} else if runtime.GOARCH == "amd64" {
-			return prysmVcTagAmd64ModernProd
-		} else {
-			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
-		}
-	}
-}
-
-// Get the container tag for the Prysm VC based on the current architecture
-func getPrysmVcTestTag() string {
-	missingFeatures := sys.GetMissingModernCpuFeatures()
-	if len(missingFeatures) > 0 {
-		if runtime.GOARCH == "arm64" {
-			return prysmTagArm64PortableTest
-		} else if runtime.GOARCH == "amd64" {
-			return prysmVcTagAmd64PortableTest
-		} else {
-			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
-		}
-	} else {
-		if runtime.GOARCH == "arm64" {
-			return prysmTagArm64ModernTest
-		} else if runtime.GOARCH == "amd64" {
-			return prysmVcTagAmd64ModernTest
-		} else {
-			panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
-		}
 	}
 }
 
@@ -271,6 +163,11 @@ func (cfg *PrysmConfig) GetUnsupportedCommonParams() []string {
 // Get the Docker container name of the validator client
 func (cfg *PrysmConfig) GetValidatorImage() string {
 	return cfg.VcContainerTag.Value.(string)
+}
+
+// Get the Docker container name of the beacon client
+func (cfg *PrysmConfig) GetBeaconNodeImage() string {
+	return cfg.BnContainerTag.Value.(string)
 }
 
 // Get the name of the client

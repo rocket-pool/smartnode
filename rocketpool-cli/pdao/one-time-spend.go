@@ -34,7 +34,7 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	// Get the invoice ID
 	invoiceID := c.String("invoice-id")
 	if invoiceID == "" {
-		invoiceID = cliutils.Prompt("Please enter an invoice ID for this spend:", "^$", "Invalid ID")
+		invoiceID = cliutils.Prompt("Please enter an invoice ID for this spend: (no spaces)", "^\\S+$", "Invalid ID")
 	}
 
 	// Get the recipient
@@ -51,9 +51,9 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	amountString := c.String("amount")
 	if amountString == "" {
 		if rawEnabled {
-			amountString = cliutils.Prompt("Please enter an amount of RPL to send to %s as a wei amount:", "^[0-9]+$", "Invalid amount")
+			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
 		} else {
-			amountString = cliutils.Prompt("Please enter an amount of RPL to send to %s:", "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
+			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
 		}
 	}
 
@@ -62,7 +62,7 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	if rawEnabled {
 		amount, err = cliutils.ValidateBigInt("amount", amountString)
 	} else {
-		amount, err = parseFloat(c, "amount", amountString)
+		amount, err = parseFloat(c, "amount", amountString, false)
 	}
 	if err != nil {
 		return err

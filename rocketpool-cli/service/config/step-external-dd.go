@@ -18,6 +18,8 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 			ddEnabled = (wiz.md.Config.ExternalLodestar.DoppelgangerDetection.Value == true)
 		case cfgtypes.ConsensusClient_Prysm:
 			ddEnabled = (wiz.md.Config.ExternalPrysm.DoppelgangerDetection.Value == true)
+		case cfgtypes.ConsensusClient_Teku:
+			ddEnabled = (wiz.md.Config.ExternalTeku.DoppelgangerDetection.Value == true)
 		}
 
 		if ddEnabled {
@@ -41,6 +43,8 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 			wiz.md.Config.ExternalLodestar.DoppelgangerDetection.Value = ddEnabled
 		case cfgtypes.ConsensusClient_Prysm:
 			wiz.md.Config.ExternalPrysm.DoppelgangerDetection.Value = ddEnabled
+		case cfgtypes.ConsensusClient_Teku:
+			wiz.md.Config.ExternalTeku.DoppelgangerDetection.Value = ddEnabled
 		}
 		wiz.useFallbackModal.show()
 	}

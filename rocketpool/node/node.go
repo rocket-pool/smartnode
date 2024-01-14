@@ -242,7 +242,7 @@ func deployDefaultFeeRecipientFile(cfg *config.RocketPoolConfig) error {
 		var defaultFeeRecipientFileContents string
 		if cfg.IsNativeMode {
 			// Native mode needs an environment variable definition
-			defaultFeeRecipientFileContents = fmt.Sprintf("%s=%s", config.FeeRecipientEnvVar, cfg.Smartnode.GetRethAddress().Hex())
+			defaultFeeRecipientFileContents = fmt.Sprintf("FEE_RECIPIENT=%s", cfg.Smartnode.GetRethAddress().Hex())
 		} else {
 			// Docker and Hybrid just need the address itself
 			defaultFeeRecipientFileContents = cfg.Smartnode.GetRethAddress().Hex()

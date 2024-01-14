@@ -62,7 +62,7 @@ type protocolDaoVoteOnProposalContext struct {
 	proposalID      uint64
 	voteDirection   types.VoteDirection
 	node            *node.Node
-	existingVoteDir types.VoteDirection
+	existingVoteDir func() types.VoteDirection
 	pdaoMgr         *protocol.ProtocolDaoManager
 	proposal        *protocol.ProtocolDaoProposal
 }
@@ -102,7 +102,7 @@ func (c *protocolDaoVoteOnProposalContext) GetState(mc *batch.MultiCaller) {
 		c.proposal.State,
 		c.proposal.TargetBlock,
 	)
-	c.proposal.GetAddressVoteDirection(mc, &c.existingVoteDir, c.nodeAddress)
+	c.existingVoteDir = c.proposal.GetAddressVoteDirection(mc, c.nodeAddress)
 }
 
 func (c *protocolDaoVoteOnProposalContext) PrepareData(data *api.ProtocolDaoVoteOnProposalData, opts *bind.TransactOpts) error {
@@ -117,7 +117,7 @@ func (c *protocolDaoVoteOnProposalContext) PrepareData(data *api.ProtocolDaoVote
 
 	data.DoesNotExist = (c.proposalID > c.pdaoMgr.ProposalCount.Formatted())
 	data.InvalidState = (c.proposal.State.Formatted() != types.ProtocolDaoProposalState_ActivePhase1)
-	data.AlreadyVoted = (c.existingVoteDir != types.VoteDirection_NoVote)
+	data.AlreadyVoted = (c.existingVoteDir() != types.VoteDirection_NoVote)
 	data.InsufficientPower = (data.VotingPower.Cmp(common.Big0) == 0)
 	data.CanVote = !(data.DoesNotExist || data.InvalidState || data.AlreadyVoted || data.InsufficientPower)
 

@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/klauspost/compress/zstd"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -36,7 +35,6 @@ import (
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
-	"github.com/web3-storage/go-w3s-client"
 )
 
 // Submit rewards Merkle Tree task
@@ -167,7 +165,7 @@ func (t *SubmitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval
-	if t.isExistingFileValid(rewardsTreePath, uint64(intervalsPassed)) {
+	if t.isExistingRewardsFileValid(rewardsTreePath, uint64(intervalsPassed)) {
 		if !nodeTrusted {
 			t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s.", currentIndex, rewardsTreePath)
 			return nil
@@ -185,25 +183,23 @@ func (t *SubmitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, rewardsTreePath)
 
 		// Deserialize the file
-		wrapperBytes, err := os.ReadFile(rewardsTreePath)
+		localRewardsFile, err := rprewards.ReadLocalRewardsFile(rewardsTreePath)
 		if err != nil {
 			return fmt.Errorf("error reading rewards tree file: %w", err)
 		}
 
-		proofWrapper, err := rprewards.DeserializeRewardsFile(wrapperBytes)
+		proofWrapper := localRewardsFile.Impl()
+
+		// Save the compressed file and get the CID for it
+		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("error deserializing rewards tree file: %w", err)
+			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
 
-		// Upload the file
-		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
-		if err != nil {
-			return fmt.Errorf("error uploading Merkle tree to Web3.Storage: %w", err)
-		}
-		t.log.Printlnf("Uploaded Merkle tree with CID %s", cid)
+		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper.GetHeader(), cid, big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("error submitting rewards snapshot: %w", err)
 		}
@@ -233,34 +229,29 @@ func (t *SubmitRewardsTree_Stateless) printMessage(message string) {
 }
 
 // Checks to see if an existing rewards file is still valid
-func (t *SubmitRewardsTree_Stateless) isExistingFileValid(rewardsTreePath string, intervalsPassed uint64) bool {
+func (t *submitRewardsTree_Stateless) isExistingRewardsFileValid(rewardsTreePath string, intervalsPassed uint64) bool {
 	_, err := os.Stat(rewardsTreePath)
-	if !os.IsNotExist(err) {
-		// The file already exists, attempt to read it
-		fileBytes, err := os.ReadFile(rewardsTreePath)
-		if err != nil {
-			t.log.Printlnf("WARNING: failed to read %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
-			return false
-		}
-
-		proofWrapper, err := rprewards.DeserializeRewardsFile(fileBytes)
-		if err != nil {
-			t.log.Printlnf("WARNING: failed to deserialize %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
-			return false
-		}
-
-		// Compare the number of intervals in it with the current number of intervals
-		header := proofWrapper.GetHeader()
-		if header.IntervalsPassed != intervalsPassed {
-			t.log.Printlnf("Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n", header.Index, header.IntervalsPassed, intervalsPassed)
-			return false
-		}
-
-		// File's good and it has the same number of intervals passed, so use it
-		return true
+	if os.IsNotExist(err) {
+		return false
 	}
 
-	return false
+	// The file already exists, attempt to read it
+	localRewardsFile, err := rprewards.ReadLocalRewardsFile(rewardsTreePath)
+	if err != nil {
+		t.log.Printlnf("WARNING: failed to read %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
+		return false
+	}
+
+	// Compare the number of intervals in it with the current number of intervals
+	proofWrapper := localRewardsFile.Impl()
+	header := proofWrapper.GetHeader()
+	if header.IntervalsPassed != intervalsPassed {
+		t.log.Printlnf("Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n", header.Index, header.IntervalsPassed, intervalsPassed)
+		return false
+	}
+
+	// File's good and it has the same number of intervals passed, so use it
+	return true
 }
 
 // Kick off the tree generation goroutine
@@ -323,56 +314,52 @@ func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	// Serialize the minipool performance file
-	minipoolPerformanceBytes, err := rewardsFile.GetMinipoolPerformanceFile().Serialize()
-	if err != nil {
-		return fmt.Errorf("error serializing minipool performance file into JSON: %w", err)
-	}
+	localMinipoolPerformanceFile := rprewards.NewLocalFile[rprewards.IMinipoolPerformanceFile](
+		rewardsFile.GetMinipoolPerformanceFile(),
+		minipoolPerformancePath,
+	)
 
 	// Write it to disk
-	err = os.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
+	err = localMinipoolPerformanceFile.Write()
 	if err != nil {
 		return fmt.Errorf("error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
 	}
 
-	// Upload it if this is an Oracle DAO node
 	if nodeTrusted {
-		t.printMessage("Uploading minipool performance file to Web3.Storage...")
-		minipoolPerformanceCid, err := t.uploadFileToWeb3Storage(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
+		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("error uploading minipool performance file to Web3.Storage: %w", err)
+			return fmt.Errorf("Error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
 		}
-		t.printMessage(fmt.Sprintf("Uploaded minipool performance file with CID %s", minipoolPerformanceCid))
-		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid)
+		t.printMessage(fmt.Sprintf("Calculated minipool performance CID: %s", minipoolPerformanceCid))
+		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
 	} else {
 		t.printMessage("Saved minipool performance file.")
 		rewardsFile.SetMinipoolPerformanceFileCID("---")
 	}
 
 	// Serialize the rewards tree to JSON
-	wrapperBytes, err := rewardsFile.Serialize()
-	if err != nil {
-		return fmt.Errorf("error serializing proof wrapper into JSON: %w", err)
-	}
+	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
+		rewardsFile,
+		rewardsTreePath,
+	)
 	t.printMessage("Generation complete! Saving tree...")
 
 	// Write the rewards tree to disk
-	err = os.WriteFile(rewardsTreePath, wrapperBytes, 0644)
+	err = localRewardsFile.Write()
 	if err != nil {
 		return fmt.Errorf("error saving rewards tree file to %s: %w", rewardsTreePath, err)
 	}
 
-	// Only do the upload and submission process if this is an Oracle DAO node
 	if nodeTrusted {
-		// Upload the rewards tree file
-		t.printMessage("Uploading to Web3.Storage and submitting results to the contracts...")
-		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedRewardsTreePath, "compressed rewards tree")
+		// Save the compressed file and get the CID for it
+		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("error uploading Merkle tree to Web3.Storage: %w", err)
+			return fmt.Errorf("Error getting CID for file %s : %w", rewardsTreePath, err)
 		}
-		t.printMessage(fmt.Sprintf("Uploaded Merkle tree with CID %s", cid))
+		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid, big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("error submitting rewards snapshot: %w", err)
 		}
@@ -470,49 +457,6 @@ func (t *SubmitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 
 	// Return
 	return nil
-}
-
-// Compress and upload a file to Web3.Storage and get the CID for it
-func (t *SubmitRewardsTree_Stateless) uploadFileToWeb3Storage(wrapperBytes []byte, compressedPath string, description string) (string, error) {
-	// Get the API token
-	apiToken := t.cfg.Smartnode.Web3StorageApiToken.Value.(string)
-	if apiToken == "" {
-		return "", fmt.Errorf("***ERROR***\nYou have not configured your Web3.Storage API token yet, so you cannot submit Merkle rewards trees.\nPlease get an API token from https://web3.storage and enter it in the Smartnode section of the `service config` TUI (or use `--smartnode-web3StorageApiToken` if you configure your system headlessly).")
-	}
-
-	// Create the client
-	w3sClient, err := w3s.NewClient(w3s.WithToken(apiToken))
-	if err != nil {
-		return "", fmt.Errorf("error creating new Web3.Storage client: %w", err)
-	}
-
-	// Compress the file
-	encoder, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-	compressedBytes := encoder.EncodeAll(wrapperBytes, make([]byte, 0, len(wrapperBytes)))
-
-	// Create the compressed tree file
-	compressedFile, err := os.Create(compressedPath)
-	if err != nil {
-		return "", fmt.Errorf("error creating %s file [%s]: %w", description, compressedPath, err)
-	}
-	defer compressedFile.Close()
-
-	// Write the compressed data to the file
-	_, err = compressedFile.Write(compressedBytes)
-	if err != nil {
-		return "", fmt.Errorf("error writing %s to %s: %w", description, compressedPath, err)
-	}
-
-	// Rewind it to the start
-	compressedFile.Seek(0, 0)
-
-	// Upload it
-	cid, err := w3sClient.Put(context.Background(), compressedFile)
-	if err != nil {
-		return "", fmt.Errorf("error uploading %s: %w", description, err)
-	}
-
-	return cid.String(), nil
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time

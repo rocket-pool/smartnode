@@ -118,7 +118,7 @@ func (r *WalletRequester) SetPassword(password []byte, save bool) (*api.ApiRespo
 }
 
 // Get wallet status
-func (r *WalletRequester) Status(message []byte, address common.Address) (*api.ApiResponse[api.WalletStatusData], error) {
+func (r *WalletRequester) Status() (*api.ApiResponse[api.WalletStatusData], error) {
 	return sendGetRequest[api.WalletStatusData](r, "status", "Status", nil)
 }
 

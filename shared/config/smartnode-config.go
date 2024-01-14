@@ -84,11 +84,11 @@ type SmartnodeConfig struct {
 	// Mode for acquiring Merkle rewards trees
 	RewardsTreeMode config.Parameter `yaml:"rewardsTreeMode,omitempty"`
 
+	// Custom URL to download a rewards tree
+	RewardsTreeCustomUrl config.Parameter `yaml:"rewardsTreeCustomUrl,omitempty"`
+
 	// URL for an EC with archive mode, for manual rewards tree generation
 	ArchiveECUrl config.Parameter `yaml:"archiveEcUrl,omitempty"`
-
-	// Token for Oracle DAO members to use when uploading Merkle trees to Web3.Storage
-	Web3StorageApiToken config.Parameter `yaml:"web3StorageApiToken,omitempty"`
 
 	// Manual override for the watchtower's max fee
 	WatchtowerMaxFeeOverride config.Parameter `yaml:"watchtowerMaxFeeOverride,omitempty"`
@@ -193,11 +193,20 @@ type SmartnodeConfig struct {
 	// The RocketArbitumPriceMessenger Arbitrum address for each network
 	arbitrumPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
+	// The RocketArbitumPriceMessengerV2 Arbitrum address for each network
+	arbitrumPriceMessengerAddressV2 map[config.Network]string `yaml:"-"`
+
 	// The RocketZkSyncPriceMessenger zkSyncEra address for each network
 	zkSyncEraPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
 	// The RocketBasePriceMessenger Base address for each network
 	basePriceMessengerAddress map[config.Network]string `yaml:"-"`
+
+	// The RocketScrollPriceMessenger Scroll address for each network
+	scrollPriceMessengerAddress map[config.Network]string `yaml:"-"`
+
+	// The Scroll L2 message fee estimator address for each network
+	scrollFeeEstimatorAddress map[config.Network]string `yaml:"-"`
 
 	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
 	rplTwapPoolAddress map[config.Network]string `yaml:"-"`
@@ -220,76 +229,70 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		parent: cfg,
 
 		ProjectName: config.Parameter{
-			ID:                   ProjectNameID,
-			Name:                 "Project Name",
-			Description:          "This is the prefix that will be attached to all of the Docker containers managed by the Smartnode.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: defaultProjectName},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter},
-			EnvironmentVariables: []string{"COMPOSE_PROJECT_NAME"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 ProjectNameID,
+			Name:               "Project Name",
+			Description:        "This is the prefix that will be attached to all of the Docker containers managed by the Smartnode.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultProjectName},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		DataPath: config.Parameter{
-			ID:                   "dataPath",
-			Name:                 "Data Path",
-			Description:          "The absolute path of the `data` folder that contains your node wallet's encrypted file, the password for your node wallet, and all of the validator keys for your minipools. You may use environment variables in this string.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: getDefaultDataDir(cfg)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Validator},
-			EnvironmentVariables: []string{"ROCKETPOOL_DATA_FOLDER"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "dataPath",
+			Name:               "Data Path",
+			Description:        "The absolute path of the `data` folder that contains your node wallet's encrypted file, the password for your node wallet, and all of the validator keys for your minipools. You may use environment variables in this string.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: getDefaultDataDir(cfg)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		WatchtowerStatePath: config.Parameter{
-			ID:                   "watchtowerPath",
-			Name:                 "Watchtower Path",
-			Description:          "The absolute path of the watchtower state folder that contains persistent state that is used by the watchtower process on trusted nodes. **Only relevant for trusted nodes.**",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: "$HOME/.rocketpool/watchtower"},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{"ROCKETPOOL_WATCHTOWER_FOLDER"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "watchtowerPath",
+			Name:               "Watchtower Path",
+			Description:        "The absolute path of the watchtower state folder that contains persistent state that is used by the watchtower process on trusted nodes. **Only relevant for trusted nodes.**",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: "$HOME/.rocketpool/watchtower"},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		Network: config.Parameter{
-			ID:                   NetworkID,
-			Name:                 "Network",
-			Description:          "The Ethereum network you want to use - select Prater Testnet or Holesky Testnet to practice with fake ETH, or Mainnet to stake on the real network using real ETH.",
-			Type:                 config.ParameterType_Choice,
-			Default:              map[config.Network]interface{}{config.Network_All: config.Network_Mainnet},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator},
-			EnvironmentVariables: []string{"NETWORK"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-			Options:              getNetworkOptions(),
+			ID:                 NetworkID,
+			Name:               "Network",
+			Description:        "The Ethereum network you want to use - select Prater Testnet or Holesky Testnet to practice with fake ETH, or Mainnet to stake on the real network using real ETH.",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: config.Network_Mainnet},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+			Options:            getNetworkOptions(),
 		},
 
 		ManualMaxFee: config.Parameter{
-			ID:                   "manualMaxFee",
-			Name:                 "Manual Max Fee",
-			Description:          "Set this if you want all of the Smartnode's transactions to use this specific max fee value (in gwei), which is the most you'd be willing to pay (*including the priority fee*).\n\nA value of 0 will show you the current suggested max fee based on the current network conditions and let you specify it each time you do a transaction.\n\nAny other value will ignore the recommended max fee and explicitly use this value instead.\n\nThis applies to automated transactions (such as claiming RPL and staking minipools) as well.",
-			Type:                 config.ParameterType_Float,
-			Default:              map[config.Network]interface{}{config.Network_All: float64(0)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "manualMaxFee",
+			Name:               "Manual Max Fee",
+			Description:        "Set this if you want all of the Smartnode's transactions to use this specific max fee value (in gwei), which is the most you'd be willing to pay (*including the priority fee*).\n\nA value of 0 will show you the current suggested max fee based on the current network conditions and let you specify it each time you do a transaction.\n\nAny other value will ignore the recommended max fee and explicitly use this value instead.\n\nThis applies to automated transactions (such as claiming RPL and staking minipools) as well.",
+			Type:               config.ParameterType_Float,
+			Default:            map[config.Network]interface{}{config.Network_All: float64(0)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		PriorityFee: config.Parameter{
-			ID:                   "priorityFee",
-			Name:                 "Priority Fee",
-			Description:          "The default value for the priority fee (in gwei) for all of your transactions. This describes how much you're willing to pay *above the network's current base fee* - the higher this is, the more ETH you give to the validators for including your transaction, which generally means it will be included in a block faster (as long as your max fee is sufficiently high to cover the current network conditions).\n\nMust be larger than 0.",
-			Type:                 config.ParameterType_Float,
-			Default:              map[config.Network]interface{}{config.Network_All: float64(2)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "priorityFee",
+			Name:               "Priority Fee",
+			Description:        "The default value for the priority fee (in gwei) for all of your transactions. This describes how much you're willing to pay *above the network's current base fee* - the higher this is, the more ETH you give to the validators for including your transaction, which generally means it will be included in a block faster (as long as your max fee is sufficiently high to cover the current network conditions).\n\nMust be larger than 0.",
+			Type:               config.ParameterType_Float,
+			Default:            map[config.Network]interface{}{config.Network_All: float64(2)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		AutoTxGasThreshold: config.Parameter{
@@ -298,48 +301,44 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Description: "Occasionally, the Smartnode will attempt to perform some automatic transactions (such as the second `stake` transaction to finish launching a minipool or the `reduce bond` transaction to convert a 16-ETH minipool to an 8-ETH one). During these, your node will use the `Rapid` suggestion from the gas estimator as its max fee.\n\nThis threshold is a limit (in gwei) you can put on that suggestion; your node will not `stake` the new minipool until the suggestion is below this limit.\n\n" +
 				"A value of 0 will disable non-essential automatic transactions (such as minipool balance distribution and bond reduction), but essential transactions (such as minipool staking and solo migration promotion) will not be disabled.\n\n" +
 				"NOTE: the node will ignore this limit and automatically execute transactions at whatever the suggested fee happens to be once too much time has passed since those transactions were first eligible. You may end up paying more than you wanted to if you set this too low!",
-			Type:                 config.ParameterType_Float,
-			Default:              map[config.Network]interface{}{config.Network_All: float64(150)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			Type:               config.ParameterType_Float,
+			Default:            map[config.Network]interface{}{config.Network_All: float64(150)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		DistributeThreshold: config.Parameter{
-			ID:                   "distributeThreshold",
-			Name:                 "Auto-Distribute Threshold",
-			Description:          "The Smartnode will regularly check the balance of each of your minipools on the Execution Layer (**not** the Beacon Chain).\nIf any of them have a balance greater than this threshold (in ETH), the Smartnode will automatically distribute the balance. This will send your share of the balance to your withdrawal address.\n\nMust be less than 8 ETH.\n\nSet this to 0 to disable automatic distributes.\n[orange]WARNING: if you disable automatic distribution, you **must** ensure you distribute your minipool's balance before it reaches 8 ETH or you will no longer be able to distribute your rewards until you exit the minipool!",
-			Type:                 config.ParameterType_Float,
-			Default:              map[config.Network]interface{}{config.Network_All: float64(1)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "distributeThreshold",
+			Name:               "Auto-Distribute Threshold",
+			Description:        "The Smartnode will regularly check the balance of each of your minipools on the Execution Layer (**not** the Beacon Chain).\nIf any of them have a balance greater than this threshold (in ETH), the Smartnode will automatically distribute the balance. This will send your share of the balance to your withdrawal address.\n\nMust be less than 8 ETH.\n\nSet this to 0 to disable automatic distributes.\n[orange]WARNING: if you disable automatic distribution, you **must** ensure you distribute your minipool's balance before it reaches 8 ETH or you will no longer be able to distribute your rewards until you exit the minipool!",
+			Type:               config.ParameterType_Float,
+			Default:            map[config.Network]interface{}{config.Network_All: float64(1)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		VerifyProposals: config.Parameter{
-			ID:                   "verifyProposals",
-			Name:                 "Enable PDAO Proposal Checker",
-			Description:          "Check this box to opt into the responsibility for verifying Protocol DAO proposals once the Houston upgrade has been activated. Your node will regularly check for new proposals, verify their correctness, and submit challenges to any that do not match the on-chain data (e.g., if someone tampered with voting power and attempted to cheat).\n\nTo learn more about the PDAO proposal checking duty, including requirements and RPL bonding, please see the documentation at <placeholder>.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "verifyProposals",
+			Name:               "Enable PDAO Proposal Checker",
+			Description:        "Check this box to opt into the responsibility for verifying Protocol DAO proposals once the Houston upgrade has been activated. Your node will regularly check for new proposals, verify their correctness, and submit challenges to any that do not match the on-chain data (e.g., if someone tampered with voting power and attempted to cheat).\n\nTo learn more about the PDAO proposal checking duty, including requirements and RPL bonding, please see the documentation at <placeholder>.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		RewardsTreeMode: config.Parameter{
-			ID:                   "rewardsTreeMode",
-			Name:                 "Rewards Tree Mode",
-			Description:          "Select how you want to acquire the Merkle Tree files for each rewards interval.",
-			Type:                 config.ParameterType_Choice,
-			Default:              map[config.Network]interface{}{config.Network_All: config.RewardsMode_Download},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "rewardsTreeMode",
+			Name:               "Rewards Tree Mode",
+			Description:        "Select how you want to acquire the Merkle Tree files for each rewards interval.",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: config.RewardsMode_Download},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
 				Name:        "Download",
 				Description: "Automatically download the Merkle Tree rewards files that were published by the Oracle DAO after a rewards checkpoint.",
@@ -351,100 +350,92 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			}},
 		},
 
-		ArchiveECUrl: config.Parameter{
-			ID:                   "archiveECUrl",
-			Name:                 "Archive-Mode EC URL",
-			Description:          "[orange]**For manual Merkle rewards tree generation only.**[white]\n\nGenerating the Merkle rewards tree files for past rewards intervals typically requires an Execution client with Archive mode enabled, which is usually disabled on your primary and fallback Execution clients to save disk space.\nIf you want to generate your own rewards tree files for intervals from a long time ago, you may enter the URL of an Execution client with Archive access here.\n\nFor a free light client with Archive access, you may use https://www.alchemy.com/supernode.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+		RewardsTreeCustomUrl: config.Parameter{
+			ID:                 "rewardsTreeCustomUrl",
+			Name:               "Rewards Tree Custom Download URLs",
+			Description:        "The Smartnode will automatically download missing rewards tree files from trusted sources like IPFS and Rocket Pool's repository on GitHub. Use this field if you would like to manually specify additional sources that host the rewards tree files, so the Smartnode can download from them as well.\nMultiple URLs can be provided using ';' as separator).\n\nUse '%s' to specify the location of the rewards file name in the URL - for example: `https://my-cool-domain.com/rewards-trees/mainnet/%s`.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 
-		Web3StorageApiToken: config.Parameter{
-			ID:                   "web3StorageApiToken",
-			Name:                 "Web3.Storage API Token",
-			Description:          "[orange]**For Oracle DAO members only.**\n\n[white]The API token for your https://web3.storage/ account. This is required in order for you to upload Merkle rewards trees to Web3.Storage at each rewards interval.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+		ArchiveECUrl: config.Parameter{
+			ID:                 "archiveECUrl",
+			Name:               "Archive-Mode EC URL",
+			Description:        "[orange]**For manual Merkle rewards tree generation only.**[white]\n\nGenerating the Merkle rewards tree files for past rewards intervals typically requires an Execution client with Archive mode enabled, which is usually disabled on your primary and fallback Execution clients to save disk space.\nIf you want to generate your own rewards tree files for intervals from a long time ago, you may enter the URL of an Execution client with Archive access here.\n\nFor a free light client with Archive access, you may use https://www.alchemy.com/supernode.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
 		},
 
 		WatchtowerMaxFeeOverride: config.Parameter{
-			ID:                   "watchtowerMaxFeeOverride",
-			Name:                 "Watchtower Max Fee Override",
-			Description:          fmt.Sprintf("[orange]**For Oracle DAO members only.**\n\n[white]Use this to override the max fee (in gwei) for watchtower transactions. Note that if you set it below %d, the setting will be ignored; it can only be used to set the max fee higher than %d during times of extreme network stress.", WatchtowerMaxFeeDefault, WatchtowerMaxFeeDefault),
-			Type:                 config.ParameterType_Float,
-			Default:              map[config.Network]interface{}{config.Network_All: float64(WatchtowerMaxFeeDefault)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			ID:                 "watchtowerMaxFeeOverride",
+			Name:               "Watchtower Max Fee Override",
+			Description:        fmt.Sprintf("[orange]**For Oracle DAO members only.**\n\n[white]Use this to override the max fee (in gwei) for watchtower transactions. Note that if you set it below %d, the setting will be ignored; it can only be used to set the max fee higher than %d during times of extreme network stress.", WatchtowerMaxFeeDefault, WatchtowerMaxFeeDefault),
+			Type:               config.ParameterType_Float,
+			Default:            map[config.Network]interface{}{config.Network_All: float64(WatchtowerMaxFeeDefault)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		WatchtowerPrioFeeOverride: config.Parameter{
-			ID:                   "watchtowerPrioFeeOverride",
-			Name:                 "Watchtower Priority Fee Override",
-			Description:          fmt.Sprintf("[orange]**For Oracle DAO members only.**\n\n[white]Use this to override the priority fee (in gwei) for watchtower transactions. Note that if you set it below %d, the setting will be ignored; it can only be used to set the priority fee higher than %d during times of extreme network stress.", WatchtowerPrioFeeDefault, WatchtowerPrioFeeDefault),
-			Type:                 config.ParameterType_Float,
-			Default:              map[config.Network]interface{}{config.Network_All: float64(WatchtowerPrioFeeDefault)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true,
+			ID:                 "watchtowerPrioFeeOverride",
+			Name:               "Watchtower Priority Fee Override",
+			Description:        fmt.Sprintf("[orange]**For Oracle DAO members only.**\n\n[white]Use this to override the priority fee (in gwei) for watchtower transactions. Note that if you set it below %d, the setting will be ignored; it can only be used to set the priority fee higher than %d during times of extreme network stress.", WatchtowerPrioFeeDefault, WatchtowerPrioFeeDefault),
+			Type:               config.ParameterType_Float,
+			Default:            map[config.Network]interface{}{config.Network_All: float64(WatchtowerPrioFeeDefault)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		UseRollingRecords: config.Parameter{
-			ID:                   "useRollingRecords",
-			Name:                 "Use Rolling Records",
-			Description:          "[orange]**WARNING: EXPERIMENTAL**\n\n[white]Enable this to use the new rolling records feature, which stores attestation records for the entire Rocket Pool network in real time instead of collecting them all after a rewards period during tree generation.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
-			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "useRollingRecords",
+			Name:               "Use Rolling Records",
+			Description:        "[orange]**WARNING: EXPERIMENTAL**\n\n[white]Enable this to use the new rolling records feature, which stores attestation records for the entire Rocket Pool network in real time instead of collecting them all after a rewards period during tree generation.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		RecordCheckpointInterval: config.Parameter{
-			ID:                   "recordCheckpointInterval",
-			Name:                 "Record Checkpoint Interval",
-			Description:          "The number of epochs that should pass before saving a new rolling record checkpoint. Used if Rolling Records is enabled.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
-			Type:                 config.ParameterType_Uint,
-			Default:              map[config.Network]interface{}{config.Network_All: uint64(45)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "recordCheckpointInterval",
+			Name:               "Record Checkpoint Interval",
+			Description:        "The number of epochs that should pass before saving a new rolling record checkpoint. Used if Rolling Records is enabled.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
+			Type:               config.ParameterType_Uint,
+			Default:            map[config.Network]interface{}{config.Network_All: uint64(45)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		CheckpointRetentionLimit: config.Parameter{
-			ID:                   "checkpointRetentionLimit",
-			Name:                 "Checkpoint Retention Limit",
-			Description:          "The number of checkpoint files to save on-disk before pruning old ones. Used if Rolling Records is enabled.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
-			Type:                 config.ParameterType_Uint,
-			Default:              map[config.Network]interface{}{config.Network_All: uint64(200)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "checkpointRetentionLimit",
+			Name:               "Checkpoint Retention Limit",
+			Description:        "The number of checkpoint files to save on-disk before pruning old ones. Used if Rolling Records is enabled.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
+			Type:               config.ParameterType_Uint,
+			Default:            map[config.Network]interface{}{config.Network_All: uint64(200)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		RecordsPath: config.Parameter{
-			ID:                   "recordsPath",
-			Name:                 "Records Path",
-			Description:          "The path of the folder to store rolling record checkpoints in during a rewards interval. Used if Rolling Records is enabled.\n\nOnly useful if you're an Oracle DAO member, or if you generate your own rewards trees.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: getDefaultRecordsDir(cfg)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			ID:                 "recordsPath",
+			Name:               "Records Path",
+			Description:        "The path of the folder to store rolling record checkpoints in during a rewards interval. Used if Rolling Records is enabled.\n\nOnly useful if you're an Oracle DAO member, or if you generate your own rewards trees.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: getDefaultRecordsDir(cfg)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		txWatchUrl: map[config.Network]string{
@@ -635,6 +626,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Holesky: "",
 		},
 
+		arbitrumPriceMessengerAddressV2: map[config.Network]string{
+			config.Network_Mainnet: "0x312FcFB03eC9B1Ea38CB7BFCd26ee7bC3b505aB1",
+			config.Network_Prater:  "",
+			config.Network_Devnet:  "",
+			config.Network_Holesky: "",
+		},
+
 		zkSyncEraPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8",
 			config.Network_Prater:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
@@ -644,6 +642,20 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		basePriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x64A5856869C06B0188C84A5F83d712bbAc03517d",
+			config.Network_Prater:  "",
+			config.Network_Devnet:  "",
+			config.Network_Holesky: "",
+		},
+
+		scrollPriceMessengerAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x0f22dc9b9c03757d4676539203d7549c8f22c15c",
+			config.Network_Prater:  "",
+			config.Network_Devnet:  "",
+			config.Network_Holesky: "",
+		},
+
+		scrollFeeEstimatorAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x0d7E906BD9cAFa154b048cFa766Cc1E54E39AF9B",
 			config.Network_Prater:  "",
 			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
@@ -692,8 +704,8 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.DistributeThreshold,
 		&cfg.VerifyProposals,
 		&cfg.RewardsTreeMode,
+		&cfg.RewardsTreeCustomUrl,
 		&cfg.ArchiveECUrl,
-		&cfg.Web3StorageApiToken,
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPrioFeeOverride,
 		&cfg.UseRollingRecords,
@@ -985,12 +997,24 @@ func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
 	return cfg.arbitrumPriceMessengerAddress[cfg.Network.Value.(config.Network)]
 }
 
+func (cfg *SmartnodeConfig) GetArbitrumMessengerAddressV2() string {
+	return cfg.arbitrumPriceMessengerAddressV2[cfg.Network.Value.(config.Network)]
+}
+
 func (cfg *SmartnodeConfig) GetZkSyncEraMessengerAddress() string {
 	return cfg.zkSyncEraPriceMessengerAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetBaseMessengerAddress() string {
 	return cfg.basePriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetScrollMessengerAddress() string {
+	return cfg.scrollPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetScrollFeeEstimatorAddress() string {
+	return cfg.scrollFeeEstimatorAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetRplTwapPoolAddress() string {

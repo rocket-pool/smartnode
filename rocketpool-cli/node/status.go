@@ -2,6 +2,7 @@ package node
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -10,8 +11,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -24,22 +27,49 @@ func getStatus(c *cli.Context) error {
 	// Get RP client
 	rp := client.NewClientFromCtx(c)
 
-	// Print what network we're on
-	err := cliutils.PrintNetwork(rp)
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
+	// Get wallet status
+	walletStatus, err := rp.Api.Wallet.Status()
 	if err != nil {
 		return err
+	}
+
+	// Rescue Node Plugin - ensure that we print the rescue node stuff even
+	// when the eth1 node is syncing by deferring it here.
+	//
+	// Since we collected all the data we need for this message, we can safely
+	// defer it and let it execute even if we fail further down, eg because
+	// the EC is still syncing.
+	if walletStatus.Data.WalletStatus == sharedtypes.WalletStatus_Ready || walletStatus.Data.WalletStatus == sharedtypes.WalletStatus_KeystoreMismatch {
+		defer func() {
+			if cfg.RescueNode.GetEnabledParameter().Value.(bool) {
+				fmt.Println()
+
+				cfg.RescueNode.(*rescue_node.RescueNode).PrintStatusText(walletStatus.Data.AccountAddress)
+			}
+		}()
+	}
+
+	// Print what network we're on
+	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
+	if err != nil {
+		return err
+	}
+
+	// rp.NodeStatus() will fail with an error, but we can short-circuit it here.
+	if walletStatus.Data.WalletStatus != sharedtypes.WalletStatus_Ready && walletStatus.Data.WalletStatus != sharedtypes.WalletStatus_KeystoreMismatch {
+		return errors.New("The node wallet is not initialized.")
 	}
 
 	// Get node status
 	status, err := rp.Api.Node.Status()
 	if err != nil {
 		return err
-	}
-
-	// Get the config
-	cfg, _, err := rp.LoadConfig()
-	if err != nil {
-		return fmt.Errorf("Error loading configuration: %w", err)
 	}
 
 	// Account address & balances
@@ -179,6 +209,9 @@ func getStatus(c *cli.Context) error {
 		}
 		if status.Data.IsRplLockingAllowed {
 			fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
+			if status.Data.RplLocked.Cmp(big.NewInt(0)) != 0 {
+				fmt.Printf("There is currently %.6f RPL locked.\n", math.RoundDown(eth.WeiToEth(status.Data.RplLocked), 6))
+			}
 		} else {
 			fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
 		}
@@ -245,18 +278,12 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf(
 				"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.Data.MinimumRplStake), 6))
 			fmt.Printf(
-				"It can earn rewards on up to %.6f RPL (150%% of bonded ETH).\n", math.RoundDown(eth.WeiToEth(status.Data.MaximumRplStake), 6))
+				"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of %.6f RPL (150%% of bonded ETH). Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n", math.RoundDown(eth.WeiToEth(status.Data.MaximumRplStake), 6))
 			if rplTooLow {
 				fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", terminal.ColorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.Data.MinimumRplStake, status.Data.RplStake)), 6), terminal.ColorReset)
 			}
 		}
 		fmt.Println()
-
-		if status.Data.PendingEffectiveRplStake.Cmp(status.Data.EffectiveRplStake) != 0 {
-			fmt.Printf("Of this stake, %.6f RPL is eligible for RPL staking rewards.\n", math.RoundDown(eth.WeiToEth(status.Data.PendingEffectiveRplStake), 6))
-			fmt.Println("Eligibility is determined by the number of minipools you have in the *active* state on the Beacon Chain:\n- Validators in the Beacon Chain queue that have not been activated yet are not eligible.\n- Validators that have been exited are not eligible.")
-			fmt.Println()
-		}
 
 		remainingAmount := big.NewInt(0).Sub(status.Data.EthMatchedLimit, status.Data.EthMatched)
 		remainingAmount.Sub(remainingAmount, status.Data.PendingMatchAmount)

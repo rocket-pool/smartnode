@@ -21,7 +21,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/wealdtech/go-ens/v3"
+	ens "github.com/wealdtech/go-ens/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool/common/collateral"
@@ -166,6 +166,7 @@ func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 		c.node.UsableCreditAndDonatedBalance,
 		c.node.DonatedEthBalance,
 		c.node.IsRplLockingAllowed,
+		c.node.RplLocked,
 
 		// Other
 		c.odaoMember.Exists,
@@ -222,6 +223,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	data.EthOnBehalfBalance = c.node.DonatedEthBalance.Get()
 	data.IsFeeDistributorInitialized = c.node.IsFeeDistributorInitialized.Get()
 	data.IsRplLockingAllowed = c.node.IsRplLockingAllowed.Get()
+	data.RplLocked = c.node.RplLocked.Get()
 
 	// Minipool info
 	mps, err := c.getMinipoolInfo(data)

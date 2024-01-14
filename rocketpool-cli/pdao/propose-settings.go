@@ -209,9 +209,14 @@ func proposeSettingNodeMaximumPerMinipoolStake(c *cli.Context, value *big.Int) e
 	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.MaximumPerMinipoolStakeSettingPath, trueValue)
 }
 
-func proposeSettingProposalsVoteTime(c *cli.Context, value time.Duration) error {
+func proposeSettingProposalsVotePhase1Time(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.VoteTimeSettingPath, trueValue)
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.VotePhase1TimeSettingPath, trueValue)
+}
+
+func proposeSettingProposalsVotePhase2Time(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.VotePhase2TimeSettingPath, trueValue)
 }
 
 func proposeSettingProposalsVoteDelayTime(c *cli.Context, value time.Duration) error {

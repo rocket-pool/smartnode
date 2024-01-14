@@ -90,7 +90,6 @@ func (c *Client) WithReady() (*Client, error) {
 
 // Check the status of the Execution and Consensus client(s) and provision the API with them
 func (c *Client) checkClientStatus() (bool, error) {
-
 	// Check if the primary clients are up, synced, and able to respond to requests - if not, forces the use of the fallbacks for this command
 	response, err := c.Api.Service.ClientStatus()
 	if err != nil {

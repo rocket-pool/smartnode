@@ -11,15 +11,17 @@ const addonPageID string = "addons"
 
 // The addons page
 type AddonsPage struct {
-	home          *settingsHome
-	page          *page
-	layout        *standardLayout
-	masterConfig  *config.RocketPoolConfig
-	gwwPage       *AddonGwwPage
-	gwwButton     *parameterizedFormItem
-	categoryList  *tview.List
-	addonSubpages []settingsPage
-	content       tview.Primitive
+	home             *settingsHome
+	page             *page
+	layout           *standardLayout
+	masterConfig     *config.RocketPoolConfig
+	gwwPage          *AddonGwwPage
+	gwwButton        *parameterizedFormItem
+	rescueNodePage   *AddonRescueNodePage
+	rescueNodeButton *parameterizedFormItem
+	categoryList     *tview.List
+	addonSubpages    []settingsPage
+	content          tview.Primitive
 }
 
 // Create a new addons page
@@ -39,8 +41,10 @@ func NewAddonsPage(home *settingsHome) *AddonsPage {
 
 	// Create the addon subpages
 	addonsPage.gwwPage = NewAddonGwwPage(addonsPage, home.md.Config.GraffitiWallWriter)
+	addonsPage.rescueNodePage = NewAddonRescueNodePage(addonsPage, home.md.Config.RescueNode)
 	addonSubpages := []settingsPage{
 		addonsPage.gwwPage,
+		addonsPage.rescueNodePage,
 	}
 	addonsPage.addonSubpages = addonSubpages
 

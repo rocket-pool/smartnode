@@ -2,17 +2,16 @@ package client
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
-	"github.com/a8m/envsubst"
-	"github.com/alessio/shellescape"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client/template"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Load the config
+// Returns the RocketPoolConfig and whether or not it was newly generated
 func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	settingsFilePath := filepath.Join(c.configPath, SettingsFile)
 	expandedPath, err := homedir.Expand(settingsFilePath)
@@ -25,12 +24,13 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 		return nil, false, err
 	}
 
-	isNew := false
-	if cfg == nil {
-		cfg = config.NewRocketPoolConfig(c.configPath, c.daemonPath != "")
-		isNew = true
+	if cfg != nil {
+		// A config was loaded, return it now
+		return cfg, false, nil
 	}
-	return cfg, isNew, nil
+
+	// Config wasn't loaded, but there was no error- we should create one.
+	return config.NewRocketPoolConfig(c.configPath, c.daemonPath != ""), true, nil
 }
 
 // Load the backup config
@@ -46,12 +46,11 @@ func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
 
 // Save the config
 func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
-	settingsFilePath := filepath.Join(c.configPath, SettingsFile)
-	expandedPath, err := homedir.Expand(settingsFilePath)
+	settingsFileDirectoryPath, err := homedir.Expand(c.configPath)
 	if err != nil {
 		return err
 	}
-	return rp.SaveConfig(cfg, expandedPath)
+	return rp.SaveConfig(cfg, settingsFileDirectoryPath, SettingsFile)
 }
 
 // Remove the upgrade flag file
@@ -72,8 +71,8 @@ func (c *Client) IsFirstRun() (bool, error) {
 	return rp.IsFirstRun(expandedPath), nil
 }
 
-// Load the Prometheus template, do an environment variable substitution, and save it
-func (c *Client) UpdatePrometheusConfiguration(settings map[string]string) error {
+// Load the Prometheus template, do a template variable substitution, and save it
+func (c *Client) UpdatePrometheusConfiguration(config *config.RocketPoolConfig) error {
 	prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusConfigTemplate))
 	if err != nil {
 		return fmt.Errorf("Error expanding Prometheus template path: %w", err)
@@ -84,33 +83,10 @@ func (c *Client) UpdatePrometheusConfiguration(settings map[string]string) error
 		return fmt.Errorf("Error expanding Prometheus config file path: %w", err)
 	}
 
-	// Set the environment variables defined in the user settings for metrics
-	oldValues := map[string]string{}
-	for varName, varValue := range settings {
-		oldValues[varName] = os.Getenv(varName)
-		os.Setenv(varName, varValue)
+	t := template.Template{
+		Src: prometheusTemplatePath,
+		Dst: prometheusConfigPath,
 	}
 
-	// Read and substitute the template
-	contents, err := envsubst.ReadFile(prometheusTemplatePath)
-	if err != nil {
-		return fmt.Errorf("Error reading and substituting Prometheus configuration template: %w", err)
-	}
-
-	// Unset the env vars
-	for name, value := range oldValues {
-		os.Setenv(name, value)
-	}
-
-	// Write the actual Prometheus config file
-	err = os.WriteFile(prometheusConfigPath, contents, 0664)
-	if err != nil {
-		return fmt.Errorf("Could not write Prometheus config file to %s: %w", shellescape.Quote(prometheusConfigPath), err)
-	}
-	err = os.Chmod(prometheusConfigPath, 0664)
-	if err != nil {
-		return fmt.Errorf("Could not set Prometheus config file permissions: %w", shellescape.Quote(prometheusConfigPath), err)
-	}
-
-	return nil
+	return t.Write(config)
 }

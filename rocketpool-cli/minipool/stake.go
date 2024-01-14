@@ -70,7 +70,11 @@ func stakeMinipools(c *cli.Context) error {
 		txs[i] = txInfo
 	}
 
-	fmt.Println("\nNOTE: Your validator container will be restarted after this process so it loads the new validator key.\n")
+	fmt.Println()
+	fmt.Println("NOTE: Your Validator Client must be restarted after this process so it loads the new validator key.")
+	fmt.Println("Since you are manually staking the minipool, this must be done manually.")
+	fmt.Println("When you have finished staking all your minipools, please restart your validator.")
+	fmt.Println()
 
 	// Run the TXs
 	err = tx.HandleTxBatch(c, rp, txs,

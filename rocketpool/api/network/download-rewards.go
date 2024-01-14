@@ -66,7 +66,7 @@ func (c *networkDownloadRewardsContext) PrepareData(data *api.SuccessData, opts 
 	}
 
 	// Download the rewards file
-	err = rewards.DownloadRewardsFile(cfg, c.interval, intervalInfo.CID, true)
+	err = rewards.DownloadRewardsFile(cfg, &intervalInfo, true)
 	if err != nil {
 		return fmt.Errorf("error downloading interval %d rewards file: %w", c.interval, err)
 	}
