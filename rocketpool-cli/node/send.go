@@ -6,22 +6,21 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS string) error {
-
+func nodeSend(c *cli.Context, amount float64, token string, toAddressOrEns string) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get amount in wei
 	amountWei := eth.EthToWei(amount)
@@ -29,31 +28,32 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 	// Get the recipient
 	var toAddress common.Address
 	var toAddressString string
-	if strings.Contains(toAddressOrENS, ".") {
-		response, err := rp.ResolveEnsName(toAddressOrENS)
+	if strings.Contains(toAddressOrEns, ".") {
+		response, err := rp.Api.Node.ResolveEns(common.Address{}, toAddressOrEns)
 		if err != nil {
 			return err
 		}
-		toAddress = response.Address
-		toAddressString = fmt.Sprintf("%s (%s)", toAddressOrENS, toAddress.Hex())
+		toAddress = response.Data.Address
+		toAddressString = fmt.Sprintf("%s (%s)", toAddressOrEns, toAddress.Hex())
 	} else {
-		toAddress, err = cliutils.ValidateAddress("to address", toAddressOrENS)
+		toAddress, err = input.ValidateAddress("to address", toAddressOrEns)
 		if err != nil {
 			return err
 		}
 		toAddressString = toAddress.Hex()
 	}
 
-	// Check tokens can be sent
-	canSend, err := rp.CanNodeSend(amountWei, token, toAddress)
+	// Build the TX
+	response, err := rp.Api.Node.Send(amountWei, token, toAddress)
 	if err != nil {
 		return err
 	}
-	tokenString := fmt.Sprintf("%s (%s)", canSend.TokenSymbol, token)
+	tokenString := fmt.Sprintf("%s (%s)", response.Data.TokenSymbol, token)
 
-	if !canSend.CanSend {
+	// Verify
+	if !response.Data.CanSend {
 		fmt.Println("Cannot send tokens:")
-		if canSend.InsufficientBalance {
+		if response.Data.InsufficientBalance {
 			if strings.HasPrefix(token, "0x") {
 				fmt.Printf("The node's balance of %s is insufficient.\n", tokenString)
 			} else {
@@ -63,54 +63,38 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 		return nil
 	}
 
-	// Prompt for confirmation
+	// Print details and create confirm message
+	var confirmMsg string
+	var submitMsg string
+	var successMsg string
 	if strings.HasPrefix(token, "0x") {
 		fmt.Printf("Token address:   %s\n", token)
-		fmt.Printf("Token name:      %s\n", canSend.TokenName)
-		fmt.Printf("Token symbol:    %s\n", canSend.TokenSymbol)
-		fmt.Printf("Node balance:    %.6f %s\n\n", eth.WeiToEth(canSend.Balance), canSend.TokenSymbol)
-		fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", colorYellow, colorReset)
+		fmt.Printf("Token name:      %s\n", response.Data.TokenName)
+		fmt.Printf("Token symbol:    %s\n", response.Data.TokenSymbol)
+		fmt.Printf("Node balance:    %.6f %s\n\n", eth.WeiToEth(response.Data.Balance), response.Data.TokenSymbol)
+		fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f of %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString))) {
-			fmt.Println("Cancelled.")
-			return nil
-		}
+		confirmMsg = fmt.Sprintf("Are you sure you want to send %.6f of %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString)
+		submitMsg = fmt.Sprintf("Sending %s to %s...\n", tokenString, toAddressString)
+		successMsg = fmt.Sprintf("Successfully sent %.6f of %s to %s.", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString)
 	} else {
-		fmt.Printf("Node balance:    %.6f %s\n\n", eth.WeiToEth(canSend.Balance), token)
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString))) {
-			fmt.Println("Cancelled.")
-			return nil
-		}
+		fmt.Printf("Node balance:    %.6f %s\n\n", eth.WeiToEth(response.Data.Balance), token)
+		confirmMsg = fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString)
+		submitMsg = fmt.Sprintf("Sending %s to %s...\n", token, toAddressString)
+		successMsg = fmt.Sprintf("Successfully sent %.6f %s to %s.", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString)
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, c.Bool("yes"))
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		confirmMsg,
+		"sending tokens",
+		submitMsg,
+	)
 	if err != nil {
-		return err
-	}
-
-	// Send tokens
-	response, err := rp.NodeSend(amountWei, token, toAddress)
-	if err != nil {
-		return err
-	}
-
-	if strings.HasPrefix(token, "0x") {
-		fmt.Printf("Sending %s to %s...\n", tokenString, toAddressString)
-	} else {
-		fmt.Printf("Sending %s to %s...\n", token, toAddressString)
-	}
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	if strings.HasPrefix(token, "0x") {
-		fmt.Printf("Successfully sent %.6f of %s to %s.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString)
-	} else {
-		fmt.Printf("Successfully sent %.6f %s to %s.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString)
-	}
+	fmt.Println(successMsg)
 	return nil
-
 }

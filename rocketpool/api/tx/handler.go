@@ -19,8 +19,6 @@ func NewTxHandler(serviceProvider *services.ServiceProvider) *TxHandler {
 	h.factories = []server.IContextFactory{
 		&txBatchSignTxsContextFactory{h},
 		&txBatchSubmitTxsContextFactory{h},
-		&txSendMessageContextFactory{h},
-		&txSignMessageContextFactory{h},
 		&txSignTxContextFactory{h},
 		&txSubmitTxContextFactory{h},
 		&txWaitContextFactory{h},

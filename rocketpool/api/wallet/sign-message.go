@@ -1,4 +1,4 @@
-package tx
+package wallet
 
 import (
 	"encoding/hex"
@@ -20,12 +20,12 @@ import (
 // === Factory ===
 // ===============
 
-type txSignMessageContextFactory struct {
-	handler *TxHandler
+type walletSignMessageContextFactory struct {
+	handler *WalletHandler
 }
 
-func (f *txSignMessageContextFactory) Create(args url.Values) (*txSignMessageContext, error) {
-	c := &txSignMessageContext{
+func (f *walletSignMessageContextFactory) Create(args url.Values) (*walletSignMessageContext, error) {
+	c := &walletSignMessageContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
@@ -34,8 +34,8 @@ func (f *txSignMessageContextFactory) Create(args url.Values) (*txSignMessageCon
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *txSignMessageContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*txSignMessageContext, api.TxSignMessageData](
+func (f *walletSignMessageContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessGet[*walletSignMessageContext, api.TxSignMessageData](
 		router, "sign-message", f, f.handler.serviceProvider,
 	)
 }
@@ -44,12 +44,12 @@ func (f *txSignMessageContextFactory) RegisterRoute(router *mux.Router) {
 // === Context ===
 // ===============
 
-type txSignMessageContext struct {
-	handler *TxHandler
+type walletSignMessageContext struct {
+	handler *WalletHandler
 	message []byte
 }
 
-func (c *txSignMessageContext) PrepareData(data *api.TxSignMessageData, opts *bind.TransactOpts) error {
+func (c *walletSignMessageContext) PrepareData(data *api.TxSignMessageData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 

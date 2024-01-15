@@ -1,4 +1,4 @@
-package tx
+package wallet
 
 import (
 	"errors"
@@ -20,12 +20,12 @@ import (
 // === Factory ===
 // ===============
 
-type txSendMessageContextFactory struct {
-	handler *TxHandler
+type walletSendMessageContextFactory struct {
+	handler *WalletHandler
 }
 
-func (f *txSendMessageContextFactory) Create(args url.Values) (*txSendMessageContext, error) {
-	c := &txSendMessageContext{
+func (f *walletSendMessageContextFactory) Create(args url.Values) (*walletSendMessageContext, error) {
+	c := &walletSendMessageContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
@@ -35,8 +35,8 @@ func (f *txSendMessageContextFactory) Create(args url.Values) (*txSendMessageCon
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *txSendMessageContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*txSendMessageContext, api.TxInfoData](
+func (f *walletSendMessageContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessGet[*walletSendMessageContext, api.TxInfoData](
 		router, "send-message", f, f.handler.serviceProvider,
 	)
 }
@@ -45,13 +45,13 @@ func (f *txSendMessageContextFactory) RegisterRoute(router *mux.Router) {
 // === Context ===
 // ===============
 
-type txSendMessageContext struct {
-	handler *TxHandler
+type walletSendMessageContext struct {
+	handler *WalletHandler
 	message []byte
 	address common.Address
 }
 
-func (c *txSendMessageContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+func (c *walletSendMessageContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	ec := sp.GetEthClient()
 

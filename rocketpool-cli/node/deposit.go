@@ -7,66 +7,67 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 // Config
-const DefaultMaxNodeFeeSlippage = 0.01 // 1% below current network fee
+const (
+	DefaultMaxNodeFeeSlippage float64 = 0.01 // 1% below current network fee
+)
 
 func nodeDeposit(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rp.DepositContractInfo()
+	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo()
 	if err != nil {
 		return err
 	}
-	if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
-		depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
-		cliutils.PrintDepositMismatchError(
-			depositContractInfo.RPNetwork,
-			depositContractInfo.BeaconNetwork,
-			depositContractInfo.RPDepositContract,
-			depositContractInfo.BeaconDepositContract)
+	if depositContractInfo.Data.RPNetwork != depositContractInfo.Data.BeaconNetwork ||
+		depositContractInfo.Data.RPDepositContract != depositContractInfo.Data.BeaconDepositContract {
+		utils.PrintDepositMismatchError(
+			depositContractInfo.Data.RPNetwork,
+			depositContractInfo.Data.BeaconNetwork,
+			depositContractInfo.Data.RPDepositContract,
+			depositContractInfo.Data.BeaconDepositContract)
 		return nil
 	}
 
 	fmt.Println("Your eth2 client is on the correct network.\n")
 
 	// Check if the fee distributor has been initialized
-	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
+	feeDistributorResponse, err := rp.Api.Node.InitializeFeeDistributor()
 	if err != nil {
 		return err
 	}
-	if !isInitializedResponse.IsInitialized {
+	if !feeDistributorResponse.Data.IsInitialized {
 		fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
 		return nil
 	}
 
 	// Post a warning about fee distribution
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !(c.Bool("yes") || utils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", terminal.ColorYellow, terminal.ColorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Get deposit amount
 	var amount float64
-	if c.String("amount") != "" {
+	if c.String(amountFlag) != "" {
 		// Parse amount
-		depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+		depositAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
+			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String(amountFlag), err)
 		}
 		amount = depositAmount
 	} else {
@@ -77,7 +78,7 @@ func nodeDeposit(c *cli.Context) error {
 		}
 
 		// Prompt for amount
-		selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
+		selected, _ := utils.Select("Please choose an amount of ETH to deposit:", amountOptions)
 		switch selected {
 		case 0:
 			amount = 8
@@ -89,55 +90,49 @@ func nodeDeposit(c *cli.Context) error {
 	amountWei := eth.EthToWei(amount)
 
 	// Get network node fees
-	nodeFees, err := rp.NodeFee()
+	nodeFeeResponse, err := rp.Api.Network.NodeFee()
 	if err != nil {
 		return err
 	}
 
 	// Get minimum node fee
 	var minNodeFee float64
-	if c.String("max-slippage") == "auto" {
-
+	if c.String(maxSlippageFlag) == "auto" {
 		// Use default max slippage
-		minNodeFee = nodeFees.NodeFee - DefaultMaxNodeFeeSlippage
-		if minNodeFee < nodeFees.MinNodeFee {
-			minNodeFee = nodeFees.MinNodeFee
+		minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.NodeFee) - DefaultMaxNodeFeeSlippage
+		if minNodeFee < eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee) {
+			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		}
-
-	} else if c.String("max-slippage") != "" {
-
+	} else if c.String(maxSlippageFlag) != "" {
 		// Parse max slippage
-		maxNodeFeeSlippagePerc, err := strconv.ParseFloat(c.String("max-slippage"), 64)
+		maxNodeFeeSlippagePerc, err := strconv.ParseFloat(c.String(maxSlippageFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid maximum commission rate slippage '%s': %w", c.String("max-slippage"), err)
+			return fmt.Errorf("Invalid maximum commission rate slippage '%s': %w", c.String(maxSlippageFlag), err)
 		}
 		maxNodeFeeSlippage := maxNodeFeeSlippagePerc / 100
 
 		// Calculate min node fee
-		minNodeFee = nodeFees.NodeFee - maxNodeFeeSlippage
-		if minNodeFee < nodeFees.MinNodeFee {
-			minNodeFee = nodeFees.MinNodeFee
+		minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.NodeFee) - maxNodeFeeSlippage
+		if minNodeFee < eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee) {
+			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		}
-
 	} else {
-
 		// Prompt for min node fee
-		if nodeFees.MinNodeFee == nodeFees.MaxNodeFee {
-			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", nodeFees.MinNodeFee*100)
-			minNodeFee = nodeFees.MinNodeFee
+		if nodeFeeResponse.Data.MinNodeFee == nodeFeeResponse.Data.MaxNodeFee {
+			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)*100)
+			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		} else {
-			minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.MinNodeFee)
+			minNodeFee = promptMinNodeFee(eth.WeiToEth(nodeFeeResponse.Data.NodeFee), eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee))
 		}
-
 	}
 
 	// Get minipool salt
 	var salt *big.Int
-	if c.String("salt") != "" {
+	if c.String(saltFlag) != "" {
 		var success bool
-		salt, success = big.NewInt(0).SetString(c.String("salt"), 0)
+		salt, success = big.NewInt(0).SetString(c.String(saltFlag), 0)
 		if !success {
-			return fmt.Errorf("Invalid minipool salt: %s", c.String("salt"))
+			return fmt.Errorf("Invalid minipool salt: %s", c.String(saltFlag))
 		}
 	} else {
 		buffer := make([]byte, 32)
@@ -148,125 +143,110 @@ func nodeDeposit(c *cli.Context) error {
 		salt = big.NewInt(0).SetBytes(buffer)
 	}
 
-	// Check deposit can be made
-	canDeposit, err := rp.CanNodeDeposit(amountWei, minNodeFee, salt)
+	// Build the TX
+	response, err := rp.Api.Node.Deposit(amountWei, minNodeFee, salt)
 	if err != nil {
 		return err
 	}
-	if !canDeposit.CanDeposit {
+
+	// Verify
+	if !response.Data.CanDeposit {
 		fmt.Println("Cannot make node deposit:")
-		if canDeposit.InsufficientBalanceWithoutCredit {
-			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
-			fmt.Printf("There is not enough ETH in the staking pool to use your credit balance (it needs at least 1 ETH but only has %.2f ETH) and you don't have enough ETH in your wallet (%.6f ETH) to cover the deposit amount yourself. If you want to continue creating a minipool, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", eth.WeiToEth(canDeposit.DepositBalance), nodeBalance)
+		if response.Data.InsufficientBalanceWithoutCredit {
+			nodeBalance := eth.WeiToEth(response.Data.NodeBalance)
+			fmt.Printf("There is not enough ETH in the staking pool to use your credit balance (it needs at least 1 ETH but only has %.2f ETH) and you don't have enough ETH in your wallet (%.6f ETH) to cover the deposit amount yourself. If you want to continue creating a minipool, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", eth.WeiToEth(response.Data.DepositBalance), nodeBalance)
 		}
-		if canDeposit.InsufficientBalance {
-			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
-			creditBalance := eth.WeiToEth(canDeposit.CreditBalance)
+		if response.Data.InsufficientBalance {
+			nodeBalance := eth.WeiToEth(response.Data.NodeBalance)
+			creditBalance := eth.WeiToEth(response.Data.CreditBalance)
 			fmt.Printf("The node's balance of %.6f ETH and credit balance of %.6f ETH are not enough to create a minipool with a %.1f ETH bond.", nodeBalance, creditBalance, amount)
 		}
-		if canDeposit.InsufficientRplStake {
+		if response.Data.InsufficientRplStake {
 			fmt.Printf("The node has not staked enough RPL to collateralize a new minipool with a bond of %d ETH (this also includes the RPL required to support any pending bond reductions).\n", int(amount))
 		}
-		if canDeposit.InvalidAmount {
+		if response.Data.InvalidAmount {
 			fmt.Println("The deposit amount is invalid.")
 		}
-		if canDeposit.UnbondedMinipoolsAtMax {
+		if response.Data.UnbondedMinipoolsAtMax {
 			fmt.Println("The node cannot create any more unbonded minipools.")
 		}
-		if canDeposit.DepositDisabled {
+		if response.Data.DepositDisabled {
 			fmt.Println("Node deposits are currently disabled.")
 		}
 		return nil
 	}
 
-	useCreditBalance := false
-	fmt.Printf("You currently have %.2f ETH in your credit balance plus.\n", eth.WeiToEth(canDeposit.CreditBalance))
-	if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
-		if canDeposit.CanUseCredit {
-			useCreditBalance = true
+	// Print credit balance info
+	fmt.Printf("You currently have %.2f ETH in your credit balance plus.\n", eth.WeiToEth(response.Data.CreditBalance))
+	if response.Data.CreditBalance.Cmp(big.NewInt(0)) > 0 {
+		if response.Data.CanUseCredit {
 			// Get how much credit to use
-			remainingAmount := big.NewInt(0).Sub(amountWei, canDeposit.CreditBalance)
+			remainingAmount := big.NewInt(0).Sub(amountWei, response.Data.CreditBalance)
 			if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("This deposit will use all %.6f ETH from your credit balance and %.6f ETH from your node.\n\n", eth.WeiToEth(canDeposit.CreditBalance), eth.WeiToEth(remainingAmount))
+				fmt.Printf("This deposit will use all %.6f ETH from your credit balance and %.6f ETH from your node.\n\n", eth.WeiToEth(response.Data.CreditBalance), eth.WeiToEth(remainingAmount))
 			} else {
 				fmt.Printf("This deposit will use %.6f ETH from your credit balance and will not require any ETH from your node.\n\n", amount)
 			}
 		} else {
-			fmt.Printf("%sNOTE: Your credit balance *cannot* currently be used to create a new minipool; there is not enough ETH in the staking pool to cover the initial deposit on your behalf (it needs at least 1 ETH but only has %.2f ETH).%s\nIf you want to continue creating this minipool now, you will have to pay for the full bond amount.\n\n", colorYellow, eth.WeiToEth(canDeposit.DepositBalance), colorReset)
+			fmt.Printf("%sNOTE: Your credit balance *cannot* currently be used to create a new minipool; there is not enough ETH in the staking pool to cover the initial deposit on your behalf (it needs at least 1 ETH but only has %.2f ETH).%s\nIf you want to continue creating this minipool now, you will have to pay for the full bond amount.\n\n", terminal.ColorYellow, eth.WeiToEth(response.Data.DepositBalance), terminal.ColorReset)
 
 			// Prompt for confirmation
-			if !(c.Bool("yes") || cliutils.Confirm("Would you like to continue?")) {
+			if !(c.Bool("yes") || utils.Confirm("Would you like to continue?")) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
 		}
 	}
 
-	if c.String("salt") != "" {
-		fmt.Printf("Using custom salt %s, your minipool address will be %s.\n\n", c.String("salt"), canDeposit.MinipoolAddress.Hex())
+	// Print salt and minipool address info
+	if c.String(saltFlag) != "" {
+		fmt.Printf("Using custom salt %s, your minipool address will be %s.\n\n", c.String("salt"), response.Data.MinipoolAddress.Hex())
 	}
 
 	// Check to see if eth2 is synced
-	syncResponse, err := rp.NodeSync()
+	syncResponse, err := rp.Api.Service.ClientStatus()
 	if err != nil {
 		fmt.Printf("%s**WARNING**: Can't verify the sync status of your consensus client.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n"+
-			"Reason: %s\n%s", colorRed, err, colorReset)
+			"Reason: %s\n%s", terminal.ColorRed, err, terminal.ColorReset)
 	} else {
-		if syncResponse.BcStatus.PrimaryClientStatus.IsSynced {
+		if syncResponse.Data.BcManagerStatus.PrimaryClientStatus.IsSynced {
 			fmt.Printf("Your consensus client is synced, you may safely create a minipool.\n")
-		} else if syncResponse.BcStatus.FallbackEnabled {
-			if syncResponse.BcStatus.FallbackClientStatus.IsSynced {
+		} else if syncResponse.Data.BcManagerStatus.FallbackEnabled {
+			if syncResponse.Data.BcManagerStatus.FallbackClientStatus.IsSynced {
 				fmt.Printf("Your fallback consensus client is synced, you may safely create a minipool.\n")
 			} else {
-				fmt.Printf("%s**WARNING**: neither your primary nor fallback consensus clients are fully synced.\nYOU WILL LOSE ETH if your minipool is activated before they are fully synced.\n%s", colorRed, colorReset)
+				fmt.Printf("%s**WARNING**: neither your primary nor fallback consensus clients are fully synced.\nYOU WILL LOSE ETH if your minipool is activated before they are fully synced.\n%s", terminal.ColorRed, terminal.ColorReset)
 			}
 		} else {
-			fmt.Printf("%s**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n%s", colorRed, colorReset)
+			fmt.Printf("%s**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n%s", terminal.ColorRed, terminal.ColorReset)
 		}
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canDeposit.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
-		"You are about to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%.\n"+
-			"%sARE YOU SURE YOU WANT TO DO THIS? Exiting this minipool and retrieving your capital cannot be done until your minipool has been *active* on the Beacon Chain for 256 epochs (approx. 27 hours).%s\n",
-		math.RoundDown(eth.WeiToEth(amountWei), 6),
-		minNodeFee*100,
-		colorYellow,
-		colorReset))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Make deposit
-	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt, useCreditBalance, true)
-	if err != nil {
-		return err
-	}
-
-	// Log and wait for the minipool address
-	fmt.Printf("Creating minipool...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	_, err = rp.WaitForTransaction(response.TxHash)
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf(
+			"You are about to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%.\n"+
+				"%sARE YOU SURE YOU WANT TO DO THIS? Exiting this minipool and retrieving your capital cannot be done until your minipool has been *active* on the Beacon Chain for 256 epochs (approx. 27 hours).%s\n",
+			math.RoundDown(eth.WeiToEth(amountWei), 6),
+			minNodeFee*100,
+			terminal.ColorYellow,
+			terminal.ColorReset),
+		"creating minipool",
+		"Creating minipool...",
+	)
 	if err != nil {
 		return err
 	}
 
 	// Log & return
 	fmt.Printf("The node deposit of %.6f ETH was made successfully!\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
-	fmt.Printf("Your new minipool's address is: %s\n", response.MinipoolAddress)
-	fmt.Printf("The validator pubkey is: %s\n\n", response.ValidatorPubkey.Hex())
+	fmt.Printf("Your new minipool's address is: %s\n", response.Data.MinipoolAddress)
+	fmt.Printf("The validator pubkey is: %s\n\n", response.Data.ValidatorPubkey.Hex())
 
 	fmt.Println("Your minipool is now in Initialized status.")
 	fmt.Println("Once the remaining ETH has been assigned to your minipool from the staking pool, it will move to Prelaunch status.")
-	fmt.Printf("After that, it will move to Staking status once %s have passed.\n", response.ScrubPeriod)
+	fmt.Printf("After that, it will move to Staking status once %s have passed.\n", response.Data.ScrubPeriod)
 	fmt.Println("You can watch its progress using `rocketpool service logs node`.")
 
 	return nil
-
 }

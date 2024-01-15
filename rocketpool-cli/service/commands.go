@@ -167,6 +167,24 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "sync",
+				Aliases:   []string{"y"},
+				Usage:     "Get the sync progress of the eth1 and eth2 clients",
+				UsageText: "rocketpool service sync",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return getSyncProgress(c)
+
+				},
+			},
+
+			{
 				Name:      "status",
 				Aliases:   []string{"u"},
 				Usage:     "View the Rocket Pool service status",

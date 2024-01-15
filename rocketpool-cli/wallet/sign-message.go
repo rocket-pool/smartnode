@@ -1,17 +1,21 @@
-package node
+package wallet
 
 import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/shared/types"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-const signatureVersion = 1
+const (
+	signatureVersion int    = 1
+	signMessageFlag  string = "message"
+)
 
 type PersonalSignature struct {
 	Address   common.Address `json:"address"`
@@ -21,37 +25,36 @@ type PersonalSignature struct {
 }
 
 func signMessage(c *cli.Context) error {
-
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
-	defer rp.Close()
+	rp := client.NewClientFromCtx(c)
 
 	// Get & check wallet status
-	status, err := rp.WalletStatus()
+	status, err := rp.Api.Wallet.Status()
 	if err != nil {
 		return err
 	}
-
-	if !status.WalletInitialized {
+	if status.Data.WalletStatus != types.WalletStatus_Ready {
 		fmt.Println("The node wallet is not initialized.")
 		return nil
 	}
 
-	message := c.String("message")
+	// Get the message
+	message := c.String(signMessageFlag)
 	for message == "" {
 		message = cliutils.Prompt("Please enter the message you want to sign: (EIP-191 personal_sign)", "^.+$", "Please enter the message you want to sign: (EIP-191 personal_sign)")
 	}
 
-	response, err := rp.SignMessage(message)
+	// Build the TX
+	response, err := rp.Api.Tx.SignMessage([]byte(message))
 	if err != nil {
 		return err
 	}
 
 	// Print the signature
 	formattedSignature := PersonalSignature{
-		Address:   status.AccountAddress,
+		Address:   status.Data.AccountAddress,
 		Message:   message,
-		Signature: response.SignedData,
+		Signature: response.Data.SignedData,
 		Version:   fmt.Sprint(signatureVersion),
 	}
 	bytes, err := json.MarshalIndent(formattedSignature, "", "    ")

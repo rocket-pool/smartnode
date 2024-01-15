@@ -4,7 +4,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // Register commands
@@ -22,30 +22,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool node status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return getStatus(c)
-				},
-			},
-
-			{
-				Name:      "sync",
-				Aliases:   []string{"y"},
-				Usage:     "Get the sync progress of the eth1 and eth2 clients",
-				UsageText: "rocketpool node sync",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					return getSyncProgress(c)
-
 				},
 			},
 
@@ -63,13 +45,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
 					if c.String(registerTimezoneFlag) != "" {
-						if _, err := cliutils.ValidateTimezoneLocation("timezone location", c.String(registerTimezoneFlag)); err != nil {
+						if _, err := input.ValidateTimezoneLocation("timezone location", c.String(registerTimezoneFlag)); err != nil {
 							return err
 						}
 					}
@@ -86,7 +68,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool node rewards",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -113,7 +95,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := input.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					withdrawalAddress := c.Args().Get(0)
@@ -137,7 +119,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -164,7 +146,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := input.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					withdrawalAddress := c.Args().Get(0)
@@ -188,7 +170,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -211,7 +193,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -234,7 +216,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 					// Run
@@ -256,13 +238,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
 					if c.String(timezoneFlag) != "" {
-						if _, err := cliutils.ValidateTimezoneLocation("timezone location", c.String("timezone")); err != nil {
+						if _, err := input.ValidateTimezoneLocation("timezone location", c.String("timezone")); err != nil {
 							return err
 						}
 					}
@@ -286,13 +268,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
 					if c.String(amountFlag) != "" && c.String(amountFlag) != "all" {
-						if _, err := cliutils.ValidatePositiveEthAmount("swap amount", c.String(amountFlag)); err != nil {
+						if _, err := input.ValidatePositiveEthAmount("swap amount", c.String(amountFlag)); err != nil {
 							return err
 						}
 					}
@@ -326,7 +308,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -337,7 +319,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						c.String(amountFlag) != "min16" &&
 						c.String(amountFlag) != "max16" &&
 						c.String(amountFlag) != "all" {
-						if _, err := cliutils.ValidatePositiveEthAmount("stake amount", c.String(amountFlag)); err != nil {
+						if _, err := input.ValidatePositiveEthAmount("stake amount", c.String(amountFlag)); err != nil {
 							return err
 						}
 					}
@@ -354,7 +336,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool node add-address-to-stake-rpl-whitelist address",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := input.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 
@@ -373,7 +355,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := input.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 
@@ -404,7 +386,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -419,32 +401,32 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Withdraw RPL staked against the node",
 				UsageText: "rocketpool node withdraw-rpl [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of RPL to withdraw (or 'max')",
+					&cli.StringFlag{
+						Name:    amountFlag,
+						Aliases: []string{"a"},
+						Usage:   "The amount of RPL to withdraw (or 'max')",
 					},
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm RPL withdrawal",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm RPL withdrawal",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
-					if c.String("amount") != "" && c.String("amount") != "max" {
-						if _, err := cliutils.ValidatePositiveEthAmount("withdrawal amount", c.String("amount")); err != nil {
+					if c.String(amountFlag) != "" && c.String(amountFlag) != "max" {
+						if _, err := input.ValidatePositiveEthAmount("withdrawal amount", c.String(amountFlag)); err != nil {
 							return err
 						}
 					}
 
 					// Run
 					return nodeWithdrawRpl(c)
-
 				},
 			},
 			{
@@ -453,32 +435,32 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Withdraw ETH staked on behalf of the node",
 				UsageText: "rocketpool node withdraw-eth [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of ETH to withdraw (or 'max')",
+					&cli.StringFlag{
+						Name:    amountFlag,
+						Aliases: []string{"a"},
+						Usage:   "The amount of ETH to withdraw (or 'max')",
 					},
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm ETH withdrawal",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm ETH withdrawal",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
-					if c.String("amount") != "" && c.String("amount") != "max" {
-						if _, err := cliutils.ValidatePositiveEthAmount("withdrawal amount", c.String("amount")); err != nil {
+					if c.String(amountFlag) != "" && c.String(amountFlag) != "max" {
+						if _, err := input.ValidatePositiveEthAmount("withdrawal amount", c.String(amountFlag)); err != nil {
 							return err
 						}
 					}
 
 					// Run
 					return nodeWithdrawEth(c)
-
 				},
 			},
 
@@ -488,50 +470,52 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Make a deposit and create a minipool",
 				UsageText: "rocketpool node deposit [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of ETH to deposit (8 or 16)",
+					&cli.StringFlag{
+						Name:    amountFlag,
+						Aliases: []string{"a"},
+						Usage:   "The amount of ETH to deposit (8 or 16)",
 					},
-					cli.StringFlag{
-						Name:  "max-slippage, s",
-						Usage: "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
+					&cli.StringFlag{
+						Name:    maxSlippageFlag,
+						Aliases: []string{"s"},
+						Usage:   "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
 					},
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm deposit",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm deposit",
 					},
-					cli.StringFlag{
-						Name:  "salt, l",
-						Usage: "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
+					&cli.StringFlag{
+						Name:    saltFlag,
+						Aliases: []string{"l"},
+						Usage:   "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
-					if c.String("amount") != "" {
-						if _, err := cliutils.ValidatePositiveEthAmount("deposit amount", c.String("amount")); err != nil {
+					if c.String(amountFlag) != "" {
+						if _, err := input.ValidatePositiveEthAmount("deposit amount", c.String(amountFlag)); err != nil {
 							return err
 						}
 					}
-					if c.String("max-slippage") != "" && c.String("max-slippage") != "auto" {
-						if _, err := cliutils.ValidatePercentage("maximum commission rate slippage", c.String("max-slippage")); err != nil {
+					if c.String(maxSlippageFlag) != "" && c.String(maxSlippageFlag) != "auto" {
+						if _, err := input.ValidatePercentage("maximum commission rate slippage", c.String(maxSlippageFlag)); err != nil {
 							return err
 						}
 					}
-					if c.String("salt") != "" {
-						if _, err := cliutils.ValidateBigInt("salt", c.String("salt")); err != nil {
+					if c.String(saltFlag) != "" {
+						if _, err := input.ValidateBigInt("salt", c.String(saltFlag)); err != nil {
 							return err
 						}
 					}
 
 					// Run
 					return nodeDeposit(c)
-
 				},
 			},
 
@@ -541,62 +525,65 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Create an empty minipool, which can be used to migrate an existing solo staking validator as part of the 0x00 to 0x01 withdrawal credentials upgrade",
 				UsageText: "rocketpool node create-vacant-minipool pubkey [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of ETH to deposit (8 or 16)",
+					&cli.StringFlag{
+						Name:    amountFlag,
+						Aliases: []string{"a"},
+						Usage:   "The amount of ETH to deposit (8 or 16)",
 					},
-					cli.StringFlag{
-						Name:  "max-slippage, s",
-						Usage: "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
+					&cli.StringFlag{
+						Name:    maxSlippageFlag,
+						Aliases: []string{"s"},
+						Usage:   "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
 					},
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm all interactive questions",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm all interactive questions",
 					},
-					cli.StringFlag{
-						Name:  "salt, l",
-						Usage: "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
+					&cli.StringFlag{
+						Name:    saltFlag,
+						Aliases: []string{"l"},
+						Usage:   "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
 					},
-					cli.StringFlag{
-						Name:  "mnemonic, m",
-						Usage: "Use this flag if you want to recreate your validator's private key within the Smartnode's VC instead of running it via your own VC, and have the Smartnode reassign your validator's withdrawal credentials to the new minipool address automatically.",
+					&cli.StringFlag{
+						Name:    cvmMnemonicFlag,
+						Aliases: []string{"m"},
+						Usage:   "Use this flag if you want to recreate your validator's private key within the Smartnode's VC instead of running it via your own VC, and have the Smartnode reassign your validator's withdrawal credentials to the new minipool address automatically.",
 					},
-					cli.BoolFlag{
-						Name:  "no-restart",
+					&cli.BoolFlag{
+						Name:  flags.NoRestartFlag,
 						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := input.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					pubkey, err := cliutils.ValidatePubkey("pubkey", c.Args().Get(0))
+					pubkey, err := input.ValidatePubkey("pubkey", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Validate flags
 					if c.String("amount") != "" {
-						if _, err := cliutils.ValidatePositiveEthAmount("deposit amount", c.String("amount")); err != nil {
+						if _, err := input.ValidatePositiveEthAmount("deposit amount", c.String("amount")); err != nil {
 							return err
 						}
 					}
 					if c.String("max-slippage") != "" && c.String("max-slippage") != "auto" {
-						if _, err := cliutils.ValidatePercentage("maximum commission rate slippage", c.String("max-slippage")); err != nil {
+						if _, err := input.ValidatePercentage("maximum commission rate slippage", c.String("max-slippage")); err != nil {
 							return err
 						}
 					}
 					if c.String("salt") != "" {
-						if _, err := cliutils.ValidateBigInt("salt", c.String("salt")); err != nil {
+						if _, err := input.ValidateBigInt("salt", c.String("salt")); err != nil {
 							return err
 						}
 					}
 
 					// Run
 					return createVacantMinipool(c, pubkey)
-
 				},
 			},
 
@@ -606,29 +593,28 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).",
 				UsageText: "rocketpool node send [options] amount token to",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm token send",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm token send",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+					if err := input.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					amount, err := cliutils.ValidatePositiveEthAmount("send amount", c.Args().Get(0))
+					amount, err := input.ValidatePositiveEthAmount("send amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
-					token, err := cliutils.ValidateTokenType("token type", c.Args().Get(1))
+					token, err := input.ValidateTokenType("token type", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
 
 					// Run
 					return nodeSend(c, amount, token, c.Args().Get(2))
-
 				},
 			},
 
@@ -638,22 +624,21 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Set the address you want to use when voting on Rocket Pool governance proposals, or the address you want to delegate your voting power to.",
 				UsageText: "rocketpool node set-voting-delegate address",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm delegate setting",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm delegate setting",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := input.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					delegate := c.Args().Get(0)
 
 					// Run
 					return nodeSetVotingDelegate(c, delegate)
-
 				},
 			},
 			{
@@ -662,21 +647,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Remove the address you've set for voting on Rocket Pool governance proposals.",
 				UsageText: "rocketpool node clear-voting-delegate",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm delegate clearing",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm delegate clearing",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return nodeClearVotingDelegate(c)
-
 				},
 			},
 
@@ -686,21 +670,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Create the fee distributor contract for your node, so you can withdraw priority fees and MEV rewards after the merge",
 				UsageText: "rocketpool node initialize-fee-distributor",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm initialization gas costs",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm initialization gas costs",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return initializeFeeDistributor(c)
-
 				},
 			},
 
@@ -710,21 +693,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Distribute the priority fee and MEV rewards from your fee distributor to your withdrawal address and the rETH contract (based on your node's average commission)",
 				UsageText: "rocketpool node distribute-fees",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm distribution",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm distribution",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return distribute(c)
-
 				},
 			},
 
@@ -734,21 +716,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Opt your node into the Smoothing Pool",
 				UsageText: "rocketpool node join-smoothing-pool",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm opt-in",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm opt-in",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
-					return joinSmoothingPool(c)
-
+					return setSmoothingPoolState(c, true)
 				},
 			},
 
@@ -758,65 +739,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Leave the Smoothing Pool",
 				UsageText: "rocketpool node leave-smoothing-pool",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm opt-out",
+					&cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm opt-out",
 					},
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
-					return leaveSmoothingPool(c)
-
-				},
-			},
-
-			{
-				Name:      "sign-message",
-				Aliases:   []string{"sm"},
-				Usage:     "Sign an arbitrary message with the node's private key",
-				UsageText: "rocketpool node sign-message [-m message]",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "message, m",
-						Usage: "The 'quoted message' to be signed",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					// Run
-					return signMessage(c)
-				},
-			},
-
-			{
-				Name:      "send-message",
-				Usage:     "Send a zero-ETH transaction to the target address (or ENS) with the provided hex-encoded message as the data payload",
-				UsageText: "rocketpool node send-message [-y] to-address hex-message",
-				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm message send",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					message, err := cliutils.ValidateByteArray("message", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					return sendMessage(c, c.Args().Get(0), message)
-
+					return setSmoothingPoolState(c, false)
 				},
 			},
 		},

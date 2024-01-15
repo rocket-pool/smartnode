@@ -150,3 +150,20 @@ func (r *WalletRequester) TestRecover(derivationPath *string, mnemonic string, s
 	}
 	return sendGetRequest[api.WalletRecoverData](r, "test-recover", "TestRecover", args)
 }
+
+// Sends a zero-value message with a payload
+func (r *WalletRequester) SendMessage(message []byte, address common.Address) (*api.ApiResponse[api.TxInfoData], error) {
+	args := map[string]string{
+		"message": hex.EncodeToString(message),
+		"address": address.Hex(),
+	}
+	return sendGetRequest[api.TxInfoData](r, "send-message", "SendMessage", args)
+}
+
+// Use the node private key to sign an arbitrary message
+func (r *WalletRequester) SignMessage(message []byte) (*api.ApiResponse[api.TxSignMessageData], error) {
+	args := map[string]string{
+		"message": hex.EncodeToString(message),
+	}
+	return sendGetRequest[api.TxSignMessageData](r, "sign-message", "SignMessage", args)
+}

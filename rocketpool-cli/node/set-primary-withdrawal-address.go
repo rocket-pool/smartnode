@@ -9,10 +9,11 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 const (
@@ -36,7 +37,7 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 		withdrawalAddress = response.Data.Address
 		withdrawalAddressString = fmt.Sprintf("%s (%s)", withdrawalAddressOrENS, withdrawalAddress.Hex())
 	} else {
-		withdrawalAddress, err = cliutils.ValidateAddress("withdrawal address", withdrawalAddressOrENS)
+		withdrawalAddress, err = input.ValidateAddress("withdrawal address", withdrawalAddressOrENS)
 		if err != nil {
 			return err
 		}
@@ -66,8 +67,8 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 
 	if confirm {
 		// Prompt for a test transaction
-		if cliutils.Confirm("Would you like to send a test transaction to make sure you have the correct address?") {
-			inputAmount := cliutils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddressString), "^\\d+(\\.\\d+)?$", "Invalid amount")
+		if utils.Confirm("Would you like to send a test transaction to make sure you have the correct address?") {
+			inputAmount := utils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddressString), "^\\d+(\\.\\d+)?$", "Invalid amount")
 			testAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
 				return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)

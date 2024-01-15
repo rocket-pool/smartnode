@@ -113,7 +113,6 @@ func (c *Client) checkClientStatus() (bool, error) {
 
 	// Check the fallbacks if enabled
 	if ecMgrStatus.FallbackEnabled && bcMgrStatus.FallbackEnabled {
-
 		// Fallback EC and CC are good
 		if ecMgrStatus.FallbackClientStatus.IsSynced && bcMgrStatus.FallbackClientStatus.IsSynced {
 			fmt.Printf("%sNOTE: primary clients are not ready, using fallback clients...\n\tPrimary EC status: %s\n\tPrimary CC status: %s%s\n\n", terminal.ColorYellow, primaryEcStatus, primaryBcStatus, terminal.ColorReset)

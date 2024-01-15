@@ -9,7 +9,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 func setStakeRplForAllowed(c *cli.Context, addressOrEns string, allowed bool) error {
@@ -29,7 +29,7 @@ func setStakeRplForAllowed(c *cli.Context, addressOrEns string, allowed bool) er
 		address = response.Data.Address
 		addressString = fmt.Sprintf("%s (%s)", addressOrEns, address.Hex())
 	} else {
-		address, err = cliutils.ValidateAddress("address", addressOrEns)
+		address, err = input.ValidateAddress("address", addressOrEns)
 		if err != nil {
 			return err
 		}

@@ -28,11 +28,13 @@ func registerNode(c *cli.Context) error {
 		timezoneLocation = promptTimezone()
 	}
 
-	// Check node can be registered
+	// Build the TX
 	response, err := rp.Api.Node.Register(timezoneLocation)
 	if err != nil {
 		return err
 	}
+
+	// Verify
 	if !response.Data.CanRegister {
 		fmt.Println("The node cannot be registered:")
 		if response.Data.AlreadyRegistered {

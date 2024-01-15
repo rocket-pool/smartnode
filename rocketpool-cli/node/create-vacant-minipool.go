@@ -9,72 +9,73 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/migration"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/migration"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
+)
+
+const (
+	cvmMnemonicFlag string = "mnemonic"
 )
 
 func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rp.DepositContractInfo()
+	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo()
 	if err != nil {
 		return err
 	}
-	if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
-		depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
-		cliutils.PrintDepositMismatchError(
-			depositContractInfo.RPNetwork,
-			depositContractInfo.BeaconNetwork,
-			depositContractInfo.RPDepositContract,
-			depositContractInfo.BeaconDepositContract)
+	if depositContractInfo.Data.RPNetwork != depositContractInfo.Data.BeaconNetwork ||
+		depositContractInfo.Data.RPDepositContract != depositContractInfo.Data.BeaconDepositContract {
+		utils.PrintDepositMismatchError(
+			depositContractInfo.Data.RPNetwork,
+			depositContractInfo.Data.BeaconNetwork,
+			depositContractInfo.Data.RPDepositContract,
+			depositContractInfo.Data.BeaconDepositContract)
 		return nil
 	}
 
 	fmt.Println("Your eth2 client is on the correct network.\n")
 
 	// Check if the fee distributor has been initialized
-	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
+	feeDistributorResponse, err := rp.Api.Node.InitializeFeeDistributor()
 	if err != nil {
 		return err
 	}
-	if !isInitializedResponse.IsInitialized {
+	if !feeDistributorResponse.Data.IsInitialized {
 		fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
 		return nil
 	}
 
 	// Post a warning about fee distribution
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !(c.Bool("yes") || utils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", terminal.ColorYellow, terminal.ColorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Print a notification about the pubkey
-	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at https://docs.rocketpool.net/guides/atlas/solo-staker-migration.html to learn about the process and its implications.\n\n1. First, we'll create the new minipool.\n2. Next, we'll ask whether you want to import the validator's private key into your Smartnode's Validator Client, or keep running your own externally-managed validator.\n3. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.\n\n%sNOTE: If you intend to use the credit balance to create additional validators, you will need to have enough RPL staked to support them.%s\n\n", pubkey.Hex(), colorYellow, colorReset)
+	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at https://docs.rocketpool.net/guides/atlas/solo-staker-migration.html to learn about the process and its implications.\n\n1. First, we'll create the new minipool.\n2. Next, we'll ask whether you want to import the validator's private key into your Smartnode's Validator Client, or keep running your own externally-managed validator.\n3. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.\n\n%sNOTE: If you intend to use the credit balance to create additional validators, you will need to have enough RPL staked to support them.%s\n\n", pubkey.Hex(), terminal.ColorYellow, terminal.ColorReset)
 
 	// Get deposit amount
 	var amount float64
-	if c.String("amount") != "" {
-
+	if c.String(amountFlag) != "" {
 		// Parse amount
-		depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+		depositAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
+			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String(amountFlag), err)
 		}
 		amount = depositAmount
-
 	} else {
-
 		// Get deposit amount options
 		amountOptions := []string{
 			"8 ETH",
@@ -82,20 +83,18 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		}
 
 		// Prompt for amount
-		selected, _ := cliutils.Select("Please choose an amount of ETH you want to use as your deposit for the new minipool (this will become your share of the balance, and the remainder will become the pool stakers' share):", amountOptions)
+		selected, _ := utils.Select("Please choose an amount of ETH you want to use as your deposit for the new minipool (this will become your share of the balance, and the remainder will become the pool stakers' share):", amountOptions)
 		switch selected {
 		case 0:
 			amount = 8
 		case 1:
 			amount = 16
 		}
-
 	}
-
 	amountWei := eth.EthToWei(amount)
 
 	// Get network node fees
-	nodeFees, err := rp.NodeFee()
+	nodeFeeResponse, err := rp.Api.Network.NodeFee()
 	if err != nil {
 		return err
 	}
@@ -103,15 +102,12 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	// Get minimum node fee
 	var minNodeFee float64
 	if c.String("max-slippage") == "auto" {
-
 		// Use default max slippage
-		minNodeFee = nodeFees.NodeFee - DefaultMaxNodeFeeSlippage
-		if minNodeFee < nodeFees.MinNodeFee {
-			minNodeFee = nodeFees.MinNodeFee
+		minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.NodeFee) - DefaultMaxNodeFeeSlippage
+		if minNodeFee < eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee) {
+			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		}
-
 	} else if c.String("max-slippage") != "" {
-
 		// Parse max slippage
 		maxNodeFeeSlippagePerc, err := strconv.ParseFloat(c.String("max-slippage"), 64)
 		if err != nil {
@@ -120,30 +116,27 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		maxNodeFeeSlippage := maxNodeFeeSlippagePerc / 100
 
 		// Calculate min node fee
-		minNodeFee = nodeFees.NodeFee - maxNodeFeeSlippage
-		if minNodeFee < nodeFees.MinNodeFee {
-			minNodeFee = nodeFees.MinNodeFee
+		minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.NodeFee) - maxNodeFeeSlippage
+		if minNodeFee < eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee) {
+			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		}
-
 	} else {
-
 		// Prompt for min node fee
-		if nodeFees.MinNodeFee == nodeFees.MaxNodeFee {
-			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", nodeFees.MinNodeFee*100)
-			minNodeFee = nodeFees.MinNodeFee
+		if nodeFeeResponse.Data.MinNodeFee == nodeFeeResponse.Data.MaxNodeFee {
+			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)*100)
+			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		} else {
-			minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.MinNodeFee)
+			minNodeFee = promptMinNodeFee(eth.WeiToEth(nodeFeeResponse.Data.NodeFee), eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee))
 		}
-
 	}
 
 	// Get minipool salt
 	var salt *big.Int
-	if c.String("salt") != "" {
+	if c.String(saltFlag) != "" {
 		var success bool
-		salt, success = big.NewInt(0).SetString(c.String("salt"), 0)
+		salt, success = big.NewInt(0).SetString(c.String(saltFlag), 0)
 		if !success {
-			return fmt.Errorf("Invalid minipool salt: %s", c.String("salt"))
+			return fmt.Errorf("Invalid minipool salt: %s", c.String(saltFlag))
 		}
 	} else {
 		buffer := make([]byte, 32)
@@ -154,104 +147,91 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		salt = big.NewInt(0).SetBytes(buffer)
 	}
 
-	// Check deposit can be made
-	canDeposit, err := rp.CanCreateVacantMinipool(amountWei, minNodeFee, salt, pubkey)
+	// Build the TX
+	response, err := rp.Api.Node.CreateVacantMinipool(amountWei, minNodeFee, salt, pubkey)
 	if err != nil {
 		return err
 	}
-	if !canDeposit.CanDeposit {
+
+	// Verify
+	if !response.Data.CanDeposit {
 		fmt.Println("Cannot create a vacant minipool for migration:")
-		if canDeposit.InsufficientRplStake {
+		if response.Data.InsufficientRplStake {
 			fmt.Printf("The node has not staked enough RPL to collateralize a new minipool with a bond of %d ETH.\n", int(amount))
 		}
-		if canDeposit.InvalidAmount {
+		if response.Data.InvalidAmount {
 			fmt.Println("The deposit amount is invalid.")
 		}
-		if canDeposit.DepositDisabled {
+		if response.Data.DepositDisabled {
 			fmt.Println("Vacant minipool deposits are currently disabled.")
 		}
 		return nil
 	}
 
-	if c.String("salt") != "" {
-		fmt.Printf("Using custom salt %s, your minipool address will be %s.\n\n", c.String("salt"), canDeposit.MinipoolAddress.Hex())
+	// Print the salt and minipool address info
+	if c.String(saltFlag) != "" {
+		fmt.Printf("Using custom salt %s, your minipool address will be %s.\n\n", c.String(saltFlag), response.Data.MinipoolAddress.Hex())
 	}
 
 	// Check to see if eth2 is synced
-	syncResponse, err := rp.NodeSync()
+	syncResponse, err := rp.Api.Service.ClientStatus()
 	if err != nil {
 		return fmt.Errorf("error checking if your clients are in sync: %w", err)
 	} else {
-		if syncResponse.BcStatus.PrimaryClientStatus.IsSynced {
+		if syncResponse.Data.BcManagerStatus.PrimaryClientStatus.IsSynced {
 			fmt.Printf("Your consensus client is synced, you may safely create a minipool.\n")
-		} else if syncResponse.BcStatus.FallbackEnabled {
-			if syncResponse.BcStatus.FallbackClientStatus.IsSynced {
+		} else if syncResponse.Data.BcManagerStatus.FallbackEnabled {
+			if syncResponse.Data.BcManagerStatus.FallbackClientStatus.IsSynced {
 				fmt.Printf("Your fallback consensus client is synced, you may safely create a minipool.\n")
 			} else {
-				fmt.Printf("%s**WARNING**: neither your primary nor fallback consensus clients are fully synced.\nYou cannot migrate until they've finished syncing.\n%s", colorRed, colorReset)
+				fmt.Printf("%s**WARNING**: neither your primary nor fallback consensus clients are fully synced.\nYou cannot migrate until they've finished syncing.\n%s", terminal.ColorRed, terminal.ColorReset)
 				return nil
 			}
 		} else {
-			fmt.Printf("%s**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.\nYou cannot migrate until you have a synced consensus client.\n%s", colorRed, colorReset)
+			fmt.Printf("%s**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.\nYou cannot migrate until you have a synced consensus client.\n%s", terminal.ColorRed, terminal.ColorReset)
 			return nil
 		}
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canDeposit.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
-		"You are about to create a new, vacant minipool with a minimum possible commission rate of %f%%. Once created, you will be able to migrate your existing validator into this minipool.\n"+
-			"%sAre you sure you want to do this?%s",
-		minNodeFee*100,
-		colorYellow,
-		colorReset))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Make deposit
-	response, err := rp.CreateVacantMinipool(amountWei, minNodeFee, salt, pubkey)
-	if err != nil {
-		return err
-	}
-
-	// Log and wait for the minipool address
-	fmt.Printf("Creating minipool...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	_, err = rp.WaitForTransaction(response.TxHash)
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf(
+			"You are about to create a new, vacant minipool with a minimum possible commission rate of %f%%. Once created, you will be able to migrate your existing validator into this minipool.\n"+
+				"%sAre you sure you want to do this?%s",
+			minNodeFee*100,
+			terminal.ColorYellow,
+			terminal.ColorReset),
+		"creating minipool",
+		"Creating minipool...",
+	)
 	if err != nil {
 		return err
 	}
 
 	// Log
 	fmt.Println("Your minipool was made successfully!")
-	fmt.Printf("Your new minipool's address is: %s\n\n", response.MinipoolAddress)
+	fmt.Printf("Your new minipool's address is: %s\n\n", response.Data.MinipoolAddress)
 
 	// Get the mnemonic if importing
 	mnemonic := ""
-	if c.IsSet("mnemonic") {
-		mnemonic = c.String("mnemonic")
-	} else if !c.Bool("yes") {
+	if c.IsSet(cvmMnemonicFlag) {
+		mnemonic = c.String(cvmMnemonicFlag)
+	} else if !c.Bool(flags.YesFlag) {
 		fmt.Println("You have the option of importing your validator's private key into the Smartnode's Validator Client instead of running your own Validator Client separately. In doing so, the Smartnode will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.\n")
-		if cliutils.Confirm("Would you like to import your key and automatically migrate your withdrawal credentials?") {
+		if utils.Confirm("Would you like to import your key and automatically migrate your withdrawal credentials?") {
 			mnemonic = wallet.PromptMnemonic()
 		}
 	}
 
 	if mnemonic != "" {
-		handleImport(c, rp, response.MinipoolAddress, mnemonic)
+		handleImport(c, rp, response.Data.MinipoolAddress, mnemonic)
 	} else {
 		// Ignore importing / it errored out
 		fmt.Println("Since you're not importing your validator key, you will still be responsible for running and maintaining your own Validator Client with the validator's private key loaded, just as you are today.\n\n")
-		fmt.Printf("You must now upgrade your validator's withdrawal credentials manually, using as tool such as `ethdo` (https://github.com/wealdtech/ethdo), to the following minipool address:\n\n\t%s\n\n", response.MinipoolAddress)
+		fmt.Printf("You must now upgrade your validator's withdrawal credentials manually, using as tool such as `ethdo` (https://github.com/wealdtech/ethdo), to the following minipool address:\n\n\t%s\n\n", response.Data.MinipoolAddress)
 	}
 
-	fmt.Printf("The minipool is now in the scrub check, where it will hold for %s.\n", response.ScrubPeriod)
+	fmt.Printf("The minipool is now in the scrub check, where it will hold for %s.\n", response.Data.ScrubPeriod)
 	fmt.Println("You can watch its progress using `rocketpool service logs node`.")
 	fmt.Println("Once the scrub check period has passed, your node will automatically promote it to an active minipool.")
 
@@ -260,7 +240,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 }
 
 // Import a validator's private key into the Smartnode and set the validator's withdrawal creds
-func handleImport(c *cli.Context, rp *rocketpool.Client, minipoolAddress common.Address, mnemonic string) {
+func handleImport(c *cli.Context, rp *client.Client, minipoolAddress common.Address, mnemonic string) {
 	// Check if the withdrawal creds can be changed
 	success := migration.ChangeWithdrawalCreds(rp, minipoolAddress, mnemonic)
 	if !success {

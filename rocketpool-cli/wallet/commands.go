@@ -5,6 +5,7 @@ import (
 
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -244,6 +245,52 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return purge(c)
+
+				},
+			},
+
+			{
+				Name:      "sign-message",
+				Aliases:   []string{"sm"},
+				Usage:     "Sign an arbitrary message with the node's private key",
+				UsageText: "rocketpool node sign-message [-m message]",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    signMessageFlag,
+						Aliases: []string{"m"},
+						Usage:   "The 'quoted message' to be signed",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					// Run
+					return signMessage(c)
+				},
+			},
+
+			{
+				Name:      "send-message",
+				Usage:     "Send a zero-ETH transaction to the target address (or ENS) with the provided hex-encoded message as the data payload",
+				UsageText: "rocketpool node send-message [-y] to-address hex-message",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:    flags.YesFlag,
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm message send",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					message, err := cliutils.ValidateByteArray("message", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return sendMessage(c, c.Args().Get(0), message)
 
 				},
 			},

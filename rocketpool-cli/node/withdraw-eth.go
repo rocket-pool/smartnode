@@ -6,123 +6,90 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func nodeWithdrawEth(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
-	}
-	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-
-	if !houston.IsHoustonDeployed {
-		return fmt.Errorf("This command cannot be used until Houston has been deployed.")
 	}
 
 	// Get withdrawal amount
 	var amountWei *big.Int
-	if c.String("amount") == "max" {
-
+	if c.String(amountFlag) == "max" {
 		// Get node status
-		status, err := rp.NodeStatus()
+		status, err := rp.Api.Node.Status()
 		if err != nil {
 			return err
 		}
 
 		// Set amount to maximum withdrawable amount
-		amountWei = status.EthOnBehalfBalance
-
-	} else if c.String("amount") != "" {
-
+		amountWei = status.Data.EthOnBehalfBalance
+	} else if c.String(amountFlag) != "" {
 		// Parse amount
-		withdrawalAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+		withdrawalAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid withdrawal amount '%s': %w", c.String("amount"), err)
+			return fmt.Errorf("Invalid withdrawal amount '%s': %w", c.String(amountFlag), err)
 		}
 		amountWei = eth.EthToWei(withdrawalAmount)
-
 	} else {
-
 		// Get node status
-		status, err := rp.NodeStatus()
+		status, err := rp.Api.Node.Status()
 		if err != nil {
 			return err
 		}
 
 		// Get maximum withdrawable amount
-		maxAmount := status.EthOnBehalfBalance
+		maxAmount := status.Data.EthOnBehalfBalance
 		// Prompt for maximum amount
-		if cliutils.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
+		if utils.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
 			amountWei = maxAmount
 		} else {
-
 			// Prompt for custom amount
-			inputAmount := cliutils.Prompt("Please enter an amount of staked ETH to withdraw:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+			inputAmount := utils.Prompt("Please enter an amount of staked ETH to withdraw:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 			withdrawalAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
 				return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
 			}
 			amountWei = eth.EthToWei(withdrawalAmount)
-
 		}
-
 	}
 
-	// Check ETH can be withdrawn
-	canWithdraw, err := rp.CanNodeWithdrawEth(amountWei)
+	// Build the TX
+	response, err := rp.Api.Node.WithdrawEth(amountWei)
 	if err != nil {
 		return err
 	}
-	if !canWithdraw.CanWithdraw {
+
+	// Verify
+	if !response.Data.CanWithdraw {
 		fmt.Println("Cannot withdraw staked ETH:")
-		if canWithdraw.InsufficientBalance {
+		if response.Data.InsufficientBalance {
 			fmt.Println("The node's staked ETH balance is insufficient.")
 		}
-		if canWithdraw.HasDifferentWithdrawalAddress {
+		if response.Data.HasDifferentPrimaryWithdrawalAddress {
 			fmt.Println("The primary withdrawal address has been set, and is not the node address. ETH can only be withdrawn from the primary withdrawal address.")
 		}
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, c.Bool("yes"))
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf("Are you sure you want to withdraw %.6f ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6)),
+		"ETH withdrawal",
+		"Withdrawing ETH...",
+	)
 	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to withdraw %.6f ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Withdraw ETH
-	response, err := rp.NodeWithdrawEth(amountWei)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Withdrawing ETH...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
 	fmt.Printf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
 	return nil
-
 }

@@ -6,10 +6,10 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/types"
 )
 
 func getRewards(c *cli.Context) error {
@@ -26,8 +26,8 @@ func getRewards(c *cli.Context) error {
 	}
 
 	// Check for missing Merkle trees with rewards available
-	missingIntervals := []rprewards.IntervalInfo{}
-	invalidIntervals := []rprewards.IntervalInfo{}
+	missingIntervals := []types.IntervalInfo{}
+	invalidIntervals := []types.IntervalInfo{}
 	for _, intervalInfo := range rewardsInfoResponse.Data.InvalidIntervals {
 		if !intervalInfo.TreeFileExists {
 			fmt.Printf("You are missing the rewards tree file for interval %d.\n", intervalInfo.Index)
@@ -42,7 +42,7 @@ func getRewards(c *cli.Context) error {
 	if len(missingIntervals) > 0 || len(invalidIntervals) > 0 {
 		fmt.Println()
 		fmt.Printf("%sNOTE: If you would like to regenerate these tree files manually, please answer `n` to the prompt below and run `rocketpool network generate-rewards-tree` before claiming your rewards.%s\n", terminal.ColorBlue, terminal.ColorReset)
-		if !cliutils.Confirm("Would you like to download all missing rewards tree files now?") {
+		if !utils.Confirm("Would you like to download all missing rewards tree files now?") {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -87,14 +87,14 @@ func getRewards(c *cli.Context) error {
 	fmt.Printf("You still have %.4f ETH in unclaimed Smoothing Pool rewards.\n", rewards.Data.UnclaimedEthRewards)
 
 	nextRewardsTime := rewards.Data.LastCheckpoint.Add(rewards.Data.RewardsInterval)
-	nextRewardsTimeString := cliutils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
+	nextRewardsTimeString := utils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
 	timeToCheckpointString := time.Until(nextRewardsTime).Round(time.Second).String()
 
 	// Assume 365 days in a year, 24 hours per day
 	rplApr := rewards.Data.EstimatedRewards / rewards.Data.TotalRplStake / rewards.Data.RewardsInterval.Hours() * (24 * 365) * 100
 
 	fmt.Println("\n=== RPL ===")
-	fmt.Printf("The current rewards cycle started on %s.\n", cliutils.GetDateTimeString(uint64(rewards.Data.LastCheckpoint.Unix())))
+	fmt.Printf("The current rewards cycle started on %s.\n", utils.GetDateTimeString(uint64(rewards.Data.LastCheckpoint.Unix())))
 	fmt.Printf("It will end on %s (%s from now).\n", nextRewardsTimeString, timeToCheckpointString)
 
 	if rewards.Data.UnclaimedRplRewards > 0 {
