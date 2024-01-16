@@ -3,42 +3,39 @@ package odao
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 func cancelProposal(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get oracle DAO proposals
-	proposals, err := rp.TNDAOProposals()
+	proposals, err := rp.Api.ODao.Proposals()
 	if err != nil {
 		return err
 	}
 
 	// Get wallet status
-	wallet, err := rp.WalletStatus()
+	wallet, err := rp.Api.Wallet.Status()
 	if err != nil {
 		return err
 	}
 
 	// Get cancelable proposals
-	cancelableProposals := []dao.ProposalDetails{}
-	for _, proposal := range proposals.Proposals {
-		if bytes.Equal(proposal.ProposerAddress.Bytes(), wallet.AccountAddress.Bytes()) && (proposal.State == types.Pending || proposal.State == types.Active) {
+	cancelableProposals := []api.OracleDaoProposalDetails{}
+	for _, proposal := range proposals.Data.Proposals {
+		if bytes.Equal(proposal.ProposerAddress.Bytes(), wallet.Data.AccountAddress.Bytes()) && (proposal.State == types.ProposalState_Pending || proposal.State == types.ProposalState_Active) {
 			cancelableProposals = append(cancelableProposals, proposal)
 		}
 	}
@@ -50,16 +47,10 @@ func cancelProposal(c *cli.Context) error {
 	}
 
 	// Get selected proposal
-	var selectedProposal dao.ProposalDetails
-	if c.String("proposal") != "" {
-
-		// Get selected proposal ID
-		selectedId, err := strconv.ParseUint(c.String("proposal"), 10, 64)
-		if err != nil {
-			return fmt.Errorf("Invalid proposal ID '%s': %w", c.String("proposal"), err)
-		}
-
+	var selectedProposal api.OracleDaoProposalDetails
+	if c.Uint64(proposalFlag.Name) != 0 {
 		// Get matching proposal
+		selectedId := c.Uint64(proposalFlag.Name)
 		found := false
 		for _, proposal := range cancelableProposals {
 			if proposal.ID == selectedId {
@@ -71,50 +62,48 @@ func cancelProposal(c *cli.Context) error {
 		if !found {
 			return fmt.Errorf("Proposal %d can not be cancelled.", selectedId)
 		}
-
 	} else {
-
 		// Prompt for proposal selection
 		options := make([]string, len(cancelableProposals))
 		for pi, proposal := range cancelableProposals {
 			options[pi] = fmt.Sprintf("proposal %d (message: '%s', payload: %s)", proposal.ID, proposal.Message, proposal.PayloadStr)
 		}
-		selected, _ := cliutils.Select("Please select a proposal to cancel:", options)
+		selected, _ := utils.Select("Please select a proposal to cancel:", options)
 		selectedProposal = cancelableProposals[selected]
-
 	}
 
-	// Display gas estimate
-	canResponse, err := rp.CanCancelTNDAOProposal(selectedProposal.ID)
-	if err != nil {
-		return err
-	}
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	// Build the TX
+	response, err := rp.Api.ODao.CancelProposal(selectedProposal.ID)
 	if err != nil {
 		return err
 	}
 
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to cancel proposal %d?", selectedProposal.ID))) {
-		fmt.Println("Cancelled.")
+	// Verify
+	if !response.Data.CanCancel {
+		fmt.Println("Cannot cancel proposal:")
+		if response.Data.DoesNotExist {
+			fmt.Println("The proposal does not exist.")
+		}
+		if response.Data.InvalidProposer {
+			fmt.Println("You are not the proposer of this proposal.")
+		}
+		if response.Data.InvalidState {
+			fmt.Println("The proposal is not in a cancellable state.")
+		}
 		return nil
 	}
 
-	// Cancel proposal
-	response, err := rp.CancelTNDAOProposal(selectedProposal.ID)
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf("Are you sure you want to cancel proposal %d?", selectedProposal.ID),
+		"proposal cancellation",
+		"Canceling proposal...",
+	)
 	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Canceling proposal...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
 	fmt.Printf("Successfully cancelled proposal %d.\n", selectedProposal.ID)
 	return nil
-
 }

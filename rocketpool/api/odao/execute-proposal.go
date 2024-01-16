@@ -20,26 +20,30 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
+const (
+	executeBatchSize int = 100
+)
+
 // ===============
 // === Factory ===
 // ===============
 
-type oracleDaoExecuteProposalContextFactory struct {
+type oracleDaoExecuteProposalsContextFactory struct {
 	handler *OracleDaoHandler
 }
 
-func (f *oracleDaoExecuteProposalContextFactory) Create(args url.Values) (*oracleDaoExecuteProposalContext, error) {
-	c := &oracleDaoExecuteProposalContext{
+func (f *oracleDaoExecuteProposalsContextFactory) Create(args url.Values) (*oracleDaoExecuteProposalsContext, error) {
+	c := &oracleDaoExecuteProposalsContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("id", args, input.ValidatePositiveUint, &c.id),
+		server.ValidateArgBatch("ids", args, executeBatchSize, input.ValidatePositiveUint, &c.ids),
 	}
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *oracleDaoExecuteProposalContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*oracleDaoExecuteProposalContext, api.OracleDaoExecuteProposalData](
+func (f *oracleDaoExecuteProposalsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoExecuteProposalsContext, api.DataBatch[api.OracleDaoExecuteProposalsData]](
 		router, "proposal/execute", f, f.handler.serviceProvider,
 	)
 }
@@ -48,18 +52,18 @@ func (f *oracleDaoExecuteProposalContextFactory) RegisterRoute(router *mux.Route
 // === Context ===
 // ===============
 
-type oracleDaoExecuteProposalContext struct {
+type oracleDaoExecuteProposalsContext struct {
 	handler     *OracleDaoHandler
 	rp          *rocketpool.RocketPool
 	nodeAddress common.Address
 
-	id         uint64
+	ids        []uint64
 	odaoMember *oracle.OracleDaoMember
 	dpm        *proposals.DaoProposalManager
-	prop       *proposals.OracleDaoProposal
+	props      []*proposals.OracleDaoProposal
 }
 
-func (c *oracleDaoExecuteProposalContext) Initialize() error {
+func (c *oracleDaoExecuteProposalsContext) Initialize() error {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
@@ -79,45 +83,55 @@ func (c *oracleDaoExecuteProposalContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager binding: %w", err)
 	}
-	prop, err := c.dpm.CreateProposalFromID(c.id, nil)
-	if err != nil {
-		return fmt.Errorf("error creating proposal binding: %w", err)
-	}
-	var success bool
-	c.prop, success = proposals.GetProposalAsOracle(prop)
-	if !success {
-		return fmt.Errorf("proposal %d is not an Oracle DAO proposal", c.id)
+	c.props = make([]*proposals.OracleDaoProposal, len(c.ids))
+	for i, id := range c.ids {
+		prop, err := c.dpm.CreateProposalFromID(id, nil)
+		if err != nil {
+			return fmt.Errorf("error creating proposal binding: %w", err)
+		}
+		var success bool
+		c.props[i], success = proposals.GetProposalAsOracle(prop)
+		if !success {
+			return fmt.Errorf("proposal %d is not an Oracle DAO proposal", id)
+		}
 	}
 	return nil
 }
 
-func (c *oracleDaoExecuteProposalContext) GetState(mc *batch.MultiCaller) {
+func (c *oracleDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	core.AddQueryablesToMulticall(mc,
 		c.dpm.ProposalCount,
 		c.odaoMember.Exists,
-		c.prop.State,
 	)
+	for _, prop := range c.props {
+		prop.State.AddToQuery(mc)
+	}
 }
 
-func (c *oracleDaoExecuteProposalContext) PrepareData(data *api.OracleDaoExecuteProposalData, opts *bind.TransactOpts) error {
+func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[api.OracleDaoExecuteProposalsData], opts *bind.TransactOpts) error {
 	// Verify oDAO status
 	if !c.odaoMember.Exists.Get() {
 		return errors.New("The node is not a member of the oracle DAO.")
 	}
 
-	// Check proposal details
-	state := c.prop.State.Formatted()
-	data.DoesNotExist = (c.id > c.dpm.ProposalCount.Formatted())
-	data.InvalidState = !(state == rptypes.ProposalState_Pending || state == rptypes.ProposalState_Active)
-	data.CanExecute = !(data.DoesNotExist || data.InvalidState)
+	dataBatch.Batch = make([]api.OracleDaoExecuteProposalsData, len(c.ids))
+	for i, prop := range c.props {
 
-	// Get the tx
-	if data.CanExecute && opts != nil {
-		txInfo, err := c.prop.Execute(opts)
-		if err != nil {
-			return fmt.Errorf("error getting TX info for Execute: %w", err)
+		// Check proposal details
+		data := &dataBatch.Batch[i]
+		state := prop.State.Formatted()
+		data.DoesNotExist = (c.ids[i] > c.dpm.ProposalCount.Formatted())
+		data.InvalidState = !(state == rptypes.ProposalState_Pending || state == rptypes.ProposalState_Active)
+		data.CanExecute = !(data.DoesNotExist || data.InvalidState)
+
+		// Get the tx
+		if data.CanExecute && opts != nil {
+			txInfo, err := prop.Execute(opts)
+			if err != nil {
+				return fmt.Errorf("error getting TX info for Execute: %w", err)
+			}
+			data.TxInfo = txInfo
 		}
-		data.TxInfo = txInfo
 	}
 	return nil
 }

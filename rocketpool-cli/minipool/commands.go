@@ -3,7 +3,7 @@ package minipool
 import (
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
@@ -67,7 +67,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool set-withdrawal-creds minipool-address [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    flags.MnemonicFlag,
+						Name:    utils.MnemonicFlag,
 						Aliases: []string{"m"},
 						Usage:   "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
 					},
@@ -93,19 +93,15 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool import-key minipool-address [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    flags.MnemonicFlag,
+						Name:    utils.MnemonicFlag,
 						Aliases: []string{"m"},
 						Usage:   "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
 					},
 					&cli.BoolFlag{
-						Name:  flags.NoRestartFlag,
+						Name:  utils.NoRestartFlag,
 						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
 					},
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm all interactive questions",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -280,11 +276,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Exit staking minipools from the beacon chain",
 				UsageText: "rocketpool minipool exit [options]",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm exiting minipools",
-					},
+					utils.YesFlag,
 					&cli.StringFlag{
 						Name:    minipoolsFlag,
 						Aliases: []string{"m"},

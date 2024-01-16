@@ -20,7 +20,6 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
@@ -399,7 +398,7 @@ func promptForSoloKeyPassword(rp *client.Client, cfg *config.RocketPoolConfig, p
 
 }
 
-func swapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
+func SwapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
 	// Get the TX
 	response, err := rp.Api.Node.SwapRpl(amountWei)
 	if err != nil {
@@ -421,7 +420,7 @@ func swapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
 		fmt.Println("This only needs to be done once for your node.")
 
 		// If a custom nonce is set, print the multi-transaction warning
-		customNonce := c.Uint64(flags.NonceFlag)
+		customNonce := c.Uint64(utils.NonceFlag)
 		if customNonce != 0 {
 			utils.PrintMultiTransactionNonceWarning()
 		}
@@ -436,11 +435,7 @@ func swapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
 			return err
 		}
 
-		// If a custom nonce is set, increment it for the next transaction
 		fmt.Println("Successfully approved access to legacy RPL.")
-		if customNonce != 0 {
-			c.Set(flags.NonceFlag, strconv.FormatUint(customNonce+1, 10))
-		}
 	}
 
 	// Run the swap TX

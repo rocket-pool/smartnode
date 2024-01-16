@@ -45,7 +45,7 @@ func rollbackDelegates(c *cli.Context) error {
 	options := make([]utils.SelectionOption[api.MinipoolDetails], len(eligibleMinipools))
 	for i, mp := range eligibleMinipools {
 		option := &options[i]
-		option.Element = &mp
+		option.Element = &eligibleMinipools[i]
 		option.ID = fmt.Sprint(mp.Address)
 		option.Display = fmt.Sprintf("%s (using delegate %s, will roll back to %s)", mp.Address.Hex(), mp.Delegate.Hex(), mp.PreviousDelegate.Hex())
 	}
@@ -56,8 +56,8 @@ func rollbackDelegates(c *cli.Context) error {
 
 	// Build the TXs
 	addresses := make([]common.Address, len(selectedMinipools))
-	for i, lot := range selectedMinipools {
-		addresses[i] = lot.Address
+	for i, mp := range selectedMinipools {
+		addresses[i] = mp.Address
 	}
 	response, err := rp.Api.Minipool.RollbackDelegates(addresses)
 	if err != nil {

@@ -46,7 +46,7 @@ func refundMinipools(c *cli.Context) error {
 	options := make([]utils.SelectionOption[api.MinipoolDetails], len(refundableMinipools))
 	for i, mp := range refundableMinipools {
 		option := &options[i]
-		option.Element = &mp
+		option.Element = &refundableMinipools[i]
 		option.ID = fmt.Sprint(mp.Address)
 		option.Display = fmt.Sprintf("%s (%.6f ETH to claim)", mp.Address.Hex(), math.RoundDown(eth.WeiToEth(mp.Node.RefundBalance), 6))
 	}
@@ -57,8 +57,8 @@ func refundMinipools(c *cli.Context) error {
 
 	// Build the TXs
 	addresses := make([]common.Address, len(selectedMinipools))
-	for i, lot := range selectedMinipools {
-		addresses[i] = lot.Address
+	for i, mp := range selectedMinipools {
+		addresses[i] = mp.Address
 	}
 	response, err := rp.Api.Minipool.Refund(addresses)
 	if err != nil {

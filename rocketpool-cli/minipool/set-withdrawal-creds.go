@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/migration"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
@@ -22,8 +22,8 @@ func setWithdrawalCreds(c *cli.Context, minipoolAddress common.Address) error {
 
 	// Get the mnemonic
 	mnemonic := ""
-	if c.IsSet(flags.MnemonicFlag) {
-		mnemonic = c.String(flags.MnemonicFlag)
+	if c.IsSet(utils.MnemonicFlag) {
+		mnemonic = c.String(utils.MnemonicFlag)
 	} else {
 		mnemonic = wallet.PromptMnemonic()
 	}

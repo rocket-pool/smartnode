@@ -3,12 +3,12 @@ package tx
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/gas"
@@ -24,8 +24,8 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, c
 	}
 
 	// Print the TX data if requested
-	if c.Bool(flags.PrintTxDataFlag) {
-		fmt.Println("TX Data:")
+	if c.Bool(utils.PrintTxDataFlag) {
+		fmt.Printf("TX Data for %s:\n", identifier)
 		fmt.Printf("\tTo:       %s\n", txInfo.To.Hex())
 		fmt.Printf("\tData:     %s\n", hexutil.Encode(txInfo.Data))
 		fmt.Printf("\tValue:    %s\n", txInfo.Value.String())
@@ -42,15 +42,15 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, c
 
 	// Check the nonce flag
 	var nonce *big.Int
-	if c.IsSet(flags.NonceFlag) {
-		nonce = big.NewInt(0).SetUint64(c.Uint64(flags.NonceFlag))
+	if c.IsSet(utils.NonceFlag) {
+		nonce = big.NewInt(0).SetUint64(c.Uint64(utils.NonceFlag))
 	}
 
 	// Create the submission from the TX info
 	submission, _ := core.CreateTxSubmissionFromInfo(txInfo, nil)
 
 	// Sign only (no submission) if requested
-	if c.Bool(flags.SignTxOnlyFlag) {
+	if c.Bool(utils.SignTxOnlyFlag) {
 		response, err := rp.Api.Tx.SignTx(submission, nonce, maxFee, maxPrioFee)
 		if err != nil {
 			return fmt.Errorf("error signing transaction: %w", err)
@@ -58,11 +58,12 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, c
 		fmt.Printf("Signed transaction (%s):\n", identifier)
 		fmt.Println(response.Data.SignedTx)
 		fmt.Println()
+		updateCustomNonce(c)
 		return nil
 	}
 
 	// Confirm submission
-	if !(c.Bool(flags.YesFlag) || utils.Confirm(confirmMessage)) {
+	if !(c.Bool(utils.YesFlag.Name) || utils.Confirm(confirmMessage)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -79,6 +80,8 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, c
 	if _, err = rp.Api.Tx.WaitForTransaction(response.Data.TxHash); err != nil {
 		return fmt.Errorf("error waiting for transaction: %w", err)
 	}
+
+	updateCustomNonce(c)
 	return nil
 }
 
@@ -92,9 +95,9 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.Transactio
 	}
 
 	// Print the TX data if requested
-	if c.Bool(flags.PrintTxDataFlag) {
+	if c.Bool(utils.PrintTxDataFlag) {
 		for i, info := range txInfos {
-			fmt.Printf("Data for TX %d:\n", i)
+			fmt.Printf("Data for TX %d (%s):\n", i, identifierFunc(i))
 			fmt.Printf("\tTo:       %s\n", info.To.Hex())
 			fmt.Printf("\tData:     %s\n", hexutil.Encode(info.Data))
 			fmt.Printf("\tValue:    %s\n", info.Value.String())
@@ -118,8 +121,8 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.Transactio
 
 	// Check the nonce flag
 	var nonce *big.Int
-	if c.IsSet(flags.NonceFlag) {
-		nonce = big.NewInt(0).SetUint64(c.Uint64(flags.NonceFlag))
+	if c.IsSet(utils.NonceFlag) {
+		nonce = big.NewInt(0).SetUint64(c.Uint64(utils.NonceFlag))
 	}
 
 	// Create the submissions from the TX infos
@@ -130,7 +133,7 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.Transactio
 	}
 
 	// Sign only (no submission) if requested
-	if c.Bool(flags.SignTxOnlyFlag) {
+	if c.Bool(utils.SignTxOnlyFlag) {
 		response, err := rp.Api.Tx.SignTxBatch(submissions, nonce, maxFee, maxPrioFee)
 		if err != nil {
 			return fmt.Errorf("error signing transactions: %w", err)
@@ -145,7 +148,7 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.Transactio
 	}
 
 	// Confirm submission
-	if !(c.Bool(flags.YesFlag) || utils.Confirm(confirmMessage)) {
+	if !(c.Bool(utils.YesFlag.Name) || utils.Confirm(confirmMessage)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -188,4 +191,12 @@ func waitForTransactions(rp *client.Client, hashes []common.Hash, identifierFunc
 		return fmt.Errorf("error waiting for transactions: %w", err)
 	}
 	return nil
+}
+
+// If a custom nonce is set, increment it for the next transaction
+func updateCustomNonce(c *cli.Context) {
+	customNonce := c.Uint64(utils.NonceFlag)
+	if customNonce != 0 {
+		c.Set(utils.NonceFlag, strconv.FormatUint(customNonce+1, 10))
+	}
 }

@@ -49,7 +49,7 @@ func claimFromLot(c *cli.Context) error {
 	options := make([]utils.SelectionOption[api.AuctionLotDetails], len(claimableLots))
 	for i, lot := range claimableLots {
 		option := &options[i]
-		option.Element = &lot
+		option.Element = &claimableLots[i]
 		option.ID = fmt.Sprint(lot.Index)
 		option.Display = fmt.Sprintf("lot %d (%.6f ETH bid @ %.6f ETH per RPL)", lot.Index, math.RoundDown(eth.WeiToEth(lot.NodeBidAmount), 6), math.RoundDown(eth.WeiToEth(lot.CurrentPrice), 6))
 	}

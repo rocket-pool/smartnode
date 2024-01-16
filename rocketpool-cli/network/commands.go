@@ -3,7 +3,7 @@ package network
 import (
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
@@ -93,11 +93,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  generateTreeIndexFlag,
 						Usage: "The index of the rewards interval you want to generate the tree for",
 					},
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm any questions about tree generation",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args

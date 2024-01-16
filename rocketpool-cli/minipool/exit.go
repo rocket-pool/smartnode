@@ -44,7 +44,7 @@ func exitMinipools(c *cli.Context) error {
 	options := make([]utils.SelectionOption[api.MinipoolDetails], len(activeMinipools))
 	for i, mp := range activeMinipools {
 		option := &options[i]
-		option.Element = &mp
+		option.Element = &activeMinipools[i]
 		option.ID = fmt.Sprint(mp.Address)
 
 		if mp.Status.Status == types.MinipoolStatus_Staking {
@@ -73,8 +73,8 @@ func exitMinipools(c *cli.Context) error {
 
 	// Exit minipools
 	addresses := make([]common.Address, len(selectedMinipools))
-	for i, lot := range selectedMinipools {
-		addresses[i] = lot.Address
+	for i, mp := range selectedMinipools {
+		addresses[i] = mp.Address
 	}
 	if _, err := rp.Api.Minipool.Exit(addresses); err != nil {
 		return fmt.Errorf("error while exiting minipools: %w\n", err)

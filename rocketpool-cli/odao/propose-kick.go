@@ -7,38 +7,41 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func proposeKick(c *cli.Context) error {
+var kickFineFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "fine",
+	Aliases: []string{"f"},
+	Usage:   "The amount of RPL to fine the member (or 'max')",
+}
 
+func proposeKick(c *cli.Context) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get DAO members
-	members, err := rp.TNDAOMembers()
+	members, err := rp.Api.ODao.Members()
 	if err != nil {
 		return err
 	}
 
 	// Get member to propose kicking
-	var selectedMember trustednode.MemberDetails
-	if c.String("member") != "" {
-
+	var selectedMember api.OracleDaoMemberDetails
+	if c.String(memberFlag.Name) != "" {
 		// Get matching member
-		selectedAddress := common.HexToAddress(c.String("member"))
-		for _, member := range members.Members {
+		selectedAddress := common.HexToAddress(c.String(memberFlag.Name))
+		for _, member := range members.Data.Members {
 			if bytes.Equal(member.Address.Bytes(), selectedAddress.Bytes()) {
 				selectedMember = member
 				break
@@ -47,89 +50,67 @@ func proposeKick(c *cli.Context) error {
 		if !selectedMember.Exists {
 			return fmt.Errorf("The oracle DAO member %s does not exist.", selectedAddress.Hex())
 		}
-
 	} else {
-
 		// Prompt for member selection
-		options := make([]string, len(members.Members))
-		for mi, member := range members.Members {
+		options := make([]string, len(members.Data.Members))
+		for mi, member := range members.Data.Members {
 			options[mi] = fmt.Sprintf("%s (URL: %s, node: %s)", member.ID, member.Url, member.Address)
 		}
-		selected, _ := cliutils.Select("Please select a member to propose kicking:", options)
-		selectedMember = members.Members[selected]
-
+		selected, _ := utils.Select("Please select a member to propose kicking:", options)
+		selectedMember = members.Data.Members[selected]
 	}
 
 	// Get fine amount
 	var fineAmountWei *big.Int
-	if c.String("fine") == "max" {
-
+	if c.String(kickFineFlag.Name) == "max" {
 		// Set fine amount to member's entire RPL bond
-		fineAmountWei = selectedMember.RPLBondAmount
-
-	} else if c.String("fine") != "" {
-
+		fineAmountWei = selectedMember.RplBondAmount
+	} else if c.String(kickFineFlag.Name) != "" {
 		// Parse amount
-		fineAmount, err := strconv.ParseFloat(c.String("fine"), 64)
+		fineAmount, err := strconv.ParseFloat(c.String(kickFineFlag.Name), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid fine amount '%s': %w", c.String("fine"), err)
+			return fmt.Errorf("Invalid fine amount '%s': %w", c.String(kickFineFlag.Name), err)
 		}
 		fineAmountWei = eth.EthToWei(fineAmount)
-
 	} else {
-
 		// Prompt for custom amount
-		inputAmount := cliutils.Prompt(fmt.Sprintf("Please enter an RPL fine amount to propose (max %.6f RPL):", math.RoundDown(eth.WeiToEth(selectedMember.RPLBondAmount), 6)), "^\\d+(\\.\\d+)?$", "Invalid amount")
+		inputAmount := utils.Prompt(fmt.Sprintf("Please enter an RPL fine amount to propose (max %.6f RPL):", math.RoundDown(eth.WeiToEth(selectedMember.RplBondAmount), 6)), "^\\d+(\\.\\d+)?$", "Invalid amount")
 		fineAmount, err := strconv.ParseFloat(inputAmount, 64)
 		if err != nil {
 			return fmt.Errorf("Invalid fine amount '%s': %w", inputAmount, err)
 		}
 		fineAmountWei = eth.EthToWei(fineAmount)
-
 	}
 
-	// Check if proposal can be made
-	canPropose, err := rp.CanProposeKickFromTNDAO(selectedMember.Address, fineAmountWei)
+	// Build the TX
+	response, err := rp.Api.ODao.ProposeKick(selectedMember.Address, fineAmountWei)
 	if err != nil {
 		return err
 	}
-	if !canPropose.CanPropose {
+
+	// Verify
+	if !response.Data.CanPropose {
 		fmt.Println("Cannot propose kicking member:")
-		if canPropose.ProposalCooldownActive {
+		if response.Data.ProposalCooldownActive {
 			fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
 		}
-		if canPropose.InsufficientRplBond {
-			fmt.Printf("The fine amount of %.6f RPL is greater than the member's bond of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(fineAmountWei), 6), math.RoundDown(eth.WeiToEth(selectedMember.RPLBondAmount), 6))
+		if response.Data.InsufficientRplBond {
+			fmt.Printf("The fine amount of %.6f RPL is greater than the member's bond of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(fineAmountWei), 6), math.RoundDown(eth.WeiToEth(selectedMember.RplBondAmount), 6))
 		}
 		return nil
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, c.Bool("yes"))
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		"Are you sure you want to submit this proposal?",
+		"proposing kicking Oracle DAO member",
+		"Proposing kick of %s from the oracle DAO...",
+	)
 	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Submit proposal
-	response, err := rp.ProposeKickFromTNDAO(selectedMember.Address, fineAmountWei)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Kicking %s from the oracle DAO...\n", selectedMember.Address.Hex())
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully submitted a kick proposal with ID %d for node %s, with a fine of %.6f RPL.\n", response.ProposalId, selectedMember.Address.Hex(), math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
+	fmt.Printf("Successfully submitted a kick proposal for node %s, with a fine of %.6f RPL.\n", selectedMember.Address.Hex(), math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
 	return nil
-
 }

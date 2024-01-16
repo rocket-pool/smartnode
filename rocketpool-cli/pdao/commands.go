@@ -9,17 +9,6 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-const (
-	boolUsage             string = "specify 'true', 'false', 'yes', or 'no'"
-	floatEthUsage         string = "specify an amount of ETH (e.g., '16.0')"
-	floatRplUsage         string = "specify an amount of RPL (e.g., '16.0')"
-	blockCountUsage       string = "specify a number, in blocks (e.g., '40000')"
-	percentUsage          string = "specify a percentage between 0 and 1 (e.g., '0.51' for 51%)"
-	unboundedPercentUsage string = "specify a percentage that can go over 100% (e.g., '1.5' for 150%)"
-	uintUsage             string = "specify an integer (e.g., '50')"
-	durationUsage         string = "specify a duration using hours, minutes, and seconds (e.g., '20m' or '72h0m0s')"
-)
-
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
 	app.Commands = append(app.Commands, cli.Command{

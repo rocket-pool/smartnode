@@ -44,7 +44,7 @@ func setUseLatestDelegates(c *cli.Context, setting bool) error {
 	options := make([]utils.SelectionOption[api.MinipoolDetails], len(settableMinipools))
 	for i, mp := range settableMinipools {
 		option := &options[i]
-		option.Element = &mp
+		option.Element = &settableMinipools[i]
 		option.ID = fmt.Sprint(mp.Address)
 		option.Display = fmt.Sprintf("%s (using delegate %s)", mp.Address.Hex(), mp.Delegate.Hex())
 	}
@@ -61,8 +61,8 @@ func setUseLatestDelegates(c *cli.Context, setting bool) error {
 
 	// Build the TXs
 	addresses := make([]common.Address, len(selectedMinipools))
-	for i, lot := range selectedMinipools {
-		addresses[i] = lot.Address
+	for i, mp := range selectedMinipools {
+		addresses[i] = mp.Address
 	}
 	response, err := rp.Api.Minipool.SetUseLatestDelegates(addresses, setting)
 	if err != nil {

@@ -139,7 +139,7 @@ func (c *oracleDaoProposeSettingContext) createProposalTx(category oracle.Settin
 
 	// Try the bool settings
 	for _, setting := range category.BoolSettings {
-		if setting.GetPath() == c.setting {
+		if string(setting.GetSettingName()) == c.setting {
 			value, err := input.ValidateBool(valueName, c.valueString)
 			if err != nil {
 				return false, nil, fmt.Errorf("error parsing value as bool: %w", err), nil
@@ -151,7 +151,7 @@ func (c *oracleDaoProposeSettingContext) createProposalTx(category oracle.Settin
 
 	// Try the uint settings
 	for _, setting := range category.UintSettings {
-		if setting.GetPath() == c.setting {
+		if string(setting.GetSettingName()) == c.setting {
 			value, err := input.ValidateBigInt(valueName, c.valueString)
 			if err != nil {
 				return false, nil, fmt.Errorf("error parsing value as *big.Int: %w", err), nil

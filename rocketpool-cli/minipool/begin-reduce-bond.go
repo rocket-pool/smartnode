@@ -96,7 +96,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 	options := make([]utils.SelectionOption[api.MinipoolBeginReduceBondDetails], len(reduceableMinipools))
 	for i, mp := range reduceableMinipools {
 		option := &options[i]
-		option.Element = &mp
+		option.Element = &reduceableMinipools[i]
 		option.ID = fmt.Sprint(mp.Address)
 		option.Display = fmt.Sprintf("%s (Current bond: %d ETH, commission: %.2f%%)", mp.Address.Hex(), int(eth.WeiToEth(mp.NodeDepositBalance)), eth.WeiToEth(mp.NodeFee)*100)
 	}

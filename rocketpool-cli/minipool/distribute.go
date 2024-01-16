@@ -141,7 +141,7 @@ func distributeBalance(c *cli.Context) error {
 	options := make([]utils.SelectionOption[api.MinipoolDistributeDetails], len(eligibleMinipools))
 	for i, mp := range eligibleMinipools {
 		option := &options[i]
-		option.Element = &mp
+		option.Element = &eligibleMinipools[i]
 		option.ID = fmt.Sprint(mp.Address)
 
 		if mp.Status == types.MinipoolStatus_Dissolved {
@@ -158,8 +158,8 @@ func distributeBalance(c *cli.Context) error {
 
 	// Build the TXs
 	addresses := make([]common.Address, len(selectedMinipools))
-	for i, lot := range selectedMinipools {
-		addresses[i] = lot.Address
+	for i, mp := range selectedMinipools {
+		addresses[i] = mp.Address
 	}
 	response, err := rp.Api.Minipool.Distribute(addresses)
 	if err != nil {

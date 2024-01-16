@@ -58,7 +58,7 @@ func reduceBondAmount(c *cli.Context) error {
 	options := make([]utils.SelectionOption[api.MinipoolReduceBondDetails], len(reduceableMinipools))
 	for i, mp := range reduceableMinipools {
 		option := &options[i]
-		option.Element = &mp
+		option.Element = &reduceableMinipools[i]
 		option.ID = fmt.Sprint(mp.Address)
 		option.Display = fmt.Sprintf("%s (Current bond: %d ETH, commission: %.2f%%)", mp.Address.Hex(), int(eth.WeiToEth(mp.NodeDepositBalance)), eth.WeiToEth(mp.NodeFee)*100)
 	}
@@ -69,8 +69,8 @@ func reduceBondAmount(c *cli.Context) error {
 
 	// Build the TXs
 	addresses := make([]common.Address, len(selectedMinipools))
-	for i, lot := range selectedMinipools {
-		addresses[i] = lot.Address
+	for i, mp := range selectedMinipools {
+		addresses[i] = mp.Address
 	}
 	response, err := rp.Api.Minipool.ReduceBond(addresses)
 	if err != nil {

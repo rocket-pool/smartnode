@@ -3,63 +3,49 @@ package odao
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 )
 
 func proposeLeave(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
-	// Check if proposal can be made
-	canPropose, err := rp.CanProposeLeaveTNDAO()
+	// Build the TX
+	response, err := rp.Api.ODao.ProposeLeave()
 	if err != nil {
 		return err
 	}
-	if !canPropose.CanPropose {
+
+	// Verify
+	if !response.Data.CanPropose {
 		fmt.Println("Cannot propose leaving:")
-		if canPropose.ProposalCooldownActive {
+		if response.Data.ProposalCooldownActive {
 			fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
 		}
-		if canPropose.InsufficientMembers {
+		if response.Data.InsufficientMembers {
 			fmt.Println("There are not enough members in the oracle DAO to allow a member to leave.")
 		}
 		return nil
 	}
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, c.Bool("yes"))
+
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		"Are you sure you want to submit this proposal?",
+		"proposing leaving Oracle DAO",
+		"Proposing leaving the Oracle DAO...",
+	)
 	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Submit proposal
-	response, err := rp.ProposeLeaveTNDAO()
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Proposing a leave from the oracle DAO...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully submitted a leave proposal with ID %d.\n", response.ProposalId)
+	fmt.Println("Successfully submitted a leave proposal.")
 	return nil
 
 }

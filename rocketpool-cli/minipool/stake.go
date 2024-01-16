@@ -44,7 +44,7 @@ func stakeMinipools(c *cli.Context) error {
 	options := make([]utils.SelectionOption[api.MinipoolDetails], len(stakeableMinipools))
 	for i, mp := range stakeableMinipools {
 		option := &options[i]
-		option.Element = &mp
+		option.Element = &stakeableMinipools[i]
 		option.ID = fmt.Sprint(mp.Address)
 		option.Display = fmt.Sprintf("%s (%s until dissolved)", mp.Address.Hex(), mp.TimeUntilDissolve)
 	}
@@ -55,8 +55,8 @@ func stakeMinipools(c *cli.Context) error {
 
 	// Build the TXs
 	addresses := make([]common.Address, len(selectedMinipools))
-	for i, lot := range selectedMinipools {
-		addresses[i] = lot.Address
+	for i, mp := range selectedMinipools {
+		addresses[i] = mp.Address
 	}
 	response, err := rp.Api.Minipool.Stake(addresses)
 	if err != nil {

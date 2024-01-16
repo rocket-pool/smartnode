@@ -58,5 +58,5 @@ func nodeSwapRpl(c *cli.Context) error {
 		}
 	}
 
-	return swapRpl(c, rp, amountWei)
+	return SwapRpl(c, rp, amountWei)
 }

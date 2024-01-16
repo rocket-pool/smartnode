@@ -2,13 +2,18 @@ package utils
 
 import (
 	"fmt"
+	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/urfave/cli/v2"
 )
 
 // Print a TX's details to the console.
@@ -170,4 +175,36 @@ func PrintNetwork(currentNetwork cfgtypes.Network, isNew bool) error {
 	}
 
 	return nil
+}
+
+// Parses a string representing either a floating point value or a raw wei amount into a *big.Int
+func ParseFloat(c *cli.Context, name string, value string, isFraction bool) (*big.Int, error) {
+	var floatValue float64
+	if c.Bool(RawFlag.Name) {
+		val, err := input.ValidateBigInt(name, value)
+		if err != nil {
+			return nil, err
+		}
+		return val, nil
+	} else if isFraction {
+		val, err := input.ValidateFraction(name, value)
+		if err != nil {
+			return nil, err
+		}
+		floatValue = val
+	} else {
+		val, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return nil, err
+		}
+		floatValue = val
+	}
+
+	trueVal := eth.EthToWei(floatValue)
+	fmt.Printf("Your value will be multiplied by 10^18 to be used in the contracts, which results in:\n\n\t[%s]\n\n", trueVal.String())
+	if !(c.Bool("yes") || Confirm("Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?")) {
+		fmt.Printf("Cancelled. Please try again with the '--%s' flag and provide an explicit value instead.\n", RawFlag.Name)
+		return nil, nil
+	}
+	return trueVal, nil
 }

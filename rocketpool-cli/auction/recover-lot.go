@@ -49,7 +49,7 @@ func recoverRplFromLot(c *cli.Context) error {
 	options := make([]utils.SelectionOption[api.AuctionLotDetails], len(recoverableLots))
 	for i, lot := range recoverableLots {
 		option := &options[i]
-		option.Element = &lot
+		option.Element = &recoverableLots[i]
 		option.ID = fmt.Sprint(lot.Index)
 		option.Display = fmt.Sprintf("lot %d (%.6f RPL unclaimed)", lot.Index, math.RoundDown(eth.WeiToEth(lot.RemainingRplAmount), 6))
 	}

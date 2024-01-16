@@ -73,6 +73,7 @@ func (c *auctionClaimContext) Initialize() error {
 	}
 
 	// Bindings
+	c.lots = make([]*auction.AuctionLot, len(c.indices))
 	for i, index := range c.indices {
 		c.lots[i], err = auction.NewAuctionLot(c.rp, index)
 		if err != nil {

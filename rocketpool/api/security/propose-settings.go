@@ -107,7 +107,7 @@ func (c *securityProposeSettingContext) createProposalTx(category security.Setti
 
 	// Try the bool settings
 	for _, setting := range category.BoolSettings {
-		if setting.GetProtocolDaoSetting().GetPath() == c.setting {
+		if string(setting.GetProtocolDaoSetting().GetSettingName()) == c.setting {
 			value, err := input.ValidateBool(valueName, c.valueString)
 			if err != nil {
 				return false, nil, fmt.Errorf("error parsing value '%s' as bool: %w", c.valueString, err), nil

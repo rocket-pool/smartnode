@@ -3,7 +3,7 @@ package node
 import (
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
@@ -83,11 +83,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Set the node's primary withdrawal address, which will receive all ETH rewards (and RPL if the RPL withdrawal address is not set)",
 				UsageText: "rocketpool node set-primary-withdrawal-address [options] address",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm setting primary withdrawal address",
-					},
+					utils.YesFlag,
 					&cli.BoolFlag{
 						Name:  setPrimaryWithdrawalAddressForceFlag,
 						Usage: "Force update the primary withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
@@ -111,11 +107,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Confirm the node's pending primary withdrawal address if it has been set back to the node's address itself",
 				UsageText: "rocketpool node confirm-primary-withdrawal-address [options]",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm withdrawal address",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -134,11 +126,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Set the node's RPL withdrawal address, which will receive all RPL rewards and staked RPL withdrawals",
 				UsageText: "rocketpool node set-rpl-withdrawal-address [options] address",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm setting RPL withdrawal address",
-					},
+					utils.YesFlag,
 					&cli.BoolFlag{
 						Name:  setRplWithdrawalAddressForceFlag,
 						Usage: "Force update the RPL withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
@@ -162,11 +150,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Confirm the node's pending RPL withdrawal address if it has been set back to the node's address itself",
 				UsageText: "rocketpool node confirm-rpl-withdrawal-address [options]",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm withdrawal address",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -185,11 +169,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Allow the node to lock RPL when creating governance proposals/challenges",
 				UsageText: "rocketpool node allow-rpl-locking [options]",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm allowing RPL locking",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -208,11 +188,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Do not allow the node to lock RPL when creating governance proposals/challenges",
 				UsageText: "rocketpool node deny-rpl-locking [options]",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm disabling of RPL locking",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -295,11 +271,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "The amount of RPL to stake (also accepts 'min8' / 'max8' for 8-ETH minipools, 'min16' / 'max16' for 16-ETH minipools, or 'all' for all of your RPL)",
 					},
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm RPL stake",
-					},
+					utils.YesFlag,
 					&cli.BoolFlag{
 						Name:    swapFlag,
 						Aliases: []string{"s"},
@@ -378,11 +350,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "The amount of RPL to automatically restake during claiming (or '150%' to stake up to 150% collateral, or 'all' for all available RPL)",
 					},
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm rewards claim",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -406,11 +374,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "The amount of RPL to withdraw (or 'max')",
 					},
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm RPL withdrawal",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -440,11 +404,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "The amount of ETH to withdraw (or 'max')",
 					},
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm ETH withdrawal",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -480,11 +440,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"s"},
 						Usage:   "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
 					},
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm deposit",
-					},
+					utils.YesFlag,
 					&cli.StringFlag{
 						Name:    saltFlag,
 						Aliases: []string{"l"},
@@ -535,11 +491,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"s"},
 						Usage:   "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
 					},
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm all interactive questions",
-					},
+					utils.YesFlag,
 					&cli.StringFlag{
 						Name:    saltFlag,
 						Aliases: []string{"l"},
@@ -551,7 +503,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Usage:   "Use this flag if you want to recreate your validator's private key within the Smartnode's VC instead of running it via your own VC, and have the Smartnode reassign your validator's withdrawal credentials to the new minipool address automatically.",
 					},
 					&cli.BoolFlag{
-						Name:  flags.NoRestartFlag,
+						Name:  utils.NoRestartFlag,
 						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
 					},
 				},
@@ -593,11 +545,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).",
 				UsageText: "rocketpool node send [options] amount token to",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm token send",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -624,11 +572,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Set the address you want to use when voting on Rocket Pool governance proposals, or the address you want to delegate your voting power to.",
 				UsageText: "rocketpool node set-voting-delegate address",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm delegate setting",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -647,11 +591,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Remove the address you've set for voting on Rocket Pool governance proposals.",
 				UsageText: "rocketpool node clear-voting-delegate",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm delegate clearing",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -670,11 +610,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Create the fee distributor contract for your node, so you can withdraw priority fees and MEV rewards after the merge",
 				UsageText: "rocketpool node initialize-fee-distributor",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm initialization gas costs",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -693,11 +629,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Distribute the priority fee and MEV rewards from your fee distributor to your withdrawal address and the rETH contract (based on your node's average commission)",
 				UsageText: "rocketpool node distribute-fees",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm distribution",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -716,11 +648,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Opt your node into the Smoothing Pool",
 				UsageText: "rocketpool node join-smoothing-pool",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm opt-in",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -739,11 +667,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Leave the Smoothing Pool",
 				UsageText: "rocketpool node leave-smoothing-pool",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm opt-out",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args

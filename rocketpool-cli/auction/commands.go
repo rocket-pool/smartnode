@@ -3,7 +3,7 @@ package auction
 import (
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
@@ -78,11 +78,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "The amount of ETH to bid (or 'max')",
 					},
-					&cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm bid",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args

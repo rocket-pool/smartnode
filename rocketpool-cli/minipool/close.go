@@ -101,7 +101,7 @@ func closeMinipools(c *cli.Context) error {
 	options := make([]utils.SelectionOption[api.MinipoolCloseDetails], len(closableMinipools))
 	for i, mp := range closableMinipools {
 		option := &options[i]
-		option.Element = &mp
+		option.Element = &closableMinipools[i]
 		option.ID = fmt.Sprint(mp.Address)
 		if mp.Status == types.MinipoolStatus_Dissolved {
 			option.Display = fmt.Sprintf("%s (%.6f ETH will be returned)", mp.Address.Hex(), math.RoundDown(eth.WeiToEth(mp.Balance), 6))
@@ -154,8 +154,8 @@ func closeMinipools(c *cli.Context) error {
 
 	// Build the TXs
 	addresses := make([]common.Address, len(selectedMinipools))
-	for i, lot := range selectedMinipools {
-		addresses[i] = lot.Address
+	for i, mp := range selectedMinipools {
+		addresses[i] = mp.Address
 	}
 	response, err := rp.Api.Minipool.Close(addresses)
 	if err != nil {

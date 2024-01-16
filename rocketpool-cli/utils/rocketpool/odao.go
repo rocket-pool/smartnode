@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -58,11 +59,11 @@ func (r *ODaoRequester) CancelProposal(id uint64) (*api.ApiResponse[api.OracleDa
 }
 
 // Execute a proposal
-func (r *ODaoRequester) ExecuteProposal(id uint64) (*api.ApiResponse[api.OracleDaoExecuteProposalData], error) {
+func (r *ODaoRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[api.DataBatch[api.OracleDaoExecuteProposalsData]], error) {
 	args := map[string]string{
-		"id": fmt.Sprint(id),
+		"ids": makeBatchArg(ids),
 	}
-	return sendGetRequest[api.OracleDaoExecuteProposalData](r, "proposal/execute", "ExecuteProposal", args)
+	return sendGetRequest[api.DataBatch[api.OracleDaoExecuteProposalsData]](r, "proposal/execute", "ExecuteProposals", args)
 }
 
 // Vote on a proposal
@@ -104,10 +105,10 @@ func (r *ODaoRequester) ProposeLeave() (*api.ApiResponse[api.OracleDaoProposeLea
 }
 
 // Propose an Oracle DAO setting update
-func (r *ODaoRequester) ProposeSetting(contractName rocketpool.ContractName, settingName string, value string) (*api.ApiResponse[api.OracleDaoProposeSettingData], error) {
+func (r *ODaoRequester) ProposeSetting(contractName rocketpool.ContractName, settingName oracle.SettingName, value string) (*api.ApiResponse[api.OracleDaoProposeSettingData], error) {
 	args := map[string]string{
 		"contract": string(contractName),
-		"setting":  settingName,
+		"setting":  string(settingName),
 		"value":    value,
 	}
 	return sendGetRequest[api.OracleDaoProposeSettingData](r, "setting/propose", "ProposeSetting", args)

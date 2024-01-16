@@ -3,42 +3,46 @@ package odao
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func voteOnProposal(c *cli.Context) error {
+var voteSupportFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "support",
+	Aliases: []string{"s"},
+	Usage:   "Whether to support the proposal ('yes' or 'no')",
+}
 
+func voteOnProposal(c *cli.Context) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get oracle DAO proposals
-	proposals, err := rp.TNDAOProposals()
+	proposals, err := rp.Api.ODao.Proposals()
 	if err != nil {
 		return err
 	}
 
 	// Get oracle DAO members
-	allMembers, err := rp.TNDAOMembers()
+	allMembers, err := rp.Api.ODao.Members()
 	if err != nil {
 		return err
 	}
 
 	// Get votable proposals
-	votableProposals := []dao.ProposalDetails{}
-	for _, proposal := range proposals.Proposals {
-		if proposal.State == types.Active && !proposal.MemberVoted {
+	votableProposals := []api.OracleDaoProposalDetails{}
+	for _, proposal := range proposals.Data.Proposals {
+		if proposal.State == types.ProposalState_Active && !proposal.MemberVoted {
 			votableProposals = append(votableProposals, proposal)
 		}
 	}
@@ -50,16 +54,10 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Get selected proposal
-	var selectedProposal dao.ProposalDetails
-	if c.String("proposal") != "" {
-
-		// Get selected proposal ID
-		selectedId, err := strconv.ParseUint(c.String("proposal"), 10, 64)
-		if err != nil {
-			return fmt.Errorf("Invalid proposal ID '%s': %w", c.String("proposal"), err)
-		}
-
+	var selectedProposal api.OracleDaoProposalDetails
+	if c.Uint64(proposalFlag.Name) != 0 {
 		// Get matching proposal
+		selectedId := c.Uint64(proposalFlag.Name)
 		found := false
 		for _, proposal := range votableProposals {
 			if proposal.ID == selectedId {
@@ -71,14 +69,12 @@ func voteOnProposal(c *cli.Context) error {
 		if !found {
 			return fmt.Errorf("Proposal %d can not be voted on.", selectedId)
 		}
-
 	} else {
-
 		// Prompt for proposal selection
 		var memberID string
 		options := make([]string, len(votableProposals))
 		for pi, proposal := range votableProposals {
-			for _, member := range allMembers.Members {
+			for _, member := range allMembers.Data.Members {
 				if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
 					memberID = member.ID
 				}
@@ -88,35 +84,30 @@ func voteOnProposal(c *cli.Context) error {
 				proposal.ID,
 				proposal.Message,
 				proposal.PayloadStr,
-				cliutils.GetDateTimeString(proposal.EndTime),
+				utils.GetDateTimeStringOfTime(proposal.EndTime),
 				proposal.VotesRequired,
 				proposal.VotesFor,
 				proposal.VotesAgainst,
 				memberID,
 				proposal.ProposerAddress)
 		}
-		selected, _ := cliutils.Select("Please select a proposal to vote on:", options)
+		selected, _ := utils.Select("Please select a proposal to vote on:", options)
 		selectedProposal = votableProposals[selected]
-
 	}
 
 	// Get support status
 	var support bool
 	var supportLabel string
-	if c.String("support") != "" {
-
+	if c.String(voteSupportFlag.Name) != "" {
 		// Parse support status
 		var err error
-		support, err = cliutils.ValidateBool("support", c.String("support"))
+		support, err = input.ValidateBool("support", c.String(voteSupportFlag.Name))
 		if err != nil {
 			return err
 		}
-
 	} else {
-
 		// Prompt for support status
-		support = cliutils.Confirm("Would you like to vote in support of the proposal?")
-
+		support = utils.Confirm("Would you like to vote in support of the proposal?")
 	}
 	if support {
 		supportLabel = "in support of"
@@ -124,45 +115,38 @@ func voteOnProposal(c *cli.Context) error {
 		supportLabel = "against"
 	}
 
-	// Check if proposal can be voted on
-	canVote, err := rp.CanVoteOnTNDAOProposal(selectedProposal.ID)
+	// Build the TX
+	response, err := rp.Api.ODao.Vote(selectedProposal.ID, support)
 	if err != nil {
 		return err
 	}
-	if !canVote.CanVote {
+
+	// Verify
+	if !response.Data.CanVote {
 		fmt.Println("Cannot vote on proposal:")
-		if canVote.JoinedAfterCreated {
+		if response.Data.JoinedAfterCreated {
 			fmt.Println("You cannot vote on proposals created before you joined the oracle DAO.")
+		}
+		if response.Data.AlreadyVoted {
+			fmt.Println("You already voted on this proposal.")
+		}
+		if response.Data.DoesNotExist {
+			fmt.Println("The proposal does not exist.")
+		}
+		if response.Data.InvalidState {
+			fmt.Println("The proposal is not in a state where it can be voted on.")
 		}
 		return nil
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Vote on proposal
-	response, err := rp.VoteOnTNDAOProposal(selectedProposal.ID, support)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Submitting vote...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-		return err
-	}
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID),
+		"voting on proposal",
+		"Submitting vote...",
+	)
 
 	// Log & return
 	fmt.Printf("Successfully voted %s proposal %d.\n", supportLabel, selectedProposal.ID)
 	return nil
-
 }

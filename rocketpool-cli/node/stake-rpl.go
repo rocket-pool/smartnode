@@ -8,7 +8,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
@@ -34,7 +33,7 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 
 	// If a custom nonce is set, print the multi-transaction warning
-	if c.Uint64(flags.NonceFlag) != 0 {
+	if c.Uint64(utils.NonceFlag) != 0 {
 		utils.PrintMultiTransactionNonceWarning()
 	}
 
@@ -42,7 +41,7 @@ func nodeStakeRpl(c *cli.Context) error {
 	rplBalance := status.Data.NodeBalances.Rpl
 	if status.Data.NodeBalances.Fsrpl.Cmp(big.NewInt(0)) > 0 {
 		if c.Bool(swapFlag) || utils.Confirm(fmt.Sprintf("The node has a balance of %.6f legacy RPL. Would you like to swap it for new RPL before staking?", math.RoundDown(eth.WeiToEth(status.Data.NodeBalances.Fsrpl), 6))) {
-			err = swapRpl(c, rp, status.Data.NodeBalances.Fsrpl)
+			err = SwapRpl(c, rp, status.Data.NodeBalances.Fsrpl)
 			if err != nil {
 				return fmt.Errorf("error swapping legacy RPL: %w", err)
 			}
@@ -106,7 +105,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		fmt.Println("This only needs to be done once for your node.")
 
 		// If a custom nonce is set, print the multi-transaction warning
-		customNonce := c.Uint64(flags.NonceFlag)
+		customNonce := c.Uint64(utils.NonceFlag)
 		if customNonce != 0 {
 			utils.PrintMultiTransactionNonceWarning()
 		}
@@ -121,11 +120,7 @@ func nodeStakeRpl(c *cli.Context) error {
 			return err
 		}
 
-		// If a custom nonce is set, increment it for the next transaction
 		fmt.Println("Successfully approved staking access to RPL.")
-		if customNonce != 0 {
-			c.Set(flags.NonceFlag, strconv.FormatUint(customNonce+1, 10))
-		}
 	}
 
 	// Run the stake TX

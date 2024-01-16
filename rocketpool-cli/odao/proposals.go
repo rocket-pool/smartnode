@@ -6,13 +6,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+var proposalStatesFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "states",
+	Aliases: []string{"s"},
+	Usage:   "Comma separated list of states to filter ('pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', or 'expired')",
+}
 
 func filterProposalState(state string, stateFilter string) bool {
 	// Easy out
@@ -33,32 +39,30 @@ func filterProposalState(state string, stateFilter string) bool {
 }
 
 func getProposals(c *cli.Context, stateFilter string) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get oracle DAO proposals
-	allProposals, err := rp.TNDAOProposals()
+	allProposals, err := rp.Api.ODao.Proposals()
 	if err != nil {
 		return err
 	}
 
 	// Get oracle DAO members
-	allMembers, err := rp.TNDAOMembers()
+	allMembers, err := rp.Api.ODao.Members()
 	if err != nil {
 		return err
 	}
 
 	// Get proposals by state
-	stateProposals := map[string][]dao.ProposalDetails{}
-	for _, proposal := range allProposals.Proposals {
+	stateProposals := map[string][]api.OracleDaoProposalDetails{}
+	for _, proposal := range allProposals.Data.Proposals {
 		stateName := proposal.State.String()
 		if _, ok := stateProposals[stateName]; !ok {
-			stateProposals[stateName] = []dao.ProposalDetails{}
+			stateProposals[stateName] = []api.OracleDaoProposalDetails{}
 		}
 		stateProposals[stateName] = append(stateProposals[stateName], proposal)
 	}
@@ -86,7 +90,7 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 		// Proposals
 		for _, proposal := range proposals {
-			for _, member := range allMembers.Members {
+			for _, member := range allMembers.Data.Members {
 				if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
 					fmt.Printf("%d: %s - Proposed by: %s (%s)\n", proposal.ID, proposal.Message, member.ID, proposal.ProposerAddress)
 				}
@@ -101,42 +105,40 @@ func getProposals(c *cli.Context, stateFilter string) error {
 		fmt.Println("There are no matching oracle DAO proposals.")
 	}
 	return nil
-
 }
 
 func getProposal(c *cli.Context, id uint64) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get oracle DAO proposals
-	allProposals, err := rp.TNDAOProposals()
+	allProposals, err := rp.Api.ODao.Proposals()
 	if err != nil {
 		return err
 	}
 
 	// Get oracle DAO members
-	allMembers, err := rp.TNDAOMembers()
+	allMembers, err := rp.Api.ODao.Members()
 	if err != nil {
 		return err
 	}
 
 	// Find the proposal
-	var proposal *dao.ProposalDetails
+	var proposal *api.OracleDaoProposalDetails
 
-	for i, p := range allProposals.Proposals {
+	for i, p := range allProposals.Data.Proposals {
 		if p.ID == id {
-			proposal = &allProposals.Proposals[i]
+			proposal = &allProposals.Data.Proposals[i]
 			break
 		}
 	}
 
 	// Find the proposer
 	var memberID string
-	for _, member := range allMembers.Members {
+	for _, member := range allMembers.Data.Members {
 		if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
 			memberID = member.ID
 		}
@@ -153,21 +155,21 @@ func getProposal(c *cli.Context, id uint64) error {
 	fmt.Printf("Payload:              %s\n", proposal.PayloadStr)
 	fmt.Printf("Payload (bytes):      %s\n", hex.EncodeToString(proposal.Payload))
 	fmt.Printf("Proposed by:          %s (%s)\n", memberID, proposal.ProposerAddress.Hex())
-	fmt.Printf("Created at:           %s\n", cliutils.GetDateTimeString(proposal.CreatedTime))
+	fmt.Printf("Created at:           %s\n", utils.GetDateTimeStringOfTime(proposal.CreatedTime))
 
 	// Start block - pending proposals
-	if proposal.State == types.Pending {
-		fmt.Printf("Starts at:            %s\n", cliutils.GetDateTimeString(proposal.StartTime))
+	if proposal.State == types.ProposalState_Pending {
+		fmt.Printf("Starts at:            %s\n", utils.GetDateTimeStringOfTime(proposal.StartTime))
 	}
 
 	// End block - active proposals
-	if proposal.State == types.Active {
-		fmt.Printf("Ends at:              %s\n", cliutils.GetDateTimeString(proposal.EndTime))
+	if proposal.State == types.ProposalState_Active {
+		fmt.Printf("Ends at:              %s\n", utils.GetDateTimeStringOfTime(proposal.EndTime))
 	}
 
 	// Expiry block - succeeded proposals
-	if proposal.State == types.Succeeded {
-		fmt.Printf("Expires at:           %s\n", cliutils.GetDateTimeString(proposal.ExpiryTime))
+	if proposal.State == types.ProposalState_Succeeded {
+		fmt.Printf("Expires at:           %s\n", utils.GetDateTimeStringOfTime(proposal.ExpiryTime))
 	}
 
 	// Vote details

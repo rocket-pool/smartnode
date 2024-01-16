@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
 	"github.com/urfave/cli/v2"
 )
 
@@ -40,8 +39,8 @@ func GetMultiselectIndices[DataType any](c *cli.Context, flagName string, option
 	}
 
 	// No headless flag, so prompt interactively
-	if c.Bool(flags.YesFlag) {
-		return nil, fmt.Errorf("the '%s' flag (non-interactive mode) is specified but the '%s' flag (selection) is missing", flags.YesFlag, flagName)
+	if c.Bool(YesFlag.Name) {
+		return nil, fmt.Errorf("the '%s' flag (non-interactive mode) is specified but the '%s' flag (selection) is missing", YesFlag.Name, flagName)
 	}
 	indexSelection := Prompt("%s\nUse a comma separated list (such as '1,2,3') or leave it blank to select all options.", "^$|^\\d+(,\\d+)*$", "Invalid index selection")
 	return parseIndexSelection(indexSelection, options)
