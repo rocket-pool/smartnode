@@ -33,12 +33,11 @@ func (r *PDaoRequester) GetClient() *http.Client {
 }
 
 // Claim / unlock bonds from a proposal
-func (r *PDaoRequester) ClaimBonds(proposalID uint64, indices []uint64) (*api.ApiResponse[api.ProtocolDaoClaimBondsData], error) {
-	args := map[string]string{
-		"proposal-id": fmt.Sprint(proposalID),
-		"indices":     makeBatchArg(indices),
+func (r *PDaoRequester) ClaimBonds(claims []api.ProtocolDaoClaimBonds) (*api.ApiResponse[api.DataBatch[api.ProtocolDaoClaimBondsData]], error) {
+	body := api.ProtocolDaoClaimBondsBody{
+		Claims: claims,
 	}
-	return sendGetRequest[api.ProtocolDaoClaimBondsData](r, "claim-bonds", "ClaimBonds", args)
+	return sendPostRequest[api.DataBatch[api.ProtocolDaoClaimBondsData]](r, "claim-bonds", "ClaimBonds", body)
 }
 
 // Get the list of proposals with claimable / rewardable bonds, and the relevant indices for each one

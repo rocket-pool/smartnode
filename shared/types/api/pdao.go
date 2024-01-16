@@ -246,6 +246,15 @@ type ProtocolDaoGetClaimableBondsData struct {
 	ClaimableBonds []BondClaimResult `json:"claimableBonds"`
 }
 
+type ProtocolDaoClaimBonds struct {
+	ProposalID uint64   `json:"proposalId"`
+	Indices    []uint64 `json:"indices"`
+}
+
+type ProtocolDaoClaimBondsBody struct {
+	Claims []ProtocolDaoClaimBonds `json:"claims"`
+}
+
 type ProtocolDaoClaimBondsData struct {
 	CanClaim     bool                  `json:"canClaim"`
 	IsProposer   bool                  `json:"isProposer"`

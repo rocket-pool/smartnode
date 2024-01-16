@@ -2,10 +2,12 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/goccy/go-json"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
@@ -43,8 +45,55 @@ func RegisterSingleStageRoute[ContextType ISingleStageCallContext[DataType], Dat
 	serviceProvider *services.ServiceProvider,
 ) {
 	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			handleInvalidMethod(w)
+			return
+		}
+
 		// Create the handler and deal with any input validation errors
 		context, err := factory.Create(r.URL.Query())
+		if err != nil {
+			handleInputError(w, err)
+			return
+		}
+
+		// Run the context's processing routine
+		response, err := runSingleStageRoute[DataType](context, serviceProvider)
+		handleResponse(w, response, err)
+	})
+}
+
+// Registers a new route with the router, which will invoke the provided factory to create and execute the context
+// for the route when it's called via POST; use this for typical general-purpose calls
+func RegisterSingleStagePost[ContextType ISingleStageCallContext[DataType], BodyType any, DataType any](
+	router *mux.Router,
+	functionName string,
+	factory ISingleStageCallContextFactory[ContextType, BodyType, DataType],
+	serviceProvider *services.ServiceProvider,
+) {
+	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			handleInvalidMethod(w)
+			return
+		}
+
+		// Read the body
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			handleInputError(w, fmt.Errorf("error reading request body: %w", err))
+			return
+		}
+
+		// Deserialize the body
+		var body BodyType
+		err = json.Unmarshal(bodyBytes, &body)
+		if err != nil {
+			handleInputError(w, fmt.Errorf("error deserializing request body: %w", err))
+			return
+		}
+
+		// Create the handler and deal with any input validation errors
+		context, err := factory.Create(body)
 		if err != nil {
 			handleInputError(w, err)
 			return
