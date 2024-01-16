@@ -163,7 +163,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to propose kicking the from the security council?\n%s", kickString))) {
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to propose kicking these members from the security council?\n%s", kickString))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
