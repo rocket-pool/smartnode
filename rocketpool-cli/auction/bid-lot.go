@@ -50,7 +50,6 @@ func bidOnLot(c *cli.Context) error {
 	// Get selected lot
 	var selectedLot api.AuctionLotDetails
 	if c.String(bidLotFlag) != "" {
-
 		// Get selected lot index
 		selectedIndex, err := strconv.ParseUint(c.String(bidLotFlag), 10, 64)
 		if err != nil {
@@ -69,9 +68,7 @@ func bidOnLot(c *cli.Context) error {
 		if !found {
 			return fmt.Errorf("lot %d is not available for bidding", selectedIndex)
 		}
-
 	} else {
-
 		// Prompt for lot selection
 		options := make([]string, len(openLots))
 		for li, lot := range openLots {
@@ -79,31 +76,25 @@ func bidOnLot(c *cli.Context) error {
 		}
 		selected, _ := utils.Select("Please select a lot to bid on:", options)
 		selectedLot = openLots[selected]
-
 	}
 
 	// Get bid amount
 	var amountWei *big.Int
 	if c.String(bidAmountFlag) == "max" {
-
 		// Set bid amount to maximum
 		var tmp big.Int
 		var maxAmount big.Int
 		tmp.Mul(selectedLot.RemainingRplAmount, selectedLot.CurrentPrice)
 		maxAmount.Quo(&tmp, eth.EthToWei(1))
 		amountWei = &maxAmount
-
 	} else if c.String(bidAmountFlag) != "" {
-
 		// Parse amount
 		bidAmount, err := strconv.ParseFloat(c.String(bidAmountFlag), 64)
 		if err != nil {
 			return fmt.Errorf("invalid bid amount '%s': %w", c.String(bidAmountFlag), err)
 		}
 		amountWei = eth.EthToWei(bidAmount)
-
 	} else {
-
 		// Calculate maximum bid amount
 		var tmp big.Int
 		var maxAmount big.Int
@@ -122,16 +113,16 @@ func bidOnLot(c *cli.Context) error {
 				return fmt.Errorf("invalid bid amount '%s': %w", inputAmount, err)
 			}
 			amountWei = eth.EthToWei(bidAmount)
-
 		}
-
 	}
 
-	// Check lot can be bid on
+	// Build the TX
 	response, err := rp.Api.Auction.BidOnLot(selectedLot.Index, amountWei)
 	if err != nil {
 		return fmt.Errorf("error checking if bidding on lot %d is possible: %w", selectedLot.Index, err)
 	}
+
+	// Verify
 	if !response.Data.CanBid {
 		fmt.Println("Cannot bid on lot:")
 		if response.Data.BidOnLotDisabled {

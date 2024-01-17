@@ -2,35 +2,42 @@ package pdao
 
 import (
 	"fmt"
-	"time"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/urfave/cli/v2"
 )
+
+var scReplaceExistingAddressFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "existing-address",
+	Aliases: []string{"e"},
+	Usage:   "The address of the existing member",
+}
+var scReplaceNewIdFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "new-id",
+	Aliases: []string{"ni"},
+	Usage:   "A descriptive ID of the new entity to invite",
+}
+var scReplaceNewAddressFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "new-address",
+	Aliases: []string{"na"},
+	Usage:   "The address of the new entity to invite",
+}
 
 func proposeSecurityCouncilReplace(c *cli.Context) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
 
 	// Get the list of members
-	membersResponse, err := rp.SecurityMembers()
+	membersResponse, err := rp.Api.Security.Members()
 	if err != nil {
 		return fmt.Errorf("error getting list of security council members: %w", err)
 	}
@@ -38,23 +45,23 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	// Get the address of the member to replace
 	var oldID string
 	var oldAddress common.Address
-	oldAddressString := c.String("existing-address")
+	oldAddressString := c.String(scReplaceExistingAddressFlag.Name)
 	if oldAddressString == "" {
-		options := make([]string, len(membersResponse.Members))
-		for i, member := range membersResponse.Members {
-			options[i] = fmt.Sprintf("%d: %s (%s), joined %s\n", i+1, member.ID, member.Address, time.Unix(int64(member.JoinedTime), 0))
+		options := make([]string, len(membersResponse.Data.Members))
+		for i, member := range membersResponse.Data.Members {
+			options[i] = fmt.Sprintf("%d: %s (%s), joined %s\n", i+1, member.ID, member.Address, member.JoinedTime)
 		}
-		selection, _ := cliutils.Select("Which member would you like to replace?", options)
-		member := membersResponse.Members[selection]
+		selection, _ := utils.Select("Which member would you like to replace?", options)
+		member := membersResponse.Data.Members[selection]
 		oldID = member.ID
 		oldAddress = member.Address
 	} else {
-		oldAddress, err = cliutils.ValidateAddress("address", oldAddressString)
+		oldAddress, err = input.ValidateAddress("address", oldAddressString)
 		if err != nil {
 			return err
 		}
 		found := false
-		for _, member := range membersResponse.Members {
+		for _, member := range membersResponse.Data.Members {
 			if member.Address == oldAddress {
 				oldID = member.ID
 				found = true
@@ -67,53 +74,53 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	}
 
 	// Get the new ID
-	newID := c.String("new-id")
+	newID := c.String(scReplaceNewIdFlag.Name)
 	if newID == "" {
-		newID = cliutils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
+		newID = utils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
 	}
 
 	// Get the new address
-	newAddressString := c.String("new-address")
+	newAddressString := c.String(scReplaceNewAddressFlag.Name)
 	if newAddressString == "" {
-		newAddressString = cliutils.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
+		newAddressString = utils.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
 	}
-	newAddress, err := cliutils.ValidateAddress("address", newAddressString)
+	newAddress, err := input.ValidateAddress("address", newAddressString)
 	if err != nil {
 		return err
 	}
 
-	// Check submissions
-	canResponse, err := rp.PDAOCanProposeReplaceMemberOfSecurityCouncil(oldAddress, newID, newAddress)
+	// Build the TX
+	response, err := rp.Api.PDao.ReplaceMemberOfSecurityCouncil(oldAddress, newID, newAddress)
 	if err != nil {
 		return err
 	}
 
-	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex()))) {
-		fmt.Println("Cancelled.")
+	// Verify
+	if !response.Data.CanPropose {
+		fmt.Println("You cannot currently submit this proposal:")
+		if response.Data.InsufficientRpl {
+			fmt.Printf("You do not have enough unlocked RPL (proposals require locking %.6f RPL, but you only have %.6f RPL staked and unlocked).", eth.WeiToEth(response.Data.ProposalBond), eth.WeiToEth(big.NewInt(0).Sub(response.Data.StakedRpl, response.Data.LockedRpl)))
+		}
+		if response.Data.NewMemberAlreadyExists {
+			fmt.Println("The new address is already a member of the security council.")
+		}
+		if response.Data.OldMemberDoesNotExist {
+			fmt.Println("The existing address is not a member of the security council.")
+		}
 		return nil
 	}
 
-	// Submit
-	response, err := rp.PDAOProposeReplaceMemberOfSecurityCouncil(oldAddress, newID, newAddress, canResponse.BlockNumber)
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf("Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex()),
+		"proposing security council replace",
+		"Proposing replace in security council...",
+	)
 	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Proposing replace in security council...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
 	fmt.Println("Proposal successfully created.")
 	return nil
-
 }

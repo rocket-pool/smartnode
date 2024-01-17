@@ -19,7 +19,7 @@ func NewProtocolDaoHandler(serviceProvider *services.ServiceProvider) *ProtocolD
 	h.factories = []server.IContextFactory{
 		&protocolDaoClaimBondsContextFactory{h},
 		&protocolDaoDefeatProposalContextFactory{h},
-		&protocolDaoExecuteProposalContextFactory{h},
+		&protocolDaoExecuteProposalsContextFactory{h},
 		&protocolDaoFinalizeProposalContextFactory{h},
 		&protocolDaoOverrideVoteOnProposalContextFactory{h},
 		&protocolDaoVoteOnProposalContextFactory{h},

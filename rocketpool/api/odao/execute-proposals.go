@@ -60,7 +60,7 @@ type oracleDaoExecuteProposalsContext struct {
 	ids        []uint64
 	odaoMember *oracle.OracleDaoMember
 	dpm        *proposals.DaoProposalManager
-	props      []*proposals.OracleDaoProposal
+	proposals  []*proposals.OracleDaoProposal
 }
 
 func (c *oracleDaoExecuteProposalsContext) Initialize() error {
@@ -83,14 +83,14 @@ func (c *oracleDaoExecuteProposalsContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager binding: %w", err)
 	}
-	c.props = make([]*proposals.OracleDaoProposal, len(c.ids))
+	c.proposals = make([]*proposals.OracleDaoProposal, len(c.ids))
 	for i, id := range c.ids {
 		prop, err := c.dpm.CreateProposalFromID(id, nil)
 		if err != nil {
 			return fmt.Errorf("error creating proposal binding: %w", err)
 		}
 		var success bool
-		c.props[i], success = proposals.GetProposalAsOracle(prop)
+		c.proposals[i], success = proposals.GetProposalAsOracle(prop)
 		if !success {
 			return fmt.Errorf("proposal %d is not an Oracle DAO proposal", id)
 		}
@@ -103,7 +103,7 @@ func (c *oracleDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 		c.dpm.ProposalCount,
 		c.odaoMember.Exists,
 	)
-	for _, prop := range c.props {
+	for _, prop := range c.proposals {
 		prop.State.AddToQuery(mc)
 	}
 }
@@ -115,7 +115,7 @@ func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[
 	}
 
 	dataBatch.Batch = make([]api.OracleDaoExecuteProposalsData, len(c.ids))
-	for i, prop := range c.props {
+	for i, prop := range c.proposals {
 
 		// Check proposal details
 		data := &dataBatch.Batch[i]

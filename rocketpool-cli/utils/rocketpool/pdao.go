@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -64,12 +65,12 @@ func (r *PDaoRequester) DefeatProposal(proposalID uint64, index uint64) (*api.Ap
 	return sendGetRequest[api.ProtocolDaoDefeatProposalData](r, "proposal/defeat", "DefeatProposal", args)
 }
 
-// Execute a proposal
-func (r *PDaoRequester) ExecuteProposal(proposalID uint64) (*api.ApiResponse[api.ProtocolDaoExecuteProposalData], error) {
+// Execute one or more proposals
+func (r *PDaoRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[api.DataBatch[api.ProtocolDaoExecuteProposalData]], error) {
 	args := map[string]string{
-		"id": fmt.Sprint(proposalID),
+		"ids": makeBatchArg(ids),
 	}
-	return sendGetRequest[api.ProtocolDaoExecuteProposalData](r, "proposal/execute", "ExecuteProposal", args)
+	return sendGetRequest[api.DataBatch[api.ProtocolDaoExecuteProposalData]](r, "proposal/execute", "ExecuteProposals", args)
 }
 
 // Finalize a proposal if it's been vetoed by burning the proposer's bond
@@ -184,10 +185,10 @@ func (r *PDaoRequester) Settings() (*api.ApiResponse[api.ProtocolDaoSettingsData
 }
 
 // Propose updating one of the Protocol DAO settings
-func (r *PDaoRequester) ProposeSetting(contractName rocketpool.ContractName, setting string, value string) (*api.ApiResponse[api.ProtocolDaoProposeSettingData], error) {
+func (r *PDaoRequester) ProposeSetting(contractName rocketpool.ContractName, setting protocol.SettingName, value string) (*api.ApiResponse[api.ProtocolDaoProposeSettingData], error) {
 	args := map[string]string{
 		"contract": string(contractName),
-		"setting":  setting,
+		"setting":  string(setting),
 		"value":    value,
 	}
 	return sendGetRequest[api.ProtocolDaoProposeSettingData](r, "setting/propose", "ProposeSetting", args)

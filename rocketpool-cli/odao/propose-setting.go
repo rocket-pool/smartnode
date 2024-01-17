@@ -3,6 +3,7 @@ package odao
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
@@ -27,7 +28,11 @@ func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocket
 	case *big.Int:
 		valueString = trueValue.String()
 	case time.Duration:
-		valueString = fmt.Sprint(uint64(trueValue.Seconds()))
+		valueString = strconv.FormatUint(uint64(trueValue.Seconds()), 10)
+	case bool:
+		valueString = strconv.FormatBool(trueValue)
+	case uint64:
+		valueString = strconv.FormatUint(trueValue, 10)
 	default:
 		panic("unknown setting type")
 	}
@@ -42,7 +47,7 @@ func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocket
 	if !response.Data.CanPropose {
 		fmt.Println("Cannot propose setting update:")
 		if response.Data.UnknownSetting {
-			fmt.Sprintf("Unknown setting '%s' on contract '%s'.\n", setting, contract)
+			fmt.Println("Unknown setting '%s' on contract '%s'.\n", setting, contract)
 		}
 		if response.Data.ProposalCooldownActive {
 			fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")

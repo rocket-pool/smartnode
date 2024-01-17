@@ -11,7 +11,6 @@ import (
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-
 	// Create the member settings commands
 	membersContract := rocketpool.ContractName_RocketDAONodeTrustedSettingsMembers
 	memberSettingsCmd := utils.CreateSetterCategory("members", "Member", "m", membersContract)

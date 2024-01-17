@@ -4,102 +4,93 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/urfave/cli/v2"
 )
+
+var oneTimeSpendInvoiceFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "invoice-id",
+	Aliases: []string{"i"},
+	Usage:   "The invoice ID / number for this spend",
+}
 
 func proposeOneTimeSpend(c *cli.Context) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
 
 	// Check for the raw flag
-	rawEnabled := c.Bool("raw")
+	rawEnabled := c.Bool(utils.RawFlag.Name)
 
 	// Get the invoice ID
-	invoiceID := c.String("invoice-id")
+	invoiceID := c.String(oneTimeSpendInvoiceFlag.Name)
 	if invoiceID == "" {
-		invoiceID = cliutils.Prompt("Please enter an invoice ID for this spend: (no spaces)", "^\\S+$", "Invalid ID")
+		invoiceID = utils.Prompt("Please enter an invoice ID for this spend: (no spaces)", "^\\S+$", "Invalid ID")
 	}
 
 	// Get the recipient
-	recipientString := c.String("recipient")
+	recipientString := c.String(recipientFlag.Name)
 	if recipientString == "" {
-		recipientString = cliutils.Prompt("Please enter a recipient address for this spend:", "^0x[0-9a-fA-F]{40}$", "Invalid recipient address")
+		recipientString = utils.Prompt("Please enter a recipient address for this spend:", "^0x[0-9a-fA-F]{40}$", "Invalid recipient address")
 	}
-	recipient, err := cliutils.ValidateAddress("recipient", recipientString)
+	recipient, err := input.ValidateAddress("recipient", recipientString)
 	if err != nil {
 		return err
 	}
 
 	// Get the amount string
-	amountString := c.String("amount")
+	amountString := c.String(amountFlag.Name)
 	if amountString == "" {
 		if rawEnabled {
-			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
+			amountString = utils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
 		} else {
-			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
+			amountString = utils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
 		}
 	}
 
 	// Parse the amount
 	var amount *big.Int
 	if rawEnabled {
-		amount, err = cliutils.ValidateBigInt("amount", amountString)
+		amount, err = input.ValidateBigInt("amount", amountString)
 	} else {
-		amount, err = parseFloat(c, "amount", amountString, false)
+		amount, err = utils.ParseFloat(c, "amount", amountString, false)
 	}
 	if err != nil {
 		return err
 	}
 
-	// Check submissions
-	canResponse, err := rp.PDAOCanProposeOneTimeSpend(invoiceID, recipient, amount)
+	// Build the TX
+	response, err := rp.Api.PDao.OneTimeSpend(invoiceID, recipient, amount)
 	if err != nil {
 		return err
 	}
 
-	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to propose this one-time spend of the Protocol DAO treasury?")) {
-		fmt.Println("Cancelled.")
+	// Verify
+	if !response.Data.CanPropose {
+		fmt.Println("You cannot currently submit this proposal:")
+		if response.Data.InsufficientRpl {
+			fmt.Printf("You do not have enough unlocked RPL (proposals require locking %.6f RPL, but you only have %.6f RPL staked and unlocked).", eth.WeiToEth(response.Data.ProposalBond), eth.WeiToEth(big.NewInt(0).Sub(response.Data.StakedRpl, response.Data.LockedRpl)))
+		}
 		return nil
 	}
 
-	// Submit
-	response, err := rp.PDAOProposeOneTimeSpend(invoiceID, recipient, amount, canResponse.BlockNumber)
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		"Are you sure you want to propose this one-time spend of the Protocol DAO treasury?",
+		"one-time-spend proposal",
+		"Proposing one-time spend...",
+	)
 	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Proposing one-time spend...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
 	fmt.Println("Proposal successfully created.")
 	return nil
-
 }

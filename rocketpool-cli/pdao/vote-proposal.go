@@ -2,47 +2,35 @@ package pdao
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 func voteOnProposal(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
-	// Get oracle DAO proposals
-	proposals, err := rp.PDAOProposals()
+	// Get Protocol DAO proposals
+	proposals, err := rp.Api.PDao.Proposals()
 	if err != nil {
 		return err
 	}
 
 	// Get votable proposals
-	votableProposals := []api.PDAOProposalWithNodeVoteDirection{}
-	for _, proposal := range proposals.Proposals {
+	votableProposals := []api.ProtocolDaoProposalDetails{}
+	for _, proposal := range proposals.Data.Proposals {
 		if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 && proposal.NodeVoteDirection == types.VoteDirection_NoVote {
 			votableProposals = append(votableProposals, proposal)
 		}
@@ -55,16 +43,10 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Get selected proposal
-	var selectedProposal api.PDAOProposalWithNodeVoteDirection
-	if c.String("proposal") != "" {
-
-		// Get selected proposal ID
-		selectedId, err := strconv.ParseUint(c.String("proposal"), 10, 64)
-		if err != nil {
-			return fmt.Errorf("Invalid proposal ID '%s': %w", c.String("proposal"), err)
-		}
-
+	var selectedProposal api.ProtocolDaoProposalDetails
+	if c.Uint64(proposalFlag.Name) != 0 {
 		// Get matching proposal
+		selectedId := c.Uint64(proposalFlag.Name)
 		found := false
 		for _, proposal := range votableProposals {
 			if proposal.ID == selectedId {
@@ -76,9 +58,7 @@ func voteOnProposal(c *cli.Context) error {
 		if !found {
 			return fmt.Errorf("Proposal %d can not be voted on.", selectedId)
 		}
-
 	} else {
-
 		// Prompt for proposal selection
 		options := make([]string, len(votableProposals))
 		for pi, proposal := range votableProposals {
@@ -95,18 +75,17 @@ func voteOnProposal(c *cli.Context) error {
 				eth.WeiToEth(proposal.VotingPowerToVeto),
 				proposal.ProposerAddress)
 		}
-		selected, _ := cliutils.Select("Please select a proposal to vote on:", options)
+		selected, _ := utils.Select("Please select a proposal to vote on:", options)
 		selectedProposal = votableProposals[selected]
-
 	}
 
 	// Get support status
 	var voteDirection types.VoteDirection
 	var voteDirectionLabel string
-	if c.String("vote-direction") != "" {
+	if c.String(voteDirectionFlag.Name) != "" {
 		// Parse vote dirrection
 		var err error
-		voteDirection, err = cliutils.ValidateVoteDirection("vote-direction", c.String("vote-direction"))
+		voteDirection, err = input.ValidateVoteDirection("vote-direction", c.String(voteDirectionFlag.Name))
 		if err != nil {
 			return err
 		}
@@ -120,52 +99,45 @@ func voteOnProposal(c *cli.Context) error {
 			"Veto",
 		}
 		var selected int
-		selected, voteDirectionLabel = cliutils.Select("How would you like to vote on the proposal?", options)
+		selected, voteDirectionLabel = utils.Select("How would you like to vote on the proposal?", options)
 		voteDirection = types.VoteDirection(selected + 1)
 	}
 
-	// Check if proposal can be voted on
-	canVote, err := rp.PDAOCanVoteProposal(selectedProposal.ID, voteDirection)
+	// Build the TX
+	response, err := rp.Api.PDao.VoteOnProposal(selectedProposal.ID, voteDirection)
 	if err != nil {
 		return err
 	}
-	if !canVote.CanVote {
+
+	// Verify
+	if !response.Data.CanVote {
 		fmt.Println("Cannot vote on proposal:")
-		if canVote.InsufficientPower {
+		if response.Data.InsufficientPower {
 			fmt.Println("You do not have any voting power.")
+		}
+		if response.Data.AlreadyVoted {
+			fmt.Println("You already voted on this proposal.")
+		}
+		if response.Data.DoesNotExist {
+			fmt.Println("The proposal does not exist.")
+		}
+		if response.Data.InvalidState {
+			fmt.Println("The proposal is not in a voteable state.")
 		}
 		return nil
 	}
 
-	// Print the voting power
-	fmt.Printf("\n\nYour current voting power: %.6f\n\n", eth.WeiToEth(canVote.VotingPower))
+	// Print voting power
+	fmt.Printf("You currently have %.2f voting power.\n\n", eth.WeiToEth(response.Data.VotingPower))
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote '%s' on proposal %d? Your vote cannot be changed later.", voteDirectionLabel, selectedProposal.ID))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Vote on proposal
-	response, err := rp.PDAOVoteProposal(selectedProposal.ID, voteDirection)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Submitting vote...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-		return err
-	}
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf("Are you sure you want to vote '%s' on proposal %d? Your vote cannot be changed later.", voteDirectionLabel, selectedProposal.ID),
+		"voting on proposal",
+		"Submitting vote...",
+	)
 
 	// Log & return
 	fmt.Printf("Successfully voted '%s' for proposal %d.\n", voteDirectionLabel, selectedProposal.ID)
 	return nil
-
 }

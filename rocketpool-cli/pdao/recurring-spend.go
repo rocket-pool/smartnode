@@ -5,137 +5,126 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/urfave/cli/v2"
 )
+
+var recurringSpendStartTimeFlag *cli.Uint64Flag = &cli.Uint64Flag{
+	Name:    "start-time",
+	Aliases: []string{"s"},
+	Usage:   "The start time of the first payment period (Unix timestamp)",
+}
 
 func proposeRecurringSpend(c *cli.Context) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
 
 	// Check for the raw flag
-	rawEnabled := c.Bool("raw")
+	rawEnabled := c.Bool(utils.RawFlag.Name)
 
 	// Get the contract name
-	contractName := c.String("contract-name")
+	contractName := c.String(contractNameFlag.Name)
 	if contractName == "" {
-		contractName = cliutils.Prompt("Please enter a contract name for this recurring payment:", "^\\S+$", "Invalid ID")
+		contractName = utils.Prompt("Please enter a contract name for this recurring payment:", "^\\S+$", "Invalid ID")
 	}
 
 	// Get the recipient
-	recipientString := c.String("recipient")
+	recipientString := c.String(recipientFlag.Name)
 	if recipientString == "" {
-		recipientString = cliutils.Prompt("Please enter a recipient address for this recurring payment:", "^0x[0-9a-fA-F]{40}$", "Invalid recipient address")
+		recipientString = utils.Prompt("Please enter a recipient address for this recurring payment:", "^0x[0-9a-fA-F]{40}$", "Invalid recipient address")
 	}
-	recipient, err := cliutils.ValidateAddress("recipient", recipientString)
+	recipient, err := input.ValidateAddress("recipient", recipientString)
 	if err != nil {
 		return err
 	}
 
 	// Get the amount string
-	amountString := c.String("amount-per-period")
+	var amount *big.Int
+	amountString := c.String(amountPerPeriodFlag.Name)
 	if amountString == "" {
 		if rawEnabled {
-			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
+			amountString = utils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
 		} else {
-			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
+			amountString = utils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
 		}
 	}
-
-	// Parse the amount
-	var amount *big.Int
 	if rawEnabled {
-		amount, err = cliutils.ValidateBigInt("amount-per-period", amountString)
+		amount, err = input.ValidateBigInt("amount-per-period", amountString)
 	} else {
-		amount, err = parseFloat(c, "amount-per-period", amountString, false)
+		amount, err = utils.ParseFloat(c, "amount-per-period", amountString, false)
 	}
 	if err != nil {
 		return err
 	}
 
 	// Get the start time
-	startTimeUnix := c.Uint64("start-time")
-	if !c.IsSet("start-time") {
-		startTimeString := cliutils.Prompt("Please enter the time that the recurring payment will start (as a UNIX timestamp):", "^[0-9]+$", "Invalid start time")
-		startTimeUnix, err = cliutils.ValidateUint("start-time", startTimeString)
+	startTimeUnix := c.Uint64(recurringSpendStartTimeFlag.Name)
+	if !c.IsSet(recurringSpendStartTimeFlag.Name) {
+		startTimeString := utils.Prompt("Please enter the time that the recurring payment will start (as a UNIX timestamp):", "^[0-9]+$", "Invalid start time")
+		startTimeUnix, err = input.ValidateUint("start-time", startTimeString)
 		if err != nil {
 			return err
 		}
 	}
 	startTime := time.Unix(int64(startTimeUnix), 0)
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("The provided timestamp corresponds to %s - is this correct?", startTime.UTC().String()))) {
+	if !(c.Bool(utils.YesFlag.Name) || utils.Confirm(fmt.Sprintf("The provided timestamp corresponds to %s - is this correct?", startTime.UTC().String()))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Get the period length
-	periodLengthString := c.String("period-length")
+	periodLengthString := c.String(periodLengthFlag.Name)
 	if periodLengthString == "" {
-		periodLengthString = cliutils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^.+$", "Invalid period length")
+		periodLengthString = utils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^.+$", "Invalid period length")
 	}
-	periodLength, err := cliutils.ValidateDuration("period-length", periodLengthString)
+	periodLength, err := input.ValidateDuration("period-length", periodLengthString)
 	if err != nil {
 		return err
 	}
 
 	// Get the number of periods
-	numPeriods := c.Uint64("number-of-periods")
-	if !c.IsSet("number-of-periods") {
-		numPeriodsString := cliutils.Prompt("Please enter the total number of payment periods:", "^[0-9]+$", "Invalid number of periods")
-		numPeriods, err = cliutils.ValidateUint("number-of-periods", numPeriodsString)
+	numPeriods := c.Uint64(numberOfPeriodsFlag.Name)
+	if !c.IsSet(numberOfPeriodsFlag.Name) {
+		numPeriodsString := utils.Prompt("Please enter the total number of payment periods:", "^[0-9]+$", "Invalid number of periods")
+		numPeriods, err = input.ValidateUint("number-of-periods", numPeriodsString)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Check submissions
-	canResponse, err := rp.PDAOCanProposeRecurringSpend(contractName, recipient, amount, periodLength, startTime, numPeriods)
+	// Build the TX
+	response, err := rp.Api.PDao.RecurringSpend(contractName, recipient, amount, periodLength, startTime, numPeriods)
 	if err != nil {
 		return err
 	}
 
-	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to propose this recurring spend of the Protocol DAO treasury?")) {
-		fmt.Println("Cancelled.")
+	// Verify
+	if !response.Data.CanPropose {
+		fmt.Println("You cannot currently submit this proposal:")
+		if response.Data.InsufficientRpl {
+			fmt.Printf("You do not have enough unlocked RPL (proposals require locking %.6f RPL, but you only have %.6f RPL staked and unlocked).", eth.WeiToEth(response.Data.ProposalBond), eth.WeiToEth(big.NewInt(0).Sub(response.Data.StakedRpl, response.Data.LockedRpl)))
+		}
 		return nil
 	}
 
-	// Submit
-	response, err := rp.PDAOProposeRecurringSpend(contractName, recipient, amount, periodLength, startTime, numPeriods, canResponse.BlockNumber)
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		"Are you sure you want to propose this recurring spend of the Protocol DAO treasury?",
+		"recurring spend proposal",
+		"Proposing recurring spend...",
+	)
 	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Proposing recurring spend...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
 	fmt.Println("Proposal successfully created.")
 	return nil
-
 }

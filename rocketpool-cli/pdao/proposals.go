@@ -8,11 +8,18 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+var proposalsListStatesFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "states",
+	Aliases: []string{"s"},
+	Usage:   "Comma separated list of states to filter ('pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', or 'expired')",
+	Value:   "",
+}
 
 func filterProposalState(state string, stateFilter string) bool {
 	// Easy out
@@ -33,26 +40,24 @@ func filterProposalState(state string, stateFilter string) bool {
 }
 
 func getProposals(c *cli.Context, stateFilter string) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get Protocol DAO proposals
-	allProposals, err := rp.PDAOProposals()
+	allProposals, err := rp.Api.PDao.Proposals()
 	if err != nil {
 		return err
 	}
 
 	// Get proposals by state
-	stateProposals := map[string][]api.PDAOProposalWithNodeVoteDirection{}
-	for _, proposal := range allProposals.Proposals {
+	stateProposals := map[string][]api.ProtocolDaoProposalDetails{}
+	for _, proposal := range allProposals.Data.Proposals {
 		stateName := types.ProtocolDaoProposalStates[proposal.State]
 		if _, ok := stateProposals[stateName]; !ok {
-			stateProposals[stateName] = []api.PDAOProposalWithNodeVoteDirection{}
+			stateProposals[stateName] = []api.ProtocolDaoProposalDetails{}
 		}
 		stateProposals[stateName] = append(stateProposals[stateName], proposal)
 	}
@@ -91,29 +96,27 @@ func getProposals(c *cli.Context, stateFilter string) error {
 		fmt.Println("There are no matching Protocol DAO proposals.")
 	}
 	return nil
-
 }
 
 func getProposal(c *cli.Context, id uint64) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get protocol DAO proposals
-	allProposals, err := rp.PDAOProposals()
+	allProposals, err := rp.Api.PDao.Proposals()
 	if err != nil {
 		return err
 	}
 
 	// Find the proposal
-	var proposal *api.PDAOProposalWithNodeVoteDirection
+	var proposal *api.ProtocolDaoProposalDetails
 
-	for i, p := range allProposals.Proposals {
+	for i, p := range allProposals.Data.Proposals {
 		if p.ID == id {
-			proposal = &allProposals.Proposals[i]
+			proposal = &allProposals.Data.Proposals[i]
 			break
 		}
 	}
