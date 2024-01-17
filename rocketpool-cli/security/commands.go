@@ -136,7 +136,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Usage: "Automatically confirm all interactive questions",
 									},
 									cli.StringFlag{
-										Name:  "members, m",
+										Name:  "addresses, a",
 										Usage: "The address(es) of the member(s) to propose kicking. Use commas to separate multiple addresses (no spaces).",
 									},
 								},
