@@ -53,7 +53,7 @@ const (
 	templateSuffix    string = ".tmpl"
 	composeFileSuffix string = ".yml"
 
-	nethermindAdminUrl string = "127.0.0.1:7434"
+	nethermindAdminUrl string = "http://127.0.0.1:7434"
 
 	DebugColor = color.FgYellow
 )

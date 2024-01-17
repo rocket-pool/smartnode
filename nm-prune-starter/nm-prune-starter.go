@@ -50,6 +50,9 @@ func main() {
 			Method: "admin_prune",
 			Params: []interface{}{},
 		}
+		if i > 0 {
+			time.Sleep(retryTime)
+		}
 
 		requestData, err := json.Marshal(request)
 		if err != nil {
@@ -87,7 +90,6 @@ func main() {
 		}
 
 		fmt.Printf("Trying again in %v... (%d/%d)\n", retryTime, i+1, retryCount)
-		time.Sleep(retryTime)
 	}
 
 	fmt.Printf("Failed starting prune after %d attempts. Please try again later.\n", retryCount)
