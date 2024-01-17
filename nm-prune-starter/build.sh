@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export CGO_ENABLED=1
+export CGO_ENABLED=0
 cd /smartnode/nm-prune-starter
 
 # Build x64 version
