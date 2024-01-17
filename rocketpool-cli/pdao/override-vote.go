@@ -125,7 +125,7 @@ func overrideVote(c *cli.Context) error {
 	}
 
 	// Check if proposal can be voted on
-	canVote, err := rp.PDAOCanVoteProposal(selectedProposal.ID, voteDirection)
+	canVote, err := rp.PDAOCanOverrideVote(selectedProposal.ID, voteDirection)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func overrideVote(c *cli.Context) error {
 	}
 
 	// Vote on proposal
-	response, err := rp.PDAOVoteProposal(selectedProposal.ID, voteDirection)
+	response, err := rp.PDAOOverrideVote(selectedProposal.ID, voteDirection)
 	if err != nil {
 		return err
 	}
