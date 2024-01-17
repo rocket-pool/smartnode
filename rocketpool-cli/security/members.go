@@ -3,52 +3,39 @@ package security
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 )
 
 func getMembers(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
 
 	// Get security council members
-	members, err := rp.SecurityMembers()
+	members, err := rp.Api.Security.Members()
 	if err != nil {
 		return err
 	}
 
 	// Print & return
-	if len(members.Members) > 0 {
-		fmt.Printf("The security council has %d members:\n", len(members.Members))
+	if len(members.Data.Members) > 0 {
+		fmt.Printf("The security council has %d members:\n", len(members.Data.Members))
 		fmt.Println("")
 	} else {
 		fmt.Println("The security council does not have any members yet.")
 	}
-	for _, member := range members.Members {
+	for _, member := range members.Data.Members {
 		fmt.Printf("--------------------\n")
 		fmt.Printf("\n")
 		fmt.Printf("Member ID:            %s\n", member.ID)
 		fmt.Printf("Node address:         %s\n", member.Address.Hex())
-		fmt.Printf("Joined at:            %s\n", cliutils.GetDateTimeString(member.JoinedTime))
+		fmt.Printf("Joined at:            %s\n", utils.GetDateTimeStringOfTime(member.JoinedTime))
 		fmt.Printf("\n")
 	}
 	return nil
-
 }

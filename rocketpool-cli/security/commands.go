@@ -3,57 +3,47 @@ package security
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-)
-
-const (
-	boolUsage string = "specify 'true', 'false', 'yes', or 'no'"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Manage the Rocket Pool security council",
-		Subcommands: []cli.Command{
-
+		Subcommands: []*cli.Command{
 			{
-				Name:      "status",
-				Aliases:   []string{"s"},
-				Usage:     "Get security council status",
-				UsageText: "rocketpool security status",
+				Name:    "status",
+				Aliases: []string{"s"},
+				Usage:   "Get security council status",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return getStatus(c)
-
 				},
 			},
 
 			{
-				Name:      "members",
-				Aliases:   []string{"m"},
-				Usage:     "Get the security council members",
-				UsageText: "rocketpool security members",
+				Name:    "members",
+				Aliases: []string{"m"},
+				Usage:   "Get the security council members",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return getMembers(c)
-
 				},
 			},
 
@@ -61,102 +51,67 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:    "propose",
 				Aliases: []string{"p"},
 				Usage:   "Make a security council proposal",
-				Subcommands: []cli.Command{
-
+				Subcommands: []*cli.Command{
 					{
 						Name:    "member",
 						Aliases: []string{"m"},
 						Usage:   "Make a security council member proposal",
-						Subcommands: []cli.Command{
-
+						Subcommands: []*cli.Command{
 							{
 								Name:      "invite",
 								Aliases:   []string{"i"},
 								Usage:     "Propose inviting a new member",
 								UsageText: "rocketpool security propose member invite",
 								Flags: []cli.Flag{
-									cli.BoolFlag{
-										Name:  "yes, y",
-										Usage: "Automatically confirm all interactive questions",
-									},
-									cli.StringFlag{
-										Name:  "id, i",
-										Usage: "A descriptive ID of the entity being invited",
-									},
-									cli.StringFlag{
-										Name:  "address, a",
-										Usage: "The address of the entity being invited",
-									},
+									utils.YesFlag,
+									inviteIdFlag,
+									inviteAddressFlag,
 								},
 								Action: func(c *cli.Context) error {
-
 									// Validate args
-									if err := cliutils.ValidateArgCount(c, 0); err != nil {
+									if err := input.ValidateArgCount(c, 0); err != nil {
 										return err
 									}
 
 									// Run
 									return proposeInvite(c)
-
 								},
 							},
 
 							{
-								Name:      "leave",
-								Aliases:   []string{"l"},
-								Usage:     "Propose leaving the security council",
-								UsageText: "rocketpool security propose member leave",
+								Name:    "leave",
+								Aliases: []string{"l"},
+								Usage:   "Propose leaving the security council",
 								Flags: []cli.Flag{
-									cli.BoolFlag{
-										Name:  "yes, y",
-										Usage: "Automatically confirm all interactive questions",
-									},
+									utils.YesFlag,
 								},
 								Action: func(c *cli.Context) error {
-
 									// Validate args
-									if err := cliutils.ValidateArgCount(c, 0); err != nil {
+									if err := input.ValidateArgCount(c, 0); err != nil {
 										return err
 									}
 
 									// Run
 									return proposeLeave(c)
-
 								},
 							},
 
 							{
-								Name:      "kick",
-								Aliases:   []string{"k"},
-								Usage:     "Propose kicking one or more members",
-								UsageText: "rocketpool security propose member kick",
+								Name:    "kick",
+								Aliases: []string{"k"},
+								Usage:   "Propose kicking one or more members",
 								Flags: []cli.Flag{
-									cli.BoolFlag{
-										Name:  "yes, y",
-										Usage: "Automatically confirm all interactive questions",
-									},
-									cli.StringFlag{
-										Name:  "members, m",
-										Usage: "The address(es) of the member(s) to propose kicking. Use commas to separate multiple addresses (no spaces).",
-									},
+									utils.YesFlag,
+									kickAddressesFlag,
 								},
 								Action: func(c *cli.Context) error {
-
 									// Validate args
-									if err := cliutils.ValidateArgCount(c, 0); err != nil {
+									if err := input.ValidateArgCount(c, 0); err != nil {
 										return err
-									}
-
-									// Validate flags
-									if c.String("members") != "" {
-										if _, err := cliutils.ValidateAddresses("member addresses", c.String("members")); err != nil {
-											return err
-										}
 									}
 
 									// Run
 									return proposeKick(c)
-
 								},
 							},
 
@@ -186,7 +141,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Action: func(c *cli.Context) error {
 
 									// Validate args
-									if err := cliutils.ValidateArgCount(c, 0); err != nil {
+									if err := input.ValidateArgCount(c, 0); err != nil {
 										return err
 									}
 
@@ -224,10 +179,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -252,10 +207,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -288,10 +243,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -316,10 +271,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -352,10 +307,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -380,10 +335,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -416,10 +371,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -444,10 +399,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -480,10 +435,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -508,10 +463,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -536,10 +491,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -564,10 +519,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := input.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											value, err := input.ValidateBool("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -605,7 +560,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Action: func(c *cli.Context) error {
 
 							// Validate args
-							if err := cliutils.ValidateArgCount(c, 0); err != nil {
+							if err := input.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
@@ -624,10 +579,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 							// Validate args
 							var err error
-							if err = cliutils.ValidateArgCount(c, 1); err != nil {
+							if err = input.ValidateArgCount(c, 1); err != nil {
 								return err
 							}
-							id, err := cliutils.ValidateUint("proposal-id", c.Args().Get(0))
+							id, err := input.ValidateUint("proposal-id", c.Args().Get(0))
 							if err != nil {
 								return err
 							}
@@ -652,13 +607,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Action: func(c *cli.Context) error {
 
 							// Validate args
-							if err := cliutils.ValidateArgCount(c, 0); err != nil {
+							if err := input.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
 							// Validate flags
 							if c.String("proposal") != "" {
-								if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
+								if _, err := input.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
 									return err
 								}
 							}
@@ -691,18 +646,18 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Action: func(c *cli.Context) error {
 
 							// Validate args
-							if err := cliutils.ValidateArgCount(c, 0); err != nil {
+							if err := input.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
 							// Validate flags
 							if c.String("proposal") != "" {
-								if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
+								if _, err := input.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
 									return err
 								}
 							}
 							if c.String("support") != "" {
-								if _, err := cliutils.ValidateBool("support", c.String("support")); err != nil {
+								if _, err := input.ValidateBool("support", c.String("support")); err != nil {
 									return err
 								}
 							}
@@ -727,13 +682,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Action: func(c *cli.Context) error {
 
 							// Validate args
-							if err := cliutils.ValidateArgCount(c, 0); err != nil {
+							if err := input.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
 							// Validate flags
 							if c.String("proposal") != "" && c.String("proposal") != "all" {
-								if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
+								if _, err := input.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
 									return err
 								}
 							}
@@ -760,7 +715,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -784,7 +739,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 

@@ -3,87 +3,79 @@ package security
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
-func proposeInvite(c *cli.Context) error {
+var inviteIdFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "id",
+	Aliases: []string{"i"},
+	Usage:   "A descriptive ID of the entity being invited",
+}
 
+var inviteAddressFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "address",
+	Aliases: []string{"a"},
+	Usage:   "The address of the entity being invited",
+}
+
+func proposeInvite(c *cli.Context) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
-	}
-	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
 	}
 
 	// Get the ID
-	id := c.String("id")
+	id := c.String(inviteIdFlag.Name)
 	if id == "" {
-		id = cliutils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
+		id = utils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
+	}
+	id, err = input.ValidateDAOMemberID("id", id)
+	if err != nil {
+		return err
 	}
 
 	// Get the address
-	addressString := c.String("address")
+	addressString := c.String(inviteAddressFlag.Name)
 	if addressString == "" {
-		addressString = cliutils.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
+		addressString = utils.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
 	}
-	address, err := cliutils.ValidateAddress("address", addressString)
+	address, err := input.ValidateAddress("address", addressString)
 	if err != nil {
 		return err
 	}
 
-	// Check if proposal can be made
-	canPropose, err := rp.SecurityCanProposeInvite(id, address)
+	// Build the TX
+	response, err := rp.Api.Security.ProposeInvite(id, address)
 	if err != nil {
 		return err
 	}
-	if !canPropose.CanPropose {
+
+	// Verify
+	if !response.Data.CanPropose {
 		fmt.Println("Cannot propose inviting member:")
-		if canPropose.MemberAlreadyExists {
+		if response.Data.MemberAlreadyExists {
 			fmt.Printf("The node %s is already a member of the security council.\n", address.Hex())
 		}
 		return nil
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, c.Bool("yes"))
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf("Are you sure you want to invite %s (%s) to the security council?", id, address),
+		"inviting member to security council",
+		fmt.Sprintf("Inviting %s (%s) to the security council...\n", id, address.Hex()),
+	)
 	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Submit proposal
-	response, err := rp.SecurityProposeInvite(id, address)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Inviting %s (%s) to the security council...\n", id, address.Hex())
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully submitted an invite proposal with ID %d for node %s.\n", response.ProposalId, address.Hex())
+	fmt.Printf("Successfully submitted an invite proposal for %s (%s).\n", id, address.Hex())
 	return nil
-
 }

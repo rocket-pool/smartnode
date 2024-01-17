@@ -75,16 +75,16 @@ func (r *SecurityRequester) Proposals() (*api.ApiResponse[api.SecurityProposalsD
 }
 
 // Invite a new member to the security council
-func (r *SecurityRequester) ProposeInvite(id uint64, address common.Address) (*api.ApiResponse[api.SecurityProposeInviteData], error) {
+func (r *SecurityRequester) ProposeInvite(id string, address common.Address) (*api.ApiResponse[api.SecurityProposeInviteData], error) {
 	args := map[string]string{
-		"id":      fmt.Sprint(id),
+		"id":      id,
 		"address": address.Hex(),
 	}
 	return sendGetRequest[api.SecurityProposeInviteData](r, "propose-invite", "ProposeInvite", args)
 }
 
 // Request leaving the security council
-func (r *SecurityRequester) ProposeLeave(address common.Address) (*api.ApiResponse[api.TxInfoData], error) {
+func (r *SecurityRequester) ProposeLeave() (*api.ApiResponse[api.TxInfoData], error) {
 	return sendGetRequest[api.TxInfoData](r, "propose-leave", "ProposeLeave", nil)
 }
 

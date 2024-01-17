@@ -2,188 +2,120 @@ package security
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/urfave/cli/v2"
 )
+
+var kickAddressesFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "addresses",
+	Aliases: []string{"a"},
+	Usage:   "The address(es) of the member(s) to propose kicking. Use commas to separate multiple addresses (no spaces).",
+}
 
 func proposeKick(c *cli.Context) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
 
 	// Get the list of members
-	membersResponse, err := rp.SecurityMembers()
+	membersResponse, err := rp.Api.Security.Members()
 	if err != nil {
 		return fmt.Errorf("error getting list of security council members: %w", err)
 	}
+	members := membersResponse.Data.Members
 
-	// Get the address
-	var addresses []common.Address
-	addressesString := c.String("addresses")
-	if addressesString == "" {
-		// Print the members
-		for i, member := range membersResponse.Members {
-			fmt.Printf("%d: %s (%s), joined %s\n", i+1, member.ID, member.Address, time.Unix(int64(member.JoinedTime), 0))
-		}
-
-		for {
-			indexSelection := cliutils.Prompt("Which members would you like to kick? Use a comma separated list (such as '1,2,3') to select multiple members.", "^\\d+(,\\d+)*$", "Invalid index selection")
-			elements := strings.Split(indexSelection, ",")
-			allValid := true
-			indices := []uint64{}
-			seenIndices := map[uint64]bool{}
-
-			for _, element := range elements {
-				index, err := strconv.ParseUint(element, 0, 64)
-				if err != nil {
-					allValid = false
-					fmt.Printf("'%s' is not a valid index.\n", element)
-					break
-				}
-
-				if index < 1 || index > uint64(len(membersResponse.Members)) {
-					allValid = false
-					fmt.Printf("'%s' must be between 1 and %d.\n", element, len(membersResponse.Members))
-					break
-				}
-
-				// Ignore duplicates
-				_, exists := seenIndices[index]
-				if !exists {
-					indices = append(indices, index)
-					seenIndices[index] = true
-				}
-			}
-			if allValid {
-				for _, index := range indices {
-					addresses = append(addresses, membersResponse.Members[index-1].Address)
-				}
-				break
-			}
-		}
-	} else {
-		addresses, err = cliutils.ValidateAddresses("addresses", addressesString)
-		if err != nil {
-			return err
-		}
+	// Check for members
+	if len(members) == 0 {
+		fmt.Println("There are no members on the Security Council.")
+		return nil
 	}
 
-	var hash common.Hash
-	if len(addresses) == 1 {
-		address := addresses[0]
-		// Get the ID
-		var id *string
-		for _, member := range membersResponse.Members {
-			if member.Address == address {
-				id = &member.ID
-				break
+	// Get selected members
+	options := make([]utils.SelectionOption[api.SecurityMemberDetails], len(members))
+	for i, member := range members {
+		option := &options[i]
+		option.Element = &members[i]
+		option.ID = fmt.Sprint(member.Address)
+		option.Display = fmt.Sprintf("%d: %s (%s), joined %s\n", i+1, member.ID, member.Address, member.JoinedTime)
+	}
+	selectedMembers, err := utils.GetMultiselectIndices[api.SecurityMemberDetails](c, kickAddressesFlag.Name, options, "Please select a member to kick:")
+	if err != nil {
+		return fmt.Errorf("error determining selected members: %w", err)
+	}
+
+	// Handle a single kick
+	var txInfo *core.TransactionInfo
+	var confirmMsg string
+	if len(selectedMembers) == 1 {
+		// Build the TX
+		response, err := rp.Api.Security.ProposeKick(selectedMembers[0].Address)
+		if err != nil {
+			return err
+		}
+
+		// Verify
+		if !response.Data.CanPropose {
+			fmt.Println("Cannot propose kick from security council:")
+			if response.Data.MemberDoesNotExist {
+				fmt.Println("The selected member does not exist.")
 			}
-		}
-		if id == nil {
-			return fmt.Errorf("address %s is not on the security council", address.Hex())
-		}
-
-		// Check submissions
-		canResponse, err := rp.SecurityCanProposeKick(address)
-		if err != nil {
-			return err
-		}
-
-		// Assign max fee
-		err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
-		if err != nil {
-			return err
-		}
-
-		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex()))) {
-			fmt.Println("Cancelled.")
 			return nil
 		}
+		txInfo = response.Data.TxInfo
+		confirmMsg = fmt.Sprintf("Are you sure you want to propose kicking %s (%s) from the security council?", selectedMembers[0].ID, selectedMembers[0].Address.Hex())
+	} else {
+		// Handle multiple kicks
+		addresses := make([]common.Address, len(selectedMembers))
+		for i, member := range selectedMembers {
+			addresses[i] = member.Address
+		}
 
-		// Submit
-		response, err := rp.SecurityProposeKick(address)
+		// Build the TX
+		response, err := rp.Api.Security.ProposeKickMulti(addresses)
 		if err != nil {
 			return err
 		}
-		hash = response.TxHash
-	} else {
-		ids := make([]string, len(addresses))
-		for i, address := range addresses {
-			// Get the ID
-			var id *string
-			for _, member := range membersResponse.Members {
-				if member.Address == address {
-					id = &member.ID
-					break
+
+		// Verify
+		if !response.Data.CanPropose {
+			fmt.Println("Cannot propose kick from security council:")
+			if len(response.Data.MembersDoNotExist) > 0 {
+				fmt.Println("The following selected members do not exist on the security council:")
+				for _, member := range response.Data.MembersDoNotExist {
+					fmt.Printf("\t%s\n", member.Hex())
 				}
 			}
-			if id == nil {
-				return fmt.Errorf("address %s is not on the security council", address.Hex())
-			}
-			ids[i] = *id
-		}
-
-		// Check submissions
-		canResponse, err := rp.SecurityCanProposeKickMulti(addresses)
-		if err != nil {
-			return err
-		}
-
-		// Assign max fee
-		err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
-		if err != nil {
-			return err
+			return nil
 		}
 
 		// Create the kick string
+		txInfo = response.Data.TxInfo
 		var kickString string
-		for i, address := range addresses {
-			kickString += fmt.Sprintf("\t- %s (%s)\n", ids[i], address.Hex())
+		for _, member := range selectedMembers {
+			kickString += fmt.Sprintf("\t- %s (%s)\n", member.ID, member.Address.Hex())
 		}
-
-		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to propose kicking the from the security council?\n%s", kickString))) {
-			fmt.Println("Cancelled.")
-			return nil
-		}
-
-		// Submit
-		response, err := rp.SecurityProposeKickMulti(addresses)
-		if err != nil {
-			return err
-		}
-		hash = response.TxHash
+		confirmMsg = fmt.Sprintf("Are you sure you want to propose kicking these members from the security council?\n%s", kickString)
 	}
 
-	fmt.Printf("Proposing kick from security council...\n")
-	cliutils.PrintTransactionHash(rp, hash)
-	if _, err = rp.WaitForTransaction(hash); err != nil {
+	// Run the TX
+	err = tx.HandleTx(c, rp, txInfo,
+		confirmMsg,
+		"proposing kick from security council",
+		"Proposing kick from security council...",
+	)
+	if err != nil {
 		return err
 	}
 
 	// Log & return
 	fmt.Println("Proposal successfully created.")
 	return nil
-
 }
