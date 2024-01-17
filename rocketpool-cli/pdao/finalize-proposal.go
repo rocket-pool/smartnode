@@ -31,7 +31,7 @@ func finalizeProposal(c *cli.Context, proposalID uint64) error {
 	// Check the status
 	canResponse, err := rp.PDAOCanFinalizeProposal(proposalID)
 	if err != nil {
-		return fmt.Errorf("error checking if proposal can be defeated: %w", err)
+		return fmt.Errorf("error checking if proposal can be finalized: %w", err)
 	}
 	if !canResponse.CanFinalize {
 		fmt.Printf("Cannot finalize proposal %d:\n", proposalID)
