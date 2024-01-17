@@ -1088,7 +1088,8 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	if selectedEc == cfgtypes.ExecutionClient_Nethermind {
-		err = rp.RunNethermindPruneStarter(executionContainerName)
+
+		err = rp.RunNethermindPruneStarter()
 		if err != nil {
 			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
 		}

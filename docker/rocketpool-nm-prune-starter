@@ -1,0 +1,7 @@
+FROM debian:bullseye-slim
+
+ARG TARGETARCH
+COPY nm-prune-starter/nm-prune-starter-linux-${TARGETARCH} /go/bin/nm-prune-starter
+
+# Container entry point
+ENTRYPOINT ["/go/bin/nm-prune-starter"]

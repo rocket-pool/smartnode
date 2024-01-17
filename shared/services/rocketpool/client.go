@@ -53,8 +53,7 @@ const (
 	templateSuffix    string = ".tmpl"
 	composeFileSuffix string = ".yml"
 
-	nethermindPruneStarterCommand string = "dotnet /setup/NethermindPruneStarter/NethermindPruneStarter.dll"
-	nethermindAdminUrl            string = "http://127.0.0.1:7434"
+	nethermindAdminUrl string = "127.0.0.1:7434"
 
 	DebugColor = color.FgYellow
 )
@@ -784,9 +783,10 @@ func (c *Client) RunPruneProvisioner(container string, volume string, image stri
 
 }
 
-// Runs the prune provisioner
-func (c *Client) RunNethermindPruneStarter(container string) error {
-	cmd := fmt.Sprintf("docker exec %s %s %s", container, nethermindPruneStarterCommand, nethermindAdminUrl)
+// Executes a Go program that triggers NM pruning
+func (c *Client) RunNethermindPruneStarter() error {
+	cmd := fmt.Sprintf(`docker run --rm --network container:rocketpool_eth1 rocketpool/nm-prune-starter %s`, nethermindAdminUrl)
+
 	err := c.printOutput(cmd)
 	if err != nil {
 		return err
