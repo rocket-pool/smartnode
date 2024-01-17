@@ -2156,7 +2156,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 							// Validate flags
 							if c.String("proposal") != "" {
-								if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
+								if _, err := cliutils.ValidateVoteDirection("proposal ID", c.String("proposal")); err != nil {
 									return err
 								}
 							}
@@ -2195,7 +2195,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 							// Validate flags
 							if c.String("proposal") != "" {
-								if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
+								if _, err := cliutils.ValidateVoteDirection("proposal ID", c.String("proposal")); err != nil {
 									return err
 								}
 							}
