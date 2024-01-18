@@ -51,13 +51,13 @@ func getProposals(c *cli.Context, stateFilter string) error {
 		return nil
 	}
 
-	// Get oracle DAO proposals
+	// Get security council proposals
 	allProposals, err := rp.SecurityProposals()
 	if err != nil {
 		return err
 	}
 
-	// Get oracle DAO members
+	// Get security council members
 	allMembers, err := rp.SecurityMembers()
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func getProposals(c *cli.Context, stateFilter string) error {
 		fmt.Println()
 	}
 	if count == 0 {
-		fmt.Println("There are no matching oracle DAO proposals.")
+		fmt.Println("There are no matching Security Council proposals.")
 	}
 	return nil
 
@@ -132,13 +132,13 @@ func getProposal(c *cli.Context, id uint64) error {
 		return nil
 	}
 
-	// Get oracle DAO proposals
+	// Get security council proposals
 	allProposals, err := rp.SecurityProposals()
 	if err != nil {
 		return err
 	}
 
-	// Get oracle DAO members
+	// Get security council members
 	allMembers, err := rp.SecurityMembers()
 	if err != nil {
 		return err
