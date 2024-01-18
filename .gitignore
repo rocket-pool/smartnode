@@ -16,5 +16,3 @@ Dockerfile
 /rocketpool/rocketpool-daemon-linux-amd64
 /rocketpool/rocketpool-daemon-darwin-arm64
 /rocketpool/rocketpool-daemon-linux-arm64
-/nm-prune-starter/nm-prune-starter-linux-amd64
-/nm-prune-starter/nm-prune-starter-linux-arm64
