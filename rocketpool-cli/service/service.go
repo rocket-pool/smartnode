@@ -1055,43 +1055,43 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
 
-	fmt.Printf("Stopping %s...\n", executionContainerName)
-	result, err := rp.StopContainer(executionContainerName)
-	if err != nil {
-		return fmt.Errorf("Error stopping main execution container: %w", err)
-	}
-	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
-	}
-
-	// Get the ETH1 volume name
-	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
-	if err != nil {
-		return fmt.Errorf("Error getting execution client volume name: %w", err)
-	}
-
-	// Run the prune provisioner
-	fmt.Printf("Provisioning pruning on volume %s...\n", volume)
-	err = rp.RunPruneProvisioner(prefix+PruneProvisionerContainerSuffix, volume, pruneProvisioner)
-	if err != nil {
-		return fmt.Errorf("Error running prune provisioner: %w", err)
-	}
-
-	// Restart ETH1
-	fmt.Printf("Restarting %s...\n", executionContainerName)
-	result, err = rp.StartContainer(executionContainerName)
-	if err != nil {
-		return fmt.Errorf("Error starting main execution client: %w", err)
-	}
-	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
-	}
-
 	if selectedEc == cfgtypes.ExecutionClient_Nethermind {
-
+		// Restarting NM is not needed anymore
 		err = rp.RunNethermindPruneStarter()
 		if err != nil {
 			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
+		}
+	} else {
+		fmt.Printf("Stopping %s...\n", executionContainerName)
+		result, err := rp.StopContainer(executionContainerName)
+		if err != nil {
+			return fmt.Errorf("Error stopping main execution container: %w", err)
+		}
+		if result != executionContainerName {
+			return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
+		}
+
+		// Get the ETH1 volume name
+		volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
+		if err != nil {
+			return fmt.Errorf("Error getting execution client volume name: %w", err)
+		}
+
+		// Run the prune provisioner
+		fmt.Printf("Provisioning pruning on volume %s...\n", volume)
+		err = rp.RunPruneProvisioner(prefix+PruneProvisionerContainerSuffix, volume, pruneProvisioner)
+		if err != nil {
+			return fmt.Errorf("Error running prune provisioner: %w", err)
+		}
+
+		// Restart ETH1
+		fmt.Printf("Restarting %s...\n", executionContainerName)
+		result, err = rp.StartContainer(executionContainerName)
+		if err != nil {
+			return fmt.Errorf("Error starting main execution client: %w", err)
+		}
+		if result != executionContainerName {
+			return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
 		}
 	}
 
