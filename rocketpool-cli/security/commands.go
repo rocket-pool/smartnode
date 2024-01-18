@@ -1,17 +1,59 @@
 package security
 
 import (
-	"fmt"
-
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
+	// Create the auction settings commands
+	auctionContract := rocketpool.ContractName_RocketDAOProtocolSettingsAuction
+	auctionSettingsCmd := utils.CreateSetterCategory("auction", "Auction", "a", auctionContract)
+	auctionSettingsCmd.Subcommands = []*cli.Command{
+		utils.CreateBoolSetter("is-create-lot-enabled", "icle", auctionContract, protocol.SettingName_Auction_IsCreateLotEnabled, proposeSetting),
+		utils.CreateBoolSetter("is-bid-on-lot-enabled", "ibole", auctionContract, protocol.SettingName_Auction_IsBidOnLotEnabled, proposeSetting),
+	}
+
+	// Create the deposit settings commands
+	depositContract := rocketpool.ContractName_RocketDAOProtocolSettingsDeposit
+	depositSettingsCmd := utils.CreateSetterCategory("deposit", "Deposit pool", "d", depositContract)
+	depositSettingsCmd.Subcommands = []*cli.Command{
+		utils.CreateBoolSetter("is-depositing-enabled", "ide", depositContract, protocol.SettingName_Deposit_IsDepositingEnabled, proposeSetting),
+		utils.CreateBoolSetter("are-deposit-assignments-enabled", "adae", depositContract, protocol.SettingName_Deposit_AreDepositAssignmentsEnabled, proposeSetting),
+	}
+
+	// Create the minipool settings commands
+	minipoolContract := rocketpool.ContractName_RocketDAOProtocolSettingsMinipool
+	minipoolSettingsCmd := utils.CreateSetterCategory("minipool", "Minipool", "m", minipoolContract)
+	minipoolSettingsCmd.Subcommands = []*cli.Command{
+		utils.CreateBoolSetter("is-submit-withdrawable-enabled", "iswe", minipoolContract, protocol.SettingName_Minipool_IsSubmitWithdrawableEnabled, proposeSetting),
+		utils.CreateBoolSetter("is-bond-reduction-enabled", "ibre", minipoolContract, protocol.SettingName_Minipool_IsBondReductionEnabled, proposeSetting),
+	}
+
+	// Create the network settings commands
+	networkContract := rocketpool.ContractName_RocketDAOProtocolSettingsNetwork
+	networkSettingsCmd := utils.CreateSetterCategory("network", "Network", "ne", networkContract)
+	networkSettingsCmd.Subcommands = []*cli.Command{
+		utils.CreateBoolSetter("is-submit-balances-enabled", "isbe", networkContract, protocol.SettingName_Network_IsSubmitBalancesEnabled, proposeSetting),
+		utils.CreateBoolSetter("is-submit-prices-enabled", "ispe", networkContract, protocol.SettingName_Network_IsSubmitPricesEnabled, proposeSetting),
+		utils.CreateBoolSetter("is-submit-rewards-enabled", "isre", networkContract, protocol.SettingName_Network_IsSubmitRewardsEnabled, proposeSetting),
+	}
+
+	// Create the node settings commands
+	nodeContract := rocketpool.ContractName_RocketDAOProtocolSettingsNode
+	nodeSettingsCmd := utils.CreateSetterCategory("node", "Node", "no", nodeContract)
+	nodeSettingsCmd.Subcommands = []*cli.Command{
+		utils.CreateBoolSetter("is-registration-enabled", "ire", nodeContract, protocol.SettingName_Node_IsRegistrationEnabled, proposeSetting),
+		utils.CreateBoolSetter("is-smoothing-pool-registration-enabled", "ispre", nodeContract, protocol.SettingName_Node_IsSmoothingPoolRegistrationEnabled, proposeSetting),
+		utils.CreateBoolSetter("is-depositing-enabled", "ide", nodeContract, protocol.SettingName_Node_IsDepositingEnabled, proposeSetting),
+		utils.CreateBoolSetter("are-vacant-minipools-enabled", "avme", nodeContract, protocol.SettingName_Node_AreVacantMinipoolsEnabled, proposeSetting),
+	}
+
 	app.Commands = append(app.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
@@ -116,30 +158,16 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							},
 
 							{
-								Name:      "replace",
-								Aliases:   []string{"r"},
-								Usage:     "Propose replacing an existing member with a new member",
-								UsageText: "rocketpool security propose member replace",
+								Name:    "replace",
+								Aliases: []string{"r"},
+								Usage:   "Propose replacing an existing member with a new member",
 								Flags: []cli.Flag{
-									cli.BoolFlag{
-										Name:  "yes, y",
-										Usage: "Automatically confirm all interactive questions",
-									},
-									cli.StringFlag{
-										Name:  "existing-address, e",
-										Usage: "The address of the existing member",
-									},
-									cli.StringFlag{
-										Name:  "new-id, ni",
-										Usage: "A descriptive ID of the new entity to invite",
-									},
-									cli.StringFlag{
-										Name:  "new-address, na",
-										Usage: "The address of the new entity to invite",
-									},
+									utils.YesFlag,
+									replaceExistingAddressFlag,
+									replaceNewIdFlag,
+									replaceNewAddressFlag,
 								},
 								Action: func(c *cli.Context) error {
-
 									// Validate args
 									if err := input.ValidateArgCount(c, 0); err != nil {
 										return err
@@ -147,7 +175,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 									// Run
 									return proposeReplace(c)
-
 								},
 							},
 						},
@@ -157,383 +184,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:    "setting",
 						Aliases: []string{"s"},
 						Usage:   "Make a proposal to update a Protocol DAO setting",
-						Subcommands: []cli.Command{
-
-							{
-								Name:    "auction",
-								Aliases: []string{"a"},
-								Usage:   "Auction settings",
-								Subcommands: []cli.Command{
-
-									{
-										Name:      "is-create-lot-enabled",
-										Aliases:   []string{"icle"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.CreateLotEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting auction is-create-lot-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingAuctionIsCreateLotEnabled(c, value)
-
-										},
-									},
-
-									{
-										Name:      "is-bid-on-lot-enabled",
-										Aliases:   []string{"ibole"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.BidOnLotEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting auction is-bid-on-lot-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingAuctionIsBidOnLotEnabled(c, value)
-
-										},
-									},
-								},
-							},
-
-							{
-								Name:    "deposit",
-								Aliases: []string{"d"},
-								Usage:   "Deposit pool settings",
-								Subcommands: []cli.Command{
-
-									{
-										Name:      "is-depositing-enabled",
-										Aliases:   []string{"ide"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.DepositEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting deposit is-depositing-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingDepositIsDepositingEnabled(c, value)
-
-										},
-									},
-
-									{
-										Name:      "are-deposit-assignments-enabled",
-										Aliases:   []string{"adae"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.AssignDepositsEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting deposit are-deposit-assignments-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingDepositAreDepositAssignmentsEnabled(c, value)
-
-										},
-									},
-								},
-							},
-
-							{
-								Name:    "minipool",
-								Aliases: []string{"m"},
-								Usage:   "Minipool settings",
-								Subcommands: []cli.Command{
-
-									{
-										Name:      "is-submit-withdrawable-enabled",
-										Aliases:   []string{"iswe"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MinipoolSubmitWithdrawableEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting minipool is-submit-withdrawable-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingMinipoolIsSubmitWithdrawableEnabled(c, value)
-
-										},
-									},
-
-									{
-										Name:      "is-bond-reduction-enabled",
-										Aliases:   []string{"ibre"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.BondReductionEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting minipool is-bond-reduction-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingMinipoolIsBondReductionEnabled(c, value)
-
-										},
-									},
-								},
-							},
-
-							{
-								Name:    "network",
-								Aliases: []string{"ne"},
-								Usage:   "Network settings",
-								Subcommands: []cli.Command{
-
-									{
-										Name:      "is-submit-balances-enabled",
-										Aliases:   []string{"isbe"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitBalancesEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting network is-submit-balances-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingNetworkIsSubmitBalancesEnabled(c, value)
-
-										},
-									},
-
-									{
-										Name:      "is-submit-rewards-enabled",
-										Aliases:   []string{"isre"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitRewardsEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting network is-submit-rewards-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingNetworkIsSubmitRewardsEnabled(c, value)
-
-										},
-									},
-								},
-							},
-
-							{
-								Name:    "node",
-								Aliases: []string{"no"},
-								Usage:   "Node settings",
-								Subcommands: []cli.Command{
-
-									{
-										Name:      "is-registration-enabled",
-										Aliases:   []string{"ire"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeRegistrationEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting node is-registration-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingNodeIsRegistrationEnabled(c, value)
-
-										},
-									},
-
-									{
-										Name:      "is-smoothing-pool-registration-enabled",
-										Aliases:   []string{"ispre"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SmoothingPoolRegistrationEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting node is-smoothing-pool-registration-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingNodeIsSmoothingPoolRegistrationEnabled(c, value)
-
-										},
-									},
-
-									{
-										Name:      "is-depositing-enabled",
-										Aliases:   []string{"ide"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeDepositEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting node is-depositing-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingNodeIsDepositingEnabled(c, value)
-
-										},
-									},
-
-									{
-										Name:      "are-vacant-minipools-enabled",
-										Aliases:   []string{"avme"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.VacantMinipoolsEnabledSettingPath, boolUsage),
-										UsageText: "rocketpool security propose setting node are-vacant-minipools-enabled value",
-										Flags: []cli.Flag{
-											cli.BoolFlag{
-												Name:  "yes, y",
-												Usage: "Automatically confirm all interactive questions",
-											},
-										},
-										Action: func(c *cli.Context) error {
-
-											// Validate args
-											if err := input.ValidateArgCount(c, 1); err != nil {
-												return err
-											}
-											value, err := input.ValidateBool("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
-											// Run
-											return proposeSettingNodeAreVacantMinipoolsEnabled(c, value)
-
-										},
-									},
-								},
-							},
+						Subcommands: []*cli.Command{
+							auctionSettingsCmd,
+							depositSettingsCmd,
+							minipoolSettingsCmd,
+							networkSettingsCmd,
+							nodeSettingsCmd,
 						},
 					},
 				},

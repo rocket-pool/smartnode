@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -115,10 +116,10 @@ func (r *SecurityRequester) ProposeReplace(existingAddress common.Address, newID
 }
 
 // Propose a Protocol DAO (security council) setting update
-func (r *SecurityRequester) ProposeSetting(contractName rocketpool.ContractName, settingName string, value string) (*api.ApiResponse[api.SecurityProposeSettingData], error) {
+func (r *SecurityRequester) ProposeSetting(contractName rocketpool.ContractName, settingName protocol.SettingName, value string) (*api.ApiResponse[api.SecurityProposeSettingData], error) {
 	args := map[string]string{
 		"contract": string(contractName),
-		"setting":  settingName,
+		"setting":  string(settingName),
 		"value":    value,
 	}
 	return sendGetRequest[api.SecurityProposeSettingData](r, "setting/propose", "ProposeSetting", args)

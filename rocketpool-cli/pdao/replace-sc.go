@@ -78,6 +78,10 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	if newID == "" {
 		newID = utils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
 	}
+	newID, err = input.ValidateDAOMemberID("id", newID)
+	if err != nil {
+		return err
+	}
 
 	// Get the new address
 	newAddressString := c.String(scReplaceNewAddressFlag.Name)
