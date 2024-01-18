@@ -1,4 +1,4 @@
-package odao
+package security
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/smartnode/rocketpool/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -27,12 +27,12 @@ const (
 // === Factory ===
 // ===============
 
-type oracleDaoExecuteProposalsContextFactory struct {
-	handler *OracleDaoHandler
+type securityExecuteProposalsContextFactory struct {
+	handler *SecurityCouncilHandler
 }
 
-func (f *oracleDaoExecuteProposalsContextFactory) Create(args url.Values) (*oracleDaoExecuteProposalsContext, error) {
-	c := &oracleDaoExecuteProposalsContext{
+func (f *securityExecuteProposalsContextFactory) Create(args url.Values) (*securityExecuteProposalsContext, error) {
+	c := &securityExecuteProposalsContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
@@ -41,8 +41,8 @@ func (f *oracleDaoExecuteProposalsContextFactory) Create(args url.Values) (*orac
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *oracleDaoExecuteProposalsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*oracleDaoExecuteProposalsContext, api.DataBatch[api.OracleDaoExecuteProposalsData]](
+func (f *securityExecuteProposalsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*securityExecuteProposalsContext, api.DataBatch[api.SecurityExecuteProposalData]](
 		router, "proposal/execute", f, f.handler.serviceProvider,
 	)
 }
@@ -51,8 +51,8 @@ func (f *oracleDaoExecuteProposalsContextFactory) RegisterRoute(router *mux.Rout
 // === Context ===
 // ===============
 
-type oracleDaoExecuteProposalsContext struct {
-	handler     *OracleDaoHandler
+type securityExecuteProposalsContext struct {
+	handler     *SecurityCouncilHandler
 	rp          *rocketpool.RocketPool
 	nodeAddress common.Address
 
@@ -61,38 +61,33 @@ type oracleDaoExecuteProposalsContext struct {
 	proposals []*proposals.OracleDaoProposal
 }
 
-func (c *oracleDaoExecuteProposalsContext) Initialize() error {
+func (c *securityExecuteProposalsContext) Initialize() error {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
-	// Requirements
-	err := sp.RequireNodeRegistered()
-	if err != nil {
-		return err
-	}
-
 	// Bindings
+	var err error
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating proposal manager binding: %w", err)
+		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
-	c.proposals = make([]*proposals.OracleDaoProposal, len(c.ids))
+	c.proposals = make([]*proposals.SecurityDaoProposal, len(c.ids))
 	for i, id := range c.ids {
 		prop, err := c.dpm.CreateProposalFromID(id, nil)
 		if err != nil {
 			return fmt.Errorf("error creating proposal binding: %w", err)
 		}
 		var success bool
-		c.proposals[i], success = proposals.GetProposalAsOracle(prop)
+		c.proposals[i], success = proposals.GetProposalAsSecurity(prop)
 		if !success {
-			return fmt.Errorf("proposal %d is not an Oracle DAO proposal", id)
+			return fmt.Errorf("proposal %d is not a Security Council proposal", id)
 		}
 	}
 	return nil
 }
 
-func (c *oracleDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
+func (c *securityExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	core.AddQueryablesToMulticall(mc,
 		c.dpm.ProposalCount,
 	)
@@ -101,15 +96,15 @@ func (c *oracleDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[api.OracleDaoExecuteProposalsData], opts *bind.TransactOpts) error {
-	dataBatch.Batch = make([]api.OracleDaoExecuteProposalsData, len(c.ids))
+func (c *securityExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[SecurityExecuteProposalData], opts *bind.TransactOpts) error {
+	dataBatch.Batch = make([]api.SecurityExecuteProposalsData, len(c.ids))
 	for i, prop := range c.proposals {
 
 		// Check proposal details
 		data := &dataBatch.Batch[i]
 		state := prop.State.Formatted()
 		data.DoesNotExist = (c.ids[i] > c.dpm.ProposalCount.Formatted())
-		data.InvalidState = !(state == rptypes.ProposalState_Pending || state == rptypes.ProposalState_Active)
+		data.InvalidState = !(state == types.ProposalState_Succeeded)
 		data.CanExecute = !(data.DoesNotExist || data.InvalidState)
 
 		// Get the tx

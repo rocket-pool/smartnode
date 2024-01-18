@@ -290,13 +290,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								return err
 							}
 
-							// Validate flags
-							if c.String(executeProposalFlag.Name) != "" && c.String(executeProposalFlag.Name) != "all" {
-								if _, err := input.ValidatePositiveUint("proposal ID", c.String(executeProposalFlag.Name)); err != nil {
-									return err
-								}
-							}
-
 							// Run
 							return executeProposal(c)
 						},

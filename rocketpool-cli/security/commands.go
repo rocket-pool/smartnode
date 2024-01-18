@@ -100,10 +100,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Usage:   "Make a security council member proposal",
 						Subcommands: []*cli.Command{
 							{
-								Name:      "invite",
-								Aliases:   []string{"i"},
-								Usage:     "Propose inviting a new member",
-								UsageText: "rocketpool security propose member invite",
+								Name:    "invite",
+								Aliases: []string{"i"},
+								Usage:   "Propose inviting a new member",
 								Flags: []cli.Flag{
 									utils.YesFlag,
 									inviteIdFlag,
@@ -199,30 +198,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:    "proposals",
 				Aliases: []string{"o"},
 				Usage:   "Manage security council proposals",
-				Subcommands: []cli.Command{
-
+				Subcommands: []*cli.Command{
 					{
-						Name:      "list",
-						Aliases:   []string{"l"},
-						Usage:     "List the security council proposals",
-						UsageText: "rocketpool security proposals list",
+						Name:    "list",
+						Aliases: []string{"l"},
+						Usage:   "List the security council proposals",
 						Flags: []cli.Flag{
-							cli.StringFlag{
-								Name:  "states, s",
-								Usage: "Comma separated list of states to filter ('pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', or 'expired')",
-								Value: "",
-							},
+							proposalsListStatesFlag,
 						},
 						Action: func(c *cli.Context) error {
-
 							// Validate args
 							if err := input.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
 							// Run
-							return getProposals(c, c.String("states"))
-
+							return getProposals(c, c.String(proposalsListStatesFlag.Name))
 						},
 					},
 
@@ -230,9 +221,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:      "details",
 						Aliases:   []string{"d"},
 						Usage:     "View proposal details",
-						UsageText: "rocketpool security proposals details proposal-id",
+						ArgsUsage: "proposal-id",
 						Action: func(c *cli.Context) error {
-
 							// Validate args
 							var err error
 							if err = input.ValidateArgCount(c, 1); err != nil {
@@ -245,131 +235,82 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 							// Run
 							return getProposal(c, id)
-
 						},
 					},
 
 					{
-						Name:      "cancel",
-						Aliases:   []string{"c"},
-						Usage:     "Cancel a proposal made by the node",
-						UsageText: "rocketpool security proposals cancel",
+						Name:    "cancel",
+						Aliases: []string{"c"},
+						Usage:   "Cancel a proposal made by the node",
 						Flags: []cli.Flag{
-							cli.StringFlag{
-								Name:  "proposal, p",
-								Usage: "The ID of the proposal to cancel",
-							},
+							utils.InstantiateFlag(proposalFlag, "The ID of the proposal to cancel"),
 						},
 						Action: func(c *cli.Context) error {
-
 							// Validate args
 							if err := input.ValidateArgCount(c, 0); err != nil {
 								return err
-							}
-
-							// Validate flags
-							if c.String("proposal") != "" {
-								if _, err := input.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
-									return err
-								}
 							}
 
 							// Run
 							return cancelProposal(c)
-
 						},
 					},
 
 					{
-						Name:      "vote",
-						Aliases:   []string{"v"},
-						Usage:     "Vote on a proposal",
-						UsageText: "rocketpool security proposals vote",
+						Name:    "vote",
+						Aliases: []string{"v"},
+						Usage:   "Vote on a proposal",
 						Flags: []cli.Flag{
-							cli.StringFlag{
-								Name:  "proposal, p",
-								Usage: "The ID of the proposal to vote on",
-							},
-							cli.StringFlag{
-								Name:  "support, s",
-								Usage: "Whether to support the proposal ('yes' or 'no')",
-							},
-							cli.BoolFlag{
-								Name:  "yes, y",
-								Usage: "Automatically confirm vote",
-							},
+							utils.InstantiateFlag(proposalFlag, "The ID of the proposal to vote on"),
+							voteSupportFlag,
+							utils.YesFlag,
 						},
 						Action: func(c *cli.Context) error {
-
 							// Validate args
 							if err := input.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
 							// Validate flags
-							if c.String("proposal") != "" {
-								if _, err := input.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
-									return err
-								}
-							}
-							if c.String("support") != "" {
-								if _, err := input.ValidateBool("support", c.String("support")); err != nil {
+							if c.String(voteSupportFlag.Name) != "" {
+								if _, err := input.ValidateBool("support", c.String(voteSupportFlag.Name)); err != nil {
 									return err
 								}
 							}
 
 							// Run
 							return voteOnProposal(c)
-
 						},
 					},
 
 					{
-						Name:      "execute",
-						Aliases:   []string{"x"},
-						Usage:     "Execute a proposal",
-						UsageText: "rocketpool security proposals execute",
+						Name:    "execute",
+						Aliases: []string{"x"},
+						Usage:   "Execute a proposal",
 						Flags: []cli.Flag{
-							cli.StringFlag{
-								Name:  "proposal, p",
-								Usage: "The ID of the proposal to execute (or 'all')",
-							},
+							executeProposalFlag,
 						},
 						Action: func(c *cli.Context) error {
-
 							// Validate args
 							if err := input.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
-							// Validate flags
-							if c.String("proposal") != "" && c.String("proposal") != "all" {
-								if _, err := input.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil {
-									return err
-								}
-							}
-
 							// Run
 							return executeProposal(c)
-
 						},
 					},
 				},
 			},
 
 			{
-				Name:      "join",
-				Aliases:   []string{"j"},
-				Usage:     "Join the security council (requires an executed invite proposal)",
-				UsageText: "rocketpool security join",
+				Name:    "join",
+				Aliases: []string{"j"},
+				Usage:   "Join the security council (requires an executed invite proposal)",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm joining",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
@@ -377,23 +318,17 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return join(c)
-
 				},
 			},
 
 			{
-				Name:      "leave",
-				Aliases:   []string{"l"},
-				Usage:     "Leave the security council (requires an executed leave proposal)",
-				UsageText: "rocketpool security leave",
+				Name:    "leave",
+				Aliases: []string{"l"},
+				Usage:   "Leave the security council (requires an executed leave proposal)",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm leaving",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
-
 					// Validate args
 					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
@@ -401,7 +336,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return leave(c)
-
 				},
 			},
 		},

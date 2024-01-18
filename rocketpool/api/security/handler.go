@@ -18,7 +18,7 @@ func NewSecurityCouncilHandler(serviceProvider *services.ServiceProvider) *Secur
 	}
 	h.factories = []server.IContextFactory{
 		&securityCancelProposalContextFactory{h},
-		&securityExecuteProposalContextFactory{h},
+		&securityExecuteProposalsContextFactory{h},
 		&securityJoinContextFactory{h},
 		&securityLeaveContextFactory{h},
 		&securityMembersContextFactory{h},

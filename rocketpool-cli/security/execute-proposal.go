@@ -2,47 +2,39 @@ package security
 
 import (
 	"fmt"
-	"strconv"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
-	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
-
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/urfave/cli/v2"
 )
 
-func executeProposal(c *cli.Context) error {
+var executeProposalFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "proposal",
+	Aliases: []string{"p"},
+	Usage:   "The ID of the proposal to execute (or 'all')",
+}
 
+func executeProposal(c *cli.Context) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
 
 	// Get security council proposals
-	proposals, err := rp.SecurityProposals()
+	proposals, err := rp.Api.Security.Proposals()
 	if err != nil {
 		return err
 	}
 
 	// Get executable proposals
-	executableProposals := []dao.ProposalDetails{}
-	for _, proposal := range proposals.Proposals {
-		if proposal.State == types.Succeeded {
+	executableProposals := []api.SecurityProposalDetails{}
+	for _, proposal := range proposals.Data.Proposals {
+		if proposal.State == types.ProposalState_Succeeded {
 			executableProposals = append(executableProposals, proposal)
 		}
 	}
@@ -53,101 +45,59 @@ func executeProposal(c *cli.Context) error {
 		return nil
 	}
 
-	// Get selected proposal
-	var selectedProposals []dao.ProposalDetails
-	if c.String("proposal") == "all" {
+	// Get selected proposals
+	options := make([]utils.SelectionOption[api.SecurityProposalDetails], len(executableProposals))
+	for i, prop := range executableProposals {
+		option := &options[i]
+		option.Element = &executableProposals[i]
+		option.ID = fmt.Sprint(prop.ID)
+		option.Display = fmt.Sprintf("proposal %d (message: '%s', payload: %s)", prop.ID, prop.Message, prop.PayloadStr)
+	}
+	selectedProposals, err := utils.GetMultiselectIndices(c, executeProposalFlag.Name, options, "Please select a proposal to execute:")
+	if err != nil {
+		return fmt.Errorf("error determining proposal selection: %w", err)
+	}
 
-		// Select all proposals
-		selectedProposals = executableProposals
+	// Build the TXs
+	ids := make([]uint64, len(selectedProposals))
+	for i, prop := range selectedProposals {
+		ids[i] = prop.ID
+	}
+	response, err := rp.Api.Security.ExecuteProposals(ids)
+	if err != nil {
+		return fmt.Errorf("error during TX generation: %w", err)
+	}
 
-	} else if c.String("proposal") != "" {
-
-		// Get selected proposal ID
-		selectedId, err := strconv.ParseUint(c.String("proposal"), 10, 64)
-		if err != nil {
-			return fmt.Errorf("Invalid proposal ID '%s': %w", c.String("proposal"), err)
-		}
-
-		// Get matching proposal
-		found := false
-		for _, proposal := range executableProposals {
-			if proposal.ID == selectedId {
-				selectedProposals = []dao.ProposalDetails{proposal}
-				found = true
-				break
+	// Validation
+	txs := make([]*core.TransactionInfo, len(selectedProposals))
+	for i, prop := range selectedProposals {
+		data := response.Data.Batch[i]
+		if !data.CanExecute {
+			fmt.Printf("Cannot execute proposal %d:\n", prop.ID)
+			if data.DoesNotExist {
+				fmt.Println("The proposal does not exist.")
 			}
+			if data.InvalidState {
+				fmt.Println("The proposal is not in an executable state.")
+			}
+			return nil
 		}
-		if !found {
-			return fmt.Errorf("Proposal %d can not be executed.", selectedId)
-		}
-
-	} else {
-
-		// Prompt for proposal selection
-		options := make([]string, len(executableProposals)+1)
-		options[0] = "All available proposals"
-		for pi, proposal := range executableProposals {
-			options[pi+1] = fmt.Sprintf("proposal %d (message: '%s', payload: %s)", proposal.ID, proposal.Message, proposal.PayloadStr)
-		}
-		selected, _ := cliutils.Select("Please select a proposal to execute:", options)
-
-		// Get proposals
-		if selected == 0 {
-			selectedProposals = executableProposals
-		} else {
-			selectedProposals = []dao.ProposalDetails{executableProposals[selected-1]}
-		}
-
+		txs[i] = data.TxInfo
 	}
 
-	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
-	var gasInfo rocketpoolapi.GasInfo
-	for _, proposal := range selectedProposals {
-		canResponse, err := rp.SecurityCanExecuteProposal(proposal.ID)
-		if err != nil {
-			fmt.Printf("WARNING: Couldn't get gas price for execute transaction (%s)", err)
-			break
-		} else {
-			gasInfo = canResponse.GasInfo
-			totalGas += canResponse.GasInfo.EstGasLimit
-			totalSafeGas += canResponse.GasInfo.SafeGasLimit
-		}
-	}
-	gasInfo.EstGasLimit = totalGas
-	gasInfo.SafeGasLimit = totalSafeGas
-
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Run the TXs
+	err = tx.HandleTxBatch(c, rp, txs,
+		fmt.Sprintf("Are you sure you want to execute %d proposals?", len(selectedProposals)),
+		func(i int) string {
+			return fmt.Sprintf("executing proposal %d", selectedProposals[i].ID)
+		},
+		"Executing proposals...",
+	)
 	if err != nil {
 		return err
 	}
 
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to execute %d proposals?", len(selectedProposals)))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Execute proposals
-	for _, proposal := range selectedProposals {
-		response, err := rp.SecurityExecuteProposal(proposal.ID)
-		if err != nil {
-			fmt.Printf("Could not execute proposal %d: %s.\n", proposal.ID, err)
-			continue
-		}
-
-		fmt.Printf("Executing proposal...\n")
-		cliutils.PrintTransactionHash(rp, response.TxHash)
-		if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-			fmt.Printf("Could not execute proposal %d: %s.\n", proposal.ID, err)
-		} else {
-			fmt.Printf("Successfully executed proposal %d.\n", proposal.ID)
-		}
-	}
-
-	// Return
+	// Log & return
+	fmt.Println("Successfully executed all selected proposals.")
 	return nil
-
 }

@@ -3,71 +3,48 @@ package security
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 )
 
 func leave(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
-	// Check if node can leave the security council
-	canLeave, err := rp.SecurityCanLeave()
+	// Build the TX
+	response, err := rp.Api.Security.Leave()
 	if err != nil {
 		return err
 	}
-	if !canLeave.CanLeave {
+
+	// Verify
+	if !response.Data.CanLeave {
 		fmt.Println("Cannot leave the security council:")
-		if canLeave.ProposalExpired {
-			fmt.Println("The proposal for you to leave the security council does not exist or has expired.")
+		if response.Data.ProposalExpired {
+			fmt.Println("The proposal for you to leave the Security Council does not exist or has expired.")
+		}
+		if response.Data.IsNotMember {
+			fmt.Println("You are not a member of the Security Council.")
 		}
 		return nil
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canLeave.GasInfo, rp, c.Bool("yes"))
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		"Are you sure you want to leave the Security Council? This action cannot be undone!",
+		"leaving Security Council",
+		"Leaving the Security Council...",
+	)
 	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to leave the security council? This action cannot be undone!")) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Leave the security council
-	response, err := rp.SecurityLeave()
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Leaving security council...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
 	fmt.Println("Successfully left the security council.")
 	return nil
-
 }

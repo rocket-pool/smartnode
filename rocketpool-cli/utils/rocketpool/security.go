@@ -54,11 +54,11 @@ func (r *SecurityRequester) CancelProposal(id uint64) (*api.ApiResponse[api.Secu
 }
 
 // Execute a proposal
-func (r *SecurityRequester) ExecuteProposal(id uint64) (*api.ApiResponse[api.SecurityExecuteProposalData], error) {
+func (r *SecurityRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[api.DataBatch[api.SecurityExecuteProposalData]], error) {
 	args := map[string]string{
-		"id": fmt.Sprint(id),
+		"ids": makeBatchArg(ids),
 	}
-	return sendGetRequest[api.SecurityExecuteProposalData](r, "proposal/execute", "ExecuteProposal", args)
+	return sendGetRequest[api.DataBatch[api.SecurityExecuteProposalData]](r, "proposal/execute", "ExecuteProposals", args)
 }
 
 // Vote on a proposal

@@ -6,13 +6,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+var proposalsListStatesFlag *cli.StringFlag = &cli.StringFlag{
+	Name:    "states",
+	Aliases: []string{"s"},
+	Usage:   "Comma separated list of states to filter ('pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', or 'expired')",
+	Value:   "",
+}
 
 func filterProposalState(state string, stateFilter string) bool {
 	// Easy out
@@ -33,42 +40,30 @@ func filterProposalState(state string, stateFilter string) bool {
 }
 
 func getProposals(c *cli.Context, stateFilter string) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
-	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
-	// Get oracle DAO proposals
-	allProposals, err := rp.SecurityProposals()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
 
-	// Get oracle DAO members
-	allMembers, err := rp.SecurityMembers()
+	// Get security council proposals
+	allProposals, err := rp.Api.Security.Proposals()
+	if err != nil {
+		return err
+	}
+
+	// Get security council members
+	allMembers, err := rp.Api.Security.Members()
 	if err != nil {
 		return err
 	}
 
 	// Get proposals by state
-	stateProposals := map[string][]dao.ProposalDetails{}
-	for _, proposal := range allProposals.Proposals {
+	stateProposals := map[string][]api.SecurityProposalDetails{}
+	for _, proposal := range allProposals.Data.Proposals {
 		stateName := proposal.State.String()
 		if _, ok := stateProposals[stateName]; !ok {
-			stateProposals[stateName] = []dao.ProposalDetails{}
+			stateProposals[stateName] = []api.SecurityProposalDetails{}
 		}
 		stateProposals[stateName] = append(stateProposals[stateName], proposal)
 	}
@@ -96,7 +91,7 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 		// Proposals
 		for _, proposal := range proposals {
-			for _, member := range allMembers.Members {
+			for _, member := range allMembers.Data.Members {
 				if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
 					fmt.Printf("%d: %s - Proposed by: %s (%s)\n", proposal.ID, proposal.Message, member.ID, proposal.ProposerAddress)
 				}
@@ -108,55 +103,43 @@ func getProposals(c *cli.Context, stateFilter string) error {
 		fmt.Println()
 	}
 	if count == 0 {
-		fmt.Println("There are no matching oracle DAO proposals.")
+		fmt.Println("There are no matching Security Council proposals.")
 	}
 	return nil
-
 }
 
 func getProposal(c *cli.Context, id uint64) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
-	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
-	// Get oracle DAO proposals
-	allProposals, err := rp.SecurityProposals()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
 
-	// Get oracle DAO members
-	allMembers, err := rp.SecurityMembers()
+	// Get security council proposals
+	allProposals, err := rp.Api.Security.Proposals()
+	if err != nil {
+		return err
+	}
+
+	// Get security council members
+	allMembers, err := rp.Api.Security.Members()
 	if err != nil {
 		return err
 	}
 
 	// Find the proposal
-	var proposal *dao.ProposalDetails
+	var proposal *api.SecurityProposalDetails
 
-	for i, p := range allProposals.Proposals {
+	for i, p := range allProposals.Data.Proposals {
 		if p.ID == id {
-			proposal = &allProposals.Proposals[i]
+			proposal = &allProposals.Data.Proposals[i]
 			break
 		}
 	}
 
 	// Find the proposer
 	var memberID string
-	for _, member := range allMembers.Members {
+	for _, member := range allMembers.Data.Members {
 		if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
 			memberID = member.ID
 		}
@@ -173,21 +156,21 @@ func getProposal(c *cli.Context, id uint64) error {
 	fmt.Printf("Payload:              %s\n", proposal.PayloadStr)
 	fmt.Printf("Payload (bytes):      %s\n", hex.EncodeToString(proposal.Payload))
 	fmt.Printf("Proposed by:          %s (%s)\n", memberID, proposal.ProposerAddress.Hex())
-	fmt.Printf("Created at:           %s\n", cliutils.GetDateTimeString(proposal.CreatedTime))
+	fmt.Printf("Created at:           %s\n", utils.GetDateTimeStringOfTime(proposal.CreatedTime))
 
 	// Start block - pending proposals
-	if proposal.State == types.Pending {
-		fmt.Printf("Starts at:            %s\n", cliutils.GetDateTimeString(proposal.StartTime))
+	if proposal.State == types.ProposalState_Pending {
+		fmt.Printf("Starts at:            %s\n", utils.GetDateTimeStringOfTime(proposal.StartTime))
 	}
 
 	// End block - active proposals
-	if proposal.State == types.Active {
-		fmt.Printf("Ends at:              %s\n", cliutils.GetDateTimeString(proposal.EndTime))
+	if proposal.State == types.ProposalState_Active {
+		fmt.Printf("Ends at:              %s\n", utils.GetDateTimeStringOfTime(proposal.EndTime))
 	}
 
 	// Expiry block - succeeded proposals
-	if proposal.State == types.Succeeded {
-		fmt.Printf("Expires at:           %s\n", cliutils.GetDateTimeString(proposal.ExpiryTime))
+	if proposal.State == types.ProposalState_Succeeded {
+		fmt.Printf("Expires at:           %s\n", utils.GetDateTimeStringOfTime(proposal.ExpiryTime))
 	}
 
 	// Vote details
