@@ -46,6 +46,11 @@ func proposeSettingNetworkIsSubmitBalancesEnabled(c *cli.Context, value bool) er
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitBalancesEnabledSettingPath, trueValue)
 }
 
+func proposeSettingNetworkIsSubmitPricesEnabled(c *cli.Context, value bool) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitPricesEnabledSettingPath, trueValue)
+}
+
 func proposeSettingNetworkIsSubmitRewardsEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitRewardsEnabledSettingPath, trueValue)

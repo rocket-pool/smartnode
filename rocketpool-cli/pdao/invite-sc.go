@@ -32,6 +32,10 @@ func proposeSecurityCouncilInvite(c *cli.Context) error {
 	if id == "" {
 		id = cliutils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
 	}
+	id, err = cliutils.ValidateDAOMemberID("id", id)
+	if err != nil {
+		return err
+	}
 
 	// Get the address
 	addressString := c.String("address")

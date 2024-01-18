@@ -431,6 +431,34 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									},
 
 									{
+										Name:      "is-submit-prices-enabled",
+										Aliases:   []string{"ispe"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitPricesEnabledSettingPath, boolUsage),
+										UsageText: "rocketpool security propose setting network is-submit-prices-enabled value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateBool("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkIsSubmitPricesEnabled(c, value)
+
+										},
+									},
+
+									{
 										Name:      "is-submit-rewards-enabled",
 										Aliases:   []string{"isre"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.SubmitRewardsEnabledSettingPath, boolUsage),
