@@ -1025,7 +1025,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	pruneProvisioner := cfg.Smartnode.GetPruneProvisionerContainerTag()
 
 	// Get the execution container name
-	executionContainerName := rp.GetExecutionContainerName(prefix)
+	executionContainerName := getExecutionContainerName(prefix)
 
 	// Check for enough free space
 	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
