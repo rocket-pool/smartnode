@@ -1093,7 +1093,6 @@ func pruneExecutionClient(c *cli.Context) error {
 		}
 		if result != executionContainerName {
 			return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
-		}
 	}
 
 	fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
