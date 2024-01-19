@@ -15,6 +15,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
+const bnContainerName string = "eth2"
+
 // This is a proxy for multiple Beacon clients, providing natural fallback support if one of them fails.
 type BeaconClientManager struct {
 	primaryBc       beacon.Client
@@ -44,7 +46,7 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 		primaryProvider = cfg.Native.CcHttpUrl.Value.(string)
 		selectedCC = cfg.Native.ConsensusClient.Value.(cfgtypes.ConsensusClient)
 	} else if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		primaryProvider = fmt.Sprintf("http://%s:%d", BnContainerName, cfg.ConsensusCommon.ApiPort.Value.(uint16))
+		primaryProvider = fmt.Sprintf("http://%s:%d", bnContainerName, cfg.ConsensusCommon.ApiPort.Value.(uint16))
 		selectedCC = cfg.ConsensusClient.Value.(cfgtypes.ConsensusClient)
 	} else if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External {
 		selectedConsensusConfig, err := cfg.GetSelectedConsensusClientConfig()

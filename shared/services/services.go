@@ -28,10 +28,7 @@ import (
 
 // Config
 const (
-	DockerAPIVersion        string = "1.40"
-	EcContainerName         string = "eth1"
-	FallbackEcContainerName string = "eth1-fallback"
-	BnContainerName         string = "eth2"
+	dockerAPIVersion string = "1.40"
 )
 
 // Service instances & initializers
@@ -149,7 +146,11 @@ func GetBeaconClient(c *cli.Context) (*BeaconClientManager, error) {
 }
 
 func GetDocker(c *cli.Context) (*client.Client, error) {
-	return getDocker()
+	var err error
+	initDocker.Do(func() {
+		docker, err = client.NewClientWithOpts(client.WithVersion(dockerAPIVersion))
+	})
+	return docker, err
 }
 
 //
@@ -279,12 +280,4 @@ func getBeaconClient(c *cli.Context, cfg *config.RocketPoolConfig) (*BeaconClien
 		}
 	})
 	return bcManager, err
-}
-
-func getDocker() (*client.Client, error) {
-	var err error
-	initDocker.Do(func() {
-		docker, err = client.NewClientWithOpts(client.WithVersion(DockerAPIVersion))
-	})
-	return docker, err
 }
