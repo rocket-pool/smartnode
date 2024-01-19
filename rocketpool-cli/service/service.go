@@ -1024,8 +1024,10 @@ func pruneExecutionClient(c *cli.Context) error {
 	// Get the prune provisioner image
 	pruneProvisioner := cfg.Smartnode.GetPruneProvisionerContainerTag()
 
+	// Get the execution container name
+	executionContainerName := rp.GetExecutionContainerName(prefix)
+
 	// Check for enough free space
-	executionContainerName := prefix + ExecutionContainerSuffix
 	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting execution volume source path: %w", err)
@@ -1057,42 +1059,44 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	if selectedEc == cfgtypes.ExecutionClient_Nethermind {
 		// Restarting NM is not needed anymore
-		err = rp.RunNethermindPruneStarter()
+		err = rp.RunNethermindPruneStarter(getExecutionContainerName(prefix))
 		if err != nil {
 			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
 		}
+		fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
+		fmt.Printf("%sNOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!%s\n", colorYellow, colorReset)
 		return nil
 	}
-		fmt.Printf("Stopping %s...\n", executionContainerName)
-		result, err := rp.StopContainer(executionContainerName)
-		if err != nil {
-			return fmt.Errorf("Error stopping main execution container: %w", err)
-		}
-		if result != executionContainerName {
-			return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
-		}
+	fmt.Printf("Stopping %s...\n", executionContainerName)
+	result, err := rp.StopContainer(executionContainerName)
+	if err != nil {
+		return fmt.Errorf("Error stopping main execution container: %w", err)
+	}
+	if result != executionContainerName {
+		return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
+	}
 
-		// Get the ETH1 volume name
-		volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
-		if err != nil {
-			return fmt.Errorf("Error getting execution client volume name: %w", err)
-		}
+	// Get the ETH1 volume name
+	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
+	if err != nil {
+		return fmt.Errorf("Error getting execution client volume name: %w", err)
+	}
 
-		// Run the prune provisioner
-		fmt.Printf("Provisioning pruning on volume %s...\n", volume)
-		err = rp.RunPruneProvisioner(prefix+PruneProvisionerContainerSuffix, volume, pruneProvisioner)
-		if err != nil {
-			return fmt.Errorf("Error running prune provisioner: %w", err)
-		}
+	// Run the prune provisioner
+	fmt.Printf("Provisioning pruning on volume %s...\n", volume)
+	err = rp.RunPruneProvisioner(prefix+PruneProvisionerContainerSuffix, volume, pruneProvisioner)
+	if err != nil {
+		return fmt.Errorf("Error running prune provisioner: %w", err)
+	}
 
-		// Restart ETH1
-		fmt.Printf("Restarting %s...\n", executionContainerName)
-		result, err = rp.StartContainer(executionContainerName)
-		if err != nil {
-			return fmt.Errorf("Error starting main execution client: %w", err)
-		}
-		if result != executionContainerName {
-			return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
+	// Restart ETH1
+	fmt.Printf("Restarting %s...\n", executionContainerName)
+	result, err = rp.StartContainer(executionContainerName)
+	if err != nil {
+		return fmt.Errorf("Error starting main execution client: %w", err)
+	}
+	if result != executionContainerName {
+		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
 	}
 
 	fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
@@ -1102,6 +1106,11 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	return nil
 
+}
+
+// Gets the execution container name
+func getExecutionContainerName(prefix string) string {
+	return prefix + ExecutionContainerSuffix
 }
 
 // Pause the Rocket Pool service
