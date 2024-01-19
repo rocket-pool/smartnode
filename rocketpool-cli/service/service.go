@@ -1061,7 +1061,8 @@ func pruneExecutionClient(c *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
 		}
-	} else {
+		return nil
+	}
 		fmt.Printf("Stopping %s...\n", executionContainerName)
 		result, err := rp.StopContainer(executionContainerName)
 		if err != nil {
