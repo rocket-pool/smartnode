@@ -1342,3 +1342,16 @@ func (c *Client) readOutput(cmdText string) ([]byte, error) {
 	return cmd.Output()
 
 }
+
+// Gets the container prefix from the settings
+func (c *Client) GetContainerPrefix() (string, error) {
+	cfg, isNew, err := c.LoadConfig()
+	if err != nil {
+		return "", err
+	}
+	if isNew {
+		return "", fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+	}
+
+	return cfg.Smartnode.ProjectName.Value.(string), nil
+}
