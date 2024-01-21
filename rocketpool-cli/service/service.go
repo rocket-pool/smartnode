@@ -32,6 +32,7 @@ const (
 	ValidatorContainerSuffix        string = "_validator"
 	BeaconContainerSuffix           string = "_eth2"
 	ExecutionContainerSuffix        string = "_eth1"
+	PruneStarterContainerSuffix     string = "_nm_prune_starter"
 	NodeContainerSuffix             string = "_node"
 	ApiContainerSuffix              string = "_api"
 	WatchtowerContainerSuffix       string = "_watchtower"
@@ -1013,6 +1014,8 @@ func pruneExecutionClient(c *cli.Context) error {
 	// Get the execution container name
 	executionContainerName := prefix + ExecutionContainerSuffix
 
+	pruneStarterContainerName := prefix + PruneStarterContainerSuffix
+
 	// Check for enough free space
 	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
 	if err != nil {
@@ -1045,7 +1048,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	if selectedEc == cfgtypes.ExecutionClient_Nethermind {
 		// Restarting NM is not needed anymore
-		err = rp.RunNethermindPruneStarter(executionContainerName)
+		err = rp.RunNethermindPruneStarter(executionContainerName, pruneStarterContainerName)
 		if err != nil {
 			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
 		}

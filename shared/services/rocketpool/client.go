@@ -784,8 +784,8 @@ func (c *Client) RunPruneProvisioner(container string, volume string, image stri
 }
 
 // Executes a Go program that triggers NM pruning
-func (c *Client) RunNethermindPruneStarter(container string) error {
-	cmd := fmt.Sprintf(`docker run --rm --network container:%s rocketpool/nm-prune-starter %s`, container, nethermindAdminUrl)
+func (c *Client) RunNethermindPruneStarter(executionContainerName string, pruneStarterContainerName string) error {
+	cmd := fmt.Sprintf(`docker run --rm  --name %s --network container:%s rocketpool/nm-prune-starter %s`, pruneStarterContainerName, executionContainerName, nethermindAdminUrl)
 
 	err := c.printOutput(cmd)
 	if err != nil {
