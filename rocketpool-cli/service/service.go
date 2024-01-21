@@ -1087,7 +1087,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	fmt.Println("Done! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
 	fmt.Println("Once it's done, it will restart automatically and resume normal operation.")
 
-	fmt.Printf(colorYellow + "NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!" + colorReset)
+	fmt.Println(colorYellow + "NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!" + colorReset)
 
 	return nil
 
