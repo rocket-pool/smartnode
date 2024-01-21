@@ -1049,8 +1049,6 @@ func pruneExecutionClient(c *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
 		}
-		fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
-		fmt.Printf("%sNOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!%s\n", colorYellow, colorReset)
 		return nil
 	}
 	fmt.Printf("Stopping %s...\n", executionContainerName)
@@ -1085,7 +1083,8 @@ func pruneExecutionClient(c *cli.Context) error {
 		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
 	}
 
-	fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
+	fmt.Println()
+	fmt.Println("Done! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
 	fmt.Println("Once it's done, it will restart automatically and resume normal operation.")
 
 	fmt.Printf("%sNOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!%s\n", colorYellow, colorReset)
