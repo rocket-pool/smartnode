@@ -3,7 +3,7 @@ package config
 import (
 	"strings"
 
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 

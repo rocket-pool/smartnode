@@ -1,26 +1,26 @@
 package utils
 
-import "github.com/urfave/cli/v2"
-
-const (
-	PrintTxDataFlag    string = "print-tx-data"
-	SignTxOnlyFlag     string = "sign-tx-only"
-	NonceFlag          string = "nonce"
-	MaxFeeFlag         string = "max-fee"
-	MaxPriorityFeeFlag string = "max-priority-fee"
-	NoRestartFlag      string = "no-restart"
-	MnemonicFlag       string = "mnemonic"
+import (
+	"github.com/urfave/cli/v2"
 )
 
-var YesFlag *cli.BoolFlag = &cli.BoolFlag{
-	Name:    "yes",
-	Aliases: []string{"y"},
-	Usage:   "Automatically confirm all interactive questions",
-}
+const (
+	PrintTxDataFlag string = "print-tx-data"
+	SignTxOnlyFlag  string = "sign-tx-only"
+	NoRestartFlag   string = "no-restart"
+	MnemonicFlag    string = "mnemonic"
+)
 
-var RawFlag *cli.BoolFlag = &cli.BoolFlag{
-	Name: "raw",
-}
+var (
+	YesFlag *cli.BoolFlag = &cli.BoolFlag{
+		Name:    "yes",
+		Aliases: []string{"y"},
+		Usage:   "Automatically confirm all interactive questions",
+	}
+	RawFlag *cli.BoolFlag = &cli.BoolFlag{
+		Name: "raw",
+	}
+)
 
 func InstantiateFlag[FlagType cli.Flag](prototype FlagType, description string) cli.Flag {
 	switch typedProto := any(prototype).(type) {

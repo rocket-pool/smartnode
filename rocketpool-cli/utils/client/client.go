@@ -2,9 +2,9 @@ package client
 
 import (
 	"fmt"
-	"os"
+	"path/filepath"
 
-	"github.com/fatih/color"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/context"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/urfave/cli/v2"
@@ -35,29 +35,35 @@ const (
 	nethermindPruneStarterCommand string = "dotnet /setup/NethermindPruneStarter/NethermindPruneStarter.dll"
 	nethermindAdminUrl            string = "http://127.0.0.1:7434"
 
-	DebugColor = color.FgYellow
+	// Default name of the API socket file
+	defaultApiSocketFile string = "daemon.sock"
 )
 
 // Rocket Pool client
 type Client struct {
-	Api *rocketpool.ApiRequester
-
-	configPath string
-	daemonPath string
-	debugPrint bool
+	Api      *rocketpool.ApiRequester
+	Context  *context.SmartNodeContext
+	isNative bool
 }
 
 // Create new Rocket Pool client from CLI context without checking for sync status
 // Only use this function from commands that may work if the Daemon service doesn't exist
 // Most users should call NewClientFromCtx(c).WithStatus() or NewClientFromCtx(c).WithReady()
 func NewClientFromCtx(c *cli.Context) *Client {
-	socketPath := os.ExpandEnv(c.String("api-socket-path"))
-	client := &Client{
-		configPath: os.ExpandEnv(c.String("config-path")),
-		daemonPath: os.ExpandEnv(c.String("daemon-path")),
-		debugPrint: c.Bool("debug"),
+	snCtx := context.GetSmartNodeContext(c)
 
-		Api: rocketpool.NewApiRequester(socketPath),
+	// Set up the default API socket file if it's not specified
+	socketPath := snCtx.ApiSocketPath
+	isNative := true
+	if socketPath == "" {
+		socketPath = filepath.Join(snCtx.ConfigPath, "data", "sockets", defaultApiSocketFile)
+		isNative = false
+	}
+
+	client := &Client{
+		Api:      rocketpool.NewApiRequester(socketPath),
+		Context:  snCtx,
+		isNative: isNative,
 	}
 	return client
 }
@@ -128,4 +134,8 @@ func (c *Client) checkClientStatus() (bool, error) {
 	// Primary isn't ready and fallback isn't enabled
 	fmt.Printf("Error: primary client pair isn't ready and fallback clients aren't enabled.\n\tPrimary EC status: %s\n\tPrimary CC status: %s\n", primaryEcStatus, primaryBcStatus)
 	return false, nil
+}
+
+func (c *Client) IsNative() bool {
+	return c.isNative
 }

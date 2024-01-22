@@ -12,6 +12,7 @@ Dockerfile
 /rocketpool-cli/rocketpool-cli
 .idea
 /.vscode
+.vscode-ctags
 /rocketpool/rocketpool-daemon-darwin-amd64
 /rocketpool/rocketpool-daemon-linux-amd64
 /rocketpool/rocketpool-daemon-darwin-arm64

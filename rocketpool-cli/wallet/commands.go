@@ -3,35 +3,31 @@ package wallet
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Manage the node wallet",
-		Subcommands: []cli.Command{
-
+		Subcommands: []*cli.Command{
 			{
-				Name:      "status",
-				Aliases:   []string{"s"},
-				Usage:     "Get the node wallet status",
-				UsageText: "rocketpool wallet status",
+				Name:    "status",
+				Aliases: []string{"s"},
+				Usage:   "Get the node wallet status",
 				Action: func(c *cli.Context) error {
-
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
 					return getStatus(c)
-
 				},
 			},
 
@@ -57,13 +53,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
 					if c.String("password") != "" {
-						if _, err := cliutils.ValidateNodePassword("password", c.String("password")); err != nil {
+						if _, err := input.ValidateNodePassword("password", c.String("password")); err != nil {
 							return err
 						}
 					}
@@ -109,18 +105,18 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
 					if c.String("password") != "" {
-						if _, err := cliutils.ValidateNodePassword("password", c.String("password")); err != nil {
+						if _, err := input.ValidateNodePassword("password", c.String("password")); err != nil {
 							return err
 						}
 					}
 					if c.String("mnemonic") != "" {
-						if _, err := cliutils.ValidateWalletMnemonic("mnemonic", c.String("mnemonic")); err != nil {
+						if _, err := input.ValidateWalletMnemonic("mnemonic", c.String("mnemonic")); err != nil {
 							return err
 						}
 					}
@@ -139,7 +135,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -180,13 +176,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Validate flags
 					if c.String("mnemonic") != "" {
-						if _, err := cliutils.ValidateWalletMnemonic("mnemonic", c.String("mnemonic")); err != nil {
+						if _, err := input.ValidateWalletMnemonic("mnemonic", c.String("mnemonic")); err != nil {
 							return err
 						}
 					}
@@ -205,7 +201,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -222,7 +218,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+					if err := input.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 
@@ -239,7 +235,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := input.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -272,19 +268,15 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Send a zero-ETH transaction to the target address (or ENS) with the provided hex-encoded message as the data payload",
 				UsageText: "rocketpool node send-message [-y] to-address hex-message",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:    flags.YesFlag,
-						Aliases: []string{"y"},
-						Usage:   "Automatically confirm message send",
-					},
+					utils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := input.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					message, err := cliutils.ValidateByteArray("message", c.Args().Get(1))
+					message, err := input.ValidateByteArray("message", c.Args().Get(1))
 					if err != nil {
 						return err
 					}

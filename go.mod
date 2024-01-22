@@ -14,7 +14,7 @@ require (
 	github.com/ethereum/go-ethereum v1.13.10
 	github.com/fatih/color v1.16.0
 	github.com/ferranbt/fastssz v0.1.3
-	github.com/gdamore/tcell/v2 v2.6.0
+	github.com/gdamore/tcell/v2 v2.6.1-0.20231203215052-2917c3801e73
 	github.com/glendc/go-external-ip v0.1.0
 	github.com/goccy/go-json v0.10.2
 	github.com/google/uuid v1.5.0
@@ -34,7 +34,7 @@ require (
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
 	github.com/rocket-pool/rocketpool-go v1.10.1-0.20240115203722-822f7eb3796a
 	github.com/sethvargo/go-password v0.2.0
-	github.com/shirou/gopsutil/v3 v3.23.1
+	github.com/shirou/gopsutil/v3 v3.23.12
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.14
 	github.com/wealdtech/go-ens/v3 v3.6.0

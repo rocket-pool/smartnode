@@ -6,11 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // When printing sync percents, we should avoid printing 100%.
@@ -22,7 +23,9 @@ func SyncRatioToPercent(in float64) float64 {
 }
 
 // Settings
-var ethClientRecentBlockThreshold, _ = time.ParseDuration("5m")
+const (
+	ethClientRecentBlockThreshold time.Duration = 5 * time.Minute
+)
 
 func printClientStatus(status *api.ClientStatus, name string) {
 
@@ -36,7 +39,7 @@ func printClientStatus(status *api.ClientStatus, name string) {
 		return
 	}
 
-	fmt.Printf("Your %s is still syncing (%0.2f%%).\n", name, rocketpool.SyncRatioToPercent(status.SyncProgress))
+	fmt.Printf("Your %s is still syncing (%0.2f%%).\n", name, client.SyncRatioToPercent(status.SyncProgress))
 	if strings.Contains(name, "execution") && status.SyncProgress == 0 {
 		fmt.Printf("\tNOTE: your %s may not report sync progress.\n\tYou should check its logs to review it.\n", name)
 	}
@@ -57,10 +60,8 @@ func printSyncProgress(status *api.ClientManagerStatus, name string) {
 }
 
 func getSyncProgress(c *cli.Context) error {
-
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
-	defer rp.Close()
+	rp := client.NewClientFromCtx(c)
 
 	// Get the config
 	cfg, isNew, err := rp.LoadConfig()
@@ -69,44 +70,43 @@ func getSyncProgress(c *cli.Context) error {
 	}
 
 	// Print what network we're on
-	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
+	err = utils.PrintNetwork(cfg.GetNetwork(), isNew)
 	if err != nil {
 		return err
 	}
 
 	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rp.DepositContractInfo()
+	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo()
 	if err != nil {
 		return err
 	}
-	if !depositContractInfo.SufficientSync {
-		fmt.Printf("%sYour execution client hasn't synced enough to determine if your execution and consensus clients are on the same network.\n", colorYellow)
-		fmt.Printf("To run this safety check, try again later when the execution client has made more sync progress.%s\n\n", colorReset)
-	} else if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
-		depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
-		cliutils.PrintDepositMismatchError(
-			depositContractInfo.RPNetwork,
-			depositContractInfo.BeaconNetwork,
-			depositContractInfo.RPDepositContract,
-			depositContractInfo.BeaconDepositContract)
+	if !depositContractInfo.Data.SufficientSync {
+		fmt.Printf("%sYour execution client hasn't synced enough to determine if your execution and consensus clients are on the same network.\n", terminal.ColorYellow)
+		fmt.Printf("To run this safety check, try again later when the execution client has made more sync progress.%s\n\n", terminal.ColorReset)
+	} else if depositContractInfo.Data.RPNetwork != depositContractInfo.Data.BeaconNetwork ||
+		depositContractInfo.Data.RPDepositContract != depositContractInfo.Data.BeaconDepositContract {
+		utils.PrintDepositMismatchError(
+			depositContractInfo.Data.RPNetwork,
+			depositContractInfo.Data.BeaconNetwork,
+			depositContractInfo.Data.RPDepositContract,
+			depositContractInfo.Data.BeaconDepositContract)
 		return nil
 	} else {
 		fmt.Println("Your consensus client is on the correct network.\n")
 	}
 
 	// Get node status
-	status, err := rp.NodeSync()
+	status, err := rp.Api.Service.ClientStatus()
 	if err != nil {
 		return err
 	}
 
 	// Print EC status
-	printSyncProgress(&status.EcStatus, "execution")
+	printSyncProgress(&status.Data.EcManagerStatus, "execution")
 
 	// Print CC status
-	printSyncProgress(&status.BcStatus, "consensus")
+	printSyncProgress(&status.Data.BcManagerStatus, "consensus")
 
 	// Return
 	return nil
-
 }
