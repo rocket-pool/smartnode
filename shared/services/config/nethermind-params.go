@@ -216,14 +216,13 @@ func calculateNethermindFullPruneMemBudget() uint64 {
 	} else if totalMemoryGB < 9 {
 		return 1024
 	} else if totalMemoryGB < 17 {
-		return 2048
+		return 1024
 	} else if totalMemoryGB < 25 {
-		return 4096
+		return 1024
 	} else if totalMemoryGB < 33 {
-		return 8192
+		return 2048
 	} else {
-		// According to the NM docs going above this value brings no benefits
-		return 16384
+		return 4096
 	}
 }
 
