@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -153,11 +152,11 @@ func getProposal(c *cli.Context, id uint64) error {
 	}
 
 	// Vote details
-	fmt.Printf("Voting power required:  %.2f\n", eth.WeiToEth(proposal.VotingPowerRequired))
-	fmt.Printf("Voting power for:       %.2f\n", eth.WeiToEth(proposal.VotingPowerFor))
-	fmt.Printf("Voting power against:   %.2f\n", eth.WeiToEth(proposal.VotingPowerAgainst))
-	fmt.Printf("Voting power abstained: %.2f\n", eth.WeiToEth(proposal.VotingPowerAbstained))
-	fmt.Printf("Voting power against:   %.2f\n", eth.WeiToEth(proposal.VotingPowerToVeto))
+	fmt.Printf("Voting power required:  %d\n", proposal.VotingPowerRequired)
+	fmt.Printf("Voting power for:       %d\n", proposal.VotingPowerFor)
+	fmt.Printf("Voting power against:   %d\n", proposal.VotingPowerAgainst)
+	fmt.Printf("Voting power abstained: %d\n", proposal.VotingPowerAbstained)
+	fmt.Printf("Voting power against:   %d\n", proposal.VotingPowerToVeto)
 	if proposal.NodeVoteDirection != types.VoteDirection_NoVote {
 		fmt.Printf("Node has voted:         %s\n", types.VoteDirections[proposal.NodeVoteDirection])
 	} else {
