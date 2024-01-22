@@ -3,58 +3,78 @@ package wallet
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/term"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/term"
+)
+
+var (
+	initConfirmMnemonicFlag *cli.BoolFlag = &cli.BoolFlag{
+		Name:    "confirm-mnemonic",
+		Aliases: []string{"c"},
+		Usage:   "Automatically confirm the mnemonic phrase",
+	}
 )
 
 func initWallet(c *cli.Context) error {
-
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
-	defer rp.Close()
+	rp := client.NewClientFromCtx(c)
 
 	// Get & check wallet status
-	status, err := rp.WalletStatus()
+	statusResponse, err := rp.Api.Wallet.Status()
 	if err != nil {
 		return err
 	}
-	if status.WalletInitialized {
+	status := statusResponse.Data.WalletStatus
+	if status.HasKeystore {
 		fmt.Println("The node wallet is already initialized.")
 		return nil
 	}
 
 	// Prompt for user confirmation before printing sensitive information
-	if !(c.GlobalBool("secure-session") ||
+	if !(rp.Context.SecureSession ||
 		cliutils.ConfirmSecureSession("Creating a wallet will print sensitive information to your screen.")) {
 		return nil
 	}
 
 	// Set password if not set
-	if !status.PasswordSet {
-		var password string
-		if c.String("password") != "" {
-			password = c.String("password")
+	var password string
+	var savePassword bool
+	if !status.HasPassword {
+		if c.String(passwordFlag.Name) != "" {
+			password = c.String(passwordFlag.Name)
 		} else {
 			password = promptPassword()
 		}
-		if _, err := rp.SetPassword(password); err != nil {
-			return err
-		}
+
+		// Ask about saving
+		savePassword = utils.Confirm("Would you like to save the password to disk? If you do, your node will be able to handle transactions automatically after a client restart; otherwise, you will have to manually enter the password after each restart with <placeholder>.")
 	}
 
 	// Get the derivation path
-	derivationPath := c.String("derivation-path")
-	if derivationPath != "" {
-		fmt.Printf("Using a custom derivation path (%s).\n\n", derivationPath)
+	derivationPathString := c.String(derivationPathFlag.Name)
+	var derivationPath *string
+	if derivationPathString != "" {
+		fmt.Printf("Using a custom derivation path (%s).\n\n", derivationPathString)
+		derivationPath = &derivationPathString
+	}
+
+	// Get the wallet index
+	walletIndexVal := c.Uint64(walletIndexFlag.Name)
+	var walletIndex *uint64
+	if walletIndexVal != 0 {
+		fmt.Printf("Using a custom wallet index (%d).\n", walletIndex)
+		walletIndex = &walletIndexVal
 	}
 
 	// Initialize wallet
-	response, err := rp.InitWallet(derivationPath)
+	response, err := rp.Api.Wallet.Initialize(derivationPath, walletIndex, []byte(password), &savePassword)
 	if err != nil {
-		return err
+		return fmt.Errorf("error initializing wallet: %w", err)
 	}
 
 	// Print mnemonic
@@ -62,25 +82,26 @@ func initWallet(c *cli.Context) error {
 	fmt.Println("Record this phrase somewhere secure and private. Do not share it with anyone as it will give them control of your node account and validators.")
 	fmt.Println("==============================================================================================================================================")
 	fmt.Println("")
-	fmt.Println(response.Mnemonic)
+	fmt.Println(response.Data.Mnemonic)
 	fmt.Println("")
 	fmt.Println("==============================================================================================================================================")
 	fmt.Println("")
 
 	// Confirm mnemonic
-	if !c.Bool("confirm-mnemonic") {
-		confirmMnemonic(response.Mnemonic)
+	if !c.Bool(initConfirmMnemonicFlag.Name) {
+		confirmMnemonic(response.Data.Mnemonic)
 	}
 
 	// Do a recover to save the wallet
-	recoverResponse, err := rp.RecoverWallet(response.Mnemonic, true, derivationPath, 0)
+	skipRecovery := true
+	recoverResponse, err := rp.Api.Wallet.Recover(derivationPath, &response.Data.Mnemonic, &skipRecovery, walletIndex, nil, nil)
 	if err != nil {
 		return fmt.Errorf("error saving wallet: %w", err)
 	}
 
 	// Sanity check the addresses
-	if recoverResponse.AccountAddress != response.AccountAddress {
-		return fmt.Errorf("Expected %s, but generated %s upon saving", response.AccountAddress, recoverResponse.AccountAddress)
+	if recoverResponse.Data.AccountAddress != response.Data.AccountAddress {
+		return fmt.Errorf("Expected %s, but generated %s upon saving", response.Data.AccountAddress, recoverResponse.Data.AccountAddress)
 	}
 
 	// Clear terminal output
@@ -88,7 +109,6 @@ func initWallet(c *cli.Context) error {
 
 	// Log & return
 	fmt.Println("The node wallet was successfully initialized.")
-	fmt.Printf("Node account: %s\n", response.AccountAddress.Hex())
+	fmt.Printf("Node account: %s%s%s\n", terminal.ColorBlue, response.Data.AccountAddress.Hex(), terminal.ColorReset)
 	return nil
-
 }

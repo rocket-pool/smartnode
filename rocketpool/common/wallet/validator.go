@@ -8,7 +8,6 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool/common/validator"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2util "github.com/wealdtech/go-eth2-util"
 )
@@ -315,18 +314,17 @@ func (w *LocalWallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateK
 // Checks if the wallet is ready for validator key processing
 func (w *LocalWallet) checkIfReady() error {
 	status := w.GetStatus()
-	switch status {
-	case sharedtypes.WalletStatus_NoAddress:
+	if !status.HasAddress {
 		return fmt.Errorf("node wallet does not have an address loaded - please create or recover a node wallet")
-	case sharedtypes.WalletStatus_NoKeystore:
-		return fmt.Errorf("cannot process validator keys because no keystore is loaded")
-	case sharedtypes.WalletStatus_NoPassword:
-		return fmt.Errorf("cannot process validator keys because no password is loaded for the wallet")
-	case sharedtypes.WalletStatus_KeystoreMismatch:
-		return fmt.Errorf("cannot process validator keys because the keystore is for a different wallet than the node address")
-	case sharedtypes.WalletStatus_Ready:
-		return nil
-	default:
-		return fmt.Errorf("unknown wallet status %v", status)
 	}
+	if !status.HasKeystore {
+		return fmt.Errorf("cannot process validator keys because no keystore is loaded")
+	}
+	if !status.HasPassword {
+		return fmt.Errorf("cannot process validator keys because no password is loaded for the wallet")
+	}
+	if status.NodeAddress != status.KeystoreAddress {
+		return fmt.Errorf("cannot process validator keys because the keystore is for a different wallet than the node address")
+	}
+	return nil
 }

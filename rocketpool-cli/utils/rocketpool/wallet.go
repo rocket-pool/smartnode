@@ -54,7 +54,7 @@ func (r *WalletRequester) Initialize(derivationPath *string, index *uint64, pass
 }
 
 // Rebuild the validator keys associated with the wallet
-func (r *WalletRequester) Rebuild(message []byte, address common.Address) (*api.ApiResponse[api.WalletRebuildData], error) {
+func (r *WalletRequester) Rebuild() (*api.ApiResponse[api.WalletRebuildData], error) {
 	return sendGetRequest[api.WalletRebuildData](r, "rebuild", "Rebuild", nil)
 }
 

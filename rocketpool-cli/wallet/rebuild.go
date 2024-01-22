@@ -4,19 +4,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli"
-
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/urfave/cli/v2"
 )
 
 func rebuildWallet(c *cli.Context) error {
-
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Load the config
 	cfg, _, err := rp.LoadConfig()
@@ -25,12 +22,17 @@ func rebuildWallet(c *cli.Context) error {
 	}
 
 	// Get & check wallet status
-	status, err := rp.WalletStatus()
+	statusResponse, err := rp.Api.Wallet.Status()
 	if err != nil {
 		return err
 	}
-	if !status.WalletInitialized {
+	status := statusResponse.Data.WalletStatus
+	if !status.HasKeystore {
 		fmt.Println("The node wallet is not initialized.")
+		return nil
+	}
+	if !status.HasPassword {
+		fmt.Println("The node's wallet password has not been set. Please run <placeholder> to set it.")
 		return nil
 	}
 
@@ -58,21 +60,20 @@ func rebuildWallet(c *cli.Context) error {
 	fmt.Println("Rebuilding node validator keystores...")
 
 	// Rebuild wallet
-	response, err := rp.RebuildWallet()
+	response, err := rp.Api.Wallet.Rebuild()
 	if err != nil {
 		return err
 	}
 
 	// Log & return
 	fmt.Println("The node wallet was successfully rebuilt.")
-	if len(response.ValidatorKeys) > 0 {
+	if len(response.Data.ValidatorKeys) > 0 {
 		fmt.Println("Validator keys:")
-		for _, key := range response.ValidatorKeys {
+		for _, key := range response.Data.ValidatorKeys {
 			fmt.Println(key.Hex())
 		}
 	} else {
 		fmt.Println("No validator keys were found.")
 	}
 	return nil
-
 }

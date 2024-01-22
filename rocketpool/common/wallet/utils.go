@@ -13,8 +13,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/config"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	sharedutils "github.com/rocket-pool/smartnode/shared/utils"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -44,7 +44,8 @@ func TestRecovery(derivationPath string, walletIndex uint, mnemonic string, chai
 }
 
 func RecoverMinipoolKeys(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, w *LocalWallet, testOnly bool) ([]types.ValidatorPubkey, error) {
-	if w.GetStatus() != sharedtypes.WalletStatus_Ready {
+	status := w.GetStatus()
+	if !sharedutils.IsWalletReady(status) {
 		return nil, fmt.Errorf("cannot recover minipool keys without a wallet keystore and matching password loaded")
 	}
 

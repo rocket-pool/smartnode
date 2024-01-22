@@ -1,15 +1,15 @@
 package types
 
-type WalletStatus int
+import "github.com/ethereum/go-ethereum/common"
 
-const (
-	WalletStatus_Unknown          WalletStatus = iota
-	WalletStatus_Ready            WalletStatus = iota
-	WalletStatus_NoAddress        WalletStatus = iota
-	WalletStatus_NoKeystore       WalletStatus = iota
-	WalletStatus_NoPassword       WalletStatus = iota
-	WalletStatus_KeystoreMismatch WalletStatus = iota
-)
+type WalletStatus struct {
+	NodeAddress     common.Address `json:"nodeAddress"`
+	KeystoreAddress common.Address `json:"keystoreAddress"`
+	HasAddress      bool           `json:"hasAddress"`
+	HasPassword     bool           `json:"hasPassword"`
+	HasKeystore     bool           `json:"hasKeystore"`
+	IsPasswordSaved bool           `json:"isPasswordSaved"`
+}
 
 type DerivationPath string
 

@@ -15,6 +15,7 @@ type DataManager[DataType any] struct {
 	isInitialized bool
 	data          DataType
 	hasValue      bool
+	isSavedToDisk bool
 }
 
 // Create a new general data manager that can load from and save to a file
@@ -35,6 +36,11 @@ func (m *DataManager[DataType]) HasValue() bool {
 	return m.hasValue
 }
 
+// Check if the underlying data has been saved to disk
+func (m *DataManager[DataType]) IsSavedToDisk() bool {
+	return m.isSavedToDisk
+}
+
 // Get the data - if it isn't loaded yet, read it from disk
 func (m *DataManager[DataType]) InitializeData() (DataType, bool, error) {
 	// Done if it's already initialized
@@ -46,6 +52,7 @@ func (m *DataManager[DataType]) InitializeData() (DataType, bool, error) {
 	_, err := os.Stat(m.path)
 	if os.IsNotExist(err) {
 		m.hasValue = false
+		m.isSavedToDisk = false
 		m.isInitialized = true
 		return m.data, false, nil
 	} else if err != nil {
@@ -65,6 +72,7 @@ func (m *DataManager[DataType]) InitializeData() (DataType, bool, error) {
 	}
 	m.isInitialized = true
 	m.hasValue = true
+	m.isSavedToDisk = true
 	return m.data, true, err
 }
 
@@ -121,6 +129,7 @@ func (m *DataManager[DataType]) Save() error {
 			return fmt.Errorf("error writing %s to disk: %w", m.name, err)
 		}
 	}
+	m.isSavedToDisk = true
 	return nil
 }
 
@@ -143,5 +152,6 @@ func (m *DataManager[DataType]) Delete() error {
 	if err != nil {
 		return fmt.Errorf("error deleting %s file: %w", m.name, err)
 	}
+	m.isSavedToDisk = false
 	return nil
 }
