@@ -24,6 +24,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
+	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
 // Generate rewards Merkle Tree task
@@ -233,11 +234,11 @@ func (t *GenerateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 	// Create the JSON files
 	rewardsFile.SetMinipoolPerformanceFileCID("---")
 	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
-	localMinipoolPerformanceFile := rprewards.NewLocalFile[rprewards.IMinipoolPerformanceFile](
+	localMinipoolPerformanceFile := rprewards.NewLocalFile[sharedtypes.IMinipoolPerformanceFile](
 		rewardsFile.GetMinipoolPerformanceFile(),
 		t.cfg.Smartnode.GetMinipoolPerformancePath(index, true),
 	)
-	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
+	localRewardsFile := rprewards.NewLocalFile[sharedtypes.IRewardsFile](
 		rewardsFile,
 		t.cfg.Smartnode.GetRewardsTreePath(index, true),
 	)

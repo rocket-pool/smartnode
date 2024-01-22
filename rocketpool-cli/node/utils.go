@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
@@ -420,8 +421,7 @@ func SwapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
 		fmt.Println("This only needs to be done once for your node.")
 
 		// If a custom nonce is set, print the multi-transaction warning
-		customNonce := c.Uint64(utils.NonceFlag)
-		if customNonce != 0 {
+		if rp.Context.Nonce.Cmp(common.Big0) > 0 {
 			utils.PrintMultiTransactionNonceWarning()
 		}
 

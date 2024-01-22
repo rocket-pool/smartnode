@@ -167,9 +167,9 @@ func (t *VerifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 		if err != nil {
 			return nil, nil, fmt.Errorf("error creating binding for proposal %d: %w", prop.ID, err)
 		}
-		var propRoot types.VotingTreeNode
+		var propRoot func() types.VotingTreeNode
 		err = t.rp.Query(func(mc *batch.MultiCaller) error {
-			prop.GetTreeNode(mc, &propRoot, 1)
+			prop.GetTreeNode(mc, 1)
 			return nil
 		}, opts)
 		if err != nil {
@@ -184,7 +184,7 @@ func (t *VerifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 		localRoot := networkTree.Nodes[0]
 
 		// Compare
-		if propRoot.Sum.Cmp(localRoot.Sum) == 0 && propRoot.Hash == localRoot.Hash {
+		if propRoot().Sum.Cmp(localRoot.Sum) == 0 && propRoot().Hash == localRoot.Hash {
 			t.log.Printlnf("Proposal %d matches the local tree artifacts, so it does not need to be challenged.", prop.ID)
 			t.validPropCache[prop.ID] = true
 			continue
@@ -292,15 +292,15 @@ func (t *VerifyPdaoProps) getChallengeOrDefeatForProposal(prop *protocol.Protoco
 		}
 
 		// Check if the index has been challenged yet
-		var state types.ChallengeState
+		var state func() types.ChallengeState
 		err = t.rp.Query(func(mc *batch.MultiCaller) error {
-			prop.GetChallengeState(mc, &state, newChallengedIndex)
+			prop.GetChallengeState(mc, newChallengedIndex)
 			return nil
 		}, opts)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error checking challenge state for proposal %d, index %d: %w", prop.ID, challengedIndex, err)
 		}
-		switch state {
+		switch state() {
 		case types.ChallengeState_Unchallenged:
 			// If it's unchallenged, this is the index to challenge
 			return &challenge{

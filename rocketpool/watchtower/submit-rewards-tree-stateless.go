@@ -229,7 +229,7 @@ func (t *SubmitRewardsTree_Stateless) printMessage(message string) {
 }
 
 // Checks to see if an existing rewards file is still valid
-func (t *submitRewardsTree_Stateless) isExistingRewardsFileValid(rewardsTreePath string, intervalsPassed uint64) bool {
+func (t *SubmitRewardsTree_Stateless) isExistingRewardsFileValid(rewardsTreePath string, intervalsPassed uint64) bool {
 	_, err := os.Stat(rewardsTreePath)
 	if os.IsNotExist(err) {
 		return false
@@ -314,7 +314,7 @@ func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	// Serialize the minipool performance file
-	localMinipoolPerformanceFile := rprewards.NewLocalFile[rprewards.IMinipoolPerformanceFile](
+	localMinipoolPerformanceFile := rprewards.NewLocalFile[sharedtypes.IMinipoolPerformanceFile](
 		rewardsFile.GetMinipoolPerformanceFile(),
 		minipoolPerformancePath,
 	)
@@ -338,7 +338,7 @@ func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	// Serialize the rewards tree to JSON
-	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
+	localRewardsFile := rprewards.NewLocalFile[sharedtypes.IRewardsFile](
 		rewardsFile,
 		rewardsTreePath,
 	)

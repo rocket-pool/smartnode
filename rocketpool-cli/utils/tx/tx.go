@@ -3,7 +3,6 @@ package tx
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -42,8 +41,8 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, c
 
 	// Check the nonce flag
 	var nonce *big.Int
-	if c.IsSet(utils.NonceFlag) {
-		nonce = big.NewInt(0).SetUint64(c.Uint64(utils.NonceFlag))
+	if rp.Context.Nonce.Cmp(common.Big0) > 0 {
+		nonce = rp.Context.Nonce
 	}
 
 	// Create the submission from the TX info
@@ -58,7 +57,7 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, c
 		fmt.Printf("Signed transaction (%s):\n", identifier)
 		fmt.Println(response.Data.SignedTx)
 		fmt.Println()
-		updateCustomNonce(c)
+		updateCustomNonce(rp)
 		return nil
 	}
 
@@ -81,7 +80,7 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, c
 		return fmt.Errorf("error waiting for transaction: %w", err)
 	}
 
-	updateCustomNonce(c)
+	updateCustomNonce(rp)
 	return nil
 }
 
@@ -121,8 +120,8 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.Transactio
 
 	// Check the nonce flag
 	var nonce *big.Int
-	if c.IsSet(utils.NonceFlag) {
-		nonce = big.NewInt(0).SetUint64(c.Uint64(utils.NonceFlag))
+	if rp.Context.Nonce.Cmp(common.Big0) > 0 {
+		nonce = rp.Context.Nonce
 	}
 
 	// Create the submissions from the TX infos
@@ -194,9 +193,8 @@ func waitForTransactions(rp *client.Client, hashes []common.Hash, identifierFunc
 }
 
 // If a custom nonce is set, increment it for the next transaction
-func updateCustomNonce(c *cli.Context) {
-	customNonce := c.Uint64(utils.NonceFlag)
-	if customNonce != 0 {
-		c.Set(utils.NonceFlag, strconv.FormatUint(customNonce+1, 10))
+func updateCustomNonce(rp *client.Client) {
+	if rp.Context.Nonce.Cmp(common.Big0) > 0 {
+		rp.Context.Nonce.Add(rp.Context.Nonce, common.Big1)
 	}
 }

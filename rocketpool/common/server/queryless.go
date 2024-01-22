@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	sharedutils "github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // Wrapper for callbacks used by call runners that simply run without following a structured pattern of
@@ -115,7 +115,7 @@ func runQuerylessRoute[DataType any](ctx IQuerylessCallContext[DataType], servic
 	// Get the transact opts if this node is ready for transaction
 	var opts *bind.TransactOpts
 	walletStatus := w.GetStatus()
-	if walletStatus == sharedtypes.WalletStatus_Ready {
+	if sharedutils.IsWalletReady(walletStatus) {
 		var err error
 		opts, err = w.GetTransactor()
 		if err != nil {

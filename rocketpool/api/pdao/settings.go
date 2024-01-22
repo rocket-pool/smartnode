@@ -120,7 +120,7 @@ func (c *protocolDaoSettingsContext) PrepareData(data *api.ProtocolDaoSettingsDa
 	data.Proposals.ChallengeBond = c.pSettings.Proposals.ChallengeBond.Get()
 	data.Proposals.Quorum = c.pSettings.Proposals.ProposalQuorum.Raw()
 	data.Proposals.VetoQuorum = c.pSettings.Proposals.ProposalVetoQuorum.Raw()
-	data.Proposals.MaxBlockAge = c.pSettings.Proposals.PropoaslMaxBlockAge.Formatted()
+	data.Proposals.MaxBlockAge = c.pSettings.Proposals.ProposalMaxBlockAge.Formatted()
 
 	data.Rewards.IntervalTime = c.pSettings.Rewards.IntervalTime.Formatted()
 

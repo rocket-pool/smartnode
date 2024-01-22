@@ -97,7 +97,7 @@ func (c *protocolDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *protocolDaoExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[api.ProtocolDaoExecuteProposalData], opts *bind.TransactOpts) error {
-	dataBatch.Batch = make([]api.OracleDaoExecuteProposalsData, len(c.ids))
+	dataBatch.Batch = make([]api.ProtocolDaoExecuteProposalData, len(c.ids))
 	for i, prop := range c.proposals {
 		// Check proposal details
 		data := &dataBatch.Batch[i]

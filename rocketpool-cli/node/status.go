@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
+	sharedutils "github.com/rocket-pool/smartnode/shared/utils"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -34,10 +34,11 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Get wallet status
-	walletStatus, err := rp.Api.Wallet.Status()
+	statusResponse, err := rp.Api.Wallet.Status()
 	if err != nil {
 		return err
 	}
+	walletStatus := statusResponse.Data.WalletStatus
 
 	// Rescue Node Plugin - ensure that we print the rescue node stuff even
 	// when the eth1 node is syncing by deferring it here.
@@ -45,12 +46,13 @@ func getStatus(c *cli.Context) error {
 	// Since we collected all the data we need for this message, we can safely
 	// defer it and let it execute even if we fail further down, eg because
 	// the EC is still syncing.
-	if walletStatus.Data.WalletStatus == sharedtypes.WalletStatus_Ready || walletStatus.Data.WalletStatus == sharedtypes.WalletStatus_KeystoreMismatch {
+
+	if sharedutils.IsWalletReady(walletStatus) {
 		defer func() {
 			if cfg.RescueNode.GetEnabledParameter().Value.(bool) {
 				fmt.Println()
 
-				cfg.RescueNode.(*rescue_node.RescueNode).PrintStatusText(walletStatus.Data.AccountAddress)
+				cfg.RescueNode.(*rescue_node.RescueNode).PrintStatusText(walletStatus.NodeAddress)
 			}
 		}()
 	}
@@ -62,7 +64,7 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// rp.NodeStatus() will fail with an error, but we can short-circuit it here.
-	if walletStatus.Data.WalletStatus != sharedtypes.WalletStatus_Ready && walletStatus.Data.WalletStatus != sharedtypes.WalletStatus_KeystoreMismatch {
+	if !walletStatus.HasKeystore {
 		return errors.New("The node wallet is not initialized.")
 	}
 

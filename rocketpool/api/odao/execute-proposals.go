@@ -42,7 +42,7 @@ func (f *oracleDaoExecuteProposalsContextFactory) Create(args url.Values) (*orac
 }
 
 func (f *oracleDaoExecuteProposalsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*oracleDaoExecuteProposalsContext, api.DataBatch[api.OracleDaoExecuteProposalsData]](
+	server.RegisterSingleStageRoute[*oracleDaoExecuteProposalsContext, api.DataBatch[api.OracleDaoExecuteProposalData]](
 		router, "proposal/execute", f, f.handler.serviceProvider,
 	)
 }
@@ -101,8 +101,8 @@ func (c *oracleDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[api.OracleDaoExecuteProposalsData], opts *bind.TransactOpts) error {
-	dataBatch.Batch = make([]api.OracleDaoExecuteProposalsData, len(c.ids))
+func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[api.OracleDaoExecuteProposalData], opts *bind.TransactOpts) error {
+	dataBatch.Batch = make([]api.OracleDaoExecuteProposalData, len(c.ids))
 	for i, prop := range c.proposals {
 
 		// Check proposal details

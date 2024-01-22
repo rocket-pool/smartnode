@@ -59,11 +59,11 @@ func (r *ODaoRequester) CancelProposal(id uint64) (*api.ApiResponse[api.OracleDa
 }
 
 // Execute a proposal
-func (r *ODaoRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[api.DataBatch[api.OracleDaoExecuteProposalsData]], error) {
+func (r *ODaoRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[api.DataBatch[api.OracleDaoExecuteProposalData]], error) {
 	args := map[string]string{
 		"ids": makeBatchArg(ids),
 	}
-	return sendGetRequest[api.DataBatch[api.OracleDaoExecuteProposalsData]](r, "proposal/execute", "ExecuteProposals", args)
+	return sendGetRequest[api.DataBatch[api.OracleDaoExecuteProposalData]](r, "proposal/execute", "ExecuteProposals", args)
 }
 
 // Vote on a proposal

@@ -140,7 +140,7 @@ func (m *ProposalManager) GetNetworkTree(blockNumber uint32, snapshot *VotingInf
 	}
 
 	// Get the depth per round
-	depthPerRound, err := protocol.GetDepthPerRound(m.rp, nil)
+	depthPerRound, err := m.getDepthPerRound()
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (m *ProposalManager) GetNodeTree(blockNumber uint32, nodeIndex uint64, snap
 	}
 
 	// Get the depth per round
-	depthPerRound, err := protocol.GetDepthPerRound(m.rp, nil)
+	depthPerRound, err := m.getDepthPerRound()
 	if err != nil {
 		return nil, err
 	}
@@ -308,4 +308,21 @@ func (m *ProposalManager) logMessage(message string, args ...any) {
 	if m.log != nil {
 		m.log.Printlnf(fmt.Sprintf("%s %s", m.logPrefix, message), args)
 	}
+}
+
+func (m *ProposalManager) getDepthPerRound() (uint64, error) {
+	// Create a pDAO manager binding
+	pdaoMgr, err := protocol.NewProtocolDaoManager(m.rp)
+	if err != nil {
+		return 0, fmt.Errorf("error creating Protocol DAO manager binding: %w", err)
+	}
+
+	// Get the depth per round
+	err = m.rp.Query(nil, nil, pdaoMgr.DepthPerRound)
+	if err != nil {
+		return 0, fmt.Errorf("error getting depth per round: %w", err)
+	}
+
+	depthPerRound := pdaoMgr.DepthPerRound.Formatted()
+	return depthPerRound, nil
 }

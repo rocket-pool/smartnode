@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli/v2"
 
@@ -33,7 +34,8 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 
 	// If a custom nonce is set, print the multi-transaction warning
-	if c.Uint64(utils.NonceFlag) != 0 {
+
+	if rp.Context.Nonce.Cmp(common.Big0) > 0 {
 		utils.PrintMultiTransactionNonceWarning()
 	}
 
@@ -105,8 +107,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		fmt.Println("This only needs to be done once for your node.")
 
 		// If a custom nonce is set, print the multi-transaction warning
-		customNonce := c.Uint64(utils.NonceFlag)
-		if customNonce != 0 {
+		if rp.Context.Nonce.Cmp(common.Big0) > 0 {
 			utils.PrintMultiTransactionNonceWarning()
 		}
 

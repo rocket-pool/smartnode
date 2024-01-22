@@ -24,6 +24,10 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
+const (
+	debugColor color.Attribute = color.FgYellow
+)
+
 // Install the Rocket Pool service
 func (c *Client) InstallService(verbose, noDeps bool, version, path string, dataPath string) error {
 	// Get installation script flags
@@ -87,7 +91,7 @@ func (c *Client) InstallService(verbose, noDeps bool, version, path string, data
 	// Read command & error output from stderr; render in verbose mode
 	var errMessage string
 	go (func() {
-		c := color.New(DebugColor)
+		c := color.New(debugColor)
 		scanner := bufio.NewScanner(cmdErr)
 		for scanner.Scan() {
 			errMessage = scanner.Text()
@@ -159,7 +163,7 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 	// Read command & error output from stderr; render in verbose mode
 	var errMessage string
 	go (func() {
-		c := color.New(DebugColor)
+		c := color.New(debugColor)
 		scanner := bufio.NewScanner(cmdErr)
 		for scanner.Scan() {
 			errMessage = scanner.Text()
@@ -302,27 +306,11 @@ func (c *Client) PrintServiceCompose(composeFiles []string) error {
 // Get the Rocket Pool service version
 func (c *Client) GetServiceVersion() (string, error) {
 	// Get service container version output
-	var versionString string
-	if c.daemonPath == "" {
-		response, err := c.Api.Service.Version()
-		if err != nil {
-			return "", fmt.Errorf("error requesting Rocket Pool service version: %w", err)
-		}
-		versionString = response.Data.Version
-	} else {
-		cmd := fmt.Sprintf("%s --version", shellescape.Quote(c.daemonPath))
-		versionBytes, err := c.readOutput(cmd)
-		if err != nil {
-			return "", fmt.Errorf("error getting Rocket Pool service version: %w", err)
-		}
-		// Get the version string
-		outputString := string(versionBytes)
-		elements := strings.Fields(outputString) // Split on whitespace
-		if len(elements) < 1 {
-			return "", fmt.Errorf("error parsing Rocket Pool service version number from output '%s'", outputString)
-		}
-		versionString = elements[len(elements)-1]
+	response, err := c.Api.Service.Version()
+	if err != nil {
+		return "", fmt.Errorf("error requesting Rocket Pool service version: %w", err)
 	}
+	versionString := response.Data.Version
 
 	// Make sure it's a semantic version
 	version, err := semver.Make(versionString)
@@ -474,12 +462,12 @@ func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string, ima
 func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 	// Cancel if running in non-docker mode
-	if c.daemonPath != "" {
+	if c.Context.ApiSocketPath != "" {
 		return "", errors.New("command unavailable in Native Mode (with '--daemon-path' option specified)")
 	}
 
 	// Get the expanded config path
-	expandedConfigPath, err := homedir.Expand(c.configPath)
+	expandedConfigPath, err := homedir.Expand(c.Context.ConfigPath)
 	if err != nil {
 		return "", err
 	}

@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/node"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -42,7 +41,7 @@ var (
 
 func (sp *ServiceProvider) RequireNodeAddress() error {
 	status := sp.nodeWallet.GetStatus()
-	if status == sharedtypes.WalletStatus_NoAddress {
+	if !status.HasAddress {
 		return errors.New("The node currently does not have an address set. Please run 'rocketpool wallet init' and try again.")
 	}
 	return nil
@@ -50,20 +49,19 @@ func (sp *ServiceProvider) RequireNodeAddress() error {
 
 func (sp *ServiceProvider) RequireWalletReady() error {
 	status := sp.nodeWallet.GetStatus()
-	switch status {
-	case sharedtypes.WalletStatus_NoAddress:
+	if !status.HasAddress {
 		return errors.New("The node currently does not have an address set. Please run 'rocketpool wallet init' and try again.")
-	case sharedtypes.WalletStatus_NoKeystore:
-		return errors.New("The node currently does not have a node wallet keystore. Please run 'rocketpool wallet init' and try again.")
-	case sharedtypes.WalletStatus_NoPassword:
-		return errors.New("The node's wallet password has not been set. Please run 'rocketpool wallet enter-password' first.")
-	case sharedtypes.WalletStatus_KeystoreMismatch:
-		return errors.New("The node's wallet keystore does not match the node address. This node is currently in read-only mode.")
-	case sharedtypes.WalletStatus_Ready:
-		return nil
-	default:
-		return fmt.Errorf("error checking if wallet is ready: unknown status [%v]", status)
 	}
+	if !status.HasKeystore {
+		return errors.New("The node currently does not have a node wallet keystore. Please run 'rocketpool wallet init' and try again.")
+	}
+	if !status.HasPassword {
+		return errors.New("The node's wallet password has not been set. Please run 'rocketpool wallet enter-password' first.")
+	}
+	if status.KeystoreAddress != status.NodeAddress {
+		return errors.New("The node's wallet keystore does not match the node address. This node is currently in read-only mode.")
+	}
+	return nil
 }
 
 func (sp *ServiceProvider) RequireEthClientSynced() error {
@@ -163,23 +161,19 @@ func (sp *ServiceProvider) WaitWalletReady(verbose bool) error {
 	for {
 		status := sp.nodeWallet.GetStatus()
 		var message string
-		switch status {
-		case sharedtypes.WalletStatus_NoAddress:
+
+		if !status.HasAddress {
 			message = "The node currently does not have an address set"
-		case sharedtypes.WalletStatus_NoKeystore:
+		} else if !status.HasKeystore {
 			message = "The node currently does not have a node wallet keystore"
-		case sharedtypes.WalletStatus_NoPassword:
+		} else if !status.HasPassword {
 			message = "The node's wallet password has not been set"
-		case sharedtypes.WalletStatus_KeystoreMismatch:
+		} else if status.KeystoreAddress != status.NodeAddress {
 			message = "The node's wallet keystore does not match the node address"
-		case sharedtypes.WalletStatus_Ready:
-			return nil
-		default:
-			message = fmt.Sprintf("error checking if wallet is ready: unknown status [%v]", status)
-		}
-		if status == sharedtypes.WalletStatus_Ready {
+		} else {
 			return nil
 		}
+
 		if verbose {
 			log.Printf("%s, retrying in %s...\n", message, checkNodeWalletInterval.String())
 		}

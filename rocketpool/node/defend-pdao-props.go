@@ -168,15 +168,15 @@ func (t *DefendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 		propID := event.ProposalID.Uint64()
 		index := event.Index.Uint64()
 		prop := propMap[propID]
-		var state types.ChallengeState
+		var state func() types.ChallengeState
 		err = t.rp.Query(func(mc *batch.MultiCaller) error {
-			prop.GetChallengeState(mc, &state, index)
+			state = prop.GetChallengeState(mc, index)
 			return nil
 		}, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error checking challenge state for proposal %d, index %d: %w", prop.ID, index, err)
 		}
-		if state == types.ChallengeState_Challenged {
+		if state() == types.ChallengeState_Challenged {
 			t.log.Printlnf("Proposal %d, index %d has been challenged by %s.", propID, index, event.Challenger.Hex())
 			defendableProposals = append(defendableProposals, defendableProposal{
 				challengeEvent: &event,

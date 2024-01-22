@@ -60,20 +60,20 @@ func (c *walletInitializeContext) PrepareData(data *api.WalletInitializeData, op
 	w := sp.GetWallet()
 
 	// Requirements
-	switch w.GetStatus() {
-	case types.WalletStatus_Ready, types.WalletStatus_KeystoreMismatch:
+	status := w.GetStatus()
+	if status.HasKeystore {
 		return fmt.Errorf("a wallet is already present")
-	default:
-		_, hasPassword := w.GetPassword()
-		if !hasPassword && !c.passwordExists {
-			return fmt.Errorf("you must set a password before initializing the wallet, or provide one in this call")
-		}
-		w.RememberPassword(c.password)
-		if c.savePassword {
-			err := w.SavePassword()
-			if err != nil {
-				return fmt.Errorf("error saving wallet password to disk: %w", err)
-			}
+	}
+
+	_, hasPassword := w.GetPassword()
+	if !hasPassword && !c.passwordExists {
+		return fmt.Errorf("you must set a password before initializing the wallet, or provide one in this call")
+	}
+	w.RememberPassword(c.password)
+	if c.savePassword {
+		err := w.SavePassword()
+		if err != nil {
+			return fmt.Errorf("error saving wallet password to disk: %w", err)
 		}
 	}
 

@@ -42,7 +42,7 @@ func (f *protocolDaoClaimBondsContextFactory) Create(body api.ProtocolDaoClaimBo
 }
 
 func (f *protocolDaoClaimBondsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStagePost[*protocolDaoClaimBondsContext, api.ProtocolDaoClaimBondsBody, api.BatchData[api.ProtocolDaoClaimBondsData]](
+	server.RegisterSingleStagePost[*protocolDaoClaimBondsContext, api.ProtocolDaoClaimBondsBody, api.DataBatch[api.ProtocolDaoClaimBondsData]](
 		router, "claim-bonds", f, f.handler.serviceProvider,
 	)
 }
@@ -99,7 +99,7 @@ func (c *protocolDaoClaimBondsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *protocolDaoClaimBondsContext) PrepareData(dataBatch *api.BatchData[api.ProtocolDaoClaimBondsData], opts *bind.TransactOpts) error {
+func (c *protocolDaoClaimBondsContext) PrepareData(dataBatch *api.DataBatch[api.ProtocolDaoClaimBondsData], opts *bind.TransactOpts) error {
 	dataBatch.Batch = make([]api.ProtocolDaoClaimBondsData, len(c.body.Claims))
 	for i, claim := range c.body.Claims {
 		proposal := c.proposals[i]

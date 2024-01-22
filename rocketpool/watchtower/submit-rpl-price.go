@@ -789,15 +789,18 @@ func (t *SubmitRplPrice) updateScroll(cfg *config.RocketPoolConfig, rp *rocketpo
 
 	l2GasEstimatorAddress := t.cfg.Smartnode.GetScrollFeeEstimatorAddress()
 	l2GasEstimatorAddr := common.HexToAddress(l2GasEstimatorAddress)
-	scrollEstimator := contracts.NewScrollFeeEstimator(l2GasEstimatorAddr, ec)
+	scrollEstimator, err := contracts.NewScrollFeeEstimator(l2GasEstimatorAddr, ec)
+	if err != nil {
+		return fmt.Errorf("error creating scroll fee estimator binding: %w", err)
+	}
 
 	// Set a fixed gas limit a bit above the estimated 85,283
 	l2GasLimit := big.NewInt(90000)
 
 	// Query the L2 message fee
 	var messageFee *big.Int
-	err := rp.Query(func(mc *batch.MultiCaller) error {
-		scrollEstimator.EstimateCrossDomainMessageFee(l2GasLimit, &messageFee)
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		scrollEstimator.EstimateCrossDomainMessageFee(mc, &messageFee, l2GasLimit)
 		return nil
 	}, nil)
 	if err != nil {

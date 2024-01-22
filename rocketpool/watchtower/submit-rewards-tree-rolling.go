@@ -377,7 +377,7 @@ func (t *SubmitRewardsTree_Rolling) getTrueRewardsIntervalSubmissionSlot(targetS
 }
 
 // Checks to see if an existing rewards file is still valid and whether or not it should be regenerated or just resubmitted
-func (t *submitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint64, intervalsPassed uint64, nodeAddress common.Address, isInOdao bool) (*rprewards.LocalRewardsFile, bool, bool) {
+func (t *SubmitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint64, intervalsPassed uint64, nodeAddress common.Address, isInOdao bool) (*rprewards.LocalRewardsFile, bool, bool) {
 	rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(rewardIndex, true)
 
 	// Check if the rewards file exists
@@ -453,7 +453,7 @@ func (t *submitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint6
 }
 
 // Run a rewards interval report submission
-func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.RocketPool, state *state.NetworkState, isInOdao bool, intervalsPassed uint64, startTime time.Time, endTime time.Time, mustRegenerate bool, existingRewardsFile *rprewards.LocalRewardsFile) error {
+func (t *SubmitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.RocketPool, state *state.NetworkState, isInOdao bool, intervalsPassed uint64, startTime time.Time, endTime time.Time, mustRegenerate bool, existingRewardsFile *rprewards.LocalRewardsFile) error {
 	// Prep the record for reporting
 	err := t.recordMgr.PrepareRecordForReport(state)
 	if err != nil {
@@ -538,7 +538,7 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	}
 
 	// Serialize the minipool performance file
-	localMinipoolPerformanceFile := rprewards.NewLocalFile[rprewards.IMinipoolPerformanceFile](
+	localMinipoolPerformanceFile := rprewards.NewLocalFile[sharedtypes.IMinipoolPerformanceFile](
 		rewardsFile.GetMinipoolPerformanceFile(),
 		minipoolPerformancePath,
 	)
@@ -560,7 +560,7 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	}
 
 	// Serialize the rewards tree to JSON
-	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
+	localRewardsFile := rprewards.NewLocalFile[sharedtypes.IRewardsFile](
 		rewardsFile,
 		rewardsTreePath,
 	)

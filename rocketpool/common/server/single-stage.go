@@ -11,8 +11,8 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/smartnode/rocketpool/common/services"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	sharedutils "github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // Wrapper for callbacks used by call runners that follow a common single-stage pattern:
@@ -31,9 +31,16 @@ type ISingleStageCallContext[DataType any] interface {
 
 // Interface for single-stage call context factories - these will be invoked during route handling to create the
 // unique context for the route
-type ISingleStageCallContextFactory[ContextType ISingleStageCallContext[DataType], DataType any] interface {
+type ISingleStageGetContextFactory[ContextType ISingleStageCallContext[DataType], DataType any] interface {
 	// Create the context for the route
 	Create(args url.Values) (ContextType, error)
+}
+
+// Interface for queryless call context factories that handle POST requests.
+// These will be invoked during route handling to create the unique context for the route
+type ISingleStagePostContextFactory[ContextType IQuerylessCallContext[DataType], BodyType any, DataType any] interface {
+	// Create the context for the route
+	Create(body BodyType) (ContextType, error)
 }
 
 // Registers a new route with the router, which will invoke the provided factory to create and execute the context
@@ -41,7 +48,7 @@ type ISingleStageCallContextFactory[ContextType ISingleStageCallContext[DataType
 func RegisterSingleStageRoute[ContextType ISingleStageCallContext[DataType], DataType any](
 	router *mux.Router,
 	functionName string,
-	factory ISingleStageCallContextFactory[ContextType, DataType],
+	factory ISingleStageGetContextFactory[ContextType, DataType],
 	serviceProvider *services.ServiceProvider,
 ) {
 	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +75,7 @@ func RegisterSingleStageRoute[ContextType ISingleStageCallContext[DataType], Dat
 func RegisterSingleStagePost[ContextType ISingleStageCallContext[DataType], BodyType any, DataType any](
 	router *mux.Router,
 	functionName string,
-	factory ISingleStageCallContextFactory[ContextType, BodyType, DataType],
+	factory ISingleStagePostContextFactory[ContextType, BodyType, DataType],
 	serviceProvider *services.ServiceProvider,
 ) {
 	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
@@ -129,7 +136,7 @@ func runSingleStageRoute[DataType any](ctx ISingleStageCallContext[DataType], se
 	// Get the transact opts if this node is ready for transaction
 	var opts *bind.TransactOpts
 	walletStatus := w.GetStatus()
-	if walletStatus == sharedtypes.WalletStatus_Ready {
+	if sharedutils.IsWalletReady(walletStatus) {
 		var err error
 		opts, err = w.GetTransactor()
 		if err != nil {

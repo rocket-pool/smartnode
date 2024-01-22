@@ -68,7 +68,7 @@ func (t *DownloadRewardsTrees) Run(state *state.NetworkState) error {
 		if err != nil {
 			return fmt.Errorf("error getting interval %d info: %w", missingInterval, err)
 		}
-		err = rprewards.DownloadRewardsFile(cfg, missingInterval, intervalInfo.CID, true)
+		err = rprewards.DownloadRewardsFile(cfg, &intervalInfo, true)
 		if err != nil {
 			fmt.Println()
 			return err

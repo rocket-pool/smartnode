@@ -58,7 +58,7 @@ type securityExecuteProposalsContext struct {
 
 	ids       []uint64
 	dpm       *proposals.DaoProposalManager
-	proposals []*proposals.OracleDaoProposal
+	proposals []*proposals.SecurityCouncilProposal
 }
 
 func (c *securityExecuteProposalsContext) Initialize() error {
@@ -72,7 +72,7 @@ func (c *securityExecuteProposalsContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
-	c.proposals = make([]*proposals.SecurityDaoProposal, len(c.ids))
+	c.proposals = make([]*proposals.SecurityCouncilProposal, len(c.ids))
 	for i, id := range c.ids {
 		prop, err := c.dpm.CreateProposalFromID(id, nil)
 		if err != nil {
@@ -96,8 +96,8 @@ func (c *securityExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *securityExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[SecurityExecuteProposalData], opts *bind.TransactOpts) error {
-	dataBatch.Batch = make([]api.SecurityExecuteProposalsData, len(c.ids))
+func (c *securityExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[api.SecurityExecuteProposalData], opts *bind.TransactOpts) error {
+	dataBatch.Batch = make([]api.SecurityExecuteProposalData, len(c.ids))
 	for i, prop := range c.proposals {
 
 		// Check proposal details
