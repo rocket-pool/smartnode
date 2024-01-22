@@ -140,6 +140,43 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:    "set-password",
+				Aliases: []string{"sp"},
+				Usage:   "Upload the node wallet password to the daemon so it can unlock your node wallet keystore, optionally saving it to disk as well",
+				Flags: []cli.Flag{
+					passwordFlag,
+					utils.YesFlag,
+				},
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := input.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return setPassword(c)
+				},
+			},
+
+			{
+				Name:    "delete-password",
+				Aliases: []string{"dp"},
+				Usage:   "Delete the node wallet password from disk, so it will need to be re-entered manually after each service or node restart.",
+				Flags: []cli.Flag{
+					utils.YesFlag,
+				},
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := input.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return deletePassword(c)
+				},
+			},
+
+			{
 				Name:    "export",
 				Aliases: []string{"e"},
 				Usage:   "Export the node wallet in JSON format",

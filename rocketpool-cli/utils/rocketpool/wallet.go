@@ -30,6 +30,11 @@ func (r *WalletRequester) GetClient() *http.Client {
 	return r.client
 }
 
+// Delete the wallet keystore's password from disk
+func (r *WalletRequester) DeletePassword() (*api.ApiResponse[api.SuccessData], error) {
+	return sendGetRequest[api.SuccessData](r, "delete-password", "DeletePassword", nil)
+}
+
 // Export wallet
 func (r *WalletRequester) Export() (*api.ApiResponse[api.WalletExportData], error) {
 	return sendGetRequest[api.WalletExportData](r, "export", "Export", nil)
