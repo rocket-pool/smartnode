@@ -93,17 +93,20 @@ func (t *StakePrelaunchMinipools) Run(state *state.NetworkState) error {
 	// Stake
 	timeoutBig := state.NetworkDetails.MinipoolLaunchTimeout
 	timeout := time.Duration(timeoutBig.Uint64()) * time.Second
-	stakedMinipools, err := t.stakeMinipools(txSubmissions, minipools, timeout)
+	_, err = t.stakeMinipools(txSubmissions, minipools, timeout)
 	if err != nil {
 		return fmt.Errorf("error staking minipools: %w", err)
 	}
 
-	// Restart validator process if any minipools were staked successfully
-	if stakedMinipools {
-		if err := validator.RestartValidator(t.cfg, t.bc, &t.log, t.d); err != nil {
-			return err
+	/*
+		NOTE: This is prompted by the CLI now, so automatic restarting may be obviated
+		// Restart validator process if any minipools were staked successfully
+		if stakedMinipools {
+			if err := validator.RestartValidator(t.cfg, t.bc, &t.log, t.d); err != nil {
+				return err
+			}
 		}
-	}
+	*/
 
 	// Return
 	return nil

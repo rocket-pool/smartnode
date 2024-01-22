@@ -28,6 +28,12 @@ func nodeDeposit(c *cli.Context) error {
 		return err
 	}
 
+	// Load the config
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading configuration: %w", err)
+	}
+
 	// Make sure ETH2 is on the correct chain
 	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo()
 	if err != nil {
@@ -247,6 +253,28 @@ func nodeDeposit(c *cli.Context) error {
 	fmt.Println("Once the remaining ETH has been assigned to your minipool from the staking pool, it will move to Prelaunch status.")
 	fmt.Printf("After that, it will move to Staking status once %s have passed.\n", response.Data.ScrubPeriod)
 	fmt.Println("You can watch its progress using `rocketpool service logs node`.")
+
+	fmt.Println()
+	if cfg.IsNativeMode {
+		fmt.Println("Your Validator Client must be restarted in order to load the new validator key so it can begin attesting once it has been activated on the Beacon Chain.")
+		if c.Bool(utils.YesFlag.Name) || utils.Confirm("Would you like to restart the Validator Client now?") {
+			success, err := rp.Api.Service.RestartVc()
+			if err != nil {
+				fmt.Printf("%sWARNING: Error restarting Validator Client: %s%s\n", terminal.ColorRed, err.Error(), terminal.ColorReset)
+			}
+			if !success.Data.Success {
+				fmt.Printf("%sWARNING: restarting the Validator Client failed.%s\n", terminal.ColorYellow, terminal.ColorReset)
+			} else {
+				fmt.Println("Successfully restarted the Validator Client. Your new validator key is now loaded.")
+				return nil
+			}
+		}
+		fmt.Println()
+		fmt.Printf("%sPlease restart the Validator Client manually before your validator becomes active, or you will miss attestations and lose ETH!%s\n", terminal.ColorYellow, terminal.ColorReset)
+	} else {
+		fmt.Println("Please restart the Validator Client manually before your validator becomes active in order to load the new validator key.")
+		fmt.Printf("%sIf you don't restart it, you will miss attestations and lose ETH!%s\n", terminal.ColorYellow, terminal.ColorReset)
+	}
 
 	return nil
 }
