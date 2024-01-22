@@ -35,7 +35,7 @@ func (f *walletSignMessageContextFactory) Create(args url.Values) (*walletSignMe
 }
 
 func (f *walletSignMessageContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*walletSignMessageContext, api.TxSignMessageData](
+	server.RegisterQuerylessGet[*walletSignMessageContext, api.WalletSignMessageData](
 		router, "sign-message", f, f.handler.serviceProvider,
 	)
 }
@@ -49,7 +49,7 @@ type walletSignMessageContext struct {
 	message []byte
 }
 
-func (c *walletSignMessageContext) PrepareData(data *api.TxSignMessageData, opts *bind.TransactOpts) error {
+func (c *walletSignMessageContext) PrepareData(data *api.WalletSignMessageData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 

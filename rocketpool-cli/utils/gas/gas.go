@@ -7,7 +7,6 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
@@ -27,7 +26,7 @@ func GetMaxFees(c *cli.Context, rp *client.Client, gasInfo core.GasInfo) (*big.I
 	}
 
 	// Get the max fee - prioritize the CLI arguments, default to the config file setting
-	maxFeeGwei := c.Float64(flags.MaxFeeFlag)
+	maxFeeGwei := rp.Context.MaxFee
 	if maxFeeGwei == 0 {
 		maxFee := eth.GweiToWei(cfg.Smartnode.ManualMaxFee.Value.(float64))
 		if maxFee != nil && maxFee.Uint64() != 0 {
@@ -36,7 +35,7 @@ func GetMaxFees(c *cli.Context, rp *client.Client, gasInfo core.GasInfo) (*big.I
 	}
 
 	// Get the priority fee - prioritize the CLI arguments, default to the config file setting
-	maxPriorityFeeGwei := c.Float64(flags.MaxPriorityFeeFlag)
+	maxPriorityFeeGwei := rp.Context.MaxPriorityFee
 	if maxPriorityFeeGwei == 0 {
 		maxPriorityFee := eth.GweiToWei(cfg.Smartnode.PriorityFee.Value.(float64))
 		if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
@@ -54,7 +53,7 @@ func GetMaxFees(c *cli.Context, rp *client.Client, gasInfo core.GasInfo) (*big.I
 		highLimit := maxFeeGwei / eth.WeiPerGwei * float64(gasInfo.SafeGasLimit)
 		fmt.Printf("Total cost: %.4f to %.4f ETH%s\n", lowLimit, highLimit, terminal.ColorReset)
 	} else {
-		if c.Bool(flags.YesFlag) {
+		if c.Bool(utils.YesFlag.Name) {
 			maxFeeWei, err := GetHeadlessMaxFeeWei()
 			if err != nil {
 				return nil, nil, err

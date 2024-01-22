@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/urfave/cli/v2"
@@ -32,7 +33,7 @@ const (
 
 // Get the compose file paths for a CLI context
 func getComposeFiles(c *cli.Context) []string {
-	return c.StringSlice(composeFileFlag.Name)
+	return c.StringSlice(utils.ComposeFileFlag.Name)
 }
 
 // Handle a network change by terminating the service, deleting everything, and starting over

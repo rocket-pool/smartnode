@@ -14,11 +14,6 @@ import (
 )
 
 var (
-	composeFileFlag *cli.StringSliceFlag = &cli.StringSliceFlag{
-		Name:    "compose-file",
-		Aliases: []string{"f"},
-		Usage:   "Supplemental Docker compose files for custom containers to include when performing service commands such as 'start' and 'stop'; this flag may be defined multiple times",
-	}
 	ignoreSlashTimerFlag *cli.BoolFlag = &cli.BoolFlag{
 		Name:  "ignore-slash-timer",
 		Usage: "Bypass the safety timer that forces a delay when switching to a new ETH2 client",
@@ -118,7 +113,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage Rocket Pool service",
 		Flags: []cli.Flag{
-			composeFileFlag,
+			utils.ComposeFileFlag,
 		},
 		Subcommands: []*cli.Command{
 			{

@@ -31,7 +31,7 @@ func (r *WalletRequester) GetClient() *http.Client {
 }
 
 // Export wallet
-func (r *WalletRequester) Export(message []byte, address common.Address) (*api.ApiResponse[api.WalletExportData], error) {
+func (r *WalletRequester) Export() (*api.ApiResponse[api.WalletExportData], error) {
 	return sendGetRequest[api.WalletExportData](r, "export", "Export", nil)
 }
 
@@ -161,9 +161,9 @@ func (r *WalletRequester) SendMessage(message []byte, address common.Address) (*
 }
 
 // Use the node private key to sign an arbitrary message
-func (r *WalletRequester) SignMessage(message []byte) (*api.ApiResponse[api.TxSignMessageData], error) {
+func (r *WalletRequester) SignMessage(message []byte) (*api.ApiResponse[api.WalletSignMessageData], error) {
 	args := map[string]string{
 		"message": hex.EncodeToString(message),
 	}
-	return sendGetRequest[api.TxSignMessageData](r, "sign-message", "SignMessage", args)
+	return sendGetRequest[api.WalletSignMessageData](r, "sign-message", "SignMessage", args)
 }

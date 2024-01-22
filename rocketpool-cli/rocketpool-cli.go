@@ -50,12 +50,14 @@ var (
 	maxFeeFlag *cli.Float64Flag = &cli.Float64Flag{
 		Name:    "max-fee",
 		Aliases: []string{"f"},
-		Usage:   "The max fee (including the priority fee) you want a transaction to cost, in gwei",
+		Usage:   "The max fee (including the priority fee) you want a transaction to cost, in gwei. Use 0 to set it automatically based on network conditions.",
+		Value:   0,
 	}
 	maxPriorityFeeFlag *cli.Float64Flag = &cli.Float64Flag{
 		Name:    "max-priority-fee",
 		Aliases: []string{"i"},
-		Usage:   "The max priority fee you want a transaction to use, in gwei",
+		Usage:   "The max priority fee you want a transaction to use, in gwei. Use 0 to set it automatically.",
+		Value:   0,
 	}
 	nonceFlag *cli.StringFlag = &cli.StringFlag{
 		Name:  "nonce",
@@ -183,7 +185,12 @@ func setDefaultPaths() {
 
 // Validate the global flags
 func validateFlags(c *cli.Context) error {
-	snCtx := &context.SmartNodeContext{}
+	snCtx := &context.SmartNodeContext{
+		MaxFee:         c.Float64(maxFeeFlag.Name),
+		MaxPriorityFee: c.Float64(maxPriorityFeeFlag.Name),
+		DebugEnabled:   c.Bool(debugFlag.Name),
+		SecureSession:  c.Bool(secureSessionFlag.Name),
+	}
 
 	// If set, validate custom nonce
 	customNonce := c.String(nonceFlag.Name)

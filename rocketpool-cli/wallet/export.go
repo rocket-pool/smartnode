@@ -4,29 +4,26 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli"
-
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/urfave/cli/v2"
 )
 
 func exportWallet(c *cli.Context) error {
-
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
-	defer rp.Close()
+	rp := client.NewClientFromCtx(c)
 
 	// Get & check wallet status
-	status, err := rp.WalletStatus()
+	status, err := rp.Api.Wallet.Status()
 	if err != nil {
 		return err
 	}
-	if !status.WalletInitialized {
+	if !status.Data.WalletStatus.HasKeystore {
 		fmt.Println("The node wallet is not initialized.")
 		return nil
 	}
 
-	if !c.GlobalBool("secure-session") {
+	if !rp.Context.SecureSession {
 		// Check if stdout is interactive
 		stat, err := os.Stdout.Stat()
 		if err != nil {
@@ -36,13 +33,13 @@ func exportWallet(c *cli.Context) error {
 		}
 
 		if (stat.Mode()&os.ModeCharDevice) == os.ModeCharDevice &&
-			!cliutils.ConfirmSecureSession("Exporting a wallet will print sensitive information to your screen.") {
+			!utils.ConfirmSecureSession("Exporting a wallet will print sensitive information to your screen.") {
 			return nil
 		}
 	}
 
 	// Export wallet
-	export, err := rp.ExportWallet()
+	export, err := rp.Api.Wallet.Export()
 	if err != nil {
 		return err
 	}
@@ -50,18 +47,17 @@ func exportWallet(c *cli.Context) error {
 	// Print wallet & return
 	fmt.Println("Node account private key:")
 	fmt.Println("")
-	fmt.Println(export.AccountPrivateKey)
+	fmt.Println(export.Data.AccountPrivateKey)
 	fmt.Println("")
 	fmt.Println("Wallet password:")
 	fmt.Println("")
-	fmt.Println(export.Password)
+	fmt.Println(export.Data.Password)
 	fmt.Println("")
 	fmt.Println("Wallet file:")
 	fmt.Println("============")
 	fmt.Println("")
-	fmt.Println(export.Wallet)
+	fmt.Println(export.Data.Wallet)
 	fmt.Println("")
 	fmt.Println("============")
 	return nil
-
 }

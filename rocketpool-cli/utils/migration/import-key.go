@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/flags"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
@@ -37,10 +36,10 @@ func ImportKey(c *cli.Context, rp *client.Client, minipoolAddress common.Address
 	fmt.Println("done!")
 
 	// Restart the VC if necessary
-	if c.Bool(flags.NoRestartFlag) {
+	if c.Bool(utils.NoRestartFlag) {
 		return true
 	}
-	if c.Bool(flags.YesFlag) || utils.Confirm("Would you like to restart the Smartnode's Validator Client now so it loads your validator's key?") {
+	if c.Bool(utils.YesFlag.Name) || utils.Confirm("Would you like to restart the Smartnode's Validator Client now so it loads your validator's key?") {
 		// Restart the VC
 		fmt.Print("Restarting Validator Client... ")
 		_, err := rp.Api.Service.RestartVc()

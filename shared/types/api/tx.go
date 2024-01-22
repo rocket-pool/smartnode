@@ -7,10 +7,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/core"
 )
 
-type TxSignMessageData struct {
-	SignedMessage string `json:"signedMessage"`
-}
-
 type TxSignTxData struct {
 	SignedTx string `json:"signedTx"`
 }

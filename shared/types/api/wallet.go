@@ -61,3 +61,7 @@ type WalletTestMnemonicData struct {
 	CurrentAddress   common.Address `json:"currentAddress"`
 	RecoveredAddress common.Address `json:"recoveredAddress"`
 }
+
+type WalletSignMessageData struct {
+	SignedMessage string `json:"signedMessage"`
+}

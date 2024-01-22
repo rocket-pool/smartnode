@@ -5,66 +5,50 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/urfave/cli"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/urfave/cli/v2"
 )
 
-func sendMessage(c *cli.Context, toAddressOrENS string, message []byte) error {
-
+func sendMessage(c *cli.Context, toAddressOrEns string, message []byte) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {
 		return err
 	}
-	defer rp.Close()
 
 	// Get the address
 	var toAddress common.Address
 	var toAddressString string
-	if strings.Contains(toAddressOrENS, ".") {
-		response, err := rp.ResolveEnsName(toAddressOrENS)
+	if strings.Contains(toAddressOrEns, ".") {
+		response, err := rp.Api.Node.ResolveEns(common.Address{}, toAddressOrEns)
 		if err != nil {
 			return err
 		}
-		toAddress = response.Address
-		toAddressString = fmt.Sprintf("%s (%s)", toAddressOrENS, toAddress.Hex())
+		toAddress = response.Data.Address
+		toAddressString = fmt.Sprintf("%s (%s)", toAddressOrEns, toAddress.Hex())
 	} else {
-		toAddress, err = cliutils.ValidateAddress("to address", toAddressOrENS)
+		toAddress, err = input.ValidateAddress("to address", toAddressOrEns)
 		if err != nil {
 			return err
 		}
 		toAddressString = toAddress.Hex()
 	}
 
-	// Get the gas estimate
-	canSend, err := rp.CanSendMessage(toAddress, message)
+	// Build the TX
+	response, err := rp.Api.Wallet.SendMessage(message, toAddress)
 	if err != nil {
 		return err
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, c.Bool("yes"))
+	// Run the TX
+	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+		fmt.Sprintf("Are you sure you want to send a message to %s?", toAddressString),
+		"sending message",
+		fmt.Sprintf("Sending message to %s...", toAddressString),
+	)
 	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send a message to %s?", toAddressString))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Send tokens
-	response, err := rp.SendMessage(toAddress, message)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Sending message to %s...\n", toAddressString)
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 

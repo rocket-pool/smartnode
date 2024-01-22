@@ -19,10 +19,10 @@ type SmartNodeContext struct {
 	ApiSocketPath string
 
 	// The max fee for transactions
-	MaxFee *big.Int
+	MaxFee float64
 
 	// The max priority fee for transactions
-	MaxPriorityFee *big.Int
+	MaxPriorityFee float64
 
 	// The nonce for the first transaction, if set
 	Nonce *big.Int

@@ -9,7 +9,6 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/term"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 var (
@@ -37,7 +36,7 @@ func initWallet(c *cli.Context) error {
 
 	// Prompt for user confirmation before printing sensitive information
 	if !(rp.Context.SecureSession ||
-		cliutils.ConfirmSecureSession("Creating a wallet will print sensitive information to your screen.")) {
+		utils.ConfirmSecureSession("Creating a wallet will print sensitive information to your screen.")) {
 		return nil
 	}
 

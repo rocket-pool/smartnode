@@ -20,6 +20,11 @@ var (
 	RawFlag *cli.BoolFlag = &cli.BoolFlag{
 		Name: "raw",
 	}
+	ComposeFileFlag *cli.StringSliceFlag = &cli.StringSliceFlag{
+		Name:    "compose-file",
+		Aliases: []string{"f"},
+		Usage:   "Supplemental Docker compose files for custom containers to include when performing service commands such as 'start' and 'stop'; this flag may be defined multiple times",
+	}
 )
 
 func InstantiateFlag[FlagType cli.Flag](prototype FlagType, description string) cli.Flag {

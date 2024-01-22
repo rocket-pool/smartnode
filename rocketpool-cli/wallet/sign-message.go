@@ -7,14 +7,13 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
-	"github.com/rocket-pool/smartnode/shared/types"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	sharedutils "github.com/rocket-pool/smartnode/shared/utils"
 )
 
 const (
-	signatureVersion int    = 1
-	signMessageFlag  string = "message"
+	signatureVersion int = 1
 )
 
 type PersonalSignature struct {
@@ -23,6 +22,14 @@ type PersonalSignature struct {
 	Signature string         `json:"sig"`
 	Version   string         `json:"version"` // beaconcha.in expects a string
 }
+
+var (
+	signMessageFlag *cli.StringFlag = &cli.StringFlag{
+		Name:    "message",
+		Aliases: []string{"m"},
+		Usage:   "The 'quoted message' to be signed",
+	}
+)
 
 func signMessage(c *cli.Context) error {
 	// Get RP client
@@ -33,19 +40,19 @@ func signMessage(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	if status.Data.WalletStatus != types.WalletStatus_Ready {
+	if !sharedutils.IsWalletReady(status.Data.WalletStatus) {
 		fmt.Println("The node wallet is not initialized.")
 		return nil
 	}
 
 	// Get the message
-	message := c.String(signMessageFlag)
+	message := c.String(signMessageFlag.Name)
 	for message == "" {
-		message = cliutils.Prompt("Please enter the message you want to sign: (EIP-191 personal_sign)", "^.+$", "Please enter the message you want to sign: (EIP-191 personal_sign)")
+		message = utils.Prompt("Please enter the message you want to sign: (EIP-191 personal_sign)", "^.+$", "Please enter the message you want to sign: (EIP-191 personal_sign)")
 	}
 
 	// Build the TX
-	response, err := rp.Api.Tx.SignMessage([]byte(message))
+	response, err := rp.Api.Wallet.SignMessage([]byte(message))
 	if err != nil {
 		return err
 	}
@@ -54,7 +61,7 @@ func signMessage(c *cli.Context) error {
 	formattedSignature := PersonalSignature{
 		Address:   status.Data.AccountAddress,
 		Message:   message,
-		Signature: response.Data.SignedData,
+		Signature: response.Data.SignedMessage,
 		Version:   fmt.Sprint(signatureVersion),
 	}
 	bytes, err := json.MarshalIndent(formattedSignature, "", "    ")
@@ -63,7 +70,5 @@ func signMessage(c *cli.Context) error {
 	}
 
 	fmt.Printf("Signed Message:\n\n%s\n", string(bytes))
-
 	return nil
-
 }
