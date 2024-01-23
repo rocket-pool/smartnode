@@ -190,6 +190,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					return exportWallet(c)
 				},
 			},
+
+			{
+				Name:    "export-as-eth-key",
+				Aliases: []string{"ek"},
+				Usage:   "Print the node wallet (encrypted with the wallet's password) in the JSON format used by eth-account and other tools for interoperability",
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := input.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return exportEthKey(c)
+				},
+			},
+
 			{
 				Name:      "set-ens-name",
 				Aliases:   []string{"ens"},

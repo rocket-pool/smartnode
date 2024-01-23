@@ -40,6 +40,11 @@ func (r *WalletRequester) Export() (*api.ApiResponse[api.WalletExportData], erro
 	return sendGetRequest[api.WalletExportData](r, "export", "Export", nil)
 }
 
+// Export the wallet in encrypted ETH key format
+func (r *WalletRequester) ExportEthKey() (*api.ApiResponse[api.WalletExportEthKeyData], error) {
+	return sendGetRequest[api.WalletExportEthKeyData](r, "export-eth-key", "ExportEthKey", nil)
+}
+
 // Initialize the wallet with a new key
 func (r *WalletRequester) Initialize(derivationPath *string, index *uint64, password []byte, save *bool) (*api.ApiResponse[api.WalletInitializeData], error) {
 	args := map[string]string{}

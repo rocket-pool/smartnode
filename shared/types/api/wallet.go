@@ -65,3 +65,7 @@ type WalletTestMnemonicData struct {
 type WalletSignMessageData struct {
 	SignedMessage string `json:"signedMessage"`
 }
+
+type WalletExportEthKeyData struct {
+	EthKeyJson []byte `json:"ethKeyJson"`
+}

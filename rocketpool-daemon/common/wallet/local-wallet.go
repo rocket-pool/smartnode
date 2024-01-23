@@ -268,8 +268,16 @@ func (w *LocalWallet) GetTransactor() (*bind.TransactOpts, error) {
 
 // Get the node account private key bytes
 func (w *LocalWallet) GetNodePrivateKeyBytes() []byte {
-	// Return private key bytes
 	return crypto.FromECDSA(w.nodePrivateKey)
+}
+
+// Get the node account private key bytes
+func (w *LocalWallet) GetWalletUuidBytes() []byte {
+	keystore, hasKeystore := w.keystoreManager.Get()
+	if !hasKeystore {
+		return nil
+	}
+	return keystore.UUID[:]
 }
 
 // Signs a serialized TX using the wallet's private key
