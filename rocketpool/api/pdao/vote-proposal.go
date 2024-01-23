@@ -105,10 +105,14 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 	if err != nil {
 		return nil, err
 	}
-	totalDelegatedVP, nodeIndex, proof, err := propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
+	tree, totalDelegatedVP, nodeIndex, proof, err := propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}
+	response.TotalDelegatedVotingPower = totalDelegatedVP
+	response.NodeIndex = nodeIndex
+	response.Proof = proof
+	response.Tree = tree
 
 	// Simulate
 	opts, err := w.GetNodeAccountTransactor()
@@ -117,7 +121,7 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 	}
 	gasInfo, err := protocol.EstimateVoteOnProposalGas(rp, proposalId, voteDirection, totalDelegatedVP, nodeIndex, proof, opts)
 	if err != nil {
-		return nil, err
+		return &response, err
 	}
 	response.GasInfo = gasInfo
 
@@ -170,7 +174,7 @@ func voteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteD
 	if err != nil {
 		return nil, err
 	}
-	totalDelegatedVP, nodeIndex, proof, err := propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
+	_, totalDelegatedVP, nodeIndex, proof, err := propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}

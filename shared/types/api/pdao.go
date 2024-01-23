@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/shared/services/proposals"
 )
 
 type PDAOProposalWithNodeVoteDirection struct {
@@ -43,15 +44,19 @@ type CancelPDAOProposalResponse struct {
 }
 
 type CanVoteOnPDAOProposalResponse struct {
-	Status            string             `json:"status"`
-	Error             string             `json:"error"`
-	CanVote           bool               `json:"canVote"`
-	DoesNotExist      bool               `json:"doesNotExist"`
-	InvalidState      bool               `json:"invalidState"`
-	InsufficientPower bool               `json:"insufficientPower"`
-	AlreadyVoted      bool               `json:"alreadyVoted"`
-	VotingPower       *big.Int           `json:"votingPower"`
-	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
+	Status                    string                    `json:"status"`
+	Error                     string                    `json:"error"`
+	CanVote                   bool                      `json:"canVote"`
+	DoesNotExist              bool                      `json:"doesNotExist"`
+	InvalidState              bool                      `json:"invalidState"`
+	InsufficientPower         bool                      `json:"insufficientPower"`
+	AlreadyVoted              bool                      `json:"alreadyVoted"`
+	VotingPower               *big.Int                  `json:"votingPower"`
+	TotalDelegatedVotingPower *big.Int                  `json:"totalDelegatedVotingPower"`
+	NodeIndex                 uint64                    `json:"nodeIndex"`
+	Tree                      *proposals.NodeVotingTree `json:"tree"`
+	Proof                     []types.VotingTreeNode    `json:"proof"`
+	GasInfo                   rocketpool.GasInfo        `json:"gasInfo"`
 }
 type VoteOnPDAOProposalResponse struct {
 	Status string      `json:"status"`

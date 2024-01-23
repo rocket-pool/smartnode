@@ -190,23 +190,23 @@ func (m *ProposalManager) GetNodeTree(blockNumber uint32, nodeIndex uint64, snap
 
 // Get the artifacts required for voting on a proposal: the node's total delegated voting power, the node index, and a Merkle proof for the node's
 // corresponding leaf index in the network tree
-func (m *ProposalManager) GetArtifactsForVoting(blockNumber uint32, nodeAddress common.Address) (*big.Int, uint64, []types.VotingTreeNode, error) {
+func (m *ProposalManager) GetArtifactsForVoting(blockNumber uint32, nodeAddress common.Address) (*NodeVotingTree, *big.Int, uint64, []types.VotingTreeNode, error) {
 	// Get the voting info snapshot
 	snapshot, err := m.GetVotingInfoSnapshot(blockNumber)
 	if err != nil {
-		return nil, 0, nil, err
+		return nil, nil, 0, nil, err
 	}
 
 	// Get the node nodeIndex
 	nodeIndex, err := getRPNodeIndexFromSnapshot(snapshot, nodeAddress)
 	if err != nil {
-		return nil, 0, nil, err
+		return nil, nil, 0, nil, err
 	}
 
 	// Get the tree
 	tree, err := m.GetNodeTree(blockNumber, nodeIndex, snapshot)
 	if err != nil {
-		return nil, 0, nil, err
+		return nil, nil, 0, nil, err
 	}
 
 	// Get the artifacts
@@ -218,7 +218,7 @@ func (m *ProposalManager) GetArtifactsForVoting(blockNumber uint32, nodeAddress 
 	for i := range proofPtrs {
 		proof[i] = *proofPtrs[i]
 	}
-	return totalDelegatedVp, nodeIndex, proof, nil
+	return tree, totalDelegatedVp, nodeIndex, proof, nil
 }
 
 // Gets the root node and pollard for a proposer's response to a challenge against a tree node
