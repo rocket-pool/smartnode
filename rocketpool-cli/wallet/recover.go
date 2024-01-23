@@ -155,7 +155,7 @@ func recoverWallet(c *cli.Context) error {
 		}
 
 		// Recover wallet
-		response, err := rp.Api.Wallet.Recover(derivationPath, &mnemonic, &skipValidatorKeyRecovery, walletIndex, []byte(password), &savePassword)
+		response, err := rp.Api.Wallet.Recover(derivationPath, &mnemonic, &skipValidatorKeyRecovery, walletIndex, &password, &savePassword)
 		if err != nil {
 			return err
 		}

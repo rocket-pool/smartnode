@@ -46,7 +46,7 @@ func (r *WalletRequester) ExportEthKey() (*api.ApiResponse[api.WalletExportEthKe
 }
 
 // Initialize the wallet with a new key
-func (r *WalletRequester) Initialize(derivationPath *string, index *uint64, password []byte, save *bool) (*api.ApiResponse[api.WalletInitializeData], error) {
+func (r *WalletRequester) Initialize(derivationPath *string, index *uint64, password *string, save *bool) (*api.ApiResponse[api.WalletInitializeData], error) {
 	args := map[string]string{}
 	if derivationPath != nil {
 		args["derivation-path"] = *derivationPath
@@ -55,7 +55,7 @@ func (r *WalletRequester) Initialize(derivationPath *string, index *uint64, pass
 		args["index"] = fmt.Sprint(*index)
 	}
 	if password != nil {
-		args["password"] = hex.EncodeToString(password)
+		args["password"] = *password
 	}
 	if save != nil {
 		args["save"] = fmt.Sprint(*save)
@@ -69,7 +69,7 @@ func (r *WalletRequester) Rebuild() (*api.ApiResponse[api.WalletRebuildData], er
 }
 
 // Recover wallet
-func (r *WalletRequester) Recover(derivationPath *string, mnemonic *string, skipValidatorKeyRecovery *bool, index *uint64, password []byte, save *bool) (*api.ApiResponse[api.WalletRecoverData], error) {
+func (r *WalletRequester) Recover(derivationPath *string, mnemonic *string, skipValidatorKeyRecovery *bool, index *uint64, password *string, save *bool) (*api.ApiResponse[api.WalletRecoverData], error) {
 	args := map[string]string{}
 	if derivationPath != nil {
 		args["derivation-path"] = *derivationPath
@@ -84,7 +84,7 @@ func (r *WalletRequester) Recover(derivationPath *string, mnemonic *string, skip
 		args["index"] = fmt.Sprint(*index)
 	}
 	if password != nil {
-		args["password"] = hex.EncodeToString(password)
+		args["password"] = *password
 	}
 	if save != nil {
 		args["save-password"] = fmt.Sprint(*save)

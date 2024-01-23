@@ -65,15 +65,19 @@ func (c *walletInitializeContext) PrepareData(data *api.WalletInitializeData, op
 		return fmt.Errorf("a wallet is already present")
 	}
 
-	_, hasPassword := w.GetPassword()
-	if !hasPassword && !c.passwordExists {
-		return fmt.Errorf("you must set a password before initializing the wallet, or provide one in this call")
-	}
-	w.RememberPassword(c.password)
-	if c.savePassword {
-		err := w.SavePassword()
-		if err != nil {
-			return fmt.Errorf("error saving wallet password to disk: %w", err)
+	// Use the provided password if there is one
+	if c.passwordExists {
+		w.RememberPassword(c.password)
+		if c.savePassword {
+			err := w.SavePassword()
+			if err != nil {
+				return fmt.Errorf("error saving wallet password to disk: %w", err)
+			}
+		}
+	} else {
+		_, hasPassword := w.GetPassword()
+		if !hasPassword {
+			return fmt.Errorf("you must set a password before recovering a wallet, or provide one in this call")
 		}
 	}
 
