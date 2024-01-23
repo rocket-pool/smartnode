@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for the Rocket Pool updates tracker
+Requires=rp-update-tracker.service
+
+[Timer]
+Unit=rp-update-tracker.service
+OnCalendar=*-*-* *:00:00
+
+[Install]
+WantedBy=timers.target

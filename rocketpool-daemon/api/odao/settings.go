@@ -1,0 +1,97 @@
+package odao
+
+import (
+	"fmt"
+	"net/url"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
+	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/oracle"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+)
+
+// ===============
+// === Factory ===
+// ===============
+
+type oracleDaoSettingsContextFactory struct {
+	handler *OracleDaoHandler
+}
+
+func (f *oracleDaoSettingsContextFactory) Create(args url.Values) (*oracleDaoSettingsContext, error) {
+	c := &oracleDaoSettingsContext{
+		handler: f.handler,
+	}
+	return c, nil
+}
+
+func (f *oracleDaoSettingsContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*oracleDaoSettingsContext, api.OracleDaoSettingsData](
+		router, "settings", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type oracleDaoSettingsContext struct {
+	handler     *OracleDaoHandler
+	rp          *rocketpool.RocketPool
+	nodeAddress common.Address
+
+	oSettings *oracle.OracleDaoSettings
+}
+
+func (c *oracleDaoSettingsContext) Initialize() error {
+	sp := c.handler.serviceProvider
+	c.rp = sp.GetRocketPool()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+
+	// Requirements
+	err := sp.RequireEthClientSynced()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	odaoMgr, err := oracle.NewOracleDaoManager(c.rp)
+	if err != nil {
+		return fmt.Errorf("error creating oracle DAO manager binding: %w", err)
+	}
+	c.oSettings = odaoMgr.Settings
+	return nil
+}
+
+func (c *oracleDaoSettingsContext) GetState(mc *batch.MultiCaller) {
+	core.QueryAllFields(c.oSettings, mc)
+}
+
+func (c *oracleDaoSettingsContext) PrepareData(data *api.OracleDaoSettingsData, opts *bind.TransactOpts) error {
+	data.Member.Quorum = c.oSettings.Member.Quorum.Formatted()
+	data.Member.RplBond = c.oSettings.Member.RplBond.Get()
+	data.Member.ChallengeCooldown = c.oSettings.Member.ChallengeCooldown.Formatted()
+	data.Member.ChallengeWindow = c.oSettings.Member.ChallengeWindow.Formatted()
+	data.Member.ChallengeCost = c.oSettings.Member.ChallengeCost.Get()
+
+	data.Minipool.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Formatted()
+	data.Minipool.ScrubQuorum = c.oSettings.Minipool.ScrubQuorum.Formatted()
+	data.Minipool.PromotionScrubPeriod = c.oSettings.Minipool.PromotionScrubPeriod.Formatted()
+	data.Minipool.IsScrubPenaltyEnabled = c.oSettings.Minipool.IsScrubPenaltyEnabled.Get()
+	data.Minipool.BondReductionWindowStart = c.oSettings.Minipool.BondReductionWindowStart.Formatted()
+	data.Minipool.BondReductionWindowLength = c.oSettings.Minipool.BondReductionWindowLength.Formatted()
+	data.Minipool.BondReductionCancellationQuorum = c.oSettings.Minipool.BondReductionCancellationQuorum.Formatted()
+
+	data.Proposal.Cooldown = c.oSettings.Proposal.CooldownTime.Formatted()
+	data.Proposal.VoteTime = c.oSettings.Proposal.VoteTime.Formatted()
+	data.Proposal.VoteDelayTime = c.oSettings.Proposal.VoteDelayTime.Formatted()
+	data.Proposal.ExecuteTime = c.oSettings.Proposal.ExecuteTime.Formatted()
+	data.Proposal.ActionTime = c.oSettings.Proposal.ActionTime.Formatted()
+	return nil
+}

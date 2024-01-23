@@ -1,0 +1,121 @@
+package security
+
+import (
+	"errors"
+	"fmt"
+	"net/url"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/gorilla/mux"
+	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/dao/security"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/input"
+)
+
+// ===============
+// === Factory ===
+// ===============
+
+type securityProposeSettingContextFactory struct {
+	handler *SecurityCouncilHandler
+}
+
+func (f *securityProposeSettingContextFactory) Create(args url.Values) (*securityProposeSettingContext, error) {
+	c := &securityProposeSettingContext{
+		handler: f.handler,
+	}
+	inputErrs := []error{
+		server.GetStringFromVars("contract", args, &c.contractNameString),
+		server.GetStringFromVars("setting", args, &c.setting),
+		server.GetStringFromVars("value", args, &c.valueString),
+	}
+	return c, errors.Join(inputErrs...)
+}
+
+func (f *securityProposeSettingContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessGet[*securityProposeSettingContext, api.SecurityProposeSettingData](
+		router, "setting/propose", f, f.handler.serviceProvider,
+	)
+}
+
+// ===============
+// === Context ===
+// ===============
+
+type securityProposeSettingContext struct {
+	handler *SecurityCouncilHandler
+
+	contractNameString string
+	setting            string
+	valueString        string
+}
+
+func (c *securityProposeSettingContext) PrepareData(data *api.SecurityProposeSettingData, opts *bind.TransactOpts) error {
+	sp := c.handler.serviceProvider
+	rp := sp.GetRocketPool()
+
+	// Requirements
+	err := sp.RequireOnSecurityCouncil()
+	if err != nil {
+		return err
+	}
+
+	// Bindings
+	pdaoMgr, err := protocol.NewProtocolDaoManager(rp)
+	if err != nil {
+		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+	}
+	pSettings := pdaoMgr.Settings
+	scMgr, err := security.NewSecurityCouncilManager(rp, pSettings)
+	if err != nil {
+		return fmt.Errorf("error creating security council manager binding: %w", err)
+	}
+
+	// Make sure the setting exists
+	settings := scMgr.Settings.GetSettings()
+	category, exists := settings[rocketpool.ContractName(c.contractNameString)]
+	if !exists {
+		data.UnknownSetting = true
+	}
+	data.CanPropose = !(data.UnknownSetting)
+
+	// Get the tx
+	if data.CanPropose && opts != nil {
+		validSetting, txInfo, parseErr, createErr := c.createProposalTx(category, opts)
+		if parseErr != nil {
+			return parseErr
+		}
+		if createErr != nil {
+			return fmt.Errorf("error getting TX info for ProposeSet: %w", createErr)
+		}
+		if !validSetting {
+			data.UnknownSetting = true
+			data.CanPropose = false
+		} else {
+			data.TxInfo = txInfo
+		}
+	}
+	return nil
+}
+
+func (c *securityProposeSettingContext) createProposalTx(category security.SettingsCategory, opts *bind.TransactOpts) (bool, *core.TransactionInfo, error, error) {
+	valueName := "value"
+
+	// Try the bool settings
+	for _, setting := range category.BoolSettings {
+		if string(setting.GetProtocolDaoSetting().GetSettingName()) == c.setting {
+			value, err := input.ValidateBool(valueName, c.valueString)
+			if err != nil {
+				return false, nil, fmt.Errorf("error parsing value '%s' as bool: %w", c.valueString, err), nil
+			}
+			txInfo, err := setting.ProposeSet(value, opts)
+			return true, txInfo, nil, err
+		}
+	}
+
+	return false, nil, nil, nil
+}

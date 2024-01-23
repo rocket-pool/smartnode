@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
-	"github.com/rocket-pool/smartnode/rocketpool/common/rewards"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )

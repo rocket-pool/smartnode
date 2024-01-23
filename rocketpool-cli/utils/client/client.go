@@ -56,7 +56,7 @@ func NewClientFromCtx(c *cli.Context) *Client {
 	socketPath := snCtx.ApiSocketPath
 	isNative := true
 	if socketPath == "" {
-		socketPath = filepath.Join(snCtx.ConfigPath, "data", "sockets", defaultApiSocketFile)
+		socketPath = filepath.Join(snCtx.ConfigPath, "data", defaultApiSocketFile)
 		isNative = false
 	}
 
