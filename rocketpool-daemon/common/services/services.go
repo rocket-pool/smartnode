@@ -1,10 +1,13 @@
 package services
 
 import (
+	"context"
 	"fmt"
+	"math/big"
 	"os"
 
 	"github.com/docker/docker/client"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/urfave/cli"
@@ -31,6 +34,9 @@ type ServiceProvider struct {
 	rplFaucet          *contracts.RplFaucet
 	snapshotDelegation *contracts.SnapshotDelegation
 	docker             *client.Client
+
+	// Internal use
+	contractLoadBlock uint64
 }
 
 // Creates a new ServiceProvider instance
@@ -50,7 +56,7 @@ func NewServiceProvider(c *cli.Context) (*ServiceProvider, error) {
 	nodeAddressPath := os.ExpandEnv(cfg.Smartnode.GetNodeAddressPath())
 	keystorePath := os.ExpandEnv(cfg.Smartnode.GetWalletPath())
 	passwordPath := os.ExpandEnv(cfg.Smartnode.GetPasswordPath())
-	nodeWallet, err := wallet.NewLocalWallet(nodeAddressPath, keystorePath, passwordPath, chainID, true)
+	nodeWallet, err := wallet.NewLocalWallet(keystorePath, nodeAddressPath, passwordPath, chainID, true)
 	if err != nil {
 		return nil, fmt.Errorf("error creating node wallet: %w", err)
 	}
@@ -175,4 +181,25 @@ func (p *ServiceProvider) GetBeaconClient() *BeaconClientManager {
 
 func (p *ServiceProvider) GetDocker() *client.Client {
 	return p.docker
+}
+
+// =============
+// === Utils ===
+// =============
+
+func (p *ServiceProvider) LoadContractsIfStale() error {
+	if p.contractLoadBlock > 0 {
+		return nil
+	}
+
+	// Get the current block
+	var err error
+	p.contractLoadBlock, err = p.ecManager.BlockNumber(context.Background())
+	if err != nil {
+		return fmt.Errorf("error getting latest block: %w", err)
+	}
+
+	return p.rocketPool.LoadAllContracts(&bind.CallOpts{
+		BlockNumber: big.NewInt(int64(p.contractLoadBlock)),
+	})
 }

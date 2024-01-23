@@ -114,9 +114,9 @@ fi
 
 # Get package files URL
 if [ "$PACKAGE_VERSION" = "latest" ]; then
-    PACKAGE_URL="https://github.com/rocket-pool/smartnode/releases/latest/download/rp-smartnode-install.tar.xz"
+    PACKAGE_URL="https://github.com/rocket-pool/smartnode/releases/latest/download/smartnode-install.tar.xz"
 else
-    PACKAGE_URL="https://github.com/rocket-pool/smartnode/releases/download/$PACKAGE_VERSION/rp-smartnode-install.tar.xz"
+    PACKAGE_URL="https://github.com/rocket-pool/smartnode/releases/download/$PACKAGE_VERSION/smartnode-install.tar.xz"
 fi
 
 

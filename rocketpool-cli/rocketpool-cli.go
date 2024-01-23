@@ -208,10 +208,6 @@ func validateFlags(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
 	}
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("Your configured Rocket Pool directory of [%s] does not exist.\nPlease follow the instructions at https://docs.rocketpool.net/guides/node/docker.html to install the Smartnode.", path)
-	}
 	snCtx.ConfigPath = configPath
 
 	// Grab the daemon socket path; don't error out if it doesn't exist yet because this might be a new installation that hasn't configured and started it yet

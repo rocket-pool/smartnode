@@ -19,7 +19,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
-	batchquery "github.com/rocket-pool/batch-query"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
@@ -51,7 +51,7 @@ func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address, curre
 
 	// Get the bucket bitmaps
 	bucketBitmaps := make([]*big.Int, bucket+1)
-	err := rp.Query(func(mc *batchquery.MultiCaller) error {
+	err := rp.Query(func(mc *batch.MultiCaller) error {
 		for i := uint64(0); i <= bucket; i++ {
 			bucketBig := big.NewInt(int64(i))
 			bucketBytes := [32]byte{}
@@ -186,8 +186,18 @@ func GetELBlockHeaderForTime(targetTime time.Time, rp *rocketpool.RocketPool) (*
 	}
 	latestBlock := latestBlockHeader.Number
 
+	// Get the deploy block
+	var deployBlock *big.Int
+	err = rp.Query(func(mc *batch.MultiCaller) error {
+		rp.Storage.GetDeployBlock(mc, &deployBlock)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting deployment block: %w", err)
+	}
+
 	// Get half the distance between the protocol deployment and right now
-	delta := big.NewInt(0).Sub(latestBlock, rp.DeployBlock)
+	delta := big.NewInt(0).Sub(latestBlock, deployBlock)
 	delta.Div(delta, big.NewInt(2))
 
 	// Start at the halfway point

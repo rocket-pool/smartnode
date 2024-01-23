@@ -7,13 +7,14 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/context"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/urfave/cli/v2"
 )
 
 // Config
 const (
-	InstallerURL     string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install.sh"
-	UpdateTrackerURL string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install-update-tracker.sh"
+	InstallerURL     string = "https://github.com/rocket-pool/smartnode/releases/download/%s/install.sh"
+	UpdateTrackerURL string = "https://github.com/rocket-pool/smartnode/releases/download/%s/install-update-tracker.sh"
 
 	SettingsFile             string = "user-settings.yml"
 	BackupSettingsFile       string = "user-settings-backup.yml"
@@ -34,9 +35,6 @@ const (
 
 	nethermindPruneStarterCommand string = "dotnet /setup/NethermindPruneStarter/NethermindPruneStarter.dll"
 	nethermindAdminUrl            string = "http://127.0.0.1:7434"
-
-	// Default name of the API socket file
-	defaultApiSocketFile string = "daemon.sock"
 )
 
 // Rocket Pool client
@@ -56,7 +54,7 @@ func NewClientFromCtx(c *cli.Context) *Client {
 	socketPath := snCtx.ApiSocketPath
 	isNative := true
 	if socketPath == "" {
-		socketPath = filepath.Join(snCtx.ConfigPath, "data", defaultApiSocketFile)
+		socketPath = filepath.Join(snCtx.ConfigPath, "data", config.SocketFilename)
 		isNative = false
 	}
 

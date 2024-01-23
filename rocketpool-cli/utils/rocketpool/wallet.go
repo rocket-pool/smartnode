@@ -82,7 +82,7 @@ func (r *WalletRequester) Recover(derivationPath *string, mnemonic *string, skip
 		args["password"] = hex.EncodeToString(password)
 	}
 	if save != nil {
-		args["save"] = fmt.Sprint(*save)
+		args["save-password"] = fmt.Sprint(*save)
 	}
 	return sendGetRequest[api.WalletRecoverData](r, "recover", "Recover", args)
 }

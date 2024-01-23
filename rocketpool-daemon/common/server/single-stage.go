@@ -118,8 +118,14 @@ func runSingleStageRoute[DataType any](ctx ISingleStageCallContext[DataType], se
 	w := serviceProvider.GetWallet()
 	rp := serviceProvider.GetRocketPool()
 
+	// Load contracts
+	err := serviceProvider.LoadContractsIfStale()
+	if err != nil {
+		return nil, fmt.Errorf("error loading contract bindings: %w", err)
+	}
+
 	// Initialize the context with any bootstrapping, requirements checks, or bindings it needs to set up
-	err := ctx.Initialize()
+	err = ctx.Initialize()
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -84,6 +85,15 @@ func NewApiManager(sp *services.ServiceProvider) *ApiManager {
 
 // Starts listening for incoming HTTP requests
 func (m *ApiManager) Start() error {
+	// Remove the socket if it's already there
+	_, err := os.Stat(m.socketPath)
+	if !errors.Is(err, fs.ErrNotExist) {
+		err = os.Remove(m.socketPath)
+		if err != nil {
+			return fmt.Errorf("error removing socket file: %w", err)
+		}
+	}
+
 	// Create the socket
 	socket, err := net.Listen("unix", m.socketPath)
 	if err != nil {

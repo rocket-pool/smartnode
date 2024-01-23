@@ -365,7 +365,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 			{
 				Name:      "withdraw-rpl",
-				Aliases:   []string{"i"},
+				Aliases:   []string{"wr"},
 				Usage:     "Withdraw RPL staked against the node",
 				UsageText: "rocketpool node withdraw-rpl [options]",
 				Flags: []cli.Flag{
@@ -395,7 +395,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 			{
 				Name:      "withdraw-eth",
-				Aliases:   []string{"h"},
+				Aliases:   []string{"we"},
 				Usage:     "Withdraw ETH staked on behalf of the node",
 				UsageText: "rocketpool node withdraw-eth [options]",
 				Flags: []cli.Flag{

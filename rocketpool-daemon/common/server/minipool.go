@@ -75,8 +75,14 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
 func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider) (*api.ApiResponse[DataType], error) {
+	// Load contracts
+	err := serviceProvider.LoadContractsIfStale()
+	if err != nil {
+		return nil, fmt.Errorf("error loading contract bindings: %w", err)
+	}
+
 	// Common requirements
-	err := serviceProvider.RequireNodeRegistered()
+	err = serviceProvider.RequireNodeRegistered()
 	if err != nil {
 		return nil, err
 	}

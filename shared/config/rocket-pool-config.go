@@ -1427,7 +1427,11 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	}
 
 	// Ensure there's a MEV-boost URL
-	if !cfg.IsNativeMode && cfg.EnableMevBoost.Value == true && cfg.Smartnode.Network.Value != config.Network_Holesky {
+	if cfg.Smartnode.Network.Value == config.Network_Holesky || cfg.Smartnode.Network.Value == config.Network_Devnet {
+		// Disabled on Holesky
+		cfg.EnableMevBoost.Value = false
+	}
+	if !cfg.IsNativeMode && cfg.EnableMevBoost.Value == true {
 		switch cfg.MevBoost.Mode.Value.(config.Mode) {
 		case config.Mode_Local:
 			// In local MEV-boost mode, the user has to have at least one relay

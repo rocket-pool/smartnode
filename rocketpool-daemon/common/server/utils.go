@@ -137,7 +137,6 @@ func handleResponse(w http.ResponseWriter, response any, err error) {
 		w.Write([]byte(err.Error()))
 	} else {
 		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
 		w.Write(bytes)
 	}
 }

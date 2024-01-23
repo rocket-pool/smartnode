@@ -33,7 +33,7 @@ const (
 	GithubRewardsFileUrl               string = "https://github.com/rocket-pool/rewards-trees/raw/main/%s/%s"
 	FeeRecipientFilename               string = "rp-fee-recipient.txt"
 	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
-	SocketFilename                     string = "smartnode.sock"
+	SocketFilename                     string = "daemon.sock"
 	NodeAddressFilename                string = "address"
 	WalletKeystoreFilename             string = "wallet"
 	WalletPasswordFilename             string = "password"

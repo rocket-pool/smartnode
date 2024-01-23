@@ -112,6 +112,12 @@ func runQuerylessRoute[DataType any](ctx IQuerylessCallContext[DataType], servic
 	// Get the services
 	w := serviceProvider.GetWallet()
 
+	// Load contracts
+	err := serviceProvider.LoadContractsIfStale()
+	if err != nil {
+		return nil, fmt.Errorf("error loading contract bindings: %w", err)
+	}
+
 	// Get the transact opts if this node is ready for transaction
 	var opts *bind.TransactOpts
 	walletStatus := w.GetStatus()
@@ -131,7 +137,7 @@ func runQuerylessRoute[DataType any](ctx IQuerylessCallContext[DataType], servic
 	}
 
 	// Prep the data with the context-specific behavior
-	err := ctx.PrepareData(data, opts)
+	err = ctx.PrepareData(data, opts)
 	if err != nil {
 		return nil, err
 	}

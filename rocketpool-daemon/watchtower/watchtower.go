@@ -140,6 +140,14 @@ func Run(sp *services.ServiceProvider) error {
 				continue
 			}
 
+			// Load contracts
+			err = sp.LoadContractsIfStale()
+			if err != nil {
+				errorLog.Println(fmt.Sprintf("error loading contract bindings: %s", err.Error()))
+				time.Sleep(taskCooldown)
+				continue
+			}
+
 			// Get the Beacon block
 			//latestBlock, err := m.GetLatestFinalizedBeaconBlock()
 			latestBlock, err := m.GetLatestBeaconBlock()
