@@ -201,6 +201,9 @@ func (sp *ServiceProvider) WaitNodeRegistered(verbose bool) error {
 	if err := sp.WaitEthClientSynced(verbose); err != nil {
 		return err
 	}
+	if err := sp.LoadContractsIfStale(); err != nil {
+		return fmt.Errorf("error loading contract bindings: %w", err)
+	}
 	for {
 		nodeRegistered, err := sp.getNodeRegistered()
 		if err != nil {

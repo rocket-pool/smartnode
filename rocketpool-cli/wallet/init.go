@@ -71,7 +71,7 @@ func initWallet(c *cli.Context) error {
 	}
 
 	// Initialize wallet
-	response, err := rp.Api.Wallet.Initialize(derivationPath, walletIndex, []byte(password), &savePassword)
+	response, err := rp.Api.Wallet.Initialize(derivationPath, walletIndex, &password, &savePassword)
 	if err != nil {
 		return fmt.Errorf("error initializing wallet: %w", err)
 	}
@@ -100,7 +100,7 @@ func initWallet(c *cli.Context) error {
 
 	// Sanity check the addresses
 	if recoverResponse.Data.AccountAddress != response.Data.AccountAddress {
-		return fmt.Errorf("Expected %s, but generated %s upon saving", response.Data.AccountAddress, recoverResponse.Data.AccountAddress)
+		return fmt.Errorf("expected %s, but generated %s upon saving", response.Data.AccountAddress, recoverResponse.Data.AccountAddress)
 	}
 
 	// Clear terminal output
