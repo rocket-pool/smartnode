@@ -138,7 +138,7 @@ func overrideVote(c *cli.Context) error {
 	}
 
 	// Print the voting power
-	fmt.Printf("\n\nYour current voting power: %.6f\n\n", eth.WeiToEth(canVote.VotingPower))
+	fmt.Printf("\n\nYour current voting power: %d\n\n", canVote.VotingPower)
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, c.Bool("yes"))
