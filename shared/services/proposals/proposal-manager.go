@@ -203,16 +203,22 @@ func (m *ProposalManager) GetArtifactsForVoting(blockNumber uint32, nodeAddress 
 		return nil, 0, nil, err
 	}
 
-	// Get the tree
-	tree, err := m.GetNetworkTree(blockNumber, snapshot)
+	// Get the networkTree - used to build the merkle proof needed to vote
+	networkTree, err := m.GetNetworkTree(blockNumber, snapshot)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+
+	// Get the networkTree - used to fetch the totalDelegatedVp for the node
+	nodeTree, err := m.GetNodeTree(blockNumber, nodeIndex, snapshot)
 	if err != nil {
 		return nil, 0, nil, err
 	}
 
 	// Get the artifacts
-	totalDelegatedVp := tree.Nodes[0].Sum
+	totalDelegatedVp := nodeTree.Nodes[0].Sum
 	treeIndex := getTreeNodeIndexFromRPNodeIndex(snapshot, nodeIndex)
-	proofPtrs := tree.generateMerkleProof(treeIndex)
+	proofPtrs := networkTree.generateMerkleProof(treeIndex)
 
 	proof := make([]types.VotingTreeNode, len(proofPtrs))
 	for i := range proofPtrs {
