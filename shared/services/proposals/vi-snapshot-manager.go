@@ -206,6 +206,6 @@ func (m *VotingInfoSnapshotManager) getBlockNumberFromFilename(filename string) 
 // Log a message to the logger
 func (m *VotingInfoSnapshotManager) logMessage(message string, args ...any) {
 	if m.log != nil {
-		m.log.Printlnf(message, args)
+		m.log.Printlnf(message, args...)
 	}
 }

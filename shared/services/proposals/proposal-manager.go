@@ -312,6 +312,6 @@ func (m *ProposalManager) CheckForChallengeableArtifacts(event protocol.RootSubm
 // Log a message to the logger
 func (m *ProposalManager) logMessage(message string, args ...any) {
 	if m.log != nil {
-		m.log.Printlnf(fmt.Sprintf("%s %s", m.logPrefix, message), args)
+		m.log.Printlnf(fmt.Sprintf("%s %s", m.logPrefix, message), args...)
 	}
 }
