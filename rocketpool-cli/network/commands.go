@@ -135,6 +135,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "initialize-voting",
+				Aliases:   []string{"iv"},
+				Usage:     "Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)",
+				UsageText: "rocketpool network initialize-voting",
+				Action: func(c *cli.Context) error {
+
+					// Run
+					return initializeVoting(c)
+
+				},
+			},
 		},
 	})
 }
