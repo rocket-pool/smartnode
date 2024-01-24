@@ -204,7 +204,7 @@ func (m *ProposalManager) GetArtifactsForVoting(blockNumber uint32, nodeAddress 
 	}
 
 	// Get the tree
-	tree, err := m.GetNodeTree(blockNumber, nodeIndex, snapshot)
+	tree, err := m.GetNetworkTree(blockNumber, snapshot)
 	if err != nil {
 		return nil, 0, nil, err
 	}
