@@ -216,6 +216,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "can-initialize-voting",
+				Aliases:   []string{"civ"},
+				Usage:     "Checks if voting can be initialized.",
+				UsageText: "rocketpool api network can-initialize-voting",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNodeInitializeVoting(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }
