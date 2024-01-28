@@ -8,12 +8,12 @@ import (
 
 const (
 	// Testnet
-	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v24.1.1"
-	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v24.1.1"
+	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v24.1.2"
+	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v24.1.2"
 
 	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v24.1.1"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v24.1.1"
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v24.1.2"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v24.1.2"
 
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
