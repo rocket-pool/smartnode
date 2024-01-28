@@ -32,8 +32,6 @@ type RootSubmitted struct {
 
 // Internal struct - returned by the RootSubmitted event
 type rootSubmittedRaw struct {
-	ProposalID  *big.Int               `json:"proposalId"`
-	Proposer    common.Address         `json:"proposer"`
 	BlockNumber uint32                 `json:"blockNumber"`
 	Index       *big.Int               `json:"index"`
 	Root        types.VotingTreeNode   `json:"root"`
@@ -51,10 +49,8 @@ type ChallengeSubmitted struct {
 
 // Internal struct - returned by the ChallengeSubmitted event
 type challengeSubmittedRaw struct {
-	ProposalID *big.Int       `json:"proposalId"`
-	Challenger common.Address `json:"challenger"`
-	Index      *big.Int       `json:"index"`
-	Timestamp  *big.Int       `json:"timestamp"`
+	Index     *big.Int `json:"index"`
+	Timestamp *big.Int `json:"timestamp"`
 }
 
 // Get the depth-per-round for voting trees
@@ -269,7 +265,7 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, int
 	idBuffers := make([]common.Hash, len(proposalIDs))
 	for i, id := range proposalIDs {
 		proposalIdBig := big.NewInt(0).SetUint64(id)
-		proposalIdBig.FillBytes(idBuffers[i].Bytes())
+		proposalIdBig.FillBytes(idBuffers[i][:])
 	}
 	rootSubmittedEvent := rocketDAOProtocolVerifier.ABI.Events["RootSubmitted"]
 	addressFilter := []common.Address{*rocketDAOProtocolVerifier.Address}
@@ -292,6 +288,15 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, int
 			return nil, fmt.Errorf("error unpacking RootSubmitted event data: %w", err)
 		}
 
+		// Get the topic values
+		if len(log.Topics) < 3 {
+			return nil, fmt.Errorf("event had %d topics but at least 3 are required", len(log.Topics))
+		}
+		idHash := log.Topics[1]
+		proposerHash := log.Topics[2]
+		propID := big.NewInt(0).SetBytes(idHash.Bytes())
+		proposer := common.BytesToAddress(proposerHash.Bytes())
+
 		// Convert to a native struct
 		var raw rootSubmittedRaw
 		err = rootSubmittedEvent.Inputs.Copy(&raw, values)
@@ -301,8 +306,8 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, int
 
 		// Get the decoded data
 		events = append(events, RootSubmitted{
-			ProposalID:  raw.ProposalID,
-			Proposer:    raw.Proposer,
+			ProposalID:  propID,
+			Proposer:    proposer,
 			BlockNumber: raw.BlockNumber,
 			Index:       raw.Index,
 			Root:        raw.Root,
@@ -326,7 +331,7 @@ func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64
 	idBuffers := make([]common.Hash, len(proposalIDs))
 	for i, id := range proposalIDs {
 		proposalIdBig := big.NewInt(0).SetUint64(id)
-		proposalIdBig.FillBytes(idBuffers[i].Bytes())
+		proposalIdBig.FillBytes(idBuffers[i][:])
 	}
 	challengeSubmittedEvent := rocketDAOProtocolVerifier.ABI.Events["ChallengeSubmitted"]
 	addressFilter := []common.Address{*rocketDAOProtocolVerifier.Address}
@@ -349,6 +354,15 @@ func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64
 			return nil, fmt.Errorf("error unpacking ChallengeSubmitted event data: %w", err)
 		}
 
+		// Get the topic values
+		if len(log.Topics) < 3 {
+			return nil, fmt.Errorf("event had %d topics but at least 3 are required", len(log.Topics))
+		}
+		idHash := log.Topics[1]
+		challengerHash := log.Topics[2]
+		propID := big.NewInt(0).SetBytes(idHash.Bytes())
+		challenger := common.BytesToAddress(challengerHash.Bytes())
+
 		// Convert to a native struct
 		var raw challengeSubmittedRaw
 		err = challengeSubmittedEvent.Inputs.Copy(&raw, values)
@@ -358,8 +372,8 @@ func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64
 
 		// Get the decoded data
 		events = append(events, ChallengeSubmitted{
-			ProposalID: raw.ProposalID,
-			Challenger: raw.Challenger,
+			ProposalID: propID,
+			Challenger: challenger,
 			Index:      raw.Index,
 			Timestamp:  time.Unix(raw.Timestamp.Int64(), 0),
 		})
