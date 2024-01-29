@@ -235,6 +235,50 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "estimate-set-voting-delegate-gas",
+				Usage:     "Estimate the gas required to set an on-chain voting delegate",
+				UsageText: "rocketpool api network estimate-set-voting-delegate-gas address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					delegate, err := cliutils.ValidateAddress("delegate", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(estimateSetVotingDelegateGas(c, delegate))
+					return nil
+
+				},
+			},
+			{
+				Name:      "set-voting-delegate",
+				Usage:     "Set an on-chain voting delegate for the node",
+				UsageText: "rocketpool api network set-voting-delegate address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					delegate, err := cliutils.ValidateAddress("delegate", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setVotingDelegate(c, delegate))
+					return nil
+
+				},
+			},
 		},
 	})
 }

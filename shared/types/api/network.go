@@ -93,6 +93,18 @@ type NetworkInitializeVotingResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+type NetworkCanSetVotingDelegateResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type NetworkSetVotingDelegateResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
 type DownloadRewardsFileResponse struct {
 	Status string `json:"status"`
 	Error  string `json:"error"`
