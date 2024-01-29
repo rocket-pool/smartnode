@@ -202,7 +202,7 @@ func GetChallengePeriod(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 }
 
 // Get the states of multiple challenges using multicall
-// NOTE: wen v2.,,
+// NOTE: wen v2...
 func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress common.Address, proposalIds []uint64, challengedIndices []uint64, opts *bind.CallOpts) ([]types.ChallengeState, error) {
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
@@ -229,7 +229,7 @@ func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress com
 	var wg errgroup.Group
 
 	// Run the getters in batches
-	states := make([]types.ChallengeState, count)
+	rawStates := make([]uint8, count)
 	for i := uint64(0); i < count; i += challengeStateBatchSize {
 		i := i
 		max := i + challengeStateBatchSize
@@ -247,7 +247,7 @@ func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress com
 			for j := i; j < max; j++ {
 				propID := big.NewInt(int64(proposalIds[j]))
 				challengedIndex := big.NewInt(int64(challengedIndices[j]))
-				mc.AddCall(rocketDAOProtocolVerifier, &states[j], "getChallengeState", propID, challengedIndex)
+				mc.AddCall(rocketDAOProtocolVerifier, &rawStates[j], "getChallengeState", propID, challengedIndex)
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -262,6 +262,11 @@ func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress com
 		return nil, err
 	}
 
+	// Cast the results
+	states := make([]types.ChallengeState, count)
+	for i, state := range rawStates {
+		states[i] = types.ChallengeState(state)
+	}
 	return states, nil
 }
 
