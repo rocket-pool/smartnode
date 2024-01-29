@@ -98,7 +98,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 			Name:               "Pruning Mode",
 			Description:        "Choose how Nimbus will prune its database. Highlight each option to learn more about it.",
 			Type:               config.ParameterType_Choice,
-			Default:            map[config.Network]interface{}{config.Network_All: config.NimbusPruningMode_Archive},
+			Default:            map[config.Network]interface{}{config.Network_All: config.NimbusPruningMode_Prune},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
