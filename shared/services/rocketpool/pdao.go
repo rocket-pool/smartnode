@@ -486,17 +486,17 @@ func (c *Client) PDAOProposeReplaceMemberOfSecurityCouncil(existingAddress commo
 }
 
 // Get the list of proposals with claimable / rewardable bonds, and the relevant indices for each one
-func (c *Client) PDAOGetClaimableBonds() (api.PDAOGetClaimableBondsResponds, error) {
+func (c *Client) PDAOGetClaimableBonds() (api.PDAOGetClaimableBondsResponse, error) {
 	responseBytes, err := c.callAPI("pdao get-claimable-bonds")
 	if err != nil {
-		return api.PDAOGetClaimableBondsResponds{}, fmt.Errorf("Could not get protocol DAO get-claimable-bonds: %w", err)
+		return api.PDAOGetClaimableBondsResponse{}, fmt.Errorf("Could not get protocol DAO get-claimable-bonds: %w", err)
 	}
-	var response api.PDAOGetClaimableBondsResponds
+	var response api.PDAOGetClaimableBondsResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOGetClaimableBondsResponds{}, fmt.Errorf("Could not decode protocol DAO get-claimable-bonds response: %w", err)
+		return api.PDAOGetClaimableBondsResponse{}, fmt.Errorf("Could not decode protocol DAO get-claimable-bonds response: %w", err)
 	}
 	if response.Error != "" {
-		return api.PDAOGetClaimableBondsResponds{}, fmt.Errorf("Could not get protocol DAO get-claimable-bonds: %s", response.Error)
+		return api.PDAOGetClaimableBondsResponse{}, fmt.Errorf("Could not get protocol DAO get-claimable-bonds: %s", response.Error)
 	}
 	return response, nil
 }

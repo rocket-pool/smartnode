@@ -27,7 +27,7 @@ type proposalInfo struct {
 	Challenges map[uint64]*challengeInfo
 }
 
-func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, error) {
+func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -47,7 +47,7 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 	}
 
 	// Response
-	response := api.PDAOGetClaimableBondsResponds{}
+	response := api.PDAOGetClaimableBondsResponse{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -110,14 +110,10 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponds, erro
 			propInfos[prop.ID] = propInfo
 
 			// Get the events for all challenges against this proposal
-			startBlock, err := getElBlockForTimestamp(bc, beaconCfg, prop.CreatedTime)
-			if err != nil {
-				return nil, fmt.Errorf("error getting creation block for proposal %d: %w", prop.ID, err)
-			}
-			endBlock, err := getElBlockForTimestamp(bc, beaconCfg, prop.VotingStartTime) // Start of voting = end of challenge period
-			if err != nil {
-				return nil, fmt.Errorf("error getting voting start block for proposal %d: %w", prop.ID, err)
-			}
+			startBlock := big.NewInt(int64(prop.TargetBlock))                              // Target block is a good start for the event window
+			blockSpan := uint64(prop.ChallengeWindow.Seconds()) / beaconCfg.SecondsPerSlot // The max possible number of blocks in the challenge window
+			endBlockUint := uint64(prop.TargetBlock) + blockSpan
+			endBlock := big.NewInt(int64(endBlockUint))
 			challengeEvents, err := protocol.GetChallengeSubmittedEvents(rp, []uint64{prop.ID}, intervalSize, startBlock, endBlock, nil)
 			if err != nil {
 				return nil, fmt.Errorf("error scanning for proposal %d's ChallengeSubmitted events: %w", prop.ID, err)

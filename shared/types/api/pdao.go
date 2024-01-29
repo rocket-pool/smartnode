@@ -319,7 +319,7 @@ type BondClaimResult struct {
 	RewardAmount      *big.Int `json:"rewardAmount"`
 }
 
-type PDAOGetClaimableBondsResponds struct {
+type PDAOGetClaimableBondsResponse struct {
 	Status         string            `json:"status"`
 	Error          string            `json:"error"`
 	ClaimableBonds []BondClaimResult `json:"claimableBonds"`

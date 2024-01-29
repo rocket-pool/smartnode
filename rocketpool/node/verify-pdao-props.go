@@ -325,7 +325,7 @@ func (t *verifyPdaoProps) getChallengeOrDefeatForProposal(prop protocol.Protocol
 			// If it's unchallenged, this is the index to challenge
 			return &challenge{
 				proposalID:      prop.ID,
-				challengedIndex: challengedIndex,
+				challengedIndex: newChallengedIndex,
 				challengedNode:  challengedNode,
 				witness:         proof,
 			}, nil, nil
