@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"sync"
@@ -206,6 +207,17 @@ func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress com
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	if opts == nil {
+		// Get the latest block
+		blockNum, err := rp.Client.BlockNumber(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("error getting latest block number: %w", err)
+		}
+		opts = &bind.CallOpts{
+			BlockNumber: big.NewInt(int64(blockNum)),
+		}
 	}
 
 	count := uint64(len(proposalIds))
