@@ -644,7 +644,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "set-voting-delegate",
 				Aliases:   []string{"sv"},
-				Usage:     "Set the address you want to use when voting on Rocket Pool governance proposals, or the address you want to delegate your voting power to.",
+				Usage:     "Set the address you want to use when voting on Rocket Pool Snapshot governance proposals, or the address you want to delegate your voting power to.",
 				UsageText: "rocketpool node set-voting-delegate address",
 				Flags: []cli.Flag{
 					cli.BoolFlag{

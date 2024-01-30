@@ -56,6 +56,8 @@ The following commands are available via the Smartnode client:
   Note that this is an asynchronous process, so it will return before the file is generated.
   You will need to use `rocketpool service logs api` to follow its progress.
   - `rocketpool network dao-proposals, d` - Get the currently active DAO proposals
+  - `rocketpool network initialize-voting, iv` - Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)
+  - `rocketpool network set-voting-delegate, sod` - Delegates the node voting power to another address (for on-chain governance)
 - **node**, n - Manage the node
   - `rocketpool node status, s` - Get the node's status
   - `rocketpool node sync, y` - Get the sync progress of the eth1 and eth2 clients
@@ -70,8 +72,8 @@ The following commands are available via the Smartnode client:
   - `rocketpool node withdraw-rpl, i` - Withdraw RPL staked against the node
   - `rocketpool node deposit, d` - Make a deposit and create a minipool
   - `rocketpool node send, n` - Send ETH or tokens from the node account to an address
-  - `rocketpool node set-voting-delegate, sv` - Set the address you want to use when voting on Rocket Pool governance proposals, or the address you want to delegate your voting power to.
-  - `rocketpool node clear-voting-delegate, cv` - Remove the address you've set for voting on Rocket Pool governance proposals.
+  - `rocketpool node set-voting-delegate, sv` - Set the address you want to use when voting on Rocket Pool governance proposals on Snapshot, or the address you want to delegate your voting power to.
+  - `rocketpool node clear-voting-delegate, cv` - Remove the address you've set for voting on Rocket Pool governance proposals on Snapshot.
   - `rocketpool node initialize-fee-distributor, z` - Create the fee distributor contract for your node, so you can withdraw priority fees and MEV rewards after the merge
   - `rocketpool node distribute-fees, b` - Distribute the priority fee and MEV rewards from your fee distributor to your withdrawal address and the rETH contract (based on your node's average commission` -
   - `rocketpool node join-smoothing-pool, js` - Opt your node into the Smoothing Pool
