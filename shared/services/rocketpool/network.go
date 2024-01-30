@@ -218,16 +218,16 @@ func (c *Client) InitializeVoting() (api.NetworkInitializeVotingResponse, error)
 
 // CanSetVotingDelegate estimates the gas required to set an on-chain voting delegate
 func (c *Client) EstimateSetVotingDelegateGas(address common.Address) (api.NetworkCanSetVotingDelegateResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("network estimate-set-voting-delegate %s", address.Hex()))
+	responseBytes, err := c.callAPI(fmt.Sprintf("network estimate-set-voting-delegate-gas %s", address.Hex()))
 	if err != nil {
-		return api.NetworkCanSetVotingDelegateResponse{}, fmt.Errorf("could not call estimate-set-voting-delegate: %w", err)
+		return api.NetworkCanSetVotingDelegateResponse{}, fmt.Errorf("could not call estimate-set-voting-delegate-gas: %w", err)
 	}
 	var response api.NetworkCanSetVotingDelegateResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkCanSetVotingDelegateResponse{}, fmt.Errorf("could not decode estimate-set-voting-delegate response: %w", err)
+		return api.NetworkCanSetVotingDelegateResponse{}, fmt.Errorf("could not decode estimate-set-voting-delegate-gas response: %w", err)
 	}
 	if response.Error != "" {
-		return api.NetworkCanSetVotingDelegateResponse{}, fmt.Errorf("error after requesting estimate-set-voting-delegate: %s", response.Error)
+		return api.NetworkCanSetVotingDelegateResponse{}, fmt.Errorf("error after requesting estimate-set-voting-delegate-gas: %s", response.Error)
 	}
 	return response, nil
 }
@@ -244,6 +244,22 @@ func (c *Client) SetVotingDelegate(address common.Address) (api.NetworkSetVoting
 	}
 	if response.Error != "" {
 		return api.NetworkSetVotingDelegateResponse{}, fmt.Errorf("error after requesting set-voting-delegate: %s", response.Error)
+	}
+	return response, nil
+}
+
+// GetActiveDAOProposals fetches information about active DAO proposals
+func (c *Client) GetCurrentVotingDelegate() (api.NetworkCurrentVotingDelegateResponse, error) {
+	responseBytes, err := c.callAPI("network get-current-voting-delegate")
+	if err != nil {
+		return api.NetworkCurrentVotingDelegateResponse{}, fmt.Errorf("could not request get-current-voting-delegate: %w", err)
+	}
+	var response api.NetworkCurrentVotingDelegateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NetworkCurrentVotingDelegateResponse{}, fmt.Errorf("could not decode get-current-voting-delegate: %w", err)
+	}
+	if response.Error != "" {
+		return api.NetworkCurrentVotingDelegateResponse{}, fmt.Errorf("error after requesting get-current-voting-delegate: %s", response.Error)
 	}
 	return response, nil
 }

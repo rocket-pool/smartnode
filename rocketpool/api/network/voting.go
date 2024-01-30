@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func estimateSetVotingDelegateGas(c *cli.Context, address common.Address) (*api.EstimateSetSnapshotDelegateGasResponse, error) {
+func estimateSetVotingDelegateGas(c *cli.Context, address common.Address) (*api.NetworkCanSetVotingDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -26,9 +26,9 @@ func estimateSetVotingDelegateGas(c *cli.Context, address common.Address) (*api.
 	if err != nil {
 		return nil, err
 	}
-
 	// Response
-	response := api.EstimateSetSnapshotDelegateGasResponse{}
+
+	response := api.NetworkCanSetVotingDelegateResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -84,6 +84,40 @@ func setVotingDelegate(c *cli.Context, address common.Address) (*api.NetworkSetV
 		return nil, err
 	}
 	response.TxHash = tx
+
+	// Return response
+	return &response, nil
+
+}
+
+func getCurrentVotingDelegate(c *cli.Context) (*api.NetworkCurrentVotingDelegateResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeWallet(c); err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.NetworkCurrentVotingDelegateResponse{}
+
+	// Set the delegate
+	delegate, err := network.GetCurrentVotingDelegate(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+	response.VotingDelegate = delegate
 
 	// Return response
 	return &response, nil

@@ -279,6 +279,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "get-current-voting-delegate",
+				Usage:     "Get the current on-chain voting delegate for the node",
+				UsageText: "rocketpool api network get-current-voting-delegate",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getCurrentVotingDelegate(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }
