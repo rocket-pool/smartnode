@@ -174,6 +174,9 @@ type SmartnodeConfig struct {
 	// Addresses for RocketRewardsPool that have been upgraded during development
 	previousRewardsPoolAddresses map[config.Network][]common.Address `yaml:"-"`
 
+	// Addresses for RocketDAOProtocolVerifier that have been upgraded during development
+	previousRocketDAOProtocolVerifier map[config.Network][]common.Address `yaml:"-"`
+
 	// Addresses for RocketNetworkPrices that have been upgraded during development
 	previousRocketNetworkPricesAddresses map[config.Network][]common.Address `yaml:"-"`
 
@@ -577,6 +580,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Holesky: {},
 		},
 
+		previousRocketDAOProtocolVerifier: map[config.Network][]common.Address{
+			config.Network_Mainnet: {},
+			config.Network_Prater:  {},
+			config.Network_Devnet:  {},
+			config.Network_Holesky: {},
+		},
+
 		previousRocketNetworkPricesAddresses: map[config.Network][]common.Address{
 			config.Network_Mainnet: {
 				common.HexToAddress("0x751826b107672360b764327631cC5764515fFC37"),
@@ -950,6 +960,10 @@ func (cfg *SmartnodeConfig) GetV110MinipoolFactoryAddress() common.Address {
 
 func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() []common.Address {
 	return cfg.previousRewardsPoolAddresses[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetPreviousRocketDAOProtocolVerifierAddresses() []common.Address {
+	return cfg.previousRocketDAOProtocolVerifier[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetPreviousRocketNetworkPricesAddresses() []common.Address {
