@@ -271,7 +271,7 @@ func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress com
 }
 
 // Get RootSubmitted event info
-func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) ([]RootSubmitted, error) {
+func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, previousVerifierAddresses []common.Address, opts *bind.CallOpts) ([]RootSubmitted, error) {
 	// Get the contract
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
@@ -285,7 +285,7 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, int
 		proposalIdBig.FillBytes(idBuffers[i][:])
 	}
 	rootSubmittedEvent := rocketDAOProtocolVerifier.ABI.Events["RootSubmitted"]
-	addressFilter := []common.Address{*rocketDAOProtocolVerifier.Address}
+	addressFilter := append(previousVerifierAddresses, *rocketDAOProtocolVerifier.Address)
 	topicFilter := [][]common.Hash{{rootSubmittedEvent.ID}, idBuffers}
 
 	// Get the event logs
