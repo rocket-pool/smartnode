@@ -409,7 +409,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
-			config.Network_Devnet:  "https://goerli.etherscan.io/tx",
+			config.Network_Devnet:  "https://holesky.etherscan.io/tx",
 			config.Network_Holesky: "https://holesky.etherscan.io/tx",
 		},
 
@@ -591,7 +591,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		flashbotsProtectUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://rpc.flashbots.net/",
-			config.Network_Devnet:  "https://rpc-goerli.flashbots.net/",
+			config.Network_Devnet:  "https://rpc-holesky.flashbots.net/",
 			config.Network_Holesky: "",
 		},
 	}
