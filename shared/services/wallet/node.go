@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -136,13 +135,7 @@ func (w *Wallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string,
 	// Follow derivation path
 	key := w.mk
 	for i, n := range path {
-		// Use the legacy implementation for Goerli
-		// TODO: remove this if Prater ever goes away!
-		if w.chainID.Cmp(big.NewInt(5)) == 0 {
-			key, err = key.DeriveNonStandard(n)
-		} else {
-			key, err = key.Derive(n)
-		}
+		key, err = key.Derive(n)
 		if err == hdkeychain.ErrInvalidChild {
 			return w.getNodeDerivedKey(index + 1)
 		} else if err != nil {
