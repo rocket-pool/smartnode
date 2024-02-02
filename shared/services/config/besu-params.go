@@ -99,7 +99,6 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: besuTagProd,
-				config.Network_Prater:  besuTagTest,
 				config.Network_Devnet:  besuTagTest,
 				config.Network_Holesky: besuTagTest,
 			},

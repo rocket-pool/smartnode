@@ -93,7 +93,6 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: prysmBnProd,
-				config.Network_Prater:  prysmBnTest,
 				config.Network_Devnet:  prysmBnTest,
 				config.Network_Holesky: prysmBnTest,
 			},
@@ -109,7 +108,6 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: prysmVcProd,
-				config.Network_Prater:  prysmVcTest,
 				config.Network_Devnet:  prysmVcTest,
 				config.Network_Holesky: prysmVcTest,
 			},
