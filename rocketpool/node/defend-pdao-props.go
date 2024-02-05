@@ -156,7 +156,7 @@ func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 	eligibleProps := []protocol.ProtocolDaoProposalDetails{}
 	for _, prop := range state.ProtocolDaoProposalDetails {
 		if prop.ProposerAddress == t.nodeAddress &&
-			time.Until(prop.CreatedTime.Add(prop.ChallengeWindow)) > 0 {
+			prop.State == types.ProtocolDaoProposalState_Pending {
 			eligibleProps = append(eligibleProps, prop)
 		}
 	}

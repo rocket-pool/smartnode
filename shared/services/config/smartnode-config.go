@@ -583,7 +583,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		previousRocketDAOProtocolVerifier: map[config.Network][]common.Address{
 			config.Network_Mainnet: {},
 			config.Network_Prater:  {},
-			config.Network_Devnet:  {},
+			config.Network_Devnet: {
+				common.HexToAddress("0x30dF9293490C8388DF35398dA31C19EF61f5115A"),
+			},
 			config.Network_Holesky: {},
 		},
 
