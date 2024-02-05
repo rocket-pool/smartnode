@@ -351,7 +351,6 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Flashbots is the developer of MEV-Boost, and one of the best-known and most trusted relays in the space.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net?id=rocketpool",
-				config.Network_Prater:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@builder-relay-goerli.flashbots.net?id=rocketpool",
 				config.Network_Devnet:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@builder-relay-goerli.flashbots.net?id=rocketpool",
 			},
 			Regulated: true,
@@ -364,7 +363,6 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Select this to enable the \"max profit\" relay from bloXroute.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com?id=rocketpool",
-				config.Network_Prater:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.goerli.blxrbdn.com?id=rocketpool",
 				config.Network_Devnet:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.goerli.blxrbdn.com?id=rocketpool",
 			},
 			Regulated: false,
@@ -388,7 +386,6 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Eden Network is the home of Eden Relay, a block building hub focused on optimising block rewards for validators.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xb3ee7afcf27f1f1259ac1787876318c6584ee353097a50ed84f51a1f21a323b3736f271a895c7ce918c038e4265918be@relay.edennetwork.io?id=rocketpool",
-				config.Network_Prater:  "https://0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b@relay-goerli.edennetwork.io?id=rocketpool",
 				config.Network_Devnet:  "https://0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b@relay-goerli.edennetwork.io?id=rocketpool",
 			},
 			Regulated: true,
@@ -401,7 +398,6 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "The ultra sound relay is a credibly-neutral and permissionless relay — a public good from the ultrasound.money team.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money?id=rocketpool",
-				config.Network_Prater:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-stag.ultrasound.money?id=rocketpool",
 				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-stag.ultrasound.money?id=rocketpool",
 			},
 			Regulated: false,
@@ -414,7 +410,6 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "The Aestus MEV-Boost Relay is an independent and non-censoring relay. It is committed to neutrality and the development of a healthy MEV-Boost ecosystem.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xa15b52576bcbf1072f4a011c0f99f9fb6c66f3e1ff321f11f461d15e31b1cb359caa092c71bbded0bae5b5ea401aab7e@aestus.live?id=rocketpool",
-				config.Network_Prater:  "https://0xab78bf8c781c58078c3beb5710c57940874dd96aef2835e7742c866b4c7c0406754376c2c8285a36c630346aa5c5f833@goerli.aestus.live?id=rocketpool",
 				config.Network_Devnet:  "https://0xab78bf8c781c58078c3beb5710c57940874dd96aef2835e7742c866b4c7c0406754376c2c8285a36c630346aa5c5f833@goerli.aestus.live?id=rocketpool",
 			},
 			Regulated: false,
@@ -451,20 +446,6 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 	}
 	mainnetDescription += strings.Join(mainnetRelays, ", ")
 
-	// Generate the Prater description
-	praterRelays := []string{}
-	praterDescription := description + "\n\nRelays:\n"
-	for _, relay := range relays {
-		_, exists := relay.Urls[config.Network_Prater]
-		if !exists {
-			continue
-		}
-		if relay.Regulated == regulated {
-			praterRelays = append(praterRelays, relay.Name)
-		}
-	}
-	praterDescription += strings.Join(praterRelays, ", ")
-
 	return config.Parameter{
 		ID:                 id,
 		Name:               name,
@@ -476,7 +457,6 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 		OverwriteOnUpgrade: false,
 		DescriptionsByNetwork: map[config.Network]string{
 			config.Network_Mainnet: mainnetDescription,
-			config.Network_Prater:  praterDescription,
 		},
 	}
 }

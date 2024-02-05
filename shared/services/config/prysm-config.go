@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	prysmBnTest             string = "rocketpool/prysm:v4.2.0"
-	prysmBnProd             string = "rocketpool/prysm:v4.2.0"
-	prysmVcTest             string = "rocketpool/prysm:v4.2.0"
-	prysmVcProd             string = "rocketpool/prysm:v4.2.0"
+	prysmBnTest             string = "rocketpool/prysm:v4.2.1"
+	prysmBnProd             string = "rocketpool/prysm:v4.2.1"
+	prysmVcTest             string = "rocketpool/prysm:v4.2.1"
+	prysmVcProd             string = "rocketpool/prysm:v4.2.1"
 	defaultPrysmRpcPort     uint16 = 5053
 	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
 	defaultPrysmMaxPeers    uint16 = 70
@@ -93,7 +93,6 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: prysmBnProd,
-				config.Network_Prater:  prysmBnTest,
 				config.Network_Devnet:  prysmBnTest,
 				config.Network_Holesky: prysmBnTest,
 			},
@@ -109,7 +108,6 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: prysmVcProd,
-				config.Network_Prater:  prysmVcTest,
 				config.Network_Devnet:  prysmVcTest,
 				config.Network_Holesky: prysmVcTest,
 			},

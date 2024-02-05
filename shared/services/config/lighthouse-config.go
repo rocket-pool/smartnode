@@ -69,7 +69,6 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: getLighthouseTagProd(),
-				config.Network_Prater:  getLighthouseTagTest(),
 				config.Network_Devnet:  getLighthouseTagTest(),
 				config.Network_Holesky: getLighthouseTagTest(),
 			},

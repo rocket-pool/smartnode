@@ -17,7 +17,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "terminate-data-folder",
 				Aliases:   []string{"t"},
-				Usage:     "Deletes the data folder including the wallet file, password file, and all validator keys - don't use this unless you have a very good reason to do it (such as switching from Prater to Mainnet)",
+				Usage:     "Deletes the data folder including the wallet file, password file, and all validator keys - don't use this unless you have a very good reason to do it (such as switching from a Testnet to Mainnet)",
 				UsageText: "rocketpool api service terminate-data-folder",
 				Action: func(c *cli.Context) error {
 

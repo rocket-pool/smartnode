@@ -32,7 +32,6 @@ const (
 	Network_Unknown Network = ""
 	Network_All     Network = "all"
 	Network_Mainnet Network = "mainnet"
-	Network_Prater  Network = "prater"
 	Network_Devnet  Network = "devnet"
 	Network_Holesky Network = "holesky"
 )

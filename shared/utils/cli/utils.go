@@ -137,8 +137,6 @@ func PrintNetwork(currentNetwork cfgtypes.Network, isNew bool) error {
 	switch currentNetwork {
 	case cfgtypes.Network_Mainnet:
 		fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", colorGreen, colorReset)
-	case cfgtypes.Network_Prater:
-		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", colorLightBlue, colorReset)
 	case cfgtypes.Network_Devnet:
 		fmt.Printf("Your Smartnode is currently using the %sHolesky Development Network.%s\n\n", colorYellow, colorReset)
 	case cfgtypes.Network_Holesky:

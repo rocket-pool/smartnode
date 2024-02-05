@@ -143,7 +143,6 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: nethermindTagProd,
-				config.Network_Prater:  nethermindTagTest,
 				config.Network_Devnet:  nethermindTagTest,
 				config.Network_Holesky: nethermindTagTest,
 			},

@@ -28,15 +28,6 @@ const (
 	MainnetV7Interval uint64 = 15
 	MainnetV8Interval uint64 = 18
 
-	// Prater intervals
-	PraterV2Interval uint64 = 37
-	PraterV3Interval uint64 = 49
-	PraterV4Interval uint64 = 60
-	PraterV5Interval uint64 = 76
-	PraterV6Interval uint64 = 118
-	PraterV7Interval uint64 = 144
-	PraterV8Interval uint64 = 162
-
 	// Devnet intervals
 	DevnetV2Interval uint64 = 0
 	DevnetV3Interval uint64 = 0
@@ -122,56 +113,48 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 		{
 			rewardsRulesetVersion: 8,
 			mainnetStartInterval:  MainnetV8Interval,
-			praterStartInterval:   PraterV8Interval,
 			holeskyStartInterval:  HoleskyV8Interval,
 			generator:             v8_generator,
 		},
 		{
 			rewardsRulesetVersion: 7,
 			mainnetStartInterval:  MainnetV7Interval,
-			praterStartInterval:   PraterV7Interval,
 			devnetStartInterval:   DevnetV7Interval,
 			holeskyStartInterval:  HoleskyV7Interval,
 			generator:             v7_generator,
 		}, {
 			rewardsRulesetVersion: 6,
 			mainnetStartInterval:  MainnetV6Interval,
-			praterStartInterval:   PraterV6Interval,
 			devnetStartInterval:   DevnetV6Interval,
 			holeskyStartInterval:  HoleskyV6Interval,
 			generator:             v6_generator,
 		}, {
 			rewardsRulesetVersion: 5,
 			mainnetStartInterval:  MainnetV5Interval,
-			praterStartInterval:   PraterV5Interval,
 			devnetStartInterval:   DevnetV5Interval,
 			holeskyStartInterval:  HoleskyV5Interval,
 			generator:             newTreeGeneratorImpl_v5(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state),
 		}, {
 			rewardsRulesetVersion: 4,
 			mainnetStartInterval:  MainnetV4Interval,
-			praterStartInterval:   PraterV4Interval,
 			devnetStartInterval:   DevnetV4Interval,
 			holeskyStartInterval:  HoleskyV4Interval,
 			generator:             newTreeGeneratorImpl_v4(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		}, {
 			rewardsRulesetVersion: 3,
 			mainnetStartInterval:  MainnetV3Interval,
-			praterStartInterval:   PraterV3Interval,
 			devnetStartInterval:   DevnetV3Interval,
 			holeskyStartInterval:  HoleskyV3Interval,
 			generator:             newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		}, {
 			rewardsRulesetVersion: 2,
 			mainnetStartInterval:  MainnetV2Interval,
-			praterStartInterval:   PraterV2Interval,
 			devnetStartInterval:   DevnetV2Interval,
 			holeskyStartInterval:  HoleskyV2Interval,
 			generator:             newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		}, {
 			rewardsRulesetVersion: 1,
 			mainnetStartInterval:  0,
-			praterStartInterval:   0,
 			devnetStartInterval:   0,
 			holeskyStartInterval:  0,
 			generator:             newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),

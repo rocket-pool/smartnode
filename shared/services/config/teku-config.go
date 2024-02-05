@@ -84,7 +84,6 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: tekuTagProd,
-				config.Network_Prater:  tekuTagTest,
 				config.Network_Devnet:  tekuTagTest,
 				config.Network_Holesky: tekuTagTest,
 			},
