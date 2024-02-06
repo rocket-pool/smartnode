@@ -193,7 +193,6 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: getLighthouseTagProd(),
-				config.Network_Prater:  getLighthouseTagTest(),
 				config.Network_Devnet:  getLighthouseTagTest(),
 				config.Network_Holesky: getLighthouseTagTest(),
 			},
@@ -261,7 +260,6 @@ func NewExternalLodestarConfig(cfg *RocketPoolConfig) *ExternalLodestarConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: lodestarTagProd,
-				config.Network_Prater:  lodestarTagTest,
 				config.Network_Devnet:  lodestarTagTest,
 				config.Network_Holesky: lodestarTagTest,
 			},
@@ -330,7 +328,6 @@ func NewExternalNimbusConfig(cfg *RocketPoolConfig) *ExternalNimbusConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: nimbusVcTagProd,
-				config.Network_Prater:  nimbusVcTagTest,
 				config.Network_Devnet:  nimbusVcTagTest,
 				config.Network_Holesky: nimbusVcTagTest,
 			},
@@ -409,7 +406,6 @@ func NewExternalPrysmConfig(cfg *RocketPoolConfig) *ExternalPrysmConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: prysmVcProd,
-				config.Network_Prater:  prysmVcTest,
 				config.Network_Devnet:  prysmVcTest,
 				config.Network_Holesky: prysmVcTest,
 			},
@@ -477,7 +473,6 @@ func NewExternalTekuConfig(cfg *RocketPoolConfig) *ExternalTekuConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: tekuTagProd,
-				config.Network_Prater:  tekuTagTest,
 				config.Network_Devnet:  tekuTagTest,
 				config.Network_Holesky: tekuTagTest,
 			},

@@ -1251,7 +1251,7 @@ func (cfg *RocketPoolConfig) GetBeaconContainerTag() (string, error) {
 func (cfg *RocketPoolConfig) GetBnOpenPorts() []string {
 	// Handle open API ports
 	bnOpenPorts := make([]string, 0)
-	consensusClient := cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+	consensusClient := cfg.ConsensusClient.Value.(config.ConsensusClient)
 	apiPortMode := cfg.ConsensusCommon.OpenApiPort.Value.(config.RPCMode)
 	if apiPortMode.Open() {
 		apiPort := cfg.ConsensusCommon.ApiPort.Value.(uint16)
@@ -1311,7 +1311,7 @@ func (cfg *RocketPoolConfig) GetBNMaxPeers() (uint16, error) {
 // Used by text/template to format eth2.yml
 func (cfg *RocketPoolConfig) GetBNAdditionalFlags() (string, error) {
 	if !cfg.ConsensusClientLocal() {
-		return "", fmt.Errorf("Consensus client is external, there is no max peers")
+		return "", fmt.Errorf("Consensus client is external, there are no additional flags")
 	}
 
 	switch cfg.ConsensusClient.Value.(config.ConsensusClient) {

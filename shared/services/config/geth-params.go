@@ -8,8 +8,8 @@ import (
 
 // Constants
 const (
-	gethTagProd          string = "ethereum/client-go:v1.13.8"
-	gethTagTest          string = "ethereum/client-go:v1.13.8"
+	gethTagProd          string = "ethereum/client-go:v1.13.11"
+	gethTagTest          string = "ethereum/client-go:v1.13.11"
 	gethEventLogInterval int    = 1000
 	gethStopSignal       string = "SIGTERM"
 )
@@ -86,7 +86,6 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: gethTagProd,
-				config.Network_Prater:  gethTagTest,
 				config.Network_Devnet:  gethTagTest,
 				config.Network_Holesky: gethTagTest,
 			},

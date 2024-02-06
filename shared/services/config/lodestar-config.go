@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	lodestarTagTest         string = "chainsafe/lodestar:v1.12.1"
-	lodestarTagProd         string = "chainsafe/lodestar:v1.12.1"
+	lodestarTagTest         string = "chainsafe/lodestar:v1.15.0"
+	lodestarTagProd         string = "chainsafe/lodestar:v1.15.0"
 	defaultLodestarMaxPeers uint16 = 50
 )
 
@@ -53,7 +53,6 @@ func NewLodestarConfig(cfg *RocketPoolConfig) *LodestarConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: lodestarTagProd,
-				config.Network_Prater:  lodestarTagTest,
 				config.Network_Devnet:  lodestarTagTest,
 				config.Network_Holesky: lodestarTagTest,
 			},

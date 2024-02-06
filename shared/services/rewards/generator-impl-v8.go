@@ -498,7 +498,10 @@ func (r *treeGeneratorImpl_v8) calculateRplRewards() error {
 	// Get actual protocol DAO rewards
 	pDaoRewards.Sub(&pDaoRewards.Int, totalCalculatedOdaoRewards)
 	r.rewardsFile.TotalRewards.ProtocolDaoRpl = pDaoRewards
-	r.log.Printlnf("%s Actual Protocol DAO rewards:   %s to account for truncation", r.logPrefix, pDaoRewards.String())
+	r.log.Printlnf("%s Actual Protocol DAO rewards:  %s to account for truncation", r.logPrefix, pDaoRewards.String())
+
+	// Print total node weight
+	r.log.Printlnf("%s Total Node Weight:            %s", r.logPrefix, totalNodeWeight)
 
 	return nil
 

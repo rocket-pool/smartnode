@@ -32,6 +32,7 @@ const (
 	ValidatorContainerSuffix        string = "_validator"
 	BeaconContainerSuffix           string = "_eth2"
 	ExecutionContainerSuffix        string = "_eth1"
+	PruneStarterContainerSuffix     string = "_nm_prune_starter"
 	NodeContainerSuffix             string = "_node"
 	ApiContainerSuffix              string = "_api"
 	WatchtowerContainerSuffix       string = "_watchtower"
@@ -132,8 +133,8 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== New Testnet: Holesky ===%s\n", colorGreen, colorReset)
 	fmt.Println("A new test network has been deployed named Holesky! This will replace Prater as the new long-term test network for Rocket Pool node operators. To use it, select the \"Holesky Testnet\" option from the Network dialog in the Smartnode section of `rocketpool service config`.\n")
 
-	fmt.Printf("%s=== Prater Deprecation ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Prater test network is now deprecated, as it is being replaced by Holesky. If you are running a Prater node, please exit your minipools to gracefully clean up the network before migration (https://docs.rocketpool.net/guides/node/withdraw.html).\n")
+	fmt.Printf("%s=== Prater Removal  ===%s\n", colorGreen, colorReset)
+	fmt.Println("The previously deprecated Prater test network is now removed from the Smartnode.\n")
 
 	fmt.Printf("%s=== New Geth Mode: PBSS ===%s\n", colorGreen, colorReset)
 	fmt.Println("Geth has been updated to v1.13, which includes the much-anticipated Path-Based State Scheme (PBSS) storage mode. With PBSS, you never have to manually prune Geth again; it prunes automatically behind the scenes during runtime! To enable it, check the \"Enable PBSS\" box in the Execution Client section of the `rocketpool service config` UI. Note you **will have to resync** Geth after enabling this for it to take effect, and will lose attestations if you don't have a fallback client enabled!\n")
@@ -666,7 +667,7 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 		}
 
 		// Ensure the eth2 and validator containers have stopped
-		prefix, err := getContainerPrefix(rp)
+		prefix, err := rp.GetContainerPrefix()
 		if err != nil {
 			return false, fmt.Errorf("error getting container prefix: %w", err)
 		}
@@ -726,7 +727,7 @@ func handleTekuSlashProtectionMigrationDelay(rp *rocketpool.Client, cfg *config.
 	fmt.Printf("You are currently using Teku as your Consensus client.\nv1.3.1+ fixes an issue that would cause Teku's slashing protection database to be lost after an upgrade.\nIt will now be rebuilt.\n\nFor the absolute safety of your funds, your node will wait for 15 minutes before starting.\nYou will miss a few attestations during this process; this is expected.\n\nThis delay only needs to happen the first time you start the Smartnode after upgrading to v1.3.1 or higher.%s\n\nIf you are installing the Smartnode for the first time or don't have any validators yet, you can skip this with `rocketpool service start --ignore-slash-timer`. Otherwise, we strongly recommend you wait for the full delay.\n\n", colorReset)
 
 	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
+	prefix, err := rp.GetContainerPrefix()
 	if err != nil {
 		return fmt.Errorf("Error getting validator container prefix: %w", err)
 	}
@@ -795,7 +796,7 @@ func handleTekuSlashProtectionMigrationDelay(rp *rocketpool.Client, cfg *config.
 func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig) error {
 
 	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
+	prefix, err := rp.GetContainerPrefix()
 	if err != nil {
 		return fmt.Errorf("Error getting validator container prefix: %w", err)
 	}
@@ -898,7 +899,7 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 // Get the name of the container responsible for validator duties based on the client name
 func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *rocketpool.Client) (string, error) {
 
-	prefix, err := getContainerPrefix(rp)
+	prefix, err := rp.GetContainerPrefix()
 	if err != nil {
 		return "", err
 	}
@@ -910,7 +911,7 @@ func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *r
 // Get the time that the container responsible for validator duties exited
 func getValidatorFinishTime(CurrentValidatorClientName string, rp *rocketpool.Client) (time.Time, error) {
 
-	prefix, err := getContainerPrefix(rp)
+	prefix, err := rp.GetContainerPrefix()
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -946,20 +947,6 @@ func getDockerImageName(imageString string) (string, error) {
 
 	imageName := matches[imageIndex]
 	return imageName, nil
-}
-
-// Gets the prefix specified for Rocket Pool's Docker containers
-func getContainerPrefix(rp *rocketpool.Client) (string, error) {
-
-	cfg, isNew, err := rp.LoadConfig()
-	if err != nil {
-		return "", err
-	}
-	if isNew {
-		return "", fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
-	}
-
-	return cfg.Smartnode.ProjectName.Value.(string), nil
 }
 
 // Prepares the execution client for pruning
@@ -998,19 +985,21 @@ func pruneExecutionClient(c *cli.Context) error {
 		}
 	}
 
-	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
-	fmt.Println("Once pruning is complete, your execution client will restart automatically.\n")
-
 	if selectedEc == cfgtypes.ExecutionClient_Geth {
+		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 		if cfg.UseFallbackClients.Value == false {
 			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until Geth is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 		} else {
 			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 		}
+	} else {
+		fmt.Println("This will request your main execution client to prune its database, freeing up disk space. This is a resource intensive operation and may lead to an increase in missed attestations until it finishes.")
 	}
+	fmt.Println("Once pruning is complete, your execution client will restart automatically.")
+	fmt.Println()
 
 	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
+	prefix, err := rp.GetContainerPrefix()
 	if err != nil {
 		return fmt.Errorf("Error getting container prefix: %w", err)
 	}
@@ -1024,8 +1013,12 @@ func pruneExecutionClient(c *cli.Context) error {
 	// Get the prune provisioner image
 	pruneProvisioner := cfg.Smartnode.GetPruneProvisionerContainerTag()
 
-	// Check for enough free space
+	// Get the execution container name
 	executionContainerName := prefix + ExecutionContainerSuffix
+
+	pruneStarterContainerName := prefix + PruneStarterContainerSuffix
+
+	// Check for enough free space
 	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting execution volume source path: %w", err)
@@ -1055,6 +1048,14 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
 
+	if selectedEc == cfgtypes.ExecutionClient_Nethermind {
+		// Restarting NM is not needed anymore
+		err = rp.RunNethermindPruneStarter(executionContainerName, pruneStarterContainerName)
+		if err != nil {
+			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
+		}
+		return nil
+	}
 	fmt.Printf("Stopping %s...\n", executionContainerName)
 	result, err := rp.StopContainer(executionContainerName)
 	if err != nil {
@@ -1087,17 +1088,11 @@ func pruneExecutionClient(c *cli.Context) error {
 		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
 	}
 
-	if selectedEc == cfgtypes.ExecutionClient_Nethermind {
-		err = rp.RunNethermindPruneStarter(executionContainerName)
-		if err != nil {
-			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
-		}
-	}
-
-	fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
+	fmt.Println()
+	fmt.Println("Done! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
 	fmt.Println("Once it's done, it will restart automatically and resume normal operation.")
 
-	fmt.Printf("%sNOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!%s\n", colorYellow, colorReset)
+	fmt.Println(colorYellow + "NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!" + colorReset)
 
 	return nil
 
@@ -1342,7 +1337,7 @@ func resyncEth1(c *cli.Context) error {
 	fmt.Printf("%sYou should only do this if your ETH1 client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n", colorYellow, colorReset)
 
 	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
+	prefix, err := rp.GetContainerPrefix()
 	if err != nil {
 		return fmt.Errorf("Error getting container prefix: %w", err)
 	}
@@ -1463,7 +1458,7 @@ func resyncEth2(c *cli.Context) error {
 	}
 
 	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
+	prefix, err := rp.GetContainerPrefix()
 	if err != nil {
 		return fmt.Errorf("Error getting container prefix: %w", err)
 	}
@@ -1574,7 +1569,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	fmt.Println("Once the export is complete, your execution client will restart automatically.\n")
 
 	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
+	prefix, err := rp.GetContainerPrefix()
 	if err != nil {
 		return fmt.Errorf("Error getting container prefix: %w", err)
 	}
@@ -1679,7 +1674,7 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	}
 
 	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
+	prefix, err := rp.GetContainerPrefix()
 	if err != nil {
 		return fmt.Errorf("Error getting container prefix: %w", err)
 	}

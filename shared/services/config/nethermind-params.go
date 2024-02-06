@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	nethermindTagProd          string = "nethermind/nethermind:1.24.0"
-	nethermindTagTest          string = "nethermind/nethermind:1.24.0"
+	nethermindTagProd          string = "nethermind/nethermind:1.25.3"
+	nethermindTagTest          string = "nethermind/nethermind:1.25.3"
 	nethermindEventLogInterval int    = 1000
 	nethermindStopSignal       string = "SIGTERM"
 )
@@ -34,8 +34,11 @@ type NethermindConfig struct {
 	// Max number of P2P peers to connect to
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
 
-	// Nethermind's memory for pruning
+	// Nethermind's memory for in-memory pruning
 	PruneMemSize config.Parameter `yaml:"pruneMemSize,omitempty"`
+
+	// Nethermind's memory budget for full pruning
+	FullPruneMemoryBudget config.Parameter `yaml:"fullPruneMemoryBudget,omitempty"`
 
 	// Additional modules to enable on the primary JSON RPC endpoint
 	AdditionalModules config.Parameter `yaml:"additionalModules,omitempty"`
@@ -100,6 +103,17 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		FullPruneMemoryBudget: config.Parameter{
+			ID:                 "fullPruneMemoryBudget",
+			Name:               "Full Prune Memory Budget Size",
+			Description:        "The amount of RAM (in MB) you want to dedicate to Nethermind for its full pruning system. Higher values mean less writes to your SSD and faster pruning times.\n\nThe default value for this will be calculated dynamically based on your system's available RAM, but you can adjust it manually.",
+			Type:               config.ParameterType_Uint,
+			Default:            map[config.Network]interface{}{config.Network_All: calculateNethermindFullPruneMemBudget()},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		AdditionalModules: config.Parameter{
 			ID:                 "additionalModules",
 			Name:               "Additional Modules",
@@ -129,7 +143,6 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: nethermindTagProd,
-				config.Network_Prater:  nethermindTagTest,
 				config.Network_Devnet:  nethermindTagTest,
 				config.Network_Holesky: nethermindTagTest,
 			},
@@ -193,6 +206,25 @@ func calculateNethermindPruneMemSize() uint64 {
 	}
 }
 
+// Calculate the recommended size for Nethermind's full pruning based on the amount of system RAM
+func calculateNethermindFullPruneMemBudget() uint64 {
+	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
+
+	if totalMemoryGB == 0 {
+		return 0
+	} else if totalMemoryGB < 9 {
+		return 1024
+	} else if totalMemoryGB < 17 {
+		return 1024
+	} else if totalMemoryGB < 25 {
+		return 1024
+	} else if totalMemoryGB < 33 {
+		return 2048
+	} else {
+		return 4096
+	}
+}
+
 // Calculate the default number of Nethermind peers
 func calculateNethermindPeers() uint16 {
 	if runtime.GOARCH == "arm64" {
@@ -207,6 +239,7 @@ func (cfg *NethermindConfig) GetParameters() []*config.Parameter {
 		&cfg.CacheSize,
 		&cfg.MaxPeers,
 		&cfg.PruneMemSize,
+		&cfg.FullPruneMemoryBudget,
 		&cfg.AdditionalModules,
 		&cfg.AdditionalUrls,
 		&cfg.ContainerTag,
