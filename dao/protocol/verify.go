@@ -271,7 +271,7 @@ func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress com
 }
 
 // Get RootSubmitted event info
-func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, previousVerifierAddresses []common.Address, opts *bind.CallOpts) ([]RootSubmitted, error) {
+func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, verifierAddresses []common.Address, opts *bind.CallOpts) ([]RootSubmitted, error) {
 	// Get the contract
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
@@ -284,8 +284,26 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, int
 		proposalIdBig := big.NewInt(0).SetUint64(id)
 		proposalIdBig.FillBytes(idBuffers[i][:])
 	}
+
+	// Create the list of addresses to check
+	currentAddress := *rocketDAOProtocolVerifier.Address
+	if verifierAddresses == nil {
+		verifierAddresses = []common.Address{currentAddress}
+	} else {
+		found := false
+		for _, address := range verifierAddresses {
+			if address == currentAddress {
+				found = true
+				break
+			}
+		}
+		if !found {
+			verifierAddresses = append(verifierAddresses, currentAddress)
+		}
+	}
+
 	rootSubmittedEvent := rocketDAOProtocolVerifier.ABI.Events["RootSubmitted"]
-	addressFilter := append(previousVerifierAddresses, *rocketDAOProtocolVerifier.Address)
+	addressFilter := verifierAddresses
 	topicFilter := [][]common.Hash{{rootSubmittedEvent.ID}, idBuffers}
 
 	// Get the event logs
@@ -337,7 +355,7 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, int
 }
 
 // Get ChallengeSubmitted event info
-func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, opts *bind.CallOpts) ([]ChallengeSubmitted, error) {
+func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int, verifierAddresses []common.Address, opts *bind.CallOpts) ([]ChallengeSubmitted, error) {
 	// Get the contract
 	rocketDAOProtocolVerifier, err := getRocketDAOProtocolVerifier(rp, opts)
 	if err != nil {
@@ -350,8 +368,26 @@ func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64
 		proposalIdBig := big.NewInt(0).SetUint64(id)
 		proposalIdBig.FillBytes(idBuffers[i][:])
 	}
+
+	// Create the list of addresses to check
+	currentAddress := *rocketDAOProtocolVerifier.Address
+	if verifierAddresses == nil {
+		verifierAddresses = []common.Address{currentAddress}
+	} else {
+		found := false
+		for _, address := range verifierAddresses {
+			if address == currentAddress {
+				found = true
+				break
+			}
+		}
+		if !found {
+			verifierAddresses = append(verifierAddresses, currentAddress)
+		}
+	}
+
 	challengeSubmittedEvent := rocketDAOProtocolVerifier.ABI.Events["ChallengeSubmitted"]
-	addressFilter := []common.Address{*rocketDAOProtocolVerifier.Address}
+	addressFilter := verifierAddresses
 	topicFilter := [][]common.Hash{{challengeSubmittedEvent.ID}, idBuffers}
 
 	// Get the event logs
