@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v0.1.0-alpha.14"
-	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v0.1.0-alpha.14"
+	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v0.1.0-alpha.16"
+	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v0.1.0-alpha.16"
 	rethEventLogInterval int    = 1000
 	rethStopSignal       string = "SIGTERM"
 )
@@ -87,7 +87,6 @@ func NewRethConfig(cfg *RocketPoolConfig) *RethConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: rethTagProd,
-				config.Network_Prater:  rethTagTest,
 				config.Network_Devnet:  rethTagTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
