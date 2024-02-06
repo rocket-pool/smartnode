@@ -255,11 +255,11 @@ func (t *verifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 		propMap[prop.ID] = &mismatchingProps[i]
 	}
 
-	// Get the previous RocketRewardsPool addresses
-	previousVerifierAddresses := t.cfg.Smartnode.GetPreviousRocketDAOProtocolVerifierAddresses()
+	// Get the RocketRewardsPool addresses
+	verifierAddresses := t.cfg.Smartnode.GetPreviousRocketDAOProtocolVerifierAddresses()
 
 	// Get and cache all root submissions for the proposals
-	rootSubmissionEvents, err := protocol.GetRootSubmittedEvents(t.rp, ids, t.intervalSize, startBlock, endBlock, previousVerifierAddresses, opts)
+	rootSubmissionEvents, err := protocol.GetRootSubmittedEvents(t.rp, ids, t.intervalSize, startBlock, endBlock, verifierAddresses, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error scanning for RootSubmitted events: %w", err)
 	}

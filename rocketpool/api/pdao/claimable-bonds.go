@@ -114,7 +114,10 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 			blockSpan := uint64(prop.ChallengeWindow.Seconds()) / beaconCfg.SecondsPerSlot // The max possible number of blocks in the challenge window
 			endBlockUint := uint64(prop.TargetBlock) + blockSpan
 			endBlock := big.NewInt(int64(endBlockUint))
-			challengeEvents, err := protocol.GetChallengeSubmittedEvents(rp, []uint64{prop.ID}, intervalSize, startBlock, endBlock, nil)
+
+			// Get the RocketRewardsPool addresses
+			verifierAddresses := cfg.Smartnode.GetPreviousRocketDAOProtocolVerifierAddresses()
+			challengeEvents, err := protocol.GetChallengeSubmittedEvents(rp, []uint64{prop.ID}, intervalSize, startBlock, endBlock, verifierAddresses, nil)
 			if err != nil {
 				return nil, fmt.Errorf("error scanning for proposal %d's ChallengeSubmitted events: %w", prop.ID, err)
 			}

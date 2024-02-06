@@ -197,8 +197,11 @@ func (t *defendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 		propMap[prop.ID] = &eligibleProps[i]
 	}
 
+	// Get the RocketRewardsPool addresses
+	verifierAddresses := t.cfg.Smartnode.GetPreviousRocketDAOProtocolVerifierAddresses()
+
 	// Get any challenges issued for the proposals
-	challengeEvents, err := protocol.GetChallengeSubmittedEvents(t.rp, ids, t.intervalSize, startBlock, endBlock, opts)
+	challengeEvents, err := protocol.GetChallengeSubmittedEvents(t.rp, ids, t.intervalSize, startBlock, endBlock, verifierAddresses, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error scanning for ChallengeSubmitted events: %w", err)
 	}
