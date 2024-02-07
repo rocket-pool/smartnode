@@ -183,7 +183,7 @@ func EstimateProposeRecurringTreasurySpendGas(rp *rocketpool.RocketPool, message
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalTreasuryNewContract", contractName, recipient, amountPerPeriod, big.NewInt(int64(periodLength.Seconds())), big.NewInt(startTime.Unix()), numberOfPeriods)
+	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalTreasuryNewContract", contractName, recipient, amountPerPeriod, big.NewInt(int64(periodLength.Seconds())), big.NewInt(startTime.Unix()), big.NewInt(int64(numberOfPeriods)))
 	if err != nil {
 		return rocketpool.GasInfo{}, fmt.Errorf("error encoding proposalTreasuryNewContract payload: %w", err)
 	}
@@ -196,7 +196,7 @@ func ProposeRecurringTreasurySpend(rp *rocketpool.RocketPool, message string, co
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
-	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalTreasuryNewContract", contractName, recipient, amountPerPeriod, big.NewInt(int64(periodLength.Seconds())), big.NewInt(startTime.Unix()), numberOfPeriods)
+	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalTreasuryNewContract", contractName, recipient, amountPerPeriod, big.NewInt(int64(periodLength.Seconds())), big.NewInt(startTime.Unix()), big.NewInt(int64(numberOfPeriods)))
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error encoding proposalTreasuryNewContract payload: %w", err)
 	}
@@ -209,7 +209,7 @@ func EstimateProposeRecurringTreasurySpendUpdateGas(rp *rocketpool.RocketPool, m
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalTreasuryUpdateContract", contractName, recipient, amountPerPeriod, big.NewInt(int64(periodLength.Seconds())), numberOfPeriods)
+	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalTreasuryUpdateContract", contractName, recipient, amountPerPeriod, big.NewInt(int64(periodLength.Seconds())), big.NewInt(int64(numberOfPeriods)))
 	if err != nil {
 		return rocketpool.GasInfo{}, fmt.Errorf("error encoding proposalTreasuryUpdateContract payload: %w", err)
 	}
@@ -222,7 +222,7 @@ func ProposeRecurringTreasurySpendUpdate(rp *rocketpool.RocketPool, message stri
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
-	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalTreasuryUpdateContract", contractName, recipient, amountPerPeriod, big.NewInt(int64(periodLength.Seconds())), numberOfPeriods)
+	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalTreasuryUpdateContract", contractName, recipient, amountPerPeriod, big.NewInt(int64(periodLength.Seconds())), big.NewInt(int64(numberOfPeriods)))
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("error encoding proposalTreasuryUpdateContract payload: %w", err)
 	}
