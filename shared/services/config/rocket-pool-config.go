@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	addontypes "github.com/rocket-pool/smartnode/shared/types/addons"
 	"github.com/rocket-pool/smartnode/shared/types/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"gopkg.in/yaml.v2"
 )
 
@@ -89,6 +90,7 @@ type RocketPoolConfig struct {
 	Geth              *GethConfig              `yaml:"geth,omitempty"`
 	Nethermind        *NethermindConfig        `yaml:"nethermind,omitempty"`
 	Besu              *BesuConfig              `yaml:"besu,omitempty"`
+	Reth              *RethConfig              `yaml:"reth,omitempty"`
 	ExternalExecution *ExternalExecutionConfig `yaml:"externalExecution,omitempty"`
 
 	// Consensus client configurations
@@ -226,6 +228,10 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Besu",
 				Description: getAugmentedEcDescription(config.ExecutionClient_Besu, "Hyperledger Besu is a robust full Ethereum protocol client. It uses a novel system called \"Bonsai Trees\" to store its chain data efficiently, which allows it to access block states from the past and does not require pruning. Besu is fully open source and written in Java."),
 				Value:       config.ExecutionClient_Besu,
+			}, {
+				Name:        "Reth",
+				Description: getAugmentedEcDescription(config.ExecutionClient_Reth, "Reth is a new Ethereum full node implementation that is focused on being user-friendly, highly modular, as well as being fast and efficient"),
+				Value:       config.ExecutionClient_Reth,
 			}},
 		},
 
@@ -447,6 +453,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	cfg.Geth = NewGethConfig(cfg)
 	cfg.Nethermind = NewNethermindConfig(cfg)
 	cfg.Besu = NewBesuConfig(cfg)
+	cfg.Reth = NewRethConfig(cfg)
 	cfg.ExternalExecution = NewExternalExecutionConfig(cfg)
 	cfg.FallbackNormal = NewFallbackNormalConfig(cfg)
 	cfg.FallbackPrysm = NewFallbackPrysmConfig(cfg)
@@ -551,6 +558,7 @@ func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 		"geth":               cfg.Geth,
 		"nethermind":         cfg.Nethermind,
 		"besu":               cfg.Besu,
+		"reth":               cfg.Reth,
 		"externalExecution":  cfg.ExternalExecution,
 		"consensusCommon":    cfg.ConsensusCommon,
 		"lighthouse":         cfg.Lighthouse,
@@ -622,6 +630,8 @@ func (cfg *RocketPoolConfig) GetEventLogInterval() (int, error) {
 			return cfg.Geth.EventLogInterval, nil
 		case config.ExecutionClient_Nethermind:
 			return cfg.Nethermind.EventLogInterval, nil
+		case config.ExecutionClient_Reth:
+			return cfg.Reth.EventLogInterval, nil
 		default:
 			return 0, fmt.Errorf("can't get event log interval of unknown execution client [%v]", client)
 		}
@@ -1129,6 +1139,8 @@ func (cfg *RocketPoolConfig) GetECContainerTag() (string, error) {
 		return cfg.Nethermind.ContainerTag.Value.(string), nil
 	case config.ExecutionClient_Besu:
 		return cfg.Besu.ContainerTag.Value.(string), nil
+	case config.ExecutionClient_Reth:
+		return cfg.Reth.ContainerTag.Value.(string), nil
 	}
 
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
@@ -1148,6 +1160,8 @@ func (cfg *RocketPoolConfig) GetECStopSignal() (string, error) {
 		return nethermindStopSignal, nil
 	case config.ExecutionClient_Besu:
 		return besuStopSignal, nil
+	case config.ExecutionClient_Reth:
+		return rethStopSignal, nil
 	}
 
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
@@ -1179,6 +1193,8 @@ func (cfg *RocketPoolConfig) GetECMaxPeers() (uint16, error) {
 		return cfg.Nethermind.MaxPeers.Value.(uint16), nil
 	case config.ExecutionClient_Besu:
 		return cfg.Besu.MaxPeers.Value.(uint16), nil
+	case config.ExecutionClient_Reth:
+		return cfg.Reth.MaxPeers.Value.(uint16), nil
 	}
 
 	return 0, fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
@@ -1197,6 +1213,8 @@ func (cfg *RocketPoolConfig) GetECAdditionalFlags() (string, error) {
 		return cfg.Nethermind.AdditionalFlags.Value.(string), nil
 	case config.ExecutionClient_Besu:
 		return cfg.Besu.AdditionalFlags.Value.(string), nil
+	case config.ExecutionClient_Reth:
+		return cfg.Reth.AdditionalFlags.Value.(string), nil
 	}
 
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
@@ -1436,6 +1454,10 @@ func (cfg *RocketPoolConfig) Validate() []string {
 		errors = append(errors, "You are using a locally-managed Execution client and an externally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
 	} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_External && cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
 		errors = append(errors, "You are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
+	}
+
+	if cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient) == cfgtypes.ExecutionClient_Reth && cfg.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Mainnet {
+		errors = append(errors, "The Reth client is currently an alpha release and not to be used on Mainnet")
 	}
 
 	// Ensure there's a MEV-boost URL

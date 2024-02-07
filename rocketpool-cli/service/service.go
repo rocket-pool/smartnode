@@ -1246,6 +1246,8 @@ func serviceVersion(c *cli.Context) error {
 			eth1ClientString = fmt.Sprintf(format, "Nethermind", cfg.Nethermind.ContainerTag.Value.(string))
 		case cfgtypes.ExecutionClient_Besu:
 			eth1ClientString = fmt.Sprintf(format, "Besu", cfg.Besu.ContainerTag.Value.(string))
+		case cfgtypes.ExecutionClient_Reth:
+			eth1ClientString = fmt.Sprintf(format, "Reth", cfg.Reth.ContainerTag.Value.(string))
 		default:
 			return fmt.Errorf("unknown local execution client [%v]", eth1Client)
 		}

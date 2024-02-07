@@ -62,6 +62,7 @@ const (
 	ExecutionClient_Geth       ExecutionClient = "geth"
 	ExecutionClient_Nethermind ExecutionClient = "nethermind"
 	ExecutionClient_Besu       ExecutionClient = "besu"
+	ExecutionClient_Reth       ExecutionClient = "reth"
 )
 
 // Enum to describe the Consensus client options
