@@ -168,7 +168,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-					interval, err := cliutils.ValidatePositiveUint("interval", c.Args().Get(0))
+					interval, err := cliutils.ValidateUint("interval", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
