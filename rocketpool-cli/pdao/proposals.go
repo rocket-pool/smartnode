@@ -129,6 +129,7 @@ func getProposal(c *cli.Context, id uint64) error {
 	fmt.Printf("Payload (bytes):        %s\n", hex.EncodeToString(proposal.Payload))
 	fmt.Printf("Proposed by:            %s\n", proposal.ProposerAddress.Hex())
 	fmt.Printf("Created at:             %s\n", proposal.CreatedTime.Format(time.RFC822))
+	fmt.Printf("State:                  %s\n", types.ProtocolDaoProposalStates[proposal.State])
 
 	// Start block - pending proposals
 	if proposal.State == types.ProtocolDaoProposalState_Pending {
