@@ -653,7 +653,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		balancebatcherAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
-			config.Network_Devnet:  "0x9788C4E93f9002a7ad8e72633b11E8d1ecd51f9b",
+			config.Network_Devnet:  "0xfAa2e7C84eD801dd9D27Ac1ed957274530796140",
 			config.Network_Holesky: "0xfAa2e7C84eD801dd9D27Ac1ed957274530796140",
 		},
 
