@@ -265,7 +265,6 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 	// Get the current collateral
 	currentBondedCollateral := float64(0)
 	currentBorrowedCollateral := float64(0)
-	rplToMaxCollateral := float64(0)
 	rplPrice := eth.WeiToEth(rewardsInfoResponse.RplPrice)
 	currentRplStake := eth.WeiToEth(rewardsInfoResponse.RplStake)
 	availableRpl := eth.WeiToEth(claimRpl)
@@ -277,22 +276,11 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 	if rewardsInfoResponse.ActiveMinipools > 0 {
 		currentBondedCollateral = rewardsInfoResponse.BondedCollateralRatio
 		currentBorrowedCollateral = rewardsInfoResponse.BorrowedCollateralRatio
-		maxRplRequired := eth.WeiToEth(rewardsInfoResponse.MaximumRplStake)
-		rplToMaxCollateral = maxRplRequired - currentRplStake
 
 		bestTotal = availableRpl + currentRplStake
 		bestBondedCollateral = rplPrice * bestTotal / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthMatched) - eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
-		bestBorrowedCollateral = rplPrice * bestTotal / (eth.WeiToEth(rewardsInfoResponse.EthMatched) + eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
 
 		fmt.Printf("You currently have %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", currentRplStake, currentBorrowedCollateral*100, currentBondedCollateral*100)
-		if rplToMaxCollateral <= 0 {
-			fmt.Println("You are already at maximum collateral. Restaking more RPL will not lead to more rewards.")
-		} else if availableRpl < rplToMaxCollateral {
-			fmt.Printf("You can restake a max of %.6f RPL which will bring you to a total of %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", availableRpl, bestTotal, bestBorrowedCollateral*100, bestBondedCollateral*100)
-		} else {
-			total := rplToMaxCollateral + currentRplStake
-			fmt.Printf("If you restake %.6f RPL, you will have a total of %.6f RPL staked (the max bonded collateral of 150%%).\nRestaking more than this will not result in higher rewards.\n\n", rplToMaxCollateral, total)
-		}
 	} else {
 		fmt.Println("You do not have any active minipools, so restaking RPL will not lead to any rewards.")
 	}
@@ -301,20 +289,7 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 	var restakeAmountWei *big.Int
 	restakeAmountFlag := c.String("restake-amount")
 
-	if restakeAmountFlag == "150%" {
-		// Figure out how much to stake to get to 150% or the max available to claim, whichever is smaller
-		if rplToMaxCollateral <= 0 {
-			fmt.Println("Ignoring automatic staking request since your collateral is already maximized.")
-			restakeAmountWei = nil
-		} else if availableRpl < rplToMaxCollateral {
-			fmt.Printf("Automatically restaking all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% bonded collateral).\n", bestTotal, bestBondedCollateral*100)
-			restakeAmountWei = claimRpl
-		} else {
-			total := rplToMaxCollateral + currentRplStake
-			fmt.Printf("Automatically restaking %.6f RPL, which will bring you to a total of %.6f RPL staked (150%% bonded collateral).\n", rplToMaxCollateral, total)
-			restakeAmountWei = eth.EthToWei(rplToMaxCollateral)
-		}
-	} else if restakeAmountFlag == "all" {
+	if restakeAmountFlag == "all" {
 		// Restake everything with no regard for collateral level
 		total := availableRpl + currentRplStake
 		totalBondedCollateral := rplPrice * total / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthMatched) - eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
@@ -343,71 +318,35 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 		restakeAmountWei = nil
 	} else {
 		// Prompt the user
-		if rplToMaxCollateral <= 0 || availableRpl < rplToMaxCollateral {
-			var collateralString string
-			collateralString = fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% borrowed collateral (%.2f%% bonded collateral)", availableRpl, bestBorrowedCollateral*100, bestBondedCollateral*100)
-
-			amountOptions := []string{
-				"None (do not restake any RPL)",
-				collateralString,
-				"A custom amount",
-			}
-			selected, _ := cliutils.Select("Please choose an amount to restake here:", amountOptions)
-			switch selected {
-			case 0:
-				restakeAmountWei = nil
-			case 1:
-				restakeAmountWei = claimRpl
-			case 2:
-				for {
-					inputAmount := cliutils.Prompt("Please enter an amount of RPL to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
-					stakeAmount, err := strconv.ParseFloat(inputAmount, 64)
-					if err != nil {
-						fmt.Printf("Invalid stake amount '%s': %s\n", inputAmount, err.Error())
-					} else if stakeAmount < 0 {
-						fmt.Println("Amount must be greater than zero.")
-					} else if stakeAmount > availableRpl {
-						fmt.Println("Amount must be less than the RPL available to claim.")
-					} else {
-						restakeAmountWei = eth.EthToWei(stakeAmount)
-						break
-					}
-				}
-			}
-		} else {
-			bestTotal = availableRpl + currentRplStake
-			var collateralString string
-			bestBondedCollateral = rplPrice * bestTotal / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthMatched) - eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
-			bestBorrowedCollateral = rplPrice * bestTotal / (eth.WeiToEth(rewardsInfoResponse.EthMatched) + eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
-			collateralString = fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% borrowed collateral (%.2f%% bonded collateral)", availableRpl, bestBorrowedCollateral*100, bestBondedCollateral*100)
-			amountOptions := []string{
-				"None (do not restake any RPL)",
-				fmt.Sprintf("Enough to get to 150%% bonded collateral (%.6f RPL)", rplToMaxCollateral),
-				collateralString,
-				"A custom amount",
-			}
-			selected, _ := cliutils.Select("Please choose an amount to restake here:", amountOptions)
-			switch selected {
-			case 0:
-				restakeAmountWei = nil
-			case 1:
-				restakeAmountWei = eth.EthToWei(rplToMaxCollateral)
-			case 2:
-				restakeAmountWei = claimRpl
-			case 3:
-				for {
-					inputAmount := cliutils.Prompt("Please enter an amount of RPL to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
-					stakeAmount, err := strconv.ParseFloat(inputAmount, 64)
-					if err != nil {
-						fmt.Printf("Invalid stake amount '%s': %s\n", inputAmount, err.Error())
-					} else if stakeAmount < 0 {
-						fmt.Println("Amount must be greater than zero.")
-					} else if stakeAmount > availableRpl {
-						fmt.Println("Amount must be less than the RPL available to claim.")
-					} else {
-						restakeAmountWei = eth.EthToWei(stakeAmount)
-						break
-					}
+		bestTotal = availableRpl + currentRplStake
+		var collateralString string
+		bestBondedCollateral = rplPrice * bestTotal / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthMatched) - eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+		bestBorrowedCollateral = rplPrice * bestTotal / (eth.WeiToEth(rewardsInfoResponse.EthMatched) + eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+		collateralString = fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% borrowed collateral (%.2f%% bonded collateral)", availableRpl, bestBorrowedCollateral*100, bestBondedCollateral*100)
+		amountOptions := []string{
+			"None (do not restake any RPL)",
+			collateralString,
+			"A custom amount",
+		}
+		selected, _ := cliutils.Select("Please choose an amount to restake here:", amountOptions)
+		switch selected {
+		case 0:
+			restakeAmountWei = nil
+		case 1:
+			restakeAmountWei = claimRpl
+		case 2:
+			for {
+				inputAmount := cliutils.Prompt("Please enter an amount of RPL to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+				stakeAmount, err := strconv.ParseFloat(inputAmount, 64)
+				if err != nil {
+					fmt.Printf("Invalid stake amount '%s': %s\n", inputAmount, err.Error())
+				} else if stakeAmount < 0 {
+					fmt.Println("Amount must be greater than zero.")
+				} else if stakeAmount > availableRpl {
+					fmt.Println("Amount must be less than the RPL available to claim.")
+				} else {
+					restakeAmountWei = eth.EthToWei(stakeAmount)
+					break
 				}
 			}
 		}

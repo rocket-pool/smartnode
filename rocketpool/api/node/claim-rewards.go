@@ -120,11 +120,6 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 	})
 	wg.Go(func() error {
 		var err error
-		response.MaximumRplStake, err = node.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
 		response.EffectiveRplStake, err = node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
 		return err
 	})
@@ -137,15 +132,9 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 	if activeMinipools > 0 {
 		var wg2 errgroup.Group
 		var minStakeFraction *big.Int
-		var maxStakeFraction *big.Int
 		wg2.Go(func() error {
 			var err error
 			minStakeFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
-			return err
-		})
-		wg2.Go(func() error {
-			var err error
-			maxStakeFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
 			return err
 		})
 		wg2.Go(func() error {
@@ -164,21 +153,10 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
 		trueMinimumStake.Div(trueMinimumStake, response.RplPrice)
 
-		// Calculate the *real* maximum, including the pending bond reductions
-		trueMaximumStake := eth.EthToWei(32)
-		trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(activeMinipools)))
-		trueMaximumStake.Sub(trueMaximumStake, response.EthMatched)
-		trueMaximumStake.Sub(trueMaximumStake, response.PendingMatchAmount) // (32 * activeMinipools - ethMatched - pendingMatch)
-		trueMaximumStake.Mul(trueMaximumStake, maxStakeFraction)
-		trueMaximumStake.Div(trueMaximumStake, response.RplPrice)
-
 		response.MinimumRplStake = trueMinimumStake
-		response.MaximumRplStake = trueMaximumStake
 
 		if response.EffectiveRplStake.Cmp(trueMinimumStake) < 0 {
 			response.EffectiveRplStake.SetUint64(0)
-		} else if response.EffectiveRplStake.Cmp(trueMaximumStake) > 0 {
-			response.EffectiveRplStake.Set(trueMaximumStake)
 		}
 
 		response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthMatched) - eth.WeiToEth(response.PendingMatchAmount))
