@@ -87,6 +87,7 @@ func NewRethConfig(cfg *RocketPoolConfig) *RethConfig {
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: rethTagProd,
+				config.Network_Holesky: rethTagTest,
 				config.Network_Devnet:  rethTagTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
