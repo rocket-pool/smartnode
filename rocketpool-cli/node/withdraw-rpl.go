@@ -76,9 +76,11 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 			}
 		} else {
-			fmt.Printf("Cannot withdraw staked RPL - you have %.6f RPL staked, but are not allowed to withdraw below %.6f RPL (150%% collateral).\n",
+			fmt.Printf("Cannot withdraw staked RPL - you have %.6f RPL staked, but are not allowed to withdraw below %.6f RPL (%d%% collateral).\n",
 				math.RoundDown(eth.WeiToEth(status.RplStake), 6),
-				math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
+				math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6),
+				uint32(eth.WeiToEth(status.MaximumStakeFraction)*100),
+			)
 			return nil
 		}
 
