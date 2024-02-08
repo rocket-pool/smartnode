@@ -21,9 +21,7 @@ type RplPriceResponse struct {
 	RplPrice                    *big.Int `json:"rplPrice"`
 	RplPriceBlock               uint64   `json:"rplPriceBlock"`
 	MinPer8EthMinipoolRplStake  *big.Int `json:"minPer8EthMinipoolRplStake"`
-	MaxPer8EthMinipoolRplStake  *big.Int `json:"maxPer8EthMinipoolRplStake"`
 	MinPer16EthMinipoolRplStake *big.Int `json:"minPer16EthMinipoolRplStake"`
-	MaxPer16EthMinipoolRplStake *big.Int `json:"maxPer16EthMinipoolRplStake"`
 }
 
 type NetworkStatsResponse struct {
