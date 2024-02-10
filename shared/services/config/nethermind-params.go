@@ -40,6 +40,9 @@ type NethermindConfig struct {
 	// Nethermind's memory budget for full pruning
 	FullPruneMemoryBudget config.Parameter `yaml:"fullPruneMemoryBudget,omitempty"`
 
+	// Nethermind's remaining disk space to trigger a pruning
+	FullPruningThresholdMb config.Parameter `yaml:"fullPruningThresholdMb,omitempty"`
+
 	// Additional modules to enable on the primary JSON RPC endpoint
 	AdditionalModules config.Parameter `yaml:"additionalModules,omitempty"`
 
@@ -109,6 +112,17 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			Description:        "The amount of RAM (in MB) you want to dedicate to Nethermind for its full pruning system. Higher values mean less writes to your SSD and faster pruning times.\n\nThe default value for this will be calculated dynamically based on your system's available RAM, but you can adjust it manually.",
 			Type:               config.ParameterType_Uint,
 			Default:            map[config.Network]interface{}{config.Network_All: calculateNethermindFullPruneMemBudget()},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		FullPruningThresholdMb: config.Parameter{
+			ID:                 "fullPruningThresholdMb",
+			Name:               "Prune threshold (MB)",
+			Description:        "When the volume free space (in MB) hits this level, Nethermind will automatically start full pruning to reclaim disk space.",
+			Type:               config.ParameterType_Uint,
+			Default:            map[config.Network]interface{}{config.Network_Mainnet: uint64(307200), config.Network_Holesky: uint64(51200), config.Network_Devnet: uint64(51200)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -240,6 +254,7 @@ func (cfg *NethermindConfig) GetParameters() []*config.Parameter {
 		&cfg.MaxPeers,
 		&cfg.PruneMemSize,
 		&cfg.FullPruneMemoryBudget,
+		&cfg.FullPruningThresholdMb,
 		&cfg.AdditionalModules,
 		&cfg.AdditionalUrls,
 		&cfg.ContainerTag,
