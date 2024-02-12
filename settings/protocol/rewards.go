@@ -23,9 +23,9 @@ const (
 
 // Rewards claimer percents
 type RplRewardsPercentages struct {
-	OdaoPercentage *big.Int `abi:"trustedNodePercent"`
-	PdaoPercentage *big.Int `abi:"protocolPercent"`
-	NodePercentage *big.Int `abi:"nodePercent"`
+	OdaoPercentage *big.Int `abi:"trustedNodePerc"`
+	PdaoPercentage *big.Int `abi:"protocolPerc"`
+	NodePercentage *big.Int `abi:"nodePerc"`
 }
 
 // The RPL rewards percentages for the Oracle DAO, Protocol DAO, and node operators
