@@ -39,6 +39,17 @@ func getRewardsPercentages(c *cli.Context) (*api.PDAOGetRewardsPercentagesRespon
 }
 
 func canProposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, pdao *big.Int) (*api.PDAOCanProposeRewardsPercentagesResponse, error) {
+	// Validate sum of percentages == 100%
+	decimalPlaces := big.NewInt(int64(18))
+	hundredPercent := new(big.Int)
+	hundredPercent.Exp(big.NewInt(10), decimalPlaces, nil) // 10^18
+	sum := new(big.Int).Set(node)
+	sum = sum.Add(sum, odao)
+	sum = sum.Add(sum, pdao)
+	if sum.Cmp(hundredPercent) != 0 {
+		return nil, fmt.Errorf("values don't add up to 100%%")
+	}
+
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
