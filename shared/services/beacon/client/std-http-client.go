@@ -236,16 +236,27 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 	// The null validator pubkey
 	nullPubkey := types.ValidatorPubkey{}
 
-	// Filter out null pubkeys
+	// Filter out null, invalid and duplicate pubkeys
 	realPubkeys := []types.ValidatorPubkey{}
 	for _, pubkey := range pubkeys {
-		if !bytes.Equal(pubkey.Bytes(), nullPubkey.Bytes()) {
-			// Teku doesn't like invalid pubkeys, so filter them out to make it consistent with other clients
-			_, err := bls.PublicKeyFromBytes(pubkey.Bytes())
-
-			if err == nil {
-				realPubkeys = append(realPubkeys, pubkey)
+		if bytes.Equal(pubkey.Bytes(), types.ValidatorPubkey{}.Bytes()) {
+			continue
+		}
+		isDuplicate := false
+		for _, pk := range realPubkeys {
+			if bytes.Equal(pubkey.Bytes(), pk.Bytes()) {
+				isDuplicate = true
+				break
 			}
+		}
+		if isDuplicate {
+			continue
+		}
+		// Teku doesn't like invalid pubkeys, so filter them out to make it consistent with other clients
+		_, err := bls.PublicKeyFromBytes(pubkey.Bytes())
+
+		if err == nil {
+			realPubkeys = append(realPubkeys, pubkey)
 		}
 	}
 
