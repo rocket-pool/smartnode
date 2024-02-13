@@ -43,7 +43,7 @@ func voteOnProposal(c *cli.Context) error {
 	// Get votable proposals
 	votableProposals := []api.PDAOProposalWithNodeVoteDirection{}
 	for _, proposal := range proposals.Proposals {
-		if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 && proposal.NodeVoteDirection == types.VoteDirection_NoVote {
+		if (proposal.State == types.ProtocolDaoProposalState_ActivePhase1 || proposal.State == types.ProtocolDaoProposalState_ActivePhase2) && proposal.NodeVoteDirection == types.VoteDirection_NoVote {
 			votableProposals = append(votableProposals, proposal)
 		}
 	}
@@ -81,13 +81,19 @@ func voteOnProposal(c *cli.Context) error {
 
 		// Prompt for proposal selection
 		options := make([]string, len(votableProposals))
+		endTime := ""
 		for pi, proposal := range votableProposals {
+			if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 {
+				endTime = fmt.Sprintf("phase 1 end: %s", proposal.Phase1EndTime.Format(time.RFC822))
+			} else {
+				endTime = fmt.Sprintf("phase 2 end: %s", proposal.Phase2EndTime.Format(time.RFC822))
+			}
 			options[pi] = fmt.Sprintf(
-				"proposal %d (message: '%s', payload: %s, phase 1 end: %s, vp required: %.2f, for: %.2f, against: %.2f, abstained: %.2f, veto: %.2f, proposed by: %s)",
+				"proposal %d (message: '%s', payload: %s, %s, vp required: %.2f, for: %.2f, against: %.2f, abstained: %.2f, veto: %.2f, proposed by: %s)",
 				proposal.ID,
 				proposal.Message,
 				proposal.PayloadStr,
-				proposal.Phase1EndTime.Format(time.RFC822),
+				endTime,
 				eth.WeiToEth(proposal.VotingPowerRequired),
 				eth.WeiToEth(proposal.VotingPowerFor),
 				eth.WeiToEth(proposal.VotingPowerAgainst),
@@ -123,14 +129,30 @@ func voteOnProposal(c *cli.Context) error {
 		selected, voteDirectionLabel = cliutils.Select("How would you like to vote on the proposal?", options)
 		voteDirection = types.VoteDirection(selected + 1)
 	}
+	canVote := api.CanVoteOnPDAOProposalResponse{}
+	actionString := ""
+	actionPast := ""
 
-	// Check if proposal can be voted on
-	canVote, err := rp.PDAOCanVoteProposal(selectedProposal.ID, voteDirection)
-	if err != nil {
-		return err
+	if selectedProposal.State == types.ProtocolDaoProposalState_ActivePhase1 {
+		// Check if proposal can be voted on
+		actionString = "vote"
+		actionPast = "voted"
+		canVote, err = rp.PDAOCanVoteProposal(selectedProposal.ID, voteDirection)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Check if proposal can be overriden on
+		actionString = "override your delegate's vote"
+		actionPast = "overrode delegate with a vote for"
+		canVote, err = rp.PDAOCanOverrideVote(selectedProposal.ID, voteDirection)
+		if err != nil {
+			return err
+		}
 	}
+
 	if !canVote.CanVote {
-		fmt.Println("Cannot vote on proposal:")
+		fmt.Printf("Cannot %s on proposal:\n", actionString)
 		if canVote.InsufficientPower {
 			fmt.Println("You do not have any voting power.")
 		}
@@ -147,25 +169,35 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote '%s' on proposal %d? Your vote cannot be changed later.", voteDirectionLabel, selectedProposal.ID))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to %s '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
-	// Vote on proposal
-	response, err := rp.PDAOVoteProposal(selectedProposal.ID, voteDirection)
-	if err != nil {
-		return err
+	response := api.VoteOnPDAOProposalResponse{}
+	if selectedProposal.State == types.ProtocolDaoProposalState_ActivePhase1 {
+		// Vote on proposal
+		response, err = rp.PDAOVoteProposal(selectedProposal.ID, voteDirection)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Submitting vote...\n")
+	} else {
+		// Override vote on proposal
+		response, err = rp.PDAOOverrideVote(selectedProposal.ID, voteDirection)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Overriding vote...\n")
 	}
 
-	fmt.Printf("Submitting vote...\n")
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully voted '%s' for proposal %d.\n", voteDirectionLabel, selectedProposal.ID)
+	fmt.Printf("Successfully %s '%s' for proposal %d.\n", actionPast, voteDirectionLabel, selectedProposal.ID)
 	return nil
 
 }

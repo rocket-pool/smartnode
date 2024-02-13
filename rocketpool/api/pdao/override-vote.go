@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canOverrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.CanOverrideVoteOnPDAOProposalResponse, error) {
+func canOverrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.CanVoteOnPDAOProposalResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -27,7 +27,7 @@ func canOverrideVote(c *cli.Context, proposalId uint64, voteDirection types.Vote
 	}
 
 	// Response
-	response := api.CanOverrideVoteOnPDAOProposalResponse{}
+	response := api.CanVoteOnPDAOProposalResponse{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -106,7 +106,7 @@ func canOverrideVote(c *cli.Context, proposalId uint64, voteDirection types.Vote
 	return &response, nil
 }
 
-func overrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.OverrideVoteOnPDAOProposalResponse, error) {
+func overrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.VoteOnPDAOProposalResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -118,7 +118,7 @@ func overrideVote(c *cli.Context, proposalId uint64, voteDirection types.VoteDir
 	}
 
 	// Response
-	response := api.OverrideVoteOnPDAOProposalResponse{}
+	response := api.VoteOnPDAOProposalResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()

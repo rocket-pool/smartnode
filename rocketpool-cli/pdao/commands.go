@@ -2159,39 +2159,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 						},
 					},
-
-					{
-						Name:      "override-vote",
-						Aliases:   []string{"o"},
-						Usage:     "Override your delegate's vote on a proposal with your own",
-						UsageText: "rocketpool pdao proposals override-vote",
-						Flags: []cli.Flag{
-							cli.StringFlag{
-								Name:  "proposal, p",
-								Usage: "The ID of the proposal to vote on",
-							},
-							cli.StringFlag{
-								Name:  "vote-direction, v",
-								Usage: "How to vote ('abstain', 'for', 'against', 'veto')",
-							},
-							cli.BoolFlag{
-								Name:  "yes, y",
-								Usage: "Automatically confirm all interactive questions",
-							},
-						},
-						Action: func(c *cli.Context) error {
-
-							// Validate args
-							if err := cliutils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
-
-							// Run
-							return overrideVote(c)
-
-						},
-					},
-
 					{
 						Name:      "execute",
 						Aliases:   []string{"x"},

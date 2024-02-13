@@ -92,33 +92,33 @@ func (c *Client) PDAOVoteProposal(proposalID uint64, voteDirection types.VoteDir
 }
 
 // Check whether the node can override the delegate's vote on a proposal
-func (c *Client) PDAOCanOverrideVote(proposalID uint64, voteDirection types.VoteDirection) (api.CanOverrideVoteOnPDAOProposalResponse, error) {
+func (c *Client) PDAOCanOverrideVote(proposalID uint64, voteDirection types.VoteDirection) (api.CanVoteOnPDAOProposalResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-override-vote %d %s", proposalID, getVoteDirectionString(voteDirection)))
 	if err != nil {
-		return api.CanOverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-override-vote: %w", err)
+		return api.CanVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-override-vote: %w", err)
 	}
-	var response api.CanOverrideVoteOnPDAOProposalResponse
+	var response api.CanVoteOnPDAOProposalResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanOverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not decode protocol DAO can-override-vote response: %w", err)
+		return api.CanVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not decode protocol DAO can-override-vote response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanOverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-override-vote: %s", response.Error)
+		return api.CanVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO can-override-vote: %s", response.Error)
 	}
 	return response, nil
 }
 
 // Override the delegate's vote on a proposal
-func (c *Client) PDAOOverrideVote(proposalID uint64, voteDirection types.VoteDirection) (api.OverrideVoteOnPDAOProposalResponse, error) {
+func (c *Client) PDAOOverrideVote(proposalID uint64, voteDirection types.VoteDirection) (api.VoteOnPDAOProposalResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("pdao override-vote %d %s", proposalID, getVoteDirectionString(voteDirection)))
 	if err != nil {
-		return api.OverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO override-vote: %w", err)
+		return api.VoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO override-vote: %w", err)
 	}
-	var response api.OverrideVoteOnPDAOProposalResponse
+	var response api.VoteOnPDAOProposalResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.OverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not decode protocol DAO override-vote response: %w", err)
+		return api.VoteOnPDAOProposalResponse{}, fmt.Errorf("Could not decode protocol DAO override-vote response: %w", err)
 	}
 	if response.Error != "" {
-		return api.OverrideVoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO override-vote: %s", response.Error)
+		return api.VoteOnPDAOProposalResponse{}, fmt.Errorf("Could not get protocol DAO override-vote: %s", response.Error)
 	}
 	return response, nil
 }

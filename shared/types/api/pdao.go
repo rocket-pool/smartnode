@@ -59,23 +59,6 @@ type VoteOnPDAOProposalResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type CanOverrideVoteOnPDAOProposalResponse struct {
-	Status            string             `json:"status"`
-	Error             string             `json:"error"`
-	CanVote           bool               `json:"canVote"`
-	DoesNotExist      bool               `json:"doesNotExist"`
-	InvalidState      bool               `json:"invalidState"`
-	InsufficientPower bool               `json:"insufficientPower"`
-	AlreadyVoted      bool               `json:"alreadyVoted"`
-	VotingPower       *big.Int           `json:"votingPower"`
-	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
-}
-type OverrideVoteOnPDAOProposalResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
-
 type CanExecutePDAOProposalResponse struct {
 	Status       string             `json:"status"`
 	Error        string             `json:"error"`
