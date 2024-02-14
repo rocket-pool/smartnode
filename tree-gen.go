@@ -144,9 +144,6 @@ func GenerateTree(c *cli.Context) error {
 	case 1:
 		network = cfgtypes.Network_Mainnet
 		logger.Printlnf("Beacon node is configured for Mainnet.")
-	case 5:
-		network = cfgtypes.Network_Prater
-		logger.Printlnf("Beacon node is configured for Prater.")
 	default:
 		return fmt.Errorf("your Beacon node is configured for an unknown network with Chain ID [%d]", depositContract.ChainID)
 	}
@@ -507,8 +504,6 @@ func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
 	if g.ruleset == 0 {
 		network := g.cfg.Smartnode.Network.Value.(cfgtypes.Network)
 		switch network {
-		case cfgtypes.Network_Prater:
-			ignoreRollingRecords = (index < rprewards.PraterV6Interval)
 		case cfgtypes.Network_Mainnet:
 			ignoreRollingRecords = (index < rprewards.MainnetV6Interval)
 		default:
