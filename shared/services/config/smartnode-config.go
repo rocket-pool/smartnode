@@ -599,13 +599,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		polygonPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1029Ac2Be4e08516697093e2AFeC435057f3511",
-			config.Network_Devnet:  "0x6D736da1dC2562DBeA9998385A0A27d8c2B2793e",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
 
 		arbitrumPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x05330300f829AD3fC8f33838BC88CFC4093baD53",
-			config.Network_Devnet:  "0x2b52479F6ea009907e46fc43e91064D1b92Fdc86",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
 
@@ -617,7 +617,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		zkSyncEraPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8",
-			config.Network_Devnet:  "0x3Fd49431bD05875AeD449Bc8C07352942A7fBA75",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
 
@@ -641,7 +641,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Devnet:  "0x5cE71E603B138F7e65029Cc1918C0566ed0dBD4B",
+			config.Network_Devnet:  "0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d",
 			config.Network_Holesky: "0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d",
 		},
 
