@@ -17,8 +17,8 @@ import (
 
 // Config
 const (
-	RewardsSettingsContractName         string = "rocketDAOProtocolSettingsRewards"
-	RewardsClaimIntervalTimeSettingPath string = "rpl.rewards.claim.period.time"
+	RewardsSettingsContractName            string = "rocketDAOProtocolSettingsRewards"
+	RewardsClaimIntervalPeriodsSettingPath string = "dao.protocol.rewards.claimsperiods"
 )
 
 // Rewards claimer percents
@@ -119,10 +119,10 @@ func GetRewardsClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	return time.Duration((*value).Uint64()) * time.Second, nil
 }
 func ProposeRewardsClaimIntervalTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", RewardsClaimIntervalTimeSettingPath), RewardsSettingsContractName, RewardsClaimIntervalTimeSettingPath, value, blockNumber, treeNodes, opts)
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", RewardsClaimIntervalPeriodsSettingPath), RewardsSettingsContractName, RewardsClaimIntervalPeriodsSettingPath, value, blockNumber, treeNodes, opts)
 }
 func EstimateProposeRewardsClaimIntervalTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", RewardsClaimIntervalTimeSettingPath), RewardsSettingsContractName, RewardsClaimIntervalTimeSettingPath, value, blockNumber, treeNodes, opts)
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", RewardsClaimIntervalPeriodsSettingPath), RewardsSettingsContractName, RewardsClaimIntervalPeriodsSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts
