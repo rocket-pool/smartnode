@@ -18,7 +18,7 @@ import (
 // Config
 const (
 	RewardsSettingsContractName            string = "rocketDAOProtocolSettingsRewards"
-	RewardsClaimIntervalPeriodsSettingPath string = "dao.protocol.rewards.claimsperiods"
+	RewardsClaimIntervalPeriodsSettingPath string = "dao.protocol.setting.rewards.claimsperiods"
 )
 
 // Rewards claimer percents
