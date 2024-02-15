@@ -39,9 +39,10 @@ type SyncStatusResponse struct {
 }
 type Eth2ConfigResponse struct {
 	Data struct {
-		SecondsPerSlot               uinteger `json:"SECONDS_PER_SLOT"`
-		SlotsPerEpoch                uinteger `json:"SLOTS_PER_EPOCH"`
-		EpochsPerSyncCommitteePeriod uinteger `json:"EPOCHS_PER_SYNC_COMMITTEE_PERIOD"`
+		SecondsPerSlot               uinteger  `json:"SECONDS_PER_SLOT"`
+		SlotsPerEpoch                uinteger  `json:"SLOTS_PER_EPOCH"`
+		CapellaForkVersion           byteArray `json:"CAPELLA_FORK_VERSION"`
+		EpochsPerSyncCommitteePeriod uinteger  `json:"EPOCHS_PER_SYNC_COMMITTEE_PERIOD"`
 	} `json:"data"`
 }
 type Eth2DepositContractResponse struct {
