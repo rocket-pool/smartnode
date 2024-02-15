@@ -664,7 +664,7 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 	case protocol.RewardsSettingsContractName:
 		switch settingName {
 		// RewardsClaimIntervalTime
-		case protocol.RewardsClaimIntervalTimeSettingPath:
+		case protocol.RewardsClaimIntervalPeriodsSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
@@ -1358,7 +1358,7 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 	case protocol.RewardsSettingsContractName:
 		switch settingName {
 		// RewardsClaimIntervalTime
-		case protocol.RewardsClaimIntervalTimeSettingPath:
+		case protocol.RewardsClaimIntervalPeriodsSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err

@@ -1891,7 +1891,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "interval-time",
 										Aliases:   []string{"it"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.RewardsClaimIntervalTimeSettingPath, durationUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.RewardsClaimIntervalPeriodsSettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting rewards interval-time value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
