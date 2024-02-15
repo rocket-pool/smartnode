@@ -403,7 +403,7 @@ func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64, useG
 	// Data
 	var wg errgroup.Group
 	var genesis GenesisResponse
-	var fork ForkResponse
+	var eth2Config Eth2ConfigResponse
 
 	// Get genesis
 	wg.Go(func() error {
@@ -412,10 +412,10 @@ func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64, useG
 		return err
 	})
 
-	// Get fork
+	// Get the BN spec as we need the CAPELLA_FORK_VERSION
 	wg.Go(func() error {
 		var err error
-		fork, err = c.getFork("head")
+		eth2Config, err = c.getEth2Config()
 		return err
 	})
 
@@ -427,17 +427,17 @@ func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64, useG
 	// Get fork version
 	var forkVersion []byte
 	if useGenesisFork {
+		// Used to compute the domain for credential changes
 		forkVersion = genesis.Data.GenesisForkVersion
-	} else if epoch < uint64(fork.Data.Epoch) {
-		forkVersion = fork.Data.PreviousVersion
 	} else {
-		forkVersion = fork.Data.CurrentVersion
+		// According to EIP-7044 (https://eips.ethereum.org/EIPS/eip-7044) the CAPELLA_FORK_VERSION should always be used to compute the domain for voluntary exits signatures.
+		forkVersion = eth2Config.Data.CapellaForkVersion
 	}
 
 	// Compute & return domain
 	var dt [4]byte
 	copy(dt[:], domainType[:])
-	return eth2types.Domain(dt, forkVersion, genesis.Data.GenesisValidatorsRoot), nil
+	return eth2types.ComputeDomain(dt, forkVersion, genesis.Data.GenesisValidatorsRoot)
 
 }
 
