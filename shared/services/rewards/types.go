@@ -11,6 +11,16 @@ import (
 	"github.com/wealdtech/go-merkletree"
 )
 
+type rewardsFileVersion uint64
+
+const (
+	rewardsFileVersionUnknown = iota
+	rewardsFileVersionOne
+	rewardsFileVersionTwo
+	rewardsFileVersionThree
+	rewardsFileVersionMax = iota - 1
+)
+
 // Interface for version-agnostic minipool performance
 type IMinipoolPerformanceFile interface {
 	// Serialize a minipool performance file into bytes
@@ -96,13 +106,13 @@ type INodeRewardsInfo interface {
 
 // Small struct to test version information for rewards files during deserialization
 type VersionHeader struct {
-	RewardsFileVersion uint64 `json:"rewardsFileVersion,omitempty"`
+	RewardsFileVersion rewardsFileVersion `json:"rewardsFileVersion,omitempty"`
 }
 
 // General version-agnostic information about a rewards file
 type RewardsFileHeader struct {
 	// Serialized fields
-	RewardsFileVersion         uint64                         `json:"rewardsFileVersion"`
+	RewardsFileVersion         rewardsFileVersion             `json:"rewardsFileVersion"`
 	RulesetVersion             uint64                         `json:"rulesetVersion,omitempty"`
 	Index                      uint64                         `json:"index"`
 	Network                    string                         `json:"network"`
@@ -216,4 +226,56 @@ func (b *QuotedBigInt) UnmarshalJSON(p []byte) error {
 
 	b.Int = *nativeInt
 	return nil
+}
+
+func (versionHeader *VersionHeader) checkVersion() error {
+	if versionHeader.RewardsFileVersion == rewardsFileVersionUnknown {
+		return fmt.Errorf("unexpected rewards file version [%d]", versionHeader.RewardsFileVersion)
+	}
+
+	if versionHeader.RewardsFileVersion > rewardsFileVersionMax {
+		return fmt.Errorf("unexpected rewards file version [%d]... highest supported version is [%d], you may need to update Smartnode", versionHeader.RewardsFileVersion, rewardsFileVersionMax)
+	}
+
+	return nil
+}
+
+func (versionHeader *VersionHeader) deserializeRewardsFile(bytes []byte) (IRewardsFile, error) {
+	if err := versionHeader.checkVersion(); err != nil {
+		return nil, err
+	}
+
+	switch versionHeader.RewardsFileVersion {
+	case rewardsFileVersionOne:
+		file := &RewardsFile_v1{}
+		return file, file.Deserialize(bytes)
+	case rewardsFileVersionTwo:
+		file := &RewardsFile_v2{}
+		return file, file.Deserialize(bytes)
+	case rewardsFileVersionThree:
+		file := &RewardsFile_v3{}
+		return file, file.Deserialize(bytes)
+	}
+
+	panic("unreachable section of code reached, please report this error to the maintainers")
+}
+
+func (versionHeader *VersionHeader) deserializeMinipoolPerformanceFile(bytes []byte) (IMinipoolPerformanceFile, error) {
+	if err := versionHeader.checkVersion(); err != nil {
+		return nil, err
+	}
+
+	switch versionHeader.RewardsFileVersion {
+	case rewardsFileVersionOne:
+		file := &MinipoolPerformanceFile_v1{}
+		return file, file.Deserialize(bytes)
+	case rewardsFileVersionTwo:
+		file := &MinipoolPerformanceFile_v2{}
+		return file, file.Deserialize(bytes)
+	case rewardsFileVersionThree:
+		file := &MinipoolPerformanceFile_v3{}
+		return file, file.Deserialize(bytes)
+	}
+
+	panic("unreachable section of code reached, please report this error to the maintainers")
 }
