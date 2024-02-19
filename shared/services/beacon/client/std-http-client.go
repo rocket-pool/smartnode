@@ -236,16 +236,27 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 	// The null validator pubkey
 	nullPubkey := types.ValidatorPubkey{}
 
-	// Filter out null pubkeys
+	// Filter out null, invalid and duplicate pubkeys
 	realPubkeys := []types.ValidatorPubkey{}
 	for _, pubkey := range pubkeys {
-		if !bytes.Equal(pubkey.Bytes(), nullPubkey.Bytes()) {
-			// Teku doesn't like invalid pubkeys, so filter them out to make it consistent with other clients
-			_, err := bls.PublicKeyFromBytes(pubkey.Bytes())
-
-			if err == nil {
-				realPubkeys = append(realPubkeys, pubkey)
+		if bytes.Equal(pubkey.Bytes(), types.ValidatorPubkey{}.Bytes()) {
+			continue
+		}
+		isDuplicate := false
+		for _, pk := range realPubkeys {
+			if bytes.Equal(pubkey.Bytes(), pk.Bytes()) {
+				isDuplicate = true
+				break
 			}
+		}
+		if isDuplicate {
+			continue
+		}
+		// Teku doesn't like invalid pubkeys, so filter them out to make it consistent with other clients
+		_, err := bls.PublicKeyFromBytes(pubkey.Bytes())
+
+		if err == nil {
+			realPubkeys = append(realPubkeys, pubkey)
 		}
 	}
 
@@ -392,7 +403,7 @@ func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64, useG
 	// Data
 	var wg errgroup.Group
 	var genesis GenesisResponse
-	var fork ForkResponse
+	var eth2Config Eth2ConfigResponse
 
 	// Get genesis
 	wg.Go(func() error {
@@ -401,10 +412,10 @@ func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64, useG
 		return err
 	})
 
-	// Get fork
+	// Get the BN spec as we need the CAPELLA_FORK_VERSION
 	wg.Go(func() error {
 		var err error
-		fork, err = c.getFork("head")
+		eth2Config, err = c.getEth2Config()
 		return err
 	})
 
@@ -416,17 +427,17 @@ func (c *StandardHttpClient) GetDomainData(domainType []byte, epoch uint64, useG
 	// Get fork version
 	var forkVersion []byte
 	if useGenesisFork {
+		// Used to compute the domain for credential changes
 		forkVersion = genesis.Data.GenesisForkVersion
-	} else if epoch < uint64(fork.Data.Epoch) {
-		forkVersion = fork.Data.PreviousVersion
 	} else {
-		forkVersion = fork.Data.CurrentVersion
+		// According to EIP-7044 (https://eips.ethereum.org/EIPS/eip-7044) the CAPELLA_FORK_VERSION should always be used to compute the domain for voluntary exits signatures.
+		forkVersion = eth2Config.Data.CapellaForkVersion
 	}
 
 	// Compute & return domain
 	var dt [4]byte
 	copy(dt[:], domainType[:])
-	return eth2types.Domain(dt, forkVersion, genesis.Data.GenesisValidatorsRoot), nil
+	return eth2types.ComputeDomain(dt, forkVersion, genesis.Data.GenesisValidatorsRoot)
 
 }
 
@@ -735,10 +746,10 @@ func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts
 func (c *StandardHttpClient) postVoluntaryExit(request VoluntaryExitRequest) error {
 	responseBody, status, err := c.postRequest(RequestVoluntaryExitPath, request)
 	if err != nil {
-		return fmt.Errorf("Could not broadcast exit for validator at index %d: %w", request.Message.ValidatorIndex, err)
+		return fmt.Errorf("Could not broadcast exit for validator at index %s: %w", request.Message.ValidatorIndex, err)
 	}
 	if status != http.StatusOK {
-		return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
+		return fmt.Errorf("Could not broadcast exit for validator at index %s: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
 	}
 	return nil
 }

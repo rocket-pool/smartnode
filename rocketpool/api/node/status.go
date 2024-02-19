@@ -153,6 +153,11 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	})
 	wg.Go(func() error {
 		var err error
+		response.MaximumStakeFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
 		response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
 		return err
 	})

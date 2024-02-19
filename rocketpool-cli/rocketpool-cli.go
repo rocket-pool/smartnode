@@ -123,6 +123,7 @@ ______           _        _    ______           _
 				os.Exit(1)
 			}
 			configPath = os.Args[index+1]
+			break
 		}
 	}
 
