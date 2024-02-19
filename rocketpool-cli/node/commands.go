@@ -306,7 +306,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "restake-amount, a",
-						Usage: "The amount of RPL to automatically restake during claiming (or '150%' to stake up to 150% collateral, or 'all' for all available RPL)",
+						Usage: "The amount of RPL to automatically restake during claiming (or 'all' for all available RPL)",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
