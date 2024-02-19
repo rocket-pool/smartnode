@@ -1644,7 +1644,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 										Name:      "vote-delay-time",
 										Aliases:   []string{"vdt"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.VoteDelayTimeSettingPath, durationUsage),
-										UsageText: "rocketpool pdao propose setting proposals vote-dalay-time value",
+										UsageText: "rocketpool pdao propose setting proposals vote-delay-time value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
 												Name:  "yes, y",
