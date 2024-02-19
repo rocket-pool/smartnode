@@ -18,7 +18,7 @@ import (
 func canCancelProposal(c *cli.Context, proposalId uint64) (*api.SecurityCanCancelProposalResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -94,7 +94,7 @@ func canCancelProposal(c *cli.Context, proposalId uint64) (*api.SecurityCanCance
 func cancelProposal(c *cli.Context, proposalId uint64) (*api.SecurityCancelProposalResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)

@@ -14,7 +14,7 @@ import (
 func canProposeLeave(c *cli.Context) (*api.SecurityCanProposeLeaveResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -67,7 +67,7 @@ func canProposeLeave(c *cli.Context) (*api.SecurityCanProposeLeaveResponse, erro
 func proposeLeave(c *cli.Context) (*api.SecurityProposeLeaveResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)

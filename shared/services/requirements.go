@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -137,6 +138,23 @@ func RequireNodeTrusted(c *cli.Context) error {
 	}
 	if !nodeTrusted {
 		return errors.New("The node is not a member of the oracle DAO. Nodes can only join the oracle DAO by invite.")
+	}
+	return nil
+}
+
+func RequireNodeSecurityMember(c *cli.Context) error {
+	if err := RequireNodeWallet(c); err != nil {
+		return err
+	}
+	if err := RequireRocketStorage(c); err != nil {
+		return err
+	}
+	nodeIsSecurityMember, err := getNodeSecurityMember(c)
+	if err != nil {
+		return err
+	}
+	if !nodeIsSecurityMember {
+		return errors.New("The node is not a member of the security council. Nodes can only join the security council by invite.")
 	}
 	return nil
 }
@@ -319,6 +337,23 @@ func getNodeTrusted(c *cli.Context) (bool, error) {
 		return false, err
 	}
 	return trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
+}
+
+// Check if the node is a member of the security council
+func getNodeSecurityMember(c *cli.Context) (bool, error) {
+	w, err := GetWallet(c)
+	if err != nil {
+		return false, err
+	}
+	rp, err := GetRocketPool(c)
+	if err != nil {
+		return false, err
+	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return false, err
+	}
+	return security.GetMemberExists(rp, nodeAccount.Address, nil)
 }
 
 // Wait for the eth client to sync

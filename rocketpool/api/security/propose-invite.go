@@ -16,7 +16,7 @@ import (
 func canProposeInvite(c *cli.Context, memberId string, memberAddress common.Address) (*api.SecurityCanProposeInviteResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -71,7 +71,7 @@ func canProposeInvite(c *cli.Context, memberId string, memberAddress common.Addr
 func proposeInvite(c *cli.Context, memberId string, memberAddress common.Address) (*api.SecurityProposeInviteResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)

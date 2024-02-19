@@ -15,7 +15,7 @@ import (
 
 func canProposeReplaceMember(c *cli.Context, existingAddress common.Address, newID string, newAddress common.Address) (*api.SecurityCanProposeReplaceResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -87,7 +87,7 @@ func canProposeReplaceMember(c *cli.Context, existingAddress common.Address, new
 
 func proposeReplaceMember(c *cli.Context, existingAddress common.Address, newID string, newAddress common.Address) (*api.SecurityProposeInviteResponse, error) {
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)

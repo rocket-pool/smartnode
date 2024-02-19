@@ -16,7 +16,7 @@ import (
 func canProposeKickMulti(c *cli.Context, memberAddresses []common.Address) (*api.SecurityCanProposeKickMultiResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -62,7 +62,7 @@ func canProposeKickMulti(c *cli.Context, memberAddresses []common.Address) (*api
 func proposeKickMulti(c *cli.Context, memberAddresses []common.Address) (*api.SecurityProposeKickMultiResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)

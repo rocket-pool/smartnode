@@ -16,7 +16,7 @@ import (
 func canProposeKick(c *cli.Context, memberAddress common.Address) (*api.SecurityCanProposeKickResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -66,7 +66,7 @@ func canProposeKick(c *cli.Context, memberAddress common.Address) (*api.Security
 func proposeKick(c *cli.Context, memberAddress common.Address) (*api.SecurityProposeKickResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
