@@ -126,6 +126,6 @@ func proposeSetting(c *cli.Context, contract string, setting string, value strin
 	}
 
 	// Log & return
-	fmt.Printf("Successfully submitted a %s setting update proposal with ID %d.\n", setting, response.ProposalId)
+	fmt.Printf("Successfully submitted a %s setting update proposal.\n", setting)
 	return nil
 }

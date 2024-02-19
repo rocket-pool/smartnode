@@ -66,7 +66,7 @@ func proposeLeave(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully submitted a leave proposal with ID %d.\n", response.ProposalId)
+	fmt.Println("Successfully submitted a leave proposal.")
 	return nil
 
 }

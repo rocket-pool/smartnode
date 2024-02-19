@@ -87,7 +87,7 @@ func proposeInvite(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully submitted an invite proposal with ID %d for node %s.\n", response.ProposalId, address.Hex())
+	fmt.Printf("Successfully submitted an invite proposal for node %s.\n", address.Hex())
 	return nil
 
 }
