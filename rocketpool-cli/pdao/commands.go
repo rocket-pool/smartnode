@@ -1889,10 +1889,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Subcommands: []cli.Command{
 
 									{
-										Name:      "interval-time",
-										Aliases:   []string{"it"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.RewardsClaimIntervalPeriodsSettingPath, durationUsage),
-										UsageText: "rocketpool pdao propose setting rewards interval-time value",
+										Name:      "interval-periods",
+										Aliases:   []string{"ip"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting - the rewards interval will consist of this number of price/balances submission periods; %s", protocol.RewardsClaimIntervalPeriodsSettingPath, uintUsage),
+										UsageText: "rocketpool pdao propose setting rewards interval-periods value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
 												Name:  "yes, y",
@@ -1905,13 +1905,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingRewardsIntervalTime(c, value)
+											return proposeSettingRewardsIntervalPeriods(c, value)
 
 										},
 									},

@@ -259,8 +259,8 @@ func proposeSettingProposalsMaxBlockAge(c *cli.Context, value uint64) error {
 	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.ProposalMaxBlockAgeSettingPath, trueValue)
 }
 
-func proposeSettingRewardsIntervalTime(c *cli.Context, value time.Duration) error {
-	trueValue := fmt.Sprint(uint64(value.Seconds()))
+func proposeSettingRewardsIntervalPeriods(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
 	return proposeSetting(c, protocol.RewardsSettingsContractName, protocol.RewardsClaimIntervalPeriodsSettingPath, trueValue)
 }
 
