@@ -206,6 +206,10 @@ func (c *Client) Close() {
 	_ = c.client.Close()
 }
 
+func (c *Client) ConfigPath() string {
+	return c.configPath
+}
+
 // Load the config
 // Returns the RocketPoolConfig and whether or not it was newly generated
 func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
