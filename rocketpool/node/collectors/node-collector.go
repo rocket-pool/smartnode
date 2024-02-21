@@ -352,6 +352,33 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
+	// get the beacon client sync status:
+	wg.Go(func() error {
+		progress := float64(0)
+		
+		syncStatus, err := collector.bc.GetSyncStatus()
+
+		if err != nil {
+			// don't return an error because then the metric isn't emitted at all, just let the Progress be 0
+			fmt.Printf("error getting beacon chain sync status: %w", err)
+		} else {
+			progress = syncStatus.Progress
+		}
+
+		channel <- prometheus.MustNewConstMetric(
+			collector.clientSyncProgress, prometheus.GaugeValue, progress, "beacon")
+		return nil
+	})
+	
+	// get the execution client sync status:
+	wg.Go(func() error {
+		syncStatus := collector.ec.CheckStatus(collector.cfg)
+
+		channel <- prometheus.MustNewConstMetric(
+			collector.clientSyncProgress, prometheus.GaugeValue, syncStatus.PrimaryClientStatus.SyncProgress, "execution")
+		return nil
+	})
+
 	// Get the number of active minipools on the node
 	wg.Go(func() error {
 		minipoolCount := len(minipools)
@@ -371,27 +398,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			return fmt.Errorf("Error getting beacon chain head: %w", err)
 		}
 		beaconHead = _beaconHead
-		return nil
-	})
-
-	// get the beacon client sync status:
-	wg.Go(func() error {
-		syncStatus, err := collector.bc.GetSyncStatus()
-		if err != nil {
-			return fmt.Errorf("error getting beacon chain sync status: %w", err)
-		}
-
-		channel <- prometheus.MustNewConstMetric(
-			collector.clientSyncProgress, prometheus.GaugeValue, syncStatus.Progress, "beacon")
-		return nil
-	})
-	
-	// get the execution client sync status:
-	wg.Go(func() error {
-		syncStatus := collector.ec.CheckStatus(collector.cfg)
-
-		channel <- prometheus.MustNewConstMetric(
-			collector.clientSyncProgress, prometheus.GaugeValue, syncStatus.PrimaryClientStatus.SyncProgress, "execution")
 		return nil
 	})
 
