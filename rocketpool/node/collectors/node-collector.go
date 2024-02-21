@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
@@ -55,6 +56,9 @@ type NodeCollector struct {
 	// The total balances of all this node's validators on the beacon chain
 	beaconBalance *prometheus.Desc
 
+	// The sync progress of the clients
+	clientSyncProgress *prometheus.Desc
+
 	// The total EL balance of all minipools belonging to this node
 	minipoolBalance *prometheus.Desc
 
@@ -83,7 +87,10 @@ type NodeCollector struct {
 	rp *rocketpool.RocketPool
 
 	// The beacon client
-	bc beacon.Client
+	bc *services.BeaconClientManager
+
+	// The execution client
+	ec *services.ExecutionClientManager
 
 	// The node's address
 	nodeAddress common.Address
@@ -114,7 +121,7 @@ type NodeCollector struct {
 }
 
 // Create a new NodeCollector instance
-func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *NodeCollector {
+func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManager, ec *services.ExecutionClientManager, nodeAddress common.Address, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *NodeCollector {
 
 	// Get the event log interval
 	eventLogInterval, err := cfg.GetEventLogInterval()
@@ -169,6 +176,10 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			"The total balances of all this node's validators on the beacon chain",
 			nil, nil,
 		),
+		clientSyncProgress: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "sync_progress"),
+			"The sync progress of the beacon and execution clients",
+			[]string{"client"}, nil,
+		),
 		minipoolBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "minipool_balance"),
 			"The total EL balance of all minipools belonging to this node",
 			nil, nil,
@@ -203,6 +214,7 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 		),
 		rp:               rp,
 		bc:               bc,
+		ec:               ec,
 		nodeAddress:      nodeAddress,
 		eventLogInterval: big.NewInt(int64(eventLogInterval)),
 		handledIntervals: map[uint64]bool{},
@@ -225,6 +237,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.depositedEth
 	channel <- collector.beaconBalance
 	channel <- collector.beaconShare
+	channel <- collector.clientSyncProgress
 	channel <- collector.minipoolBalance
 	channel <- collector.minipoolShare
 	channel <- collector.refundBalance
@@ -360,6 +373,28 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		beaconHead = _beaconHead
 		return nil
 	})
+
+	// get the beacon client sync status:
+	wg.Go(func() error {
+		syncStatus, err := collector.bc.GetSyncStatus()
+		if err != nil {
+			return fmt.Errorf("error getting beacon chain sync status: %w", err)
+		}
+
+		channel <- prometheus.MustNewConstMetric(
+			collector.clientSyncProgress, prometheus.GaugeValue, syncStatus.Progress, "beacon")
+		return nil
+	})
+	
+	// get the execution client sync status:
+	wg.Go(func() error {
+		syncStatus := collector.ec.CheckStatus(collector.cfg)
+
+		channel <- prometheus.MustNewConstMetric(
+			collector.clientSyncProgress, prometheus.GaugeValue, syncStatus.PrimaryClientStatus.SyncProgress, "execution")
+		return nil
+	})
+
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {

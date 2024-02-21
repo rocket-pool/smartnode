@@ -36,6 +36,7 @@ const (
 	MevBoostContainerName     string = "mev-boost"
 	NodeContainerName         string = "node"
 	PrometheusContainerName   string = "prometheus"
+	AlertmanagerContainerName string = "alertmanager"
 	ValidatorContainerName    string = "validator"
 	WatchtowerContainerName   string = "watchtower"
 )

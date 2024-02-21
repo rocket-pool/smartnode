@@ -1081,6 +1081,7 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 			config.GrafanaContainerName,
 			config.ExporterContainerName,
 			config.PrometheusContainerName,
+			config.AlertmanagerContainerName,
 		)
 	}
 
