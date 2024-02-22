@@ -15,7 +15,7 @@ import (
 func canLeave(c *cli.Context) (*api.SecurityCanLeaveResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -73,7 +73,7 @@ func canLeave(c *cli.Context) (*api.SecurityCanLeaveResponse, error) {
 func leave(c *cli.Context) (*api.SecurityLeaveResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)

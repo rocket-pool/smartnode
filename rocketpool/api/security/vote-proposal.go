@@ -17,7 +17,7 @@ import (
 func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.SecurityCanVoteOnProposalResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -114,7 +114,7 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.SecurityCanVoteO
 func voteOnProposal(c *cli.Context, proposalId uint64, support bool) (*api.SecurityVoteOnProposalResponse, error) {
 
 	// Get services
-	if err := services.RequireNodeTrusted(c); err != nil {
+	if err := services.RequireNodeSecurityMember(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
