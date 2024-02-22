@@ -207,7 +207,7 @@ func nodeStakeRpl(c *cli.Context) error {
 			amountWei = minAmount8
 		case 1:
 			amountWei = minAmount16
-		case 3:
+		case 2:
 			amountWei = &rplBalance
 		}
 
