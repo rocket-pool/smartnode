@@ -23,7 +23,7 @@ type MetricsConfigPage struct {
 	watchtowerMetricsPortBox   *parameterizedFormItem
 	grafanaItems               []*parameterizedFormItem
 	prometheusItems            []*parameterizedFormItem
-	alertmanagerItems					 []*parameterizedFormItem
+	alertmanagerItems          []*parameterizedFormItem
 	exporterItems              []*parameterizedFormItem
 	enableBitflyNodeMetricsBox *parameterizedFormItem
 	bitflyNodeMetricsItems     []*parameterizedFormItem
