@@ -312,6 +312,25 @@ func getStatus(c *cli.Context) error {
 		fmt.Println("The node is not registered with Rocket Pool.")
 	}
 
+	// Alerts
+	fmt.Printf("\n%s=== Alerts ===%s\n", colorGreen, colorReset)
+	for _, alert := range status.Alerts {
+		severity := alert.Severity()
+		suppressed := ""
+		if alert.IsSuppressed() {
+			suppressed = " (suppressed)"
+		}
+		alertColor := colorYellow
+		if alert.Severity() == "critical" {
+			alertColor = colorRed
+		}
+		fmt.Printf("%s%s%s%s %s: %s\n", alertColor, severity, suppressed, colorReset, alert.Summary(), alert.Description())
+	}
+
+	if len(status.Alerts) == 0 {
+		fmt.Println("No alerts are currently active.")
+	}
+
 	// Return
 	return nil
 

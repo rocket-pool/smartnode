@@ -13,7 +13,7 @@ import (
 const alertmanagerTag string = "prom/alertmanager:v0.26.0"
 
 const AlertmanagerConfigTemplate string = "alertmanager.tmpl"
-const AlertmanagerConfigFile     string = "alertmanager.yml"
+const AlertmanagerConfigFile string = "alertmanager.yml"
 
 // Defaults
 const defaultAlertmanagerPort uint16 = 9093
@@ -47,7 +47,7 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 			Description:        "The port Alertmanager will listen on.",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultAlertmanagerPort},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager,config.ContainerID_Prometheus},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager, config.ContainerID_Prometheus},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
@@ -112,7 +112,6 @@ func (cfg *AlertmanagerConfig) GetOpenPorts() string {
 
 // Load the Alertmanager template, do an template variable substitution, and save it
 func (cfg *AlertmanagerConfig) UpdateConfigurationFile(configPath string) error {
-	fmt.Printf("Updating Alertmanager configuration file...\n")
 	templatePath, err := homedir.Expand(fmt.Sprintf("%s/alerting/%s", configPath, AlertmanagerConfigTemplate))
 	if err != nil {
 		return fmt.Errorf("error expanding Alertmanager template path: %w", err)
