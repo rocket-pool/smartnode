@@ -17,6 +17,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
@@ -149,6 +150,9 @@ func (t *stakePrelaunchMinipools) run(state *state.NetworkState) error {
 		}
 		if success {
 			successCount++
+			alerting.AlertStakedMinipool(t.cfg, mpd.MinipoolAddress, true)
+		} else {
+			alerting.AlertStakedMinipool(t.cfg, mpd.MinipoolAddress, false)
 		}
 	}
 
