@@ -17,6 +17,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -131,7 +132,10 @@ func (t *promoteMinipools) run(state *state.NetworkState) error {
 		_, err := t.promoteMinipool(mpd, opts)
 		if err != nil {
 			t.log.Println(fmt.Errorf("Could not promote minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
+			alerting.AlertMinipoolPromoted(t.cfg, mpd.MinipoolAddress, false)
 			return err
+		} else {
+			alerting.AlertMinipoolPromoted(t.cfg, mpd.MinipoolAddress, false)
 		}
 	}
 

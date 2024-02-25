@@ -150,9 +150,9 @@ func (t *stakePrelaunchMinipools) run(state *state.NetworkState) error {
 		}
 		if success {
 			successCount++
-			alerting.AlertStakedMinipool(t.cfg, mpd.MinipoolAddress, true)
+			alerting.AlertMinipoolStaked(t.cfg, mpd.MinipoolAddress, true)
 		} else {
-			alerting.AlertStakedMinipool(t.cfg, mpd.MinipoolAddress, false)
+			alerting.AlertMinipoolStaked(t.cfg, mpd.MinipoolAddress, false)
 		}
 	}
 

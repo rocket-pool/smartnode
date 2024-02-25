@@ -13,6 +13,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
+const (
+	DefaultEndsAtDurationForSeverityInfo     = time.Minute * 5
+	DefaultEndsAtDurationForSeverityCritical = time.Minute * 60
+)
+
 // fetches the current alerts directly the alertmanager container/application's API.
 func FetchAlerts(cfg *config.RocketPoolConfig) ([]*models.GettableAlert, error) {
 	// NOTE: don't log to stdout here since this method is on the "api" path and all stdout is parsed as a json "api" response.
@@ -33,26 +38,57 @@ func FetchAlerts(cfg *config.RocketPoolConfig) ([]*models.GettableAlert, error) 
 	return resp.Payload, nil
 }
 
-// Sends an alert when the node automatically staked a minipool or attempted to (success or failure).
+// Sends an alert when the node automatically prompted a minipool or attempted to (success or failure).
 // If alerting/metrics are disabled, this function does nothing.
-func AlertStakedMinipool(cfg *config.RocketPoolConfig, minipoolAddress common.Address, succeeded bool) error {
+func AlertMinipoolPromoted(cfg *config.RocketPoolConfig, minipoolAddress common.Address, succeeded bool) error {
 	if !isAlertingEnabled(cfg) {
-		logMessage("alerting is disabled, not sending AlertStakedMinipool.")
+		logMessage("alerting is disabled, not sending AlertMinipoolPromoted.")
 		return nil
 	}
 
 	// prepare the alert information:
-	endsAt := strfmt.DateTime(time.Now().Add(time.Minute * 5))
+	endsAt := strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityInfo))
 	severity := SeverityInfo
 	succeededOrFailed := "succeeded"
 	if !succeeded {
 		succeededOrFailed = "failed"
 		severity = SeverityCritical
-		endsAt = strfmt.DateTime(time.Now().Add(time.Minute * 60))
+		endsAt = strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityCritical))
 	}
 
 	alert := createAlert(
-		fmt.Sprintf("StakedMinipool-%s-%s", succeededOrFailed, minipoolAddress.Hex()),
+		fmt.Sprintf("MinipoolPromoted-%s-%s", succeededOrFailed, minipoolAddress.Hex()),
+		fmt.Sprintf("Minipool %s %s", minipoolAddress.Hex(), succeededOrFailed),
+		fmt.Sprintf("The vacant minipool with address %s promoted with status %s.", minipoolAddress.Hex(), succeededOrFailed),
+		severity,
+		endsAt,
+		map[string]string{
+			"minipool": minipoolAddress.Hex(),
+		},
+	)
+	return sendAlert(alert, cfg)
+}
+
+// Sends an alert when the node automatically staked a minipool or attempted to (success or failure).
+// If alerting/metrics are disabled, this function does nothing.
+func AlertMinipoolStaked(cfg *config.RocketPoolConfig, minipoolAddress common.Address, succeeded bool) error {
+	if !isAlertingEnabled(cfg) {
+		logMessage("alerting is disabled, not sending AlertMinipoolStaked.")
+		return nil
+	}
+
+	// prepare the alert information:
+	endsAt := strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityInfo))
+	severity := SeverityInfo
+	succeededOrFailed := "succeeded"
+	if !succeeded {
+		succeededOrFailed = "failed"
+		severity = SeverityCritical
+		endsAt = strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityCritical))
+	}
+
+	alert := createAlert(
+		fmt.Sprintf("MinipoolStaked-%s-%s", succeededOrFailed, minipoolAddress.Hex()),
 		fmt.Sprintf("Minipool %s %s", minipoolAddress.Hex(), succeededOrFailed),
 		fmt.Sprintf("The minipool with address %s staked with status %s.", minipoolAddress.Hex(), succeededOrFailed),
 		severity,
