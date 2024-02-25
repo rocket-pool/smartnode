@@ -38,6 +38,28 @@ func FetchAlerts(cfg *config.RocketPoolConfig) ([]*models.GettableAlert, error) 
 	return resp.Payload, nil
 }
 
+func AlertMinipoolBondReduced(cfg *config.RocketPoolConfig, minipoolAddress common.Address, succeeded bool) error {
+	if !isAlertingEnabled(cfg) {
+		logMessage("alerting is disabled, not sending AlertMinipoolBondReduced.")
+		return nil
+	}
+
+	// prepare the alert information:
+	endsAt, severity, succeededOrFailedText := getAlertSettingsForEvent(succeeded)
+	alert := createAlert(
+		fmt.Sprintf("MinipoolBondReduced-%s-%s", succeededOrFailedText, minipoolAddress.Hex()),
+		fmt.Sprintf("Minipool %s reduce bond %s", minipoolAddress.Hex(), succeededOrFailedText),
+		fmt.Sprintf("The minipool with address %s reduced bond with status %s.", minipoolAddress.Hex(), succeededOrFailedText),
+		severity,
+		endsAt,
+		map[string]string{
+			"minipool": minipoolAddress.Hex(),
+		},
+	)
+	return sendAlert(alert, cfg)
+
+}
+
 // Sends an alert when the node automatically prompted a minipool or attempted to (success or failure).
 // If alerting/metrics are disabled, this function does nothing.
 func AlertMinipoolPromoted(cfg *config.RocketPoolConfig, minipoolAddress common.Address, succeeded bool) error {
@@ -47,19 +69,11 @@ func AlertMinipoolPromoted(cfg *config.RocketPoolConfig, minipoolAddress common.
 	}
 
 	// prepare the alert information:
-	endsAt := strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityInfo))
-	severity := SeverityInfo
-	succeededOrFailed := "succeeded"
-	if !succeeded {
-		succeededOrFailed = "failed"
-		severity = SeverityCritical
-		endsAt = strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityCritical))
-	}
-
+	endsAt, severity, succeededOrFailedText := getAlertSettingsForEvent(succeeded)
 	alert := createAlert(
-		fmt.Sprintf("MinipoolPromoted-%s-%s", succeededOrFailed, minipoolAddress.Hex()),
-		fmt.Sprintf("Minipool %s %s", minipoolAddress.Hex(), succeededOrFailed),
-		fmt.Sprintf("The vacant minipool with address %s promoted with status %s.", minipoolAddress.Hex(), succeededOrFailed),
+		fmt.Sprintf("MinipoolPromoted-%s-%s", succeededOrFailedText, minipoolAddress.Hex()),
+		fmt.Sprintf("Minipool %s promote %s", minipoolAddress.Hex(), succeededOrFailedText),
+		fmt.Sprintf("The vacant minipool with address %s promoted with status %s.", minipoolAddress.Hex(), succeededOrFailedText),
 		severity,
 		endsAt,
 		map[string]string{
@@ -78,19 +92,12 @@ func AlertMinipoolStaked(cfg *config.RocketPoolConfig, minipoolAddress common.Ad
 	}
 
 	// prepare the alert information:
-	endsAt := strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityInfo))
-	severity := SeverityInfo
-	succeededOrFailed := "succeeded"
-	if !succeeded {
-		succeededOrFailed = "failed"
-		severity = SeverityCritical
-		endsAt = strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityCritical))
-	}
+	endsAt, severity, succeededOrFailedText := getAlertSettingsForEvent(succeeded)
 
 	alert := createAlert(
-		fmt.Sprintf("MinipoolStaked-%s-%s", succeededOrFailed, minipoolAddress.Hex()),
-		fmt.Sprintf("Minipool %s %s", minipoolAddress.Hex(), succeededOrFailed),
-		fmt.Sprintf("The minipool with address %s staked with status %s.", minipoolAddress.Hex(), succeededOrFailed),
+		fmt.Sprintf("MinipoolStaked-%s-%s", succeededOrFailedText, minipoolAddress.Hex()),
+		fmt.Sprintf("Minipool %s stake %s", minipoolAddress.Hex(), succeededOrFailedText),
+		fmt.Sprintf("The minipool with address %s staked with status %s.", minipoolAddress.Hex(), succeededOrFailedText),
 		severity,
 		endsAt,
 		map[string]string{
@@ -98,6 +105,21 @@ func AlertMinipoolStaked(cfg *config.RocketPoolConfig, minipoolAddress common.Ad
 		},
 	)
 	return sendAlert(alert, cfg)
+}
+
+// Gets various settings for an alert based on whether a process succeeded or failed.
+func getAlertSettingsForEvent(succeeded bool) (strfmt.DateTime, Severity, string) {
+	endsAt := strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityInfo))
+	severity := SeverityInfo
+	if !succeeded {
+		severity = SeverityCritical
+		endsAt = strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityCritical))
+	}
+	succeededOrFailedText := "failed"
+	if succeeded {
+		succeededOrFailedText = "succeeded"
+	}
+	return endsAt, severity, succeededOrFailedText
 }
 
 func AlertExecutionClientSyncComplete(cfg *config.RocketPoolConfig) error {

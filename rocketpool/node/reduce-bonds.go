@@ -19,6 +19,7 @@ import (
 
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -176,7 +177,10 @@ func (t *reduceBonds) run(state *state.NetworkState) error {
 		success, err := t.reduceBond(mp, windowStart, windowLength, latestBlockTime, opts)
 		if err != nil {
 			t.log.Println(fmt.Errorf("could not reduce bond for minipool %s: %w", mp.MinipoolAddress.Hex(), err))
+			alerting.AlertMinipoolBondReduced(t.cfg, mp.MinipoolAddress, false)
 			return err
+		} else {
+			alerting.AlertMinipoolBondReduced(t.cfg, mp.MinipoolAddress, true)
 		}
 		if success {
 			successCount++
