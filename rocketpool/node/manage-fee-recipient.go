@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpsvc "github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -120,12 +121,15 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 		m.log.Println("***ERROR***")
 		m.log.Printlnf("Error updating fee recipient files: %s", err.Error())
 		m.log.Println("Shutting down the validator client for safety to prevent you from being penalized...")
+		alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, false)
 
 		err = validator.StopValidator(m.cfg, m.bc, &m.log, m.d)
 		if err != nil {
 			return fmt.Errorf("error stopping validator client: %w", err)
 		}
 		return nil
+	} else {
+		alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, true)
 	}
 
 	// Restart the VC

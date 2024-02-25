@@ -19,6 +19,7 @@ const (
 )
 
 // fetches the current alerts directly the alertmanager container/application's API.
+// If alerting/metrics are disabled, this function returns an empty array.
 func FetchAlerts(cfg *config.RocketPoolConfig) ([]*models.GettableAlert, error) {
 	// NOTE: don't log to stdout here since this method is on the "api" path and all stdout is parsed as a json "api" response.
 	if !isAlertingEnabled(cfg) {
@@ -31,13 +32,34 @@ func FetchAlerts(cfg *config.RocketPoolConfig) ([]*models.GettableAlert, error) 
 	// request alerts:
 	resp, err := client.Alert.GetAlerts(nil)
 	if err != nil {
-		//logMessage("ERROR fetching alerts from alertmanager.")
 		return nil, fmt.Errorf("error fetching alerts from alertmanager: %w", err)
 	}
-	//logMessage("fetching alerts from alertmanager succeeded (%d).", len(resp.Payload))
 	return resp.Payload, nil
 }
 
+// Sends an alert when the node automatically changed a node's fee recipient or attempted to (success or failure).
+// If alerting/metrics are disabled, this function does nothing.
+func AlertFeeRecipientChanged(cfg *config.RocketPoolConfig, newFeeRecipient common.Address, succeeded bool) error {
+	if !isAlertingEnabled(cfg) {
+		logMessage("alerting is disabled, not sending AlertFeeRecipientChanged.")
+		return nil
+	}
+
+	// prepare the alert information:
+	endsAt, severity, succeededOrFailedText := getAlertSettingsForEvent(succeeded)
+	alert := createAlert(
+		fmt.Sprintf("AlertFeeRecipientChanged-%s-%s", succeededOrFailedText, newFeeRecipient.Hex()),
+		fmt.Sprintf("Fee Recipient Change %s", succeededOrFailedText),
+		fmt.Sprintf("The fee recipient was changed to %s with status %s.", newFeeRecipient.Hex(), succeededOrFailedText),
+		severity,
+		endsAt,
+		map[string]string{},
+	)
+	return sendAlert(alert, cfg)
+}
+
+// Sends an alert when the node automatically reduced a minipool's bond or attempted to (success or failure).
+// If alerting/metrics are disabled, this function does nothing.
 func AlertMinipoolBondReduced(cfg *config.RocketPoolConfig, minipoolAddress common.Address, succeeded bool) error {
 	if !isAlertingEnabled(cfg) {
 		logMessage("alerting is disabled, not sending AlertMinipoolBondReduced.")
