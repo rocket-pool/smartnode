@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"math/big"
 	"time"
 
@@ -116,6 +117,23 @@ func (n NodeAlert) Severity() string {
 		return ""
 	}
 	return value
+}
+
+func (n NodeAlert) ColorString() string {
+	const (
+		colorReset  string = "\033[0m"
+		colorRed    string = "\033[31m"
+		colorYellow string = "\033[33m"
+	)
+	suppressed := ""
+	if n.IsSuppressed() {
+		suppressed = " (suppressed)"
+	}
+	alertColor := colorYellow
+	if n.Severity() == "critical" {
+		alertColor = colorRed
+	}
+	return fmt.Sprintf("%s%s%s%s %s: %s", alertColor, n.Severity(), suppressed, colorReset, n.Summary(), n.Description())
 }
 
 type CanRegisterNodeResponse struct {

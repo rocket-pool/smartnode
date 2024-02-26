@@ -117,19 +117,17 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 
 	// Regenerate the fee recipient files
 	err = rpsvc.UpdateFeeRecipientFile(correctFeeRecipient, m.cfg)
+	alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, err == nil)
 	if err != nil {
 		m.log.Println("***ERROR***")
 		m.log.Printlnf("Error updating fee recipient files: %s", err.Error())
 		m.log.Println("Shutting down the validator client for safety to prevent you from being penalized...")
-		alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, false)
 
 		err = validator.StopValidator(m.cfg, m.bc, &m.log, m.d)
 		if err != nil {
 			return fmt.Errorf("error stopping validator client: %w", err)
 		}
 		return nil
-	} else {
-		alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, true)
 	}
 
 	// Restart the VC

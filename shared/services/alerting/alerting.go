@@ -24,7 +24,7 @@ func FetchAlerts(cfg *config.RocketPoolConfig) ([]*models.GettableAlert, error) 
 	// NOTE: don't log to stdout here since this method is on the "api" path and all stdout is parsed as a json "api" response.
 	if !isAlertingEnabled(cfg) {
 		// metrics are disabled, so no alerts will be fetched.
-		return make([]*models.GettableAlert, 0), nil
+		return nil, nil
 	}
 
 	//logMessage("Fetching alerts from alertmanager...")

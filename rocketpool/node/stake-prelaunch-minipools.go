@@ -144,15 +144,13 @@ func (t *stakePrelaunchMinipools) run(state *state.NetworkState) error {
 	successCount := 0
 	for _, mpd := range minipools {
 		success, err := t.stakeMinipool(mpd, state, opts)
+		alerting.AlertMinipoolStaked(t.cfg, mpd.MinipoolAddress, success && err == nil)
 		if err != nil {
 			t.log.Println(fmt.Errorf("Could not stake minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
 			return err
 		}
 		if success {
 			successCount++
-			alerting.AlertMinipoolStaked(t.cfg, mpd.MinipoolAddress, true)
-		} else {
-			alerting.AlertMinipoolStaked(t.cfg, mpd.MinipoolAddress, false)
 		}
 	}
 

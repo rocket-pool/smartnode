@@ -528,7 +528,7 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 
 	cfg, err := getConfig(c)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error getting config %w", err)
 	}
 
 	// Wait for sync

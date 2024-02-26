@@ -175,12 +175,10 @@ func (t *reduceBonds) run(state *state.NetworkState) error {
 	successCount := 0
 	for _, mp := range minipools {
 		success, err := t.reduceBond(mp, windowStart, windowLength, latestBlockTime, opts)
+		alerting.AlertMinipoolBondReduced(t.cfg, mp.MinipoolAddress, err == nil)
 		if err != nil {
 			t.log.Println(fmt.Errorf("could not reduce bond for minipool %s: %w", mp.MinipoolAddress.Hex(), err))
-			alerting.AlertMinipoolBondReduced(t.cfg, mp.MinipoolAddress, false)
 			return err
-		} else {
-			alerting.AlertMinipoolBondReduced(t.cfg, mp.MinipoolAddress, true)
 		}
 		if success {
 			successCount++

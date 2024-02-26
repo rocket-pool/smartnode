@@ -130,12 +130,10 @@ func (t *promoteMinipools) run(state *state.NetworkState) error {
 	// Promote minipools
 	for _, mpd := range minipools {
 		_, err := t.promoteMinipool(mpd, opts)
+		alerting.AlertMinipoolPromoted(t.cfg, mpd.MinipoolAddress, err == nil)
 		if err != nil {
 			t.log.Println(fmt.Errorf("Could not promote minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
-			alerting.AlertMinipoolPromoted(t.cfg, mpd.MinipoolAddress, false)
 			return err
-		} else {
-			alerting.AlertMinipoolPromoted(t.cfg, mpd.MinipoolAddress, false)
 		}
 	}
 

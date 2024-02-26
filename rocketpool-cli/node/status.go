@@ -313,22 +313,16 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Alerts
-	fmt.Printf("\n%s=== Alerts ===%s\n", colorGreen, colorReset)
-	for _, alert := range status.Alerts {
-		severity := alert.Severity()
-		suppressed := ""
-		if alert.IsSuppressed() {
-			suppressed = " (suppressed)"
+	if cfg.EnableMetrics.Value == true {
+		// only print alerts if enabled; to avoid misleading the user to thinking everything is fine (since we really don't know).
+		fmt.Printf("\n%s=== Alerts ===%s\n", colorGreen, colorReset)
+		for _, alert := range status.Alerts {
+			fmt.Println(alert.ColorString())
 		}
-		alertColor := colorYellow
-		if alert.Severity() == "critical" {
-			alertColor = colorRed
-		}
-		fmt.Printf("%s%s%s%s %s: %s\n", alertColor, severity, suppressed, colorReset, alert.Summary(), alert.Description())
-	}
 
-	if len(status.Alerts) == 0 {
-		fmt.Println("No alerts are currently active.")
+		if len(status.Alerts) == 0 {
+			fmt.Println("No alerts are currently active.")
+		}
 	}
 
 	// Return
