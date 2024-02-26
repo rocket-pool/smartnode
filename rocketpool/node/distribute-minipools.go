@@ -15,6 +15,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
@@ -163,8 +164,11 @@ func (t *distributeMinipools) run(state *state.NetworkState) error {
 	for _, mpd := range minipools {
 		success, err := t.distributeMinipool(mpd, opts)
 		if err != nil {
+			alerting.AlertMinipoolBalanceDistributed(t.cfg, mpd.MinipoolAddress, false)
 			t.log.Println(fmt.Errorf("Could not distribute balance of minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
 			return err
+		} else {
+			alerting.AlertMinipoolBalanceDistributed(t.cfg, mpd.MinipoolAddress, true)
 		}
 		if success {
 			successCount++

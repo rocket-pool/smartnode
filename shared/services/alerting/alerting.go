@@ -82,6 +82,29 @@ func AlertMinipoolBondReduced(cfg *config.RocketPoolConfig, minipoolAddress comm
 
 }
 
+// Sends an alert when the node automatically distributes a minipool's balance (success or failure).
+// If alerting/metrics are disabled, this function does nothing.
+func AlertMinipoolBalanceDistributed(cfg *config.RocketPoolConfig, minipoolAddress common.Address, succeeded bool) error {
+	if !isAlertingEnabled(cfg) {
+		logMessage("alerting is disabled, not sending AlertMinipoolBalanceDistributed.")
+		return nil
+	}
+
+	// prepare the alert information:
+	endsAt, severity, succeededOrFailedText := getAlertSettingsForEvent(succeeded)
+	alert := createAlert(
+		fmt.Sprintf("MinipoolBalanceDistributed-%s-%s", succeededOrFailedText, minipoolAddress.Hex()),
+		fmt.Sprintf("Minipool %s balance distributed %s", minipoolAddress.Hex(), succeededOrFailedText),
+		fmt.Sprintf("The minipool with address %s had its balance distributed with status %s.", minipoolAddress.Hex(), succeededOrFailedText),
+		severity,
+		endsAt,
+		map[string]string{
+			"minipool": minipoolAddress.Hex(),
+		},
+	)
+	return sendAlert(alert, cfg)
+}
+
 // Sends an alert when the node automatically prompted a minipool or attempted to (success or failure).
 // If alerting/metrics are disabled, this function does nothing.
 func AlertMinipoolPromoted(cfg *config.RocketPoolConfig, minipoolAddress common.Address, succeeded bool) error {
