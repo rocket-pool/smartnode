@@ -9,7 +9,7 @@ import (
 
 // Constants
 const (
-	mevBoostTag                 string = "flashbots/mev-boost:1.6"
+	mevBoostTag                 string = "flashbots/mev-boost:1.7"
 	mevDocsUrl                  string = "https://docs.rocketpool.net/guides/node/mev.html"
 	RegulatedRelayDescription   string = "Select this to enable the relays that comply with government regulations (e.g. OFAC sanctions), "
 	UnregulatedRelayDescription string = "Select this to enable the relays that do not follow any sanctions lists (do not censor transactions), "
