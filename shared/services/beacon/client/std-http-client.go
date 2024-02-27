@@ -39,6 +39,7 @@ const (
 	RequestVoluntaryExitPath               = "/eth/v1/beacon/pool/voluntary_exits"
 	RequestAttestationsPath                = "/eth/v1/beacon/blocks/%s/attestations"
 	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%s"
+	RequestBeaconBlockHeaderPath           = "/eth/v1/beacon/headers/%s"
 	RequestValidatorSyncDuties             = "/eth/v1/validator/duties/sync/%s"
 	RequestValidatorProposerDuties         = "/eth/v1/validator/duties/proposer/%s"
 	RequestWithdrawalCredentialsChangePath = "/eth/v1/beacon/pool/bls_to_execution_changes"
@@ -537,6 +538,22 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 	return beaconBlock, true, nil
 }
 
+func (c *StandardHttpClient) GetBeaconBlockHeader(blockId string) (beacon.BeaconBlockHeader, bool, error) {
+	block, exists, err := c.getBeaconBlockHeader(blockId)
+	if err != nil {
+		fmt.Printf("Error getting beacon block header: %s\n", err.Error())
+		return beacon.BeaconBlockHeader{}, false, err
+	}
+	if !exists {
+		return beacon.BeaconBlockHeader{}, false, nil
+	}
+	beaconBlock := beacon.BeaconBlockHeader{
+		Slot:          uint64(block.Data.Header.Message.Slot),
+		ProposerIndex: block.Data.Header.Message.ProposerIndex,
+	}
+	return beaconBlock, true, nil
+}
+
 // Get the attestation committees for the given epoch, or the current epoch if nil
 func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error) {
 	response, err := c.getCommittees("head", epoch)
@@ -788,6 +805,25 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 	var beaconBlock BeaconBlockResponse
 	if err := json.Unmarshal(responseBody, &beaconBlock); err != nil {
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not decode beacon block data: %w", err)
+	}
+	return beaconBlock, true, nil
+}
+
+// Get the specified beacon block header
+func (c *StandardHttpClient) getBeaconBlockHeader(blockId string) (BeaconBlockHeaderResponse, bool, error) {
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockHeaderPath, blockId))
+	if err != nil {
+		return BeaconBlockHeaderResponse{}, false, fmt.Errorf("could not get beacon block header data: %w", err)
+	}
+	if status == http.StatusNotFound {
+		return BeaconBlockHeaderResponse{}, false, nil
+	}
+	if status != http.StatusOK {
+		return BeaconBlockHeaderResponse{}, false, fmt.Errorf("could not get beacon block header data: HTTP status %d; response body: '%s'", status, string(responseBody))
+	}
+	var beaconBlock BeaconBlockHeaderResponse
+	if err := json.Unmarshal(responseBody, &beaconBlock); err != nil {
+		return BeaconBlockHeaderResponse{}, false, fmt.Errorf("could not decode beacon block header data: %w", err)
 	}
 	return beaconBlock, true, nil
 }

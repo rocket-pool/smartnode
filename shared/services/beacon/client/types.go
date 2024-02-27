@@ -101,6 +101,19 @@ type BeaconBlockResponse struct {
 		} `json:"message"`
 	} `json:"data"`
 }
+type BeaconBlockHeaderResponse struct {
+	Finalized bool `json:"finalized"`
+	Data      struct {
+		Root      string `json:"root"`
+		Canonical bool   `json:"canonical"`
+		Header    struct {
+			Message struct {
+				Slot          uinteger `json:"slot"`
+				ProposerIndex string   `json:"proposer_index"`
+			} `json:"message"`
+		} `json:"header"`
+	} `json:"data"`
+}
 type ValidatorsResponse struct {
 	Data []Validator `json:"data"`
 }

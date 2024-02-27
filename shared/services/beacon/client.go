@@ -64,6 +64,10 @@ type BeaconBlock struct {
 	FeeRecipient         common.Address
 	ExecutionBlockNumber uint64
 }
+type BeaconBlockHeader struct {
+	Slot          uint64
+	ProposerIndex string
+}
 
 // Committees is an interface as an optimization- since committees responses
 // are quite large, there's a decent cpu/memory improvement to removing the
@@ -134,6 +138,7 @@ type Client interface {
 	GetEth2DepositContract() (Eth2DepositContract, error)
 	GetAttestations(blockId string) ([]AttestationInfo, bool, error)
 	GetBeaconBlock(blockId string) (BeaconBlock, bool, error)
+	GetBeaconBlockHeader(blockId string) (BeaconBlockHeader, bool, error)
 	GetBeaconHead() (BeaconHead, error)
 	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)

@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -21,6 +22,9 @@ type BeaconCollector struct {
 
 	// The number of upcoming proposals for this node's validators
 	upcomingProposals *prometheus.Desc
+
+	// The number of recent proposals for this node's validators
+	recentProposals *prometheus.Desc
 
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
@@ -57,6 +61,10 @@ func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpo
 			"The number of proposals assigned to validators in this epoch and the next",
 			nil, nil,
 		),
+		recentProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "recent_proposals"),
+			"The number of block proposals made by validators in the most recent finalized epoch",
+			nil, nil,
+		),
 		rp:          rp,
 		bc:          bc,
 		ec:          ec,
@@ -71,6 +79,7 @@ func (collector *BeaconCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.activeSyncCommittee
 	channel <- collector.upcomingSyncCommittee
 	channel <- collector.upcomingProposals
+	channel <- collector.recentProposals
 }
 
 // Collect the latest metric values and pass them to Prometheus
@@ -166,6 +175,18 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
+	recentProposalCount := float64(0)
+	wg.Go(func() error {
+		// check the latest finalized epoch for proposals:
+		count, err := collector.getProposedBlockCount(validatorIndices, head, state.BeaconConfig.SlotsPerEpoch)
+		if err != nil {
+			collector.logError(fmt.Errorf("error getting recent proposed block count: %w", err))
+			return err
+		}
+		recentProposalCount = count
+		return nil
+	})
+
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		collector.logError(err)
@@ -178,7 +199,35 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.upcomingSyncCommittee, prometheus.GaugeValue, upcomingSyncCommittee)
 	channel <- prometheus.MustNewConstMetric(
 		collector.upcomingProposals, prometheus.GaugeValue, upcomingProposals)
+	channel <- prometheus.MustNewConstMetric(
+		collector.recentProposals, prometheus.GaugeValue, recentProposalCount)
+}
 
+func (collector *BeaconCollector) getProposedBlockCount(validatorIndices []string, head beacon.BeaconHead, slotsPerEpoch uint64) (float64, error) {
+	// prepare for quick lookups in event of many validators:
+	indexLookup := make(map[string]string, len(validatorIndices))
+	for _, index := range validatorIndices {
+		indexLookup[index] = index
+	}
+	latestSlot := head.FinalizedEpoch*slotsPerEpoch + (slotsPerEpoch - 1)
+
+	// check each block in the most recent epoch for our validators:
+	proposedBlockCount := float64(0)
+
+	for slot := latestSlot; slot > latestSlot-slotsPerEpoch; slot-- {
+		block, hasBlock, err := collector.bc.GetBeaconBlockHeader(strconv.FormatUint(slot, 10))
+		if err != nil {
+			collector.logError(fmt.Errorf("error getting beacon block: %w", err))
+			continue
+		}
+		if !hasBlock {
+			continue
+		}
+		if _, ok := indexLookup[block.ProposerIndex]; ok {
+			proposedBlockCount++
+		}
+	}
+	return proposedBlockCount, nil
 }
 
 // Log error messages
