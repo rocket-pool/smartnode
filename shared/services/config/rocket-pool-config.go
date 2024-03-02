@@ -1520,6 +1520,7 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Grafana.Port, errors)
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.MevBoost.Port, errors)
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Prometheus.Port, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Alertmanager.Port, errors)
 	_, errors = addAndCheckForDuplicate(portMap, cfg.Lighthouse.P2pQuicPort, errors)
 
 	return errors
