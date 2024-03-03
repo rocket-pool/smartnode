@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
@@ -60,25 +59,7 @@ func (configPage *MevBoostConfigPage) createContent() {
 	// Create the layout
 	configPage.layout = newStandardLayout()
 	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "MEV-Boost Settings")
-
-	// Return to the home page after pressing Escape
-	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		// Return to the home page
-		if event.Key() == tcell.KeyEsc {
-			// Close all dropdowns and break if one was open
-			for _, param := range configPage.layout.parameters {
-				dropDown, ok := param.item.(*DropDown)
-				if ok && dropDown.open {
-					dropDown.CloseList(configPage.home.md.app)
-					return nil
-				}
-			}
-
-			configPage.home.md.setPage(configPage.home.homePage)
-			return nil
-		}
-		return event
-	})
+	configPage.layout.setupEscapeReturnHomeHandler(configPage.home.md, configPage.home.homePage)
 
 	// Set up the form items
 	configPage.enableBox = createParameterizedCheckbox(&configPage.masterConfig.EnableMevBoost)
