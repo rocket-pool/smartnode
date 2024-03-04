@@ -40,6 +40,7 @@ type AlertmanagerConfig struct {
 	// The Discord webhook URL for alert notifications
 	DiscordWebhookURL config.Parameter `yaml:"discordWebhookURL,omitempty"`
 
+	// Alerts configured in prometheus rule configuration file:
 	AlertEnabled_ClientSyncStatusBeacon    config.Parameter `yaml:"alertEnabled_ClientSyncStatusBeacon,omitempty"`
 	AlertEnabled_ClientSyncStatusExecution config.Parameter `yaml:"alertEnabled_ClientSyncStatusBeacon,omitempty"`
 	AlertEnabled_UpcomingSyncCommittee     config.Parameter `yaml:"alertEnabled_UpcomingSyncCommittee,omitempty"`
@@ -50,6 +51,14 @@ type AlertmanagerConfig struct {
 	AlertEnabled_LowDiskSpaceCritical      config.Parameter `yaml:"alertEnabled_LowDiskSpaceCritical,omitempty"`
 	AlertEnabled_OSUpdatesAvailable        config.Parameter `yaml:"alertEnabled_OSUpdatesAvailable,omitempty"`
 	AlertEnabled_RPUpdatesAvailable        config.Parameter `yaml:"alertEnabled_RPUpdatesAvailable,omitempty"`
+	// Alerts manually sent in alerting.go:
+	AlertEnabled_FeeRecipientChanged         config.Parameter `yaml:"alertEnabled_FeeRecipientChanged,omitempty"`
+	AlertEnabled_MinipoolBondReduced         config.Parameter `yaml:"alertEnabled_MinipoolBondReduced,omitempty"`
+	AlertEnabled_MinipoolBalanceDistributed  config.Parameter `yaml:"alertEnabled_MinipoolBalanceDistributed,omitempty"`
+	AlertEnabled_MinipoolPromoted            config.Parameter `yaml:"alertEnabled_MinipoolPromoted,omitempty"`
+	AlertEnabled_MinipoolStaked              config.Parameter `yaml:"alertEnabled_MinipoolStaked,omitempty"`
+	AlertEnabled_ExecutionClientSyncComplete config.Parameter `yaml:"alertEnabled_ExecutionClientSyncComplete,omitempty"`
+	AlertEnabled_BeaconClientSyncComplete    config.Parameter `yaml:"alertEnabled_BeaconClientSyncComplete,omitempty"`
 }
 
 func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
@@ -141,6 +150,34 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 		AlertEnabled_RPUpdatesAvailable: createParameterForAlertEnablement(
 			"RPUpdatesAvailable",
 			"Smartnode Update Available"),
+
+		AlertEnabled_FeeRecipientChanged: createParameterForAlertEnablement(
+			"FeeRecipientChanged",
+			"Fee Recipient Changed"),
+
+		AlertEnabled_MinipoolBondReduced: createParameterForAlertEnablement(
+			"MinipoolBondReduced",
+			"Minipool Bond Reduced"),
+
+		AlertEnabled_MinipoolBalanceDistributed: createParameterForAlertEnablement(
+			"MinipoolBalanceDistributed",
+			"Minipool Balance Distributed"),
+
+		AlertEnabled_MinipoolPromoted: createParameterForAlertEnablement(
+			"MinipoolPromoted",
+			"Minipool Promoted"),
+
+		AlertEnabled_MinipoolStaked: createParameterForAlertEnablement(
+			"MinipoolStaked",
+			"Minipool Staked"),
+
+		AlertEnabled_ExecutionClientSyncComplete: createParameterForAlertEnablement(
+			"ExecutionClientSyncComplete",
+			"execution client is synced"),
+
+		AlertEnabled_BeaconClientSyncComplete: createParameterForAlertEnablement(
+			"BeaconClientSyncComplete",
+			"beacon client is synced"),
 	}
 }
 
@@ -174,6 +211,13 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.AlertEnabled_LowDiskSpaceCritical,
 		&cfg.AlertEnabled_OSUpdatesAvailable,
 		&cfg.AlertEnabled_RPUpdatesAvailable,
+		&cfg.AlertEnabled_FeeRecipientChanged,
+		&cfg.AlertEnabled_MinipoolBondReduced,
+		&cfg.AlertEnabled_MinipoolBalanceDistributed,
+		&cfg.AlertEnabled_MinipoolPromoted,
+		&cfg.AlertEnabled_MinipoolStaked,
+		&cfg.AlertEnabled_ExecutionClientSyncComplete,
+		&cfg.AlertEnabled_BeaconClientSyncComplete,
 	}
 }
 

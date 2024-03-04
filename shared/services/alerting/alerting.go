@@ -45,10 +45,15 @@ func AlertFeeRecipientChanged(cfg *config.RocketPoolConfig, newFeeRecipient comm
 		return nil
 	}
 
+	if cfg.Alertmanager.AlertEnabled_FeeRecipientChanged.Value != true {
+		logMessage("alert for FeeRecipientChanged is disabled, not sending.")
+		return nil
+	}
+
 	// prepare the alert information:
 	endsAt, severity, succeededOrFailedText := getAlertSettingsForEvent(succeeded)
 	alert := createAlert(
-		fmt.Sprintf("AlertFeeRecipientChanged-%s-%s", succeededOrFailedText, newFeeRecipient.Hex()),
+		fmt.Sprintf("FeeRecipientChanged-%s-%s", succeededOrFailedText, newFeeRecipient.Hex()),
 		fmt.Sprintf("Fee Recipient Change %s", succeededOrFailedText),
 		fmt.Sprintf("The fee recipient was changed to %s with status %s.", newFeeRecipient.Hex(), succeededOrFailedText),
 		severity,
@@ -63,6 +68,11 @@ func AlertFeeRecipientChanged(cfg *config.RocketPoolConfig, newFeeRecipient comm
 func AlertMinipoolBondReduced(cfg *config.RocketPoolConfig, minipoolAddress common.Address, succeeded bool) error {
 	if !isAlertingEnabled(cfg) {
 		logMessage("alerting is disabled, not sending AlertMinipoolBondReduced.")
+		return nil
+	}
+
+	if cfg.Alertmanager.AlertEnabled_MinipoolBondReduced.Value != true {
+		logMessage("alert for MinipoolBondReduced is disabled, not sending.")
 		return nil
 	}
 
@@ -90,6 +100,11 @@ func AlertMinipoolBalanceDistributed(cfg *config.RocketPoolConfig, minipoolAddre
 		return nil
 	}
 
+	if cfg.Alertmanager.AlertEnabled_MinipoolBalanceDistributed.Value != true {
+		logMessage("alert for MinipoolBalanceDistributed is disabled, not sending.")
+		return nil
+	}
+
 	// prepare the alert information:
 	endsAt, severity, succeededOrFailedText := getAlertSettingsForEvent(succeeded)
 	alert := createAlert(
@@ -113,6 +128,11 @@ func AlertMinipoolPromoted(cfg *config.RocketPoolConfig, minipoolAddress common.
 		return nil
 	}
 
+	if cfg.Alertmanager.AlertEnabled_MinipoolPromoted.Value != true {
+		logMessage("alert for MinipoolPromoted is disabled, not sending.")
+		return nil
+	}
+
 	// prepare the alert information:
 	endsAt, severity, succeededOrFailedText := getAlertSettingsForEvent(succeeded)
 	alert := createAlert(
@@ -133,6 +153,11 @@ func AlertMinipoolPromoted(cfg *config.RocketPoolConfig, minipoolAddress common.
 func AlertMinipoolStaked(cfg *config.RocketPoolConfig, minipoolAddress common.Address, succeeded bool) error {
 	if !isAlertingEnabled(cfg) {
 		logMessage("alerting is disabled, not sending AlertMinipoolStaked.")
+		return nil
+	}
+
+	if cfg.Alertmanager.AlertEnabled_MinipoolStaked.Value != true {
+		logMessage("alert for MinipoolStaked is disabled, not sending.")
 		return nil
 	}
 
@@ -168,10 +193,18 @@ func getAlertSettingsForEvent(succeeded bool) (strfmt.DateTime, Severity, string
 }
 
 func AlertExecutionClientSyncComplete(cfg *config.RocketPoolConfig) error {
+	if cfg.Alertmanager.AlertEnabled_ExecutionClientSyncComplete.Value != true {
+		logMessage("alert for ExecutionClientSyncComplete is disabled, not sending.")
+		return nil
+	}
 	return alertClientSyncComplete(cfg, ClientKindExecution)
 }
 
 func AlertBeaconClientSyncComplete(cfg *config.RocketPoolConfig) error {
+	if cfg.Alertmanager.AlertEnabled_BeaconClientSyncComplete.Value != true {
+		logMessage("alert for BeaconClientSyncComplete is disabled, not sending.")
+		return nil
+	}
 	return alertClientSyncComplete(cfg, ClientKindBeacon)
 }
 
