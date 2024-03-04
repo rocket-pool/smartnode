@@ -223,9 +223,10 @@ func (collector *BeaconCollector) getProposedBlockCount(validatorIndices []strin
 		if !hasBlock {
 			continue
 		}
-		if _, ok := indexLookup[block.ProposerIndex]; ok {
-			proposedBlockCount++
+		if _, ok := indexLookup[block.ProposerIndex]; !ok {
+			continue
 		}
+		proposedBlockCount++
 	}
 	return proposedBlockCount, nil
 }
