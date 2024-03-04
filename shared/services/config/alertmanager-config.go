@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/mitchellh/go-homedir"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/template"
 	"github.com/rocket-pool/smartnode/shared/types/config"
@@ -11,9 +13,12 @@ import (
 
 // Constants
 const alertmanagerTag string = "prom/alertmanager:v0.26.0"
+const AlertmanagerConfigTemplate string = "alerting/alertmanager.tmpl"
+const AlertmanagerConfigFile string = "alerting/alertmanager.yml"
 
-const AlertmanagerConfigTemplate string = "alertmanager.tmpl"
-const AlertmanagerConfigFile string = "alertmanager.yml"
+// Note: Alerting rules are actually loaded by prometheus, but we control the alerting settings here.
+const AlertingRulesConfigTemplate string = "alerting/rules/default.tmpl"
+const AlertingRulesConfigFile string = "alerting/rules/default.yml"
 
 // Defaults
 const defaultAlertmanagerPort uint16 = 9093
@@ -34,6 +39,17 @@ type AlertmanagerConfig struct {
 
 	// The Discord webhook URL for alert notifications
 	DiscordWebhookURL config.Parameter `yaml:"discordWebhookURL,omitempty"`
+
+	AlertEnabled_ClientSyncStatusBeacon    config.Parameter `yaml:"alertEnabled_ClientSyncStatusBeacon,omitempty"`
+	AlertEnabled_ClientSyncStatusExecution config.Parameter `yaml:"alertEnabled_ClientSyncStatusBeacon,omitempty"`
+	AlertEnabled_UpcomingSyncCommittee     config.Parameter `yaml:"alertEnabled_UpcomingSyncCommittee,omitempty"`
+	AlertEnabled_ActiveSyncCommittee       config.Parameter `yaml:"alertEnabled_ActiveSyncCommittee,omitempty"`
+	AlertEnabled_UpcomingProposal          config.Parameter `yaml:"alertEnabled_UpcomingProposal,omitempty"`
+	AlertEnabled_RecentProposal            config.Parameter `yaml:"alertEnabled_RecentProposal,omitempty"`
+	AlertEnabled_LowDiskSpaceWarning       config.Parameter `yaml:"alertEnabled_LowDiskSpaceWarning,omitempty"`
+	AlertEnabled_LowDiskSpaceCritical      config.Parameter `yaml:"alertEnabled_LowDiskSpaceCritical,omitempty"`
+	AlertEnabled_OSUpdatesAvailable        config.Parameter `yaml:"alertEnabled_OSUpdatesAvailable,omitempty"`
+	AlertEnabled_RPUpdatesAvailable        config.Parameter `yaml:"alertEnabled_RPUpdatesAvailable,omitempty"`
 }
 
 func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
@@ -85,6 +101,60 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
+
+		AlertEnabled_ClientSyncStatusBeacon: createParameterForAlertEnablement(
+			"ClientSyncStatusBeacon",
+			"beacon client is not synced"),
+
+		AlertEnabled_ClientSyncStatusExecution: createParameterForAlertEnablement(
+			"ClientSyncStatusExecution",
+			"execution client is not synced"),
+
+		AlertEnabled_UpcomingSyncCommittee: createParameterForAlertEnablement(
+			"UpcomingSyncCommittee",
+			"about to become part of a sync committee"),
+
+		AlertEnabled_ActiveSyncCommittee: createParameterForAlertEnablement(
+			"ActiveSyncCommittee",
+			"part of a sync committee"),
+
+		AlertEnabled_UpcomingProposal: createParameterForAlertEnablement(
+			"UpcomingProposal",
+			"about to propose a block"),
+
+		AlertEnabled_RecentProposal: createParameterForAlertEnablement(
+			"RecentProposal",
+			"recently proposed a block"),
+
+		AlertEnabled_LowDiskSpaceWarning: createParameterForAlertEnablement(
+			"LowDiskSpaceWarning",
+			"low disk space"),
+
+		AlertEnabled_LowDiskSpaceCritical: createParameterForAlertEnablement(
+			"LowDiskSpaceCritical",
+			"critically low disk space"),
+
+		AlertEnabled_OSUpdatesAvailable: createParameterForAlertEnablement(
+			"OSUpdatesAvailable",
+			"OS updates available"),
+
+		AlertEnabled_RPUpdatesAvailable: createParameterForAlertEnablement(
+			"RPUpdatesAvailable",
+			"Smartnode Update Available"),
+	}
+}
+
+func createParameterForAlertEnablement(uniqueName string, label string) config.Parameter {
+	titleCaser := cases.Title(language.Und, cases.NoLower)
+	return config.Parameter{
+		ID:                 fmt.Sprintf("alertEnabled_%s", uniqueName),
+		Name:               fmt.Sprintf("Alert for %s", titleCaser.String(label)),
+		Description:        fmt.Sprintf("Enable an alert when %s", label),
+		Type:               config.ParameterType_Bool,
+		Default:            map[config.Network]interface{}{config.Network_All: true},
+		AffectsContainers:  []config.ContainerID{config.ContainerID_Prometheus},
+		CanBeBlank:         false,
+		OverwriteOnUpgrade: false,
 	}
 }
 
@@ -94,6 +164,16 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.OpenPort,
 		&cfg.ContainerTag,
 		&cfg.DiscordWebhookURL,
+		&cfg.AlertEnabled_ClientSyncStatusBeacon,
+		&cfg.AlertEnabled_ClientSyncStatusExecution,
+		&cfg.AlertEnabled_UpcomingSyncCommittee,
+		&cfg.AlertEnabled_ActiveSyncCommittee,
+		&cfg.AlertEnabled_UpcomingProposal,
+		&cfg.AlertEnabled_RecentProposal,
+		&cfg.AlertEnabled_LowDiskSpaceWarning,
+		&cfg.AlertEnabled_LowDiskSpaceCritical,
+		&cfg.AlertEnabled_OSUpdatesAvailable,
+		&cfg.AlertEnabled_RPUpdatesAvailable,
 	}
 }
 
@@ -110,16 +190,29 @@ func (cfg *AlertmanagerConfig) GetOpenPorts() string {
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Port.Value.(uint16)))
 }
 
-// Load the Alertmanager template, do an template variable substitution, and save it
-func (cfg *AlertmanagerConfig) UpdateConfigurationFile(configPath string) error {
-	templatePath, err := homedir.Expand(fmt.Sprintf("%s/alerting/%s", configPath, AlertmanagerConfigTemplate))
+// Load the alerting configuration templates, do the template variable substitutions, and save them.
+func (cfg *AlertmanagerConfig) UpdateConfigurationFiles(configPath string) error {
+	err := cfg.processTemplate(configPath, AlertmanagerConfigTemplate, AlertmanagerConfigFile, "{{", "}}")
 	if err != nil {
-		return fmt.Errorf("error expanding Alertmanager template path: %w", err)
+		return fmt.Errorf("error processing alertmanager config template: %w", err)
+	}
+	// NOTE: we use unique delimiters here because there are nested go templates in the alert messages
+	err = cfg.processTemplate(configPath, AlertingRulesConfigTemplate, AlertingRulesConfigFile, "{{{", "}}}")
+	if err != nil {
+		return fmt.Errorf("error processing alerting rules template: %w", err)
+	}
+	return nil
+}
+
+func (cfg *AlertmanagerConfig) processTemplate(configPath string, templateFileName string, configFileName string, leftDelim string, rightDelim string) error {
+	templatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", configPath, templateFileName))
+	if err != nil {
+		return fmt.Errorf("error expanding alerting template path for file %s: %w", templateFileName, err)
 	}
 
-	configFile, err := homedir.Expand(fmt.Sprintf("%s/alerting/%s", configPath, AlertmanagerConfigFile))
+	configFile, err := homedir.Expand(fmt.Sprintf("%s/%s", configPath, configFileName))
 	if err != nil {
-		return fmt.Errorf("error expanding Alertmanager config file path: %w", err)
+		return fmt.Errorf("error expanding alerting file out path for file %s: %w", configFileName, err)
 	}
 
 	t := template.Template{
@@ -127,5 +220,5 @@ func (cfg *AlertmanagerConfig) UpdateConfigurationFile(configPath string) error 
 		Dst: configFile,
 	}
 
-	return t.Write(cfg)
+	return t.WriteWithDelims(cfg, leftDelim, rightDelim)
 }

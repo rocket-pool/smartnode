@@ -529,7 +529,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 			return err
 		}
 
-		err = cfg.Alertmanager.UpdateConfigurationFile(rp.ConfigPath())
+		err = cfg.Alertmanager.UpdateConfigurationFiles(rp.ConfigPath())
 		if err != nil {
 			return err
 		}
