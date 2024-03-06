@@ -1099,8 +1099,46 @@ func pruneExecutionClient(c *cli.Context) error {
 
 }
 
-// Pause the Rocket Pool service
-func pauseService(c *cli.Context) error {
+// Stops Smartnode stack containers, prunes docker, and restarts the Smartnode stack.
+func resetDocker(c *cli.Context) error {
+	// Get RP client
+	rp := rocketpool.NewClientFromCtx(c)
+	defer rp.Close()
+
+	fmt.Println("Once cleanup is complete, Rocket Pool will restart automatically.")
+	fmt.Println()
+
+	// Stop...
+	// NOTE: pauseService prompts for confirmation, so we don't need to do it here
+	confirmed, err := pauseService(c)
+	if err != nil {
+		return err
+	} else if !confirmed {
+		// if the user cancelled the pause, then we cancel the rest of the operation here:
+		return nil
+	}
+
+	// Prune...
+	fmt.Println()
+
+	// NOTE: DockerSystemPrune prints its output (which could be errors)
+	err = rp.DockerSystemPrune()
+	if err != nil {
+		return fmt.Errorf("error pruning docker: %w", err)
+	}
+
+	// Restart...
+	// NOTE: startService does some other sanity checks and messages that we leverage here:
+	fmt.Print("Restarting Rocket Pool...\n")
+	err = startService(c, true)
+	if err != nil {
+		return fmt.Errorf("error starting Rocket Pool: %s", err)
+	}
+	return nil
+}
+
+// Pause the Rocket Pool service. Returns whether the action proceeded (was confirmed by user and no error occurred before starting it)
+func pauseService(c *cli.Context) (bool, error) {
 
 	// Get RP client
 	rp := rocketpool.NewClientFromCtx(c)
@@ -1109,7 +1147,7 @@ func pauseService(c *cli.Context) error {
 	// Get the config
 	cfg, _, err := rp.LoadConfig()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Write a note on doppelganger protection
@@ -1123,11 +1161,12 @@ func pauseService(c *cli.Context) error {
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
 		fmt.Println("Cancelled.")
-		return nil
+		return false, nil
 	}
 
 	// Pause service
-	return rp.PauseService(getComposeFiles(c))
+	err = rp.PauseService(getComposeFiles(c))
+	return true, err
 
 }
 

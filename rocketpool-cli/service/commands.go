@@ -231,7 +231,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return pauseService(c)
+					_, err := pauseService(c)
+					return err
 
 				},
 			},
@@ -254,8 +255,31 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return pauseService(c)
+					_, err := pauseService(c)
+					return err
 
+				},
+			},
+
+			{
+				Name:      "reset",
+				Aliases:   []string{"r"},
+				Usage:     "Cleanup Docker system resources, including stopped containers, dangling images, and unused networks and volumes. Requires temporarily pausing your clients.",
+				UsageText: "rocketpool service reset [options]",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm service suspension",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return resetDocker(c)
 				},
 			},
 

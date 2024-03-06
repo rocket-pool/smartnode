@@ -731,6 +731,17 @@ func (c *Client) DeleteVolume(volume string) (string, error) {
 
 }
 
+// Runs docker system prune remove all unused containers, networks, and unused images
+func (c *Client) DockerSystemPrune() error {
+
+	cmd := "docker system prune -af"
+	err := c.printOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error running docker system prune: %w", err)
+	}
+	return nil
+}
+
 // Gets the absolute file path of the client volume
 func (c *Client) GetClientVolumeSource(container string, volumeTarget string) (string, error) {
 
