@@ -1163,7 +1163,7 @@ func pruneDocker(c *cli.Context) error {
 				fmt.Printf("Error deleting image %s: %s\n", image.String(), err.Error())
 			}
 		} else {
-			fmt.Printf("Skipping image used by Smartnode stack: %s\n", image)
+			fmt.Printf("Skipping image used by Smartnode stack: %s\n", image.String())
 		}
 	}
 
