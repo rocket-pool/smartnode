@@ -264,7 +264,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "reset",
 				Aliases:   []string{"r"},
-				Usage:     "Cleanup Docker system resources, including stopped containers, dangling images, and unused networks and volumes. Requires temporarily pausing your clients.",
+				Usage:     "Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts Smartnode.",
 				UsageText: "rocketpool service reset [options]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
@@ -280,6 +280,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run command
 					return resetDocker(c)
+				},
+			},
+
+			{
+				Name:      "prune",
+				Usage:     "Cleanup unused Docker resources, including stopped containers, unused images, networks and volumes. Does not restart smartnode, so the running containers and the images and networks they reference will not be pruned.",
+				UsageText: "rocketpool service prune",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return pruneDocker(c)
 				},
 			},
 

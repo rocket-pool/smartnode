@@ -1101,9 +1101,6 @@ func pruneExecutionClient(c *cli.Context) error {
 
 // Stops Smartnode stack containers, prunes docker, and restarts the Smartnode stack.
 func resetDocker(c *cli.Context) error {
-	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
-	defer rp.Close()
 
 	fmt.Println("Once cleanup is complete, Rocket Pool will restart automatically.")
 	fmt.Println()
@@ -1118,22 +1115,65 @@ func resetDocker(c *cli.Context) error {
 		return nil
 	}
 
-	// Prune...
-	fmt.Println()
-
-	// NOTE: DockerSystemPrune prints its output (which could be errors)
-	err = rp.DockerSystemPrune()
+	// Prune images...
+	err = pruneDocker(c)
 	if err != nil {
-		return fmt.Errorf("error pruning docker: %w", err)
+		return fmt.Errorf("error pruning Docker: %s", err)
 	}
 
 	// Restart...
 	// NOTE: startService does some other sanity checks and messages that we leverage here:
-	fmt.Print("Restarting Rocket Pool...\n")
+	fmt.Println("Restarting Rocket Pool...")
 	err = startService(c, true)
 	if err != nil {
 		return fmt.Errorf("error starting Rocket Pool: %s", err)
 	}
+	return nil
+}
+
+func pruneDocker(c *cli.Context) error {
+
+	// Get RP client
+	rp := rocketpool.NewClientFromCtx(c)
+	defer rp.Close()
+
+	// NOTE: we deliberately avoid using `docker system prune -a` and delete all images manually so that we can preserve the current smartnode-stack images
+	ourImages, err := rp.GetComposeImages(getComposeFiles(c))
+	if err != nil {
+		return fmt.Errorf("error getting compose images: %w", err)
+	}
+
+	ourImagesMap := make(map[string]struct{})
+	for _, image := range ourImages {
+		ourImagesMap[image] = struct{}{}
+	}
+
+	allImages, err := rp.GetAllDockerImages()
+	if err != nil {
+		return fmt.Errorf("error getting all docker images: %w", err)
+	}
+
+	fmt.Println("Deleting images not used by the Rocket Pool Smartnode...")
+	for _, image := range allImages {
+		if _, ok := ourImagesMap[image.String()]; !ok {
+			fmt.Printf("Deleting %s...\n", image)
+			_, err = rp.DeleteDockerImage(image.ID)
+			if err != nil {
+				// safe to ignore and print to user, since it may just be an image referenced by a running container that is managed outside of the smartnode's compose stack
+				fmt.Printf("Error deleting image %s: %s\n", image.String(), err.Error())
+			}
+		} else {
+			fmt.Printf("Skipping image used by Smartnode stack: %s\n", image)
+		}
+	}
+
+	// now we can run docker system prune (without --all) to remove all stopped containers and networks:
+	fmt.Println("Pruning Docker system...")
+	err = rp.DockerSystemPrune()
+	if err != nil {
+		return fmt.Errorf("error pruning Docker system: %w", err)
+	}
+
 	return nil
 }
 

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/goccy/go-json"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
 
@@ -731,15 +732,79 @@ func (c *Client) DeleteVolume(volume string) (string, error) {
 
 }
 
+// Deletes a docker image
+func (c *Client) DeleteDockerImage(id string) (string, error) {
+
+	cmd := fmt.Sprintf("docker image rm %s", shellescape.Quote(id))
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+
+}
+
 // Runs docker system prune remove all unused containers, networks, and unused images
 func (c *Client) DockerSystemPrune() error {
 
-	cmd := "docker system prune -af"
+	// NOTE: explicitly *NOT* using the --all flag, as it would remove all images,
+	//   not just unused ones, and we use this command to preserve the current
+	//   smartnode stack images.
+	cmd := "docker system prune -f"
 	err := c.printOutput(cmd)
 	if err != nil {
 		return fmt.Errorf("error running docker system prune: %w", err)
 	}
 	return nil
+}
+
+// Returns the images used by each service in compose file in "repository:tag"
+// format (assuming that is the format specified in the compose files)
+func (c *Client) GetComposeImages(composeFiles []string) ([]string, error) {
+	cmd, err := c.compose(composeFiles, "config --images")
+	if err != nil {
+		return nil, err
+	}
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return nil, err
+	}
+	return strings.Fields(string(output)), nil
+}
+
+type DockerImage struct {
+	Repository string `json:"Repository"`
+	Tag        string `json:"Tag"`
+	ID         string `json:"ID"`
+}
+
+func (img *DockerImage) String() string {
+	return fmt.Sprintf("%s:%s", img.Repository, img.Tag)
+}
+
+// Returns all Docker images on the system
+func (c *Client) GetAllDockerImages() ([]DockerImage, error) {
+	cmd := "docker images -a --format json"
+	responseBytes, err := c.readOutput(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	// docker images output puts each image as a json object on a new line (JSONL)
+	var images []DockerImage
+	lines := strings.Split(string(responseBytes), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		var image DockerImage
+		if err := json.Unmarshal([]byte(line), &image); err != nil {
+			return nil, fmt.Errorf("could not decode docker image: %w", err)
+		}
+		images = append(images, image)
+	}
+
+	return images, nil
 }
 
 // Gets the absolute file path of the client volume
