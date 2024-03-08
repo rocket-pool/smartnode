@@ -150,7 +150,7 @@ func nodeStakeRpl(c *cli.Context) error {
 
 	}
 
-	// Get stake mount
+	// Get stake amount
 	var amountWei *big.Int
 	if c.String("amount") == "min8" {
 

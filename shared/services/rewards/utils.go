@@ -403,49 +403,33 @@ func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beac
 }
 
 // Deserializes a byte array into a rewards file interface
-func DeserializeRewardsFile(bytes []byte) (IRewardsFile, error) {
-	var header RewardsFileHeader
-	err := json.Unmarshal(bytes, &header)
-	if err != nil {
-		return nil, fmt.Errorf("error deserializing rewards file header: %w", err)
-	}
-
-	switch header.RewardsFileVersion {
-	case 1:
-		file := &RewardsFile_v1{}
-		return file, file.Deserialize(bytes)
-	case 2:
-		file := &RewardsFile_v2{}
-		return file, file.Deserialize(bytes)
-	case 3:
-		file := &RewardsFile_v3{}
-		return file, file.Deserialize(bytes)
-	default:
-		return nil, fmt.Errorf("unexpected rewards file version [%d]", header.RewardsFileVersion)
-	}
-}
-
-// Deserializes a byte array into a rewards file interface
-func DeserializeMinipoolPerformanceFile(bytes []byte) (IMinipoolPerformanceFile, error) {
+func deserializeVersionHeader(bytes []byte) (*VersionHeader, error) {
 	var header VersionHeader
 	err := json.Unmarshal(bytes, &header)
 	if err != nil {
 		return nil, fmt.Errorf("error deserializing version header: %w", err)
 	}
+	return &header, nil
+}
 
-	switch header.RewardsFileVersion {
-	case 1:
-		file := &MinipoolPerformanceFile_v1{}
-		return file, file.Deserialize(bytes)
-	case 2:
-		file := &MinipoolPerformanceFile_v2{}
-		return file, file.Deserialize(bytes)
-	case 3:
-		file := &MinipoolPerformanceFile_v3{}
-		return file, file.Deserialize(bytes)
-	default:
-		return nil, fmt.Errorf("unexpected rewards file version [%d]", header.RewardsFileVersion)
+// Deserializes a byte array into a rewards file interface
+func DeserializeRewardsFile(bytes []byte) (IRewardsFile, error) {
+	header, err := deserializeVersionHeader(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error deserializing rewards file header: %w", err)
 	}
+
+	return header.deserializeRewardsFile(bytes)
+}
+
+// Deserializes a byte array into a rewards file interface
+func DeserializeMinipoolPerformanceFile(bytes []byte) (IMinipoolPerformanceFile, error) {
+	header, err := deserializeVersionHeader(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error deserializing rewards file header: %w", err)
+	}
+
+	return header.deserializeMinipoolPerformanceFile(bytes)
 }
 
 // Decompresses a rewards file
