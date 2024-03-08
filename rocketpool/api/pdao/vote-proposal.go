@@ -5,7 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
-	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -82,14 +81,20 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 		return err
 	})
 
+	// Check voting power using the voting artifacts to consider delegated VP
+	wg.Go(func() error {
+		var err error
+		// Get the proposal artifacts
+		propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
+		if err != nil {
+			return err
+		}
+		response.VotingPower, _, _, err = propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
+		return err
+	})
+
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Check voting power
-	response.VotingPower, err = network.GetVotingPower(rp, nodeAccount.Address, proposalBlock, nil)
-	if err != nil {
 		return nil, err
 	}
 
