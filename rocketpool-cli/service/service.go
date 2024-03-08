@@ -21,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	sharedConfig "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/sys"
 	"github.com/shirou/gopsutil/v3/disk"
@@ -1303,11 +1304,26 @@ func serviceVersion(c *cli.Context) error {
 		return fmt.Errorf("unknown consensus client mode [%v]", eth2ClientMode)
 	}
 
+	var mevBoostString string
+	var mevBoostMode string
+
+	if cfg.MevBoost.Mode.Value.(sharedConfig.Mode) == sharedConfig.Mode_Local {
+		mevBoostMode = "Local Mode"
+	} else {
+		mevBoostMode = "External Mode"
+	}
+	if cfg.EnableMevBoost.Value.(bool) {
+		mevBoostString = fmt.Sprintf("Enabled (%s)\n\tImage: %s", mevBoostMode, cfg.MevBoost.ContainerTag.Value.(string))
+	} else {
+		mevBoostString = "Disabled"
+	}
+
 	// Print version info
 	fmt.Printf("Rocket Pool client version: %s\n", c.App.Version)
 	fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
 	fmt.Printf("Selected Eth 1.0 client: %s\n", eth1ClientString)
 	fmt.Printf("Selected Eth 2.0 client: %s\n", eth2ClientString)
+	fmt.Printf("MEV-Boost client: %s\n", mevBoostString)
 	return nil
 
 }
