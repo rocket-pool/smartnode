@@ -1168,9 +1168,10 @@ func pruneDocker(c *cli.Context) error {
 					// safe to ignore and print to user, since it may just be an image referenced by a running container that is managed outside of the smartnode's compose stack
 					fmt.Printf("Error deleting image %s: %s\n", image.String(), err.Error())
 				}
-			} else {
-				fmt.Printf("Skipping image used by Smartnode stack: %s\n", image.String())
+				continue
 			}
+			
+			fmt.Printf("Skipping image used by Smartnode stack: %s\n", image.String())
 		}
 	}
 
