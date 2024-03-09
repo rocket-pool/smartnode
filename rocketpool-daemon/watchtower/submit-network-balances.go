@@ -17,7 +17,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/node-manager-core/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"golang.org/x/sync/errgroup"
 

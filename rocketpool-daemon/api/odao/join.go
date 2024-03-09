@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -86,7 +86,7 @@ func (c *oracleDaoJoinContext) Initialize() error {
 }
 
 func (c *oracleDaoJoinContext) GetState(mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.odaoMember.InvitedTime,
 		c.oSettings.Proposal.ActionTime,
 		c.odaoMember.Exists,

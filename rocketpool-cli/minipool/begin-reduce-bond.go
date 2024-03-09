@@ -6,8 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
@@ -117,7 +116,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 
 	// Validation
 	totalMatchRequest := big.NewInt(0)
-	txs := make([]*core.TransactionInfo, len(selectedMinipools))
+	txs := make([]*eth.TransactionInfo, len(selectedMinipools))
 	for i, minipool := range selectedMinipools {
 		txInfo := response.Data.TxInfos[i]
 		txs[i] = txInfo

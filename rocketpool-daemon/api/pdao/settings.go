@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
@@ -61,7 +61,7 @@ func (c *protocolDaoSettingsContext) Initialize() error {
 }
 
 func (c *protocolDaoSettingsContext) GetState(mc *batch.MultiCaller) {
-	core.QueryAllFields(c.pSettings, mc)
+	eth.QueryAllFields(c.pSettings, mc)
 }
 
 func (c *protocolDaoSettingsContext) PrepareData(data *api.ProtocolDaoSettingsData, opts *bind.TransactOpts) error {

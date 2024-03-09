@@ -3,8 +3,7 @@ package auction
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
@@ -69,7 +68,7 @@ func claimFromLot(c *cli.Context) error {
 	}
 
 	// Validation
-	txs := make([]*core.TransactionInfo, len(selectedLots))
+	txs := make([]*eth.TransactionInfo, len(selectedLots))
 	for i, lot := range selectedLots {
 		data := response.Data.Batch[i]
 		if !data.CanClaim {

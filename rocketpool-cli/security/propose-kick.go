@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
@@ -52,7 +52,7 @@ func proposeKick(c *cli.Context) error {
 	}
 
 	// Handle a single kick
-	var txInfo *core.TransactionInfo
+	var txInfo *eth.TransactionInfo
 	var confirmMsg string
 	if len(selectedMembers) == 1 {
 		// Build the TX

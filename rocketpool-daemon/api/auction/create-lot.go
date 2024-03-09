@@ -8,12 +8,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -81,7 +80,7 @@ func (c *auctionCreateContext) Initialize() error {
 }
 
 func (c *auctionCreateContext) GetState(mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.auctionMgr.RemainingRplBalance,
 		c.networkMgr.RplPrice,
 		c.pSettings.Auction.LotMinimumEthValue,

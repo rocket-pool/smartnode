@@ -3,7 +3,7 @@ package api
 import (
 	"math/big"
 
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 )
 
 type FaucetStatusData struct {
@@ -15,10 +15,10 @@ type FaucetStatusData struct {
 }
 
 type FaucetWithdrawRplData struct {
-	Amount                    *big.Int              `json:"amount"`
-	CanWithdraw               bool                  `json:"canWithdraw"`
-	InsufficientFaucetBalance bool                  `json:"insufficientFaucetBalance"`
-	InsufficientAllowance     bool                  `json:"insufficientAllowance"`
-	InsufficientNodeBalance   bool                  `json:"insufficientNodeBalance"`
-	TxInfo                    *core.TransactionInfo `json:"txInfo"`
+	Amount                    *big.Int             `json:"amount"`
+	CanWithdraw               bool                 `json:"canWithdraw"`
+	InsufficientFaucetBalance bool                 `json:"insufficientFaucetBalance"`
+	InsufficientAllowance     bool                 `json:"insufficientAllowance"`
+	InsufficientNodeBalance   bool                 `json:"insufficientNodeBalance"`
+	TxInfo                    *eth.TransactionInfo `json:"txInfo"`
 }

@@ -9,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/eth"
 
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
@@ -112,7 +112,7 @@ func (c *nodeClaimAndStakeContext) PrepareData(data *api.TxInfoData, opts *bind.
 	}
 
 	// Get tx info
-	var txInfo *core.TransactionInfo
+	var txInfo *eth.TransactionInfo
 	var funcName string
 	if c.stakeAmount.Cmp(common.Big0) == 0 {
 		txInfo, err = distMainnet.Claim(nodeAddress, c.indices, rplAmount, ethAmount, merkleProofs, opts)

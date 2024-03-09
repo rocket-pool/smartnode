@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
@@ -22,8 +23,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
+	rpbeacon "github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -114,7 +115,7 @@ func (c *minipoolStatusContext) Initialize() error {
 }
 
 func (c *minipoolStatusContext) GetState(node *node.Node, mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.pSettings.Minipool.LaunchTimeout,
 		c.oSettings.Minipool.ScrubPeriod,
 		c.oSettings.Minipool.PromotionScrubPeriod,
@@ -132,7 +133,7 @@ func (c *minipoolStatusContext) CheckState(node *node.Node, response *api.Minipo
 
 func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	address := mp.Common().Address
-	core.QueryAllFields(mp, mc)
+	eth.QueryAllFields(mp, mc)
 	c.reth.BalanceOf(mc, &c.rethBalances[index], address)
 	c.rpl.BalanceOf(mc, &c.rplBalances[index], address)
 	c.fsrpl.BalanceOf(mc, &c.fsrplBalances[index], address)
@@ -192,7 +193,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	promotionScrubPeriod := c.oSettings.Minipool.PromotionScrubPeriod.Formatted()
 
 	// Get the statuses on Beacon
-	pubkeys := make([]rptypes.ValidatorPubkey, 0, len(addresses))
+	pubkeys := make([]rpbeacon.ValidatorPubkey, 0, len(addresses))
 	for _, mp := range mps {
 		mpCommon := mp.Common()
 		status := mpCommon.Status.Formatted()

@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
@@ -88,7 +88,7 @@ func (c *oracleDaoProposeSettingContext) Initialize() error {
 }
 
 func (c *oracleDaoProposeSettingContext) GetState(mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.odaoMember.LastProposalTime,
 		c.oSettings.Proposal.CooldownTime,
 	)
@@ -134,7 +134,7 @@ func (c *oracleDaoProposeSettingContext) PrepareData(data *api.OracleDaoProposeS
 	return nil
 }
 
-func (c *oracleDaoProposeSettingContext) createProposalTx(category oracle.SettingsCategory, opts *bind.TransactOpts) (bool, *core.TransactionInfo, error, error) {
+func (c *oracleDaoProposeSettingContext) createProposalTx(category oracle.SettingsCategory, opts *bind.TransactOpts) (bool, *eth.TransactionInfo, error, error) {
 	valueName := "value"
 
 	// Try the bool settings

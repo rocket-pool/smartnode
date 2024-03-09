@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/node-manager-core/beacon"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -45,7 +45,7 @@ func (f *walletCreateValidatorKeyContextFactory) RegisterRoute(router *mux.Route
 
 type walletCreateValidatorKeyContext struct {
 	handler *WalletHandler
-	pubkey  types.ValidatorPubkey
+	pubkey  beacon.ValidatorPubkey
 	index   uint64
 }
 

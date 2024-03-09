@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -23,7 +23,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/shared/config"
@@ -280,7 +279,7 @@ func (r *treeGeneratorImpl_v3) calculateRplRewards() error {
 	var percentages protocol.RplRewardsPercentages
 	err = r.rp.Query(func(mc *batch.MultiCaller) error {
 		pMgr.GetRewardsPercentages(mc, &percentages)
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			rewardsPool.PendingRplRewards,
 			rewardsPool.IntervalDuration,
 		)
@@ -324,7 +323,7 @@ func (r *treeGeneratorImpl_v3) calculateRplRewards() error {
 	err = r.rp.BatchQuery(nodeCount, LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
 		address := r.nodeAddresses[i]
 		node := nodes[address]
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			node.EffectiveRplStake,
 			node.RegistrationTime,
 			node.RewardNetwork,
@@ -998,7 +997,7 @@ func (r *treeGeneratorImpl_v3) getDutiesForEpoch(committees beacon.Committees) e
 func (r *treeGeneratorImpl_v3) createMinipoolIndexMap() error {
 
 	// Make a slice of all minipool pubkeys
-	minipoolPubkeys := []rptypes.ValidatorPubkey{}
+	minipoolPubkeys := []rpbeacon.ValidatorPubkey{}
 	for _, details := range r.nodeDetails {
 		if details.IsEligible {
 			for _, minipoolInfo := range details.Minipools {
@@ -1110,7 +1109,7 @@ func (r *treeGeneratorImpl_v3) getSmoothingPoolNodeDetails() error {
 	err := r.rp.BatchQuery(int(nodeCount), LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
 		address := r.nodeAddresses[i]
 		node := nodes[address]
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			node.SmoothingPoolRegistrationState,
 			node.SmoothingPoolRegistrationChanged,
 			node.RewardNetwork,
@@ -1207,7 +1206,7 @@ func (r *treeGeneratorImpl_v3) getSmoothingPoolNodeDetails() error {
 				}
 				err = r.rp.BatchQuery(len(mps), LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
 					mpCommon := mps[i].Common()
-					core.AddQueryablesToMulticall(mc,
+					eth.AddQueryablesToMulticall(mc,
 						mpCommon.Exists,
 						mpCommon.Status,
 						mpCommon.PenaltyCount,

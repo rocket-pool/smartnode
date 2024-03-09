@@ -9,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -85,7 +85,7 @@ func (c *auctionLotContext) PrepareData(data *api.AuctionLotsData, opts *bind.Tr
 			return fmt.Errorf("error creating lot %d binding: %w", i, err)
 		}
 		lots[i] = lot
-		core.QueryAllFields(lot, mc)
+		eth.QueryAllFields(lot, mc)
 		lot.GetLotAddressBidAmount(mc, &details[i].NodeBidAmount, c.nodeAddress)
 		return nil
 	}, nil)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -81,7 +82,7 @@ func (t *StakePrelaunchMinipools) Run(state *state.NetworkState) error {
 	}
 
 	// Stake minipools
-	txSubmissions := make([]*core.TransactionSubmission, len(minipools))
+	txSubmissions := make([]*eth.TransactionSubmission, len(minipools))
 	for i, mpd := range minipools {
 		txSubmissions[i], err = t.createStakeMinipoolTx(mpd, state)
 		if err != nil {
@@ -148,7 +149,7 @@ func (t *StakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 }
 
 // Get submission info for staking a minipool
-func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState) (*core.TransactionSubmission, error) {
+func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState) (*eth.TransactionSubmission, error) {
 	// Log
 	t.log.Printlnf("Preparing to stake minipool %s...", mpd.MinipoolAddress.Hex())
 
@@ -211,7 +212,7 @@ func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinip
 }
 
 // Stake all available minipools
-func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*core.TransactionSubmission, minipools []*rpstate.NativeMinipoolDetails, minipoolLaunchTimeout time.Duration) (bool, error) {
+func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionSubmission, minipools []*rpstate.NativeMinipoolDetails, minipoolLaunchTimeout time.Duration) (bool, error) {
 	// Get transactor
 	opts, err := t.w.GetTransactor()
 	if err != nil {
@@ -230,7 +231,7 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*core.Transaction
 	opts.GasTipCap = t.maxPriorityFee
 
 	// Print the gas info
-	forceSubmissions := []*core.TransactionSubmission{}
+	forceSubmissions := []*eth.TransactionSubmission{}
 	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, &t.log, maxFee) {
 		// Check for the timeout buffers
 		for i, mpd := range minipools {

@@ -8,13 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/collateral"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
@@ -92,7 +91,7 @@ func (c *nodeGetRewardsInfoContext) Initialize() error {
 }
 
 func (c *nodeGetRewardsInfoContext) GetState(mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.node.ActiveMinipoolCount,
 		c.node.RplStake,
 		c.node.MinimumRplStake,

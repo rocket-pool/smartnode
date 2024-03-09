@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
@@ -78,7 +78,7 @@ func (c *oracleDaoProposeLeaveContext) Initialize() error {
 }
 
 func (c *oracleDaoProposeLeaveContext) GetState(mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.odaoMember.LastProposalTime,
 		c.odaoMember.ID,
 		c.odaoMember.Url,

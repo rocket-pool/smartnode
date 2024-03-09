@@ -10,8 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/rocket-pool/smartnode/addons/rescue_node/pb"
-	"github.com/rocket-pool/smartnode/shared/types/addons"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	config "github.com/rocket-pool/smartnode/shared/config/legacy"
 )
 
 const (
@@ -43,7 +42,7 @@ type RescueNode struct {
 	cfg *RescueNodeConfig `yaml:"config,omitempty"`
 }
 
-func NewRescueNode() addons.SmartnodeAddon {
+func NewRescueNode() config.SmartnodeAddon {
 	return &RescueNode{
 		cfg: NewConfig(),
 	}
@@ -53,7 +52,7 @@ func (r *RescueNode) GetName() string {
 	return "Rescue Node"
 }
 
-func (r *RescueNode) GetConfig() cfgtypes.Config {
+func (r *RescueNode) GetConfig() config.Config {
 	return r.cfg
 }
 
@@ -73,7 +72,7 @@ The Rocket Rescue Node is a community-run, trust-minimized, and secured fallback
 For more information, see https://rescuenode.com`
 }
 
-func (r *RescueNode) GetEnabledParameter() *cfgtypes.Parameter {
+func (r *RescueNode) GetEnabledParameter() *config.Parameter {
 	return &r.cfg.Enabled
 }
 
@@ -166,7 +165,7 @@ type RescueNodeOverrides struct {
 	VcAdditionalFlags string
 }
 
-func (r *RescueNode) GetOverrides(cc cfgtypes.ConsensusClient) (*RescueNodeOverrides, error) {
+func (r *RescueNode) GetOverrides(cc config.ConsensusClient) (*RescueNodeOverrides, error) {
 	if !r.cfg.Enabled.Value.(bool) {
 		return nil, nil
 	}
@@ -179,19 +178,19 @@ func (r *RescueNode) GetOverrides(cc cfgtypes.ConsensusClient) (*RescueNodeOverr
 	}
 
 	switch cc {
-	case cfgtypes.ConsensusClient_Unknown:
+	case config.ConsensusClient_Unknown:
 		return nil, fmt.Errorf("Unable to generate rescue node URLs for unknown consensus client")
-	case cfgtypes.ConsensusClient_Lighthouse,
-		cfgtypes.ConsensusClient_Nimbus,
-		cfgtypes.ConsensusClient_Lodestar,
-		cfgtypes.ConsensusClient_Teku:
+	case config.ConsensusClient_Lighthouse,
+		config.ConsensusClient_Nimbus,
+		config.ConsensusClient_Lodestar,
+		config.ConsensusClient_Teku:
 
 		rescueURL := fmt.Sprintf("https://%s:%s@%s.rescuenode.com", username, password, cc)
 
 		return &RescueNodeOverrides{
 			CcApiEndpoint: rescueURL,
 		}, nil
-	case cfgtypes.ConsensusClient_Prysm:
+	case config.ConsensusClient_Prysm:
 
 		return &RescueNodeOverrides{
 			CcRpcEndpoint:     "prysm-grpc.rescuenode.com:443",

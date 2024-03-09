@@ -11,13 +11,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/tyler-smith/go-bip39"
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Config
@@ -303,7 +303,7 @@ func ValidateTxHash(name, value string) (common.Hash, error) {
 }
 
 // Validate TX info
-func ValidateTxInfo(name string, value string) (*core.TransactionInfo, error) {
+func ValidateTxInfo(name string, value string) (*eth.TransactionInfo, error) {
 	// Remove a 0x prefix if present
 	value = strings.TrimPrefix(value, "0x")
 
@@ -314,7 +314,7 @@ func ValidateTxInfo(name string, value string) (*core.TransactionInfo, error) {
 	}
 
 	// Deserialize it
-	var info core.TransactionInfo
+	var info eth.TransactionInfo
 	err = json.Unmarshal(bytes, &info)
 	if err != nil {
 		return nil, fmt.Errorf("Deserializing %s failed: %w", name, err)
@@ -324,10 +324,10 @@ func ValidateTxInfo(name string, value string) (*core.TransactionInfo, error) {
 }
 
 // Validate a validator pubkey
-func ValidatePubkey(name, value string) (types.ValidatorPubkey, error) {
-	pubkey, err := types.HexToValidatorPubkey(hexutils.RemovePrefix(value))
+func ValidatePubkey(name, value string) (beacon.ValidatorPubkey, error) {
+	pubkey, err := beacon.HexToValidatorPubkey(value)
 	if err != nil {
-		return types.ValidatorPubkey{}, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
+		return beacon.ValidatorPubkey{}, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
 	}
 	return pubkey, nil
 }

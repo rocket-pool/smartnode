@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -93,7 +93,7 @@ func (c *minipoolBeginReduceBondDetailsContext) Initialize() error {
 }
 
 func (c *minipoolBeginReduceBondDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.node.IsFeeDistributorInitialized,
 		c.pSettings.Minipool.IsBondReductionEnabled,
 		c.oSettings.Minipool.BondReductionWindowStart,
@@ -108,13 +108,13 @@ func (c *minipoolBeginReduceBondDetailsContext) CheckState(node *node.Node, data
 
 func (c *minipoolBeginReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	mpCommon := mp.Common()
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		mpCommon.NodeDepositBalance,
 		mpCommon.NodeFee,
 	)
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if success {
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			mpv3.NodeDepositBalance,
 			mpv3.IsFinalised,
 			mpv3.Status,
@@ -139,8 +139,8 @@ func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.A
 	currentTime := time.Unix(int64(header.Time), 0)
 
 	// Get the bond reduction details
-	pubkeys := []types.ValidatorPubkey{}
-	detailsMap := map[types.ValidatorPubkey]int{}
+	pubkeys := []beacon.ValidatorPubkey{}
+	detailsMap := map[beacon.ValidatorPubkey]int{}
 	details := make([]api.MinipoolBeginReduceBondDetails, len(addresses))
 	for i, mp := range mps {
 		details[i] = c.getMinipoolDetails(mp, currentTime)

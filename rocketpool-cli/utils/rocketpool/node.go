@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/beacon"
 
-	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -64,7 +64,7 @@ func (r *NodeRequester) ClaimAndStake(indices []*big.Int, stakeAmount *big.Int) 
 }
 
 // Create a vacant minipool, which can be used to migrate a solo staker
-func (r *NodeRequester) CreateVacantMinipool(amount *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey) (*api.ApiResponse[api.NodeCreateVacantMinipoolData], error) {
+func (r *NodeRequester) CreateVacantMinipool(amount *big.Int, minFee float64, salt *big.Int, pubkey beacon.ValidatorPubkey) (*api.ApiResponse[api.NodeCreateVacantMinipoolData], error) {
 	args := map[string]string{
 		"amount":       amount.String(),
 		"min-node-fee": fmt.Sprint(minFee),

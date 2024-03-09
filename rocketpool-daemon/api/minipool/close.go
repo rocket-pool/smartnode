@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -82,7 +82,7 @@ func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []min
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, addresses, data, c.CreateTx, "close")
 }
 
-func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	mpCommon := mp.Common()
 	minipoolAddress := mpCommon.Address
 	mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)

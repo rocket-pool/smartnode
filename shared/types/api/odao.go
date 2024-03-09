@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -64,75 +64,75 @@ type OracleDaoProposalsData struct {
 }
 
 type OracleDaoProposeInviteData struct {
-	CanPropose             bool                  `json:"canPropose"`
-	ProposalCooldownActive bool                  `json:"proposalCooldownActive"`
-	MemberAlreadyExists    bool                  `json:"memberAlreadyExists"`
-	TxInfo                 *core.TransactionInfo `json:"txInfo"`
+	CanPropose             bool                 `json:"canPropose"`
+	ProposalCooldownActive bool                 `json:"proposalCooldownActive"`
+	MemberAlreadyExists    bool                 `json:"memberAlreadyExists"`
+	TxInfo                 *eth.TransactionInfo `json:"txInfo"`
 }
 
 type OracleDaoProposeLeaveData struct {
-	CanPropose             bool                  `json:"canPropose"`
-	ProposalCooldownActive bool                  `json:"proposalCooldownActive"`
-	MemberDoesntExist      bool                  `json:"memberDoesntExist"`
-	InsufficientMembers    bool                  `json:"insufficientMembers"`
-	TxInfo                 *core.TransactionInfo `json:"txInfo"`
+	CanPropose             bool                 `json:"canPropose"`
+	ProposalCooldownActive bool                 `json:"proposalCooldownActive"`
+	MemberDoesntExist      bool                 `json:"memberDoesntExist"`
+	InsufficientMembers    bool                 `json:"insufficientMembers"`
+	TxInfo                 *eth.TransactionInfo `json:"txInfo"`
 }
 
 type OracleDaoProposeKickData struct {
-	Status                 string                `json:"status"`
-	Error                  string                `json:"error"`
-	CanPropose             bool                  `json:"canPropose"`
-	MemberDoesNotExist     bool                  `json:"memberDoesNotExist"`
-	ProposalCooldownActive bool                  `json:"proposalCooldownActive"`
-	InsufficientRplBond    bool                  `json:"insufficientRplBond"`
-	TxInfo                 *core.TransactionInfo `json:"txInfo"`
+	Status                 string               `json:"status"`
+	Error                  string               `json:"error"`
+	CanPropose             bool                 `json:"canPropose"`
+	MemberDoesNotExist     bool                 `json:"memberDoesNotExist"`
+	ProposalCooldownActive bool                 `json:"proposalCooldownActive"`
+	InsufficientRplBond    bool                 `json:"insufficientRplBond"`
+	TxInfo                 *eth.TransactionInfo `json:"txInfo"`
 }
 
 type OracleDaoCancelProposalData struct {
-	CanCancel       bool                  `json:"canCancel"`
-	DoesNotExist    bool                  `json:"doesNotExist"`
-	InvalidState    bool                  `json:"invalidState"`
-	InvalidProposer bool                  `json:"invalidProposer"`
-	TxInfo          *core.TransactionInfo `json:"txInfo"`
+	CanCancel       bool                 `json:"canCancel"`
+	DoesNotExist    bool                 `json:"doesNotExist"`
+	InvalidState    bool                 `json:"invalidState"`
+	InvalidProposer bool                 `json:"invalidProposer"`
+	TxInfo          *eth.TransactionInfo `json:"txInfo"`
 }
 
 type OracleDaoVoteOnProposalData struct {
-	CanVote            bool                  `json:"canVote"`
-	DoesNotExist       bool                  `json:"doesNotExist"`
-	InvalidState       bool                  `json:"invalidState"`
-	JoinedAfterCreated bool                  `json:"joinedAfterCreated"`
-	AlreadyVoted       bool                  `json:"alreadyVoted"`
-	TxInfo             *core.TransactionInfo `json:"txInfo"`
+	CanVote            bool                 `json:"canVote"`
+	DoesNotExist       bool                 `json:"doesNotExist"`
+	InvalidState       bool                 `json:"invalidState"`
+	JoinedAfterCreated bool                 `json:"joinedAfterCreated"`
+	AlreadyVoted       bool                 `json:"alreadyVoted"`
+	TxInfo             *eth.TransactionInfo `json:"txInfo"`
 }
 
 type OracleDaoExecuteProposalData struct {
-	CanExecute   bool                  `json:"canExecute"`
-	DoesNotExist bool                  `json:"doesNotExist"`
-	InvalidState bool                  `json:"invalidState"`
-	TxInfo       *core.TransactionInfo `json:"txInfo"`
+	CanExecute   bool                 `json:"canExecute"`
+	DoesNotExist bool                 `json:"doesNotExist"`
+	InvalidState bool                 `json:"invalidState"`
+	TxInfo       *eth.TransactionInfo `json:"txInfo"`
 }
 
 type OracleDaoJoinData struct {
-	CanJoin                bool                  `json:"canJoin"`
-	ProposalExpired        bool                  `json:"proposalExpired"`
-	AlreadyMember          bool                  `json:"alreadyMember"`
-	InsufficientRplBalance bool                  `json:"insufficientRplBalance"`
-	ApproveTxInfo          *core.TransactionInfo `json:"approveTxInfo"`
-	JoinTxInfo             *core.TransactionInfo `json:"joinTxInfo"`
+	CanJoin                bool                 `json:"canJoin"`
+	ProposalExpired        bool                 `json:"proposalExpired"`
+	AlreadyMember          bool                 `json:"alreadyMember"`
+	InsufficientRplBalance bool                 `json:"insufficientRplBalance"`
+	ApproveTxInfo          *eth.TransactionInfo `json:"approveTxInfo"`
+	JoinTxInfo             *eth.TransactionInfo `json:"joinTxInfo"`
 }
 
 type OracleDaoLeaveData struct {
-	CanLeave            bool                  `json:"canLeave"`
-	ProposalExpired     bool                  `json:"proposalExpired"`
-	InsufficientMembers bool                  `json:"insufficientMembers"`
-	TxInfo              *core.TransactionInfo `json:"txInfo"`
+	CanLeave            bool                 `json:"canLeave"`
+	ProposalExpired     bool                 `json:"proposalExpired"`
+	InsufficientMembers bool                 `json:"insufficientMembers"`
+	TxInfo              *eth.TransactionInfo `json:"txInfo"`
 }
 
 type OracleDaoProposeSettingData struct {
-	CanPropose             bool                  `json:"canPropose"`
-	UnknownSetting         bool                  `json:"unknownSetting"`
-	ProposalCooldownActive bool                  `json:"proposalCooldownActive"`
-	TxInfo                 *core.TransactionInfo `json:"txInfo"`
+	CanPropose             bool                 `json:"canPropose"`
+	UnknownSetting         bool                 `json:"unknownSetting"`
+	ProposalCooldownActive bool                 `json:"proposalCooldownActive"`
+	TxInfo                 *eth.TransactionInfo `json:"txInfo"`
 }
 
 type OracleDaoSettingsData struct {

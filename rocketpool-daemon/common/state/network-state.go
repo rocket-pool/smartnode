@@ -7,11 +7,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
@@ -54,7 +54,7 @@ type NetworkState struct {
 	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails
 
 	// Validator details
-	ValidatorDetails map[types.ValidatorPubkey]beacon.ValidatorStatus
+	ValidatorDetails map[beacon.ValidatorPubkey]beacon.ValidatorStatus
 
 	// Oracle DAO details
 	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails
@@ -138,8 +138,8 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	}
 
 	// Create the minipool lookups
-	pubkeys := make([]types.ValidatorPubkey, 0, len(state.MinipoolDetails))
-	emptyPubkey := types.ValidatorPubkey{}
+	pubkeys := make([]beacon.ValidatorPubkey, 0, len(state.MinipoolDetails))
+	emptyPubkey := beacon.ValidatorPubkey{}
 	for i, details := range state.MinipoolDetails {
 		state.MinipoolDetailsByAddress[details.MinipoolAddress] = &state.MinipoolDetails[i]
 		if details.Pubkey != emptyPubkey {
@@ -281,8 +281,8 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	}
 
 	// Create the minipool lookups
-	pubkeys := make([]types.ValidatorPubkey, 0, len(state.MinipoolDetails))
-	emptyPubkey := types.ValidatorPubkey{}
+	pubkeys := make([]beacon.ValidatorPubkey, 0, len(state.MinipoolDetails))
+	emptyPubkey := beacon.ValidatorPubkey{}
 	for i, details := range state.MinipoolDetails {
 		state.MinipoolDetailsByAddress[details.MinipoolAddress] = &state.MinipoolDetails[i]
 		if details.Pubkey != emptyPubkey {

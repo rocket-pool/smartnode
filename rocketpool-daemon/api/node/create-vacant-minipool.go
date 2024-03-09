@@ -11,14 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	rputils "github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
@@ -69,7 +67,7 @@ type nodeCreateVacantMinipoolContext struct {
 	amount     *big.Int
 	minNodeFee float64
 	salt       *big.Int
-	pubkey     rptypes.ValidatorPubkey
+	pubkey     rpbeacon.ValidatorPubkey
 	node       *node.Node
 	pSettings  *protocol.ProtocolDaoSettings
 	oSettings  *oracle.OracleDaoSettings
@@ -112,7 +110,7 @@ func (c *nodeCreateVacantMinipoolContext) Initialize() error {
 }
 
 func (c *nodeCreateVacantMinipoolContext) GetState(mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.node.EthMatched,
 		c.node.EthMatchedLimit,
 		c.pSettings.Node.AreVacantMinipoolsEnabled,

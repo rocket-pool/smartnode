@@ -9,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/beacon"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -89,7 +89,7 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *api.BatchTxInfoData, 
 	}
 
 	// Get the TXs
-	txInfos := make([]*core.TransactionInfo, len(c.minipoolAddresses))
+	txInfos := make([]*eth.TransactionInfo, len(c.minipoolAddresses))
 	for i, address := range c.minipoolAddresses {
 		amount := c.depositAmounts[i]
 		opts.Value = amount
@@ -105,7 +105,7 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *api.BatchTxInfoData, 
 }
 
 // Create a transaction for submitting a rescue deposit, optionally simulating it only for gas estimation
-func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Address, amount *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Address, amount *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	beaconDeposit, err := beacon.NewBeaconDeposit(c.rp)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Beacon deposit contract binding: %w", err)

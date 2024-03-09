@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
@@ -69,7 +69,7 @@ func (c *nodeDistributeContext) Initialize() error {
 }
 
 func (c *nodeDistributeContext) GetState(mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.node.IsFeeDistributorInitialized,
 		c.node.DistributorAddress,
 	)
@@ -98,7 +98,7 @@ func (c *nodeDistributeContext) PrepareData(data *api.NodeDistributeData, opts *
 	if data.CanDistribute {
 		// Get the node share of the balance
 		err = c.rp.Query(func(mc *batch.MultiCaller) error {
-			core.AddQueryablesToMulticall(mc,
+			eth.AddQueryablesToMulticall(mc,
 				distributor.NodeShare,
 			)
 			return nil

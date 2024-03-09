@@ -1,7 +1,7 @@
 package keystore
 
 import (
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/sethvargo/go-password/password"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
@@ -21,6 +21,6 @@ func GenerateRandomPassword() (string, error) {
 // Validator keystore interface
 type Keystore interface {
 	StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPath string) error
-	LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error)
+	LoadValidatorKey(pubkey beacon.ValidatorPubkey) (*eth2types.BLSPrivateKey, error)
 	GetKeystoreDir() string
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -19,7 +20,7 @@ const (
 
 // A validator private/public key pair
 type ValidatorKey struct {
-	PublicKey      types.ValidatorPubkey
+	PublicKey      beacon.ValidatorPubkey
 	PrivateKey     *eth2types.BLSPrivateKey
 	DerivationPath string
 	WalletIndex    uint
@@ -50,7 +51,7 @@ func (w *LocalWallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, e
 }
 
 // Get a validator key by public key
-func (w *LocalWallet) GetValidatorKeyByPubkey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+func (w *LocalWallet) GetValidatorKeyByPubkey(pubkey beacon.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
 	err := w.checkIfReady()
 	if err != nil {
 		return nil, err
@@ -103,7 +104,7 @@ func (w *LocalWallet) StoreValidatorKey(key *eth2types.BLSPrivateKey, path strin
 }
 
 // Loads a validator key from the wallet's keystores
-func (w *LocalWallet) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+func (w *LocalWallet) LoadValidatorKey(pubkey beacon.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
 	errors := []string{}
 	// Try loading the key from all of the keystores, caching errors but not breaking on them
 	for name := range w.validatorKeystores {
@@ -210,7 +211,7 @@ func (w *LocalWallet) SaveValidatorKey(key ValidatorKey) error {
 }
 
 // Recover a validator key by public key
-func (w *LocalWallet) RecoverValidatorKey(pubkey types.ValidatorPubkey, startIndex uint) (uint, error) {
+func (w *LocalWallet) RecoverValidatorKey(pubkey beacon.ValidatorPubkey, startIndex uint) (uint, error) {
 	err := w.checkIfReady()
 	if err != nil {
 		return 0, err
@@ -256,7 +257,7 @@ func (w *LocalWallet) RecoverValidatorKey(pubkey types.ValidatorPubkey, startInd
 }
 
 // Test recovery of a validator key by public key
-func (w *LocalWallet) TestRecoverValidatorKey(pubkey types.ValidatorPubkey, startIndex uint) (uint, error) {
+func (w *LocalWallet) TestRecoverValidatorKey(pubkey beacon.ValidatorPubkey, startIndex uint) (uint, error) {
 	err := w.checkIfReady()
 	if err != nil {
 		return 0, err

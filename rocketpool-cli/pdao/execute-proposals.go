@@ -3,7 +3,7 @@ package pdao
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli/v2"
 
@@ -70,7 +70,7 @@ func executeProposals(c *cli.Context) error {
 	}
 
 	// Verify
-	txs := make([]*core.TransactionInfo, len(selectedProposals))
+	txs := make([]*eth.TransactionInfo, len(selectedProposals))
 	for i, prop := range selectedProposals {
 		data := response.Data.Batch[i]
 		if !data.CanExecute {

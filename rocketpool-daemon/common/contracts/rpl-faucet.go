@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -107,26 +108,26 @@ func (c *RplFaucet) GetAllowanceFor(mc *batch.MultiCaller, allowance **big.Int, 
 // ====================
 
 // Get info for withdrawing RPL from the faucet
-func (c *RplFaucet) Withdraw(amount *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *RplFaucet) Withdraw(amount *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "withdraw", opts, amount)
 }
 
 // Get info for withdrawing RPL from the faucet to a specific address
-func (c *RplFaucet) WithdrawTo(to common.Address, amount *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *RplFaucet) WithdrawTo(to common.Address, amount *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "withdrawTo", opts, to, amount)
 }
 
 // Set the withdrawal period, in blocks
-func (c *RplFaucet) SetWithdrawalPeriod(period *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *RplFaucet) SetWithdrawalPeriod(period *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "setWithdrawalPeriod", opts, period)
 }
 
 // Set the max total withdrawal amount per period
-func (c *RplFaucet) SetMaxWithdrawalPerPeriod(max *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *RplFaucet) SetMaxWithdrawalPerPeriod(max *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "setMaxWithdrawalPerPeriod", opts, max)
 }
 
 // Set the withdrawal fee
-func (c *RplFaucet) SetWithdrawalFee(fee *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *RplFaucet) SetWithdrawalFee(fee *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "setWithdrawalFee", opts, fee)
 }

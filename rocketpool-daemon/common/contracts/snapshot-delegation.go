@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 )
 
@@ -77,11 +78,11 @@ func (c *SnapshotDelegation) Delegation(mc *batch.MultiCaller, out *common.Addre
 // ====================
 
 // Get info for setting the snapshot delegate
-func (c *SnapshotDelegation) SetDelegate(id common.Hash, delegate common.Address, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *SnapshotDelegation) SetDelegate(id common.Hash, delegate common.Address, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "setDelegate", opts, id, delegate)
 }
 
 // Get info for clearing the snapshot delegate
-func (c *SnapshotDelegation) ClearDelegate(id common.Hash, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *SnapshotDelegation) ClearDelegate(id common.Hash, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "clearDelegate", opts, id)
 }

@@ -3,6 +3,7 @@ package beacon
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/rocketpool-go/types"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
@@ -39,7 +40,7 @@ type BeaconHead struct {
 	PreviousJustifiedEpoch uint64
 }
 type ValidatorStatus struct {
-	Pubkey                     types.ValidatorPubkey
+	Pubkey                     beacon.ValidatorPubkey
 	Index                      string
 	WithdrawalCredentials      common.Hash
 	Balance                    uint64
@@ -104,9 +105,9 @@ type Client interface {
 	GetBeaconBlock(blockId string) (BeaconBlock, bool, error)
 	GetBeaconHead() (BeaconHead, error)
 	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)
-	GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
-	GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
-	GetValidatorIndex(pubkey types.ValidatorPubkey) (string, error)
+	GetValidatorStatus(pubkey beacon.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
+	GetValidatorStatuses(pubkeys []beacon.ValidatorPubkey, opts *ValidatorStatusOptions) (map[beacon.ValidatorPubkey]ValidatorStatus, error)
+	GetValidatorIndex(pubkey beacon.ValidatorPubkey) (string, error)
 	GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error)
 	GetValidatorProposerDuties(indices []string, epoch uint64) (map[string]uint64, error)
 	GetDomainData(domainType []byte, epoch uint64, useGenesisFork bool) ([]byte, error)
@@ -114,5 +115,5 @@ type Client interface {
 	Close() error
 	GetEth1DataForEth2Block(blockId string) (Eth1Data, bool, error)
 	GetCommitteesForEpoch(epoch *uint64) (Committees, error)
-	ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error
+	ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey beacon.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -102,7 +102,7 @@ func (c *securityProposeSettingContext) PrepareData(data *api.SecurityProposeSet
 	return nil
 }
 
-func (c *securityProposeSettingContext) createProposalTx(category security.SettingsCategory, opts *bind.TransactOpts) (bool, *core.TransactionInfo, error, error) {
+func (c *securityProposeSettingContext) createProposalTx(category security.SettingsCategory, opts *bind.TransactOpts) (bool, *eth.TransactionInfo, error, error) {
 	valueName := "value"
 
 	// Try the bool settings

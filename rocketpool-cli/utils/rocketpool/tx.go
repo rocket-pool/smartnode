@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -30,7 +30,7 @@ func (r *TxRequester) GetClient() *http.Client {
 }
 
 // Use the node private key to sign a transaction without submitting it
-func (r *TxRequester) SignTx(txSubmission *core.TransactionSubmission, nonce *big.Int, maxFee *big.Int, maxPriorityFee *big.Int) (*api.ApiResponse[api.TxSignTxData], error) {
+func (r *TxRequester) SignTx(txSubmission *eth.TransactionSubmission, nonce *big.Int, maxFee *big.Int, maxPriorityFee *big.Int) (*api.ApiResponse[api.TxSignTxData], error) {
 	body := api.SubmitTxBody{
 		Submission:     txSubmission,
 		Nonce:          nonce,
@@ -41,7 +41,7 @@ func (r *TxRequester) SignTx(txSubmission *core.TransactionSubmission, nonce *bi
 }
 
 // Submit a transaction
-func (r *TxRequester) SubmitTx(txSubmission *core.TransactionSubmission, nonce *big.Int, maxFee *big.Int, maxPriorityFee *big.Int) (*api.ApiResponse[api.TxData], error) {
+func (r *TxRequester) SubmitTx(txSubmission *eth.TransactionSubmission, nonce *big.Int, maxFee *big.Int, maxPriorityFee *big.Int) (*api.ApiResponse[api.TxData], error) {
 	body := api.SubmitTxBody{
 		Submission:     txSubmission,
 		Nonce:          nonce,
@@ -52,7 +52,7 @@ func (r *TxRequester) SubmitTx(txSubmission *core.TransactionSubmission, nonce *
 }
 
 // Use the node private key to sign a batch of transactions without submitting them
-func (r *TxRequester) SignTxBatch(txSubmissions []*core.TransactionSubmission, firstNonce *big.Int, maxFee *big.Int, maxPriorityFee *big.Int) (*api.ApiResponse[api.TxBatchSignTxData], error) {
+func (r *TxRequester) SignTxBatch(txSubmissions []*eth.TransactionSubmission, firstNonce *big.Int, maxFee *big.Int, maxPriorityFee *big.Int) (*api.ApiResponse[api.TxBatchSignTxData], error) {
 	body := api.BatchSubmitTxsBody{
 		Submissions:    txSubmissions,
 		FirstNonce:     firstNonce,
@@ -63,7 +63,7 @@ func (r *TxRequester) SignTxBatch(txSubmissions []*core.TransactionSubmission, f
 }
 
 // Submit a batch of transactions
-func (r *TxRequester) SubmitTxBatch(txSubmissions []*core.TransactionSubmission, firstNonce *big.Int, maxFee *big.Int, maxPriorityFee *big.Int) (*api.ApiResponse[api.BatchTxData], error) {
+func (r *TxRequester) SubmitTxBatch(txSubmissions []*eth.TransactionSubmission, firstNonce *big.Int, maxFee *big.Int, maxPriorityFee *big.Int) (*api.ApiResponse[api.BatchTxData], error) {
 	body := api.BatchSubmitTxsBody{
 		Submissions:    txSubmissions,
 		FirstNonce:     firstNonce,

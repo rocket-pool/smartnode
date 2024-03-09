@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
@@ -20,7 +21,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	ens "github.com/wealdtech/go-ens/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
@@ -143,7 +143,7 @@ func (c *nodeStatusContext) Initialize() error {
 
 func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 	// Node properties
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		// Node
 		c.node.Exists,
 		c.node.PrimaryWithdrawalAddress,
@@ -317,7 +317,7 @@ func (c *nodeStatusContext) getMinipoolInfo(data *api.NodeStatusData) ([]minipoo
 		// Basic details
 		mp := mps[i]
 		mpCommon := mp.Common()
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			mpCommon.PenaltyCount,
 			mpCommon.IsFinalised,
 			mpCommon.Status,
@@ -330,7 +330,7 @@ func (c *nodeStatusContext) getMinipoolInfo(data *api.NodeStatusData) ([]minipoo
 		// Details needed for collateral checking
 		mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)
 		if isMpv3 {
-			core.AddQueryablesToMulticall(mc,
+			eth.AddQueryablesToMulticall(mc,
 				mpv3.ReduceBondTime,
 				mpv3.IsBondReduceCancelled,
 				mpv3.ReduceBondValue,
@@ -522,7 +522,7 @@ func (c *nodeStatusContext) calculateTrueStakesAndBonds(data *api.NodeStatusData
 // Calculate the true borrowed and bonded ETH amounts for a node based on the Beacon status of the minipools
 func (c *nodeStatusContext) getTrueBorrowAndBondAmounts(mps []minipool.IMinipool, epoch uint64) (*big.Int, *big.Int, *big.Int, *big.Int, error) {
 
-	pubkeys := make([]types.ValidatorPubkey, len(mps))
+	pubkeys := make([]beacon.ValidatorPubkey, len(mps))
 	nodeDeposits := make([]*big.Int, len(mps))
 	userDeposits := make([]*big.Int, len(mps))
 	pendingNodeDeposits := make([]*big.Int, len(mps))

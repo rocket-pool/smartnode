@@ -3,7 +3,7 @@ package network
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"

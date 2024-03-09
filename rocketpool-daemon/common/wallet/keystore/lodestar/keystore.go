@@ -9,6 +9,7 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -39,7 +40,7 @@ type validatorKey struct {
 	Version uint                   `json:"version"`
 	UUID    uuid.UUID              `json:"uuid"`
 	Path    string                 `json:"path"`
-	Pubkey  types.ValidatorPubkey  `json:"pubkey"`
+	Pubkey  beacon.ValidatorPubkey `json:"pubkey"`
 }
 
 // Create new lodestar keystore
@@ -120,7 +121,7 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
 }
 
 // Load a private key
-func (ks *Keystore) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+func (ks *Keystore) LoadValidatorKey(pubkey beacon.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
 
 	// Get key file path
 	keyFilePath := filepath.Join(ks.keystorePath, KeystoreDir, ValidatorsDir, hexutil.AddPrefix(pubkey.Hex()), KeyFileName)

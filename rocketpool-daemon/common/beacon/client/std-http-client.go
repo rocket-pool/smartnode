@@ -181,7 +181,7 @@ func (c *StandardHttpClient) GetBeaconHead() (beacon.BeaconHead, error) {
 }
 
 // Get a validator's status
-func (c *StandardHttpClient) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
+func (c *StandardHttpClient) GetValidatorStatus(pubkey beacon.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 
 	return c.getValidatorStatus(hexutil.AddPrefix(pubkey.Hex()), opts)
 
@@ -228,13 +228,13 @@ func (c *StandardHttpClient) getValidatorStatus(pubkeyOrIndex string, opts *beac
 }
 
 // Get multiple validators' statuses
-func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
+func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []beacon.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[beacon.ValidatorPubkey]beacon.ValidatorStatus, error) {
 
 	// The null validator pubkey
-	nullPubkey := types.ValidatorPubkey{}
+	nullPubkey := beacon.ValidatorPubkey{}
 
 	// Filter out null pubkeys
-	realPubkeys := []types.ValidatorPubkey{}
+	realPubkeys := []beacon.ValidatorPubkey{}
 	for _, pubkey := range pubkeys {
 		if !bytes.Equal(pubkey.Bytes(), nullPubkey.Bytes()) {
 			// Teku doesn't like invalid pubkeys, so filter them out to make it consistent with other clients
@@ -259,7 +259,7 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 	}
 
 	// Build validator status map
-	statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
+	statuses := make(map[beacon.ValidatorPubkey]beacon.ValidatorStatus)
 	for _, validator := range validators.Data {
 
 		// Ignore empty pubkeys
@@ -365,7 +365,7 @@ func (c *StandardHttpClient) GetValidatorProposerDuties(indices []string, epoch 
 }
 
 // Get a validator's index
-func (c *StandardHttpClient) GetValidatorIndex(pubkey types.ValidatorPubkey) (string, error) {
+func (c *StandardHttpClient) GetValidatorIndex(pubkey beacon.ValidatorPubkey) (string, error) {
 
 	// Get validator
 	pubkeyString := hexutil.AddPrefix(pubkey.Hex())
@@ -534,7 +534,7 @@ func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) (beacon.Commit
 }
 
 // Perform a withdrawal credentials change on a validator
-func (c *StandardHttpClient) ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
+func (c *StandardHttpClient) ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey beacon.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error {
 	return c.postWithdrawalCredentialsChange(BLSToExecutionChangeRequest{
 		Message: BLSToExecutionChangeMessage{
 			ValidatorIndex:     validatorIndex,

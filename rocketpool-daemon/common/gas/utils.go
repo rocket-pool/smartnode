@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/shared/gas/etherchain"
 	"github.com/rocket-pool/smartnode/shared/gas/etherscan"
@@ -48,7 +48,7 @@ func PrintAndCheckGasInfo(gasInfo core.GasInfo, checkThreshold bool, gasThreshol
 }
 
 // Print the gas price and cost of a TX batch
-func PrintAndCheckGasInfoForBatch(submissions []*core.TransactionSubmission, checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int) bool {
+func PrintAndCheckGasInfoForBatch(submissions []*eth.TransactionSubmission, checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int) bool {
 	// Check the gas threshold if requested
 	if checkThreshold {
 		gasThresholdWei := math.RoundUp(gasThresholdGwei*eth.WeiPerGwei, 0)

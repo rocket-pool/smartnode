@@ -9,12 +9,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -92,7 +91,7 @@ func (c *auctionStatusContext) Initialize() error {
 }
 
 func (c *auctionStatusContext) GetState(mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.auctionMgr.TotalRplBalance,
 		c.auctionMgr.AllottedRplBalance,
 		c.auctionMgr.RemainingRplBalance,
@@ -149,7 +148,7 @@ func (c *auctionStatusContext) getAllLotCountDetails(lotCount uint64) ([]lotCoun
 		lots[i] = lot
 
 		lot.GetLotAddressBidAmount(mc, &addressBids[i], c.nodeAddress)
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			lot.IsCleared,
 			lot.RemainingRplAmount,
 			lot.RplRecovered,

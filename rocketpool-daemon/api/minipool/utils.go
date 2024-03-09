@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
@@ -18,7 +18,7 @@ const (
 )
 
 // Get transaction info for an operation on all of the provided minipools, using the common minipool API (for version-agnostic functions)
-func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses []common.Address, data *api.BatchTxInfoData, txCreator func(mp minipool.IMinipool, opts *bind.TransactOpts) (*core.TransactionInfo, error), txName string) error {
+func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses []common.Address, data *api.BatchTxInfoData, txCreator func(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error), txName string) error {
 	// Requirements
 	err := errors.Join(
 		sp.RequireNodeRegistered(),
@@ -49,7 +49,7 @@ func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses 
 	}
 
 	// Get the TXs
-	txInfos := make([]*core.TransactionInfo, len(minipoolAddresses))
+	txInfos := make([]*eth.TransactionInfo, len(minipoolAddresses))
 	for i, mp := range mps {
 		txInfo, err := txCreator(mp, opts)
 		if err != nil {

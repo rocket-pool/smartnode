@@ -1,9 +1,5 @@
 package config
 
-import (
-	"github.com/rocket-pool/smartnode/shared/types/config"
-)
-
 // Constants
 const exporterTag string = "prom/node-exporter:v1.6.1"
 
@@ -15,13 +11,13 @@ type ExporterConfig struct {
 	Title string `yaml:"-"`
 
 	// Toggle for enabling access to the root filesystem (for multiple disk usage metrics)
-	RootFs config.Parameter `yaml:"rootFs,omitempty"`
+	RootFs Parameter `yaml:"rootFs,omitempty"`
 
 	// The Docker Hub tag for Prometheus
-	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
+	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
 	// Custom command line flags
-	AdditionalFlags config.Parameter `yaml:"additionalFlags,omitempty"`
+	AdditionalFlags Parameter `yaml:"additionalFlags,omitempty"`
 }
 
 // Generates a new Exporter config
@@ -29,35 +25,35 @@ func NewExporterConfig(cfg *RocketPoolConfig) *ExporterConfig {
 	return &ExporterConfig{
 		Title: "Node Exporter Settings",
 
-		RootFs: config.Parameter{
+		RootFs: Parameter{
 			ID:                 "enableRootFs",
 			Name:               "Allow Root Filesystem Access",
 			Description:        "Give Prometheus's Node Exporter permission to view your root filesystem instead of being limited to its own Docker container.\nThis is needed if you want the Grafana dashboard to report the used disk space of a second SSD.",
-			Type:               config.ParameterType_Bool,
-			Default:            map[config.Network]interface{}{config.Network_All: defaultExporterRootFs},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Exporter},
+			Type:               ParameterType_Bool,
+			Default:            map[Network]interface{}{Network_All: defaultExporterRootFs},
+			AffectsContainers:  []ContainerID{ContainerID_Exporter},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 
-		ContainerTag: config.Parameter{
+		ContainerTag: Parameter{
 			ID:                 "containerTag",
 			Name:               "Exporter Container Tag",
 			Description:        "The tag name of the Prometheus Node Exporter container you want to use on Docker Hub.",
-			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: exporterTag},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Exporter},
+			Type:               ParameterType_String,
+			Default:            map[Network]interface{}{Network_All: exporterTag},
+			AffectsContainers:  []ContainerID{ContainerID_Exporter},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
 		},
 
-		AdditionalFlags: config.Parameter{
+		AdditionalFlags: Parameter{
 			ID:                 "additionalFlags",
 			Name:               "Additional Exporter Flags",
 			Description:        "Additional custom command line flags you want to pass to the Node Exporter, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Grafana},
+			Type:               ParameterType_String,
+			Default:            map[Network]interface{}{Network_All: ""},
+			AffectsContainers:  []ContainerID{ContainerID_Grafana},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
@@ -65,8 +61,8 @@ func NewExporterConfig(cfg *RocketPoolConfig) *ExporterConfig {
 }
 
 // Get the parameters for this config
-func (cfg *ExporterConfig) GetParameters() []*config.Parameter {
-	return []*config.Parameter{
+func (cfg *ExporterConfig) GetParameters() []*Parameter {
+	return []*Parameter{
 		&cfg.RootFs,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,

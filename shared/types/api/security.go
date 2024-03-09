@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -61,71 +61,71 @@ type SecurityProposalsData struct {
 }
 
 type SecurityProposeInviteData struct {
-	CanPropose          bool                  `json:"canPropose"`
-	MemberAlreadyExists bool                  `json:"memberAlreadyExists"`
-	TxInfo              *core.TransactionInfo `json:"txInfo"`
+	CanPropose          bool                 `json:"canPropose"`
+	MemberAlreadyExists bool                 `json:"memberAlreadyExists"`
+	TxInfo              *eth.TransactionInfo `json:"txInfo"`
 }
 
 type SecurityProposeKickData struct {
-	CanPropose         bool                  `json:"canPropose"`
-	MemberDoesNotExist bool                  `json:"memberDoesNotExist"`
-	TxInfo             *core.TransactionInfo `json:"txInfo"`
+	CanPropose         bool                 `json:"canPropose"`
+	MemberDoesNotExist bool                 `json:"memberDoesNotExist"`
+	TxInfo             *eth.TransactionInfo `json:"txInfo"`
 }
 
 type SecurityProposeKickMultiData struct {
-	CanPropose        bool                  `json:"canPropose"`
-	MembersDoNotExist []common.Address      `json:"membersDoNotExist"`
-	TxInfo            *core.TransactionInfo `json:"txInfo"`
+	CanPropose        bool                 `json:"canPropose"`
+	MembersDoNotExist []common.Address     `json:"membersDoNotExist"`
+	TxInfo            *eth.TransactionInfo `json:"txInfo"`
 }
 
 type SecurityProposeReplaceData struct {
-	CanPropose             bool                  `json:"canPropose"`
-	OldMemberDoesNotExist  bool                  `json:"oldMemberDoesNotExist"`
-	NewMemberAlreadyExists bool                  `json:"newMemberAlreadyExists"`
-	TxInfo                 *core.TransactionInfo `json:"txInfo"`
+	CanPropose             bool                 `json:"canPropose"`
+	OldMemberDoesNotExist  bool                 `json:"oldMemberDoesNotExist"`
+	NewMemberAlreadyExists bool                 `json:"newMemberAlreadyExists"`
+	TxInfo                 *eth.TransactionInfo `json:"txInfo"`
 }
 
 type SecurityProposeSettingData struct {
-	CanPropose     bool                  `json:"canPropose"`
-	UnknownSetting bool                  `json:"unknownSetting"`
-	TxInfo         *core.TransactionInfo `json:"txInfo"`
+	CanPropose     bool                 `json:"canPropose"`
+	UnknownSetting bool                 `json:"unknownSetting"`
+	TxInfo         *eth.TransactionInfo `json:"txInfo"`
 }
 
 type SecurityCancelProposalData struct {
-	CanCancel            bool                  `json:"canCancel"`
-	DoesNotExist         bool                  `json:"doesNotExist"`
-	InvalidState         bool                  `json:"invalidState"`
-	InvalidProposer      bool                  `json:"invalidProposer"`
-	NotOnSecurityCouncil bool                  `json:"notOnSecurityCouncil"`
-	TxInfo               *core.TransactionInfo `json:"txInfo"`
+	CanCancel            bool                 `json:"canCancel"`
+	DoesNotExist         bool                 `json:"doesNotExist"`
+	InvalidState         bool                 `json:"invalidState"`
+	InvalidProposer      bool                 `json:"invalidProposer"`
+	NotOnSecurityCouncil bool                 `json:"notOnSecurityCouncil"`
+	TxInfo               *eth.TransactionInfo `json:"txInfo"`
 }
 
 type SecurityVoteOnProposalData struct {
-	CanVote            bool                  `json:"canVote"`
-	DoesNotExist       bool                  `json:"doesNotExist"`
-	InvalidState       bool                  `json:"invalidState"`
-	JoinedAfterCreated bool                  `json:"joinedAfterCreated"`
-	AlreadyVoted       bool                  `json:"alreadyVoted"`
-	TxInfo             *core.TransactionInfo `json:"txInfo"`
+	CanVote            bool                 `json:"canVote"`
+	DoesNotExist       bool                 `json:"doesNotExist"`
+	InvalidState       bool                 `json:"invalidState"`
+	JoinedAfterCreated bool                 `json:"joinedAfterCreated"`
+	AlreadyVoted       bool                 `json:"alreadyVoted"`
+	TxInfo             *eth.TransactionInfo `json:"txInfo"`
 }
 
 type SecurityExecuteProposalData struct {
-	CanExecute   bool                  `json:"canExecute"`
-	DoesNotExist bool                  `json:"doesNotExist"`
-	InvalidState bool                  `json:"invalidState"`
-	TxInfo       *core.TransactionInfo `json:"txInfo"`
+	CanExecute   bool                 `json:"canExecute"`
+	DoesNotExist bool                 `json:"doesNotExist"`
+	InvalidState bool                 `json:"invalidState"`
+	TxInfo       *eth.TransactionInfo `json:"txInfo"`
 }
 
 type SecurityJoinData struct {
-	CanJoin         bool                  `json:"canJoin"`
-	ProposalExpired bool                  `json:"proposalExpired"`
-	AlreadyMember   bool                  `json:"alreadyMember"`
-	TxInfo          *core.TransactionInfo `json:"txInfo"`
+	CanJoin         bool                 `json:"canJoin"`
+	ProposalExpired bool                 `json:"proposalExpired"`
+	AlreadyMember   bool                 `json:"alreadyMember"`
+	TxInfo          *eth.TransactionInfo `json:"txInfo"`
 }
 
 type SecurityLeaveData struct {
-	CanLeave        bool                  `json:"canLeave"`
-	IsNotMember     bool                  `json:"isNotMember"`
-	ProposalExpired bool                  `json:"proposalExpired"`
-	TxInfo          *core.TransactionInfo `json:"txInfo"`
+	CanLeave        bool                 `json:"canLeave"`
+	IsNotMember     bool                 `json:"isNotMember"`
+	ProposalExpired bool                 `json:"proposalExpired"`
+	TxInfo          *eth.TransactionInfo `json:"txInfo"`
 }

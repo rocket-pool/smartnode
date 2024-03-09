@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/pbnjay/memory"
-	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const (
@@ -19,22 +18,22 @@ type TekuConfig struct {
 	UnsupportedCommonParams []string `yaml:"-"`
 
 	// Max number of P2P peers to connect to
-	JvmHeapSize config.Parameter `yaml:"jvmHeapSize,omitempty"`
+	JvmHeapSize Parameter `yaml:"jvmHeapSize,omitempty"`
 
 	// The max number of P2P peers to connect to
-	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
+	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// The archive mode flag
-	ArchiveMode config.Parameter `yaml:"archiveMode,omitempty"`
+	ArchiveMode Parameter `yaml:"archiveMode,omitempty"`
 
 	// The Docker Hub tag for Lighthouse
-	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
+	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
 	// Custom command line flags for the BN
-	AdditionalBnFlags config.Parameter `yaml:"additionalBnFlags,omitempty"`
+	AdditionalBnFlags Parameter `yaml:"additionalBnFlags,omitempty"`
 
 	// Custom command line flags for the VC
-	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
+	AdditionalVcFlags Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
 // Generates a new Teku configuration
@@ -44,73 +43,73 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 
 		UnsupportedCommonParams: []string{},
 
-		JvmHeapSize: config.Parameter{
+		JvmHeapSize: Parameter{
 			ID:                 "jvmHeapSize",
 			Name:               "JVM Heap Size",
 			Description:        "The max amount of RAM, in MB, that Teku's JVM should limit itself to. Setting this lower will cause Teku to use less RAM, though it will always use more than this limit.\n\nUse 0 for automatic allocation.",
-			Type:               config.ParameterType_Uint,
-			Default:            map[config.Network]interface{}{config.Network_All: getTekuHeapSize()},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			Type:               ParameterType_Uint,
+			Default:            map[Network]interface{}{Network_All: getTekuHeapSize()},
+			AffectsContainers:  []ContainerID{ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 
-		MaxPeers: config.Parameter{
+		MaxPeers: Parameter{
 			ID:                 "maxPeers",
 			Name:               "Max Peers",
 			Description:        "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:               config.ParameterType_Uint16,
-			Default:            map[config.Network]interface{}{config.Network_All: defaultTekuMaxPeers},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			Type:               ParameterType_Uint16,
+			Default:            map[Network]interface{}{Network_All: defaultTekuMaxPeers},
+			AffectsContainers:  []ContainerID{ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 
-		ArchiveMode: config.Parameter{
+		ArchiveMode: Parameter{
 			ID:                 "archiveMode",
 			Name:               "Enable Archive Mode",
 			Description:        "When enabled, Teku will run in \"archive\" mode which means it can recreate the state of the Beacon chain for a previous block. This is required for manually generating the Merkle rewards tree.\n\nIf you are sure you will never be manually generating a tree, you can disable archive mode.",
-			Type:               config.ParameterType_Bool,
-			Default:            map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			Type:               ParameterType_Bool,
+			Default:            map[Network]interface{}{Network_All: false},
+			AffectsContainers:  []ContainerID{ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 
-		ContainerTag: config.Parameter{
+		ContainerTag: Parameter{
 			ID:          "containerTag",
 			Name:        "Container Tag",
 			Description: "The tag name of the Teku container you want to use on Docker Hub.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: tekuTagProd,
-				config.Network_Prater:  tekuTagTest,
-				config.Network_Devnet:  tekuTagTest,
-				config.Network_Holesky: tekuTagTest,
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: tekuTagProd,
+				Network_Prater:  tekuTagTest,
+				Network_Devnet:  tekuTagTest,
+				Network_Holesky: tekuTagTest,
 			},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
+			AffectsContainers:  []ContainerID{ContainerID_Eth2, ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
 		},
 
-		AdditionalBnFlags: config.Parameter{
+		AdditionalBnFlags: Parameter{
 			ID:                 "additionalBnFlags",
 			Name:               "Additional Beacon Node Flags",
 			Description:        "Additional custom command line flags you want to pass Teku's Beacon Node, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			Type:               ParameterType_String,
+			Default:            map[Network]interface{}{Network_All: ""},
+			AffectsContainers:  []ContainerID{ContainerID_Eth2},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
 
-		AdditionalVcFlags: config.Parameter{
+		AdditionalVcFlags: Parameter{
 			ID:                 "additionalVcFlags",
 			Name:               "Additional Validator Client Flags",
 			Description:        "Additional custom command line flags you want to pass Teku's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			Type:               ParameterType_String,
+			Default:            map[Network]interface{}{Network_All: ""},
+			AffectsContainers:  []ContainerID{ContainerID_Validator},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
@@ -118,8 +117,8 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 }
 
 // Get the parameters for this config
-func (cfg *TekuConfig) GetParameters() []*config.Parameter {
-	return []*config.Parameter{
+func (cfg *TekuConfig) GetParameters() []*Parameter {
+	return []*Parameter{
 		&cfg.JvmHeapSize,
 		&cfg.MaxPeers,
 		&cfg.ArchiveMode,

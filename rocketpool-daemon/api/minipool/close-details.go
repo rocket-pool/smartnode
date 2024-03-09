@@ -9,12 +9,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
@@ -74,7 +73,7 @@ func (c *minipoolCloseDetailsContext) CheckState(node *node.Node, response *api.
 
 func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	mpCommon := mp.Common()
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		mpCommon.NodeAddress,
 		mpCommon.NodeRefundBalance,
 		mpCommon.IsFinalised,
@@ -119,8 +118,8 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 	}
 
 	// Get the beacon statuses for each closeable minipool
-	pubkeys := []types.ValidatorPubkey{}
-	pubkeyMap := map[common.Address]types.ValidatorPubkey{}
+	pubkeys := []beacon.ValidatorPubkey{}
+	pubkeyMap := map[common.Address]beacon.ValidatorPubkey{}
 	for i, mp := range details {
 		if mp.Status == types.MinipoolStatus_Dissolved {
 			// Ignore dissolved minipools

@@ -10,12 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
@@ -84,7 +83,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	// TODO: add these to the state
 	var percentages protocol.RplRewardsPercentages
 	err = rp.Query(func(mc *batch.MultiCaller) error {
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			rpl.TotalSupply,
 		)
 		pMgr.GetRewardsPercentages(mc, &percentages)

@@ -10,10 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
@@ -92,7 +92,7 @@ func (c *minipoolImportKeyContext) Initialize() error {
 
 func (c *minipoolImportKeyContext) GetState(mc *batch.MultiCaller) {
 	mpCommon := c.mp.Common()
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		mpCommon.NodeAddress,
 		mpCommon.Pubkey,
 	)
@@ -107,7 +107,7 @@ func (c *minipoolImportKeyContext) PrepareData(data *api.SuccessData, opts *bind
 
 	// Get minipool validator pubkey
 	pubkey := mpCommon.Pubkey.Get()
-	emptyPubkey := types.ValidatorPubkey{}
+	emptyPubkey := beacon.ValidatorPubkey{}
 	if pubkey == emptyPubkey {
 		return fmt.Errorf("minipool %s does not have a validator pubkey associated with it", c.minipoolAddress.Hex())
 	}

@@ -11,11 +11,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
@@ -47,7 +47,7 @@ type treeGeneratorImpl_v7 struct {
 	epsilon                *big.Int
 	intervalSeconds        *big.Int
 	beaconConfig           beacon.Eth2Config
-	validatorStatusMap     map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
+	validatorStatusMap     map[rpbeacon.ValidatorPubkey]beacon.ValidatorStatus
 	totalAttestationScore  *big.Int
 	successfulAttestations uint64
 	genesisTime            time.Time
@@ -87,7 +87,7 @@ func newTreeGeneratorImpl_v7(log *log.ColorLogger, logPrefix string, index uint6
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
 			},
 		},
-		validatorStatusMap:    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
+		validatorStatusMap:    map[rpbeacon.ValidatorPubkey]beacon.ValidatorStatus{},
 		validatorIndexMap:     map[string]*MinipoolInfo{},
 		elSnapshotHeader:      elSnapshotHeader,
 		log:                   log,

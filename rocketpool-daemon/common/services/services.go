@@ -4,45 +4,35 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"os"
 
-	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/node/services"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
-	lhkeystore "github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet/keystore/lighthouse"
-	lokeystore "github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet/keystore/lodestar"
-	nmkeystore "github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet/keystore/nimbus"
-	prkeystore "github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet/keystore/prysm"
-	tkkeystore "github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet/keystore/teku"
 	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/docker"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // A container for all of the various services used by the Smartnode
 type ServiceProvider struct {
+	*services.ServiceProvider
+
+	// Services
 	cfg                *config.RocketPoolConfig
-	nodeWallet         *wallet.LocalWallet
-	ecManager          *ExecutionClientManager
-	bcManager          *BeaconClientManager
 	rocketPool         *rocketpool.RocketPool
 	rplFaucet          *contracts.RplFaucet
 	snapshotDelegation *contracts.SnapshotDelegation
-	docker             *client.Client
 
 	// Internal use
 	contractLoadBlock uint64
+	userDir           string
 }
 
 // Creates a new ServiceProvider instance
-func NewServiceProvider(c *cli.Context) (*ServiceProvider, error) {
+func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
 	// Config
-	settingsFile := os.ExpandEnv(c.GlobalString("settings"))
 	cfg, err := rp.LoadConfigFromFile(settingsFile)
 	if err != nil {
 		return nil, fmt.Errorf("error loading Smartnode config: %w", err)
@@ -51,36 +41,14 @@ func NewServiceProvider(c *cli.Context) (*ServiceProvider, error) {
 		return nil, fmt.Errorf("Smartnode config settings file [%s] not found", settingsFile)
 	}
 
-	// Wallet
-	chainID := cfg.Smartnode.GetChainID()
-	nodeAddressPath := os.ExpandEnv(cfg.Smartnode.GetNodeAddressPath())
-	keystorePath := os.ExpandEnv(cfg.Smartnode.GetWalletPath())
-	passwordPath := os.ExpandEnv(cfg.Smartnode.GetPasswordPath())
-	nodeWallet, err := wallet.NewLocalWallet(keystorePath, nodeAddressPath, passwordPath, chainID, true)
+	// Core provider
+	sp, err := services.NewServiceProvider(cfg, rpconfig.ClientTimeout, rpconfig.DebugMode.Value)
 	if err != nil {
-		return nil, fmt.Errorf("error creating node wallet: %w", err)
-	}
-
-	// Keystores
-	validatorKeychainPath := os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath())
-	lighthouseKeystore := lhkeystore.NewKeystore(validatorKeychainPath)
-	lodestarKeystore := lokeystore.NewKeystore(validatorKeychainPath)
-	nimbusKeystore := nmkeystore.NewKeystore(validatorKeychainPath)
-	prysmKeystore := prkeystore.NewKeystore(validatorKeychainPath)
-	tekuKeystore := tkkeystore.NewKeystore(validatorKeychainPath)
-	nodeWallet.AddValidatorKeystore("lighthouse", lighthouseKeystore)
-	nodeWallet.AddValidatorKeystore("lodestar", lodestarKeystore)
-	nodeWallet.AddValidatorKeystore("nimbus", nimbusKeystore)
-	nodeWallet.AddValidatorKeystore("prysm", prysmKeystore)
-	nodeWallet.AddValidatorKeystore("teku", tekuKeystore)
-
-	// EC Manager
-	ecManager, err := NewExecutionClientManager(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error creating executon client manager: %w", err)
+		return nil, fmt.Errorf("error creating core service provider: %w", err)
 	}
 
 	// Rocket Pool
+	ecManager := sp.GetEthClient()
 	rp, err := rocketpool.NewRocketPool(
 		ecManager,
 		common.HexToAddress(cfg.Smartnode.GetStorageAddress()),
@@ -111,38 +79,13 @@ func NewServiceProvider(c *cli.Context) (*ServiceProvider, error) {
 		}
 	}
 
-	// Beacon manager
-	bcManager, err := NewBeaconClientManager(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error creating Beacon client manager: %w", err)
-	}
-
-	// Docker client
-	dockerClient, err := client.NewClientWithOpts(client.WithVersion(docker.DockerApiVersion))
-	if err != nil {
-		return nil, fmt.Errorf("error creating Docker client: %w", err)
-	}
-
-	// Check if the managers should ignore sync checks and/or default to using the fallback (used by the API container when driven by the CLI)
-	if c.GlobalBool("ignore-sync-check") {
-		ecManager.ignoreSyncCheck = true
-		bcManager.ignoreSyncCheck = true
-	}
-	if c.GlobalBool("force-fallbacks") {
-		ecManager.primaryReady = false
-		bcManager.primaryReady = false
-	}
-
 	// Create the provider
 	provider := &ServiceProvider{
+		ServiceProvider:    sp,
 		cfg:                cfg,
-		nodeWallet:         nodeWallet,
-		ecManager:          ecManager,
-		bcManager:          bcManager,
 		rocketPool:         rp,
 		rplFaucet:          rplFaucet,
 		snapshotDelegation: snapshotDelegation,
-		docker:             dockerClient,
 	}
 	return provider, nil
 }
@@ -153,14 +96,6 @@ func NewServiceProvider(c *cli.Context) (*ServiceProvider, error) {
 
 func (p *ServiceProvider) GetConfig() *config.RocketPoolConfig {
 	return p.cfg
-}
-
-func (p *ServiceProvider) GetWallet() *wallet.LocalWallet {
-	return p.nodeWallet
-}
-
-func (p *ServiceProvider) GetEthClient() *ExecutionClientManager {
-	return p.ecManager
 }
 
 func (p *ServiceProvider) GetRocketPool() *rocketpool.RocketPool {
@@ -175,14 +110,6 @@ func (p *ServiceProvider) GetSnapshotDelegation() *contracts.SnapshotDelegation 
 	return p.snapshotDelegation
 }
 
-func (p *ServiceProvider) GetBeaconClient() *BeaconClientManager {
-	return p.bcManager
-}
-
-func (p *ServiceProvider) GetDocker() *client.Client {
-	return p.docker
-}
-
 // =============
 // === Utils ===
 // =============
@@ -194,7 +121,7 @@ func (p *ServiceProvider) LoadContractsIfStale() error {
 
 	// Get the current block
 	var err error
-	p.contractLoadBlock, err = p.ecManager.BlockNumber(context.Background())
+	p.contractLoadBlock, err = p.GetEthClient().BlockNumber(context.Background())
 	if err != nil {
 		return fmt.Errorf("error getting latest block: %w", err)
 	}

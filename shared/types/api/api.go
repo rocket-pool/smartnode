@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/shared/types"
 )
 
@@ -19,9 +19,9 @@ type DataBatch[DataType any] struct {
 }
 
 type TxInfoData struct {
-	TxInfo *core.TransactionInfo `json:"txInfo"`
+	TxInfo *eth.TransactionInfo `json:"txInfo"`
 }
 
 type BatchTxInfoData struct {
-	TxInfos []*core.TransactionInfo `json:"txInfos"`
+	TxInfos []*eth.TransactionInfo `json:"txInfos"`
 }

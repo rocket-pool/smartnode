@@ -16,11 +16,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
 
-	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
@@ -328,7 +328,7 @@ func promptMinNodeFee(networkCurrentNodeFee, networkMinNodeFee float64) float64 
 }
 
 // Prompt for the password to a solo validator key as part of migration
-func promptForSoloKeyPassword(rp *client.Client, cfg *config.RocketPoolConfig, pubkey types.ValidatorPubkey) (string, error) {
+func promptForSoloKeyPassword(rp *client.Client, cfg *config.RocketPoolConfig, pubkey beacon.ValidatorPubkey) (string, error) {
 
 	// Check for the custom key directory
 	datapath, err := homedir.Expand(cfg.Smartnode.DataPath.Value.(string))

@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
@@ -59,7 +58,7 @@ func claimBonds(c *cli.Context) error {
 	}
 
 	// Validation
-	txs := make([]*core.TransactionInfo, len(selectedClaims))
+	txs := make([]*eth.TransactionInfo, len(selectedClaims))
 	for i, bond := range selectedClaims {
 		data := response.Data.Batch[i]
 		if !data.CanClaim {

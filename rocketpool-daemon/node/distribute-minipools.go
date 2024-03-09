@@ -6,11 +6,11 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
@@ -98,7 +98,7 @@ func (t *DistributeMinipools) Run(state *state.NetworkState) error {
 	}
 
 	// Get distribute minipools submissions
-	txSubmissions := make([]*core.TransactionSubmission, len(minipools))
+	txSubmissions := make([]*eth.TransactionSubmission, len(minipools))
 	for i, mpd := range minipools {
 		txSubmissions[i], err = t.createDistributeMinipoolTx(mpd)
 		if err != nil {
@@ -144,7 +144,7 @@ func (t *DistributeMinipools) getDistributableMinipools(nodeAddress common.Addre
 }
 
 // Get submission info for distributing a minipool
-func (t *DistributeMinipools) createDistributeMinipoolTx(mpd *rpstate.NativeMinipoolDetails) (*core.TransactionSubmission, error) {
+func (t *DistributeMinipools) createDistributeMinipoolTx(mpd *rpstate.NativeMinipoolDetails) (*eth.TransactionSubmission, error) {
 	// Log
 	t.log.Printlnf("Preparing to distribute minipool %s (total balance of %.6f ETH)...", mpd.MinipoolAddress.Hex(), eth.WeiToEth(mpd.Balance))
 
@@ -181,7 +181,7 @@ func (t *DistributeMinipools) createDistributeMinipoolTx(mpd *rpstate.NativeMini
 }
 
 // Distribute all available minipools
-func (t *DistributeMinipools) distributeMinipools(submissions []*core.TransactionSubmission) error {
+func (t *DistributeMinipools) distributeMinipools(submissions []*eth.TransactionSubmission) error {
 	// Get transactor
 	opts, err := t.w.GetTransactor()
 	if err != nil {

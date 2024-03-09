@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -61,7 +61,7 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 	err = rp.BatchQuery(len(addresses), minipoolReduceDetailsBatchSize, func(mc *batch.MultiCaller, i int) error {
 		mpv3, isMpv3 := minipool.GetMinipoolAsV3(mps[i])
 		if isMpv3 {
-			core.AddQueryablesToMulticall(mc,
+			eth.AddQueryablesToMulticall(mc,
 				mpv3.ReduceBondTime,
 				mpv3.IsBondReduceCancelled,
 				mpv3.NodeDepositBalance,
@@ -112,7 +112,7 @@ func CheckCollateralWithMinipoolCache(rp *rocketpool.RocketPool, nodeAddress com
 
 	// Get contract state
 	err = rp.Query(func(mc *batch.MultiCaller) error {
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			node.EthMatched,
 			node.EthMatchedLimit,
 			oSettings.Minipool.BondReductionWindowStart,

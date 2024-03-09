@@ -11,12 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
 	prdeposit "github.com/prysmaticlabs/prysm/v4/contracts/deposit"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	rputils "github.com/rocket-pool/rocketpool-go/utils"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
@@ -80,7 +80,7 @@ type iterationData struct {
 }
 
 type minipoolDetails struct {
-	pubkey                        types.ValidatorPubkey
+	pubkey                        beacon.ValidatorPubkey
 	expectedWithdrawalCredentials common.Hash
 }
 
@@ -393,7 +393,7 @@ func (t *SubmitScrubMinipools) verifyDeposits() error {
 	minipoolsToScrub := []minipool.IMinipool{}
 
 	// Create a "hashset" of the remaining pubkeys
-	pubkeys := make(map[types.ValidatorPubkey]bool, len(t.it.minipools))
+	pubkeys := make(map[beacon.ValidatorPubkey]bool, len(t.it.minipools))
 	for _, details := range t.it.minipools {
 		pubkeys[details.pubkey] = true
 	}

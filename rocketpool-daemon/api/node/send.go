@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
@@ -129,7 +130,7 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 
 	// Get the TX Info
 	if data.CanSend {
-		var txInfo *core.TransactionInfo
+		var txInfo *eth.TransactionInfo
 		var err error
 		if tokenContract != nil {
 			txInfo, err = tokenContract.Transfer(c.recipient, c.amount, opts)

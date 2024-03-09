@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -24,7 +24,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/shared/config"
@@ -56,11 +55,11 @@ type treeGeneratorImpl_v4 struct {
 	intervalSeconds        *big.Int
 	beaconConfig           beacon.Eth2Config
 	stakingMinipoolMap     map[common.Address][]MinipoolDetails
-	validatorStatusMap     map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
+	validatorStatusMap     map[rpbeacon.ValidatorPubkey]beacon.ValidatorStatus
 	rplPrice               *big.Int
 	minCollateralFraction  *big.Int
 	maxCollateralFraction  *big.Int
-	stakingMinipoolPubkeys []rptypes.ValidatorPubkey
+	stakingMinipoolPubkeys []rpbeacon.ValidatorPubkey
 	nodeStakes             []*big.Int
 }
 
@@ -99,7 +98,7 @@ func newTreeGeneratorImpl_v4(log *log.ColorLogger, logPrefix string, index uint6
 			},
 		},
 		stakingMinipoolMap: map[common.Address][]MinipoolDetails{},
-		validatorStatusMap: map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
+		validatorStatusMap: map[rpbeacon.ValidatorPubkey]beacon.ValidatorStatus{},
 		elSnapshotHeader:   elSnapshotHeader,
 		log:                log,
 		logPrefix:          logPrefix,
@@ -323,7 +322,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	var percentages protocol.RplRewardsPercentages
 	err = r.rp.Query(func(mc *batch.MultiCaller) error {
 		pMgr.GetRewardsPercentages(mc, &percentages)
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			rewardsPool.PendingRplRewards,
 			rewardsPool.IntervalDuration,
 			networkMgr.RplPrice,
@@ -381,7 +380,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 	err = r.rp.BatchQuery(nodeCount, LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
 		address := r.nodeAddresses[i]
 		node := nodes[address]
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			node.EffectiveRplStake,
 			node.RegistrationTime,
 			node.RewardNetwork,
@@ -1058,7 +1057,7 @@ func (r *treeGeneratorImpl_v4) getDutiesForEpoch(committees beacon.Committees) e
 func (r *treeGeneratorImpl_v4) createMinipoolIndexMap() error {
 
 	// Make a slice of all minipool pubkeys
-	uncachedMinipoolPubkeys := []rptypes.ValidatorPubkey{}
+	uncachedMinipoolPubkeys := []rpbeacon.ValidatorPubkey{}
 	for _, details := range r.nodeDetails {
 		if details.IsEligible {
 			for _, minipoolInfo := range details.Minipools {
@@ -1178,7 +1177,7 @@ func (r *treeGeneratorImpl_v4) getSmoothingPoolNodeDetails() error {
 	err := r.rp.BatchQuery(int(nodeCount), LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
 		address := r.nodeAddresses[i]
 		node := nodes[address]
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			node.SmoothingPoolRegistrationState,
 			node.SmoothingPoolRegistrationChanged,
 			node.RewardNetwork,
@@ -1394,14 +1393,14 @@ func (r *treeGeneratorImpl_v4) getStartBlocksForInterval(previousIntervalEvent r
 // Create a cache of the minipool details for each node
 func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 
-	r.stakingMinipoolPubkeys = []rptypes.ValidatorPubkey{}
+	r.stakingMinipoolPubkeys = []rpbeacon.ValidatorPubkey{}
 	nodesDone := uint64(0)
 	startTime := time.Now()
 	r.log.Printlnf("%s Querying minipool info for nodes (progress is reported every 100 nodes)", r.logPrefix)
 
 	nodeCount := uint64(len(r.nodeAddresses))
 	stakingMinipoolDetailsList := make([][]MinipoolDetails, nodeCount)
-	pubkeyList := make([][]rptypes.ValidatorPubkey, nodeCount)
+	pubkeyList := make([][]rpbeacon.ValidatorPubkey, nodeCount)
 	r.nodeStakes = make([]*big.Int, nodeCount)
 
 	// Get node details
@@ -1417,7 +1416,7 @@ func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 	err := r.rp.BatchQuery(int(nodeCount), LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
 		address := r.nodeAddresses[i]
 		node := nodes[address]
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			node.RplStake,
 			node.MinipoolCount,
 		)
@@ -1467,7 +1466,7 @@ func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 				}
 				err = r.rp.BatchQuery(len(mps), LegacyDetailsBatchCount, func(mc *batch.MultiCaller, i int) error {
 					mpCommon := mps[i].Common()
-					core.AddQueryablesToMulticall(mc,
+					eth.AddQueryablesToMulticall(mc,
 						mpCommon.Exists,
 						mpCommon.Status,
 						mpCommon.PenaltyCount,
@@ -1494,7 +1493,7 @@ func (r *treeGeneratorImpl_v4) cacheMinipoolDetails() error {
 				}
 
 				stakingMinipools := make([]MinipoolDetails, 0, len(minipoolDetails))
-				minipoolPubkeys := make([]rptypes.ValidatorPubkey, 0, len(minipoolDetails))
+				minipoolPubkeys := make([]rpbeacon.ValidatorPubkey, 0, len(minipoolDetails))
 				for _, mpd := range minipoolDetails {
 					if mpd.Exists {
 						status := mpd.Status

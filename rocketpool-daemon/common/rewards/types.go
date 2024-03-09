@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/rocketpool-go/types"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
@@ -14,14 +15,14 @@ type MinipoolDetails struct {
 	Address      common.Address
 	Exists       bool
 	Status       types.MinipoolStatus
-	Pubkey       types.ValidatorPubkey
+	Pubkey       beacon.ValidatorPubkey
 	PenaltyCount uint64
 	NodeFee      *big.Int
 }
 
 type MinipoolInfo struct {
 	Address                 common.Address            `json:"address"`
-	ValidatorPubkey         types.ValidatorPubkey     `json:"pubkey"`
+	ValidatorPubkey         beacon.ValidatorPubkey    `json:"pubkey"`
 	ValidatorIndex          string                    `json:"index"`
 	NodeAddress             common.Address            `json:"nodeAddress"`
 	NodeIndex               uint64                    `json:"-"`

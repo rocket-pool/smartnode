@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/rocketpool-go/types"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	merkletree "github.com/wealdtech/go-merkletree"
@@ -72,7 +73,7 @@ type SmoothingPoolMinipoolPerformance_v3 struct {
 	EthEarned               *sharedtypes.QuotedBigInt `json:"ethEarned"`
 }
 
-func (p *SmoothingPoolMinipoolPerformance_v3) GetPubkey() (types.ValidatorPubkey, error) {
+func (p *SmoothingPoolMinipoolPerformance_v3) GetPubkey() (beacon.ValidatorPubkey, error) {
 	return types.HexToValidatorPubkey(p.Pubkey)
 }
 func (p *SmoothingPoolMinipoolPerformance_v3) GetSuccessfulAttestationCount() uint64 {

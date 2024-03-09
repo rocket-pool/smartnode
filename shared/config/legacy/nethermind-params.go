@@ -4,7 +4,6 @@ import (
 	"runtime"
 
 	"github.com/pbnjay/memory"
-	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Constants
@@ -23,31 +22,31 @@ type NethermindConfig struct {
 	UnsupportedCommonParams []string `yaml:"-"`
 
 	// Compatible consensus clients
-	CompatibleConsensusClients []config.ConsensusClient `yaml:"-"`
+	CompatibleConsensusClients []ConsensusClient `yaml:"-"`
 
 	// The max number of events to query in a single event log query
 	EventLogInterval int `yaml:"-"`
 
 	// Nethermind's cache memory hint
-	CacheSize config.Parameter `yaml:"cacheSize,omitempty"`
+	CacheSize Parameter `yaml:"cacheSize,omitempty"`
 
 	// Max number of P2P peers to connect to
-	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
+	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// Nethermind's memory for pruning
-	PruneMemSize config.Parameter `yaml:"pruneMemSize,omitempty"`
+	PruneMemSize Parameter `yaml:"pruneMemSize,omitempty"`
 
 	// Additional modules to enable on the primary JSON RPC endpoint
-	AdditionalModules config.Parameter `yaml:"additionalModules,omitempty"`
+	AdditionalModules Parameter `yaml:"additionalModules,omitempty"`
 
 	// Additional JSON RPC URLs
-	AdditionalUrls config.Parameter `yaml:"additionalUrls,omitempty"`
+	AdditionalUrls Parameter `yaml:"additionalUrls,omitempty"`
 
 	// The Docker Hub tag for Nethermind
-	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
+	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
 	// Custom command line flags
-	AdditionalFlags config.Parameter `yaml:"additionalFlags,omitempty"`
+	AdditionalFlags Parameter `yaml:"additionalFlags,omitempty"`
 }
 
 // Generates a new Nethermind configuration
@@ -57,94 +56,94 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 
 		UnsupportedCommonParams: []string{},
 
-		CompatibleConsensusClients: []config.ConsensusClient{
-			config.ConsensusClient_Lighthouse,
-			config.ConsensusClient_Lodestar,
-			config.ConsensusClient_Nimbus,
-			config.ConsensusClient_Prysm,
-			config.ConsensusClient_Teku,
+		CompatibleConsensusClients: []ConsensusClient{
+			ConsensusClient_Lighthouse,
+			ConsensusClient_Lodestar,
+			ConsensusClient_Nimbus,
+			ConsensusClient_Prysm,
+			ConsensusClient_Teku,
 		},
 
 		EventLogInterval: nethermindEventLogInterval,
 
-		CacheSize: config.Parameter{
+		CacheSize: Parameter{
 			ID:                 "cache",
 			Name:               "Cache (Memory Hint) Size",
 			Description:        "The amount of RAM (in MB) you want to suggest for Nethermind's cache. While there is no guarantee that Nethermind will stay under this limit, lower values are preferred for machines with less RAM.\n\nThe default value for this will be calculated dynamically based on your system's available RAM, but you can adjust it manually.",
-			Type:               config.ParameterType_Uint,
-			Default:            map[config.Network]interface{}{config.Network_All: calculateNethermindCache()},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			Type:               ParameterType_Uint,
+			Default:            map[Network]interface{}{Network_All: calculateNethermindCache()},
+			AffectsContainers:  []ContainerID{ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 
-		MaxPeers: config.Parameter{
+		MaxPeers: Parameter{
 			ID:                 "maxPeers",
 			Name:               "Max Peers",
-			Description:        "The maximum number of peers Nethermind should connect to. This can be lowered to improve performance on low-power systems or constrained config.Networks. We recommend keeping it at 12 or higher.",
-			Type:               config.ParameterType_Uint16,
-			Default:            map[config.Network]interface{}{config.Network_All: calculateNethermindPeers()},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			Description:        "The maximum number of peers Nethermind should connect to. This can be lowered to improve performance on low-power systems or constrained Networks. We recommend keeping it at 12 or higher.",
+			Type:               ParameterType_Uint16,
+			Default:            map[Network]interface{}{Network_All: calculateNethermindPeers()},
+			AffectsContainers:  []ContainerID{ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 
-		PruneMemSize: config.Parameter{
+		PruneMemSize: Parameter{
 			ID:                 "pruneMemSize",
 			Name:               "In-Memory Pruning Cache Size",
 			Description:        "The amount of RAM (in MB) you want to dedicate to Nethermind for its in-memory pruning system. Higher values mean less writes to your SSD and slower overall database growth.\n\nThe default value for this will be calculated dynamically based on your system's available RAM, but you can adjust it manually.",
-			Type:               config.ParameterType_Uint,
-			Default:            map[config.Network]interface{}{config.Network_All: calculateNethermindPruneMemSize()},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			Type:               ParameterType_Uint,
+			Default:            map[Network]interface{}{Network_All: calculateNethermindPruneMemSize()},
+			AffectsContainers:  []ContainerID{ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 
-		AdditionalModules: config.Parameter{
+		AdditionalModules: Parameter{
 			ID:                 "additionalModules",
 			Name:               "Additional Modules",
 			Description:        "Additional modules you want to add to the primary JSON-RPC route. The defaults are Eth,Net,Personal,Web3. You can add any additional ones you need here; separate multiple modules with commas, and do not use spaces.",
-			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			Type:               ParameterType_String,
+			Default:            map[Network]interface{}{Network_All: ""},
+			AffectsContainers:  []ContainerID{ContainerID_Eth1},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
 
-		AdditionalUrls: config.Parameter{
+		AdditionalUrls: Parameter{
 			ID:                 "additionalUrls",
 			Name:               "Additional URLs",
 			Description:        "Additional JSON-RPC URLs you want to run alongside the primary URL. These will be added to the \"--JsonRpc.AdditionalRpcUrls\" argument. Wrap each additional URL in quotes, and separate multiple URLs with commas (no spaces). Please consult the Nethermind documentation for more information on this flag, its intended usage, and its expected formatting.\n\nFor advanced users only.",
-			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			Type:               ParameterType_String,
+			Default:            map[Network]interface{}{Network_All: ""},
+			AffectsContainers:  []ContainerID{ContainerID_Eth1},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
 
-		ContainerTag: config.Parameter{
+		ContainerTag: Parameter{
 			ID:          "containerTag",
 			Name:        "Container Tag",
 			Description: "The tag name of the Nethermind container you want to use on Docker Hub.",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: nethermindTagProd,
-				config.Network_Prater:  nethermindTagTest,
-				config.Network_Devnet:  nethermindTagTest,
-				config.Network_Holesky: nethermindTagTest,
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: nethermindTagProd,
+				Network_Prater:  nethermindTagTest,
+				Network_Devnet:  nethermindTagTest,
+				Network_Holesky: nethermindTagTest,
 			},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			AffectsContainers:  []ContainerID{ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
 		},
 
-		AdditionalFlags: config.Parameter{
+		AdditionalFlags: Parameter{
 			ID:                 "additionalFlags",
 			Name:               "Additional Flags",
 			Description:        "Additional custom command line flags you want to pass to Nethermind, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			Type:               ParameterType_String,
+			Default:            map[Network]interface{}{Network_All: ""},
+			AffectsContainers:  []ContainerID{ContainerID_Eth1},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
@@ -202,8 +201,8 @@ func calculateNethermindPeers() uint16 {
 }
 
 // Get the parameters for this config
-func (cfg *NethermindConfig) GetParameters() []*config.Parameter {
-	return []*config.Parameter{
+func (cfg *NethermindConfig) GetParameters() []*Parameter {
+	return []*Parameter{
 		&cfg.CacheSize,
 		&cfg.MaxPeers,
 		&cfg.PruneMemSize,

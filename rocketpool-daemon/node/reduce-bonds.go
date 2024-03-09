@@ -9,12 +9,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"golang.org/x/sync/errgroup"
 
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
@@ -125,7 +125,7 @@ func (t *ReduceBonds) Run(state *state.NetworkState) error {
 	}
 
 	// Get reduce bonds submissions
-	txSubmissions := make([]*core.TransactionSubmission, len(minipools))
+	txSubmissions := make([]*eth.TransactionSubmission, len(minipools))
 	for i, mpd := range minipools {
 		txSubmissions[i], err = t.createReduceBondTx(mpd)
 		if err != nil {
@@ -259,7 +259,7 @@ func (t *ReduceBonds) getReduceableMinipools(nodeAddress common.Address, windowS
 
 	// Get bond reduction details
 	err := t.rp.BatchQuery(len(mps), bondReductionBatchSize, func(mc *batch.MultiCaller, i int) error {
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			mps[i].ReduceBondTime,
 			mps[i].IsBondReduceCancelled,
 		)
@@ -296,7 +296,7 @@ func (t *ReduceBonds) getReduceableMinipools(nodeAddress common.Address, windowS
 }
 
 // Get submission info for reducing a minipool's bond
-func (t *ReduceBonds) createReduceBondTx(mpd *rpstate.NativeMinipoolDetails) (*core.TransactionSubmission, error) {
+func (t *ReduceBonds) createReduceBondTx(mpd *rpstate.NativeMinipoolDetails) (*eth.TransactionSubmission, error) {
 	// Log
 	t.log.Printlnf("Preparing to reduce bond for minipool %s...", mpd.MinipoolAddress.Hex())
 
@@ -333,7 +333,7 @@ func (t *ReduceBonds) createReduceBondTx(mpd *rpstate.NativeMinipoolDetails) (*c
 }
 
 // Reduce bonds for all available minipools
-func (t *ReduceBonds) reduceBonds(submissions []*core.TransactionSubmission, minipools []*minipool.MinipoolV3, windowDuration time.Duration, latestBlockTime time.Time) error {
+func (t *ReduceBonds) reduceBonds(submissions []*eth.TransactionSubmission, minipools []*minipool.MinipoolV3, windowDuration time.Duration, latestBlockTime time.Time) error {
 	// Get transactor
 	opts, err := t.w.GetTransactor()
 	if err != nil {

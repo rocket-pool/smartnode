@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/wealdtech/go-merkletree"
 )
 
@@ -78,7 +78,7 @@ type TotalRewards struct {
 
 // Minipool stats
 type ISmoothingPoolMinipoolPerformance interface {
-	GetPubkey() (types.ValidatorPubkey, error)
+	GetPubkey() (beacon.ValidatorPubkey, error)
 	GetSuccessfulAttestationCount() uint64
 	GetMissedAttestationCount() uint64
 	GetMissingAttestationSlots() []uint64

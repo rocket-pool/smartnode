@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
@@ -16,7 +17,7 @@ import (
 )
 
 // Handle a transaction, either printing its details, signing it, or submitting it and waiting for it to be included
-func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, confirmMessage string, identifier string, submissionMessage string) error {
+func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, confirmMessage string, identifier string, submissionMessage string) error {
 	// Make sure the TX was successful
 	if txInfo.SimError != "" {
 		return fmt.Errorf("simulating %s failed: %s", identifier, txInfo.SimError)
@@ -85,7 +86,7 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *core.TransactionInfo, c
 }
 
 // Handle a batch of transactions, either printing their details, signing them, or submitting them and waiting for them to be included
-func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.TransactionInfo, confirmMessage string, identifierFunc func(int) string, submissionMessage string) error {
+func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.TransactionInfo, confirmMessage string, identifierFunc func(int) string, submissionMessage string) error {
 	// Make sure the TXs were successful
 	for i, txInfo := range txInfos {
 		if txInfo.SimError != "" {
@@ -125,7 +126,7 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*core.Transactio
 	}
 
 	// Create the submissions from the TX infos
-	submissions := make([]*core.TransactionSubmission, len(txInfos))
+	submissions := make([]*eth.TransactionSubmission, len(txInfos))
 	for i, info := range txInfos {
 		submission, _ := core.CreateTxSubmissionFromInfo(info, nil)
 		submissions[i] = submission

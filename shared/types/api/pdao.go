@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -56,30 +56,30 @@ type ProtocolDaoProposalsData struct {
 }
 
 type ProtocolDaoVoteOnProposalData struct {
-	CanVote           bool                  `json:"canVote"`
-	DoesNotExist      bool                  `json:"doesNotExist"`
-	InvalidState      bool                  `json:"invalidState"`
-	InsufficientPower bool                  `json:"insufficientPower"`
-	AlreadyVoted      bool                  `json:"alreadyVoted"`
-	VotingPower       *big.Int              `json:"votingPower"`
-	TxInfo            *core.TransactionInfo `json:"txInfo"`
+	CanVote           bool                 `json:"canVote"`
+	DoesNotExist      bool                 `json:"doesNotExist"`
+	InvalidState      bool                 `json:"invalidState"`
+	InsufficientPower bool                 `json:"insufficientPower"`
+	AlreadyVoted      bool                 `json:"alreadyVoted"`
+	VotingPower       *big.Int             `json:"votingPower"`
+	TxInfo            *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoOverrideVoteOnProposalData struct {
-	CanVote           bool                  `json:"canVote"`
-	DoesNotExist      bool                  `json:"doesNotExist"`
-	InvalidState      bool                  `json:"invalidState"`
-	InsufficientPower bool                  `json:"insufficientPower"`
-	AlreadyVoted      bool                  `json:"alreadyVoted"`
-	VotingPower       *big.Int              `json:"votingPower"`
-	TxInfo            *core.TransactionInfo `json:"txInfo"`
+	CanVote           bool                 `json:"canVote"`
+	DoesNotExist      bool                 `json:"doesNotExist"`
+	InvalidState      bool                 `json:"invalidState"`
+	InsufficientPower bool                 `json:"insufficientPower"`
+	AlreadyVoted      bool                 `json:"alreadyVoted"`
+	VotingPower       *big.Int             `json:"votingPower"`
+	TxInfo            *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoExecuteProposalData struct {
-	CanExecute   bool                  `json:"canExecute"`
-	DoesNotExist bool                  `json:"doesNotExist"`
-	InvalidState bool                  `json:"invalidState"`
-	TxInfo       *core.TransactionInfo `json:"txInfo"`
+	CanExecute   bool                 `json:"canExecute"`
+	DoesNotExist bool                 `json:"doesNotExist"`
+	InvalidState bool                 `json:"invalidState"`
+	TxInfo       *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoSettingsData struct {
@@ -175,63 +175,63 @@ type ProtocolDaoRewardsPercentagesData struct {
 }
 
 type ProtocolDaoProposeSettingData struct {
-	CanPropose      bool                  `json:"canPropose"`
-	UnknownSetting  bool                  `json:"unknownSetting"`
-	InsufficientRpl bool                  `json:"insufficientRpl"`
-	StakedRpl       *big.Int              `json:"stakedRpl"`
-	LockedRpl       *big.Int              `json:"lockedRpl"`
-	ProposalBond    *big.Int              `json:"proposalBond"`
-	TxInfo          *core.TransactionInfo `json:"txInfo"`
+	CanPropose      bool                 `json:"canPropose"`
+	UnknownSetting  bool                 `json:"unknownSetting"`
+	InsufficientRpl bool                 `json:"insufficientRpl"`
+	StakedRpl       *big.Int             `json:"stakedRpl"`
+	LockedRpl       *big.Int             `json:"lockedRpl"`
+	ProposalBond    *big.Int             `json:"proposalBond"`
+	TxInfo          *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoGeneralProposeData struct {
-	CanPropose      bool                  `json:"canPropose"`
-	InsufficientRpl bool                  `json:"insufficientRpl"`
-	StakedRpl       *big.Int              `json:"stakedRpl"`
-	LockedRpl       *big.Int              `json:"lockedRpl"`
-	ProposalBond    *big.Int              `json:"proposalBond"`
-	TxInfo          *core.TransactionInfo `json:"txInfo"`
+	CanPropose      bool                 `json:"canPropose"`
+	InsufficientRpl bool                 `json:"insufficientRpl"`
+	StakedRpl       *big.Int             `json:"stakedRpl"`
+	LockedRpl       *big.Int             `json:"lockedRpl"`
+	ProposalBond    *big.Int             `json:"proposalBond"`
+	TxInfo          *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoProposeInviteToSecurityCouncilData struct {
-	CanPropose          bool                  `json:"canPropose"`
-	MemberAlreadyExists bool                  `json:"memberAlreadyExists"`
-	InsufficientRpl     bool                  `json:"insufficientRpl"`
-	StakedRpl           *big.Int              `json:"stakedRpl"`
-	LockedRpl           *big.Int              `json:"lockedRpl"`
-	ProposalBond        *big.Int              `json:"proposalBond"`
-	TxInfo              *core.TransactionInfo `json:"txInfo"`
+	CanPropose          bool                 `json:"canPropose"`
+	MemberAlreadyExists bool                 `json:"memberAlreadyExists"`
+	InsufficientRpl     bool                 `json:"insufficientRpl"`
+	StakedRpl           *big.Int             `json:"stakedRpl"`
+	LockedRpl           *big.Int             `json:"lockedRpl"`
+	ProposalBond        *big.Int             `json:"proposalBond"`
+	TxInfo              *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoProposeKickFromSecurityCouncilData struct {
-	CanPropose         bool                  `json:"canPropose"`
-	MemberDoesNotExist bool                  `json:"memberDoesNotExist"`
-	InsufficientRpl    bool                  `json:"insufficientRpl"`
-	StakedRpl          *big.Int              `json:"stakedRpl"`
-	LockedRpl          *big.Int              `json:"lockedRpl"`
-	ProposalBond       *big.Int              `json:"proposalBond"`
-	TxInfo             *core.TransactionInfo `json:"txInfo"`
+	CanPropose         bool                 `json:"canPropose"`
+	MemberDoesNotExist bool                 `json:"memberDoesNotExist"`
+	InsufficientRpl    bool                 `json:"insufficientRpl"`
+	StakedRpl          *big.Int             `json:"stakedRpl"`
+	LockedRpl          *big.Int             `json:"lockedRpl"`
+	ProposalBond       *big.Int             `json:"proposalBond"`
+	TxInfo             *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoProposeKickMultiFromSecurityCouncilData struct {
-	CanPropose         bool                  `json:"canPropose"`
-	NonexistingMembers []common.Address      `json:"nonexistingMembers"`
-	InsufficientRpl    bool                  `json:"insufficientRpl"`
-	StakedRpl          *big.Int              `json:"stakedRpl"`
-	LockedRpl          *big.Int              `json:"lockedRpl"`
-	ProposalBond       *big.Int              `json:"proposalBond"`
-	TxInfo             *core.TransactionInfo `json:"txInfo"`
+	CanPropose         bool                 `json:"canPropose"`
+	NonexistingMembers []common.Address     `json:"nonexistingMembers"`
+	InsufficientRpl    bool                 `json:"insufficientRpl"`
+	StakedRpl          *big.Int             `json:"stakedRpl"`
+	LockedRpl          *big.Int             `json:"lockedRpl"`
+	ProposalBond       *big.Int             `json:"proposalBond"`
+	TxInfo             *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoProposeReplaceMemberOfSecurityCouncilData struct {
-	CanPropose             bool                  `json:"canPropose"`
-	OldMemberDoesNotExist  bool                  `json:"oldMemberDoesNotExist"`
-	NewMemberAlreadyExists bool                  `json:"newMemberAlreadyExists"`
-	InsufficientRpl        bool                  `json:"insufficientRpl"`
-	StakedRpl              *big.Int              `json:"stakedRpl"`
-	LockedRpl              *big.Int              `json:"lockedRpl"`
-	ProposalBond           *big.Int              `json:"proposalBond"`
-	TxInfo                 *core.TransactionInfo `json:"txInfo"`
+	CanPropose             bool                 `json:"canPropose"`
+	OldMemberDoesNotExist  bool                 `json:"oldMemberDoesNotExist"`
+	NewMemberAlreadyExists bool                 `json:"newMemberAlreadyExists"`
+	InsufficientRpl        bool                 `json:"insufficientRpl"`
+	StakedRpl              *big.Int             `json:"stakedRpl"`
+	LockedRpl              *big.Int             `json:"lockedRpl"`
+	ProposalBond           *big.Int             `json:"proposalBond"`
+	TxInfo                 *eth.TransactionInfo `json:"txInfo"`
 }
 
 type BondClaimResult struct {
@@ -256,36 +256,36 @@ type ProtocolDaoClaimBondsBody struct {
 }
 
 type ProtocolDaoClaimBondsData struct {
-	CanClaim     bool                  `json:"canClaim"`
-	IsProposer   bool                  `json:"isProposer"`
-	DoesNotExist bool                  `json:"doesNotExist"`
-	InvalidState bool                  `json:"invalidState"`
-	TxInfo       *core.TransactionInfo `json:"txInfo"`
+	CanClaim     bool                 `json:"canClaim"`
+	IsProposer   bool                 `json:"isProposer"`
+	DoesNotExist bool                 `json:"doesNotExist"`
+	InvalidState bool                 `json:"invalidState"`
+	TxInfo       *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoDefeatProposalData struct {
-	CanDefeat              bool                  `json:"canDefeat"`
-	DoesNotExist           bool                  `json:"doesNotExist"`
-	AlreadyDefeated        bool                  `json:"alreadyDefeated"`
-	StillInChallengeWindow bool                  `json:"stillInChallengeWindow"`
-	InvalidChallengeState  bool                  `json:"invalidChallengeState"`
-	TxInfo                 *core.TransactionInfo `json:"txInfo"`
+	CanDefeat              bool                 `json:"canDefeat"`
+	DoesNotExist           bool                 `json:"doesNotExist"`
+	AlreadyDefeated        bool                 `json:"alreadyDefeated"`
+	StillInChallengeWindow bool                 `json:"stillInChallengeWindow"`
+	InvalidChallengeState  bool                 `json:"invalidChallengeState"`
+	TxInfo                 *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoFinalizeProposalData struct {
-	CanFinalize      bool                  `json:"canFinalize"`
-	DoesNotExist     bool                  `json:"doesNotExist"`
-	InvalidState     bool                  `json:"invalidState"`
-	AlreadyFinalized bool                  `json:"alreadyFinalized"`
-	TxInfo           *core.TransactionInfo `json:"txInfo"`
+	CanFinalize      bool                 `json:"canFinalize"`
+	DoesNotExist     bool                 `json:"doesNotExist"`
+	InvalidState     bool                 `json:"invalidState"`
+	AlreadyFinalized bool                 `json:"alreadyFinalized"`
+	TxInfo           *eth.TransactionInfo `json:"txInfo"`
 }
 
 type ProtocolDaoProposeRecurringSpendUpdateData struct {
-	CanPropose      bool                  `json:"canPropose"`
-	DoesNotExist    bool                  `json:"doesNotExist"`
-	InsufficientRpl bool                  `json:"insufficientRpl"`
-	StakedRpl       *big.Int              `json:"stakedRpl"`
-	LockedRpl       *big.Int              `json:"lockedRpl"`
-	ProposalBond    *big.Int              `json:"proposalBond"`
-	TxInfo          *core.TransactionInfo `json:"txInfo"`
+	CanPropose      bool                 `json:"canPropose"`
+	DoesNotExist    bool                 `json:"doesNotExist"`
+	InsufficientRpl bool                 `json:"insufficientRpl"`
+	StakedRpl       *big.Int             `json:"stakedRpl"`
+	LockedRpl       *big.Int             `json:"lockedRpl"`
+	ProposalBond    *big.Int             `json:"proposalBond"`
+	TxInfo          *eth.TransactionInfo `json:"txInfo"`
 }

@@ -3,7 +3,7 @@ package api
 import (
 	"math/big"
 
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 )
 
 type AuctionStatusData struct {
@@ -44,34 +44,34 @@ type AuctionLotsData struct {
 }
 
 type AuctionCreateLotData struct {
-	CanCreate           bool                  `json:"canCreate"`
-	InsufficientBalance bool                  `json:"insufficientBalance"`
-	CreateLotDisabled   bool                  `json:"createLotDisabled"`
-	TxInfo              *core.TransactionInfo `json:"txInfo"`
+	CanCreate           bool                 `json:"canCreate"`
+	InsufficientBalance bool                 `json:"insufficientBalance"`
+	CreateLotDisabled   bool                 `json:"createLotDisabled"`
+	TxInfo              *eth.TransactionInfo `json:"txInfo"`
 }
 
 type AuctionBidOnLotData struct {
-	CanBid           bool                  `json:"canBid"`
-	DoesNotExist     bool                  `json:"doesNotExist"`
-	BiddingEnded     bool                  `json:"biddingEnded"`
-	RplExhausted     bool                  `json:"rplExhausted"`
-	BidOnLotDisabled bool                  `json:"bidOnLotDisabled"`
-	TxInfo           *core.TransactionInfo `json:"txInfo"`
+	CanBid           bool                 `json:"canBid"`
+	DoesNotExist     bool                 `json:"doesNotExist"`
+	BiddingEnded     bool                 `json:"biddingEnded"`
+	RplExhausted     bool                 `json:"rplExhausted"`
+	BidOnLotDisabled bool                 `json:"bidOnLotDisabled"`
+	TxInfo           *eth.TransactionInfo `json:"txInfo"`
 }
 
 type AuctionClaimFromLotData struct {
-	CanClaim         bool                  `json:"canClaim"`
-	DoesNotExist     bool                  `json:"doesNotExist"`
-	NoBidFromAddress bool                  `json:"noBidFromAddress"`
-	NotCleared       bool                  `json:"notCleared"`
-	TxInfo           *core.TransactionInfo `json:"txInfo"`
+	CanClaim         bool                 `json:"canClaim"`
+	DoesNotExist     bool                 `json:"doesNotExist"`
+	NoBidFromAddress bool                 `json:"noBidFromAddress"`
+	NotCleared       bool                 `json:"notCleared"`
+	TxInfo           *eth.TransactionInfo `json:"txInfo"`
 }
 
 type AuctionRecoverRplFromLotData struct {
-	CanRecover          bool                  `json:"canRecover"`
-	DoesNotExist        bool                  `json:"doesNotExist"`
-	BiddingNotEnded     bool                  `json:"biddingNotEnded"`
-	NoUnclaimedRpl      bool                  `json:"noUnclaimedRpl"`
-	RplAlreadyRecovered bool                  `json:"rplAlreadyRecovered"`
-	TxInfo              *core.TransactionInfo `json:"txInfo"`
+	CanRecover          bool                 `json:"canRecover"`
+	DoesNotExist        bool                 `json:"doesNotExist"`
+	BiddingNotEnded     bool                 `json:"biddingNotEnded"`
+	NoUnclaimedRpl      bool                 `json:"noUnclaimedRpl"`
+	RplAlreadyRecovered bool                 `json:"rplAlreadyRecovered"`
+	TxInfo              *eth.TransactionInfo `json:"txInfo"`
 }

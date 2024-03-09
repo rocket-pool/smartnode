@@ -10,6 +10,7 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/rocketpool-go/types"
 	rpkeystore "github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet/keystore"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -233,7 +234,7 @@ func (ks *Keystore) initialize() error {
 }
 
 // Load a private key
-func (ks *Keystore) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+func (ks *Keystore) LoadValidatorKey(pubkey beacon.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
 
 	// Initialize the account store
 	err := ks.initialize()

@@ -8,6 +8,7 @@ import (
 
 	"github.com/goccy/go-json"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -43,7 +44,7 @@ func TestRecovery(derivationPath string, walletIndex uint, mnemonic string, chai
 	return w, nil
 }
 
-func RecoverMinipoolKeys(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, w *LocalWallet, testOnly bool) ([]types.ValidatorPubkey, error) {
+func RecoverMinipoolKeys(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, w *LocalWallet, testOnly bool) ([]beacon.ValidatorPubkey, error) {
 	status := w.GetStatus()
 	if !sharedutils.IsWalletReady(status) {
 		return nil, fmt.Errorf("cannot recover minipool keys without a wallet keystore and matching password loaded")
@@ -86,9 +87,9 @@ func RecoverMinipoolKeys(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool
 	}
 
 	// Remove zero pubkeys
-	zeroPubkey := types.ValidatorPubkey{}
-	pubkeys := []types.ValidatorPubkey{}
-	pubkeyMap := map[types.ValidatorPubkey]bool{}
+	zeroPubkey := beacon.ValidatorPubkey{}
+	pubkeys := []beacon.ValidatorPubkey{}
+	pubkeyMap := map[beacon.ValidatorPubkey]bool{}
 	for _, mp := range mps {
 		pubkey := mp.Common().Pubkey.Get()
 		if pubkey != zeroPubkey {
@@ -144,7 +145,7 @@ func RecoverMinipoolKeys(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool
 	return pubkeys, nil
 }
 
-func CheckForAndRecoverCustomMinipoolKeys(cfg *config.RocketPoolConfig, pubkeyMap map[types.ValidatorPubkey]bool, w *LocalWallet, testOnly bool) (map[types.ValidatorPubkey]bool, error) {
+func CheckForAndRecoverCustomMinipoolKeys(cfg *config.RocketPoolConfig, pubkeyMap map[beacon.ValidatorPubkey]bool, w *LocalWallet, testOnly bool) (map[beacon.ValidatorPubkey]bool, error) {
 	// Load custom validator keys
 	customKeyDir := cfg.Smartnode.GetCustomKeyPath()
 	info, err := os.Stat(customKeyDir)

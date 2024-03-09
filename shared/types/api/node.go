@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/eth"
 
-	"github.com/rocket-pool/rocketpool-go/core"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
@@ -97,151 +97,151 @@ type NodeStatusData struct {
 }
 
 type NodeRegisterData struct {
-	CanRegister          bool                  `json:"canRegister"`
-	AlreadyRegistered    bool                  `json:"alreadyRegistered"`
-	RegistrationDisabled bool                  `json:"registrationDisabled"`
-	TxInfo               *core.TransactionInfo `json:"txInfo"`
+	CanRegister          bool                 `json:"canRegister"`
+	AlreadyRegistered    bool                 `json:"alreadyRegistered"`
+	RegistrationDisabled bool                 `json:"registrationDisabled"`
+	TxInfo               *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeSetRplLockingAllowedData struct {
-	CanSet              bool                  `json:"canSet"`
-	DifferentRplAddress bool                  `json:"differentRplAddress"`
-	TxInfo              *core.TransactionInfo `json:"txInfo"`
+	CanSet              bool                 `json:"canSet"`
+	DifferentRplAddress bool                 `json:"differentRplAddress"`
+	TxInfo              *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeSetPrimaryWithdrawalAddressData struct {
-	CanSet            bool                  `json:"canSet"`
-	AddressAlreadySet bool                  `json:"addressAlreadySet"`
-	TxInfo            *core.TransactionInfo `json:"txInfo"`
+	CanSet            bool                 `json:"canSet"`
+	AddressAlreadySet bool                 `json:"addressAlreadySet"`
+	TxInfo            *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeConfirmPrimaryWithdrawalAddressData struct {
-	CanConfirm              bool                  `json:"canConfirm"`
-	IncorrectPendingAddress bool                  `json:"incorrectPendingAddress"`
-	TxInfo                  *core.TransactionInfo `json:"txInfo"`
+	CanConfirm              bool                 `json:"canConfirm"`
+	IncorrectPendingAddress bool                 `json:"incorrectPendingAddress"`
+	TxInfo                  *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeSetRplWithdrawalAddressData struct {
-	CanSet                bool                  `json:"canSet"`
-	PrimaryAddressDiffers bool                  `json:"primaryAddressDiffers"`
-	RplAddressDiffers     bool                  `json:"rplAddressDiffers"`
-	RplStake              *big.Int              `json:"rplStake"`
-	TxInfo                *core.TransactionInfo `json:"txInfo"`
+	CanSet                bool                 `json:"canSet"`
+	PrimaryAddressDiffers bool                 `json:"primaryAddressDiffers"`
+	RplAddressDiffers     bool                 `json:"rplAddressDiffers"`
+	RplStake              *big.Int             `json:"rplStake"`
+	TxInfo                *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeConfirmRplWithdrawalAddressData struct {
-	CanConfirm              bool                  `json:"canConfirm"`
-	IncorrectPendingAddress bool                  `json:"incorrectPendingAddress"`
-	TxInfo                  *core.TransactionInfo `json:"txInfo"`
+	CanConfirm              bool                 `json:"canConfirm"`
+	IncorrectPendingAddress bool                 `json:"incorrectPendingAddress"`
+	TxInfo                  *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeSwapRplData struct {
-	CanSwap             bool                  `json:"canSwap"`
-	InsufficientBalance bool                  `json:"insufficientBalance"`
-	Allowance           *big.Int              `json:"allowance"`
-	ApproveTxInfo       *core.TransactionInfo `json:"approveTxInfo"`
-	SwapTxInfo          *core.TransactionInfo `json:"swapTxInfo"`
+	CanSwap             bool                 `json:"canSwap"`
+	InsufficientBalance bool                 `json:"insufficientBalance"`
+	Allowance           *big.Int             `json:"allowance"`
+	ApproveTxInfo       *eth.TransactionInfo `json:"approveTxInfo"`
+	SwapTxInfo          *eth.TransactionInfo `json:"swapTxInfo"`
 }
 
 type NodeStakeRplData struct {
-	CanStake            bool                  `json:"canStake"`
-	InsufficientBalance bool                  `json:"insufficientBalance"`
-	Allowance           *big.Int              `json:"allowance"`
-	ApproveTxInfo       *core.TransactionInfo `json:"approveTxInfo"`
-	StakeTxInfo         *core.TransactionInfo `json:"stakeTxInfo"`
+	CanStake            bool                 `json:"canStake"`
+	InsufficientBalance bool                 `json:"insufficientBalance"`
+	Allowance           *big.Int             `json:"allowance"`
+	ApproveTxInfo       *eth.TransactionInfo `json:"approveTxInfo"`
+	StakeTxInfo         *eth.TransactionInfo `json:"stakeTxInfo"`
 }
 
 type NodeSetStakeRplForAllowedData struct {
-	CanSet bool                  `json:"canSet"`
-	TxInfo *core.TransactionInfo `json:"txInfo"`
+	CanSet bool                 `json:"canSet"`
+	TxInfo *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeWithdrawRplData struct {
-	CanWithdraw                      bool                  `json:"canWithdraw"`
-	InsufficientBalance              bool                  `json:"insufficientBalance"`
-	MinipoolsUndercollateralized     bool                  `json:"minipoolsUndercollateralized"`
-	WithdrawalDelayActive            bool                  `json:"withdrawalDelayActive"`
-	HasDifferentRplWithdrawalAddress bool                  `json:"hasDifferentRPLWithdrawalAddress"`
-	TxInfo                           *core.TransactionInfo `json:"txInfo"`
+	CanWithdraw                      bool                 `json:"canWithdraw"`
+	InsufficientBalance              bool                 `json:"insufficientBalance"`
+	MinipoolsUndercollateralized     bool                 `json:"minipoolsUndercollateralized"`
+	WithdrawalDelayActive            bool                 `json:"withdrawalDelayActive"`
+	HasDifferentRplWithdrawalAddress bool                 `json:"hasDifferentRPLWithdrawalAddress"`
+	TxInfo                           *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeWithdrawEthData struct {
-	CanWithdraw                          bool                  `json:"canWithdraw"`
-	InsufficientBalance                  bool                  `json:"insufficientBalance"`
-	HasDifferentPrimaryWithdrawalAddress bool                  `json:"hasDifferentWithdrawalAddress"`
-	TxInfo                               *core.TransactionInfo `json:"txInfo"`
+	CanWithdraw                          bool                 `json:"canWithdraw"`
+	InsufficientBalance                  bool                 `json:"insufficientBalance"`
+	HasDifferentPrimaryWithdrawalAddress bool                 `json:"hasDifferentWithdrawalAddress"`
+	TxInfo                               *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeDepositData struct {
-	CanDeposit                       bool                    `json:"canDeposit"`
-	CreditBalance                    *big.Int                `json:"creditBalance"`
-	DepositBalance                   *big.Int                `json:"depositBalance"`
-	CanUseCredit                     bool                    `json:"canUseCredit"`
-	NodeBalance                      *big.Int                `json:"nodeBalance"`
-	InsufficientBalance              bool                    `json:"insufficientBalance"`
-	InsufficientBalanceWithoutCredit bool                    `json:"insufficientBalanceWithoutCredit"`
-	InsufficientRplStake             bool                    `json:"insufficientRplStake"`
-	InvalidAmount                    bool                    `json:"invalidAmount"`
-	UnbondedMinipoolsAtMax           bool                    `json:"unbondedMinipoolsAtMax"`
-	DepositDisabled                  bool                    `json:"depositDisabled"`
-	InConsensus                      bool                    `json:"inConsensus"`
-	MinipoolAddress                  common.Address          `json:"minipoolAddress"`
-	ValidatorPubkey                  rptypes.ValidatorPubkey `json:"validatorPubkey"`
-	Index                            uint                    `json:"index"`
-	ScrubPeriod                      time.Duration           `json:"scrubPeriod"`
-	TxInfo                           *core.TransactionInfo   `json:"txInfo"`
+	CanDeposit                       bool                   `json:"canDeposit"`
+	CreditBalance                    *big.Int               `json:"creditBalance"`
+	DepositBalance                   *big.Int               `json:"depositBalance"`
+	CanUseCredit                     bool                   `json:"canUseCredit"`
+	NodeBalance                      *big.Int               `json:"nodeBalance"`
+	InsufficientBalance              bool                   `json:"insufficientBalance"`
+	InsufficientBalanceWithoutCredit bool                   `json:"insufficientBalanceWithoutCredit"`
+	InsufficientRplStake             bool                   `json:"insufficientRplStake"`
+	InvalidAmount                    bool                   `json:"invalidAmount"`
+	UnbondedMinipoolsAtMax           bool                   `json:"unbondedMinipoolsAtMax"`
+	DepositDisabled                  bool                   `json:"depositDisabled"`
+	InConsensus                      bool                   `json:"inConsensus"`
+	MinipoolAddress                  common.Address         `json:"minipoolAddress"`
+	ValidatorPubkey                  beacon.ValidatorPubkey `json:"validatorPubkey"`
+	Index                            uint                   `json:"index"`
+	ScrubPeriod                      time.Duration          `json:"scrubPeriod"`
+	TxInfo                           *eth.TransactionInfo   `json:"txInfo"`
 }
 
 type NodeCreateVacantMinipoolData struct {
-	CanDeposit            bool                  `json:"canDeposit"`
-	InsufficientRplStake  bool                  `json:"insufficientRplStake"`
-	InvalidAmount         bool                  `json:"invalidAmount"`
-	DepositDisabled       bool                  `json:"depositDisabled"`
-	MinipoolAddress       common.Address        `json:"minipoolAddress"`
-	ScrubPeriod           time.Duration         `json:"scrubPeriod"`
-	WithdrawalCredentials common.Hash           `json:"withdrawalCredentials"`
-	TxInfo                *core.TransactionInfo `json:"txInfo"`
+	CanDeposit            bool                 `json:"canDeposit"`
+	InsufficientRplStake  bool                 `json:"insufficientRplStake"`
+	InvalidAmount         bool                 `json:"invalidAmount"`
+	DepositDisabled       bool                 `json:"depositDisabled"`
+	MinipoolAddress       common.Address       `json:"minipoolAddress"`
+	ScrubPeriod           time.Duration        `json:"scrubPeriod"`
+	WithdrawalCredentials common.Hash          `json:"withdrawalCredentials"`
+	TxInfo                *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeSendData struct {
-	Balance             *big.Int              `json:"balance"`
-	TokenName           string                `json:"name"`
-	TokenSymbol         string                `json:"symbol"`
-	CanSend             bool                  `json:"canSend"`
-	InsufficientBalance bool                  `json:"insufficientBalance"`
-	TxInfo              *core.TransactionInfo `json:"txInfo"`
+	Balance             *big.Int             `json:"balance"`
+	TokenName           string               `json:"name"`
+	TokenSymbol         string               `json:"symbol"`
+	CanSend             bool                 `json:"canSend"`
+	InsufficientBalance bool                 `json:"insufficientBalance"`
+	TxInfo              *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeSendMessageData struct {
-	TxInfo *core.TransactionInfo `json:"txInfo"`
+	TxInfo *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeBurnData struct {
-	CanBurn                bool                  `json:"canBurn"`
-	InsufficientBalance    bool                  `json:"insufficientBalance"`
-	InsufficientCollateral bool                  `json:"insufficientCollateral"`
-	TxInfo                 *core.TransactionInfo `json:"txInfo"`
+	CanBurn                bool                 `json:"canBurn"`
+	InsufficientBalance    bool                 `json:"insufficientBalance"`
+	InsufficientCollateral bool                 `json:"insufficientCollateral"`
+	TxInfo                 *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeRewardsData struct {
-	NodeRegistrationTime        time.Time             `json:"nodeRegistrationTime"`
-	RewardsInterval             time.Duration         `json:"rewardsInterval"`
-	LastCheckpoint              time.Time             `json:"lastCheckpoint"`
-	Trusted                     bool                  `json:"trusted"`
-	Registered                  bool                  `json:"registered"`
-	EffectiveRplStake           float64               `json:"effectiveRplStake"`
-	TotalRplStake               float64               `json:"totalRplStake"`
-	TrustedRplBond              float64               `json:"trustedRplBond"`
-	EstimatedRewards            float64               `json:"estimatedRewards"`
-	CumulativeRplRewards        float64               `json:"cumulativeRplRewards"`
-	CumulativeEthRewards        float64               `json:"cumulativeEthRewards"`
-	EstimatedTrustedRplRewards  float64               `json:"estimatedTrustedRplRewards"`
-	CumulativeTrustedRplRewards float64               `json:"cumulativeTrustedRplRewards"`
-	UnclaimedRplRewards         float64               `json:"unclaimedRplRewards"`
-	UnclaimedEthRewards         float64               `json:"unclaimedEthRewards"`
-	UnclaimedTrustedRplRewards  float64               `json:"unclaimedTrustedRplRewards"`
-	BeaconRewards               float64               `json:"beaconRewards"`
-	TxInfo                      *core.TransactionInfo `json:"txInfo"`
+	NodeRegistrationTime        time.Time            `json:"nodeRegistrationTime"`
+	RewardsInterval             time.Duration        `json:"rewardsInterval"`
+	LastCheckpoint              time.Time            `json:"lastCheckpoint"`
+	Trusted                     bool                 `json:"trusted"`
+	Registered                  bool                 `json:"registered"`
+	EffectiveRplStake           float64              `json:"effectiveRplStake"`
+	TotalRplStake               float64              `json:"totalRplStake"`
+	TrustedRplBond              float64              `json:"trustedRplBond"`
+	EstimatedRewards            float64              `json:"estimatedRewards"`
+	CumulativeRplRewards        float64              `json:"cumulativeRplRewards"`
+	CumulativeEthRewards        float64              `json:"cumulativeEthRewards"`
+	EstimatedTrustedRplRewards  float64              `json:"estimatedTrustedRplRewards"`
+	CumulativeTrustedRplRewards float64              `json:"cumulativeTrustedRplRewards"`
+	UnclaimedRplRewards         float64              `json:"unclaimedRplRewards"`
+	UnclaimedEthRewards         float64              `json:"unclaimedEthRewards"`
+	UnclaimedTrustedRplRewards  float64              `json:"unclaimedTrustedRplRewards"`
+	BeaconRewards               float64              `json:"beaconRewards"`
+	TxInfo                      *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeSignData struct {
@@ -249,19 +249,19 @@ type NodeSignData struct {
 }
 
 type NodeInitializeFeeDistributorData struct {
-	CanInitialize bool                  `json:"canInitialize"`
-	IsInitialized bool                  `json:"isInitialized"`
-	Distributor   common.Address        `json:"distributor"`
-	TxInfo        *core.TransactionInfo `json:"txInfo"`
+	CanInitialize bool                 `json:"canInitialize"`
+	IsInitialized bool                 `json:"isInitialized"`
+	Distributor   common.Address       `json:"distributor"`
+	TxInfo        *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeDistributeData struct {
-	CanDistribute bool                  `json:"canDistribute"`
-	NoBalance     bool                  `json:"noBalance"`
-	IsInitialized bool                  `json:"isInitialized"`
-	Balance       *big.Int              `json:"balance"`
-	NodeShare     *big.Int              `json:"nodeShare"`
-	TxInfo        *core.TransactionInfo `json:"txInfo"`
+	CanDistribute bool                 `json:"canDistribute"`
+	NoBalance     bool                 `json:"noBalance"`
+	IsInitialized bool                 `json:"isInitialized"`
+	Balance       *big.Int             `json:"balance"`
+	NodeShare     *big.Int             `json:"nodeShare"`
+	TxInfo        *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeGetRewardsInfoData struct {
@@ -282,10 +282,10 @@ type NodeGetRewardsInfoData struct {
 }
 
 type NodeSetSmoothingPoolRegistrationStatusData struct {
-	NodeRegistered          bool                  `json:"nodeRegistered"`
-	CanChange               bool                  `json:"canChange"`
-	TimeLeftUntilChangeable time.Duration         `json:"timeLeftUntilChangeable"`
-	TxInfo                  *core.TransactionInfo `json:"txInfo"`
+	NodeRegistered          bool                 `json:"nodeRegistered"`
+	CanChange               bool                 `json:"canChange"`
+	TimeLeftUntilChangeable time.Duration        `json:"timeLeftUntilChangeable"`
+	TxInfo                  *eth.TransactionInfo `json:"txInfo"`
 }
 
 type NodeResolveEnsData struct {

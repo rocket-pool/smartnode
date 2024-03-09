@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/beacon"
 
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -12,9 +13,9 @@ import (
 )
 
 type MinipoolDetails struct {
-	Address         common.Address        `json:"address"`
-	ValidatorPubkey types.ValidatorPubkey `json:"validatorPubkey"`
-	Version         uint8                 `json:"version"`
+	Address         common.Address         `json:"address"`
+	ValidatorPubkey beacon.ValidatorPubkey `json:"validatorPubkey"`
+	Version         uint8                  `json:"version"`
 	Status          struct {
 		Status      types.MinipoolStatus `json:"status"`
 		StatusBlock uint64               `json:"statusBlock"`

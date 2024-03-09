@@ -4,8 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
@@ -66,7 +65,7 @@ func refundMinipools(c *cli.Context) error {
 	}
 
 	// Validation
-	txs := make([]*core.TransactionInfo, len(selectedMinipools))
+	txs := make([]*eth.TransactionInfo, len(selectedMinipools))
 	for i, minipool := range selectedMinipools {
 		txInfo := response.Data.TxInfos[i]
 		if txInfo.SimError != "" {

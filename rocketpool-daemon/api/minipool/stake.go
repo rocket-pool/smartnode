@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
@@ -85,7 +85,7 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 	// Get the relevant details
 	err = rp.BatchQuery(len(c.minipoolAddresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
 		mpCommon := mps[i].Common()
-		core.AddQueryablesToMulticall(mc,
+		eth.AddQueryablesToMulticall(mc,
 			mpCommon.WithdrawalCredentials,
 			mpCommon.Pubkey,
 			mpCommon.DepositType,
@@ -97,7 +97,7 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 	}
 
 	// Get the TXs
-	txInfos := make([]*core.TransactionInfo, len(c.minipoolAddresses))
+	txInfos := make([]*eth.TransactionInfo, len(c.minipoolAddresses))
 	for i, mp := range mps {
 		mpCommon := mp.Common()
 		pubkey := mpCommon.Pubkey.Get()

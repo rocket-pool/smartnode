@@ -9,10 +9,10 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
 
-	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
@@ -166,7 +166,7 @@ func promptForCustomKeyPasswords(rp *client.Client, cfg *config.RocketPoolConfig
 	}
 
 	// Get the pubkeys for the custom keystores
-	customPubkeys := []types.ValidatorPubkey{}
+	customPubkeys := []beacon.ValidatorPubkey{}
 	for _, file := range files {
 		// Read the file
 		bytes, err := os.ReadFile(filepath.Join(customKeyDir, file.Name()))

@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/deposit"
@@ -21,7 +21,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	prdeposit "github.com/prysmaticlabs/prysm/v4/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
@@ -128,7 +127,7 @@ func (c *nodeDepositContext) Initialize() error {
 }
 
 func (c *nodeDepositContext) GetState(mc *batch.MultiCaller) {
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		c.node.TotalCreditAndDonatedBalance,
 		c.depositPool.Balance,
 		c.pSettings.Node.IsDepositingEnabled,
@@ -302,7 +301,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	}
 
 	// Get tx info
-	var txInfo *core.TransactionInfo
+	var txInfo *eth.TransactionInfo
 	var funcName string
 	if data.CanUseCredit {
 		txInfo, err = c.node.DepositWithCredit(c.amount, c.minNodeFee, pubkey, signature, depositDataRoot, c.salt, minipoolAddress, opts)
@@ -319,7 +318,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	return nil
 }
 
-func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey rptypes.ValidatorPubkey, withdrawalCredentials common.Hash, signature rptypes.ValidatorSignature) error {
+func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey rpbeacon.ValidatorPubkey, withdrawalCredentials common.Hash, signature rptypes.ValidatorSignature) error {
 
 	// Get the deposit domain based on the eth2 config
 	depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)

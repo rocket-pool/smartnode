@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -74,7 +75,7 @@ func (t *PromoteMinipools) Run(state *state.NetworkState) error {
 	}
 
 	// Get promote minipools submissions
-	txSubmissions := make([]*core.TransactionSubmission, len(minipools))
+	txSubmissions := make([]*eth.TransactionSubmission, len(minipools))
 	for i, mpd := range minipools {
 		txSubmissions[i], err = t.createPromoteMinipoolTx(mpd)
 		if err != nil {
@@ -128,7 +129,7 @@ func (t *PromoteMinipools) getVacantMinipools(nodeAddress common.Address, state 
 }
 
 // Get submission info for promoting a minipool
-func (t *PromoteMinipools) createPromoteMinipoolTx(mpd *rpstate.NativeMinipoolDetails) (*core.TransactionSubmission, error) {
+func (t *PromoteMinipools) createPromoteMinipoolTx(mpd *rpstate.NativeMinipoolDetails) (*eth.TransactionSubmission, error) {
 	// Log
 	t.log.Printlnf("Preparing to promote minipool %s...", mpd.MinipoolAddress.Hex())
 
@@ -165,7 +166,7 @@ func (t *PromoteMinipools) createPromoteMinipoolTx(mpd *rpstate.NativeMinipoolDe
 }
 
 // Promote all available minipools
-func (t *PromoteMinipools) promoteMinipools(submissions []*core.TransactionSubmission, minipools []*rpstate.NativeMinipoolDetails, minipoolLaunchTimeout time.Duration) error {
+func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmission, minipools []*rpstate.NativeMinipoolDetails, minipoolLaunchTimeout time.Duration) error {
 	// Get transactor
 	opts, err := t.w.GetTransactor()
 	if err != nil {
@@ -184,7 +185,7 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*core.TransactionSubmi
 	opts.GasTipCap = t.maxPriorityFee
 
 	// Print the gas info
-	forceSubmissions := []*core.TransactionSubmission{}
+	forceSubmissions := []*eth.TransactionSubmission{}
 	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, &t.log, maxFee) {
 		// Check for the timeout buffers
 		for i, mpd := range minipools {

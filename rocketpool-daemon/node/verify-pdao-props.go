@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -107,7 +108,7 @@ func (t *VerifyPdaoProps) Run(state *state.NetworkState) error {
 		return nil
 	}
 
-	submissions := []*core.TransactionSubmission{}
+	submissions := []*eth.TransactionSubmission{}
 
 	// Create challenges
 	for _, challenge := range challenges {
@@ -330,7 +331,7 @@ func (t *VerifyPdaoProps) getChallengeOrDefeatForProposal(prop *protocol.Protoco
 }
 
 // Submit a challenge against a proposal
-func (t *VerifyPdaoProps) createSubmitChallengeTx(challenge challenge) (*core.TransactionSubmission, error) {
+func (t *VerifyPdaoProps) createSubmitChallengeTx(challenge challenge) (*eth.TransactionSubmission, error) {
 	prop := challenge.proposal
 	challengedIndex := challenge.challengedIndex
 	t.log.Printlnf("Creating challenge against proposal %d, index %d...", prop.ID, challengedIndex)
@@ -358,7 +359,7 @@ func (t *VerifyPdaoProps) createSubmitChallengeTx(challenge challenge) (*core.Tr
 }
 
 // Defeat a proposal
-func (t *VerifyPdaoProps) createSubmitDefeatTx(defeat defeat) (*core.TransactionSubmission, error) {
+func (t *VerifyPdaoProps) createSubmitDefeatTx(defeat defeat) (*eth.TransactionSubmission, error) {
 	prop := defeat.proposal
 	challengedIndex := defeat.challengedIndex
 	t.log.Printlnf("Proposal %d has been defeated with node index %d, creating defeat TX...", prop.ID, challengedIndex)
@@ -386,7 +387,7 @@ func (t *VerifyPdaoProps) createSubmitDefeatTx(defeat defeat) (*core.Transaction
 }
 
 // Submit all transactions
-func (t *VerifyPdaoProps) submitTxs(submissions []*core.TransactionSubmission) error {
+func (t *VerifyPdaoProps) submitTxs(submissions []*eth.TransactionSubmission) error {
 	// Get transactor
 	opts, err := t.w.GetTransactor()
 	if err != nil {

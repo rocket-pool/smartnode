@@ -9,11 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
@@ -75,7 +74,7 @@ func (c *minipoolRescueDissolvedDetailsContext) CheckState(node *node.Node, resp
 
 func (c *minipoolRescueDissolvedDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	mpCommon := mp.Common()
-	core.AddQueryablesToMulticall(mc,
+	eth.AddQueryablesToMulticall(mc,
 		mpCommon.IsFinalised,
 		mpCommon.Status,
 		mpCommon.Pubkey,
@@ -84,8 +83,8 @@ func (c *minipoolRescueDissolvedDetailsContext) GetMinipoolDetails(mc *batch.Mul
 
 func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRescueDissolvedDetailsData) error {
 	// Get the rescue details
-	pubkeys := []types.ValidatorPubkey{}
-	detailsMap := map[types.ValidatorPubkey]int{}
+	pubkeys := []beacon.ValidatorPubkey{}
+	detailsMap := map[beacon.ValidatorPubkey]int{}
 	details := make([]api.MinipoolRescueDissolvedDetails, len(addresses))
 	for i, mp := range mps {
 		mpCommon := mp.Common()

@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/migration"
@@ -22,7 +22,7 @@ const (
 	cvmMnemonicFlag string = "mnemonic"
 )
 
-func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
+func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 	// Get RP client
 	rp, err := client.NewClientFromCtx(c).WithReady()
 	if err != nil {

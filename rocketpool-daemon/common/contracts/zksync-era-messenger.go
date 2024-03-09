@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 )
 
@@ -78,6 +79,6 @@ func (c *ZkSyncEraMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
 // ====================
 
 // Send the latest RPL rate to the L2
-func (c *ZkSyncEraMessenger) SubmitRate(l2GasLimit *big.Int, l2GasPerPubdataByteLimit *big.Int, opts *bind.TransactOpts) (*core.TransactionInfo, error) {
+func (c *ZkSyncEraMessenger) SubmitRate(l2GasLimit *big.Int, l2GasPerPubdataByteLimit *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	return core.NewTransactionInfo(c.contract, "submitRate", opts, l2GasLimit, l2GasPerPubdataByteLimit)
 }
