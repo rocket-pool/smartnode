@@ -1110,7 +1110,9 @@ func resetDocker(c *cli.Context) error {
 	confirmed, err := pauseService(c)
 	if err != nil {
 		return err
-	} else if !confirmed {
+	}
+
+	if !confirmed {
 		// if the user cancelled the pause, then we cancel the rest of the operation here:
 		return nil
 	}
