@@ -271,6 +271,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "yes, y",
 						Usage: "Automatically confirm service suspension",
 					},
+					cli.BoolFlag{
+						Name:  "all, a",
+						Usage: "Removes all Docker images, including those currently used by the Smartnode stack. This will force a full re-download of all images when the Smartnode is restarted.",
+					},
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
@@ -287,6 +291,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "prune",
 				Usage:     "Cleanup unused Docker resources, including stopped containers, unused images, networks and volumes. Does not restart smartnode, so the running containers and the images and networks they reference will not be pruned.",
 				UsageText: "rocketpool service prune",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "all, a",
+						Usage: "Removes all Docker images, including those currently used by the Smartnode stack. This will force a full re-download of all images when the Smartnode is restarted.",
+					},
+				},
 				Action: func(c *cli.Context) error {
 
 					// Validate args

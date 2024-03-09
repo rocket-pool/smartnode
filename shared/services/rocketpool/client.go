@@ -745,12 +745,15 @@ func (c *Client) DeleteDockerImage(id string) (string, error) {
 }
 
 // Runs docker system prune remove all unused containers, networks, and unused images
-func (c *Client) DockerSystemPrune() error {
+func (c *Client) DockerSystemPrune(deleteAllImages bool) error {
 
 	// NOTE: explicitly *NOT* using the --all flag, as it would remove all images,
 	//   not just unused ones, and we use this command to preserve the current
 	//   smartnode stack images.
 	cmd := "docker system prune -f"
+	if deleteAllImages {
+		cmd += " --all"
+	}
 	err := c.printOutput(cmd)
 	if err != nil {
 		return fmt.Errorf("error running docker system prune: %w", err)
@@ -778,8 +781,12 @@ type DockerImage struct {
 	ID         string `json:"ID"`
 }
 
-func (img *DockerImage) String() string {
+func (img *DockerImage) TagString() string {
 	return fmt.Sprintf("%s:%s", img.Repository, img.Tag)
+}
+
+func (img *DockerImage) String() string {
+	return fmt.Sprintf("%s:%s (%s)", img.Repository, img.Tag, img.ID)
 }
 
 // Returns all Docker images on the system
