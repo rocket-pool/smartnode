@@ -977,8 +977,11 @@ func pruneExecutionClient(c *cli.Context) error {
 	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 	switch selectedEc {
 	case cfgtypes.ExecutionClient_Besu:
-		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
-		return nil
+		if cfg.Besu.ArchiveMode.Value == true {
+			fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
+			return nil
+		}
+
 	case cfgtypes.ExecutionClient_Geth:
 		if cfg.Geth.EnablePbss.Value == true {
 			fmt.Println("You have PBSS enabled for Geth. Pruning is no longer required when using PBSS.")
@@ -986,7 +989,7 @@ func pruneExecutionClient(c *cli.Context) error {
 		}
 	}
 
-	if selectedEc == cfgtypes.ExecutionClient_Geth {
+	if selectedEc == cfgtypes.ExecutionClient_Geth || selectedEc == cfgtypes.ExecutionClient_Besu {
 		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 		if cfg.UseFallbackClients.Value == false {
 			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until Geth is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
@@ -1170,7 +1173,7 @@ func pruneDocker(c *cli.Context) error {
 				}
 				continue
 			}
-			
+
 			fmt.Printf("Skipping image used by Smartnode stack: %s\n", image.String())
 		}
 	}
