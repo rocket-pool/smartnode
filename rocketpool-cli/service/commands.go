@@ -231,7 +231,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return pauseService(c)
+					_, err := pauseService(c)
+					return err
 
 				},
 			},
@@ -254,8 +255,57 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return pauseService(c)
+					_, err := pauseService(c)
+					return err
 
+				},
+			},
+
+			{
+				Name:      "reset",
+				Aliases:   []string{"r"},
+				Usage:     "Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts Smartnode.",
+				UsageText: "rocketpool service reset [options]",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm service suspension",
+					},
+					cli.BoolFlag{
+						Name:  "all, a",
+						Usage: "Removes all Docker images, including those currently used by the Smartnode stack. This will force a full re-download of all images when the Smartnode is restarted.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return resetDocker(c)
+				},
+			},
+
+			{
+				Name:      "prune",
+				Usage:     "Cleanup unused Docker resources, including stopped containers, unused images, networks and volumes. Does not restart smartnode, so the running containers and the images and networks they reference will not be pruned.",
+				UsageText: "rocketpool service prune",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "all, a",
+						Usage: "Removes all Docker images, including those currently used by the Smartnode stack. This will force a full re-download of all images when the Smartnode is restarted.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return pruneDocker(c)
 				},
 			},
 
