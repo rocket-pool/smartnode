@@ -21,6 +21,9 @@ const (
 
 // Configuration for MEV-Boost
 type MevBoostConfig struct {
+	// Toggle to enable / disable
+	EnableMevBoost config.Parameter[bool]
+
 	// Ownership mode
 	Mode config.Parameter[config.ClientMode]
 
@@ -88,6 +91,20 @@ func NewMevBoostConfig(parent *SmartNodeConfig) *MevBoostConfig {
 
 	return &MevBoostConfig{
 		parent: parent,
+
+		EnableMevBoost: config.Parameter[bool]{
+			ParameterCommon: &config.ParameterCommon{
+				ID:                 ids.MevBoostEnableID,
+				Name:               "Enable MEV-Boost",
+				Description:        "Enable MEV-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract MEV opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n[orange]NOTE: This toggle is temporary during the early Merge days while relays are still being created. It will be removed in the future.",
+				AffectsContainers:  []config.ContainerID{config.ContainerID_BeaconNode, config.ContainerID_MevBoost},
+				CanBeBlank:         false,
+				OverwriteOnUpgrade: true,
+			},
+			Default: map[config.Network]bool{
+				config.Network_All: true,
+			},
+		},
 
 		Mode: config.Parameter[config.ClientMode]{
 			ParameterCommon: &config.ParameterCommon{

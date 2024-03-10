@@ -16,14 +16,17 @@ import (
 	"github.com/rocket-pool/smartnode/addons"
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/config/migration"
+	"github.com/rocket-pool/smartnode/shared/config/legacy/migration"
 	"github.com/rocket-pool/smartnode/shared/docker"
 	"gopkg.in/yaml.v2"
 )
 
 // Settings
 const (
-	rootConfigName string = "root"
+	RootConfigName string = "root"
+	RpDirKey       string = "rpDir"
+	IsNativeKey    string = "isNative"
+	VersionKey     string = "version"
 
 	defaultBnMetricsPort         uint16 = 9100
 	defaultVcMetricsPort         uint16 = 9101
@@ -728,10 +731,10 @@ func (cfg *RocketPoolConfig) Serialize() map[string]map[string]string {
 	for _, param := range cfg.GetParameters() {
 		param.Serialize(rootParams)
 	}
-	masterMap[rootConfigName] = rootParams
-	masterMap[rootConfigName]["rpDir"] = cfg.RocketPoolDirectory
-	masterMap[rootConfigName]["isNative"] = fmt.Sprint(cfg.IsNativeMode)
-	masterMap[rootConfigName]["version"] = fmt.Sprintf("v%s", shared.RocketPoolVersion) // Update the version with the current Smartnode version
+	masterMap[RootConfigName] = rootParams
+	masterMap[RootConfigName][RpDirKey] = cfg.RocketPoolDirectory
+	masterMap[RootConfigName][IsNativeKey] = fmt.Sprint(cfg.IsNativeMode)
+	masterMap[RootConfigName][VersionKey] = fmt.Sprintf("v%s", shared.RocketPoolVersion) // Update the version with the current Smartnode version
 
 	// Serialize the subconfigs
 	for name, subconfig := range cfg.GetSubconfigs() {
@@ -770,7 +773,7 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 	}
 
 	// Deserialize root params
-	rootParams := masterMap[rootConfigName]
+	rootParams := masterMap[RootConfigName]
 	for _, param := range cfg.GetParameters() {
 		// Note: if the root config doesn't exist, this will end up using the default values for all of its settings
 		err := param.Deserialize(rootParams, network)
@@ -779,12 +782,12 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 		}
 	}
 
-	cfg.RocketPoolDirectory = masterMap[rootConfigName]["rpDir"]
-	cfg.IsNativeMode, err = strconv.ParseBool(masterMap[rootConfigName]["isNative"])
+	cfg.RocketPoolDirectory = masterMap[RootConfigName][RpDirKey]
+	cfg.IsNativeMode, err = strconv.ParseBool(masterMap[RootConfigName][IsNativeKey])
 	if err != nil {
 		return fmt.Errorf("error parsing isNative: %w", err)
 	}
-	cfg.Version = masterMap[rootConfigName]["version"]
+	cfg.Version = masterMap[RootConfigName][VersionKey]
 
 	// Deserialize the subconfigs
 	for name, subconfig := range cfg.GetSubconfigs() {

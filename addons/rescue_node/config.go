@@ -1,5 +1,6 @@
 package rescue_node
 
+/*
 import (
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
@@ -66,3 +67,4 @@ func (cfg *RescueNodeConfig) GetParameters() []*config.Parameter {
 func (cfg *RescueNodeConfig) GetConfigTitle() string {
 	return cfg.Title
 }
+*/

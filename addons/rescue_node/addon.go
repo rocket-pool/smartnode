@@ -1,5 +1,6 @@
 package rescue_node
 
+/*
 import (
 	"bytes"
 	"encoding/base64"
@@ -200,3 +201,4 @@ func (r *RescueNode) GetOverrides(cc config.ConsensusClient) (*RescueNodeOverrid
 
 	return nil, nil
 }
+*/

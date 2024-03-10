@@ -1,5 +1,6 @@
 package graffiti_wall_writer
 
+/*
 import (
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
@@ -131,3 +132,4 @@ func (cfg *GraffitiWallWriterConfig) GetParameters() []*config.Parameter {
 func (cfg *GraffitiWallWriterConfig) GetConfigTitle() string {
 	return cfg.Title
 }
+*/

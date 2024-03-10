@@ -1,5 +1,6 @@
 package graffiti_wall_writer
 
+/*
 import (
 	"fmt"
 
@@ -45,3 +46,4 @@ func (gww *GraffitiWallWriter) GetEnabledParameter() *cfgtypes.Parameter {
 func (gww *GraffitiWallWriter) GetContainerTag() string {
 	return containerTag
 }
+*/
