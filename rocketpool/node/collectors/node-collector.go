@@ -255,6 +255,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	totalRplSupply := state.NetworkDetails.RPLTotalSupply
 	totalEffectiveStake := collector.stateLocker.GetTotalEffectiveRPLStake()
 	nodeOperatorRewardsPercent := eth.WeiToEth(state.NetworkDetails.NodeOperatorRewardsPercent)
+	nodeWeight := state.GetNodeWeight(state.GetEligibleBorrowedEth(nd), nd.RplStake)
+	previousIntervalTotalNodeWeight := big.NewInt(0)
 	ethBalance := eth.WeiToEth(nd.BalanceETH)
 	oldRplBalance := eth.WeiToEth(nd.BalanceOldRPL)
 	newRplBalance := eth.WeiToEth(nd.BalanceRPL)
@@ -291,6 +293,18 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		if err != nil {
 			return err
 		}
+
+		// Get the totalNodeWeight for the last completed interval
+		previousRewardIndex := state.NetworkDetails.RewardIndex - 1
+		previousInterval, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, previousRewardIndex, nil)
+		if err != nil {
+			return err
+		}
+
+		if !previousInterval.TreeFileExists {
+			return fmt.Errorf("Error retrieving previous interval's total node weight: rewards file %s doesn't exist for interval %d", previousInterval.TreeFilePath, previousRewardIndex)
+		}
+		previousIntervalTotalNodeWeight.Set(&previousInterval.TotalNodeWeight.Int)
 
 		// Get the info for each claimed interval
 		for _, claimedInterval := range claimed {
@@ -445,9 +459,34 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	if totalRplAtNextCheckpoint < 0 {
 		totalRplAtNextCheckpoint = 0
 	}
+
+	/*
+	 * Calculates a RPIP-30 RPL reward estimate. Assumes that RPIP-30 has been fully phased in
+	 *
+	 * Formula:
+	 * 		current_node_weight / (current_node_weight + previous_interval_total_node_weight) * estimated_collateral_rewards
+	 *
+	 * This will inevitably be inaccurate due to factors external to the node, such as large nodes running
+	 * several bond reductions, or really anything that can move the needle on total_node_weight. However,
+	 * short of generating a full rewards tree at a regular interval to populate this metric, this is the
+	 * best estimator available.
+	 * RPIP-30 is still being phased in, and this estimator will be more and more accurate as it is, but never fully accurate
+	 */
 	estimatedRewards := float64(0)
 	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
-		estimatedRewards = rewardableStakeFloat / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
+		// (current_node_weight + previous_interval_total_node_weight)
+		nodeWeightSum := big.NewInt(0).Add(nodeWeight, previousIntervalTotalNodeWeight)
+
+		// Convert to float so we can divide them safely
+		nodeWeightFloat := big.NewFloat(0).SetInt(nodeWeight)
+		nodeWeightSumFloat := big.NewFloat(0).SetInt(nodeWeightSum)
+
+		// current_node_weight / (current_node_weight + previous_interval_total_node_weight)
+		nodeWeightRatio := big.NewFloat(0).Quo(nodeWeightFloat, nodeWeightSumFloat)
+		nodeWeightRatioFloat, _ := nodeWeightRatio.Float64()
+
+		// current_node_weight / (current_node_weight + previous_interval_total_node_weight) * estimated_collateral_rewards
+		estimatedRewards = nodeWeightRatioFloat * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
 	}
 
 	// Calculate the RPL APR
