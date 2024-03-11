@@ -1628,7 +1628,7 @@ func resyncEth2(c *cli.Context) error {
 
 // Generate a YAML file that shows the current configuration schema, including all of the parameters and their descriptions
 func getConfigYaml(c *cli.Context) error {
-	cfg := config.NewRocketPoolConfig("", false)
+	cfg := config.NewRocketPoolConfig("", false, config.NewNetworksConfig())
 	bytes, err := yaml.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("error serializing configuration schema: %w", err)

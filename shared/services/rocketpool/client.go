@@ -227,7 +227,11 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	}
 
 	// Config wasn't loaded, but there was no error- we should create one.
-	return config.NewRocketPoolConfig(c.configPath, c.daemonPath != ""), true, nil
+	networks, err := config.LoadNetworksFromFile(c.configPath)
+	if err != nil {
+		return nil, false, fmt.Errorf("could not load networks file: %w", err)
+	}
+	return config.NewRocketPoolConfig(c.configPath, c.daemonPath != "", networks), true, nil
 }
 
 // Load the backup config

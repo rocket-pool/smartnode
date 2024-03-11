@@ -144,3 +144,77 @@ type MevRelay struct {
 	Urls        map[Network]string
 	Regulated   bool
 }
+
+// Describes a network that the smartnode system can use.
+type NetworkInfo struct {
+	// A unique name for the network
+	Name string `yaml:"name"`
+	// A human-readable label for the network
+	Label string `yaml:"label"`
+	// A human-readable description of the network
+	Description string `yaml:"description"`
+	// The URL to provide the user so they can follow pending transactions
+	TxWatchUrl string `yaml:"txWatchUrl"`
+	// The URL to use for staking rETH
+	StakeUrl string `yaml:"stakeUrl"`
+	// Execution chain ID
+	ChainID uint64 `yaml:"chainID"`
+	// The contract address of RocketStorage
+	StorageAddress string `yaml:"storageAddress"`
+	// The contract address of the RPL token
+	RplTokenAddress string `yaml:"rplTokenAddress"`
+	// The contract address of the RPL faucet
+	RplFaucetAddress string `yaml:"rplFaucetAddress"`
+	// The contract address for Snapshot delegation
+	SnapshotDelegationAddress string `yaml:"snapshotDelegationAddress"`
+	// The Snapshot API domain
+	SnapshotApiDomain string `yaml:"snapshotApiDomain"`
+	// The contract address of rETH
+	RethAddress string `yaml:"rethAddress"`
+	// The contract address of rocketRewardsPool from v1.0.0
+	V1_0_0_RewardsPoolAddress string `yaml:"v1_0_0_RewardsPoolAddress"`
+	// The contract address of rocketClaimNode from v1.0.0
+	V1_0_0_ClaimNodeAddress string `yaml:"v1_0_0_ClaimNodeAddress"`
+	// The contract address of rocketClaimTrustedNode from v1.0.0
+	V1_0_0_ClaimTrustedNodeAddress string `yaml:"v1_0_0_ClaimTrustedNodeAddress"`
+	// The contract address of rocketMinipoolManager from v1.0.0
+	V1_0_0_MinipoolManagerAddress string `yaml:"v1_0_0_MinipoolManagerAddress"`
+	// The contract address of rocketNetworkPrices from v1.1.0
+	V1_1_0_NetworkPricesAddress string `yaml:"v1_1_0_NetworkPricesAddress"`
+	// The contract address of rocketNodeStaking from v1.1.0
+	V1_1_0_NodeStakingAddress string `yaml:"v1_1_0_NodeStakingAddress"`
+	// The contract address of rocketNodeDeposit from v1.1.0
+	V1_1_0_NodeDepositAddress string `yaml:"v1_1_0_NodeDepositAddress"`
+	// The contract address of rocketMinipoolQueue from v1.1.0
+	V1_1_0_MinipoolQueueAddress string `yaml:"v1_1_0_MinipoolQueueAddress"`
+	// The contract address of rocketMinipoolFactory from v1.1.0
+	V1_1_0_MinipoolFactoryAddress string `yaml:"v1_1_0_MinipoolFactoryAddress"`
+	// Addresses for RocketRewardsPool that have been upgraded during development
+	PreviousRewardsPoolAddresses []string `yaml:"previousRewardsPoolAddresses"`
+	// The RocketOvmPriceMessenger Optimism address for each network
+	OptimismPriceMessengerAddress string `yaml:"optimismPriceMessengerAddress"`
+	// The RocketPolygonPriceMessenger Polygon address for each network
+	PolygonPriceMessengerAddress string `yaml:"polygonPriceMessengerAddress"`
+	// The RocketArbitumPriceMessenger Arbitrum address for each network
+	ArbitrumPriceMessengerAddress string `yaml:"arbitrumPriceMessengerAddress"`
+	// The RocketArbitumPriceMessengerV2 Arbitrum address for each network
+	ArbitrumPriceMessengerAddressV2 string `yaml:"arbitrumPriceMessengerAddressV2"`
+	// The RocketZkSyncPriceMessenger zkSyncEra address for each network
+	ZkSyncEraPriceMessengerAddress string `yaml:"zkSyncEraPriceMessengerAddress"`
+	// The RocketBasePriceMessenger Base address for each network
+	BasePriceMessengerAddress string `yaml:"basePriceMessengerAddress"`
+	// The RocketScrollPriceMessenger Scroll address for each network
+	ScrollPriceMessengerAddress string `yaml:"scrollPriceMessengerAddress"`
+	// The Scroll L2 message fee estimator address for each network
+	ScrollFeeEstimatorAddress string `yaml:"scrollFeeEstimatorAddress"`
+	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
+	RplTwapPoolAddress string `yaml:"rplTwapPoolAddress"`
+	// The multicall contract address
+	MulticallAddress string `yaml:"multicallAddress"`
+	// The BalanceChecker contract address
+	BalancebatcherAddress string `yaml:"balancebatcherAddress"`
+	// The FlashBots Protect RPC endpoint
+	FlashbotsProtectUrl string `yaml:"flashbotsProtectUrl"`
+	// Indicates if we support mevboost on the network
+	IsMevBoostSupported bool `yaml:"isMevBoostSupported"`
+}

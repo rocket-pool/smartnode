@@ -58,6 +58,8 @@ type RocketPoolConfig struct {
 
 	IsNativeMode bool `yaml:"-"`
 
+	networks *NetworksConfig `yaml:"-"`
+
 	// Execution client settings
 	ExecutionClientMode config.Parameter `yaml:"executionClientMode,omitempty"`
 	ExecutionClient     config.Parameter `yaml:"executionClient,omitempty"`
@@ -165,9 +167,13 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 	if err := yaml.Unmarshal(configBytes, &settings); err != nil {
 		return nil, fmt.Errorf("could not parse settings file: %w", err)
 	}
-
+	// now load the networks:
+	networks, err := LoadNetworksFromFile(filepath.Dir(path))
+	if err != nil {
+		return nil, fmt.Errorf("could not load networks file: %w", err)
+	}
 	// Deserialize it into a config object
-	cfg := NewRocketPoolConfig(filepath.Dir(path), false)
+	cfg := NewRocketPoolConfig(filepath.Dir(path), false, networks)
 	err = cfg.Deserialize(settings)
 	if err != nil {
 		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
@@ -178,7 +184,7 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 }
 
 // Creates a new Rocket Pool configuration instance
-func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
+func NewRocketPoolConfig(rpDir string, isNativeMode bool, networks *NetworksConfig) *RocketPoolConfig {
 
 	clientModes := []config.ParameterOption{{
 		Name:        "Locally Managed",
@@ -194,6 +200,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		Title:               "Top-level Settings",
 		RocketPoolDirectory: rpDir,
 		IsNativeMode:        isNativeMode,
+		networks:            networks,
 
 		ExecutionClientMode: config.Parameter{
 			ID:                 "executionClientMode",
@@ -503,7 +510,7 @@ func getAugmentedEcDescription(client config.ExecutionClient, originalDescriptio
 
 // Create a copy of this configuration.
 func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
-	newConfig := NewRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode)
+	newConfig := NewRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode, cfg.networks)
 
 	// Set the network
 	network := cfg.Smartnode.Network.Value.(config.Network)
