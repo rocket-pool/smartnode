@@ -143,7 +143,7 @@ type IntervalInfo struct {
 	CID                    string        `json:"cid"`
 	StartTime              time.Time     `json:"startTime"`
 	EndTime                time.Time     `json:"endTime"`
-	TotalNodeWeight        *QuotedBigInt `json:"totalNodeWeight"`
+	TotalNodeWeight        *QuotedBigInt `json:"-"`
 	NodeExists             bool          `json:"nodeExists"`
 	CollateralRplAmount    *QuotedBigInt `json:"collateralRplAmount"`
 	ODaoRplAmount          *QuotedBigInt `json:"oDaoRplAmount"`

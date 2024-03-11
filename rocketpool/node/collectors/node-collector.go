@@ -255,12 +255,12 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	totalRplSupply := state.NetworkDetails.RPLTotalSupply
 	totalEffectiveStake := collector.stateLocker.GetTotalEffectiveRPLStake()
 	nodeOperatorRewardsPercent := eth.WeiToEth(state.NetworkDetails.NodeOperatorRewardsPercent)
-	nodeWeight := state.GetNodeWeight(state.GetEligibleBorrowedEth(nd), nd.RplStake)
 	previousIntervalTotalNodeWeight := big.NewInt(0)
 	ethBalance := eth.WeiToEth(nd.BalanceETH)
 	oldRplBalance := eth.WeiToEth(nd.BalanceOldRPL)
 	newRplBalance := eth.WeiToEth(nd.BalanceRPL)
 	rethBalance := eth.WeiToEth(nd.BalanceRETH)
+	eligibleBorrowedEth := state.GetEligibleBorrowedEth(nd)
 	var activeMinipoolCount float64
 	rplPriceRaw := state.NetworkDetails.RplPrice
 	rplPrice := eth.WeiToEth(rplPriceRaw)
@@ -304,7 +304,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		if !previousInterval.TreeFileExists {
 			return fmt.Errorf("Error retrieving previous interval's total node weight: rewards file %s doesn't exist for interval %d", previousInterval.TreeFilePath, previousRewardIndex)
 		}
-		previousIntervalTotalNodeWeight.Set(&previousInterval.TotalNodeWeight.Int)
+		// Convert to a float, accuracy loss is meaningless compared to the heuristic's natural inaccuracy.
+		previousIntervalTotalNodeWeight = &previousInterval.TotalNodeWeight.Int
 
 		// Get the info for each claimed interval
 		for _, claimedInterval := range claimed {
@@ -379,6 +380,17 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	if err := wg.Wait(); err != nil {
 		collector.logError(err)
 		return
+	}
+
+	// Calculate the node weight
+	minCollateral := big.NewInt(0).Mul(eligibleBorrowedEth, state.NetworkDetails.MinCollateralFraction)
+	minCollateral.Div(minCollateral, state.NetworkDetails.RplPrice)
+
+	nodeWeight := big.NewInt(0)
+	// The node must satisfy collateral requirements and have eligible ETH from which to earn rewards.
+	if nd.RplStake.Cmp(minCollateral) != -1 && eligibleBorrowedEth.Sign() > 0 {
+		// Convert to a float, accuracy loss is meaningless compared to the heuristic's natural inaccuracy.
+		nodeWeight = state.GetNodeWeight(eligibleBorrowedEth, nd.RplStake)
 	}
 
 	// Calculate the rewardable RPL
@@ -474,19 +486,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	 */
 	estimatedRewards := float64(0)
 	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
-		// (current_node_weight + previous_interval_total_node_weight)
+
 		nodeWeightSum := big.NewInt(0).Add(nodeWeight, previousIntervalTotalNodeWeight)
 
-		// Convert to float so we can divide them safely
-		nodeWeightFloat := big.NewFloat(0).SetInt(nodeWeight)
-		nodeWeightSumFloat := big.NewFloat(0).SetInt(nodeWeightSum)
+		// nodeWeightRatio = current_node_weight / (current_node_weight + previous_interval_total_node_weight)
+		nodeWeightRatio, _ := big.NewFloat(0).Quo(
+			big.NewFloat(0).SetInt(nodeWeight),
+			big.NewFloat(0).SetInt(nodeWeightSum)).Float64()
 
-		// current_node_weight / (current_node_weight + previous_interval_total_node_weight)
-		nodeWeightRatio := big.NewFloat(0).Quo(nodeWeightFloat, nodeWeightSumFloat)
-		nodeWeightRatioFloat, _ := nodeWeightRatio.Float64()
-
-		// current_node_weight / (current_node_weight + previous_interval_total_node_weight) * estimated_collateral_rewards
-		estimatedRewards = nodeWeightRatioFloat * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
+		// estimatedRewards = nodeWeightRatio * estimated_collateral_rewards
+		estimatedRewards = nodeWeightRatio * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
 	}
 
 	// Calculate the RPL APR
