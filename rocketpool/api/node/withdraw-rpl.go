@@ -56,6 +56,7 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	var wg errgroup.Group
 	var rplStake *big.Int
 	var minimumRplStake *big.Int
+	var maximumRplStake *big.Int
 	var currentTime uint64
 	var rplStakedTime uint64
 	var withdrawalDelay time.Duration
@@ -73,6 +74,13 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	wg.Go(func() error {
 		var err error
 		minimumRplStake, err = node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
+		return err
+	})
+
+	// Get maximum RPL stake
+	wg.Go(func() error {
+		var err error
+		maximumRplStake, err = node.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
 		return err
 	})
 
@@ -137,12 +145,13 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	var remainingRplStake big.Int
 	remainingRplStake.Sub(rplStake, amountWei)
 	response.InsufficientBalance = (amountWei.Cmp(rplStake) > 0)
+	response.BelowMaxRPLStake = (remainingRplStake.Cmp(maximumRplStake) < 0)
 	response.MinipoolsUndercollateralized = (remainingRplStake.Cmp(minimumRplStake) < 0)
 	response.WithdrawalDelayActive = ((currentTime - rplStakedTime) < uint64(withdrawalDelay.Seconds()))
 	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
 
 	// Update & return response
-	response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive || response.HasDifferentRPLWithdrawalAddress)
+	response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive || response.HasDifferentRPLWithdrawalAddress || response.BelowMaxRPLStake)
 	return &response, nil
 
 }

@@ -268,6 +268,7 @@ type CanNodeWithdrawRplResponse struct {
 	Error                            string             `json:"error"`
 	CanWithdraw                      bool               `json:"canWithdraw"`
 	InsufficientBalance              bool               `json:"insufficientBalance"`
+	BelowMaxRPLStake                 bool               `json:"belowMaxRPLStake"`
 	MinipoolsUndercollateralized     bool               `json:"minipoolsUndercollateralized"`
 	WithdrawalDelayActive            bool               `json:"withdrawalDelayActive"`
 	HasDifferentRPLWithdrawalAddress bool               `json:"hasDifferentRPLWithdrawalAddress"`

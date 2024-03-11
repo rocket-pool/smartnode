@@ -21,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	sharedConfig "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/sys"
 	"github.com/shirou/gopsutil/v3/disk"
@@ -976,8 +977,11 @@ func pruneExecutionClient(c *cli.Context) error {
 	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 	switch selectedEc {
 	case cfgtypes.ExecutionClient_Besu:
-		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
-		return nil
+		if cfg.Besu.ArchiveMode.Value == true {
+			fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
+			return nil
+		}
+
 	case cfgtypes.ExecutionClient_Geth:
 		if cfg.Geth.EnablePbss.Value == true {
 			fmt.Println("You have PBSS enabled for Geth. Pruning is no longer required when using PBSS.")
@@ -985,7 +989,7 @@ func pruneExecutionClient(c *cli.Context) error {
 		}
 	}
 
-	if selectedEc == cfgtypes.ExecutionClient_Geth {
+	if selectedEc == cfgtypes.ExecutionClient_Geth || selectedEc == cfgtypes.ExecutionClient_Besu {
 		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 		if cfg.UseFallbackClients.Value == false {
 			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until Geth is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
@@ -1098,8 +1102,95 @@ func pruneExecutionClient(c *cli.Context) error {
 
 }
 
-// Pause the Rocket Pool service
-func pauseService(c *cli.Context) error {
+// Stops Smartnode stack containers, prunes docker, and restarts the Smartnode stack.
+func resetDocker(c *cli.Context) error {
+
+	fmt.Println("Once cleanup is complete, Rocket Pool will restart automatically.")
+	fmt.Println()
+
+	// Stop...
+	// NOTE: pauseService prompts for confirmation, so we don't need to do it here
+	confirmed, err := pauseService(c)
+	if err != nil {
+		return err
+	}
+
+	if !confirmed {
+		// if the user cancelled the pause, then we cancel the rest of the operation here:
+		return nil
+	}
+
+	// Prune images...
+	err = pruneDocker(c)
+	if err != nil {
+		return fmt.Errorf("error pruning Docker: %s", err)
+	}
+
+	// Restart...
+	// NOTE: startService does some other sanity checks and messages that we leverage here:
+	fmt.Println("Restarting Rocket Pool...")
+	err = startService(c, true)
+	if err != nil {
+		return fmt.Errorf("error starting Rocket Pool: %s", err)
+	}
+	return nil
+}
+
+func pruneDocker(c *cli.Context) error {
+
+	// Get RP client
+	rp := rocketpool.NewClientFromCtx(c)
+	defer rp.Close()
+
+	// NOTE: we deliberately avoid using `docker system prune -a` and delete all
+	//   images manually so that we can preserve the current smartnode-stack
+	//   images, _unless_ the user specified --all option
+	deleteAllImages := c.Bool("all")
+	if !deleteAllImages {
+		ourImages, err := rp.GetComposeImages(getComposeFiles(c))
+		if err != nil {
+			return fmt.Errorf("error getting compose images: %w", err)
+		}
+
+		ourImagesMap := make(map[string]struct{})
+		for _, image := range ourImages {
+			ourImagesMap[image] = struct{}{}
+		}
+
+		allImages, err := rp.GetAllDockerImages()
+		if err != nil {
+			return fmt.Errorf("error getting all docker images: %w", err)
+		}
+
+		fmt.Println("Deleting images not used by the Rocket Pool Smartnode...")
+		for _, image := range allImages {
+			if _, ok := ourImagesMap[image.TagString()]; !ok {
+				fmt.Printf("Deleting %s...\n", image.String())
+				_, err = rp.DeleteDockerImage(image.ID)
+				if err != nil {
+					// safe to ignore and print to user, since it may just be an image referenced by a running container that is managed outside of the smartnode's compose stack
+					fmt.Printf("Error deleting image %s: %s\n", image.String(), err.Error())
+				}
+				continue
+			}
+
+			fmt.Printf("Skipping image used by Smartnode stack: %s\n", image.String())
+		}
+	}
+
+	// now we can run docker system prune (potentially without --all) to remove
+	// all stopped containers and networks:
+	fmt.Println("Pruning Docker system...")
+	err := rp.DockerSystemPrune(deleteAllImages)
+	if err != nil {
+		return fmt.Errorf("error pruning Docker system: %w", err)
+	}
+
+	return nil
+}
+
+// Pause the Rocket Pool service. Returns whether the action proceeded (was confirmed by user and no error occurred before starting it)
+func pauseService(c *cli.Context) (bool, error) {
 
 	// Get RP client
 	rp := rocketpool.NewClientFromCtx(c)
@@ -1108,7 +1199,7 @@ func pauseService(c *cli.Context) error {
 	// Get the config
 	cfg, _, err := rp.LoadConfig()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Write a note on doppelganger protection
@@ -1122,11 +1213,12 @@ func pauseService(c *cli.Context) error {
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
 		fmt.Println("Cancelled.")
-		return nil
+		return false, nil
 	}
 
 	// Pause service
-	return rp.PauseService(getComposeFiles(c))
+	err = rp.PauseService(getComposeFiles(c))
+	return true, err
 
 }
 
@@ -1303,11 +1395,26 @@ func serviceVersion(c *cli.Context) error {
 		return fmt.Errorf("unknown consensus client mode [%v]", eth2ClientMode)
 	}
 
+	var mevBoostString string
+	var mevBoostMode string
+
+	if cfg.MevBoost.Mode.Value.(sharedConfig.Mode) == sharedConfig.Mode_Local {
+		mevBoostMode = "Local Mode"
+	} else {
+		mevBoostMode = "External Mode"
+	}
+	if cfg.EnableMevBoost.Value.(bool) {
+		mevBoostString = fmt.Sprintf("Enabled (%s)\n\tImage: %s", mevBoostMode, cfg.MevBoost.ContainerTag.Value.(string))
+	} else {
+		mevBoostString = "Disabled"
+	}
+
 	// Print version info
 	fmt.Printf("Rocket Pool client version: %s\n", c.App.Version)
 	fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
 	fmt.Printf("Selected Eth 1.0 client: %s\n", eth1ClientString)
 	fmt.Printf("Selected Eth 2.0 client: %s\n", eth2ClientString)
+	fmt.Printf("MEV-Boost client: %s\n", mevBoostString)
 	return nil
 
 }

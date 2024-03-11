@@ -37,11 +37,10 @@ type generateRewardsTree struct {
 	bc        beacon.Client
 	lock      *sync.Mutex
 	isRunning bool
-	m         *state.NetworkStateManager
 }
 
 // Create generate rewards Merkle Tree task
-func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*generateRewardsTree, error) {
+func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*generateRewardsTree, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -72,7 +71,6 @@ func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger 
 		rp:        rp,
 		lock:      lock,
 		isRunning: false,
-		m:         m,
 	}
 
 	return generator, nil
@@ -156,18 +154,29 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		return
 	}
 
+	var stateManager *state.NetworkStateManager
+
 	// Try getting the rETH address as a canary to see if the block is available
 	client := t.rp
 	opts := &bind.CallOpts{
 		BlockNumber: elBlockHeader.Number,
 	}
 	address, err := client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
-	if err != nil {
+	if err == nil {
+		// Create the state manager with using the primary or fallback (not necessarily archive) EC
+		stateManager, err = state.NewNetworkStateManager(client, t.cfg, t.rp.Client, t.bc, &t.log)
+		if err != nil {
+			t.handleError(fmt.Errorf("error creating new NetworkStateManager with Archive EC: %w", err))
+			return
+		}
+	} else {
+		// Check if an Archive EC is provided, and if using it would potentially resolve the error
 		errMessage := err.Error()
 		t.log.Printlnf("%s Error getting state for block %d: %s", generationPrefix, elBlockHeader.Number.Uint64(), errMessage)
 		if strings.Contains(errMessage, "missing trie node") || // Geth
 			strings.Contains(errMessage, "No state available for block") || // Nethermind
 			strings.Contains(errMessage, "Internal error") { // Besu
+			// TODO add Reth string
 
 			// The state was missing so fall back to the archive node
 			archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
@@ -190,6 +199,12 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 					t.handleError(fmt.Errorf("%s Error verifying rETH address with Archive EC: %w", err))
 					return
 				}
+				// Create the state manager with the archive EC
+				stateManager, err = state.NewNetworkStateManager(client, t.cfg, ec, t.bc, &t.log)
+				if err != nil {
+					t.handleError(fmt.Errorf("%s Error creating new NetworkStateManager with ARchive EC: %w", err))
+					return
+				}
 			} else {
 				// No archive node specified
 				t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", elBlockHeader.Number.Uint64()))
@@ -206,7 +221,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	}
 
 	// Get the state for the target slot
-	state, err := t.m.GetStateForSlot(rewardsEvent.ConsensusBlock.Uint64())
+	state, err := stateManager.GetStateForSlot(rewardsEvent.ConsensusBlock.Uint64())
 	if err != nil {
 		t.handleError(fmt.Errorf("%s error getting state for beacon slot %d: %w", generationPrefix, rewardsEvent.ConsensusBlock.Uint64(), err))
 		return
