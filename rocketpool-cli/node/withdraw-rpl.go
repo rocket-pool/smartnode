@@ -35,8 +35,8 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 		// Set amount to maximum withdrawable amount
 		var maxAmount big.Int
-		if status.RplStake.Cmp(status.MinimumRplStake) > 0 {
-			maxAmount.Sub(status.RplStake, status.MinimumRplStake)
+		if status.RplStake.Cmp(status.MaximumRplStake) > 0 {
+			maxAmount.Sub(status.RplStake, status.MaximumRplStake)
 		}
 		amountWei = &maxAmount
 
