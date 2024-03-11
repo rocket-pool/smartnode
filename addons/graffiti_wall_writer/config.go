@@ -1,4 +1,4 @@
-package graffiti_wall_writer
+package gww
 
 /*
 import (

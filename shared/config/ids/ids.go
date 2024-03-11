@@ -1,11 +1,14 @@
 package ids
 
 const (
+	// Root IDs
+	AddonsID         string = "addons"
+	VersionID        string = "version"
+	UserDirectoryKey string = "rpUserDir"
+	IsNativeKey      string = "isNative"
+	SmartNodeID      string = "smartNode"
+
 	// Smart Node parameter IDs
-	RootConfigID                    string = "smartnode"
-	VersionID                       string = "version"
-	UserDirectoryKey                string = "rpUserDir"
-	IsNativeKey                     string = "isNative"
 	DebugModeID                     string = "debugMode"
 	NetworkID                       string = "network"
 	ClientModeID                    string = "clientMode"
@@ -35,7 +38,6 @@ const (
 	ExternalBeaconID    string = "externalBeacon"
 	ValidatorClientID   string = "validator"
 	MetricsID           string = "metrics"
-	NativeID            string = "native"
 	MevBoostID          string = "mevBoost"
 
 	// Metrics
@@ -43,16 +45,23 @@ const (
 	MetricsEnableOdaoID     string = "enableODaoMetrics"
 
 	// MEV-Boost
-	MevBoostEnableID        string = "enableMevBoost"
-	MevBoostModeID          string = "mode"
-	MevBoostSelectionModeID string = "selectionMode"
-	MevBoostPortID          string = "port"
-	MevBoostOpenRpcPortID   string = "openRpcPort"
-	MevBoostExternalUrlID   string = "externalUrl"
+	MevBoostEnableID               string = "enableMevBoost"
+	MevBoostModeID                 string = "mode"
+	MevBoostSelectionModeID        string = "selectionMode"
+	MevBoostOpenRpcPortID          string = "openRpcPort"
+	MevBoostExternalUrlID          string = "externalUrl"
+	MevBoostEnableRegulatedAllID   string = "enableRegulatedAllMev"
+	MevBoostEnableUnregulatedAllID string = "enableUnregulatedAllMev"
+	MevBoostFlashbotsID            string = "flashbotsEnabled"
+	MevBoostBloxRouteMaxProfitID   string = "bloxRouteMaxProfitEnabled"
+	MevBoostBloxRouteRegulatedID   string = "bloxRouteRegulatedEnabled"
+	MevBoostEdenID                 string = "edenEnabled"
+	MevBoostUltrasoundID           string = "ultrasoundEnabled"
+	MevBoostAestusID               string = "aestusEnabled"
 
 	// Native
-	NativeValidatorRestartCommandID string = "validatorRestartCommand"
-	NativeValidatorStopCommandID    string = "validatorStopCommand"
+	NativeValidatorRestartCommandID string = "nativeValidatorRestartCommand"
+	NativeValidatorStopCommandID    string = "nativeValidatorStopCommand"
 
 	// VC Subconfigs
 	VcCommonID   string = "common"

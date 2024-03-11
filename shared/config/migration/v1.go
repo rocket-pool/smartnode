@@ -3,10 +3,12 @@ package migration
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 
 	nmc_ids "github.com/rocket-pool/node-manager-core/config/ids"
+	gww_ids "github.com/rocket-pool/smartnode/addons/graffiti_wall_writer/ids"
+	rn_ids "github.com/rocket-pool/smartnode/addons/rescue_node/ids"
 	"github.com/rocket-pool/smartnode/shared/config/ids"
-	legacy "github.com/rocket-pool/smartnode/shared/config/legacy"
 )
 
 // Migrate a legacy v1 config into a new v2 config
@@ -46,7 +48,8 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// Top level
 	newConfig := map[string]any{}
-	newConfig[ids.UserDirectoryKey] = legacyRootConfig[legacy.RpDirKey]
+	newConfig[ids.UserDirectoryKey] = legacyRootConfig["rpDir"]
+	newConfig[ids.IsNativeKey] = legacyRootConfig["isNative"]
 	newConfig[ids.VersionID] = "v2.0.0-migrate"
 
 	// Smart Node
@@ -70,7 +73,7 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	newSmartnodeConfig[ids.CheckpointRetentionLimitID] = legacySmartnodeConfig["checkpointRetentionLimit"]
 	newSmartnodeConfig[ids.WatchtowerStatePath] = legacySmartnodeConfig["watchtowerPath"]
 	newSmartnodeConfig[ids.RecordsPathID] = legacySmartnodeConfig["recordsPath"]
-	newConfig[ids.RootConfigID] = newSmartnodeConfig
+	newConfig[ids.SmartNodeID] = newSmartnodeConfig
 
 	// Local execution
 	newLocalExecutionConfig := map[string]any{}
@@ -113,8 +116,13 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	// External execution
 	newExternalExecutionConfig := map[string]any{}
 	newExternalExecutionConfig[nmc_ids.EcID] = "" // Smartnode v1 didn't have this unfortunately
-	newExternalExecutionConfig[nmc_ids.HttpUrlID] = legacyExternalExecutionConfig["httpUrl"]
-	newExternalExecutionConfig[nmc_ids.ExternalEcWebsocketUrlID] = legacyExternalExecutionConfig["wsUrl"]
+	isNative, _ := strconv.ParseBool(legacyRootConfig["isNative"])
+	if isNative {
+		newExternalExecutionConfig[nmc_ids.HttpUrlID] = legacyNativeConfig["ecHttpUrl"]
+	} else {
+		newExternalExecutionConfig[nmc_ids.HttpUrlID] = legacyExternalExecutionConfig["httpUrl"]
+		newExternalExecutionConfig[nmc_ids.ExternalEcWebsocketUrlID] = legacyExternalExecutionConfig["wsUrl"]
+	}
 	newSmartnodeConfig[ids.ExternalExecutionID] = newExternalExecutionConfig
 
 	// Local beacon
@@ -169,24 +177,31 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// External beacon
 	newExternalBeaconConfig := map[string]any{}
-	newExternalBeaconConfig[nmc_ids.BnID] = legacyRootConfig["externalConsensusClient"]
-	switch newExternalBeaconConfig[nmc_ids.BnID] {
-	case "lighthouse":
-		newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalLighthouseConfig["httpUrl"]
-	case "lodestar":
-		newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalLodestarConfig["httpUrl"]
-	case "nimbus":
-		newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalNimbusConfig["httpUrl"]
-	case "prysm":
-		newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalPrysmConfig["httpUrl"]
-		newExternalBeaconConfig[nmc_ids.ExternalBnPrysmRpcUrlID] = legacyExternalPrysmConfig["jsonRpcUrl"]
-	case "teku":
-		newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalTekuConfig["httpUrl"]
+	if isNative {
+		newExternalBeaconConfig[nmc_ids.BnID] = legacyNativeConfig["consensusClient"]
+		newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyNativeConfig["ccHttpUrl"]
+	} else {
+		newExternalBeaconConfig[nmc_ids.BnID] = legacyRootConfig["externalConsensusClient"]
+		switch newExternalBeaconConfig[nmc_ids.BnID] {
+		case "lighthouse":
+			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalLighthouseConfig["httpUrl"]
+		case "lodestar":
+			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalLodestarConfig["httpUrl"]
+		case "nimbus":
+			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalNimbusConfig["httpUrl"]
+		case "prysm":
+			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalPrysmConfig["httpUrl"]
+			newExternalBeaconConfig[nmc_ids.PrysmRpcUrlID] = legacyExternalPrysmConfig["jsonRpcUrl"]
+		case "teku":
+			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalTekuConfig["httpUrl"]
+		}
 	}
 	newSmartnodeConfig[ids.ExternalBeaconID] = newExternalBeaconConfig
 
 	// Validator Client
 	newValidatorClientConfig := map[string]any{}
+	newValidatorClientConfig[ids.NativeValidatorRestartCommandID] = legacyNativeConfig["validatorRestartCommand"]
+	newValidatorClientConfig[ids.NativeValidatorStopCommandID] = legacyNativeConfig["validatorStopCommand"]
 	newSmartnodeConfig[ids.ValidatorClientID] = newValidatorClientConfig
 
 	// Get the VC details based on the old client mode
@@ -296,7 +311,74 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	newSmartnodeConfig[ids.MetricsID] = newMetricsConfig
 
 	// Grafana
-	// TODO
+	newGrafanaConfig := map[string]any{}
+	newGrafanaConfig[nmc_ids.PortID] = legacyGrafanaConfig["port"]
+	newGrafanaConfig[nmc_ids.ContainerTagID] = legacyGrafanaConfig["containerTag"]
+	newMetricsConfig[nmc_ids.MetricsGrafanaID] = newGrafanaConfig
+
+	// Prometheus
+	newPrometheusConfig := map[string]any{}
+	newPrometheusConfig[nmc_ids.PortID] = legacyPrometheusConfig["port"]
+	newPrometheusConfig[nmc_ids.OpenPortID] = legacyPrometheusConfig["openPort"]
+	newPrometheusConfig[nmc_ids.ContainerTagID] = legacyPrometheusConfig["containerTag"]
+	newPrometheusConfig[nmc_ids.AdditionalFlagsID] = legacyPrometheusConfig["additionalFlags"]
+	newMetricsConfig[nmc_ids.MetricsPrometheusID] = newPrometheusConfig
+
+	// Exporter
+	newExporterConfig := map[string]any{}
+	newExporterConfig[nmc_ids.ExporterEnableRootFsID] = legacyExporterConfig["enableRootFs"]
+	newExporterConfig[nmc_ids.ContainerTagID] = legacyExporterConfig["containerTag"]
+	newExporterConfig[nmc_ids.AdditionalFlagsID] = legacyExporterConfig["additionalFlags"]
+	newMetricsConfig[nmc_ids.MetricsExporterID] = newExporterConfig
+
+	// Bitfly
+	newBitflyConfig := map[string]any{}
+	newBitflyConfig[nmc_ids.BitflySecretID] = legacybBitflyNodeMetricsConfig["bitflySecret"]
+	newBitflyConfig[nmc_ids.BitflyEndpointID] = legacybBitflyNodeMetricsConfig["bitflyEndpoint"]
+	newBitflyConfig[nmc_ids.BitflyMachineNameID] = legacybBitflyNodeMetricsConfig["bitflyMachineName"]
+	newMetricsConfig[nmc_ids.MetricsBitflyID] = newBitflyConfig
+
+	// MEV-Boost
+	newMevBoostConfig := map[string]any{}
+	newMevBoostConfig[ids.MevBoostEnableID] = legacyRootConfig["enableMevBoost"]
+	newMevBoostConfig[ids.MevBoostModeID] = legacyMevBoostConfig["mode"]
+	newMevBoostConfig[ids.MevBoostSelectionModeID] = legacyMevBoostConfig["selectionMode"]
+	newMevBoostConfig[ids.MevBoostEnableRegulatedAllID] = legacyMevBoostConfig["enableRegulatedAllMev"]
+	newMevBoostConfig[ids.MevBoostEnableUnregulatedAllID] = legacyMevBoostConfig["enableUnregulatedAllMev"]
+	newMevBoostConfig[ids.MevBoostFlashbotsID] = legacyMevBoostConfig["flashbotsEnabled"]
+	newMevBoostConfig[ids.MevBoostBloxRouteMaxProfitID] = legacyMevBoostConfig["bloxRouteMaxProfitEnabled"]
+	newMevBoostConfig[ids.MevBoostBloxRouteRegulatedID] = legacyMevBoostConfig["bloxRouteRegulatedEnabled"]
+	newMevBoostConfig[ids.MevBoostEdenID] = legacyMevBoostConfig["edenEnabled"]
+	newMevBoostConfig[ids.MevBoostUltrasoundID] = legacyMevBoostConfig["ultrasoundEnabled"]
+	newMevBoostConfig[ids.MevBoostAestusID] = legacyMevBoostConfig["aestusEnabled"]
+	newMevBoostConfig[nmc_ids.PortID] = legacyMevBoostConfig["port"]
+	newMevBoostConfig[nmc_ids.OpenPortID] = legacyMevBoostConfig["openRpcPort"]
+	newMevBoostConfig[nmc_ids.ContainerTagID] = legacyMevBoostConfig["containerTag"]
+	newMevBoostConfig[nmc_ids.AdditionalFlagsID] = legacyMevBoostConfig["additionalFlags"]
+	newMevBoostConfig[ids.MevBoostExternalUrlID] = legacyMevBoostConfig["externalUrl"]
+	newSmartnodeConfig[ids.MevBoostID] = newMevBoostConfig
+
+	// Addons
+	newAddonsConfig := map[string]any{}
+	newConfig[ids.AddonsID] = newAddonsConfig
+
+	// GWW
+	newGwwConfig := map[string]any{}
+	newGwwConfig[gww_ids.GwwEnabledID] = legacyGwwConfig["enabled"]
+	newGwwConfig[gww_ids.GwwInputUrlID] = legacyGwwConfig["inputUrl"]
+	newGwwConfig[gww_ids.GwwUpdateWallTimeID] = legacyGwwConfig["updateWallTime"]
+	newGwwConfig[gww_ids.GwwUpdateInputTimeID] = legacyGwwConfig["updateInputTime"]
+	newGwwConfig[gww_ids.GwwUpdatePixelTimeID] = legacyGwwConfig["updatePixelTime"]
+	newGwwConfig[nmc_ids.ContainerTagID] = legacyGwwConfig["containerTag"]
+	newGwwConfig[nmc_ids.AdditionalFlagsID] = legacyGwwConfig["additionalFlags"]
+	newAddonsConfig[gww_ids.GwwName] = newGwwConfig
+
+	// Rescue node
+	newRescueNodeConfig := map[string]any{}
+	newRescueNodeConfig[rn_ids.RescueNodeEnabledID] = legacyRescueNodeConfig["enabled"]
+	newRescueNodeConfig[rn_ids.RescueNodeUsernameID] = legacyRescueNodeConfig["username"]
+	newRescueNodeConfig[rn_ids.RescueNodePasswordID] = legacyRescueNodeConfig["password"]
+	newAddonsConfig[rn_ids.RescueNodeName] = newRescueNodeConfig
 
 	return newConfig, nil
 }

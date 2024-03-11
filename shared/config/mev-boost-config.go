@@ -160,20 +160,20 @@ func NewMevBoostConfig(parent *SmartNodeConfig) *MevBoostConfig {
 			},
 		},
 
-		EnableRegulatedAllMev:   generateProfileParameter("enableRegulatedAllMev", relays, true),
-		EnableUnregulatedAllMev: generateProfileParameter("enableUnregulatedAllMev", relays, false),
+		EnableRegulatedAllMev:   generateProfileParameter(ids.MevBoostEnableRegulatedAllID, relays, true),
+		EnableUnregulatedAllMev: generateProfileParameter(ids.MevBoostEnableUnregulatedAllID, relays, false),
 
 		// Explicit relay params
-		FlashbotsRelay:          generateRelayParameter("flashbotsEnabled", relayMap[MevRelayID_Flashbots]),
-		BloxRouteMaxProfitRelay: generateRelayParameter("bloxRouteMaxProfitEnabled", relayMap[MevRelayID_BloxrouteMaxProfit]),
-		BloxRouteRegulatedRelay: generateRelayParameter("bloxRouteRegulatedEnabled", relayMap[MevRelayID_BloxrouteRegulated]),
-		EdenRelay:               generateRelayParameter("edenEnabled", relayMap[MevRelayID_Eden]),
-		UltrasoundRelay:         generateRelayParameter("ultrasoundEnabled", relayMap[MevRelayID_Ultrasound]),
-		AestusRelay:             generateRelayParameter("aestusEnabled", relayMap[MevRelayID_Aestus]),
+		FlashbotsRelay:          generateRelayParameter(ids.MevBoostFlashbotsID, relayMap[MevRelayID_Flashbots]),
+		BloxRouteMaxProfitRelay: generateRelayParameter(ids.MevBoostBloxRouteMaxProfitID, relayMap[MevRelayID_BloxrouteMaxProfit]),
+		BloxRouteRegulatedRelay: generateRelayParameter(ids.MevBoostBloxRouteRegulatedID, relayMap[MevRelayID_BloxrouteRegulated]),
+		EdenRelay:               generateRelayParameter(ids.MevBoostEdenID, relayMap[MevRelayID_Eden]),
+		UltrasoundRelay:         generateRelayParameter(ids.MevBoostUltrasoundID, relayMap[MevRelayID_Ultrasound]),
+		AestusRelay:             generateRelayParameter(ids.MevBoostAestusID, relayMap[MevRelayID_Aestus]),
 
 		Port: config.Parameter[uint16]{
 			ParameterCommon: &config.ParameterCommon{
-				ID:                 ids.MevBoostPortID,
+				ID:                 nmc_ids.PortID,
 				Name:               "Port",
 				Description:        "The port that MEV-Boost should serve its API on.",
 				AffectsContainers:  []config.ContainerID{config.ContainerID_BeaconNode, config.ContainerID_MevBoost},
@@ -187,7 +187,7 @@ func NewMevBoostConfig(parent *SmartNodeConfig) *MevBoostConfig {
 
 		OpenRpcPort: config.Parameter[config.RpcPortMode]{
 			ParameterCommon: &config.ParameterCommon{
-				ID:                 ids.MevBoostOpenRpcPortID,
+				ID:                 nmc_ids.OpenPortID,
 				Name:               "Expose API Port",
 				Description:        "Expose the API port to other processes on your machine, or to your local network so other local machines can access MEV-Boost's API.",
 				AffectsContainers:  []config.ContainerID{config.ContainerID_MevBoost},

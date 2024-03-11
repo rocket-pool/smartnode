@@ -7,16 +7,17 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/rocket-pool/smartnode/shared/config/ids"
-	legacycfg "github.com/rocket-pool/smartnode/shared/config/legacy"
 )
 
 const (
-	v1LegacyVersionMax string = "1.99.99"
+	v1LegacyVersionMax   string = "1.99.99"
+	legacyRootConfigName string = "root"
+	legacyVersionKey     string = "version"
 )
 
 type ConfigUpgrader struct {
 	Version     *version.Version
-	UpgradeFunc func(serializedConfig map[string]any) error
+	UpgradeFunc func(serializedConfig map[string]any) (map[string]any, error)
 }
 
 func UpdateConfig(serializedConfig map[string]any) error {
@@ -57,7 +58,7 @@ func UpdateConfig(serializedConfig map[string]any) error {
 	// If there are upgrades, start at the first applicable index and apply them all in series
 	for i := targetIndex; i < len(upgraders); i++ {
 		upgrader := upgraders[i]
-		err = upgrader.UpgradeFunc(serializedConfig)
+		serializedConfig, err = upgrader.UpgradeFunc(serializedConfig)
 		if err != nil {
 			return fmt.Errorf("error applying upgrade for config version %s: %w", upgrader.Version.String(), err)
 		}
@@ -73,7 +74,7 @@ func getVersionFromConfig(serializedConfig map[string]any) (*version.Version, er
 	configVersionEntry, exists := serializedConfig[ids.VersionID]
 	if !exists {
 		// Check to see if this is a legacy config
-		rootConfigEntry, exists := serializedConfig[legacycfg.RootConfigName]
+		rootConfigEntry, exists := serializedConfig[legacyRootConfigName]
 		if !exists {
 			return nil, fmt.Errorf("expected a top-level setting named '%s' but it didn't exist", ids.VersionID)
 		}
@@ -81,17 +82,17 @@ func getVersionFromConfig(serializedConfig map[string]any) (*version.Version, er
 		// Ok, we have a legacy config - get its version
 		rootConfig, ok := rootConfigEntry.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("detected a Smart Node v1 config; it has an entry named [%s] but it is not a map, it's a %s", legacycfg.RootConfigName, reflect.TypeOf(rootConfigEntry))
+			return nil, fmt.Errorf("detected a Smart Node v1 config; it has an entry named [%s] but it is not a map, it's a %s", legacyRootConfigName, reflect.TypeOf(rootConfigEntry))
 		}
 
-		configVersionEntry, exists := rootConfig[legacycfg.VersionKey]
+		configVersionEntry, exists := rootConfig[legacyVersionKey]
 		if !exists {
-			return nil, fmt.Errorf("detected a Smart Node v1 config but it is missing an entry named [%s.%s]", legacycfg.RootConfigName, legacycfg.VersionKey)
+			return nil, fmt.Errorf("detected a Smart Node v1 config but it is missing an entry named [%s.%s]", legacyRootConfigName, legacyVersionKey)
 		}
 
 		configVersionString, ok = configVersionEntry.(string)
 		if !ok {
-			return nil, fmt.Errorf("detected a Smart Node v1 config; it has an entry named [%s.%s] but it is not a string, it's a %s", legacycfg.RootConfigName, legacycfg.VersionKey, reflect.TypeOf(configVersionEntry))
+			return nil, fmt.Errorf("detected a Smart Node v1 config; it has an entry named [%s.%s] but it is not a string, it's a %s", legacyRootConfigName, legacyVersionKey, reflect.TypeOf(configVersionEntry))
 		}
 	}
 
