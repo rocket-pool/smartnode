@@ -66,6 +66,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		// Get maximum withdrawable amount
 		var maxAmount big.Int
 		maxAmount.Sub(status.RplStake, status.MaximumRplStake)
+		maxAmount.Sub(&maxAmount, status.NodeRPLLocked)
 		if maxAmount.Sign() == 1 {
 			// Prompt for maximum amount
 			if cliutils.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {

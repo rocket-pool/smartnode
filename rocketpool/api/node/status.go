@@ -61,6 +61,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	// Response
 	response := api.NodeStatusResponse{}
 	response.PenalizedMinipools = map[common.Address]uint64{}
+	response.NodeRPLLocked = big.NewInt(0)
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()

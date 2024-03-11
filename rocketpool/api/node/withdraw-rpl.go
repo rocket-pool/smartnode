@@ -57,6 +57,7 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	var rplStake *big.Int
 	var minimumRplStake *big.Int
 	var maximumRplStake *big.Int
+	nodeRplLocked := big.NewInt(0)
 	var currentTime uint64
 	var rplStakedTime uint64
 	var withdrawalDelay time.Duration
@@ -121,6 +122,13 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 			rplWithdrawalAddress, err = node.GetNodeRPLWithdrawalAddress(rp, nodeAccount.Address, nil)
 			return err
 		})
+
+		// Get RPL locked on node
+		wg.Go(func() error {
+			var err error
+			nodeRplLocked, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
+			return err
+		})
 	}
 
 	// Get gas estimate
@@ -144,6 +152,7 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	// Check data
 	var remainingRplStake big.Int
 	remainingRplStake.Sub(rplStake, amountWei)
+	remainingRplStake.Sub(&remainingRplStake, nodeRplLocked)
 	response.InsufficientBalance = (amountWei.Cmp(rplStake) > 0)
 	response.BelowMaxRPLStake = (remainingRplStake.Cmp(maximumRplStake) < 0)
 	response.MinipoolsUndercollateralized = (remainingRplStake.Cmp(minimumRplStake) < 0)
