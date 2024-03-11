@@ -21,7 +21,7 @@ func NewNativeConfig(cfg *SmartNodeConfig) *NativeConfig {
 	return &NativeConfig{
 		ValidatorRestartCommand: config.Parameter[string]{
 			ParameterCommon: &config.ParameterCommon{
-				ID:                 ids.ValidatorRestartCommandID,
+				ID:                 ids.NativeValidatorRestartCommandID,
 				Name:               "VC Restart Script",
 				Description:        "The absolute path to a custom script that will be invoked when the Smart Node needs to restart your validator client to load the new key after a minipool is staked.",
 				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon},
@@ -35,7 +35,7 @@ func NewNativeConfig(cfg *SmartNodeConfig) *NativeConfig {
 
 		ValidatorStopCommand: config.Parameter[string]{
 			ParameterCommon: &config.ParameterCommon{
-				ID:                 ids.ValidatorStopCommandID,
+				ID:                 ids.NativeValidatorStopCommandID,
 				Name:               "Validator Stop Command",
 				Description:        "The absolute path to a custom script that will be invoked when the Smart Node needs to stop your validator client in case of emergency.",
 				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon},

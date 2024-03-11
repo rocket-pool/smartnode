@@ -554,6 +554,14 @@ github.com/rocket-pool/node-manager-core v0.1.1-0.20240308092800-95365d9eebda h1
 github.com/rocket-pool/node-manager-core v0.1.1-0.20240308092800-95365d9eebda/go.mod h1:mUIsrmHwbpBwYo1Gp8nPmQ6SeNGxxgXMssT83eicDso=
 github.com/rocket-pool/node-manager-core v0.1.1-0.20240309065111-c0ac05feefb4 h1:ywgRfCLhUq1Lc1cHcooM5fyE/rwJ1ybmwkBWJSsbmE8=
 github.com/rocket-pool/node-manager-core v0.1.1-0.20240309065111-c0ac05feefb4/go.mod h1:mUIsrmHwbpBwYo1Gp8nPmQ6SeNGxxgXMssT83eicDso=
+github.com/rocket-pool/node-manager-core v0.1.1-0.20240310205829-015d6b258cb4 h1:q5+0M4A5JE3do/TlheyWenMnSSaiLhm8WEse5/QuR7s=
+github.com/rocket-pool/node-manager-core v0.1.1-0.20240310205829-015d6b258cb4/go.mod h1:mUIsrmHwbpBwYo1Gp8nPmQ6SeNGxxgXMssT83eicDso=
+github.com/rocket-pool/node-manager-core v0.1.1-0.20240311030739-585230cb0ee5 h1:C6wjBDgeRYMzD+KOM0mSgEHsJeHkiHsZH+EQWjzIbB4=
+github.com/rocket-pool/node-manager-core v0.1.1-0.20240311030739-585230cb0ee5/go.mod h1:mUIsrmHwbpBwYo1Gp8nPmQ6SeNGxxgXMssT83eicDso=
+github.com/rocket-pool/node-manager-core v0.1.1-0.20240311034648-a390e9fa0819 h1:7tDe05JyRrTyRX8beogJhIXTTpUlxFN/DiXjTd+dH1s=
+github.com/rocket-pool/node-manager-core v0.1.1-0.20240311034648-a390e9fa0819/go.mod h1:mUIsrmHwbpBwYo1Gp8nPmQ6SeNGxxgXMssT83eicDso=
+github.com/rocket-pool/node-manager-core v0.1.1-0.20240311093034-83c53c2b2496 h1:sZBGPi7W+e0YoR7U7bUy9i2duNSK4MeVagzqKZCqpJA=
+github.com/rocket-pool/node-manager-core v0.1.1-0.20240311093034-83c53c2b2496/go.mod h1:mUIsrmHwbpBwYo1Gp8nPmQ6SeNGxxgXMssT83eicDso=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20240308080512-77189d8e0758 h1:Et8AzJ69G5ylaw0SFgA86S4bsINKY48yDqbaUvM6hHA=
 github.com/rocket-pool/rocketpool-go v1.10.1-0.20240308080512-77189d8e0758/go.mod h1:DILzlh7QqmV00rdC7tJQ4hXGLkJjfEo3yKU+BWuhEgM=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=

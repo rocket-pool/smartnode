@@ -60,14 +60,17 @@ type SmartNodeConfig struct {
 	// Fallback clients
 	Fallback *config.FallbackConfig
 
+	// Validator client settings
+	ValidatorClientConfig *ValidatorClientConfig
+
 	// Metrics
-	Metrics *MetricsConfig
+	MetricsConfig *MetricsConfig
 
 	// Native mode
-	Native *NativeConfig
+	NativeConfig *NativeConfig
 
 	// MEV-Boost
-	MevBoost *MevBoostConfig
+	MevBoostConfig *MevBoostConfig
 
 	// Addons
 	Addons map[string]any
@@ -431,9 +434,9 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 	cfg.LocalBeaconConfig = NewLocalBeaconConfig()
 	cfg.ExternalBeaconConfig = config.NewExternalBeaconConfig()
 	cfg.Fallback = config.NewFallbackConfig()
-	cfg.Metrics = NewMetricsConfig()
-	cfg.Native = NewNativeConfig(cfg)
-	cfg.MevBoost = NewMevBoostConfig(cfg)
+	cfg.MetricsConfig = NewMetricsConfig()
+	cfg.NativeConfig = NewNativeConfig(cfg)
+	cfg.MevBoostConfig = NewMevBoostConfig(cfg)
 
 	// Apply the default values for mainnet
 	cfg.Network.Value = config.Network_Mainnet
@@ -477,14 +480,15 @@ func (cfg *SmartNodeConfig) GetParameters() []config.IParameter {
 // Get the subconfigurations for this config
 func (cfg *SmartNodeConfig) GetSubconfigs() map[string]config.IConfigSection {
 	return map[string]config.IConfigSection{
-		"fallback":          cfg.Fallback,
-		"localExecution":    cfg.LocalExecutionConfig,
-		"externalExecution": cfg.ExternalExecutionConfig,
-		"localBeacon":       cfg.LocalBeaconConfig,
-		"externalBeacon":    cfg.ExternalBeaconConfig,
-		"metrics":           cfg.Metrics,
-		"native":            cfg.Native,
-		"mevBoost":          cfg.MevBoost,
+		ids.LocalExecutionID:    cfg.LocalExecutionConfig,
+		ids.ExternalExecutionID: cfg.ExternalExecutionConfig,
+		ids.LocalBeaconID:       cfg.LocalBeaconConfig,
+		ids.ExternalBeaconID:    cfg.ExternalBeaconConfig,
+		ids.ValidatorClientID:   cfg.ValidatorClientConfig,
+		ids.FallbackID:          cfg.Fallback,
+		ids.MetricsID:           cfg.MetricsConfig,
+		ids.NativeID:            cfg.NativeConfig,
+		ids.MevBoostID:          cfg.MevBoostConfig,
 	}
 }
 

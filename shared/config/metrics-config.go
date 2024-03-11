@@ -22,7 +22,7 @@ func NewMetricsConfig() *MetricsConfig {
 		base: cfg,
 		EnableOdaoMetrics: config.Parameter[bool]{
 			ParameterCommon: &config.ParameterCommon{
-				ID:                 "enableODaoMetrics",
+				ID:                 ids.MetricsEnableOdaoID,
 				Name:               "Enable Oracle DAO Metrics",
 				Description:        "Enable the tracking of Oracle DAO performance metrics, such as prices and balances submission participation.",
 				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon},
@@ -38,7 +38,7 @@ func NewMetricsConfig() *MetricsConfig {
 			ParameterCommon: &config.ParameterCommon{
 				ID:                 ids.MetricsWatchtowerPortID,
 				Name:               "Daemon Metrics Port",
-				Description:        "The port your daemon container should expose its metrics on.",
+				Description:        "The port the Watchtower container should expose its metrics on.",
 				AffectsContainers:  []config.ContainerID{ContainerID_Watchtower, config.ContainerID_Prometheus},
 				CanBeBlank:         false,
 				OverwriteOnUpgrade: false,
