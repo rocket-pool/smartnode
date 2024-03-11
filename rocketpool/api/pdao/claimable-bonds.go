@@ -66,7 +66,7 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 	// Get all of the proposals
 	props, err := state.GetAllProtocolDaoProposalDetails(rp, contracts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting pDAO proposal details: %w", err)
+		return nil, fmt.Errorf("error ge	tting pDAO proposal details: %w", err)
 	}
 	if len(props) == 0 {
 		response.ClaimableBonds = []api.BondClaimResult{}
@@ -255,7 +255,9 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 	// Make a sorted list of claimable bonds
 	claimableBonds := make([]api.BondClaimResult, 0, len(claimResults))
 	for _, result := range claimResults {
-		claimableBonds = append(claimableBonds, *result)
+		if result.RewardAmount.Cmp(big.NewInt(0)) > 0 || result.UnlockAmount.Cmp(big.NewInt(0)) > 0 {
+			claimableBonds = append(claimableBonds, *result)
+		}
 	}
 	sort.SliceStable(claimableBonds, func(i, j int) bool {
 		first := claimableBonds[i]
