@@ -1,6 +1,5 @@
 package rescue_node
 
-/*
 import (
 	"bytes"
 	"encoding/base64"
@@ -10,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/smartnode/addons/rescue_node/pb"
-	config "github.com/rocket-pool/smartnode/shared/config/legacy"
 )
 
 const (
@@ -31,8 +30,7 @@ type credentialDetails struct {
 }
 
 func (c *credentialDetails) GetTimeLeft() time.Duration {
-
-	if c.solo == true {
+	if c.solo {
 		return time.Until(c.issued.Add(soloAuthValidity))
 	}
 
@@ -43,26 +41,14 @@ type RescueNode struct {
 	cfg *RescueNodeConfig `yaml:"config,omitempty"`
 }
 
-func NewRescueNode() config.SmartnodeAddon {
+func NewRescueNode(cfg *RescueNodeConfig) *RescueNode {
 	return &RescueNode{
-		cfg: NewConfig(),
+		cfg: cfg,
 	}
 }
 
 func (r *RescueNode) GetName() string {
 	return "Rescue Node"
-}
-
-func (r *RescueNode) GetConfig() config.Config {
-	return r.cfg
-}
-
-func (r *RescueNode) GetContainerName() string {
-	return ""
-}
-
-func (r *RescueNode) GetContainerTag() string {
-	return ""
 }
 
 func (r *RescueNode) GetDescription() string {
@@ -73,16 +59,12 @@ The Rocket Rescue Node is a community-run, trust-minimized, and secured fallback
 For more information, see https://rescuenode.com`
 }
 
-func (r *RescueNode) GetEnabledParameter() *config.Parameter {
-	return &r.cfg.Enabled
-}
-
 func (r *RescueNode) getCredentialDetails() (*credentialDetails, error) {
-	if !r.cfg.Enabled.Value.(bool) {
+	if !r.cfg.Enabled.Value {
 		panic("getCredentialDetails() should not be called without checking if RN plugin is enabled")
 	}
 
-	password := r.cfg.Password.Value.(string)
+	password := r.cfg.Password.Value
 	if password == "" {
 		return nil, fmt.Errorf("Rescue Node enabled, but no Username provided")
 	}
@@ -106,11 +88,11 @@ func (r *RescueNode) getCredentialDetails() (*credentialDetails, error) {
 }
 
 func (r *RescueNode) getCredentialNodeId() (*common.Address, error) {
-	if !r.cfg.Enabled.Value.(bool) {
+	if !r.cfg.Enabled.Value {
 		panic("getCredentialNodeId() should not be called without checking if RN plugin is enabled")
 	}
 
-	username := r.cfg.Username.Value.(string)
+	username := r.cfg.Username.Value
 	if username == "" {
 		return nil, fmt.Errorf("Rescue Node enabled, but no Username provided")
 	}
@@ -125,7 +107,7 @@ func (r *RescueNode) getCredentialNodeId() (*common.Address, error) {
 }
 
 func (r *RescueNode) PrintStatusText(nodeAddr common.Address) {
-	if !r.cfg.Enabled.Value.(bool) {
+	if !r.cfg.Enabled.Value {
 		return
 	}
 
@@ -166,33 +148,32 @@ type RescueNodeOverrides struct {
 	VcAdditionalFlags string
 }
 
-func (r *RescueNode) GetOverrides(cc config.ConsensusClient) (*RescueNodeOverrides, error) {
-	if !r.cfg.Enabled.Value.(bool) {
+func (r *RescueNode) GetOverrides(bn config.BeaconNode) (*RescueNodeOverrides, error) {
+	if !r.cfg.Enabled.Value {
 		return nil, nil
 	}
 
-	username := r.cfg.Username.Value.(string)
-	password := r.cfg.Password.Value.(string)
+	username := r.cfg.Username.Value
+	password := r.cfg.Password.Value
 
 	if username == "" || password == "" {
 		return nil, fmt.Errorf("Rescue Node can not be enabled without a Username and Password configured.")
 	}
 
-	switch cc {
-	case config.ConsensusClient_Unknown:
+	switch bn {
+	case config.BeaconNode_Unknown:
 		return nil, fmt.Errorf("Unable to generate rescue node URLs for unknown consensus client")
-	case config.ConsensusClient_Lighthouse,
-		config.ConsensusClient_Nimbus,
-		config.ConsensusClient_Lodestar,
-		config.ConsensusClient_Teku:
+	case config.BeaconNode_Lighthouse,
+		config.BeaconNode_Nimbus,
+		config.BeaconNode_Lodestar,
+		config.BeaconNode_Teku:
 
-		rescueURL := fmt.Sprintf("https://%s:%s@%s.rescuenode.com", username, password, cc)
+		rescueURL := fmt.Sprintf("https://%s:%s@%s.rescuenode.com", username, password, bn)
 
 		return &RescueNodeOverrides{
 			CcApiEndpoint: rescueURL,
 		}, nil
-	case config.ConsensusClient_Prysm:
-
+	case config.BeaconNode_Prysm:
 		return &RescueNodeOverrides{
 			CcRpcEndpoint:     "prysm-grpc.rescuenode.com:443",
 			VcAdditionalFlags: fmt.Sprintf("--grpc-headers=rprnauth=%s:%s --tls-cert=/etc/ssl/certs/ca-certificates.crt", username, password),
@@ -201,4 +182,3 @@ func (r *RescueNode) GetOverrides(cc config.ConsensusClient) (*RescueNodeOverrid
 
 	return nil, nil
 }
-*/

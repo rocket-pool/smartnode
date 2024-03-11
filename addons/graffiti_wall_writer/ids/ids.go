@@ -1,7 +1,6 @@
 package ids
 
 const (
-	GwwName              string = "gww"
 	GwwEnabledID         string = "enabled"
 	GwwInputUrlID        string = "inputUrl"
 	GwwUpdateWallTimeID  string = "updateWallTime"

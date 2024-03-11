@@ -2,7 +2,6 @@ package ids
 
 const (
 	// Root IDs
-	AddonsID         string = "addons"
 	VersionID        string = "version"
 	UserDirectoryKey string = "rpUserDir"
 	IsNativeKey      string = "isNative"
@@ -39,6 +38,7 @@ const (
 	ValidatorClientID   string = "validator"
 	MetricsID           string = "metrics"
 	MevBoostID          string = "mevBoost"
+	AddonsID            string = "addons"
 
 	// Metrics
 	MetricsWatchtowerPortID string = "watchtowerMetricsPort"
@@ -70,4 +70,8 @@ const (
 	NimbusID     string = "nimbus"
 	PrysmID      string = "prysm"
 	TekuID       string = "teku"
+
+	// Addons
+	AddonsGwwID        string = "gww"
+	AddonsRescueNodeID string = "rescueNode"
 )

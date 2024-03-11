@@ -71,7 +71,7 @@ type SmartNodeConfig struct {
 	MevBoostConfig *MevBoostConfig
 
 	// Addons
-	Addons map[string]any
+	AddonsConfig *AddonsConfig
 
 	// Internal fields
 	Version             string
@@ -434,6 +434,7 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 	cfg.Fallback = config.NewFallbackConfig()
 	cfg.MetricsConfig = NewMetricsConfig()
 	cfg.MevBoostConfig = NewMevBoostConfig(cfg)
+	cfg.AddonsConfig = NewAddonsConfig()
 
 	// Apply the default values for mainnet
 	cfg.Network.Value = config.Network_Mainnet
@@ -485,31 +486,19 @@ func (cfg *SmartNodeConfig) GetSubconfigs() map[string]config.IConfigSection {
 		ids.FallbackID:          cfg.Fallback,
 		ids.MetricsID:           cfg.MetricsConfig,
 		ids.MevBoostID:          cfg.MevBoostConfig,
+		ids.AddonsID:            cfg.AddonsConfig,
 	}
 }
 
 // Serializes the configuration into a map of maps, compatible with a settings file
-func (cfg *SmartNodeConfig) Serialize(modules []IAddonConfig) map[string]any {
+func (cfg *SmartNodeConfig) Serialize() map[string]any {
 	masterMap := map[string]any{}
 
-	hdMap := config.Serialize(cfg)
-	masterMap[ids.UserDirectoryKey] = cfg.HyperdriveUserDirectory
-	masterMap[ids.VersionID] = fmt.Sprintf("v%s", shared.HyperdriveVersion)
+	snMap := config.Serialize(cfg)
+	masterMap[ids.UserDirectoryKey] = cfg.RocketPoolDirectory
+	masterMap[ids.VersionID] = fmt.Sprintf("v%s", shared.RocketPoolVersion)
 	masterMap[ids.IsNativeKey] = strconv.FormatBool(cfg.IsNativeMode)
-	masterMap[ids.SmartNodeID] = hdMap
-
-	// Handle modules
-	modulesMap := map[string]any{}
-	for modName, value := range cfg.Addons {
-		// Copy the module configs already on-board
-		modulesMap[modName] = value
-	}
-	for _, module := range modules {
-		// Serialize / overwrite them with explictly provided ones
-		modMap := config.Serialize(module)
-		modulesMap[module.GetModuleName()] = modMap
-	}
-	masterMap[ModulesName] = modulesMap
+	masterMap[ids.SmartNodeID] = snMap
 	return masterMap
 }
 
@@ -523,15 +512,15 @@ func (cfg *SmartNodeConfig) Deserialize(masterMap map[string]any) error {
 
 	// Get the network
 	network := config.Network_Mainnet
-	hyperdriveParams, exists := masterMap[ids.SmartNodeID]
+	smartnodeParams, exists := masterMap[ids.SmartNodeID]
 	if !exists {
 		return fmt.Errorf("config is missing the [%s] section", ids.SmartNodeID)
 	}
-	hdMap, isMap := hyperdriveParams.(map[string]any)
+	snMap, isMap := smartnodeParams.(map[string]any)
 	if !isMap {
-		return fmt.Errorf("config has an entry named [%s] but it is not a map, it's a %s", ids.SmartNodeID, reflect.TypeOf(hyperdriveParams))
+		return fmt.Errorf("config has an entry named [%s] but it is not a map, it's a %s", ids.SmartNodeID, reflect.TypeOf(smartnodeParams))
 	}
-	networkVal, exists := hdMap[cfg.Network.ID]
+	networkVal, exists := snMap[cfg.Network.ID]
 	if exists {
 		networkString, isString := networkVal.(string)
 		if !isString {
@@ -541,7 +530,7 @@ func (cfg *SmartNodeConfig) Deserialize(masterMap map[string]any) error {
 	}
 
 	// Deserialize the params and subconfigs
-	err = config.Deserialize(cfg, hdMap, network)
+	err = config.Deserialize(cfg, snMap, network)
 	if err != nil {
 		return fmt.Errorf("error deserializing [%s]: %w", ids.SmartNodeID, err)
 	}
@@ -562,18 +551,6 @@ func (cfg *SmartNodeConfig) Deserialize(masterMap map[string]any) error {
 		return fmt.Errorf("expected a native toggle parameter named [%s] but it was not found", ids.IsNativeKey)
 	}
 	cfg.IsNativeMode, _ = strconv.ParseBool(isNativeMode.(string))
-
-	// Handle modules
-	modules, exists := masterMap[ModulesName]
-	if exists {
-		if modMap, ok := modules.(map[string]any); ok {
-			cfg.Modules = modMap
-		} else {
-			return fmt.Errorf("config has an entry named [%s] but it is not a map, it's a %s", ModulesName, reflect.TypeOf(modules))
-		}
-	} else {
-		cfg.Modules = map[string]any{}
-	}
 
 	return nil
 }

@@ -360,7 +360,7 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// Addons
 	newAddonsConfig := map[string]any{}
-	newConfig[ids.AddonsID] = newAddonsConfig
+	newSmartnodeConfig[ids.AddonsID] = newAddonsConfig
 
 	// GWW
 	newGwwConfig := map[string]any{}
@@ -371,14 +371,14 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	newGwwConfig[gww_ids.GwwUpdatePixelTimeID] = legacyGwwConfig["updatePixelTime"]
 	newGwwConfig[nmc_ids.ContainerTagID] = legacyGwwConfig["containerTag"]
 	newGwwConfig[nmc_ids.AdditionalFlagsID] = legacyGwwConfig["additionalFlags"]
-	newAddonsConfig[gww_ids.GwwName] = newGwwConfig
+	newAddonsConfig[ids.AddonsGwwID] = newGwwConfig
 
 	// Rescue node
 	newRescueNodeConfig := map[string]any{}
 	newRescueNodeConfig[rn_ids.RescueNodeEnabledID] = legacyRescueNodeConfig["enabled"]
 	newRescueNodeConfig[rn_ids.RescueNodeUsernameID] = legacyRescueNodeConfig["username"]
 	newRescueNodeConfig[rn_ids.RescueNodePasswordID] = legacyRescueNodeConfig["password"]
-	newAddonsConfig[rn_ids.RescueNodeName] = newRescueNodeConfig
+	newAddonsConfig[ids.AddonsRescueNodeID] = newRescueNodeConfig
 
 	return newConfig, nil
 }
