@@ -143,12 +143,13 @@ type IntervalInfo struct {
 	CID                    string        `json:"cid"`
 	StartTime              time.Time     `json:"startTime"`
 	EndTime                time.Time     `json:"endTime"`
-	TotalNodeWeight        *QuotedBigInt `json:"-"`
 	NodeExists             bool          `json:"nodeExists"`
 	CollateralRplAmount    *QuotedBigInt `json:"collateralRplAmount"`
 	ODaoRplAmount          *QuotedBigInt `json:"oDaoRplAmount"`
 	SmoothingPoolEthAmount *QuotedBigInt `json:"smoothingPoolEthAmount"`
 	MerkleProof            []common.Hash `json:"merkleProof"`
+
+	TotalNodeWeight        *QuotedBigInt `json:"-"`
 }
 
 type MinipoolInfo struct {
