@@ -63,32 +63,6 @@ func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPat
 	return SubmitProposal(rp, message, payload, opts)
 }
 
-// Estimate the gas of ProposeInviteMember
-func EstimateProposeInviteMemberGas(rp *rocketpool.RocketPool, message string, newMemberId string, newMemberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	payload, err := rocketDAOSecurityProposals.ABI.Pack("proposalInvite", newMemberId, newMemberAddress)
-	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error encoding invite member proposal payload: %w", err)
-	}
-	return EstimateProposalGas(rp, message, payload, opts)
-}
-
-// Submit a proposal to invite a new member to the security DAO
-func ProposeInviteMember(rp *rocketpool.RocketPool, message string, newMemberId string, newMemberAddress common.Address, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
-	if err != nil {
-		return 0, common.Hash{}, err
-	}
-	payload, err := rocketDAOSecurityProposals.ABI.Pack("proposalInvite", newMemberId, newMemberAddress)
-	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("error encoding invite member proposal payload: %w", err)
-	}
-	return SubmitProposal(rp, message, payload, opts)
-}
-
 // Estimate the gas of ProposeKick
 func EstimateProposeKickGas(rp *rocketpool.RocketPool, message string, memberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
@@ -100,71 +74,6 @@ func EstimateProposeKickGas(rp *rocketpool.RocketPool, message string, memberAdd
 		return rocketpool.GasInfo{}, fmt.Errorf("error encoding kick proposal payload: %w", err)
 	}
 	return EstimateProposalGas(rp, message, payload, opts)
-}
-
-// Submit a proposal to kick a member from the security DAO
-func ProposeKick(rp *rocketpool.RocketPool, message string, memberAddress common.Address, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
-	if err != nil {
-		return 0, common.Hash{}, err
-	}
-	payload, err := rocketDAOSecurityProposals.ABI.Pack("proposalKick", memberAddress)
-	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("error encoding kick proposal payload: %w", err)
-	}
-	return SubmitProposal(rp, message, payload, opts)
-}
-
-// Estimate the gas of ProposeKickMulti
-func EstimateProposeKickMultiGas(rp *rocketpool.RocketPool, message string, memberAddresses []common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	payload, err := rocketDAOSecurityProposals.ABI.Pack("proposalKickMulti", memberAddresses)
-	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error encoding kick multi proposal payload: %w", err)
-	}
-	return EstimateProposalGas(rp, message, payload, opts)
-}
-
-// Submit a proposal to kick multiple members from the security DAO
-func ProposeKickMulti(rp *rocketpool.RocketPool, message string, memberAddresses []common.Address, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
-	if err != nil {
-		return 0, common.Hash{}, err
-	}
-	payload, err := rocketDAOSecurityProposals.ABI.Pack("proposalKickMulti", memberAddresses)
-	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("error encoding kick multi proposal payload: %w", err)
-	}
-	return SubmitProposal(rp, message, payload, opts)
-}
-
-// Estimate the gas of ProposeReplace
-func EstimateProposeReplaceGas(rp *rocketpool.RocketPool, message string, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	payload, err := rocketDAOSecurityProposals.ABI.Pack("proposalReplace", existingMemberAddress, newMemberID, newMemberAddress)
-	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error encoding replace proposal payload: %w", err)
-	}
-	return EstimateProposalGas(rp, message, payload, opts)
-}
-
-// Submit a proposal to kick a member from the security DAO and replace it with a new member
-func ProposeReplace(rp *rocketpool.RocketPool, message string, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
-	if err != nil {
-		return 0, common.Hash{}, err
-	}
-	payload, err := rocketDAOSecurityProposals.ABI.Pack("proposalReplace", existingMemberAddress, newMemberID, newMemberAddress)
-	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("error encoding replace proposal payload: %w", err)
-	}
-	return SubmitProposal(rp, message, payload, opts)
 }
 
 // Estimate the gas of a proposal submission
