@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
-	"github.com/rocket-pool/rocketpool-go/dao/security"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -62,7 +61,7 @@ func canExecuteProposal(c *cli.Context, proposalId uint64) (*api.CanExecutePDAOP
 		if err != nil {
 			return err
 		}
-		gasInfo, err := security.EstimateExecuteProposalGas(rp, proposalId, opts)
+		gasInfo, err := protocol.EstimateExecuteProposalGas(rp, proposalId, opts)
 		if err == nil {
 			response.GasInfo = gasInfo
 		}
@@ -114,7 +113,7 @@ func executeProposal(c *cli.Context, proposalId uint64) (*api.ExecutePDAOProposa
 	}
 
 	// Execute proposal
-	hash, err := security.ExecuteProposal(rp, proposalId, opts)
+	hash, err := protocol.ExecuteProposal(rp, proposalId, opts)
 	if err != nil {
 		return nil, err
 	}
