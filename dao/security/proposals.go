@@ -63,19 +63,6 @@ func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPat
 	return SubmitProposal(rp, message, payload, opts)
 }
 
-// Estimate the gas of ProposeKick
-func EstimateProposeKickGas(rp *rocketpool.RocketPool, message string, memberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	payload, err := rocketDAOSecurityProposals.ABI.Pack("proposalKick", memberAddress)
-	if err != nil {
-		return rocketpool.GasInfo{}, fmt.Errorf("error encoding kick proposal payload: %w", err)
-	}
-	return EstimateProposalGas(rp, message, payload, opts)
-}
-
 // Estimate the gas of a proposal submission
 func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOSecurityProposals, err := getRocketDAOSecurityProposals(rp, nil)
