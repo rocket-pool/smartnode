@@ -14,8 +14,9 @@ import (
 )
 
 // Determines if the primary EC can be used for historical queries, or if the Archive EC is required
-func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.RocketPoolConfig, printMessage func(string), blockNumber *big.Int) (*rocketpool.RocketPool, error) {
+func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.SmartNodeConfig, printMessage func(string), blockNumber *big.Int) (*rocketpool.RocketPool, error) {
 	client := primary
+	resources := cfg.GetNetworkResources()
 
 	// Try getting the rETH address as a canary to see if the block is available
 	opts := &bind.CallOpts{
@@ -34,7 +35,7 @@ func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.RocketPoolConf
 			strings.Contains(errMessage, "Internal error") { // Besu
 
 			// The state was missing so fall back to the archive node
-			archiveEcUrl := cfg.Smartnode.ArchiveECUrl.Value.(string)
+			archiveEcUrl := cfg.ArchiveEcUrl.Value
 			if archiveEcUrl != "" {
 				printMessage(fmt.Sprintf("Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", blockNumber.Uint64(), archiveEcUrl))
 				ec, err := ethclient.Dial(archiveEcUrl)
@@ -43,9 +44,9 @@ func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.RocketPoolConf
 				}
 				client, err = rocketpool.NewRocketPool(
 					ec,
-					common.HexToAddress(cfg.Smartnode.GetStorageAddress()),
-					common.HexToAddress(cfg.Smartnode.GetMulticallAddress()),
-					common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress()),
+					resources.StorageAddress,
+					resources.MulticallAddress,
+					resources.BalanceBatcherAddress,
 				)
 				if err != nil {
 					return nil, fmt.Errorf("error creating Rocket Pool client connected to archive EC: %w", err)
@@ -68,8 +69,8 @@ func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.RocketPoolConf
 	}
 
 	// Sanity check the rETH address to make sure the client is working right
-	if address != cfg.Smartnode.GetRethAddress() {
-		return nil, fmt.Errorf("***ERROR*** Your Primary EC provided %s as the rETH address, but it should have been %s", address.Hex(), cfg.Smartnode.GetRethAddress().Hex())
+	if address != resources.RethAddress {
+		return nil, fmt.Errorf("***ERROR*** Your Primary EC provided %s as the rETH address, but it should have been %s", address.Hex(), resources.RethAddress.Hex())
 	}
 
 	return client, nil

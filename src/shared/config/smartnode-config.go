@@ -640,12 +640,12 @@ func (cfg *SmartNodeConfig) GetPasswordFilePath() string {
 	return filepath.Join(cfg.UserDataPath.Value, UserPasswordFilename)
 }
 
-func (cfg *SmartNodeConfig) GetNetworkResources() *config.NetworkResources {
+func (cfg *SmartNodeConfig) GetNetworkResources() *SmartNodeResources {
 	switch cfg.Network.Value {
 	case Network_Devnet:
-		return config.NewResources(config.Network_Holesky)
+		return NewSmartNodeResources(config.Network_Holesky)
 	default:
-		return config.NewResources(cfg.Network.Value)
+		return NewSmartNodeResources(cfg.Network.Value)
 	}
 }
 

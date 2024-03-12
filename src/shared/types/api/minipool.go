@@ -6,10 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/beacon"
-
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
 type MinipoolDetails struct {
@@ -120,18 +118,18 @@ type MinipoolDelegateDetailsData struct {
 }
 
 type MinipoolCloseDetails struct {
-	Address                     common.Address             `json:"address"`
-	IsFinalized                 bool                       `json:"isFinalized"`
-	Status                      types.MinipoolStatus       `json:"status"`
-	Version                     uint8                      `json:"version"`
-	Distributed                 bool                       `json:"distributed"`
-	CanClose                    bool                       `json:"canClose"`
-	Balance                     *big.Int                   `json:"balance"`
-	EffectiveBalance            *big.Int                   `json:"effectiveBalance"`
-	Refund                      *big.Int                   `json:"refund"`
-	UserDepositBalance          *big.Int                   `json:"userDepositBalance"`
-	BeaconState                 sharedtypes.ValidatorState `json:"beaconState"`
-	NodeShareOfEffectiveBalance *big.Int                   `json:"nodeShareOfEffectiveBalance"`
+	Address                     common.Address        `json:"address"`
+	IsFinalized                 bool                  `json:"isFinalized"`
+	Status                      types.MinipoolStatus  `json:"status"`
+	Version                     uint8                 `json:"version"`
+	Distributed                 bool                  `json:"distributed"`
+	CanClose                    bool                  `json:"canClose"`
+	Balance                     *big.Int              `json:"balance"`
+	EffectiveBalance            *big.Int              `json:"effectiveBalance"`
+	Refund                      *big.Int              `json:"refund"`
+	UserDepositBalance          *big.Int              `json:"userDepositBalance"`
+	BeaconState                 beacon.ValidatorState `json:"beaconState"`
+	NodeShareOfEffectiveBalance *big.Int              `json:"nodeShareOfEffectiveBalance"`
 }
 type MinipoolCloseDetailsData struct {
 	IsFeeDistributorInitialized bool                   `json:"isFeeDistributorInitialized"`
@@ -180,20 +178,20 @@ type MinipoolVanityArtifactsData struct {
 }
 
 type MinipoolBeginReduceBondDetails struct {
-	Address               common.Address             `json:"address"`
-	NodeDepositBalance    *big.Int                   `json:"nodeDepositBalance"`
-	NodeFee               *big.Int                   `json:"nodeFee"`
-	MinipoolVersionTooLow bool                       `json:"minipoolVersionTooLow"`
-	Balance               uint64                     `json:"balance"`
-	BalanceTooLow         bool                       `json:"balanceTooLow"`
-	AlreadyInWindow       bool                       `json:"alreadyInWindow"`
-	MatchRequest          *big.Int                   `json:"matchRequest"`
-	BeaconState           sharedtypes.ValidatorState `json:"beaconState"`
-	InvalidElState        bool                       `json:"invalidElState"`
-	InvalidBeaconState    bool                       `json:"invalidBeaconState"`
-	AlreadyCancelled      bool                       `json:"alreadyCancelled"`
-	NodeDepositTooLow     bool                       `json:"nodeDepositTooLow"`
-	CanReduce             bool                       `json:"canReduce"`
+	Address               common.Address        `json:"address"`
+	NodeDepositBalance    *big.Int              `json:"nodeDepositBalance"`
+	NodeFee               *big.Int              `json:"nodeFee"`
+	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
+	Balance               uint64                `json:"balance"`
+	BalanceTooLow         bool                  `json:"balanceTooLow"`
+	AlreadyInWindow       bool                  `json:"alreadyInWindow"`
+	MatchRequest          *big.Int              `json:"matchRequest"`
+	BeaconState           beacon.ValidatorState `json:"beaconState"`
+	InvalidElState        bool                  `json:"invalidElState"`
+	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
+	AlreadyCancelled      bool                  `json:"alreadyCancelled"`
+	NodeDepositTooLow     bool                  `json:"nodeDepositTooLow"`
+	CanReduce             bool                  `json:"canReduce"`
 }
 type MinipoolBeginReduceBondDetailsData struct {
 	BondReductionDisabled       bool                             `json:"bondReductionDisabled"`
@@ -204,18 +202,18 @@ type MinipoolBeginReduceBondDetailsData struct {
 }
 
 type MinipoolReduceBondDetails struct {
-	Address               common.Address             `json:"address"`
-	NodeDepositBalance    *big.Int                   `json:"nodeDepositBalance"`
-	NodeFee               *big.Int                   `json:"nodeFee"`
-	MinipoolVersionTooLow bool                       `json:"minipoolVersionTooLow"`
-	Balance               uint64                     `json:"balance"`
-	BalanceTooLow         bool                       `json:"balanceTooLow"`
-	OutOfWindow           bool                       `json:"outOfWindow"`
-	BeaconState           sharedtypes.ValidatorState `json:"beaconState"`
-	InvalidElState        bool                       `json:"invalidElState"`
-	InvalidBeaconState    bool                       `json:"invalidBeaconState"`
-	AlreadyCancelled      bool                       `json:"alreadyCancelled"`
-	CanReduce             bool                       `json:"canReduce"`
+	Address               common.Address        `json:"address"`
+	NodeDepositBalance    *big.Int              `json:"nodeDepositBalance"`
+	NodeFee               *big.Int              `json:"nodeFee"`
+	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
+	Balance               uint64                `json:"balance"`
+	BalanceTooLow         bool                  `json:"balanceTooLow"`
+	OutOfWindow           bool                  `json:"outOfWindow"`
+	BeaconState           beacon.ValidatorState `json:"beaconState"`
+	InvalidElState        bool                  `json:"invalidElState"`
+	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
+	AlreadyCancelled      bool                  `json:"alreadyCancelled"`
+	CanReduce             bool                  `json:"canReduce"`
 }
 type MinipoolReduceBondDetailsData struct {
 	BondReductionDisabled       bool                        `json:"bondReductionDisabled"`
@@ -226,16 +224,16 @@ type MinipoolReduceBondDetailsData struct {
 }
 
 type MinipoolRescueDissolvedDetails struct {
-	Address            common.Address             `json:"address"`
-	CanRescue          bool                       `json:"canRescue"`
-	IsFinalized        bool                       `json:"isFinalized"`
-	MinipoolState      types.MinipoolStatus       `json:"minipoolStatus"`
-	InvalidElState     bool                       `json:"invalidElState"`
-	MinipoolVersion    uint8                      `json:"minipoolVersion"`
-	BeaconBalance      *big.Int                   `json:"beaconBalance"`
-	BeaconState        sharedtypes.ValidatorState `json:"beaconState"`
-	InvalidBeaconState bool                       `json:"invalidBeaconState"`
-	HasFullBalance     bool                       `json:"hasFullBalance"`
+	Address            common.Address        `json:"address"`
+	CanRescue          bool                  `json:"canRescue"`
+	IsFinalized        bool                  `json:"isFinalized"`
+	MinipoolState      types.MinipoolStatus  `json:"minipoolStatus"`
+	InvalidElState     bool                  `json:"invalidElState"`
+	MinipoolVersion    uint8                 `json:"minipoolVersion"`
+	BeaconBalance      *big.Int              `json:"beaconBalance"`
+	BeaconState        beacon.ValidatorState `json:"beaconState"`
+	InvalidBeaconState bool                  `json:"invalidBeaconState"`
+	HasFullBalance     bool                  `json:"hasFullBalance"`
 }
 type MinipoolRescueDissolvedDetailsData struct {
 	Details []MinipoolRescueDissolvedDetails `json:"details"`
