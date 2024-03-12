@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/rocket-pool/node-manager-core/config"
@@ -94,6 +95,42 @@ func (cfg *ValidatorClientConfig) GetSubconfigs() map[string]config.IConfigSecti
 		ids.NimbusID:     cfg.Nimbus,
 		ids.PrysmID:      cfg.Prysm,
 		ids.TekuID:       cfg.Teku,
+	}
+}
+
+// Gets the tag of the VC container
+func (cfg *ValidatorClientConfig) GetVcContainerTag(bn config.BeaconNode) string {
+	switch bn {
+	case config.BeaconNode_Lighthouse:
+		return cfg.Lighthouse.ContainerTag.Value
+	case config.BeaconNode_Lodestar:
+		return cfg.Lodestar.ContainerTag.Value
+	case config.BeaconNode_Nimbus:
+		return cfg.Nimbus.ContainerTag.Value
+	case config.BeaconNode_Prysm:
+		return cfg.Prysm.ContainerTag.Value
+	case config.BeaconNode_Teku:
+		return cfg.Teku.ContainerTag.Value
+	default:
+		panic(fmt.Sprintf("Unknown Beacon Node %s", bn))
+	}
+}
+
+// Gets the additional flags of the selected VC
+func (cfg *ValidatorClientConfig) GetVcAdditionalFlags(bn config.BeaconNode) string {
+	switch bn {
+	case config.BeaconNode_Lighthouse:
+		return cfg.Lighthouse.AdditionalFlags.Value
+	case config.BeaconNode_Lodestar:
+		return cfg.Lodestar.AdditionalFlags.Value
+	case config.BeaconNode_Nimbus:
+		return cfg.Nimbus.AdditionalFlags.Value
+	case config.BeaconNode_Prysm:
+		return cfg.Prysm.AdditionalFlags.Value
+	case config.BeaconNode_Teku:
+		return cfg.Teku.AdditionalFlags.Value
+	default:
+		panic(fmt.Sprintf("Unknown Beacon Node %s", bn))
 	}
 }
 
