@@ -480,9 +480,12 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	 *
 	 * Formula:
 	 * 		current_node_weight / (current_node_weight + previous_interval_total_node_weight) * estimated_collateral_rewards
+	 *
+	 * Note that if the node has no effective stake, has no eligibleBorrowedETH, or if this is the very first rewards
+	 * period we don't attempt an estimate and simply use 0.
 	 */
 	estimatedRewards := float64(0)
-	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 && nodeWeight.Cmp(big.NewInt(0)) == 1 {
+	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 && nodeWeight.Cmp(big.NewInt(0)) == 1 && state.NetworkDetails.RewardIndex > 0 {
 
 		nodeWeightSum := big.NewInt(0).Add(nodeWeight, previousIntervalTotalNodeWeight)
 
