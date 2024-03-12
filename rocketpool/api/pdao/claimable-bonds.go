@@ -66,7 +66,7 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 	// Get all of the proposals
 	props, err := state.GetAllProtocolDaoProposalDetails(rp, contracts)
 	if err != nil {
-		return nil, fmt.Errorf("error ge	tting pDAO proposal details: %w", err)
+		return nil, fmt.Errorf("error getting pDAO proposal details: %w", err)
 	}
 	if len(props) == 0 {
 		response.ClaimableBonds = []api.BondClaimResult{}
