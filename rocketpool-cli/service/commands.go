@@ -262,8 +262,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "reset",
-				Aliases:   []string{"r"},
+				Name:      "reset-docker",
+				Aliases:   []string{"rd"},
 				Usage:     "Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts Smartnode.",
 				UsageText: "rocketpool service reset [options]",
 				Flags: []cli.Flag{
@@ -288,7 +288,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "prune",
+				Name:      "prune-docker",
+				Aliases:   []string{"pd"},
 				Usage:     "Cleanup unused Docker resources, including stopped containers, unused images, networks and volumes. Does not restart smartnode, so the running containers and the images and networks they reference will not be pruned.",
 				UsageText: "rocketpool service prune",
 				Flags: []cli.Flag{
