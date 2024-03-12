@@ -295,7 +295,11 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		// Get the totalNodeWeight for the last completed interval
-		previousRewardIndex := state.NetworkDetails.RewardIndex - 1
+		previousRewardIndex := state.NetworkDetails.RewardIndex
+		if previousRewardIndex > 0 {
+			previousRewardIndex = previousRewardIndex - 1
+		}
+
 		previousInterval, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, previousRewardIndex, nil)
 		if err != nil {
 			return err
@@ -389,7 +393,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	nodeWeight := big.NewInt(0)
 	// The node must satisfy collateral requirements and have eligible ETH from which to earn rewards.
 	if nd.RplStake.Cmp(minCollateral) != -1 && eligibleBorrowedEth.Sign() > 0 {
-		// Convert to a float, accuracy loss is meaningless compared to the heuristic's natural inaccuracy.
 		nodeWeight = state.GetNodeWeight(eligibleBorrowedEth, nd.RplStake)
 	}
 
@@ -477,15 +480,9 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	 *
 	 * Formula:
 	 * 		current_node_weight / (current_node_weight + previous_interval_total_node_weight) * estimated_collateral_rewards
-	 *
-	 * This will inevitably be inaccurate due to factors external to the node, such as large nodes running
-	 * several bond reductions, or really anything that can move the needle on total_node_weight. However,
-	 * short of generating a full rewards tree at a regular interval to populate this metric, this is the
-	 * best estimator available.
-	 * RPIP-30 is still being phased in, and this estimator will be more and more accurate as it is, but never fully accurate
 	 */
 	estimatedRewards := float64(0)
-	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
+	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 && nodeWeight.Cmp(big.NewInt(0)) == 1 {
 
 		nodeWeightSum := big.NewInt(0).Add(nodeWeight, previousIntervalTotalNodeWeight)
 
