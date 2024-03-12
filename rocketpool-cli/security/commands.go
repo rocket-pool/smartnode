@@ -70,7 +70,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Subcommands: []cli.Command{
 							{
 								Name:      "request-leave",
-								Aliases:   []string{"l"},
+								Aliases:   []string{"rl"},
 								Usage:     "Propose a request to leave the security council",
 								UsageText: "rocketpool security propose member request-leave",
 								Flags: []cli.Flag{
