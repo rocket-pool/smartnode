@@ -28,7 +28,7 @@ require (
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v3 v3.2.0
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20240312133024-d53e1ec0ff7a
+	github.com/rocket-pool/rocketpool-go v1.10.1-0.20240312134208-ae623947c9d6
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/tyler-smith/go-bip39 v1.1.0

@@ -68,24 +68,15 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"m"},
 						Usage:   "Make a security council member proposal",
 						Subcommands: []cli.Command{
-
 							{
-								Name:      "invite",
-								Aliases:   []string{"i"},
-								Usage:     "Propose inviting a new member",
-								UsageText: "rocketpool security propose member invite",
+								Name:      "request-leave",
+								Aliases:   []string{"l"},
+								Usage:     "Propose a request to leave the security council",
+								UsageText: "rocketpool security propose member request-leave",
 								Flags: []cli.Flag{
 									cli.BoolFlag{
 										Name:  "yes, y",
 										Usage: "Automatically confirm all interactive questions",
-									},
-									cli.StringFlag{
-										Name:  "id, i",
-										Usage: "A descriptive ID of the entity being invited",
-									},
-									cli.StringFlag{
-										Name:  "address, a",
-										Usage: "The address of the entity being invited",
 									},
 								},
 								Action: func(c *cli.Context) error {
@@ -96,7 +87,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeInvite(c)
+									return proposeRequestLeave(c)
 
 								},
 							},
@@ -124,80 +115,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 								},
 							},
-
-							{
-								Name:      "kick",
-								Aliases:   []string{"k"},
-								Usage:     "Propose kicking one or more members",
-								UsageText: "rocketpool security propose member kick",
-								Flags: []cli.Flag{
-									cli.BoolFlag{
-										Name:  "yes, y",
-										Usage: "Automatically confirm all interactive questions",
-									},
-									cli.StringFlag{
-										Name:  "addresses, a",
-										Usage: "The address(es) of the member(s) to propose kicking. Use commas to separate multiple addresses (no spaces).",
-									},
-								},
-								Action: func(c *cli.Context) error {
-
-									// Validate args
-									if err := cliutils.ValidateArgCount(c, 0); err != nil {
-										return err
-									}
-
-									// Validate flags
-									if c.String("members") != "" {
-										if _, err := cliutils.ValidateAddresses("member addresses", c.String("members")); err != nil {
-											return err
-										}
-									}
-
-									// Run
-									return proposeKick(c)
-
-								},
-							},
-
-							{
-								Name:      "replace",
-								Aliases:   []string{"r"},
-								Usage:     "Propose replacing an existing member with a new member",
-								UsageText: "rocketpool security propose member replace",
-								Flags: []cli.Flag{
-									cli.BoolFlag{
-										Name:  "yes, y",
-										Usage: "Automatically confirm all interactive questions",
-									},
-									cli.StringFlag{
-										Name:  "existing-address, e",
-										Usage: "The address of the existing member",
-									},
-									cli.StringFlag{
-										Name:  "new-id, ni",
-										Usage: "A descriptive ID of the new entity to invite",
-									},
-									cli.StringFlag{
-										Name:  "new-address, na",
-										Usage: "The address of the new entity to invite",
-									},
-								},
-								Action: func(c *cli.Context) error {
-
-									// Validate args
-									if err := cliutils.ValidateArgCount(c, 0); err != nil {
-										return err
-									}
-
-									// Run
-									return proposeReplace(c)
-
-								},
-							},
 						},
 					},
-
 					{
 						Name:    "setting",
 						Aliases: []string{"s"},

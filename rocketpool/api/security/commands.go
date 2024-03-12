@@ -94,63 +94,45 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
-
 			{
-				Name:      "can-propose-invite",
-				Usage:     "Check whether the node can propose inviting a new member",
-				UsageText: "rocketpool api security can-propose-invite member-id member-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canProposeInvite(c, memberId, memberAddress))
-					return nil
-
-				},
-			},
-			{
-				Name:      "propose-invite",
-				Aliases:   []string{"i"},
-				Usage:     "Propose inviting a new member",
-				UsageText: "rocketpool api security propose-invite member-id member-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
-					memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(proposeInvite(c, memberId, memberAddress))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "can-propose-leave",
+				Name:      "can-propose-request-leave",
 				Usage:     "Check whether the node can propose leaving the security council",
 				UsageText: "rocketpool api security can-propose-leave",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeRequestLeave(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-request-leave",
+				Aliases:   []string{"l"},
+				Usage:     "Propose leaving the security council",
+				UsageText: "rocketpool api security propose-leave",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeRequestLeave(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-leave",
+				Usage:     "Check whether the node can leave the security council",
+				UsageText: "rocketpool api security can-leave",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -165,9 +147,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "propose-leave",
+				Name:      "leave",
 				Aliases:   []string{"l"},
-				Usage:     "Propose leaving the security council",
+				Usage:     "Leave the security council",
 				UsageText: "rocketpool api security propose-leave",
 				Action: func(c *cli.Context) error {
 
@@ -182,145 +164,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
-
-			{
-				Name:      "can-propose-kick",
-				Usage:     "Check whether the node can propose kicking a member",
-				UsageText: "rocketpool api security can-propose-kick member-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canProposeKick(c, memberAddress))
-					return nil
-
-				},
-			},
-			{
-				Name:      "propose-kick",
-				Aliases:   []string{"k"},
-				Usage:     "Propose kicking a member",
-				UsageText: "rocketpool api security propose-kick member-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					// Run
-					api.PrintResponse(proposeKick(c, memberAddress))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "can-propose-kick-multi",
-				Usage:     "Check whether the node can propose kicking multiple members",
-				UsageText: "rocketpool api security can-propose-kick-multi member-addresses",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					memberAddresses, err := cliutils.ValidateAddresses("member addresses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canProposeKickMulti(c, memberAddresses))
-					return nil
-
-				},
-			},
-			{
-				Name:      "propose-kick-multi",
-				Usage:     "Propose kicking multiple member",
-				UsageText: "rocketpool api security propose-kick-multi member-addresses",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					memberAddresses, err := cliutils.ValidateAddresses("member addresses", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					// Run
-					api.PrintResponse(proposeKickMulti(c, memberAddresses))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "can-propose-replace-member",
-				Usage:     "Check whether the node can propose replacing someone on the security council with another member",
-				UsageText: "rocketpool api security can-propose-replace-member existing-address new-id new-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
-						return err
-					}
-					existingAddress, err := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					newID := c.Args().Get(1)
-					newAddress, err := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canProposeReplaceMember(c, existingAddress, newID, newAddress))
-					return nil
-
-				},
-			},
-			{
-				Name:      "propose-replace-member",
-				Usage:     "Propose replacing someone on the security council with another member",
-				UsageText: "rocketpool api pdao propose-replace-member existing-address new-id new-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
-						return err
-					}
-					existingAddress, err := cliutils.ValidateAddress("existingAddress", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					newID := c.Args().Get(1)
-					newAddress, err := cliutils.ValidateAddress("newAddress", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(proposeReplaceMember(c, existingAddress, newID, newAddress))
-					return nil
-
-				},
-			},
-
 			{
 				Name:      "can-cancel-proposal",
 				Usage:     "Check whether the node can cancel a proposal",

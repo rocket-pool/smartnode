@@ -105,6 +105,38 @@ func (c *Client) SecurityProposeInvite(memberId string, memberAddress common.Add
 	return response, nil
 }
 
+// Check whether the node can propose a request to leave the security council
+func (c *Client) SecurityCanProposeRequestLeave() (api.SecurityCanProposeLeaveResponse, error) {
+	responseBytes, err := c.callAPI("security can-propose-request-leave")
+	if err != nil {
+		return api.SecurityCanProposeLeaveResponse{}, fmt.Errorf("Could not get security-can-propose-request-leave status: %w", err)
+	}
+	var response api.SecurityCanProposeLeaveResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SecurityCanProposeLeaveResponse{}, fmt.Errorf("Could not decode security-can-propose-request-leave response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SecurityCanProposeLeaveResponse{}, fmt.Errorf("Could not get security-can-propose-request-leave status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can propose a request to leave the security council
+func (c *Client) SecurityProposeRequestLeave() (api.SecurityProposeLeaveResponse, error) {
+	responseBytes, err := c.callAPI("security propose-request-leave")
+	if err != nil {
+		return api.SecurityProposeLeaveResponse{}, fmt.Errorf("Could not get security-propose-request-leave status: %w", err)
+	}
+	var response api.SecurityProposeLeaveResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SecurityProposeLeaveResponse{}, fmt.Errorf("Could not decode security-propose-request-leave response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SecurityProposeLeaveResponse{}, fmt.Errorf("Could not get security-propose-request-leave status: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can propose leaving the security council
 func (c *Client) SecurityCanProposeLeave() (api.SecurityCanProposeLeaveResponse, error) {
 	responseBytes, err := c.callAPI("security can-propose-leave")
