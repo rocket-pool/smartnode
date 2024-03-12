@@ -9,7 +9,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const defaultNetworksConfigPath = "networks-default.yml"
+const (
+	defaultNetworksConfigPath = "networks-default.yml"
+	extraNetworksConfigPath   = "networks-extra.yml"
+)
 
 type NetworksConfig struct {
 	Networks []*config.NetworkInfo `yaml:"networks"`
@@ -28,10 +31,27 @@ func LoadNetworksFromFile(configPath string) (*NetworksConfig, error) {
 	}
 
 	filePath := path.Join(configPath, defaultNetworksConfigPath)
-	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("default networks file does not exist: %s", filePath)
+	defaultNetworks, err := loadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("could not load default networks file: %w", err)
 	}
 
+	filePath = path.Join(configPath, extraNetworksConfigPath)
+	_, err = os.Stat(filePath)
+	if os.IsNotExist(err) {
+		// if the file didn't exist, we just use the default networks
+		return defaultNetworks, nil
+	}
+	extraNetworks, err := loadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("could not load extra networks file: %w", err)
+	}
+	defaultNetworks.Networks = append(defaultNetworks.Networks, extraNetworks.Networks...)
+
+	return defaultNetworks, nil
+}
+
+func loadFile(filePath string) (*NetworksConfig, error) {
 	bytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read default networks file: %w", err)
@@ -48,18 +68,4 @@ func LoadNetworksFromFile(configPath string) (*NetworksConfig, error) {
 
 func (nc *NetworksConfig) GetNetworks() []*config.NetworkInfo {
 	return nc.Networks
-}
-
-func (nc *NetworksConfig) SaveToFile(filePath string) error {
-	// TODO: this signature doesn't support saving to default/extras files
-	d, err := yaml.Marshal(nc)
-	if err != nil {
-		return fmt.Errorf("could not marshal networks config: %w", err)
-	}
-
-	err = os.WriteFile(filePath, d, 0644)
-	if err != nil {
-		return fmt.Errorf("could not write networks config to file to %s: %w", filePath, err)
-	}
-	return nil
 }

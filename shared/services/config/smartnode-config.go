@@ -429,19 +429,19 @@ func (cfg *SmartnodeConfig) GetCustomKeyPasswordFilePath() string {
 }
 
 func (cfg *SmartnodeConfig) GetStorageAddress() string {
-	return cfg.GetNetworkInfo().StorageAddress
+	return cfg.GetNetworkInfo().Addresses.Storage
 }
 
 func (cfg *SmartnodeConfig) GetRplTokenAddress() string {
-	return cfg.GetNetworkInfo().RplTokenAddress
+	return cfg.GetNetworkInfo().Addresses.RplToken
 }
 
 func (cfg *SmartnodeConfig) GetRplFaucetAddress() string {
-	return cfg.GetNetworkInfo().RplFaucetAddress
+	return cfg.GetNetworkInfo().Addresses.RplFaucet
 }
 
 func (cfg *SmartnodeConfig) GetSnapshotDelegationAddress() string {
-	return cfg.GetNetworkInfo().SnapshotDelegationAddress
+	return cfg.GetNetworkInfo().Addresses.SnapshotDelegation
 }
 
 func (cfg *SmartnodeConfig) GetSmartnodeContainerTag() string {
@@ -478,7 +478,7 @@ func (cfg *SmartnodeConfig) GetConfigTitle() string {
 }
 
 func (cfg *SmartnodeConfig) GetRethAddress() common.Address {
-	return common.HexToAddress(cfg.GetNetworkInfo().RethAddress)
+	return common.HexToAddress(cfg.GetNetworkInfo().Addresses.Reth)
 }
 
 func getDefaultDataDir(config *RocketPoolConfig) string {
@@ -530,91 +530,91 @@ func (cfg *SmartnodeConfig) GetFeeRecipientFilePath() string {
 }
 
 func (cfg *SmartnodeConfig) GetV100RewardsPoolAddress() common.Address {
-	return common.HexToAddress(cfg.GetNetworkInfo().V1_0_0_RewardsPoolAddress)
+	return common.HexToAddress(cfg.GetNetworkInfo().Addresses.V1_0_0_RewardsPool)
 }
 
 func (cfg *SmartnodeConfig) GetV100ClaimNodeAddress() common.Address {
-	return common.HexToAddress(cfg.GetNetworkInfo().V1_0_0_ClaimNodeAddress)
+	return common.HexToAddress(cfg.GetNetworkInfo().Addresses.V1_0_0_ClaimNode)
 }
 
 func (cfg *SmartnodeConfig) GetV100ClaimTrustedNodeAddress() common.Address {
-	return common.HexToAddress(cfg.GetNetworkInfo().V1_0_0_ClaimTrustedNodeAddress)
+	return common.HexToAddress(cfg.GetNetworkInfo().Addresses.V1_0_0_ClaimTrustedNode)
 }
 
 func (cfg *SmartnodeConfig) GetV100MinipoolManagerAddress() common.Address {
-	return common.HexToAddress(cfg.GetNetworkInfo().V1_0_0_MinipoolManagerAddress)
+	return common.HexToAddress(cfg.GetNetworkInfo().Addresses.V1_0_0_MinipoolManager)
 }
 
 func (cfg *SmartnodeConfig) GetV110NetworkPricesAddress() common.Address {
-	return common.HexToAddress(cfg.GetNetworkInfo().V1_1_0_NetworkPricesAddress)
+	return common.HexToAddress(cfg.GetNetworkInfo().Addresses.V1_1_0_NetworkPrices)
 }
 
 func (cfg *SmartnodeConfig) GetV110NodeStakingAddress() common.Address {
-	return common.HexToAddress(cfg.GetNetworkInfo().V1_1_0_NodeStakingAddress)
+	return common.HexToAddress(cfg.GetNetworkInfo().Addresses.V1_1_0_NodeStaking)
 }
 
 func (cfg *SmartnodeConfig) GetV110NodeDepositAddress() common.Address {
-	return common.HexToAddress(cfg.GetNetworkInfo().V1_1_0_NodeDepositAddress)
+	return common.HexToAddress(cfg.GetNetworkInfo().Addresses.V1_1_0_NodeDeposit)
 }
 
 func (cfg *SmartnodeConfig) GetV110MinipoolQueueAddress() common.Address {
-	return common.HexToAddress(cfg.GetNetworkInfo().V1_1_0_MinipoolQueueAddress)
+	return common.HexToAddress(cfg.GetNetworkInfo().Addresses.V1_1_0_MinipoolQueue)
 }
 
 func (cfg *SmartnodeConfig) GetV110MinipoolFactoryAddress() common.Address {
-	return common.HexToAddress(cfg.GetNetworkInfo().V1_1_0_MinipoolFactoryAddress)
+	return common.HexToAddress(cfg.GetNetworkInfo().Addresses.V1_1_0_MinipoolFactory)
 }
 
 func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() []common.Address {
 	addresses := []common.Address{}
-	for _, address := range cfg.GetNetworkInfo().PreviousRewardsPoolAddresses {
+	for _, address := range cfg.GetNetworkInfo().Addresses.PreviousRewardsPools {
 		addresses = append(addresses, common.HexToAddress(address))
 	}
 	return addresses
 }
 
 func (cfg *SmartnodeConfig) GetOptimismMessengerAddress() string {
-	return cfg.GetNetworkInfo().OptimismPriceMessengerAddress
+	return cfg.GetNetworkInfo().Addresses.OptimismPriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetPolygonMessengerAddress() string {
-	return cfg.GetNetworkInfo().PolygonPriceMessengerAddress
+	return cfg.GetNetworkInfo().Addresses.PolygonPriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetArbitrumMessengerAddress() string {
-	return cfg.GetNetworkInfo().ArbitrumPriceMessengerAddress
+	return cfg.GetNetworkInfo().Addresses.ArbitrumPriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetArbitrumMessengerAddressV2() string {
-	return cfg.GetNetworkInfo().ArbitrumPriceMessengerAddressV2
+	return cfg.GetNetworkInfo().Addresses.ArbitrumPriceMessengerV2
 }
 
 func (cfg *SmartnodeConfig) GetZkSyncEraMessengerAddress() string {
-	return cfg.GetNetworkInfo().ZkSyncEraPriceMessengerAddress
+	return cfg.GetNetworkInfo().Addresses.ZkSyncEraPriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetBaseMessengerAddress() string {
-	return cfg.GetNetworkInfo().BasePriceMessengerAddress
+	return cfg.GetNetworkInfo().Addresses.BasePriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetScrollMessengerAddress() string {
-	return cfg.GetNetworkInfo().ScrollPriceMessengerAddress
+	return cfg.GetNetworkInfo().Addresses.ScrollPriceMessenger
 }
 
 func (cfg *SmartnodeConfig) GetScrollFeeEstimatorAddress() string {
-	return cfg.GetNetworkInfo().ScrollFeeEstimatorAddress
+	return cfg.GetNetworkInfo().Addresses.ScrollFeeEstimator
 }
 
 func (cfg *SmartnodeConfig) GetRplTwapPoolAddress() string {
-	return cfg.GetNetworkInfo().RplTwapPoolAddress
+	return cfg.GetNetworkInfo().Addresses.RplTwapPool
 }
 
 func (cfg *SmartnodeConfig) GetMulticallAddress() string {
-	return cfg.GetNetworkInfo().MulticallAddress
+	return cfg.GetNetworkInfo().Addresses.Multicall
 }
 
 func (cfg *SmartnodeConfig) GetBalanceBatcherAddress() string {
-	return cfg.GetNetworkInfo().BalancebatcherAddress
+	return cfg.GetNetworkInfo().Addresses.Balancebatcher
 }
 
 func (cfg *SmartnodeConfig) GetFlashbotsProtectUrl() string {
