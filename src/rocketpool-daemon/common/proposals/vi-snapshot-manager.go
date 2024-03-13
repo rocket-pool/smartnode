@@ -9,14 +9,14 @@ import (
 
 	"github.com/blang/semver/v4"
 	batchquery "github.com/rocket-pool/batch-query"
+	nmc_config "github.com/rocket-pool/node-manager-core/config"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 // A network voting tree
 type VotingInfoSnapshot struct {
 	SmartnodeVersion string                 `json:"smartnodeVersion"`
-	Network          cfgtypes.Network       `json:"network"`
+	Network          nmc_config.Network     `json:"network"`
 	BlockNumber      uint32                 `json:"blockNumber"`
 	Info             []types.NodeVotingInfo `json:"info"`
 }
@@ -51,7 +51,7 @@ func (t VotingInfoSnapshot) GetFilename() string {
 type VotingInfoSnapshotManager struct {
 	log       *log.ColorLogger
 	logPrefix string
-	cfg       *config.RocketPoolConfig
+	cfg       *config.SmartNodeConfig
 	rp        *rocketpool.RocketPool
 
 	filenameRegex           *regexp.Regexp
@@ -60,7 +60,7 @@ type VotingInfoSnapshotManager struct {
 }
 
 // Create a new VotingInfoSnapshotManager instance
-func NewVotingInfoSnapshotManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool) (*VotingInfoSnapshotManager, error) {
+func NewVotingInfoSnapshotManager(log *log.ColorLogger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool) (*VotingInfoSnapshotManager, error) {
 	// Create the snapshot filename regex
 	logPrefix := "[Voting Info Snapshot]"
 	filenameRegex := regexp.MustCompile(votingInfoSnapshotFilenamePattern)
@@ -80,7 +80,7 @@ func NewVotingInfoSnapshotManager(log *log.ColorLogger, cfg *config.RocketPoolCo
 		latestCompatibleVersion: latestCompatibleVersion,
 	}
 
-	votingPath := cfg.Smartnode.GetVotingPath()
+	votingPath := cfg.GetVotingPath()
 	checksumFilename := filepath.Join(votingPath, votingInfoSnapshotPathFolderName, config.ChecksumTableFilename)
 	checksumManager, err := NewChecksumManager[uint32, VotingInfoSnapshot](checksumFilename, manager)
 	if err != nil {
@@ -135,7 +135,7 @@ func (m *VotingInfoSnapshotManager) CreateVotingInfoSnapshot(blockNumber uint32)
 
 	return &VotingInfoSnapshot{
 		SmartnodeVersion: shared.RocketPoolVersion,
-		Network:          m.cfg.Smartnode.Network.Value.(cfgtypes.Network),
+		Network:          m.cfg.Network.Value,
 		BlockNumber:      blockNumber,
 		Info:             infos,
 	}, nil
@@ -191,8 +191,8 @@ func (m *VotingInfoSnapshotManager) ShouldLoadEntry(filename string, context uin
 // Return true if the loaded snapshot can be used for processing
 func (m *VotingInfoSnapshotManager) IsDataValid(data *VotingInfoSnapshot, filename string, context uint32) (bool, error) {
 	// Check if it has the proper network
-	if data.Network != m.cfg.Smartnode.Network.Value.(cfgtypes.Network) {
-		m.logMessage("%s File [%s] is for network %s instead of %s so it cannot be used.", m.logPrefix, filename, data.Network, string(m.cfg.Smartnode.Network.Value.(cfgtypes.Network)))
+	if data.Network != m.cfg.Network.Value {
+		m.logMessage("%s File [%s] is for network %s instead of %s so it cannot be used.", m.logPrefix, filename, data.Network, string(m.cfg.Network.Value))
 		return false, nil
 	}
 

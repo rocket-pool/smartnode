@@ -3,7 +3,8 @@ package rewards
 import (
 	"fmt"
 
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 type rewardsIntervalInfo struct {
@@ -15,15 +16,13 @@ type rewardsIntervalInfo struct {
 	generator             treeGeneratorImpl
 }
 
-func (r *rewardsIntervalInfo) GetStartInterval(network cfgtypes.Network) (uint64, error) {
+func (r *rewardsIntervalInfo) GetStartInterval(network config.Network) (uint64, error) {
 	switch network {
-	case cfgtypes.Network_Mainnet:
+	case config.Network_Mainnet:
 		return r.mainnetStartInterval, nil
-	case cfgtypes.Network_Prater:
-		return r.praterStartInterval, nil
-	case cfgtypes.Network_Devnet:
+	case snCfg.Network_Devnet:
 		return r.devnetStartInterval, nil
-	case cfgtypes.Network_Holesky:
+	case config.Network_Holesky:
 		return r.holeskyStartInterval, nil
 	default:
 		return 0, fmt.Errorf("unknown network: %s", string(network))

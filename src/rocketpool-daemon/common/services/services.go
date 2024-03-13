@@ -6,13 +6,12 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/node/services"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
 	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // A container for all of the various services used by the Smartnode
@@ -20,7 +19,7 @@ type ServiceProvider struct {
 	*services.ServiceProvider
 
 	// Services
-	cfg                *config.RocketPoolConfig
+	cfg                *config.SmartNodeConfig
 	rocketPool         *rocketpool.RocketPool
 	rplFaucet          *contracts.RplFaucet
 	snapshotDelegation *contracts.SnapshotDelegation
@@ -33,7 +32,7 @@ type ServiceProvider struct {
 // Creates a new ServiceProvider instance
 func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
 	// Config
-	cfg, err := rp.LoadConfigFromFile(settingsFile)
+	cfg, err := client.LoadConfigFromFile(settingsFile)
 	if err != nil {
 		return nil, fmt.Errorf("error loading Smartnode config: %w", err)
 	}
@@ -42,18 +41,19 @@ func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
 	}
 
 	// Core provider
-	sp, err := services.NewServiceProvider(cfg, rpconfig.ClientTimeout, rpconfig.DebugMode.Value)
+	sp, err := services.NewServiceProvider(cfg, config.ClientTimeout, cfg.DebugMode.Value)
 	if err != nil {
 		return nil, fmt.Errorf("error creating core service provider: %w", err)
 	}
 
 	// Rocket Pool
 	ecManager := sp.GetEthClient()
+	resources := cfg.GetRocketPoolResources()
 	rp, err := rocketpool.NewRocketPool(
 		ecManager,
-		common.HexToAddress(cfg.Smartnode.GetStorageAddress()),
-		common.HexToAddress(cfg.Smartnode.GetMulticallAddress()),
-		common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress()),
+		resources.StorageAddress,
+		resources.MulticallAddress,
+		resources.BalanceBatcherAddress,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Rocket Pool binding: %w", err)
@@ -61,9 +61,9 @@ func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
 
 	// RPL Faucet
 	var rplFaucet *contracts.RplFaucet
-	faucetAddress := cfg.Smartnode.GetRplFaucetAddress()
-	if faucetAddress != "" {
-		rplFaucet, err = contracts.NewRplFaucet(common.HexToAddress(faucetAddress), ecManager)
+	faucetAddress := resources.RplFaucetAddress
+	if faucetAddress != nil {
+		rplFaucet, err = contracts.NewRplFaucet(*faucetAddress, sp.GetEthClient(), sp.GetTransactionManager())
 		if err != nil {
 			return nil, fmt.Errorf("error creating RPL faucet binding: %w", err)
 		}
@@ -71,9 +71,9 @@ func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
 
 	// Snapshot delegation
 	var snapshotDelegation *contracts.SnapshotDelegation
-	snapshotAddress := cfg.Smartnode.GetSnapshotDelegationAddress()
-	if snapshotAddress != "" {
-		snapshotDelegation, err = contracts.NewSnapshotDelegation(common.HexToAddress(snapshotAddress), ecManager)
+	snapshotAddress := resources.SnapshotDelegationAddress
+	if snapshotAddress != nil {
+		snapshotDelegation, err = contracts.NewSnapshotDelegation(*snapshotAddress, sp.GetEthClient(), sp.GetTransactionManager())
 		if err != nil {
 			return nil, fmt.Errorf("error creating snapshot delegation binding: %w", err)
 		}
@@ -94,7 +94,7 @@ func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
 // === Getters ===
 // ===============
 
-func (p *ServiceProvider) GetConfig() *config.RocketPoolConfig {
+func (p *ServiceProvider) GetConfig() *config.SmartNodeConfig {
 	return p.cfg
 }
 

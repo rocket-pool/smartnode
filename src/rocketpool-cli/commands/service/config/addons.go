@@ -14,7 +14,7 @@ type AddonsPage struct {
 	home             *settingsHome
 	page             *page
 	layout           *standardLayout
-	masterConfig     *config.RocketPoolConfig
+	masterConfig     *config.SmartNodeConfig
 	gwwPage          *AddonGwwPage
 	gwwButton        *parameterizedFormItem
 	rescueNodePage   *AddonRescueNodePage

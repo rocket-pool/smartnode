@@ -54,8 +54,8 @@ func (f *protocolDaoProposeInviteToSecurityCouncilContextFactory) RegisterRoute(
 type protocolDaoProposeInviteToSecurityCouncilContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
-	cfg         *config.RocketPoolConfig
-	bc          beacon.Client
+	cfg         *config.SmartNodeConfig
+	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
 	id      string

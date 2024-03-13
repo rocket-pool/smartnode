@@ -235,7 +235,7 @@ func Run(sp *services.ServiceProvider) error {
 }
 
 // Copy the default fee recipient file into the proper location
-func deployDefaultFeeRecipientFile(cfg *config.RocketPoolConfig) error {
+func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig) error {
 	feeRecipientPath := cfg.Smartnode.GetFeeRecipientFilePath()
 	_, err := os.Stat(feeRecipientPath)
 	if os.IsNotExist(err) {
@@ -267,7 +267,7 @@ func deployDefaultFeeRecipientFile(cfg *config.RocketPoolConfig) error {
 }
 
 // Remove the old fee recipient files that were created in v1.5.0
-func removeLegacyFeeRecipientFiles(cfg *config.RocketPoolConfig) error {
+func removeLegacyFeeRecipientFiles(cfg *config.SmartNodeConfig) error {
 	legacyFeeRecipientFile := "rp-fee-recipient.txt"
 	validatorsFolder := cfg.Smartnode.GetValidatorKeychainPath()
 

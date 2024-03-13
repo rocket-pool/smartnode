@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/goccy/go-json"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 )
 
 // Function for validating an argument (wraps the old CLI validators)

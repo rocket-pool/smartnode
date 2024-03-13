@@ -11,7 +11,7 @@ type NativeFallbackConfigPage struct {
 	home           *settingsNativeHome
 	page           *page
 	layout         *standardLayout
-	masterConfig   *config.RocketPoolConfig
+	masterConfig   *config.SmartNodeConfig
 	useFallbackBox *parameterizedFormItem
 	reconnectDelay *parameterizedFormItem
 	fallbackItems  []*parameterizedFormItem

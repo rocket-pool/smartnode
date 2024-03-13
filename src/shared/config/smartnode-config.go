@@ -628,6 +628,10 @@ func getDefaultRecordsDir(rpDir string) string {
 // === IConfig Implementation ===
 // ==============================
 
+// ==============================
+// === IConfig Implementation ===
+// ==============================
+
 func (cfg *SmartNodeConfig) GetNodeAddressFilePath() string {
 	return filepath.Join(cfg.UserDataPath.Value, UserAddressFilename)
 }
@@ -638,15 +642,6 @@ func (cfg *SmartNodeConfig) GetWalletFilePath() string {
 
 func (cfg *SmartNodeConfig) GetPasswordFilePath() string {
 	return filepath.Join(cfg.UserDataPath.Value, UserPasswordFilename)
-}
-
-func (cfg *SmartNodeConfig) GetNetworkResources() *SmartNodeResources {
-	switch cfg.Network.Value {
-	case Network_Devnet:
-		return NewSmartNodeResources(config.Network_Holesky)
-	default:
-		return NewSmartNodeResources(cfg.Network.Value)
-	}
 }
 
 func (cfg *SmartNodeConfig) GetExecutionClientUrls() (string, string) {

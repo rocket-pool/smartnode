@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 )
 
 const (
@@ -27,9 +26,8 @@ var polygonOnce sync.Once
 
 // Binding for the Polygon Messenger
 type PolygonMessenger struct {
-
-	// === Internal fields ===
-	contract *core.Contract
+	contract *eth.Contract
+	txMgr    *eth.TransactionManager
 }
 
 // ====================
@@ -37,7 +35,7 @@ type PolygonMessenger struct {
 // ====================
 
 // Creates a new Polygon Messenger contract binding
-func NewPolygonMessenger(address common.Address, client core.ExecutionClient) (*PolygonMessenger, error) {
+func NewPolygonMessenger(address common.Address, client eth.IExecutionClient, txMgr *eth.TransactionManager) (*PolygonMessenger, error) {
 	// Parse the ABI
 	var err error
 	polygonOnce.Do(func() {
@@ -52,15 +50,15 @@ func NewPolygonMessenger(address common.Address, client core.ExecutionClient) (*
 	}
 
 	// Create the contract
-	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, polygonMessengerAbi, client, client, client),
-		Address:  &address,
-		ABI:      &polygonMessengerAbi,
-		Client:   client,
+	contract := &eth.Contract{
+		ContractImpl: bind.NewBoundContract(address, polygonMessengerAbi, client, client, client),
+		Address:      address,
+		ABI:          &polygonMessengerAbi,
 	}
 
 	return &PolygonMessenger{
 		contract: contract,
+		txMgr:    txMgr,
 	}, nil
 }
 
@@ -70,7 +68,7 @@ func NewPolygonMessenger(address common.Address, client core.ExecutionClient) (*
 
 // Check if the RPL rate is stale and needs to be updated
 func (c *PolygonMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
-	core.AddCall(mc, c.contract, out, "rateStale")
+	eth.AddCallToMulticaller(mc, c.contract, out, "rateStale")
 }
 
 // ====================
@@ -79,5 +77,5 @@ func (c *PolygonMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
 
 // Send the latest RPL rate to the L2
 func (c *PolygonMessenger) SubmitRate(opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "submitRate", opts)
+	return c.txMgr.CreateTransactionInfo(c.contract, "submitRate", opts)
 }

@@ -22,7 +22,7 @@ type ReviewPage struct {
 }
 
 // Create a page to review any changes
-func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
+func NewReviewPage(md *mainDisplay, oldConfig *config.SmartNodeConfig, newConfig *config.SmartNodeConfig) *ReviewPage {
 
 	var changedSettings map[string][]cfgtypes.ChangedSetting
 	var totalAffectedContainers map[cfgtypes.ContainerID]bool

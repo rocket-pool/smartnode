@@ -12,11 +12,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/node-manager-core/eth"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
@@ -50,11 +49,11 @@ type SubmitRplPrice struct {
 	sp        *services.ServiceProvider
 	log       log.ColorLogger
 	errLog    log.ColorLogger
-	cfg       *config.RocketPoolConfig
-	ec        core.ExecutionClient
+	cfg       *config.SmartNodeConfig
+	ec        eth.IExecutionClient
 	w         *wallet.LocalWallet
 	rp        *rocketpool.RocketPool
-	bc        beacon.Client
+	bc        beacon.IBeaconClient
 	lock      *sync.Mutex
 	isRunning bool
 }
@@ -572,7 +571,7 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 }
 
 // Submit a price update to Optimism
-func (t *SubmitRplPrice) updateOptimism(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, optimismMessenger *contracts.OptimismMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateOptimism(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, optimismMessenger *contracts.OptimismMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.log.Println("Submitting rate to Optimism...")
 	txInfo, err := optimismMessenger.SubmitRate(opts)
 	if err != nil {
@@ -605,7 +604,7 @@ func (t *SubmitRplPrice) updateOptimism(cfg *config.RocketPoolConfig, rp *rocket
 }
 
 // Submit a price update to Polygon
-func (t *SubmitRplPrice) updatePolygon(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, polygonmMessenger *contracts.PolygonMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updatePolygon(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, polygonmMessenger *contracts.PolygonMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.log.Println("Submitting rate to Polygon...")
 	txInfo, err := polygonmMessenger.SubmitRate(opts)
 	if err != nil {
@@ -638,7 +637,7 @@ func (t *SubmitRplPrice) updatePolygon(cfg *config.RocketPoolConfig, rp *rocketp
 }
 
 // Submit a price update to Arbitrum
-func (t *SubmitRplPrice) updateArbitrum(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, arbitrumMessenger *contracts.ArbitrumMessenger, version string, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateArbitrum(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, arbitrumMessenger *contracts.ArbitrumMessenger, version string, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.log.Println("Submitting rate to Arbitrum...")
 
 	// Get the current network recommended max fee
@@ -698,7 +697,7 @@ func (t *SubmitRplPrice) updateArbitrum(cfg *config.RocketPoolConfig, rp *rocket
 }
 
 // Submit a price update to zkSync Era
-func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, zkSyncEraMessenger *contracts.ZkSyncEraMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, zkSyncEraMessenger *contracts.ZkSyncEraMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.log.Println("Submitting rate to zkSync Era...")
 	// Constants for zkSync Era
 	l1GasPerPubdataByte := big.NewInt(17)
@@ -750,7 +749,7 @@ func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.RocketPoolConfig, rp *rocke
 }
 
 // Submit a price update to Base
-func (t *SubmitRplPrice) updateBase(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, baseMessenger *contracts.OptimismMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateBase(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, baseMessenger *contracts.OptimismMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.log.Println("Submitting rate to Base...")
 	txInfo, err := baseMessenger.SubmitRate(opts)
 	if err != nil {
@@ -783,7 +782,7 @@ func (t *SubmitRplPrice) updateBase(cfg *config.RocketPoolConfig, rp *rocketpool
 }
 
 // Submit a price update to Scroll
-func (t *SubmitRplPrice) updateScroll(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec core.ExecutionClient, scrollMessenger *contracts.ScrollMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, scrollMessenger *contracts.ScrollMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.log.Println("Submitting rate to Scroll...")
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
 

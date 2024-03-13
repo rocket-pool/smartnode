@@ -113,10 +113,11 @@ type snapshotProposalsResponse struct {
 // === Utils ===
 // =============
 
-func GetSnapshotVotingPower(cfg *config.RocketPoolConfig, address common.Address) (float64, error) {
+func GetSnapshotVotingPower(cfg *config.SmartNodeConfig, address common.Address) (float64, error) {
 	client := getHttpClientWithTimeout()
-	apiDomain := cfg.Smartnode.GetSnapshotApiDomain()
-	id := cfg.Smartnode.GetSnapshotID()
+	resources := cfg.GetRocketPoolResources()
+	apiDomain := resources.SnapshotApiDomain
+	id := config.SnapshotID
 	if apiDomain == "" {
 		return 0, nil
 	}
@@ -148,10 +149,11 @@ func GetSnapshotVotingPower(cfg *config.RocketPoolConfig, address common.Address
 	return vp, nil
 }
 
-func GetSnapshotProposals(cfg *config.RocketPoolConfig, address common.Address, delegate common.Address, activeOnly bool) ([]*sharedtypes.SnapshotProposal, error) {
+func GetSnapshotProposals(cfg *config.SmartNodeConfig, address common.Address, delegate common.Address, activeOnly bool) ([]*sharedtypes.SnapshotProposal, error) {
 	client := getHttpClientWithTimeout()
-	apiDomain := cfg.Smartnode.GetSnapshotApiDomain()
-	id := cfg.Smartnode.GetSnapshotID()
+	resources := cfg.GetRocketPoolResources()
+	apiDomain := resources.SnapshotApiDomain
+	id := config.SnapshotID
 	if apiDomain == "" {
 		return nil, nil
 	}

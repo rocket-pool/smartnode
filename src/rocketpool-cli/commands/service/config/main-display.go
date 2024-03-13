@@ -25,15 +25,15 @@ type mainDisplay struct {
 	isNative            bool
 	previousWidth       int
 	previousHeight      int
-	PreviousConfig      *config.RocketPoolConfig
-	Config              *config.RocketPoolConfig
+	PreviousConfig      *config.SmartNodeConfig
+	Config              *config.SmartNodeConfig
 	ShouldSave          bool
 	ContainersToRestart []cfgtypes.ContainerID
 	ChangeNetworks      bool
 }
 
 // Creates a new MainDisplay instance.
-func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isUpdate bool, isNative bool) *mainDisplay {
+func NewMainDisplay(app *tview.Application, previousConfig *config.SmartNodeConfig, config *config.SmartNodeConfig, isNew bool, isUpdate bool, isNative bool) *mainDisplay {
 
 	// Create a copy of the original config for comparison purposes
 	if previousConfig == nil {

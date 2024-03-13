@@ -133,7 +133,7 @@ func confirmMnemonic(mnemonic string) {
 }
 
 // Check for custom keys, prompt for their passwords, and store them in the custom keys file
-func promptForCustomKeyPasswords(rp *client.Client, cfg *config.RocketPoolConfig, testOnly bool) (string, error) {
+func promptForCustomKeyPasswords(rp *client.Client, cfg *config.SmartNodeConfig, testOnly bool) (string, error) {
 
 	// Check for the custom key directory
 	datapath, err := homedir.Expand(cfg.Smartnode.DataPath.Value.(string))

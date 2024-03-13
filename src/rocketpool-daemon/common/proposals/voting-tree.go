@@ -7,14 +7,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 type VotingTree struct {
 	SmartnodeVersion string                  `json:"smartnodeVersion"`
-	Network          cfgtypes.Network        `json:"network"`
+	Network          config.Network          `json:"network"`
 	BlockNumber      uint32                  `json:"blockNumber"`
 	Depth            uint64                  `json:"depth"`
 	VirtualRootIndex uint64                  `json:"virtualRootIndex"`
@@ -23,7 +23,7 @@ type VotingTree struct {
 }
 
 // Creates a new NetworkVotingPowerTree instance from leaf nodes.
-func CreateTreeFromLeaves(blockNumber uint32, network cfgtypes.Network, leaves []*types.VotingTreeNode, virtualRootIndex uint64, depthPerRound uint64) *VotingTree {
+func CreateTreeFromLeaves(blockNumber uint32, network config.Network, leaves []*types.VotingTreeNode, virtualRootIndex uint64, depthPerRound uint64) *VotingTree {
 	// Determine the total number of nodes from the leaf count
 	originalPower := math.Log2(float64(len(leaves)))
 	ceilingPower := int(math.Ceil(originalPower))

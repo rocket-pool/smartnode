@@ -328,7 +328,7 @@ func promptMinNodeFee(networkCurrentNodeFee, networkMinNodeFee float64) float64 
 }
 
 // Prompt for the password to a solo validator key as part of migration
-func promptForSoloKeyPassword(rp *client.Client, cfg *config.RocketPoolConfig, pubkey beacon.ValidatorPubkey) (string, error) {
+func promptForSoloKeyPassword(rp *client.Client, cfg *config.SmartNodeConfig, pubkey beacon.ValidatorPubkey) (string, error) {
 
 	// Check for the custom key directory
 	datapath, err := homedir.Expand(cfg.Smartnode.DataPath.Value.(string))

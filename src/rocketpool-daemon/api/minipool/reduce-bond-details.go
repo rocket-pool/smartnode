@@ -51,7 +51,7 @@ func (f *minipoolReduceBondDetailsContextFactory) RegisterRoute(router *mux.Rout
 type minipoolReduceBondDetailsContext struct {
 	handler *MinipoolHandler
 	rp      *rocketpool.RocketPool
-	bc      beacon.Client
+	bc      beacon.IBeaconClient
 
 	node      *node.Node
 	pSettings *protocol.ProtocolDaoSettings

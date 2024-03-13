@@ -11,7 +11,6 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
@@ -51,7 +50,7 @@ func (f *nodeWithdrawEthContextFactory) RegisterRoute(router *mux.Router) {
 type nodeWithdrawEthContext struct {
 	handler     *NodeHandler
 	rp          *rocketpool.RocketPool
-	ec          core.ExecutionClient
+	ec          eth.IExecutionClient
 	nodeAddress common.Address
 
 	amount *big.Int

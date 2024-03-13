@@ -12,7 +12,6 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
 	prdeposit "github.com/prysmaticlabs/prysm/v4/contracts/deposit"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -44,11 +43,11 @@ type SubmitScrubMinipools struct {
 	sp        *services.ServiceProvider
 	log       log.ColorLogger
 	errLog    log.ColorLogger
-	cfg       *config.RocketPoolConfig
+	cfg       *config.SmartNodeConfig
 	w         *wallet.LocalWallet
 	rp        *rocketpool.RocketPool
-	ec        core.ExecutionClient
-	bc        beacon.Client
+	ec        eth.IExecutionClient
+	bc        beacon.IBeaconClient
 	mpMgr     *minipool.MinipoolManager
 	it        *iterationData
 	coll      *collectors.ScrubCollector

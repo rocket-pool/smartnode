@@ -111,7 +111,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 }
 
 // Check if the VC has changed and force a wait for slashing protection if it has
-func checkForValidatorChange(rp *client.Client, cfg *config.RocketPoolConfig) error {
+func checkForValidatorChange(rp *client.Client, cfg *config.SmartNodeConfig) error {
 	// Get the container prefix
 	prefix, err := getContainerPrefix(rp)
 	if err != nil {

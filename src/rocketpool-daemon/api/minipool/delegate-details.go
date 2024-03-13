@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -47,7 +46,7 @@ func (f *minipoolDelegateDetailsContextFactory) RegisterRoute(router *mux.Router
 type minipoolDelegateDetailsContext struct {
 	handler  *MinipoolHandler
 	rp       *rocketpool.RocketPool
-	delegate *core.Contract
+	delegate *eth.Contract
 }
 
 func (c *minipoolDelegateDetailsContext) Initialize() error {

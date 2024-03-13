@@ -5,15 +5,13 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
-	"github.com/rocket-pool/smartnode/shared/gas/etherchain"
-	"github.com/rocket-pool/smartnode/shared/gas/etherscan"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/node-manager-core/gas"
+	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/utils/math"
 )
 
 // Print the gas price and cost of a TX
-func PrintAndCheckGasInfo(gasInfo core.GasInfo, checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) bool {
+func PrintAndCheckGasInfo(simResult eth.SimulationResult, checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) bool {
 	// Check the gas threshold if requested
 	if checkThreshold {
 		gasThresholdWei := math.RoundUp(gasThresholdGwei*eth.WeiPerGwei, 0)
@@ -34,8 +32,8 @@ func PrintAndCheckGasInfo(gasInfo core.GasInfo, checkThreshold bool, gasThreshol
 		gas = new(big.Int).SetUint64(gasLimit)
 		safeGas = gas
 	} else {
-		gas = new(big.Int).SetUint64(gasInfo.EstGasLimit)
-		safeGas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+		gas = new(big.Int).SetUint64(simResult.EstimatedGasLimit)
+		safeGas = new(big.Int).SetUint64(simResult.SafeGasLimit)
 	}
 	totalGasWei := new(big.Int).Mul(maxFeeWei, gas)
 	totalSafeGasWei := new(big.Int).Mul(maxFeeWei, safeGas)
@@ -66,7 +64,7 @@ func PrintAndCheckGasInfoForBatch(submissions []*eth.TransactionSubmission, chec
 	totalEstGasWei := big.NewInt(0)
 	totalAssignedGasWei := big.NewInt(0)
 	for _, submission := range submissions {
-		lowGas := big.NewInt(0).SetUint64(submission.TxInfo.GasInfo.EstGasLimit)
+		lowGas := big.NewInt(0).SetUint64(submission.TxInfo.SimulationResult.EstimatedGasLimit)
 		highGas := big.NewInt(0).SetUint64(submission.GasLimit)
 		lowGas.Mul(lowGas, maxFeeWei)
 		highGas.Mul(highGas, maxFeeWei)
@@ -83,13 +81,13 @@ func PrintAndCheckGasInfoForBatch(submissions []*eth.TransactionSubmission, chec
 
 // Get the suggested max fee for service operations
 func GetMaxFeeWeiForDaemon(logger *log.ColorLogger) (*big.Int, error) {
-	etherchainData, err := etherchain.GetGasPrices()
+	etherchainData, err := gas.GetEtherchainGasPrices()
 	if err == nil {
 		return etherchainData.RapidWei, nil
 	}
 
 	logger.Println("WARNING: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan\n", err.Error())
-	etherscanData, err := etherscan.GetGasPrices()
+	etherscanData, err := gas.GetEtherscanGasPrices()
 	if err == nil {
 		return eth.GweiToWei(etherscanData.FastGwei), nil
 	}

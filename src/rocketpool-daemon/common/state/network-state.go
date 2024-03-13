@@ -1,20 +1,20 @@
 package state
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"golang.org/x/sync/errgroup"
 )
@@ -67,13 +67,14 @@ type NetworkState struct {
 }
 
 // Creates a snapshot of the entire Rocket Pool network state, on both the Execution and Consensus layers
-func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec core.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config) (*NetworkState, error) {
+func CreateNetworkState(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, bc beacon.IBeaconClient, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, context context.Context) (*NetworkState, error) {
 	// Get the relevant network contracts
-	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+	resources := cfg.GetNetworkResources()
+	multicallerAddress := resources.MulticallAddress
+	balanceBatcherAddress := resources.BalanceBatcherAddress
 
 	// Get the execution block for the given slot
-	beaconBlock, exists, err := bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
+	beaconBlock, exists, err := bc.GetBeaconBlock(context, fmt.Sprintf("%d", slotNumber))
 	if err != nil {
 		return nil, fmt.Errorf("error getting Beacon block for slot %d: %w", slotNumber, err)
 	}
@@ -168,7 +169,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	state.logLine("4/6 - Retrieved Oracle DAO details (%s so far)", time.Since(start))
 
 	// Get the validator stats from Beacon
-	statusMap, err := bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
+	statusMap, err := bc.GetValidatorStatuses(context, pubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &slotNumber,
 	})
 	if err != nil {
@@ -201,18 +202,19 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 
 // Creates a snapshot of the Rocket Pool network, but only for a single node
 // Also gets the total effective RPL stake of the network for convenience since this is required by several node routines
-func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec core.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
+func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, bc beacon.IBeaconClient, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool, context context.Context) (*NetworkState, *big.Int, error) {
 	steps := 5
 	if calculateTotalEffectiveStake {
 		steps++
 	}
 
 	// Get the relevant network contracts
-	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+	resources := cfg.GetNetworkResources()
+	multicallerAddress := resources.MulticallAddress
+	balanceBatcherAddress := resources.BalanceBatcherAddress
 
 	// Get the execution block for the given slot
-	beaconBlock, exists, err := bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
+	beaconBlock, exists, err := bc.GetBeaconBlock(context, fmt.Sprintf("%d", slotNumber))
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting Beacon block for slot %d: %w", slotNumber, err)
 	}
@@ -316,7 +318,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	}
 
 	// Get the validator stats from Beacon
-	statusMap, err := bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
+	statusMap, err := bc.GetValidatorStatuses(context, pubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &slotNumber,
 	})
 	if err != nil {

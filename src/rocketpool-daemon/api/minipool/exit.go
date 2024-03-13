@@ -53,7 +53,7 @@ type minipoolExitContext struct {
 	handler *MinipoolHandler
 	rp      *rocketpool.RocketPool
 	w       *wallet.LocalWallet
-	bc      beacon.Client
+	bc      beacon.IBeaconClient
 
 	minipoolAddresses []common.Address
 }

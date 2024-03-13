@@ -16,7 +16,7 @@ const (
 )
 
 // Get the max fee for watchtower transactions
-func GetWatchtowerMaxFee(cfg *config.RocketPoolConfig) float64 {
+func GetWatchtowerMaxFee(cfg *config.SmartNodeConfig) float64 {
 	setting := cfg.Smartnode.WatchtowerMaxFeeOverride.Value.(float64)
 	if setting < MinWatchtowerMaxFee {
 		return MinWatchtowerMaxFee
@@ -25,7 +25,7 @@ func GetWatchtowerMaxFee(cfg *config.RocketPoolConfig) float64 {
 }
 
 // Get the priority fee for watchtower transactions
-func GetWatchtowerPrioFee(cfg *config.RocketPoolConfig) float64 {
+func GetWatchtowerPrioFee(cfg *config.SmartNodeConfig) float64 {
 	setting := cfg.Smartnode.WatchtowerPrioFeeOverride.Value.(float64)
 	if setting < MinWatchtowerPriorityFee {
 		return MinWatchtowerPriorityFee
@@ -33,7 +33,7 @@ func GetWatchtowerPrioFee(cfg *config.RocketPoolConfig) float64 {
 	return setting
 }
 
-func FindLastExistingELBlockFromSlot(bc beacon.Client, slotNumber uint64) (beacon.Eth1Data, error) {
+func FindLastExistingELBlockFromSlot(bc beacon.IBeaconClient, slotNumber uint64) (beacon.Eth1Data, error) {
 	ecBlock := beacon.Eth1Data{}
 	var err error
 	for blockExists, searchSlot := false, slotNumber; !blockExists; searchSlot -= 1 {

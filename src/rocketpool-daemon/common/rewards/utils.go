@@ -20,13 +20,12 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/shared/config"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Settings
@@ -95,7 +94,7 @@ func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address, curre
 }
 
 // Gets the information for an interval including the file status, the validity, and the node's rewards
-func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, interval uint64, opts *bind.CallOpts) (info sharedtypes.IntervalInfo, err error) {
+func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, nodeAddress common.Address, interval uint64, opts *bind.CallOpts) (info sharedtypes.IntervalInfo, err error) {
 	info.Index = interval
 	var event rewards.RewardsEvent
 
@@ -112,7 +111,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.MerkleRoot = merkleRootCanon
 
 	// Check if the tree file exists
-	info.TreeFilePath = cfg.Smartnode.GetRewardsTreePath(interval, true)
+	info.TreeFilePath = cfg.GetRewardsTreePath(interval)
 	_, err = os.Stat(info.TreeFilePath)
 	if os.IsNotExist(err) {
 		info.TreeFileExists = false
@@ -159,14 +158,14 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 }
 
 // Get the event for a rewards snapshot
-func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {
-	addresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
+func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {
+	resources := cfg.GetRocketPoolResources()
 	rewardsPool, err := rewards.NewRewardsPool(rp)
 	if err != nil {
 		return rewards.RewardsEvent{}, fmt.Errorf("error getting rewards pool binding: %w", err)
 	}
 
-	found, event, err := rewardsPool.GetRewardsEvent(rp, interval, addresses, opts)
+	found, event, err := rewardsPool.GetRewardsEvent(rp, interval, resources.PreviousRewardsPoolAddresses, opts)
 	if err != nil {
 		return rewards.RewardsEvent{}, fmt.Errorf("error getting rewards event for interval %d: %w", interval, err)
 	}
@@ -259,12 +258,12 @@ func GetELBlockHeaderForTime(targetTime time.Time, rp *rocketpool.RocketPool) (*
 }
 
 // Downloads the rewards file for this interval
-func DownloadRewardsFile(cfg *config.RocketPoolConfig, i *sharedtypes.IntervalInfo, isDaemon bool) error {
+func DownloadRewardsFile(cfg *config.SmartNodeConfig, i *sharedtypes.IntervalInfo) error {
 	interval := i.Index
 	expectedCid := i.CID
 	expectedRoot := i.MerkleRoot
 	// Determine file name and path
-	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon))
+	rewardsTreePath, err := homedir.Expand(cfg.GetRewardsTreePath(interval))
 	if err != nil {
 		return fmt.Errorf("error expanding rewards tree path: %w", err)
 	}
@@ -275,10 +274,10 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, i *sharedtypes.IntervalIn
 	urls := []string{
 		fmt.Sprintf(config.PrimaryRewardsFileUrl, expectedCid, ipfsFilename),
 		fmt.Sprintf(config.SecondaryRewardsFileUrl, expectedCid, ipfsFilename),
-		fmt.Sprintf(config.GithubRewardsFileUrl, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsTreeFilename),
+		fmt.Sprintf(config.GithubRewardsFileUrl, string(cfg.Network.Value), rewardsTreeFilename),
 	}
 
-	rewardsTreeCustomUrl := cfg.Smartnode.RewardsTreeCustomUrl.Value.(string)
+	rewardsTreeCustomUrl := cfg.RewardsTreeCustomUrl.Value
 	rewardsTreeCustomUrl = strings.TrimSpace(rewardsTreeCustomUrl)
 	if len(rewardsTreeCustomUrl) != 0 {
 		splitRewardsTreeCustomUrls := strings.Split(rewardsTreeCustomUrl, ";")
@@ -363,15 +362,15 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, i *sharedtypes.IntervalIn
 }
 
 // Gets the start slot for the given interval
-func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beacon.Client, beaconConfig beacon.Eth2Config) (uint64, error) {
+func GetStartSlotForInterval(context context.Context, previousIntervalEvent rewards.RewardsEvent, bc beacon.IBeaconClient, beaconConfig beacon.Eth2Config) (uint64, error) {
 	// Get the chain head
-	head, err := bc.GetBeaconHead()
+	head, err := bc.GetBeaconHead(context)
 	if err != nil {
 		return 0, fmt.Errorf("error getting Beacon chain head: %w", err)
 	}
 
 	// Sanity check to confirm the BN can access the block from the previous interval
-	_, exists, err := bc.GetBeaconBlock(previousIntervalEvent.ConsensusBlock.String())
+	_, exists, err := bc.GetBeaconBlock(context, previousIntervalEvent.ConsensusBlock.String())
 	if err != nil {
 		return 0, fmt.Errorf("error verifying block from previous interval: %w", err)
 	}
@@ -387,7 +386,7 @@ func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beac
 	currentEpoch := consensusStartBlock / beaconConfig.SlotsPerEpoch
 	found := false
 	for currentEpoch <= head.Epoch {
-		_, exists, err := bc.GetBeaconBlock(fmt.Sprint(consensusStartBlock))
+		_, exists, err := bc.GetBeaconBlock(context, fmt.Sprint(consensusStartBlock))
 		if err != nil {
 			return 0, fmt.Errorf("error getting EL data for BC slot %d: %w", consensusStartBlock, err)
 		}

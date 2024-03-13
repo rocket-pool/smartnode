@@ -12,7 +12,6 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -63,10 +62,10 @@ func (f *nodeStatusContextFactory) RegisterRoute(router *mux.Router) {
 
 type nodeStatusContext struct {
 	handler  *NodeHandler
-	cfg      *config.RocketPoolConfig
+	cfg      *config.SmartNodeConfig
 	rp       *rocketpool.RocketPool
-	ec       core.ExecutionClient
-	bc       beacon.Client
+	ec       eth.IExecutionClient
+	bc       beacon.IBeaconClient
 	snapshot *contracts.SnapshotDelegation
 
 	node         *node.Node

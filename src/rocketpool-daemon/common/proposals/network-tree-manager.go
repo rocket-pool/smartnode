@@ -9,10 +9,9 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const (
@@ -43,7 +42,7 @@ func (t NetworkVotingTree) GetFilename() string {
 type NetworkTreeManager struct {
 	log       *log.ColorLogger
 	logPrefix string
-	cfg       *config.RocketPoolConfig
+	cfg       *config.SmartNodeConfig
 
 	filenameRegex           *regexp.Regexp
 	latestCompatibleVersion *semver.Version
@@ -51,7 +50,7 @@ type NetworkTreeManager struct {
 }
 
 // Create a new NetworkTreeManager instance
-func NewNetworkTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig) (*NetworkTreeManager, error) {
+func NewNetworkTreeManager(log *log.ColorLogger, cfg *config.SmartNodeConfig) (*NetworkTreeManager, error) {
 	// Create the snapshot filename regex
 	logPrefix := "[Network Tree]"
 	filenameRegex := regexp.MustCompile(networkVotingTreeFilenamePattern)
@@ -70,7 +69,7 @@ func NewNetworkTreeManager(log *log.ColorLogger, cfg *config.RocketPoolConfig) (
 		latestCompatibleVersion: latestCompatibleVersion,
 	}
 
-	votingPath := cfg.Smartnode.GetVotingPath()
+	votingPath := cfg.GetVotingPath()
 	checksumFilename := filepath.Join(votingPath, networkPathFolderName, config.ChecksumTableFilename)
 	checksumManager, err := NewChecksumManager[uint32, NetworkVotingTree](checksumFilename, manager)
 	if err != nil {
@@ -113,7 +112,7 @@ func (m *NetworkTreeManager) CreateNetworkVotingTree(snapshot *VotingInfoSnapsho
 	}
 
 	// Make the tree
-	network := m.cfg.Smartnode.Network.Value.(cfgtypes.Network)
+	network := m.cfg.Network.Value
 	tree := CreateTreeFromLeaves(snapshot.BlockNumber, network, leaves, 1, depthPerRound)
 	return &NetworkVotingTree{
 		VotingTree: tree,
@@ -170,8 +169,8 @@ func (m *NetworkTreeManager) ShouldLoadEntry(filename string, context uint32) (b
 // Return true if the loaded network tree can be used for processing
 func (m *NetworkTreeManager) IsDataValid(data *NetworkVotingTree, filename string, context uint32) (bool, error) {
 	// Check if it has the proper network
-	if data.Network != m.cfg.Smartnode.Network.Value.(cfgtypes.Network) {
-		m.logMessage("%s File [%s] is for network %s instead of %s so it cannot be used.", m.logPrefix, filename, data.Network, string(m.cfg.Smartnode.Network.Value.(cfgtypes.Network)))
+	if data.Network != m.cfg.Network.Value {
+		m.logMessage("%s File [%s] is for network %s instead of %s so it cannot be used.", m.logPrefix, filename, data.Network, string(m.cfg.Network.Value))
 		return false, nil
 	}
 

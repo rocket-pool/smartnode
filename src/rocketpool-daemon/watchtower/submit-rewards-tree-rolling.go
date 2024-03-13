@@ -15,11 +15,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/eth1"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
@@ -40,11 +40,11 @@ type SubmitRewardsTree_Rolling struct {
 	sp          *services.ServiceProvider
 	log         log.ColorLogger
 	errLog      log.ColorLogger
-	cfg         *config.RocketPoolConfig
+	cfg         *config.SmartNodeConfig
 	w           *wallet.LocalWallet
-	ec          core.ExecutionClient
+	ec          eth.IExecutionClient
 	rp          *rocketpool.RocketPool
-	bc          beacon.Client
+	bc          beacon.IBeaconClient
 	rewardsPool *rewards.RewardsPool
 	genesisTime time.Time
 	recordMgr   *rprewards.RollingRecordManager

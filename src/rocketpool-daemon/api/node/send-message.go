@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/rocketpool-go/core"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -60,7 +59,7 @@ func (c *nodeSendMessageContext) PrepareData(data *api.TxInfoData, opts *bind.Tr
 		return err
 	}
 
-	info, err := core.NewTransactionInfoRaw(ec, c.address, c.message, opts)
+	info, err := eth.NewTransactionInfoRaw(ec, c.address, c.message, opts)
 	if err != nil {
 		return fmt.Errorf("error getting transaction info: %w", err)
 	}

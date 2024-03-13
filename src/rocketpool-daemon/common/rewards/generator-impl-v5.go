@@ -11,14 +11,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
@@ -33,8 +33,8 @@ type treeGeneratorImpl_v5 struct {
 	log                    *log.ColorLogger
 	logPrefix              string
 	rp                     *rocketpool.RocketPool
-	cfg                    *config.RocketPoolConfig
-	bc                     beacon.Client
+	cfg                    *config.SmartNodeConfig
+	bc                     beacon.IBeaconClient
 	opts                   *bind.CallOpts
 	nodeDetails            []*NodeSmoothingDetails
 	smoothingPoolBalance   *big.Int
@@ -48,7 +48,7 @@ type treeGeneratorImpl_v5 struct {
 	epsilon                *big.Int
 	intervalSeconds        *big.Int
 	beaconConfig           beacon.Eth2Config
-	validatorStatusMap     map[rpbeacon.ValidatorPubkey]beacon.ValidatorStatus
+	validatorStatusMap     map[beacon.ValidatorPubkey]beacon.ValidatorStatus
 	totalAttestationScore  *big.Int
 	successfulAttestations uint64
 	zero                   *big.Int
@@ -89,7 +89,7 @@ func newTreeGeneratorImpl_v5(log *log.ColorLogger, logPrefix string, index uint6
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v1{},
 			},
 		},
-		validatorStatusMap:    map[rpbeacon.ValidatorPubkey]beacon.ValidatorStatus{},
+		validatorStatusMap:    map[beacon.ValidatorPubkey]beacon.ValidatorStatus{},
 		validatorIndexMap:     map[string]*MinipoolInfo{},
 		elSnapshotHeader:      elSnapshotHeader,
 		log:                   log,
@@ -104,7 +104,7 @@ func (r *treeGeneratorImpl_v5) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (sharedtypes.IRewardsFile, error) {
+func (r *treeGeneratorImpl_v5) generateTree(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (sharedtypes.IRewardsFile, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -117,7 +117,7 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	}
 
 	// Set the network name
-	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+	r.rewardsFile.Network = fmt.Sprint(cfg.Network.Value)
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
 
 	// Get the Beacon config
@@ -142,7 +142,7 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	}
 
 	// Calculate the ETH rewards
-	err = r.calculateEthRewards(true)
+	err = r.calculateEthRewards(context, true)
 	if err != nil {
 		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
@@ -169,7 +169,7 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v5) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error) {
+func (r *treeGeneratorImpl_v5) approximateStakerShareOfSmoothingPool(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
@@ -180,7 +180,7 @@ func (r *treeGeneratorImpl_v5) approximateStakerShareOfSmoothingPool(rp *rocketp
 	}
 
 	// Set the network name
-	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+	r.rewardsFile.Network = fmt.Sprint(cfg.Network.Value)
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
 
 	// Get the Beacon config
@@ -199,7 +199,7 @@ func (r *treeGeneratorImpl_v5) approximateStakerShareOfSmoothingPool(rp *rocketp
 	r.epsilon = big.NewInt(int64(minipoolCount))
 
 	// Calculate the ETH rewards
-	err := r.calculateEthRewards(false)
+	err := r.calculateEthRewards(context, false)
 	if err != nil {
 		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
@@ -442,16 +442,16 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 }
 
 // Calculates the ETH rewards for the given interval
-func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) error {
+func (r *treeGeneratorImpl_v5) calculateEthRewards(context context.Context, checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
 	smoothingPoolContract, err := r.rp.GetContract(rocketpool.ContractName_RocketSmoothingPool)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
-	r.smoothingPoolAddress = *smoothingPoolContract.Address
+	r.smoothingPoolAddress = smoothingPoolContract.Address
 
-	r.smoothingPoolBalance, err = r.rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, r.elSnapshotHeader.Number)
+	r.smoothingPoolBalance, err = r.rp.Client.BalanceAt(context, smoothingPoolContract.Address, r.elSnapshotHeader.Number)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool balance: %w", err)
 	}
@@ -472,7 +472,7 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 	if err != nil {
 		return err
 	}
-	startElBlockHeader, err := r.getStartBlocksForInterval(previousIntervalEvent)
+	startElBlockHeader, err := r.getStartBlocksForInterval(context, previousIntervalEvent)
 	if err != nil {
 		return err
 	}
@@ -501,7 +501,7 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 		Slots: map[uint64]*SlotInfo{},
 	}
 	if checkBeaconPerformance {
-		err = r.processAttestationsForInterval()
+		err = r.processAttestationsForInterval(context)
 		if err != nil {
 			return err
 		}
@@ -669,7 +669,7 @@ func (r *treeGeneratorImpl_v5) calculateNodeRewards() (*big.Int, *big.Int, error
 }
 
 // Get all of the duties for a range of epochs
-func (r *treeGeneratorImpl_v5) processAttestationsForInterval() error {
+func (r *treeGeneratorImpl_v5) processAttestationsForInterval(context context.Context) error {
 
 	startEpoch := r.rewardsFile.ConsensusStartBlock / r.beaconConfig.SlotsPerEpoch
 	endEpoch := r.rewardsFile.ConsensusEndBlock / r.beaconConfig.SlotsPerEpoch
@@ -693,7 +693,7 @@ func (r *treeGeneratorImpl_v5) processAttestationsForInterval() error {
 			epochsDone = 0
 		}
 
-		err := r.processEpoch(true, epoch)
+		err := r.processEpoch(context, true, epoch)
 		if err != nil {
 			return err
 		}
@@ -703,7 +703,7 @@ func (r *treeGeneratorImpl_v5) processAttestationsForInterval() error {
 
 	// Check the epoch after the end of the interval for any lingering attestations
 	epoch := endEpoch + 1
-	err = r.processEpoch(false, epoch)
+	err = r.processEpoch(context, false, epoch)
 	if err != nil {
 		return err
 	}
@@ -714,7 +714,7 @@ func (r *treeGeneratorImpl_v5) processAttestationsForInterval() error {
 }
 
 // Process an epoch, optionally getting the duties for all eligible minipools in it and checking each one's attestation performance
-func (r *treeGeneratorImpl_v5) processEpoch(getDuties bool, epoch uint64) error {
+func (r *treeGeneratorImpl_v5) processEpoch(context context.Context, getDuties bool, epoch uint64) error {
 
 	// Get the committee info and attestation records for this epoch
 	var committeeData beacon.Committees
@@ -733,7 +733,7 @@ func (r *treeGeneratorImpl_v5) processEpoch(getDuties bool, epoch uint64) error 
 		i := i
 		slot := epoch*r.slotsPerEpoch + i
 		wg.Go(func() error {
-			attestations, found, err := r.bc.GetAttestations(fmt.Sprint(slot))
+			attestations, found, err := r.bc.GetAttestations(context, fmt.Sprint(slot))
 			if err != nil {
 				return err
 			}
@@ -890,7 +890,7 @@ func (r *treeGeneratorImpl_v5) createMinipoolIndexMap() error {
 					minipoolInfo.WasActive = false
 				} else {
 					switch status.Status {
-					case sharedtypes.ValidatorState_PendingInitialized, sharedtypes.ValidatorState_PendingQueued:
+					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
 						// Remove minipools that don't have indices yet since they're not actually viable
 						r.log.Printlnf("NOTE: minipool %s (index %s, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
 						minipoolInfo.WasActive = false
@@ -1054,9 +1054,9 @@ func (r *treeGeneratorImpl_v5) validateNetwork(network uint64) (bool, error) {
 }
 
 // Gets the start blocks for the given interval
-func (r *treeGeneratorImpl_v5) getStartBlocksForInterval(previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
+func (r *treeGeneratorImpl_v5) getStartBlocksForInterval(context context.Context, previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
 	// Sanity check to confirm the BN can access the block from the previous interval
-	_, exists, err := r.bc.GetBeaconBlock(previousIntervalEvent.ConsensusBlock.String())
+	_, exists, err := r.bc.GetBeaconBlock(context, previousIntervalEvent.ConsensusBlock.String())
 	if err != nil {
 		return nil, fmt.Errorf("error verifying block from previous interval: %w", err)
 	}
@@ -1072,7 +1072,7 @@ func (r *treeGeneratorImpl_v5) getStartBlocksForInterval(previousIntervalEvent r
 	// Get the first block that isn't missing
 	var elBlockNumber uint64
 	for {
-		beaconBlock, exists, err := r.bc.GetBeaconBlock(fmt.Sprint(r.rewardsFile.ConsensusStartBlock))
+		beaconBlock, exists, err := r.bc.GetBeaconBlock(context, fmt.Sprint(r.rewardsFile.ConsensusStartBlock))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL data for BC slot %d: %w", r.rewardsFile.ConsensusStartBlock, err)
 		}
@@ -1090,7 +1090,7 @@ func (r *treeGeneratorImpl_v5) getStartBlocksForInterval(previousIntervalEvent r
 		// We are pre-merge, so get the first block after the one from the previous interval
 		r.rewardsFile.ExecutionStartBlock = previousIntervalEvent.ExecutionBlock.Uint64() + 1
 		r.rewardsFile.MinipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
-		startElHeader, err = r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(r.rewardsFile.ExecutionStartBlock)))
+		startElHeader, err = r.rp.Client.HeaderByNumber(context, big.NewInt(int64(r.rewardsFile.ExecutionStartBlock)))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL start block %d: %w", r.rewardsFile.ExecutionStartBlock, err)
 		}
@@ -1098,7 +1098,7 @@ func (r *treeGeneratorImpl_v5) getStartBlocksForInterval(previousIntervalEvent r
 		// We are post-merge, so get the EL block corresponding to the BC block
 		r.rewardsFile.ExecutionStartBlock = elBlockNumber
 		r.rewardsFile.MinipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
-		startElHeader, err = r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
+		startElHeader, err = r.rp.Client.HeaderByNumber(context, big.NewInt(int64(elBlockNumber)))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL header for block %d: %w", elBlockNumber, err)
 		}

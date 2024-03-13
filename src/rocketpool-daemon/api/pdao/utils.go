@@ -9,7 +9,7 @@ import (
 )
 
 // Constructs a pollard for the latest finalized block and saves it to disk
-func createPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (uint32, []types.VotingTreeNode, error) {
+func createPollard(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (uint32, []types.VotingTreeNode, error) {
 	// Create a proposal manager
 	propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
 	if err != nil {
@@ -31,7 +31,7 @@ func createPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc b
 }
 
 // Loads (or regenerates) the pollard for a proposal from a block number
-func getPollard(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, blockNumber uint32) ([]types.VotingTreeNode, error) {
+func getPollard(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, blockNumber uint32) ([]types.VotingTreeNode, error) {
 	// Create a proposal manager
 	propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
 	if err != nil {

@@ -54,8 +54,8 @@ func (f *protocolDaoProposeSettingContextFactory) RegisterRoute(router *mux.Rout
 type protocolDaoProposeSettingContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
-	cfg         *config.RocketPoolConfig
-	bc          beacon.Client
+	cfg         *config.SmartNodeConfig
+	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
 	contractNameString string

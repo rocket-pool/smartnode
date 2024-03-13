@@ -60,9 +60,9 @@ func (f *nodeCreateVacantMinipoolContextFactory) RegisterRoute(router *mux.Route
 
 type nodeCreateVacantMinipoolContext struct {
 	handler *NodeHandler
-	cfg     *config.RocketPoolConfig
+	cfg     *config.SmartNodeConfig
 	rp      *rocketpool.RocketPool
-	bc      beacon.Client
+	bc      beacon.IBeaconClient
 
 	amount     *big.Int
 	minNodeFee float64
@@ -186,7 +186,7 @@ func (c *nodeCreateVacantMinipoolContext) PrepareData(data *api.NodeCreateVacant
 	if validatorStatus.Status != sharedtypes.ValidatorState_ActiveOngoing {
 		return fmt.Errorf("validator %s must be in the active_ongoing state to be migrated, but it is currently in %s.", c.pubkey.Hex(), string(validatorStatus.Status))
 	}
-	if c.cfg.Smartnode.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
+	if c.cfg.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
 		return fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", c.pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
 	}
 

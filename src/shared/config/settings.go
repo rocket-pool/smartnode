@@ -29,4 +29,18 @@ const (
 	// Volumes
 	ExecutionClientDataVolume string = "eth1clientdata"
 	BeaconNodeDataVolume      string = "eth2clientdata"
+
+	// Smart Node
+	ChecksumTableFilename     string = "checksums.sha384"
+	RewardsTreeIpfsExtension  string = ".zst"
+	RewardsTreeFilenameFormat string = "rp-rewards-%s-%d.json"
+	VotingFolder              string = "voting"
+	RecordsFolder             string = "records"
+	RewardsTreesFolder        string = "rewards-trees"
+	PrimaryRewardsFileUrl     string = "https://%s.ipfs.dweb.link/%s"
+	SecondaryRewardsFileUrl   string = "https://ipfs.io/ipfs/%s/%s"
+	GithubRewardsFileUrl      string = "https://github.com/rocket-pool/rewards-trees/raw/main/%s/%s"
+
+	// Snapshot
+	SnapshotID string = "rocketpool-dao.eth"
 )

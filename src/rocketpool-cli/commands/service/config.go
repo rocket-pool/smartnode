@@ -19,7 +19,7 @@ func configureService(c *cli.Context) error {
 	rp := client.NewClientFromCtx(c)
 
 	// Load the config, checking to see if it's new (hasn't been installed before)
-	var oldCfg *config.RocketPoolConfig
+	var oldCfg *config.SmartNodeConfig
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading user settings: %w", err)
@@ -140,7 +140,7 @@ func configureService(c *cli.Context) error {
 }
 
 // Updates a configuration from the provided CLI arguments headlessly
-func configureHeadless(c *cli.Context, cfg *config.RocketPoolConfig) error {
+func configureHeadless(c *cli.Context, cfg *config.SmartNodeConfig) error {
 	// Root params
 	for _, param := range cfg.GetParameters() {
 		err := updateConfigParamFromCliArg(c, "", param, cfg)
@@ -163,7 +163,7 @@ func configureHeadless(c *cli.Context, cfg *config.RocketPoolConfig) error {
 }
 
 // Updates a config parameter from a CLI flag
-func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *cfgtypes.Parameter, cfg *config.RocketPoolConfig) error {
+func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *cfgtypes.Parameter, cfg *config.SmartNodeConfig) error {
 	var paramName string
 	if sectionName == "" {
 		paramName = param.ID

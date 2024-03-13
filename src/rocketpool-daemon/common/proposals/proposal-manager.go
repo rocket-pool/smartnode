@@ -1,15 +1,16 @@
 package proposals
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
 )
@@ -22,12 +23,12 @@ type ProposalManager struct {
 
 	log       *log.ColorLogger
 	logPrefix string
-	cfg       *config.RocketPoolConfig
+	cfg       *config.SmartNodeConfig
 	rp        *rocketpool.RocketPool
-	bc        beacon.Client
+	bc        beacon.IBeaconClient
 }
 
-func NewProposalManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client) (*ProposalManager, error) {
+func NewProposalManager(context context.Context, log *log.ColorLogger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, bc beacon.IBeaconClient) (*ProposalManager, error) {
 	viSnapshotMgr, err := NewVotingInfoSnapshotManager(log, cfg, rp)
 	if err != nil {
 		return nil, fmt.Errorf("error creating voting info manager: %w", err)
@@ -43,7 +44,7 @@ func NewProposalManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *
 		return nil, fmt.Errorf("error creating node tree manager: %w", err)
 	}
 
-	stateMgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, log)
+	stateMgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, log, context)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network state manager: %w", err)
 	}
@@ -63,9 +64,9 @@ func NewProposalManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *
 	}, nil
 }
 
-func (m *ProposalManager) CreateLatestFinalizedTree() (uint32, *NetworkVotingTree, error) {
+func (m *ProposalManager) CreateLatestFinalizedTree(context context.Context) (uint32, *NetworkVotingTree, error) {
 	// Get the latest finalized block
-	block, err := m.stateMgr.GetLatestFinalizedBeaconBlock()
+	block, err := m.stateMgr.GetLatestFinalizedBeaconBlock(context)
 	if err != nil {
 		return 0, nil, fmt.Errorf("error determining latest finalized block: %w", err)
 	}
@@ -80,8 +81,8 @@ func (m *ProposalManager) CreateLatestFinalizedTree() (uint32, *NetworkVotingTre
 	return blockNumber, tree, nil
 }
 
-func (m *ProposalManager) CreatePollardForProposal() (uint32, []*types.VotingTreeNode, error) {
-	blockNumber, tree, err := m.CreateLatestFinalizedTree()
+func (m *ProposalManager) CreatePollardForProposal(context context.Context) (uint32, []*types.VotingTreeNode, error) {
+	blockNumber, tree, err := m.CreateLatestFinalizedTree(context)
 	if err != nil {
 		return 0, nil, err
 	}

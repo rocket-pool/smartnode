@@ -25,9 +25,9 @@ const (
 // Manage fee recipient task
 type ManageFeeRecipient struct {
 	sp  *services.ServiceProvider
-	cfg *config.RocketPoolConfig
+	cfg *config.SmartNodeConfig
 	log log.ColorLogger
-	bc  beacon.Client
+	bc  beacon.IBeaconClient
 }
 
 // Create manage fee recipient task

@@ -515,7 +515,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 }
 
 // Deploys all of the appropriate docker compose template files and provisions them based on the provided configuration
-func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir string) ([]string, error) {
+func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, rocketpoolDir string) ([]string, error) {
 	// Check for the folders
 	runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir)
 	templatesFolder := filepath.Join(rocketpoolDir, templatesDir)
@@ -614,7 +614,7 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 }
 
 // Handle composing for addons
-func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir string, deployedContainers []string) ([]string, error) {
+func (c *Client) composeAddons(cfg *config.SmartNodeConfig, rocketpoolDir string, deployedContainers []string) ([]string, error) {
 	// GWW
 	if cfg.GraffitiWallWriter.GetEnabledParameter().Value == true {
 

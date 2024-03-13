@@ -9,11 +9,10 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/collectors"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
@@ -37,11 +36,11 @@ type CheckSoloMigrations struct {
 	sp               *services.ServiceProvider
 	log              log.ColorLogger
 	errLog           log.ColorLogger
-	cfg              *config.RocketPoolConfig
+	cfg              *config.SmartNodeConfig
 	w                *wallet.LocalWallet
 	rp               *rocketpool.RocketPool
-	ec               core.ExecutionClient
-	bc               beacon.Client
+	ec               eth.IExecutionClient
+	bc               beacon.IBeaconClient
 	mpMgr            *minipool.MinipoolManager
 	coll             *collectors.SoloMigrationCollector
 	lock             *sync.Mutex

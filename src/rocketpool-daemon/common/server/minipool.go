@@ -11,10 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
-	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 const (
@@ -49,6 +49,9 @@ type IMinipoolCallContext[DataType any] interface {
 type IMinipoolCallContextFactory[ContextType IMinipoolCallContext[DataType], DataType any] interface {
 	// Create the context for the route
 	Create(args url.Values) (ContextType, error)
+
+	// Get the cancel context
+	GetCancelContext() context.Context
 }
 
 // Registers a new route with the router, which will invoke the provided factory to create and execute the context
@@ -68,13 +71,13 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 		}
 
 		// Run the context's processing routine
-		response, err := runMinipoolRoute[DataType](context, serviceProvider)
+		response, err := runMinipoolRoute[DataType](context, serviceProvider, factory.GetCancelContext())
 		handleResponse(w, response, err)
 	})
 }
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
-func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider) (*api.ApiResponse[DataType], error) {
+func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider, cancelContext context.Context) (*types.ApiResponse[DataType], error) {
 	// Load contracts
 	err := serviceProvider.LoadContractsIfStale()
 	if err != nil {
@@ -82,16 +85,14 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	}
 
 	// Common requirements
-	err = serviceProvider.RequireNodeRegistered()
+	err = serviceProvider.RequireNodeRegistered(cancelContext)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get the services
-	w := serviceProvider.GetWallet()
 	rp := serviceProvider.GetRocketPool()
 	nodeAddress, _ := serviceProvider.GetWallet().GetAddress()
-	walletStatus := w.GetStatus()
 
 	// Get the latest block for consistency
 	latestBlock, err := rp.Client.BlockNumber(context.Background())
@@ -126,9 +127,8 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 
 	// Create the response and data
 	data := new(DataType)
-	response := &api.ApiResponse[DataType]{
-		WalletStatus: walletStatus,
-		Data:         data,
+	response := &types.ApiResponse[DataType]{
+		Data: data,
 	}
 
 	// Supplemental function-specific check to see if minipool processing should continue

@@ -47,7 +47,7 @@ func (f *minipoolRescueDissolvedDetailsContextFactory) RegisterRoute(router *mux
 
 type minipoolRescueDissolvedDetailsContext struct {
 	handler *MinipoolHandler
-	bc      beacon.Client
+	bc      beacon.IBeaconClient
 }
 
 func (c *minipoolRescueDissolvedDetailsContext) Initialize() error {

@@ -35,7 +35,7 @@ const (
 type ReduceBonds struct {
 	sp             *services.ServiceProvider
 	log            log.ColorLogger
-	cfg            *config.RocketPoolConfig
+	cfg            *config.SmartNodeConfig
 	w              *wallet.LocalWallet
 	rp             *rocketpool.RocketPool
 	mpMgr          *minipool.MinipoolManager

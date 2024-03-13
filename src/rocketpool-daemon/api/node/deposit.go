@@ -68,9 +68,9 @@ func (f *nodeDepositContextFactory) RegisterRoute(router *mux.Router) {
 
 type nodeDepositContext struct {
 	handler *NodeHandler
-	cfg     *config.RocketPoolConfig
+	cfg     *config.SmartNodeConfig
 	rp      *rocketpool.RocketPool
-	bc      beacon.Client
+	bc      beacon.IBeaconClient
 	w       *wallet.LocalWallet
 
 	amount      *big.Int

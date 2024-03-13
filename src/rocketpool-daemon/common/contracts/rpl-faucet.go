@@ -52,6 +52,7 @@ type RplFaucet struct {
 
 	// === Internal fields ===
 	contract *core.Contract
+	txMgr    *eth.TransactionManager
 }
 
 // ====================
@@ -59,7 +60,7 @@ type RplFaucet struct {
 // ====================
 
 // Creates a new RPL Faucet contract binding
-func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFaucet, error) {
+func NewRplFaucet(address common.Address, client eth.IExecutionClient, txMgr *eth.TransactionManager) (*RplFaucet, error) {
 	// Parse the ABI
 	var err error
 	faucetOnce.Do(func() {
@@ -75,10 +76,11 @@ func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFauc
 
 	// Create the contract
 	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, faucetAbi, client, client, client),
-		Address:  &address,
-		ABI:      &faucetAbi,
-		Client:   client,
+		Contract: &eth.Contract{
+			ContractImpl: bind.NewBoundContract(address, faucetAbi, client, client, client),
+			Address:      address,
+			ABI:          &faucetAbi,
+		},
 	}
 
 	return &RplFaucet{
@@ -91,6 +93,7 @@ func NewRplFaucet(address common.Address, client core.ExecutionClient) (*RplFauc
 		WithdrawalPeriodStart:  core.NewFormattedUint256Field[uint64](contract, "getWithdrawalPeriodStart"),
 
 		contract: contract,
+		txMgr:    txMgr,
 	}, nil
 }
 
@@ -109,25 +112,25 @@ func (c *RplFaucet) GetAllowanceFor(mc *batch.MultiCaller, allowance **big.Int, 
 
 // Get info for withdrawing RPL from the faucet
 func (c *RplFaucet) Withdraw(amount *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "withdraw", opts, amount)
+	return c.txMgr.CreateTransactionInfo(c.contract.Contract, "withdraw", opts, amount)
 }
 
 // Get info for withdrawing RPL from the faucet to a specific address
 func (c *RplFaucet) WithdrawTo(to common.Address, amount *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "withdrawTo", opts, to, amount)
+	return c.txMgr.CreateTransactionInfo(c.contract.Contract, "withdrawTo", opts, to, amount)
 }
 
 // Set the withdrawal period, in blocks
 func (c *RplFaucet) SetWithdrawalPeriod(period *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "setWithdrawalPeriod", opts, period)
+	return c.txMgr.CreateTransactionInfo(c.contract.Contract, "setWithdrawalPeriod", opts, period)
 }
 
 // Set the max total withdrawal amount per period
 func (c *RplFaucet) SetMaxWithdrawalPerPeriod(max *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "setMaxWithdrawalPerPeriod", opts, max)
+	return c.txMgr.CreateTransactionInfo(c.contract.Contract, "setMaxWithdrawalPerPeriod", opts, max)
 }
 
 // Set the withdrawal fee
 func (c *RplFaucet) SetWithdrawalFee(fee *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "setWithdrawalFee", opts, fee)
+	return c.txMgr.CreateTransactionInfo(c.contract.Contract, "setWithdrawalFee", opts, fee)
 }

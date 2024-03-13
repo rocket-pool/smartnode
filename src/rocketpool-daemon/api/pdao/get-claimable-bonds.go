@@ -53,8 +53,8 @@ func (f *protocolDaoGetClaimableBondsContextFactory) RegisterRoute(router *mux.R
 type protocolDaoGetClaimableBondsContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
-	cfg         *config.RocketPoolConfig
-	bc          beacon.Client
+	cfg         *config.SmartNodeConfig
+	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
 	pdaoMgr *protocol.ProtocolDaoManager
@@ -320,7 +320,7 @@ func isRewardedIndex(defeatIndex uint64, nodeIndex uint64) bool {
 	return false
 }
 
-func getElBlockForTimestamp(bc beacon.Client, beaconCfg beacon.Eth2Config, creationTime time.Time) (*big.Int, error) {
+func getElBlockForTimestamp(bc beacon.IBeaconClient, beaconCfg beacon.Eth2Config, creationTime time.Time) (*big.Int, error) {
 	// Get the slot number the first proposal was created on
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 	secondsPerSlot := time.Second * time.Duration(beaconCfg.SecondsPerSlot)

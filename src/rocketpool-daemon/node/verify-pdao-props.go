@@ -39,10 +39,10 @@ type defeat struct {
 type VerifyPdaoProps struct {
 	sp                  *services.ServiceProvider
 	log                 *log.ColorLogger
-	cfg                 *config.RocketPoolConfig
+	cfg                 *config.SmartNodeConfig
 	w                   *wallet.LocalWallet
 	rp                  *rocketpool.RocketPool
-	bc                  beacon.Client
+	bc                  beacon.IBeaconClient
 	gasThreshold        float64
 	maxFee              *big.Int
 	maxPriorityFee      *big.Int

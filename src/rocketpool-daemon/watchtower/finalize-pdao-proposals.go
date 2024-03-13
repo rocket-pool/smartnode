@@ -3,11 +3,10 @@ package watchtower
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/node-manager-core/eth"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
@@ -23,9 +22,9 @@ import (
 type FinalizePdaoProposals struct {
 	sp  *services.ServiceProvider
 	log log.ColorLogger
-	cfg *config.RocketPoolConfig
+	cfg *config.SmartNodeConfig
 	w   *wallet.LocalWallet
-	ec  core.ExecutionClient
+	ec  eth.IExecutionClient
 	rp  *rocketpool.RocketPool
 }
 

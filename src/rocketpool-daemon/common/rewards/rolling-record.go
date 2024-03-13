@@ -1,16 +1,17 @@
 package rewards
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
+	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/shared"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
@@ -29,12 +30,12 @@ type RollingRecord struct {
 	SmartnodeVersion  string                   `json:"smartnodeVersion,omitempty"`
 
 	// Private fields
-	bc                 beacon.Client       `json:"-"`
-	beaconConfig       *beacon.Eth2Config  `json:"-"`
-	genesisTime        time.Time           `json:"-"`
-	log                *log.ColorLogger    `json:"-"`
-	logPrefix          string              `json:"-"`
-	intervalDutiesInfo *IntervalDutiesInfo `json:"-"`
+	bc                 beacon.IBeaconClient `json:"-"`
+	beaconConfig       *beacon.Eth2Config   `json:"-"`
+	genesisTime        time.Time            `json:"-"`
+	log                *log.ColorLogger     `json:"-"`
+	logPrefix          string               `json:"-"`
+	intervalDutiesInfo *IntervalDutiesInfo  `json:"-"`
 
 	// Constants for convenience
 	one          *big.Int `json:"-"`
@@ -42,7 +43,7 @@ type RollingRecord struct {
 }
 
 // Create a new rolling record wrapper
-func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, startSlot uint64, beaconConfig *beacon.Eth2Config, rewardsInterval uint64) *RollingRecord {
+func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.IBeaconClient, startSlot uint64, beaconConfig *beacon.Eth2Config, rewardsInterval uint64) *RollingRecord {
 	return &RollingRecord{
 		StartSlot:         startSlot,
 		LastDutiesSlot:    0,
@@ -65,7 +66,7 @@ func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, 
 }
 
 // Load an existing record from serialized JSON data
-func DeserializeRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, beaconConfig *beacon.Eth2Config, bytes []byte) (*RollingRecord, error) {
+func DeserializeRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.IBeaconClient, beaconConfig *beacon.Eth2Config, bytes []byte) (*RollingRecord, error) {
 	record := &RollingRecord{
 		bc:           bc,
 		beaconConfig: beaconConfig,
@@ -90,7 +91,7 @@ func DeserializeRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.
 
 // Update the record to the requested slot, using the provided state as a reference.
 // Requires the epoch *after* the requested slot to be finalized so it can accurately count attestations.
-func (r *RollingRecord) UpdateToSlot(slot uint64, state *state.NetworkState) error {
+func (r *RollingRecord) UpdateToSlot(context context.Context, slot uint64, state *state.NetworkState) error {
 
 	// Get the slot to start processing from
 	startSlot := r.LastDutiesSlot + 1
@@ -118,7 +119,7 @@ func (r *RollingRecord) UpdateToSlot(slot uint64, state *state.NetworkState) err
 		}
 
 		// Process the epoch's attestation submissions
-		err = r.processAttestationsInEpoch(epoch, state)
+		err = r.processAttestationsInEpoch(context, epoch, state)
 		if err != nil {
 			return fmt.Errorf("error processing attestations in epoch %d: %w", epoch, err)
 		}
@@ -126,7 +127,7 @@ func (r *RollingRecord) UpdateToSlot(slot uint64, state *state.NetworkState) err
 	}
 
 	// Process the epoch after the last one to check for late attestations / attestations of the last slot
-	err := r.processAttestationsInEpoch(stateEpoch+1, state)
+	err := r.processAttestationsInEpoch(context, stateEpoch+1, state)
 	if err != nil {
 		return fmt.Errorf("error processing attestations in epoch %d: %w", stateEpoch+1, err)
 	}
@@ -309,7 +310,7 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, endSlot uint64, state *s
 
 // Process the attestations proposed within the given epoch against the existing record, using
 // the provided state for EL <-> CL mapping
-func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.NetworkState) error {
+func (r *RollingRecord) processAttestationsInEpoch(context context.Context, epoch uint64, state *state.NetworkState) error {
 
 	slotsPerEpoch := r.beaconConfig.SlotsPerEpoch
 	var wg errgroup.Group
@@ -321,7 +322,7 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 		i := i
 		slot := epoch*slotsPerEpoch + i
 		wg.Go(func() error {
-			attestations, found, err := r.bc.GetAttestations(fmt.Sprint(slot))
+			attestations, found, err := r.bc.GetAttestations(context, fmt.Sprint(slot))
 			if err != nil {
 				return fmt.Errorf("error getting attestations for slot %d: %w", slot, err)
 			}

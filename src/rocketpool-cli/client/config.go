@@ -12,7 +12,7 @@ import (
 
 // Load the config
 // Returns the RocketPoolConfig and whether or not it was newly generated
-func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
+func (c *Client) LoadConfig() (*config.SmartNodeConfig, bool, error) {
 	settingsFilePath := filepath.Join(c.Context.ConfigPath, SettingsFile)
 	expandedPath, err := homedir.Expand(settingsFilePath)
 	if err != nil {
@@ -34,7 +34,7 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 }
 
 // Load the backup config
-func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
+func (c *Client) LoadBackupConfig() (*config.SmartNodeConfig, error) {
 	settingsFilePath := filepath.Join(c.Context.ConfigPath, BackupSettingsFile)
 	expandedPath, err := homedir.Expand(settingsFilePath)
 	if err != nil {
@@ -45,7 +45,7 @@ func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
 }
 
 // Save the config
-func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
+func (c *Client) SaveConfig(cfg *config.SmartNodeConfig) error {
 	settingsFileDirectoryPath, err := homedir.Expand(c.Context.ConfigPath)
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func (c *Client) IsFirstRun() (bool, error) {
 }
 
 // Load the Prometheus template, do a template variable substitution, and save it
-func (c *Client) UpdatePrometheusConfiguration(config *config.RocketPoolConfig) error {
+func (c *Client) UpdatePrometheusConfiguration(config *config.SmartNodeConfig) error {
 	prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.Context.ConfigPath, PrometheusConfigTemplate))
 	if err != nil {
 		return fmt.Errorf("Error expanding Prometheus template path: %w", err)

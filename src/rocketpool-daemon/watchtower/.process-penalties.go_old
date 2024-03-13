@@ -40,11 +40,11 @@ type processPenalties struct {
 	c              *cli.Context
 	log            log.ColorLogger
 	errLog         log.ColorLogger
-	cfg            *config.RocketPoolConfig
+	cfg            *config.SmartNodeConfig
 	w              *wallet.LocalWallet
 	rp             *rocketpool.RocketPool
 	ec             rocketpool.ExecutionClient
-	bc             beacon.Client
+	bc             beacon.IBeaconClient
 	lock           *sync.Mutex
 	isRunning      bool
 	maxFee         *big.Int

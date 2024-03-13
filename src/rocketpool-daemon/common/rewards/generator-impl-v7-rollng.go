@@ -11,11 +11,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
@@ -29,8 +29,8 @@ type treeGeneratorImpl_v7_rolling struct {
 	log                  *log.ColorLogger
 	logPrefix            string
 	rp                   *rocketpool.RocketPool
-	cfg                  *config.RocketPoolConfig
-	bc                   beacon.Client
+	cfg                  *config.SmartNodeConfig
+	bc                   beacon.IBeaconClient
 	opts                 *bind.CallOpts
 	smoothingPoolBalance *big.Int
 	intervalDutiesInfo   *IntervalDutiesInfo
@@ -94,7 +94,7 @@ func (r *treeGeneratorImpl_v7_rolling) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v7_rolling) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (sharedtypes.IRewardsFile, error) {
+func (r *treeGeneratorImpl_v7_rolling) generateTree(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (sharedtypes.IRewardsFile, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -107,7 +107,7 @@ func (r *treeGeneratorImpl_v7_rolling) generateTree(rp *rocketpool.RocketPool, c
 	}
 
 	// Set the network name
-	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+	r.rewardsFile.Network = fmt.Sprint(cfg.Network.Value)
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
 	r.rewardsFile.MinipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
 	r.rewardsFile.MinipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
@@ -139,7 +139,7 @@ func (r *treeGeneratorImpl_v7_rolling) generateTree(rp *rocketpool.RocketPool, c
 	}
 
 	// Calculate the ETH rewards
-	err = r.calculateEthRewards(true)
+	err = r.calculateEthRewards(context, true)
 	if err != nil {
 		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
@@ -166,7 +166,7 @@ func (r *treeGeneratorImpl_v7_rolling) generateTree(rp *rocketpool.RocketPool, c
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v7_rolling) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error) {
+func (r *treeGeneratorImpl_v7_rolling) approximateStakerShareOfSmoothingPool(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
@@ -177,7 +177,7 @@ func (r *treeGeneratorImpl_v7_rolling) approximateStakerShareOfSmoothingPool(rp 
 	}
 
 	// Set the network name
-	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+	r.rewardsFile.Network = fmt.Sprint(cfg.Network.Value)
 	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
 	r.rewardsFile.MinipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
 	r.rewardsFile.MinipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
@@ -203,7 +203,7 @@ func (r *treeGeneratorImpl_v7_rolling) approximateStakerShareOfSmoothingPool(rp 
 	}
 
 	// Calculate the ETH rewards
-	err := r.calculateEthRewards(false)
+	err := r.calculateEthRewards(context, false)
 	if err != nil {
 		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
@@ -434,7 +434,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateRplRewards() error {
 }
 
 // Calculates the ETH rewards for the given interval
-func (r *treeGeneratorImpl_v7_rolling) calculateEthRewards(checkBeaconPerformance bool) error {
+func (r *treeGeneratorImpl_v7_rolling) calculateEthRewards(context context.Context, checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
 	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
@@ -451,7 +451,7 @@ func (r *treeGeneratorImpl_v7_rolling) calculateEthRewards(checkBeaconPerformanc
 	}
 
 	// Get the EL block for the start of this interval
-	startElBlockHeader, err := r.getStartBlocksForInterval()
+	startElBlockHeader, err := r.getStartBlocksForInterval(context)
 	if err != nil {
 		return err
 	}
@@ -637,11 +637,11 @@ func (r *treeGeneratorImpl_v7_rolling) validateNetwork(network uint64) (bool, er
 }
 
 // Gets the EL header for the given interval's start block
-func (r *treeGeneratorImpl_v7_rolling) getStartBlocksForInterval() (*types.Header, error) {
+func (r *treeGeneratorImpl_v7_rolling) getStartBlocksForInterval(context context.Context) (*types.Header, error) {
 	// Get the Beacon block for the start slot of the record
 	r.rewardsFile.ConsensusStartBlock = r.rollingRecord.StartSlot
 	r.rewardsFile.MinipoolPerformanceFile.ConsensusStartBlock = r.rollingRecord.StartSlot
-	beaconBlock, exists, err := r.bc.GetBeaconBlock(fmt.Sprint(r.rollingRecord.StartSlot))
+	beaconBlock, exists, err := r.bc.GetBeaconBlock(context, fmt.Sprint(r.rollingRecord.StartSlot))
 	if err != nil {
 		return nil, fmt.Errorf("error verifying block from previous interval: %w", err)
 	}
@@ -653,7 +653,7 @@ func (r *treeGeneratorImpl_v7_rolling) getStartBlocksForInterval() (*types.Heade
 	elBlockNumber := beaconBlock.ExecutionBlockNumber
 	r.rewardsFile.ExecutionStartBlock = elBlockNumber
 	r.rewardsFile.MinipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
-	startElHeader, err := r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
+	startElHeader, err := r.rp.Client.HeaderByNumber(context, big.NewInt(int64(elBlockNumber)))
 	if err != nil {
 		return nil, fmt.Errorf("error getting EL header for block %d: %w", elBlockNumber, err)
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/input"
@@ -62,7 +61,7 @@ func (c *walletSendMessageContext) PrepareData(data *api.TxInfoData, opts *bind.
 		return err
 	}
 
-	txInfo, err := core.NewTransactionInfoRaw(ec, c.address, c.message, opts)
+	txInfo, err := eth.NewTransactionInfoRaw(ec, c.address, c.message, opts)
 	if err != nil {
 		return fmt.Errorf("error creating TX info: %w", err)
 	}

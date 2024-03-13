@@ -97,7 +97,7 @@ type SmartNodeResources struct {
 }
 
 // Creates a new resource collection for the given network
-func NewSmartNodeResources(network config.Network) *SmartNodeResources {
+func newSmartNodeResources(network config.Network) *SmartNodeResources {
 	// Mainnet
 	mainnetResources := &SmartNodeResources{
 		NetworkResources:               config.NewResources(config.Network_Mainnet),

@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 )
 
 const (
@@ -28,9 +27,8 @@ var scrollOnce sync.Once
 
 // Binding for the Scroll Messenger
 type ScrollMessenger struct {
-
-	// === Internal fields ===
-	contract *core.Contract
+	contract *eth.Contract
+	txMgr    *eth.TransactionManager
 }
 
 // ====================
@@ -38,7 +36,7 @@ type ScrollMessenger struct {
 // ====================
 
 // Creates a new Scroll Messenger contract binding
-func NewScrollMessenger(address common.Address, client core.ExecutionClient) (*ScrollMessenger, error) {
+func NewScrollMessenger(address common.Address, client eth.IExecutionClient, txMgr *eth.TransactionManager) (*ScrollMessenger, error) {
 	// Parse the ABI
 	var err error
 	scrollOnce.Do(func() {
@@ -53,11 +51,10 @@ func NewScrollMessenger(address common.Address, client core.ExecutionClient) (*S
 	}
 
 	// Create the contract
-	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, scrollMessengerAbi, client, client, client),
-		Address:  &address,
-		ABI:      &scrollMessengerAbi,
-		Client:   client,
+	contract := &eth.Contract{
+		ContractImpl: bind.NewBoundContract(address, scrollMessengerAbi, client, client, client),
+		Address:      address,
+		ABI:          &scrollMessengerAbi,
 	}
 
 	return &ScrollMessenger{
@@ -71,7 +68,7 @@ func NewScrollMessenger(address common.Address, client core.ExecutionClient) (*S
 
 // Check if the RPL rate is stale and needs to be updated
 func (c *ScrollMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
-	core.AddCall(mc, c.contract, out, "rateStale")
+	eth.AddCallToMulticaller(mc, c.contract, out, "rateStale")
 }
 
 // ====================
@@ -80,5 +77,5 @@ func (c *ScrollMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
 
 // Send the latest RPL rate to the L2
 func (c *ScrollMessenger) SubmitRate(l2GasLimit *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "submitRate", opts, l2GasLimit)
+	return c.txMgr.CreateTransactionInfo(c.contract, "submitRate", opts, l2GasLimit)
 }

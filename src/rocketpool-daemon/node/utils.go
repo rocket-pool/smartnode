@@ -8,7 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/config"
 )
 
-func getAutoTxInfo(cfg *config.RocketPoolConfig, logger *log.ColorLogger) (*big.Int, *big.Int) {
+func getAutoTxInfo(cfg *config.SmartNodeConfig, logger *log.ColorLogger) (*big.Int, *big.Int) {
 	// Get the user-requested max fee
 	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
 	var maxFee *big.Int

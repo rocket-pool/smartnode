@@ -11,7 +11,6 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -51,7 +50,7 @@ func (f *nodeSetSmoothingPoolRegistrationStatusContextFactory) RegisterRoute(rou
 type nodeSetSmoothingPoolRegistrationStatusContext struct {
 	handler *NodeHandler
 	rp      *rocketpool.RocketPool
-	ec      core.ExecutionClient
+	ec      eth.IExecutionClient
 
 	state     bool
 	node      *node.Node

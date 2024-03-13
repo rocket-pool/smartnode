@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 )
 
 const (
@@ -27,9 +27,7 @@ var scrollFeeEstimatorOnce sync.Once
 
 // Binding for the Scroll Fee Estimator
 type ScrollFeeEstimator struct {
-
-	// === Internal fields ===
-	contract *core.Contract
+	contract *eth.Contract
 }
 
 // ====================
@@ -37,7 +35,7 @@ type ScrollFeeEstimator struct {
 // ====================
 
 // Creates a new Scroll Fee Estimator contract binding
-func NewScrollFeeEstimator(address common.Address, client core.ExecutionClient) (*ScrollFeeEstimator, error) {
+func NewScrollFeeEstimator(address common.Address, client eth.IExecutionClient) (*ScrollFeeEstimator, error) {
 	// Parse the ABI
 	var err error
 	scrollFeeEstimatorOnce.Do(func() {
@@ -52,11 +50,10 @@ func NewScrollFeeEstimator(address common.Address, client core.ExecutionClient) 
 	}
 
 	// Create the contract
-	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, scrollFeeEstimatorAbi, client, client, client),
-		Address:  &address,
-		ABI:      &scrollFeeEstimatorAbi,
-		Client:   client,
+	contract := &eth.Contract{
+		ContractImpl: bind.NewBoundContract(address, scrollFeeEstimatorAbi, client, client, client),
+		Address:      address,
+		ABI:          &scrollFeeEstimatorAbi,
 	}
 
 	return &ScrollFeeEstimator{
@@ -70,5 +67,5 @@ func NewScrollFeeEstimator(address common.Address, client core.ExecutionClient) 
 
 // Estimate the fee for sending a message to the Scroll L2
 func (c *ScrollFeeEstimator) EstimateCrossDomainMessageFee(mc *batch.MultiCaller, out **big.Int, l2GasLimit *big.Int) {
-	core.AddCall(mc, c.contract, out, "estimateCrossDomainMessageFee", l2GasLimit)
+	eth.AddCallToMulticaller(mc, c.contract, out, "estimateCrossDomainMessageFee", l2GasLimit)
 }

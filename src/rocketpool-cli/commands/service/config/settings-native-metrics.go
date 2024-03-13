@@ -11,7 +11,7 @@ type NativeMetricsConfigPage struct {
 	home             *settingsNativeHome
 	page             *page
 	layout           *standardLayout
-	masterConfig     *config.RocketPoolConfig
+	masterConfig     *config.SmartNodeConfig
 	enableMetricsBox *parameterizedFormItem
 }
 

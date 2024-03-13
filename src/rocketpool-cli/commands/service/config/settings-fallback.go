@@ -12,7 +12,7 @@ type FallbackConfigPage struct {
 	home                *settingsHome
 	page                *page
 	layout              *standardLayout
-	masterConfig        *config.RocketPoolConfig
+	masterConfig        *config.SmartNodeConfig
 	useFallbackBox      *parameterizedFormItem
 	reconnectDelay      *parameterizedFormItem
 	fallbackNormalItems []*parameterizedFormItem

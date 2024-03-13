@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 )
 
 const (
@@ -27,9 +26,8 @@ var snapshotOnce sync.Once
 
 // Binding for Snapshot Delegation
 type SnapshotDelegation struct {
-
-	// === Internal fields ===
-	contract *core.Contract
+	contract *eth.Contract
+	txMgr    *eth.TransactionManager
 }
 
 // ====================
@@ -37,7 +35,7 @@ type SnapshotDelegation struct {
 // ====================
 
 // Creates a new Snapshot Delegation contract binding
-func NewSnapshotDelegation(address common.Address, client core.ExecutionClient) (*SnapshotDelegation, error) {
+func NewSnapshotDelegation(address common.Address, client eth.IExecutionClient, txMgr *eth.TransactionManager) (*SnapshotDelegation, error) {
 	// Parse the ABI
 	var err error
 	snapshotOnce.Do(func() {
@@ -52,11 +50,10 @@ func NewSnapshotDelegation(address common.Address, client core.ExecutionClient) 
 	}
 
 	// Create the contract
-	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, snapshotAbi, client, client, client),
-		Address:  &address,
-		ABI:      &snapshotAbi,
-		Client:   client,
+	contract := &eth.Contract{
+		ContractImpl: bind.NewBoundContract(address, snapshotAbi, client, client, client),
+		Address:      address,
+		ABI:          &snapshotAbi,
 	}
 
 	return &SnapshotDelegation{
@@ -70,7 +67,7 @@ func NewSnapshotDelegation(address common.Address, client core.ExecutionClient) 
 
 // Get the delegate for the provided address
 func (c *SnapshotDelegation) Delegation(mc *batch.MultiCaller, out *common.Address, address common.Address, id common.Hash) {
-	core.AddCall(mc, c.contract, out, "delegation", address, id)
+	eth.AddCallToMulticaller(mc, c.contract, out, "delegation", address, id)
 }
 
 // ====================
@@ -79,10 +76,10 @@ func (c *SnapshotDelegation) Delegation(mc *batch.MultiCaller, out *common.Addre
 
 // Get info for setting the snapshot delegate
 func (c *SnapshotDelegation) SetDelegate(id common.Hash, delegate common.Address, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "setDelegate", opts, id, delegate)
+	return c.txMgr.CreateTransactionInfo(c.contract, "setDelegate", opts, id, delegate)
 }
 
 // Get info for clearing the snapshot delegate
 func (c *SnapshotDelegation) ClearDelegate(id common.Hash, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "clearDelegate", opts, id)
+	return c.txMgr.CreateTransactionInfo(c.contract, "clearDelegate", opts, id)
 }

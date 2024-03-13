@@ -12,12 +12,12 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/node-manager-core/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"golang.org/x/sync/errgroup"
 
@@ -43,11 +43,11 @@ type SubmitNetworkBalances struct {
 	sp        *services.ServiceProvider
 	log       *log.ColorLogger
 	errLog    *log.ColorLogger
-	cfg       *config.RocketPoolConfig
+	cfg       *config.SmartNodeConfig
 	w         *wallet.LocalWallet
-	ec        core.ExecutionClient
+	ec        eth.IExecutionClient
 	rp        *rocketpool.RocketPool
-	bc        beacon.Client
+	bc        beacon.IBeaconClient
 	lock      *sync.Mutex
 	isRunning bool
 }
@@ -452,7 +452,7 @@ func (t *SubmitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 }
 
 // Get minipool balance details
-func (t *SubmitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, cfg *config.RocketPoolConfig) minipoolBalanceDetails {
+func (t *SubmitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, cfg *config.SmartNodeConfig) minipoolBalanceDetails {
 	status := mpd.Status
 	userDepositBalance := mpd.UserDepositBalance
 	mpType := mpd.DepositType

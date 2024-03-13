@@ -15,7 +15,6 @@ import (
 
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -57,9 +56,9 @@ func (f *minipoolStatusContextFactory) RegisterRoute(router *mux.Router) {
 type minipoolStatusContext struct {
 	handler *MinipoolHandler
 	rp      *rocketpool.RocketPool
-	bc      beacon.Client
+	bc      beacon.IBeaconClient
 
-	delegate      *core.Contract
+	delegate      *eth.Contract
 	pSettings     *protocol.ProtocolDaoSettings
 	oSettings     *oracle.OracleDaoSettings
 	reth          *tokens.TokenReth

@@ -13,7 +13,6 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
@@ -141,7 +140,7 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 				Nonce: opts.Nonce,
 				Value: c.amount,
 			}
-			txInfo, err = core.NewTransactionInfoRaw(ec, c.recipient, nil, newOpts)
+			txInfo, err = eth.NewTransactionInfoRaw(ec, c.recipient, nil, newOpts)
 		}
 		if err != nil {
 			return fmt.Errorf("error getting TX info for Transfer: %w", err)

@@ -10,7 +10,6 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -56,7 +55,7 @@ type networkStatsContext struct {
 	mpMgr         *minipool.MinipoolManager
 	networkMgr    *network.NetworkManager
 	reth          *tokens.TokenReth
-	smoothingPool *core.Contract
+	smoothingPool *eth.Contract
 }
 
 func (c *networkStatsContext) Initialize() error {

@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 )
 
 const (
@@ -27,9 +27,7 @@ var rplTwapPoolOnce sync.Once
 
 // Binding for the zkSync Era Messenger
 type RplTwapPool struct {
-
-	// === Internal fields ===
-	contract *core.Contract
+	contract *eth.Contract
 }
 
 // Response from the Observe function
@@ -43,7 +41,7 @@ type PoolObserveResponse struct {
 // ====================
 
 // Creates a new RPL TWAP Pool contract binding
-func NewRplTwapPool(address common.Address, client core.ExecutionClient) (*RplTwapPool, error) {
+func NewRplTwapPool(address common.Address, client eth.IExecutionClient) (*RplTwapPool, error) {
 	// Parse the ABI
 	var err error
 	rplTwapPoolOnce.Do(func() {
@@ -58,11 +56,10 @@ func NewRplTwapPool(address common.Address, client core.ExecutionClient) (*RplTw
 	}
 
 	// Create the contract
-	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, rplTwapPoolAbi, client, client, client),
-		Address:  &address,
-		ABI:      &rplTwapPoolAbi,
-		Client:   client,
+	contract := &eth.Contract{
+		ContractImpl: bind.NewBoundContract(address, rplTwapPoolAbi, client, client, client),
+		Address:      address,
+		ABI:          &rplTwapPoolAbi,
 	}
 
 	return &RplTwapPool{
@@ -76,5 +73,5 @@ func NewRplTwapPool(address common.Address, client core.ExecutionClient) (*RplTw
 
 // Get the TWAP RPL price from the pool
 func (c *RplTwapPool) Observe(mc *batch.MultiCaller, out *PoolObserveResponse, secondsAgos []uint32) {
-	core.AddCallRaw(mc, c.contract, out, "observe", secondsAgos)
+	eth.AddCallToMulticaller(mc, c.contract, out, "observe", secondsAgos)
 }

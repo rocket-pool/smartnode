@@ -14,8 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/nodeset-org/eth-utils/eth"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
@@ -32,10 +32,10 @@ type GenerateRewardsTree struct {
 	sp        *services.ServiceProvider
 	log       log.ColorLogger
 	errLog    log.ColorLogger
-	cfg       *config.RocketPoolConfig
+	cfg       *config.SmartNodeConfig
 	rp        *rocketpool.RocketPool
-	ec        core.ExecutionClient
-	bc        beacon.Client
+	ec        eth.IExecutionClient
+	bc        beacon.IBeaconClient
 	lock      *sync.Mutex
 	isRunning bool
 	m         *state.NetworkStateManager

@@ -12,7 +12,7 @@ type MevBoostConfigPage struct {
 	home                  *settingsHome
 	page                  *page
 	layout                *standardLayout
-	masterConfig          *config.RocketPoolConfig
+	masterConfig          *config.SmartNodeConfig
 	enableBox             *parameterizedFormItem
 	modeBox               *parameterizedFormItem
 	selectionModeBox      *parameterizedFormItem

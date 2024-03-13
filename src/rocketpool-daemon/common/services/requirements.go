@@ -10,7 +10,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/node"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Settings
@@ -80,7 +79,7 @@ func (sp *ServiceProvider) RequireNodeRegistered(context context.Context) error 
 
 func (sp *ServiceProvider) RequireRplFaucet() error {
 	if sp.rplFaucet == nil {
-		network := string(sp.cfg.Smartnode.Network.Value.(cfgtypes.Network))
+		network := string(sp.cfg.Network.Value)
 		return fmt.Errorf("The RPL faucet is not available on the %s network.", network)
 	}
 	return nil
@@ -88,7 +87,7 @@ func (sp *ServiceProvider) RequireRplFaucet() error {
 
 func (sp *ServiceProvider) RequireSnapshot() error {
 	if sp.snapshotDelegation == nil {
-		network := string(sp.cfg.Smartnode.Network.Value.(cfgtypes.Network))
+		network := string(sp.cfg.Network.Value)
 		return fmt.Errorf("Snapshot voting is not available on the %s network.", network)
 	}
 	return nil

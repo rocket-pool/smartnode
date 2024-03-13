@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	ens "github.com/wealdtech/go-ens/v3"
@@ -93,7 +92,7 @@ func (c *walletSetEnsNameContext) PrepareData(data *api.WalletSetEnsNameData, op
 	}
 
 	// Derive the TXInfo
-	txInfo, err := core.NewTransactionInfoRaw(ec, *tx.To(), tx.Data(), opts)
+	txInfo, err := eth.NewTransactionInfoRaw(ec, *tx.To(), tx.Data(), opts)
 	if err != nil {
 		return fmt.Errorf("error getting TX info for SetName: %w", err)
 	}

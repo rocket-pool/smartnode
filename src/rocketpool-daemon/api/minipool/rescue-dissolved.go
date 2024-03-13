@@ -57,7 +57,7 @@ type minipoolRescueDissolvedContext struct {
 	depositAmounts    []*big.Int
 	rp                *rocketpool.RocketPool
 	w                 *wallet.LocalWallet
-	bc                rpbeacon.Client
+	bc                rpbeacon.IBeaconClient
 
 	mpMgr *minipool.MinipoolManager
 }

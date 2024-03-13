@@ -53,9 +53,9 @@ func (f *protocolDaoOverrideVoteOnProposalContextFactory) RegisterRoute(router *
 
 type protocolDaoOverrideVoteOnProposalContext struct {
 	handler     *ProtocolDaoHandler
-	cfg         *config.RocketPoolConfig
+	cfg         *config.SmartNodeConfig
 	rp          *rocketpool.RocketPool
-	bc          beacon.Client
+	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
 	proposalID      uint64

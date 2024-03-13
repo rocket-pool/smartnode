@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 )
 
 const (
@@ -28,9 +27,8 @@ var arbitrumOnce sync.Once
 
 // Binding for the Arbitrum Messenger
 type ArbitrumMessenger struct {
-
-	// === Internal fields ===
-	contract *core.Contract
+	contract *eth.Contract
+	txMgr    *eth.TransactionManager
 }
 
 // ====================
@@ -38,7 +36,7 @@ type ArbitrumMessenger struct {
 // ====================
 
 // Creates a new Arbitrum Messenger contract binding
-func NewArbitrumMessenger(address common.Address, client core.ExecutionClient) (*ArbitrumMessenger, error) {
+func NewArbitrumMessenger(address common.Address, client eth.IExecutionClient, txMgr *eth.TransactionManager) (*ArbitrumMessenger, error) {
 	// Parse the ABI
 	var err error
 	arbitrumOnce.Do(func() {
@@ -53,15 +51,15 @@ func NewArbitrumMessenger(address common.Address, client core.ExecutionClient) (
 	}
 
 	// Create the contract
-	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, arbitrumMessengerAbi, client, client, client),
-		Address:  &address,
-		ABI:      &arbitrumMessengerAbi,
-		Client:   client,
+	contract := &eth.Contract{
+		ContractImpl: bind.NewBoundContract(address, arbitrumMessengerAbi, client, client, client),
+		Address:      address,
+		ABI:          &arbitrumMessengerAbi,
 	}
 
 	return &ArbitrumMessenger{
 		contract: contract,
+		txMgr:    txMgr,
 	}, nil
 }
 
@@ -71,7 +69,7 @@ func NewArbitrumMessenger(address common.Address, client core.ExecutionClient) (
 
 // Check if the RPL rate is stale and needs to be updated
 func (c *ArbitrumMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
-	core.AddCall(mc, c.contract, out, "rateStale")
+	eth.AddCallToMulticaller(mc, c.contract, out, "rateStale")
 }
 
 // ====================
@@ -80,5 +78,5 @@ func (c *ArbitrumMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
 
 // Send the latest RPL rate to the L2
 func (c *ArbitrumMessenger) SubmitRate(maxSubmissionCost *big.Int, gasLimit *big.Int, gasPriceBid *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "submitRate", opts, maxSubmissionCost, gasLimit, gasPriceBid)
+	return c.txMgr.CreateTransactionInfo(c.contract, "submitRate", opts, maxSubmissionCost, gasLimit, gasPriceBid)
 }

@@ -27,10 +27,10 @@ import (
 type DistributeMinipools struct {
 	sp                  *services.ServiceProvider
 	log                 log.ColorLogger
-	cfg                 *config.RocketPoolConfig
+	cfg                 *config.SmartNodeConfig
 	w                   *wallet.LocalWallet
 	rp                  *rocketpool.RocketPool
-	bc                  beacon.Client
+	bc                  beacon.IBeaconClient
 	d                   *client.Client
 	mpMgr               *minipool.MinipoolManager
 	gasThreshold        float64

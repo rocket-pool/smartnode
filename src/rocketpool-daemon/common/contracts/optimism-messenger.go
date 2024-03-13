@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 )
 
 const (
@@ -27,9 +26,8 @@ var optimismOnce sync.Once
 
 // Binding for the Optimism Messenger
 type OptimismMessenger struct {
-
-	// === Internal fields ===
-	contract *core.Contract
+	contract *eth.Contract
+	txMgr    *eth.TransactionManager
 }
 
 // ====================
@@ -37,7 +35,7 @@ type OptimismMessenger struct {
 // ====================
 
 // Creates a new Optimism Messenger contract binding
-func NewOptimismMessenger(address common.Address, client core.ExecutionClient) (*OptimismMessenger, error) {
+func NewOptimismMessenger(address common.Address, client eth.IExecutionClient, txMgr *eth.TransactionManager) (*OptimismMessenger, error) {
 	// Parse the ABI
 	var err error
 	optimismOnce.Do(func() {
@@ -52,15 +50,15 @@ func NewOptimismMessenger(address common.Address, client core.ExecutionClient) (
 	}
 
 	// Create the contract
-	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, optimismMessengerAbi, client, client, client),
-		Address:  &address,
-		ABI:      &optimismMessengerAbi,
-		Client:   client,
+	contract := &eth.Contract{
+		ContractImpl: bind.NewBoundContract(address, optimismMessengerAbi, client, client, client),
+		Address:      address,
+		ABI:          &optimismMessengerAbi,
 	}
 
 	return &OptimismMessenger{
 		contract: contract,
+		txMgr:    txMgr,
 	}, nil
 }
 
@@ -70,7 +68,7 @@ func NewOptimismMessenger(address common.Address, client core.ExecutionClient) (
 
 // Check if the RPL rate is stale and needs to be updated
 func (c *OptimismMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
-	core.AddCall(mc, c.contract, out, "rateStale")
+	eth.AddCallToMulticaller(mc, c.contract, out, "rateStale")
 }
 
 // ====================
@@ -79,5 +77,5 @@ func (c *OptimismMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
 
 // Send the latest RPL rate to the L2
 func (c *OptimismMessenger) SubmitRate(opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "submitRate", opts)
+	return c.txMgr.CreateTransactionInfo(c.contract, "submitRate", opts)
 }

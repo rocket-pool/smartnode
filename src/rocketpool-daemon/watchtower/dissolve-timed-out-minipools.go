@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/node-manager-core/eth"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
@@ -27,10 +26,10 @@ const MinipoolStatusBatchSize = 20
 type DissolveTimedOutMinipools struct {
 	sp    *services.ServiceProvider
 	log   log.ColorLogger
-	cfg   *config.RocketPoolConfig
+	cfg   *config.SmartNodeConfig
 	w     *wallet.LocalWallet
 	rp    *rocketpool.RocketPool
-	ec    core.ExecutionClient
+	ec    eth.IExecutionClient
 	mpMgr *minipool.MinipoolManager
 }
 

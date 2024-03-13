@@ -55,8 +55,8 @@ func (f *protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory) Registe
 type protocolDaoProposeReplaceMemberOfSecurityCouncilContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
-	cfg         *config.RocketPoolConfig
-	bc          beacon.Client
+	cfg         *config.SmartNodeConfig
+	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
 	existingAddress common.Address

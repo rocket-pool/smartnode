@@ -10,7 +10,7 @@ type NativePage struct {
 	home         *settingsNativeHome
 	page         *page
 	layout       *standardLayout
-	masterConfig *config.RocketPoolConfig
+	masterConfig *config.SmartNodeConfig
 	nativeItems  []*parameterizedFormItem
 }
 

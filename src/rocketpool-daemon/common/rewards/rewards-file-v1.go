@@ -10,7 +10,6 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/types"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	merkletree "github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
@@ -76,7 +75,7 @@ type SmoothingPoolMinipoolPerformance_v1 struct {
 }
 
 func (p *SmoothingPoolMinipoolPerformance_v1) GetPubkey() (beacon.ValidatorPubkey, error) {
-	return types.HexToValidatorPubkey(p.Pubkey)
+	return beacon.HexToValidatorPubkey(p.Pubkey)
 }
 func (p *SmoothingPoolMinipoolPerformance_v1) GetSuccessfulAttestationCount() uint64 {
 	return p.SuccessfulAttestations

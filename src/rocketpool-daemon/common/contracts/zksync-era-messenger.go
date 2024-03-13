@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 )
 
 const (
@@ -28,9 +27,8 @@ var zksyncEraOnce sync.Once
 
 // Binding for the zkSync Era Messenger
 type ZkSyncEraMessenger struct {
-
-	// === Internal fields ===
-	contract *core.Contract
+	contract *eth.Contract
+	txMgr    *eth.TransactionManager
 }
 
 // ====================
@@ -38,7 +36,7 @@ type ZkSyncEraMessenger struct {
 // ====================
 
 // Creates a new zkSync Era Messenger contract binding
-func NewZkSyncEraMessenger(address common.Address, client core.ExecutionClient) (*ZkSyncEraMessenger, error) {
+func NewZkSyncEraMessenger(address common.Address, client eth.IExecutionClient, txMgr *eth.TransactionManager) (*ZkSyncEraMessenger, error) {
 	// Parse the ABI
 	var err error
 	zksyncEraOnce.Do(func() {
@@ -53,11 +51,10 @@ func NewZkSyncEraMessenger(address common.Address, client core.ExecutionClient) 
 	}
 
 	// Create the contract
-	contract := &core.Contract{
-		Contract: bind.NewBoundContract(address, zksyncEraMessengerAbi, client, client, client),
-		Address:  &address,
-		ABI:      &zksyncEraMessengerAbi,
-		Client:   client,
+	contract := &eth.Contract{
+		ContractImpl: bind.NewBoundContract(address, zksyncEraMessengerAbi, client, client, client),
+		Address:      address,
+		ABI:          &zksyncEraMessengerAbi,
 	}
 
 	return &ZkSyncEraMessenger{
@@ -71,7 +68,7 @@ func NewZkSyncEraMessenger(address common.Address, client core.ExecutionClient) 
 
 // Check if the RPL rate is stale and needs to be updated
 func (c *ZkSyncEraMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
-	core.AddCall(mc, c.contract, out, "rateStale")
+	eth.AddCallToMulticaller(mc, c.contract, out, "rateStale")
 }
 
 // ====================
@@ -80,5 +77,5 @@ func (c *ZkSyncEraMessenger) IsRateStale(mc *batch.MultiCaller, out *bool) {
 
 // Send the latest RPL rate to the L2
 func (c *ZkSyncEraMessenger) SubmitRate(l2GasLimit *big.Int, l2GasPerPubdataByteLimit *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return core.NewTransactionInfo(c.contract, "submitRate", opts, l2GasLimit, l2GasPerPubdataByteLimit)
+	return c.txMgr.CreateTransactionInfo(c.contract, "submitRate", opts, l2GasLimit, l2GasPerPubdataByteLimit)
 }

@@ -56,7 +56,7 @@ func (f *minipoolCanChangeCredsContextFactory) RegisterRoute(router *mux.Router)
 type minipoolCanChangeCredsContext struct {
 	handler     *MinipoolHandler
 	rp          *rocketpool.RocketPool
-	bc          beacon.Client
+	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
 	mnemonic        string

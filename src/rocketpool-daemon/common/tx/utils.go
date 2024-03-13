@@ -7,8 +7,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"golang.org/x/sync/errgroup"
 )
@@ -17,13 +17,14 @@ import (
 const TimeoutSafetyFactor time.Duration = 2
 
 // Prints a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, logger *log.ColorLogger, txInfo *eth.TransactionInfo, opts *bind.TransactOpts) error {
+func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *log.ColorLogger, txInfo *eth.TransactionInfo, opts *bind.TransactOpts) error {
 	tx, err := rp.ExecuteTransaction(txInfo, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting transaction: %w", err)
 	}
 
-	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
+	resources := cfg.GetRocketPoolResources()
+	txWatchUrl := resources.TxWatchUrl
 	hashString := tx.Hash().String()
 	logger.Printlnf("Transaction has been submitted with hash %s.", hashString)
 	if txWatchUrl != "" {
@@ -42,13 +43,14 @@ func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, rp *rocketpool.Roc
 }
 
 // Prints a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransactionBatch(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, logger *log.ColorLogger, submissions []*eth.TransactionSubmission, opts *bind.TransactOpts) error {
+func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *log.ColorLogger, submissions []*eth.TransactionSubmission, opts *bind.TransactOpts) error {
 	txs, err := rp.BatchExecuteTransactions(submissions, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting transactions: %w", err)
 	}
 
-	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
+	resources := cfg.GetRocketPoolResources()
+	txWatchUrl := resources.TxWatchUrl
 	if txWatchUrl != "" {
 		logger.Println("Transactions have been submitted. You may follow them progress by visiting:")
 		for _, tx := range txs {

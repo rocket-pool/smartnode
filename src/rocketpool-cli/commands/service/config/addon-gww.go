@@ -15,7 +15,7 @@ type AddonGwwPage struct {
 	addonsPage   *AddonsPage
 	page         *page
 	layout       *standardLayout
-	masterConfig *config.RocketPoolConfig
+	masterConfig *config.SmartNodeConfig
 	addon        addons.SmartnodeAddon
 	enabledBox   *parameterizedFormItem
 	otherParams  []*parameterizedFormItem

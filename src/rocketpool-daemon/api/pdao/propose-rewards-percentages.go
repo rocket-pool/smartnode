@@ -54,8 +54,8 @@ func (f *protocolDaoProposeRewardsPercentagesContextFactory) RegisterRoute(route
 type protocolDaoProposeRewardsPercentagesContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
-	cfg         *config.RocketPoolConfig
-	bc          beacon.Client
+	cfg         *config.SmartNodeConfig
+	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
 	nodePercent *big.Int
