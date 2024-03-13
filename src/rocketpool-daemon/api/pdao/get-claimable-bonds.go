@@ -1,6 +1,7 @@
 package pdao
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -11,12 +12,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -42,7 +43,7 @@ func (f *protocolDaoGetClaimableBondsContextFactory) Create(args url.Values) (*p
 
 func (f *protocolDaoGetClaimableBondsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoGetClaimableBondsContext, api.ProtocolDaoGetClaimableBondsData](
-		router, "get-claimable-bonds", f, f.handler.serviceProvider,
+		router, "get-claimable-bonds", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -68,7 +69,7 @@ func (c *protocolDaoGetClaimableBondsContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -95,11 +96,11 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 	}
 
 	// Get some common vars
-	beaconCfg, err := c.bc.GetEth2Config()
+	beaconCfg, err := c.bc.GetEth2Config(c.handler.context)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon config: %w", err)
 	}
-	intervalSize := big.NewInt(int64(c.cfg.Geth.EventLogInterval))
+	intervalSize := big.NewInt(int64(config.EventLogInterval))
 
 	// Get the lists of proposals / challenge indices to check the state for
 	propInfos := map[uint64]*proposalInfo{}
@@ -132,15 +133,16 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 			propInfos[prop.ID] = propInfo
 
 			// Get the events for all challenges against this proposal
-			startBlock, err := getElBlockForTimestamp(c.bc, beaconCfg, prop.CreatedTime.Formatted())
+			startBlock, err := getElBlockForTimestamp(c.handler.context, c.bc, beaconCfg, prop.CreatedTime.Formatted())
 			if err != nil {
 				return fmt.Errorf("error getting creation block for proposal %d: %w", prop.ID, err)
 			}
-			endBlock, err := getElBlockForTimestamp(c.bc, beaconCfg, prop.VotingStartTime.Formatted()) // Start of voting = end of challenge period
+			endBlock, err := getElBlockForTimestamp(c.handler.context, c.bc, beaconCfg, prop.VotingStartTime.Formatted()) // Start of voting = end of challenge period
 			if err != nil {
 				return fmt.Errorf("error getting voting start block for proposal %d: %w", prop.ID, err)
 			}
-			challengeEvents, err := c.pdaoMgr.GetChallengeSubmittedEvents([]uint64{prop.ID}, intervalSize, startBlock, endBlock, nil)
+			resources := c.cfg.GetRocketPoolResources()
+			challengeEvents, err := c.pdaoMgr.GetChallengeSubmittedEvents([]uint64{prop.ID}, intervalSize, startBlock, endBlock, resources.PreviousProtocolDaoVerifierAddresses, nil)
 			if err != nil {
 				return fmt.Errorf("error scanning for proposal %d's ChallengeSubmitted events: %w", prop.ID, err)
 			}
@@ -320,14 +322,14 @@ func isRewardedIndex(defeatIndex uint64, nodeIndex uint64) bool {
 	return false
 }
 
-func getElBlockForTimestamp(bc beacon.IBeaconClient, beaconCfg beacon.Eth2Config, creationTime time.Time) (*big.Int, error) {
+func getElBlockForTimestamp(context context.Context, bc beacon.IBeaconClient, beaconCfg beacon.Eth2Config, creationTime time.Time) (*big.Int, error) {
 	// Get the slot number the first proposal was created on
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 	secondsPerSlot := time.Second * time.Duration(beaconCfg.SecondsPerSlot)
 	startSlot := uint64(creationTime.Sub(genesisTime) / secondsPerSlot)
 
 	// Get the Beacon block for the slot
-	block, exists, err := bc.GetBeaconBlock(fmt.Sprint(startSlot))
+	block, exists, err := bc.GetBeaconBlock(context, fmt.Sprint(startSlot))
 	if err != nil {
 		return nil, fmt.Errorf("error getting Beacon block at slot %d: %w", startSlot, err)
 	}

@@ -8,11 +8,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -40,7 +40,7 @@ func (f *walletRecoverContextFactory) Create(args url.Values) (*walletRecoverCon
 
 func (f *walletRecoverContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletRecoverContext, api.WalletRecoverData](
-		router, "recover", f, f.handler.serviceProvider,
+		router, "recover", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -88,7 +88,7 @@ func (c *walletRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bi
 	}
 
 	if !c.skipValidatorKeyRecovery {
-		err := sp.RequireEthClientSynced()
+		err := sp.RequireEthClientSynced(c.handler.context)
 		if err != nil {
 			return err
 		}

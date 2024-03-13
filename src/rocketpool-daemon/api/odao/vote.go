@@ -15,9 +15,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -41,7 +41,7 @@ func (f *oracleDaoVoteContextFactory) Create(args url.Values) (*oracleDaoVoteCon
 
 func (f *oracleDaoVoteContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoVoteContext, api.OracleDaoVoteOnProposalData](
-		router, "proposal/vote", f, f.handler.serviceProvider,
+		router, "proposal/vote", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -68,7 +68,7 @@ func (c *oracleDaoVoteContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnOracleDao()
+	err := sp.RequireOnOracleDao(c.handler.context)
 	if err != nil {
 		return err
 	}

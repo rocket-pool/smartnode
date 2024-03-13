@@ -12,9 +12,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -38,7 +38,7 @@ func (f *nodeSetPrimaryWithdrawalAddressContextFactory) Create(args url.Values) 
 
 func (f *nodeSetPrimaryWithdrawalAddressContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSetPrimaryWithdrawalAddressContext, api.NodeSetPrimaryWithdrawalAddressData](
-		router, "primary-withdrawal-address/set", f, f.handler.serviceProvider,
+		router, "primary-withdrawal-address/set", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -62,7 +62,7 @@ func (c *nodeSetPrimaryWithdrawalAddressContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

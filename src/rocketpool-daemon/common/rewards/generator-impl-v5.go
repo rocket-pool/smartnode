@@ -724,7 +724,7 @@ func (r *treeGeneratorImpl_v5) processEpoch(context context.Context, getDuties b
 	if getDuties {
 		wg.Go(func() error {
 			var err error
-			committeeData, err = r.bc.GetCommitteesForEpoch(&epoch)
+			committeeData, err = r.bc.GetCommitteesForEpoch(context, &epoch)
 			return err
 		})
 	}

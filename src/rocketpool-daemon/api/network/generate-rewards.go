@@ -8,9 +8,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 )
 
 // ===============
@@ -32,8 +32,8 @@ func (f *networkGenerateRewardsContextFactory) Create(args url.Values) (*network
 }
 
 func (f *networkGenerateRewardsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*networkGenerateRewardsContext, api.SuccessData](
-		router, "generate-rewards-tree", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*networkGenerateRewardsContext, types.SuccessData](
+		router, "generate-rewards-tree", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -47,12 +47,12 @@ type networkGenerateRewardsContext struct {
 	index uint64
 }
 
-func (c *networkGenerateRewardsContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+func (c *networkGenerateRewardsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 
 	// Create the generation request
-	requestPath := cfg.Smartnode.GetRegenerateRewardsTreeRequestPath(c.index, true)
+	requestPath := cfg.GetRegenerateRewardsTreeRequestPath(c.index)
 	requestFile, err := os.Create(requestPath)
 	if requestFile != nil {
 		requestFile.Close()
@@ -60,6 +60,5 @@ func (c *networkGenerateRewardsContext) PrepareData(data *api.SuccessData, opts 
 	if err != nil {
 		return fmt.Errorf("error creating request marker: %w", err)
 	}
-	data.Success = true
 	return nil
 }

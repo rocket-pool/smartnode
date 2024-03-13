@@ -7,11 +7,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -34,8 +34,8 @@ func (f *minipoolSetUseLatestDelegatesContextFactory) Create(args url.Values) (*
 }
 
 func (f *minipoolSetUseLatestDelegatesContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*minipoolSetUseLatestDelegatesContext, api.BatchTxInfoData](
-		router, "delegate/set-use-latest", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*minipoolSetUseLatestDelegatesContext, types.BatchTxInfoData](
+		router, "delegate/set-use-latest", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -49,8 +49,8 @@ type minipoolSetUseLatestDelegatesContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolSetUseLatestDelegatesContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "set-use-latest-delegate")
+func (c *minipoolSetUseLatestDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
+	return prepareMinipoolBatchTxData(c.handler.context, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "set-use-latest-delegate")
 }
 
 func (c *minipoolSetUseLatestDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {

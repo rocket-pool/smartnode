@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -38,7 +38,7 @@ func (f *securityProposalsContextFactory) Create(args url.Values) (*securityProp
 
 func (f *securityProposalsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityProposalsContext, api.SecurityProposalsData](
-		router, "proposals", f, f.handler.serviceProvider,
+		router, "proposals", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -62,7 +62,7 @@ func (c *securityProposalsContext) Initialize() error {
 	c.nodeAddress, c.hasAddress = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.context)
 	if err != nil {
 		return err
 	}

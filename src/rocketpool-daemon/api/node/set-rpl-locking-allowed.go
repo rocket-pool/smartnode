@@ -12,9 +12,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -37,7 +37,7 @@ func (f *nodeSetRplLockingAllowedContextFactory) Create(args url.Values) (*nodeS
 
 func (f *nodeSetRplLockingAllowedContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSetRplLockingAllowedContext, api.NodeSetRplLockingAllowedData](
-		router, "set-rpl-locking-allowed", f, f.handler.serviceProvider,
+		router, "set-rpl-locking-allowed", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -60,7 +60,7 @@ func (c *nodeSetRplLockingAllowedContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

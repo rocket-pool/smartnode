@@ -11,20 +11,18 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	rputils "github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -50,7 +48,7 @@ func (f *nodeCreateVacantMinipoolContextFactory) Create(args url.Values) (*nodeC
 
 func (f *nodeCreateVacantMinipoolContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeCreateVacantMinipoolContext, api.NodeCreateVacantMinipoolData](
-		router, "create-vacant-minipool", f, f.handler.serviceProvider,
+		router, "create-vacant-minipool", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -67,7 +65,7 @@ type nodeCreateVacantMinipoolContext struct {
 	amount     *big.Int
 	minNodeFee float64
 	salt       *big.Int
-	pubkey     rpbeacon.ValidatorPubkey
+	pubkey     beacon.ValidatorPubkey
 	node       *node.Node
 	pSettings  *protocol.ProtocolDaoSettings
 	oSettings  *oracle.OracleDaoSettings
@@ -82,7 +80,7 @@ func (c *nodeCreateVacantMinipoolContext) Initialize() error {
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -162,7 +160,7 @@ func (c *nodeCreateVacantMinipoolContext) PrepareData(data *api.NodeCreateVacant
 		return nil
 	}
 	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rputils.GetDepositContractInfo(c.rp, c.cfg, c.bc)
+	depositContractInfo, err := rputils.GetDepositContractInfo(c.handler.context, c.rp, c.cfg, c.bc)
 	if err != nil {
 		return fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
 	}
@@ -176,17 +174,17 @@ func (c *nodeCreateVacantMinipoolContext) PrepareData(data *api.NodeCreateVacant
 	}
 
 	// Check if the pubkey is for an existing active_ongoing validator
-	validatorStatus, err := c.bc.GetValidatorStatus(c.pubkey, nil)
+	validatorStatus, err := c.bc.GetValidatorStatus(c.handler.context, c.pubkey, nil)
 	if err != nil {
 		return fmt.Errorf("error checking status of existing validator: %w", err)
 	}
 	if !validatorStatus.Exists {
 		return fmt.Errorf("validator %s does not exist on the Beacon chain. If you recently created it, please wait until the Consensus layer has processed your deposits.", c.pubkey.Hex())
 	}
-	if validatorStatus.Status != sharedtypes.ValidatorState_ActiveOngoing {
+	if validatorStatus.Status != beacon.ValidatorState_ActiveOngoing {
 		return fmt.Errorf("validator %s must be in the active_ongoing state to be migrated, but it is currently in %s.", c.pubkey.Hex(), string(validatorStatus.Status))
 	}
-	if c.cfg.Network.Value.(cfgtypes.Network) != cfgtypes.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
+	if c.cfg.Network.Value != config.Network_Devnet && validatorStatus.WithdrawalCredentials[0] != 0x00 {
 		return fmt.Errorf("validator %s already has withdrawal credentials [%s], which are not BLS credentials.", c.pubkey.Hex(), validatorStatus.WithdrawalCredentials.Hex())
 	}
 

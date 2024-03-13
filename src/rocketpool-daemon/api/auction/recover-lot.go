@@ -14,9 +14,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 const (
@@ -42,8 +43,8 @@ func (f *auctionRecoverContextFactory) Create(args url.Values) (*auctionRecoverC
 }
 
 func (f *auctionRecoverContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*auctionRecoverContext, api.DataBatch[api.AuctionRecoverRplFromLotData]](
-		router, "lots/recover", f, f.handler.serviceProvider,
+	server.RegisterSingleStageRoute[*auctionRecoverContext, types.DataBatch[api.AuctionRecoverRplFromLotData]](
+		router, "lots/recover", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -64,7 +65,7 @@ func (c *auctionRecoverContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -91,7 +92,7 @@ func (c *auctionRecoverContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *auctionRecoverContext) PrepareData(dataBatch *api.DataBatch[api.AuctionRecoverRplFromLotData], opts *bind.TransactOpts) error {
+func (c *auctionRecoverContext) PrepareData(dataBatch *types.DataBatch[api.AuctionRecoverRplFromLotData], opts *bind.TransactOpts) error {
 	// Get the current block
 	currentBlock, err := c.rp.Client.BlockNumber(context.Background())
 	if err != nil {

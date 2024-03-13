@@ -7,9 +7,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 func nodeSetVotingDelegate(c *cli.Context, nameOrAddress string) error {

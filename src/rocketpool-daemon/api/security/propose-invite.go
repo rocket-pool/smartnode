@@ -14,9 +14,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // ===============
@@ -32,7 +33,7 @@ func (f *securityProposeInviteContextFactory) Create(args url.Values) (*security
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("id", args, input.ValidateDAOMemberID, &c.id),
+		server.ValidateArg("id", args, utils.ValidateDAOMemberID, &c.id),
 		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
 	}
 	return c, errors.Join(inputErrs...)
@@ -40,7 +41,7 @@ func (f *securityProposeInviteContextFactory) Create(args url.Values) (*security
 
 func (f *securityProposeInviteContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityProposeInviteContext, api.SecurityProposeInviteData](
-		router, "propose-invite", f, f.handler.serviceProvider,
+		router, "propose-invite", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -65,7 +66,7 @@ func (c *securityProposeInviteContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnSecurityCouncil()
+	err := sp.RequireOnSecurityCouncil(c.handler.context)
 	if err != nil {
 		return err
 	}

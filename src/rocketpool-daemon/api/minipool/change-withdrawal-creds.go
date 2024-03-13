@@ -12,14 +12,13 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -42,8 +41,8 @@ func (f *minipoolChangeCredsContextFactory) Create(args url.Values) (*minipoolCh
 }
 
 func (f *minipoolChangeCredsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*minipoolChangeCredsContext, api.SuccessData](
-		router, "change-withdrawal-creds", f, f.handler.serviceProvider,
+	server.RegisterSingleStageRoute[*minipoolChangeCredsContext, types.SuccessData](
+		router, "change-withdrawal-creds", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -70,8 +69,8 @@ func (c *minipoolChangeCredsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
+		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireBeaconClientSynced(c.handler.context),
 	)
 	if err != nil {
 		return err
@@ -93,7 +92,7 @@ func (c *minipoolChangeCredsContext) GetState(mc *batch.MultiCaller) {
 	c.mp.Common().Pubkey.AddToQuery(mc)
 }
 
-func (c *minipoolChangeCredsContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
 	// Get minipool validator pubkey
 	pubkey := c.mp.Common().Pubkey.Get()
 
@@ -124,19 +123,19 @@ func (c *minipoolChangeCredsContext) PrepareData(data *api.SuccessData, opts *bi
 	}
 
 	// Get beacon head
-	head, err := c.bc.GetBeaconHead()
+	head, err := c.bc.GetBeaconHead(c.handler.context)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon head: %w", err)
 	}
 
 	// Get voluntary exit signature domain
-	signatureDomain, err := c.bc.GetDomainData(eth2types.DomainBlsToExecutionChange[:], head.Epoch, true)
+	signatureDomain, err := c.bc.GetDomainData(c.handler.context, eth2types.DomainBlsToExecutionChange[:], head.Epoch, true)
 	if err != nil {
 		return fmt.Errorf("error getting signature domain: %w", err)
 	}
 
 	// Get validator index
-	validatorIndex, err := c.bc.GetValidatorIndex(pubkey)
+	validatorIndex, err := c.bc.GetValidatorIndex(c.handler.context, pubkey)
 	if err != nil {
 		return fmt.Errorf("error getting validator index: %w", err)
 	}
@@ -148,10 +147,9 @@ func (c *minipoolChangeCredsContext) PrepareData(data *api.SuccessData, opts *bi
 	}
 
 	// Broadcast withdrawal creds change message
-	withdrawalPubkey := types.BytesToValidatorPubkey(withdrawalKey.PublicKey().Marshal())
-	if err := c.bc.ChangeWithdrawalCredentials(validatorIndex, withdrawalPubkey, c.minipoolAddress, signature); err != nil {
+	withdrawalPubkey := beacon.ValidatorPubkey(withdrawalKey.PublicKey().Marshal())
+	if err := c.bc.ChangeWithdrawalCredentials(c.handler.context, validatorIndex, withdrawalPubkey, c.minipoolAddress, signature); err != nil {
 		return fmt.Errorf("error submitting withdrawal credentials change message: %w", err)
 	}
-	data.Success = true
 	return nil
 }

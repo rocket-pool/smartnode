@@ -1,20 +1,24 @@
 package node
 
 import (
+	"context"
+
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 )
 
 type NodeHandler struct {
 	serviceProvider *services.ServiceProvider
+	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
+func NewNodeHandler(context context.Context, serviceProvider *services.ServiceProvider) *NodeHandler {
 	h := &NodeHandler{
 		serviceProvider: serviceProvider,
+		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&nodeBalanceContextFactory{h},

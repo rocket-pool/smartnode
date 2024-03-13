@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -36,7 +36,7 @@ func (f *auctionStatusContextFactory) Create(args url.Values) (*auctionStatusCon
 
 func (f *auctionStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*auctionStatusContext, api.AuctionStatusData](
-		router, "status", f, f.handler.serviceProvider,
+		router, "status", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -68,7 +68,7 @@ func (c *auctionStatusContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

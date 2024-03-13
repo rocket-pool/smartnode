@@ -10,9 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 )
 
 // ===============
@@ -35,8 +35,8 @@ func (f *walletSendMessageContextFactory) Create(args url.Values) (*walletSendMe
 }
 
 func (f *walletSendMessageContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*walletSendMessageContext, api.TxInfoData](
-		router, "send-message", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*walletSendMessageContext, types.TxInfoData](
+		router, "send-message", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -50,7 +50,7 @@ type walletSendMessageContext struct {
 	address common.Address
 }
 
-func (c *walletSendMessageContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+func (c *walletSendMessageContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	ec := sp.GetEthClient()
 

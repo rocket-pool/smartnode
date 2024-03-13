@@ -14,9 +14,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 const (
@@ -42,8 +43,8 @@ func (f *oracleDaoExecuteProposalsContextFactory) Create(args url.Values) (*orac
 }
 
 func (f *oracleDaoExecuteProposalsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*oracleDaoExecuteProposalsContext, api.DataBatch[api.OracleDaoExecuteProposalData]](
-		router, "proposal/execute", f, f.handler.serviceProvider,
+	server.RegisterSingleStageRoute[*oracleDaoExecuteProposalsContext, types.DataBatch[api.OracleDaoExecuteProposalData]](
+		router, "proposal/execute", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -67,7 +68,7 @@ func (c *oracleDaoExecuteProposalsContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -101,7 +102,7 @@ func (c *oracleDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[api.OracleDaoExecuteProposalData], opts *bind.TransactOpts) error {
+func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *types.DataBatch[api.OracleDaoExecuteProposalData], opts *bind.TransactOpts) error {
 	dataBatch.Batch = make([]api.OracleDaoExecuteProposalData, len(c.ids))
 	for i, prop := range c.proposals {
 

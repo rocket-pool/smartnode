@@ -10,16 +10,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 const (
@@ -46,7 +46,7 @@ func (f *protocolDaoProposeKickMultiFromSecurityCouncilContextFactory) Create(ar
 
 func (f *protocolDaoProposeKickMultiFromSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeKickMultiFromSecurityCouncilContext, api.ProtocolDaoProposeKickMultiFromSecurityCouncilData](
-		router, "security/kick-multi", f, f.handler.serviceProvider,
+		router, "security/kick-multi", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -74,7 +74,7 @@ func (c *protocolDaoProposeKickMultiFromSecurityCouncilContext) Initialize() err
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func (c *protocolDaoProposeKickMultiFromSecurityCouncilContext) PrepareData(data
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
 		message := "kick multiple members from the security council"
 		txInfo, err := c.pdaoMgr.ProposeKickMultiFromSecurityCouncil(message, c.addresses, blockNumber, pollard, opts)
 		if err != nil {

@@ -9,8 +9,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 )
 
 // ===============
@@ -29,8 +29,8 @@ func (f *securityProposeLeaveContextFactory) Create(args url.Values) (*securityP
 }
 
 func (f *securityProposeLeaveContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*securityProposeLeaveContext, api.TxInfoData](
-		router, "propose-leave", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*securityProposeLeaveContext, types.TxInfoData](
+		router, "propose-leave", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -42,12 +42,12 @@ type securityProposeLeaveContext struct {
 	handler *SecurityCouncilHandler
 }
 
-func (c *securityProposeLeaveContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+func (c *securityProposeLeaveContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireOnSecurityCouncil()
+	err := sp.RequireOnSecurityCouncil(c.handler.context)
 	if err != nil {
 		return err
 	}

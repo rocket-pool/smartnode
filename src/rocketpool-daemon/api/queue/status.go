@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -33,7 +33,7 @@ func (f *queueStatusContextFactory) Create(args url.Values) (*queueStatusContext
 
 func (f *queueStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*queueStatusContext, api.QueueStatusData](
-		router, "status", f, f.handler.serviceProvider,
+		router, "status", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -54,7 +54,7 @@ func (c *queueStatusContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.context)
 	if err != nil {
 		return err
 	}

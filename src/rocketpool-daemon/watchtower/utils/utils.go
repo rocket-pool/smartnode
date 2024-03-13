@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/smartnode/shared/config"
 )
 

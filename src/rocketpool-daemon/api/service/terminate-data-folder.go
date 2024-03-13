@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -34,7 +34,7 @@ func (f *serviceTerminateDataFolderContextFactory) Create(args url.Values) (*ser
 
 func (f *serviceTerminateDataFolderContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*serviceTerminateDataFolderContext, api.ServiceTerminateDataFolderData](
-		router, "terminate-data-folder", f, f.handler.serviceProvider,
+		router, "terminate-data-folder", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

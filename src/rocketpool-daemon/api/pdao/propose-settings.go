@@ -10,15 +10,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -43,7 +43,7 @@ func (f *protocolDaoProposeSettingContextFactory) Create(args url.Values) (*prot
 
 func (f *protocolDaoProposeSettingContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeSettingContext, api.ProtocolDaoProposeSettingData](
-		router, "setting/propose", f, f.handler.serviceProvider,
+		router, "setting/propose", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -73,7 +73,7 @@ func (c *protocolDaoProposeSettingContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.Se
 			if err != nil {
 				return false, nil, fmt.Errorf("error parsing value '%s' as bool: %w", c.valueString, err), nil
 			}
-			blockNumber, pollard, err := createPollard(c.rp, c.cfg, c.bc)
+			blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
 			txInfo, err := setting.ProposeSet(value, blockNumber, pollard, opts)
 			return true, txInfo, nil, err
 		}
@@ -155,7 +155,7 @@ func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.Se
 			if err != nil {
 				return false, nil, fmt.Errorf("error parsing value '%s' as *big.Int: %w", c.valueString, err), nil
 			}
-			blockNumber, pollard, err := createPollard(c.rp, c.cfg, c.bc)
+			blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
 			txInfo, err := setting.ProposeSet(value, blockNumber, pollard, opts)
 			return true, txInfo, nil, err
 		}

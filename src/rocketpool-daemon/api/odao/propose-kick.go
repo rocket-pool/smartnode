@@ -16,10 +16,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
+	"github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 // ===============
@@ -43,7 +43,7 @@ func (f *oracleDaoProposeKickContextFactory) Create(args url.Values) (*oracleDao
 
 func (f *oracleDaoProposeKickContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoProposeKickContext, api.OracleDaoProposeKickData](
-		router, "propose-kick", f, f.handler.serviceProvider,
+		router, "propose-kick", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -70,7 +70,7 @@ func (c *oracleDaoProposeKickContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnOracleDao()
+	err := sp.RequireOnOracleDao(c.handler.context)
 	if err != nil {
 		return err
 	}

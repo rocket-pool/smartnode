@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -33,7 +33,7 @@ func (f *oracleDaoSettingsContextFactory) Create(args url.Values) (*oracleDaoSet
 
 func (f *oracleDaoSettingsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoSettingsContext, api.OracleDaoSettingsData](
-		router, "settings", f, f.handler.serviceProvider,
+		router, "settings", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -55,7 +55,7 @@ func (c *oracleDaoSettingsContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.context)
 	if err != nil {
 		return err
 	}

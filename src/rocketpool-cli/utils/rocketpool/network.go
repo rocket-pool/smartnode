@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -38,19 +39,19 @@ func (r *NetworkRequester) GetDepositContractInfo() (*api.ApiResponse[api.Networ
 }
 
 // Download a rewards info file from IPFS or Github for the given interval
-func (r *NetworkRequester) DownloadRewardsFile(interval uint64) (*api.ApiResponse[api.SuccessData], error) {
+func (r *NetworkRequester) DownloadRewardsFile(interval uint64) (*api.ApiResponse[types.SuccessData], error) {
 	args := map[string]string{
 		"interval": fmt.Sprint(interval),
 	}
-	return sendGetRequest[api.SuccessData](r, "download-rewards-file", "DownloadRewardsFile", args)
+	return sendGetRequest[types.SuccessData](r, "download-rewards-file", "DownloadRewardsFile", args)
 }
 
 // Set a request marker for the watchtower to generate the rewards tree for the given interval
-func (r *NetworkRequester) GenerateRewardsTree(index uint64) (*api.ApiResponse[api.SuccessData], error) {
+func (r *NetworkRequester) GenerateRewardsTree(index uint64) (*api.ApiResponse[types.SuccessData], error) {
 	args := map[string]string{
 		"index": fmt.Sprint(index),
 	}
-	return sendGetRequest[api.SuccessData](r, "generate-rewards-tree", "GenerateRewardsTree", args)
+	return sendGetRequest[types.SuccessData](r, "generate-rewards-tree", "GenerateRewardsTree", args)
 }
 
 // Get the address of the latest minipool delegate contract

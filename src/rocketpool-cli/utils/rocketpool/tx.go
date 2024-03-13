@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -74,9 +75,9 @@ func (r *TxRequester) SubmitTxBatch(txSubmissions []*eth.TransactionSubmission, 
 }
 
 // Wait for a transaction
-func (r *TxRequester) WaitForTransaction(txHash common.Hash) (*api.ApiResponse[api.SuccessData], error) {
+func (r *TxRequester) WaitForTransaction(txHash common.Hash) (*api.ApiResponse[types.SuccessData], error) {
 	args := map[string]string{
 		"hash": txHash.Hex(),
 	}
-	return sendGetRequest[api.SuccessData](r, "wait", "WaitForTransaction", args)
+	return sendGetRequest[types.SuccessData](r, "wait", "WaitForTransaction", args)
 }

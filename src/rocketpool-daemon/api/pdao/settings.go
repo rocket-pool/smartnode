@@ -11,7 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -32,7 +32,7 @@ func (f *protocolDaoSettingsContextFactory) Create(args url.Values) (*protocolDa
 
 func (f *protocolDaoSettingsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoSettingsContext, api.ProtocolDaoSettingsData](
-		router, "settings", f, f.handler.serviceProvider,
+		router, "settings", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -44,6 +44,7 @@ type protocolDaoSettingsContext struct {
 	handler *ProtocolDaoHandler
 	rp      *rocketpool.RocketPool
 
+	pMgr      *protocol.ProtocolDaoManager
 	pSettings *protocol.ProtocolDaoSettings
 }
 
@@ -52,16 +53,20 @@ func (c *protocolDaoSettingsContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 
 	// Bindings
-	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
+	var err error
+	c.pMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-	c.pSettings = pdaoMgr.Settings
+	c.pSettings = c.pMgr.Settings
 	return nil
 }
 
 func (c *protocolDaoSettingsContext) GetState(mc *batch.MultiCaller) {
 	eth.QueryAllFields(c.pSettings, mc)
+	eth.AddQueryablesToMulticall(mc,
+		c.pMgr.IntervalTime,
+	)
 }
 
 func (c *protocolDaoSettingsContext) PrepareData(data *api.ProtocolDaoSettingsData, opts *bind.TransactOpts) error {
@@ -122,7 +127,7 @@ func (c *protocolDaoSettingsContext) PrepareData(data *api.ProtocolDaoSettingsDa
 	data.Proposals.VetoQuorum = c.pSettings.Proposals.ProposalVetoQuorum.Raw()
 	data.Proposals.MaxBlockAge = c.pSettings.Proposals.ProposalMaxBlockAge.Formatted()
 
-	data.Rewards.IntervalTime = c.pSettings.Rewards.IntervalTime.Formatted()
+	data.Rewards.IntervalTime = c.pMgr.IntervalTime.Formatted()
 
 	data.Security.MembersQuorum = c.pSettings.Security.MembersQuorum.Raw()
 	data.Security.MembersLeaveTime = c.pSettings.Security.MembersLeaveTime.Formatted()

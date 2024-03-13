@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -31,7 +31,7 @@ func (f *walletExportEthKeyContextFactory) Create(args url.Values) (*walletExpor
 
 func (f *walletExportEthKeyContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletExportEthKeyContext, api.WalletExportEthKeyData](
-		router, "export-eth-key", f, f.handler.serviceProvider,
+		router, "export-eth-key", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

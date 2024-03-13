@@ -7,11 +7,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -33,8 +33,8 @@ func (f *minipoolUpgradeDelegatesContextFactory) Create(args url.Values) (*minip
 }
 
 func (f *minipoolUpgradeDelegatesContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*minipoolUpgradeDelegatesContext, api.BatchTxInfoData](
-		router, "delegate/upgrade", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*minipoolUpgradeDelegatesContext, types.BatchTxInfoData](
+		router, "delegate/upgrade", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -47,8 +47,8 @@ type minipoolUpgradeDelegatesContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolUpgradeDelegatesContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "upgrade-delegate")
+func (c *minipoolUpgradeDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
+	return prepareMinipoolBatchTxData(c.handler.context, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "upgrade-delegate")
 }
 
 func (c *minipoolUpgradeDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {

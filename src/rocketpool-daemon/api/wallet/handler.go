@@ -1,20 +1,24 @@
 package wallet
 
 import (
+	"context"
+
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 )
 
 type WalletHandler struct {
 	serviceProvider *services.ServiceProvider
+	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewWalletHandler(serviceProvider *services.ServiceProvider) *WalletHandler {
+func NewWalletHandler(context context.Context, serviceProvider *services.ServiceProvider) *WalletHandler {
 	h := &WalletHandler{
 		serviceProvider: serviceProvider,
+		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&walletCreateValidatorKeyContextFactory{h},

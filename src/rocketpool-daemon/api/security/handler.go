@@ -1,20 +1,24 @@
 package security
 
 import (
+	"context"
+
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 )
 
 type SecurityCouncilHandler struct {
 	serviceProvider *services.ServiceProvider
+	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewSecurityCouncilHandler(serviceProvider *services.ServiceProvider) *SecurityCouncilHandler {
+func NewSecurityCouncilHandler(context context.Context, serviceProvider *services.ServiceProvider) *SecurityCouncilHandler {
 	h := &SecurityCouncilHandler{
 		serviceProvider: serviceProvider,
+		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&securityCancelProposalContextFactory{h},

@@ -8,9 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -31,7 +31,7 @@ func (f *nodeConfirmRplWithdrawalAddressContextFactory) Create(args url.Values) 
 
 func (f *nodeConfirmRplWithdrawalAddressContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeConfirmRplWithdrawalAddressContext, api.NodeConfirmRplWithdrawalAddressData](
-		router, "rpl-withdrawal-address/confirm", f, f.handler.serviceProvider,
+		router, "rpl-withdrawal-address/confirm", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -53,7 +53,7 @@ func (c *nodeConfirmRplWithdrawalAddressContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

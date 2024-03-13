@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	rputils "github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -28,7 +28,7 @@ func (f *networkDepositInfoContextFactory) Create(args url.Values) (*networkDepo
 
 func (f *networkDepositInfoContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkDepositInfoContext, api.NetworkDepositContractInfoData](
-		router, "deposit-contract-info", f, f.handler.serviceProvider,
+		router, "deposit-contract-info", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -47,13 +47,13 @@ func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContract
 	bc := sp.GetBeaconClient()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.context)
 	if err != nil {
 		return err
 	}
 
 	// Get the deposit contract info
-	info, err := rputils.GetDepositContractInfo(rp, cfg, bc)
+	info, err := rputils.GetDepositContractInfo(c.handler.context, rp, cfg, bc)
 	if err != nil {
 		return fmt.Errorf("error getting deposit contract info: %w", err)
 	}

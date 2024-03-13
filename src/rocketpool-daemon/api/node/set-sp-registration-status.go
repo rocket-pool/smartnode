@@ -10,13 +10,13 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -39,7 +39,7 @@ func (f *nodeSetSmoothingPoolRegistrationStatusContextFactory) Create(args url.V
 
 func (f *nodeSetSmoothingPoolRegistrationStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSetSmoothingPoolRegistrationStatusContext, api.NodeSetSmoothingPoolRegistrationStatusData](
-		router, "set-smoothing-pool-registration-state", f, f.handler.serviceProvider,
+		router, "set-smoothing-pool-registration-state", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -54,6 +54,7 @@ type nodeSetSmoothingPoolRegistrationStatusContext struct {
 
 	state     bool
 	node      *node.Node
+	pMgr      *protocol.ProtocolDaoManager
 	pSettings *protocol.ProtocolDaoSettings
 }
 
@@ -64,7 +65,7 @@ func (c *nodeSetSmoothingPoolRegistrationStatusContext) Initialize() error {
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -74,11 +75,11 @@ func (c *nodeSetSmoothingPoolRegistrationStatusContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
-	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
+	c.pMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
-	c.pSettings = pMgr.Settings
+	c.pSettings = c.pMgr.Settings
 	return nil
 }
 
@@ -86,7 +87,7 @@ func (c *nodeSetSmoothingPoolRegistrationStatusContext) GetState(mc *batch.Multi
 	eth.AddQueryablesToMulticall(mc,
 		c.node.SmoothingPoolRegistrationState,
 		c.node.SmoothingPoolRegistrationChanged,
-		c.pSettings.Rewards.IntervalTime,
+		c.pMgr.IntervalTime,
 	)
 }
 
@@ -101,7 +102,7 @@ func (c *nodeSetSmoothingPoolRegistrationStatusContext) PrepareData(data *api.No
 	latestBlockTime := time.Unix(int64(latestBlockHeader.Time), 0)
 
 	regChangeTime := c.node.SmoothingPoolRegistrationChanged.Formatted()
-	intervalTime := c.pSettings.Rewards.IntervalTime.Formatted()
+	intervalTime := c.pMgr.IntervalTime.Formatted()
 	changeAvailableTime := regChangeTime.Add(intervalTime)
 	data.TimeLeftUntilChangeable = changeAvailableTime.Sub(latestBlockTime)
 

@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -44,7 +44,7 @@ func (f *txSignTxContextFactory) Create(body api.SubmitTxBody) (*txSignTxContext
 
 func (f *txSignTxContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessPost[*txSignTxContext, api.SubmitTxBody, api.TxSignTxData](
-		router, "sign-tx", f, f.handler.serviceProvider,
+		router, "sign-tx", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

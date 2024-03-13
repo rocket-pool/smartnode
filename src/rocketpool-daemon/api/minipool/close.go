@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -9,14 +10,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/types"
-
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+
+	"github.com/rocket-pool/node-manager-core/utils/input"
 )
 
 // ===============
@@ -37,8 +38,12 @@ func (f *minipoolCloseContextFactory) Create(args url.Values) (*minipoolCloseCon
 	return c, errors.Join(inputErrs...)
 }
 
+func (f *minipoolCloseContextFactory) GetCancelContext() context.Context {
+	return f.handler.context
+}
+
 func (f *minipoolCloseContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterMinipoolRoute[*minipoolCloseContext, api.BatchTxInfoData](
+	server.RegisterMinipoolRoute[*minipoolCloseContext, types.BatchTxInfoData](
 		router, "close", f, f.handler.serviceProvider,
 	)
 }
@@ -58,7 +63,7 @@ func (c *minipoolCloseContext) Initialize() error {
 
 	// Requirements
 	return errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 		sp.RequireWalletReady(),
 	)
 }
@@ -66,7 +71,7 @@ func (c *minipoolCloseContext) Initialize() error {
 func (c *minipoolCloseContext) GetState(node *node.Node, mc *batch.MultiCaller) {
 }
 
-func (c *minipoolCloseContext) CheckState(node *node.Node, response *api.BatchTxInfoData) bool {
+func (c *minipoolCloseContext) CheckState(node *node.Node, response *types.BatchTxInfoData) bool {
 	return true
 }
 
@@ -78,8 +83,8 @@ func (c *minipoolCloseContext) GetMinipoolDetails(mc *batch.MultiCaller, mp mini
 	}
 }
 
-func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.BatchTxInfoData) error {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, addresses, data, c.CreateTx, "close")
+func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.BatchTxInfoData) error {
+	return prepareMinipoolBatchTxData(c.handler.context, c.handler.serviceProvider, addresses, data, c.CreateTx, "close")
 }
 
 func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
@@ -88,7 +93,7 @@ func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.Transa
 	mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)
 
 	// If it's dissolved, just close it
-	if mpCommon.Status.Formatted() == types.MinipoolStatus_Dissolved {
+	if mpCommon.Status.Formatted() == rptypes.MinipoolStatus_Dissolved {
 		// Get gas estimate
 		txInfo, err := mpCommon.Close(opts)
 		if err != nil {

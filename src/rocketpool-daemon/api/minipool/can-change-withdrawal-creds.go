@@ -10,16 +10,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	util "github.com/wealdtech/go-eth2-util"
 )
@@ -45,7 +44,7 @@ func (f *minipoolCanChangeCredsContextFactory) Create(args url.Values) (*minipoo
 
 func (f *minipoolCanChangeCredsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*minipoolCanChangeCredsContext, api.MinipoolCanChangeWithdrawalCredentialsData](
-		router, "change-withdrawal-creds/verify", f, f.handler.serviceProvider,
+		router, "change-withdrawal-creds/verify", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -73,8 +72,8 @@ func (c *minipoolCanChangeCredsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
+		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireBeaconClientSynced(c.handler.context),
 	)
 	if err != nil {
 		return err
@@ -122,11 +121,11 @@ func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeW
 
 	// Check the validator's status and current creds
 	pubkey := c.mpv3.Common().Pubkey.Get()
-	beaconStatus, err := c.bc.GetValidatorStatus(pubkey, nil)
+	beaconStatus, err := c.bc.GetValidatorStatus(c.handler.context, pubkey, nil)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon status for minipool %s (pubkey %s): %w", c.minipoolAddress.Hex(), pubkey.Hex(), err)
 	}
-	if beaconStatus.Status != sharedtypes.ValidatorState_ActiveOngoing {
+	if beaconStatus.Status != beacon.ValidatorState_ActiveOngoing {
 		return fmt.Errorf("minipool %s (pubkey %s) was in state %v, but is required to be active_ongoing for migration", c.minipoolAddress.Hex(), pubkey.Hex(), beaconStatus.Status)
 	}
 	if beaconStatus.WithdrawalCredentials[0] != 0x00 {

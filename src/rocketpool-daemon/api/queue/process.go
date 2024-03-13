@@ -11,8 +11,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -33,7 +33,7 @@ func (f *queueProcessContextFactory) Create(args url.Values) (*queueProcessConte
 
 func (f *queueProcessContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*queueProcessContext, api.QueueProcessData](
-		router, "process", f, f.handler.serviceProvider,
+		router, "process", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -44,7 +44,7 @@ func (f *queueProcessContextFactory) RegisterRoute(router *mux.Router) {
 type queueProcessContext struct {
 	handler *QueueHandler
 	rp      *rocketpool.RocketPool
-	w       *wallet.LocalWallet
+	w       *wallet.Wallet
 
 	pSettings   *protocol.ProtocolDaoSettings
 	depositPool *deposit.DepositPoolManager

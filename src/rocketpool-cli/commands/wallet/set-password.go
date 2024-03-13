@@ -3,9 +3,9 @@ package wallet
 import (
 	"fmt"
 
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 	"github.com/urfave/cli/v2"
 )
 

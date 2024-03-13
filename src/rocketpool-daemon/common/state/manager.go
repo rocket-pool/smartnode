@@ -28,7 +28,7 @@ type NetworkStateManager struct {
 }
 
 // Create a new manager for the network state
-func NewNetworkStateManager(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, ec eth.IExecutionClient, bc beacon.IBeaconClient, log *log.ColorLogger, context context.Context) (*NetworkStateManager, error) {
+func NewNetworkStateManager(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, ec eth.IExecutionClient, bc beacon.IBeaconClient, log *log.ColorLogger) (*NetworkStateManager, error) {
 	// Make a resource list
 	resources := cfg.GetNetworkResources()
 

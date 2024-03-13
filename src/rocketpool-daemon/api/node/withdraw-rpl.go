@@ -17,9 +17,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -42,7 +42,7 @@ func (f *nodeWithdrawRplContextFactory) Create(args url.Values) (*nodeWithdrawRp
 
 func (f *nodeWithdrawRplContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeWithdrawRplContext, api.NodeWithdrawRplData](
-		router, "withdraw-rpl", f, f.handler.serviceProvider,
+		router, "withdraw-rpl", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -58,6 +58,7 @@ type nodeWithdrawRplContext struct {
 
 	amount    *big.Int
 	node      *node.Node
+	pMgr      *protocol.ProtocolDaoManager
 	pSettings *protocol.ProtocolDaoSettings
 }
 
@@ -68,7 +69,7 @@ func (c *nodeWithdrawRplContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -78,11 +79,11 @@ func (c *nodeWithdrawRplContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
 	}
-	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
+	c.pMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
 		return fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
-	c.pSettings = pMgr.Settings
+	c.pSettings = c.pMgr.Settings
 	return nil
 }
 
@@ -93,7 +94,7 @@ func (c *nodeWithdrawRplContext) GetState(mc *batch.MultiCaller) {
 		c.node.RplStakedTime,
 		c.node.IsRplWithdrawalAddressSet,
 		c.node.RplWithdrawalAddress,
-		c.pSettings.Rewards.IntervalTime,
+		c.pMgr.IntervalTime,
 	)
 }
 
@@ -108,7 +109,7 @@ func (c *nodeWithdrawRplContext) PrepareData(data *api.NodeWithdrawRplData, opts
 	minimumRplStake := c.node.MinimumRplStake.Get()
 	remainingRplStake := big.NewInt(0).Sub(rplStake, c.amount)
 	rplStakedTime := c.node.RplStakedTime.Formatted()
-	withdrawalDelay := c.pSettings.Rewards.IntervalTime.Formatted()
+	withdrawalDelay := c.pMgr.IntervalTime.Formatted()
 	isRplWithdrawalAddressSet := c.node.IsRplWithdrawalAddressSet.Get()
 	hasDifferentRplWithdrawalAddress := isRplWithdrawalAddressSet && c.nodeAddress != c.node.RplWithdrawalAddress.Get()
 

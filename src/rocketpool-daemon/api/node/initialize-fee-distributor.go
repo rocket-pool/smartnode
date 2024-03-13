@@ -11,7 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -32,7 +32,7 @@ func (f *nodeInitializeFeeDistributorContextFactory) Create(args url.Values) (*n
 
 func (f *nodeInitializeFeeDistributorContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeInitializeFeeDistributorContext, api.NodeInitializeFeeDistributorData](
-		router, "initialize-fee-distributor", f, f.handler.serviceProvider,
+		router, "initialize-fee-distributor", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -53,7 +53,7 @@ func (c *nodeInitializeFeeDistributorContext) Initialize() error {
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

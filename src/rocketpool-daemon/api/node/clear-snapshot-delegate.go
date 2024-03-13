@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 )
 
 // ===============
@@ -27,8 +27,8 @@ func (f *nodeClearSnapshotDelegateContextFactory) Create(args url.Values) (*node
 }
 
 func (f *nodeClearSnapshotDelegateContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*nodeClearSnapshotDelegateContext, api.TxInfoData](
-		router, "snapshot-delegate/clear", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*nodeClearSnapshotDelegateContext, types.TxInfoData](
+		router, "snapshot-delegate/clear", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -40,11 +40,11 @@ type nodeClearSnapshotDelegateContext struct {
 	handler *NodeHandler
 }
 
-func (c *nodeClearSnapshotDelegateContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+func (c *nodeClearSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	snapshot := sp.GetSnapshotDelegation()
-	idHash := cfg.Smartnode.GetVotingSnapshotID()
+	idHash := cfg.GetVotingSnapshotID()
 
 	var err error
 	data.TxInfo, err = snapshot.ClearDelegate(idHash, opts)

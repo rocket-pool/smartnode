@@ -44,7 +44,7 @@ func NewProposalManager(context context.Context, log *log.ColorLogger, cfg *conf
 		return nil, fmt.Errorf("error creating node tree manager: %w", err)
 	}
 
-	stateMgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, log, context)
+	stateMgr, err := state.NewNetworkStateManager(context, rp, cfg, rp.Client, bc, log)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network state manager: %w", err)
 	}

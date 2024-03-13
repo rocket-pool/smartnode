@@ -9,9 +9,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/beacon"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 )
 
 // ===============
@@ -34,8 +34,8 @@ func (f *walletCreateValidatorKeyContextFactory) Create(args url.Values) (*walle
 }
 
 func (f *walletCreateValidatorKeyContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*walletCreateValidatorKeyContext, api.SuccessData](
-		router, "create-validator-key", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*walletCreateValidatorKeyContext, types.SuccessData](
+		router, "create-validator-key", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -49,7 +49,7 @@ type walletCreateValidatorKeyContext struct {
 	index   uint64
 }
 
-func (c *walletCreateValidatorKeyContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+func (c *walletCreateValidatorKeyContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 
@@ -63,7 +63,5 @@ func (c *walletCreateValidatorKeyContext) PrepareData(data *api.SuccessData, opt
 	if err != nil {
 		return fmt.Errorf("error creating validator key: %w", err)
 	}
-
-	data.Success = true
 	return nil
 }

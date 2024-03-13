@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -14,9 +15,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -33,6 +33,10 @@ func (f *minipoolRescueDissolvedDetailsContextFactory) Create(args url.Values) (
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *minipoolRescueDissolvedDetailsContextFactory) GetCancelContext() context.Context {
+	return f.handler.context
 }
 
 func (f *minipoolRescueDissolvedDetailsContextFactory) RegisterRoute(router *mux.Router) {
@@ -56,8 +60,8 @@ func (c *minipoolRescueDissolvedDetailsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
+		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireBeaconClientSynced(c.handler.context),
 	)
 	if err != nil {
 		return err
@@ -106,7 +110,7 @@ func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.A
 	}
 
 	// Get the statuses on Beacon
-	beaconStatuses, err := c.bc.GetValidatorStatuses(pubkeys, nil)
+	beaconStatuses, err := c.bc.GetValidatorStatuses(c.handler.context, pubkeys, nil)
 	if err != nil {
 		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}
@@ -116,7 +120,7 @@ func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.A
 		i := detailsMap[pubkey]
 		mpDetails := &details[i]
 		mpDetails.BeaconState = beaconStatus.Status
-		mpDetails.InvalidBeaconState = beaconStatus.Status != sharedtypes.ValidatorState_PendingInitialized
+		mpDetails.InvalidBeaconState = beaconStatus.Status != beacon.ValidatorState_PendingInitialized
 
 		if !mpDetails.InvalidBeaconState {
 			beaconBalanceGwei := big.NewInt(0).SetUint64(beaconStatus.Balance)

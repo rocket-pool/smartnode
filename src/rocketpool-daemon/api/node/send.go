@@ -15,9 +15,9 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -42,7 +42,7 @@ func (f *nodeSendContextFactory) Create(args url.Values) (*nodeSendContext, erro
 
 func (f *nodeSendContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeSendContext, api.NodeSendData](
-		router, "send", f, f.handler.serviceProvider,
+		router, "send", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -62,6 +62,7 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	ec := sp.GetEthClient()
+	txMgr := sp.GetTransactionManager()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
@@ -140,7 +141,7 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 				Nonce: opts.Nonce,
 				Value: c.amount,
 			}
-			txInfo, err = eth.NewTransactionInfoRaw(ec, c.recipient, nil, newOpts)
+			txInfo = txMgr.CreateTransactionInfoRaw(c.recipient, nil, newOpts)
 		}
 		if err != nil {
 			return fmt.Errorf("error getting TX info for Transfer: %w", err)

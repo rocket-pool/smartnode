@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -30,7 +30,7 @@ func (f *walletRebuildContextFactory) Create(args url.Values) (*walletRebuildCon
 
 func (f *walletRebuildContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletRebuildContext, api.WalletRebuildData](
-		router, "rebuild", f, f.handler.serviceProvider,
+		router, "rebuild", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -51,7 +51,7 @@ func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bi
 	// Requirements
 	err := errors.Join(
 		sp.RequireWalletReady(),
-		sp.RequireEthClientSynced(),
+		sp.RequireEthClientSynced(c.handler.context),
 	)
 	if err != nil {
 		return err

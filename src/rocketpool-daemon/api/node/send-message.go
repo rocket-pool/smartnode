@@ -2,16 +2,15 @@ package node
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 )
 
 // ===============
@@ -34,8 +33,8 @@ func (f *nodeSendMessageContextFactory) Create(args url.Values) (*nodeSendMessag
 }
 
 func (f *nodeSendMessageContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*nodeSendMessageContext, api.TxInfoData](
-		router, "send-message", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*nodeSendMessageContext, types.TxInfoData](
+		router, "send-message", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -49,9 +48,9 @@ type nodeSendMessageContext struct {
 	message []byte
 }
 
-func (c *nodeSendMessageContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+func (c *nodeSendMessageContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	ec := sp.GetEthClient()
+	txMgr := sp.GetTransactionManager()
 
 	// Requirements
 	err := sp.RequireNodeAddress()
@@ -59,10 +58,7 @@ func (c *nodeSendMessageContext) PrepareData(data *api.TxInfoData, opts *bind.Tr
 		return err
 	}
 
-	info, err := eth.NewTransactionInfoRaw(ec, c.address, c.message, opts)
-	if err != nil {
-		return fmt.Errorf("error getting transaction info: %w", err)
-	}
+	info := txMgr.CreateTransactionInfoRaw(c.address, c.message, opts)
 	data.TxInfo = info
 	return nil
 }

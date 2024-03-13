@@ -14,7 +14,10 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	rpbeacon "github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -22,8 +25,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	rpbeacon "github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -43,6 +44,10 @@ func (f *minipoolStatusContextFactory) Create(args url.Values) (*minipoolStatusC
 	return c, nil
 }
 
+func (f *minipoolStatusContextFactory) GetCancelContext() context.Context {
+	return f.handler.context
+}
+
 func (f *minipoolStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterMinipoolRoute[*minipoolStatusContext, api.MinipoolStatusData](
 		router, "status", f, f.handler.serviceProvider,
@@ -58,7 +63,7 @@ type minipoolStatusContext struct {
 	rp      *rocketpool.RocketPool
 	bc      beacon.IBeaconClient
 
-	delegate      *eth.Contract
+	delegate      *core.Contract
 	pSettings     *protocol.ProtocolDaoSettings
 	oSettings     *oracle.OracleDaoSettings
 	reth          *tokens.TokenReth
@@ -76,8 +81,8 @@ func (c *minipoolStatusContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
+		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireBeaconClientSynced(c.handler.context),
 	)
 	if err != nil {
 		return err
@@ -158,7 +163,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	// Get eth2 config
 	wg1.Go(func() error {
 		var err error
-		eth2Config, err = c.bc.GetEth2Config()
+		eth2Config, err = c.bc.GetEth2Config(c.handler.context)
 		if err != nil {
 			return fmt.Errorf("error getting Beacon config: %w", err)
 		}
@@ -200,7 +205,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 			pubkeys = append(pubkeys, mpCommon.Pubkey.Get())
 		}
 	}
-	beaconStatuses, err := c.bc.GetValidatorStatuses(pubkeys, nil)
+	beaconStatuses, err := c.bc.GetValidatorStatuses(c.handler.context, pubkeys, nil)
 	if err != nil {
 		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}
@@ -318,6 +323,6 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 		return nil
 	}, nil)
 
-	data.LatestDelegate = *c.delegate.Address
+	data.LatestDelegate = c.delegate.Address
 	return nil
 }

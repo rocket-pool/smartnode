@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 )
 
 // ===============
@@ -27,8 +27,8 @@ func (f *walletDeletePasswordContextFactory) Create(args url.Values) (*walletDel
 }
 
 func (f *walletDeletePasswordContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*walletDeletePasswordContext, api.SuccessData](
-		router, "delete-password", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*walletDeletePasswordContext, types.SuccessData](
+		router, "delete-password", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -42,7 +42,7 @@ type walletDeletePasswordContext struct {
 	save     bool
 }
 
-func (c *walletDeletePasswordContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+func (c *walletDeletePasswordContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 

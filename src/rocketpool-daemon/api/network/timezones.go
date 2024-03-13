@@ -11,7 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -32,7 +32,7 @@ func (f *networkTimezoneContextFactory) Create(args url.Values) (*networkTimezon
 
 func (f *networkTimezoneContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkTimezoneContext, api.NetworkTimezonesData](
-		router, "timezone-map", f, f.handler.serviceProvider,
+		router, "timezone-map", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -52,7 +52,7 @@ func (c *networkTimezoneContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.context)
 	if err != nil {
 		return err
 	}

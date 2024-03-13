@@ -113,7 +113,7 @@ func (r *RollingRecord) UpdateToSlot(context context.Context, slot uint64, state
 	for epoch := startEpoch; epoch <= stateEpoch; epoch++ {
 
 		// Retrieve the duties for the epoch - this won't get duties higher than the given state
-		err := r.getDutiesForEpoch(epoch, slot, state)
+		err := r.getDutiesForEpoch(context, epoch, slot, state)
 		if err != nil {
 			return fmt.Errorf("error getting duties for epoch %d: %w", epoch, err)
 		}
@@ -221,7 +221,7 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 }
 
 // Get the attestation duties for the given epoch, up to (and including) the provided end slot
-func (r *RollingRecord) getDutiesForEpoch(epoch uint64, endSlot uint64, state *state.NetworkState) error {
+func (r *RollingRecord) getDutiesForEpoch(context context.Context, epoch uint64, endSlot uint64, state *state.NetworkState) error {
 
 	lastSlotInEpoch := (epoch+1)*r.beaconConfig.SlotsPerEpoch - 1
 
@@ -232,7 +232,7 @@ func (r *RollingRecord) getDutiesForEpoch(epoch uint64, endSlot uint64, state *s
 	}
 
 	// Get the attestation committees for the epoch
-	committees, err := r.bc.GetCommitteesForEpoch(&epoch)
+	committees, err := r.bc.GetCommitteesForEpoch(context, &epoch)
 	if err != nil {
 		return fmt.Errorf("error getting committees for epoch %d: %w", epoch, err)
 	}

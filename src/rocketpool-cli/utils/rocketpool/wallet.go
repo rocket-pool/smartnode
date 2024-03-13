@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -31,8 +32,8 @@ func (r *WalletRequester) GetClient() *http.Client {
 }
 
 // Delete the wallet keystore's password from disk
-func (r *WalletRequester) DeletePassword() (*api.ApiResponse[api.SuccessData], error) {
-	return sendGetRequest[api.SuccessData](r, "delete-password", "DeletePassword", nil)
+func (r *WalletRequester) DeletePassword() (*api.ApiResponse[types.SuccessData], error) {
+	return sendGetRequest[types.SuccessData](r, "delete-password", "DeletePassword", nil)
 }
 
 // Export wallet
@@ -119,12 +120,12 @@ func (r *WalletRequester) SetEnsName(name string) (*api.ApiResponse[api.WalletSe
 }
 
 // Sets the wallet keystore's password
-func (r *WalletRequester) SetPassword(password []byte, save bool) (*api.ApiResponse[api.SuccessData], error) {
+func (r *WalletRequester) SetPassword(password []byte, save bool) (*api.ApiResponse[types.SuccessData], error) {
 	args := map[string]string{
 		"password": hex.EncodeToString(password),
 		"save":     fmt.Sprint(save),
 	}
-	return sendGetRequest[api.SuccessData](r, "set-password", "SetPassword", args)
+	return sendGetRequest[types.SuccessData](r, "set-password", "SetPassword", args)
 }
 
 // Get wallet status
@@ -162,12 +163,12 @@ func (r *WalletRequester) TestRecover(derivationPath *string, mnemonic string, s
 }
 
 // Sends a zero-value message with a payload
-func (r *WalletRequester) SendMessage(message []byte, address common.Address) (*api.ApiResponse[api.TxInfoData], error) {
+func (r *WalletRequester) SendMessage(message []byte, address common.Address) (*api.ApiResponse[types.TxInfoData], error) {
 	args := map[string]string{
 		"message": hex.EncodeToString(message),
 		"address": address.Hex(),
 	}
-	return sendGetRequest[api.TxInfoData](r, "send-message", "SendMessage", args)
+	return sendGetRequest[types.TxInfoData](r, "send-message", "SendMessage", args)
 }
 
 // Use the node private key to sign an arbitrary message

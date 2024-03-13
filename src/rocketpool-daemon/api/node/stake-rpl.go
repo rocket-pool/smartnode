@@ -14,9 +14,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -39,7 +39,7 @@ func (f *nodeStakeRplContextFactory) Create(args url.Values) (*nodeStakeRplConte
 
 func (f *nodeStakeRplContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeStakeRplContext, api.NodeStakeRplData](
-		router, "stake-rpl", f, f.handler.serviceProvider,
+		router, "stake-rpl", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -66,7 +66,7 @@ func (c *nodeStakeRplContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (c *nodeStakeRplContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating RocketNodeStaking binding: %w", err)
 	}
-	c.nsAddress = *rns.Address
+	c.nsAddress = rns.Address
 	return nil
 }
 

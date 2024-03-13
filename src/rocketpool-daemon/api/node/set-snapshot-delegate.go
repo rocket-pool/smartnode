@@ -9,9 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 )
 
 // ===============
@@ -33,8 +33,8 @@ func (f *nodeSetSnapshotDelegateContextFactory) Create(args url.Values) (*nodeSe
 }
 
 func (f *nodeSetSnapshotDelegateContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*nodeSetSnapshotDelegateContext, api.TxInfoData](
-		router, "snapshot-delegate/set", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*nodeSetSnapshotDelegateContext, types.TxInfoData](
+		router, "snapshot-delegate/set", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -48,11 +48,11 @@ type nodeSetSnapshotDelegateContext struct {
 	delegate common.Address
 }
 
-func (c *nodeSetSnapshotDelegateContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+func (c *nodeSetSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	snapshot := sp.GetSnapshotDelegation()
-	idHash := cfg.Smartnode.GetVotingSnapshotID()
+	idHash := cfg.GetVotingSnapshotID()
 
 	var err error
 	data.TxInfo, err = snapshot.SetDelegate(idHash, c.delegate, opts)

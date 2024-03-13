@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
@@ -18,9 +19,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -37,6 +36,10 @@ func (f *minipoolBeginReduceBondDetailsContextFactory) Create(args url.Values) (
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *minipoolBeginReduceBondDetailsContextFactory) GetCancelContext() context.Context {
+	return f.handler.context
 }
 
 func (f *minipoolBeginReduceBondDetailsContextFactory) RegisterRoute(router *mux.Router) {
@@ -68,7 +71,7 @@ func (c *minipoolBeginReduceBondDetailsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 	)
 	if err != nil {
 		return err
@@ -150,7 +153,7 @@ func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.A
 	}
 
 	// Get the statuses on Beacon
-	beaconStatuses, err := c.bc.GetValidatorStatuses(pubkeys, nil)
+	beaconStatuses, err := c.bc.GetValidatorStatuses(c.handler.context, pubkeys, nil)
 	if err != nil {
 		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}
@@ -163,9 +166,9 @@ func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.A
 		mpDetails.BeaconState = beaconStatus.Status
 
 		// Check the beacon state
-		mpDetails.InvalidBeaconState = !(mpDetails.BeaconState == sharedtypes.ValidatorState_PendingInitialized ||
-			mpDetails.BeaconState == sharedtypes.ValidatorState_PendingQueued ||
-			mpDetails.BeaconState == sharedtypes.ValidatorState_ActiveOngoing)
+		mpDetails.InvalidBeaconState = !(mpDetails.BeaconState == beacon.ValidatorState_PendingInitialized ||
+			mpDetails.BeaconState == beacon.ValidatorState_PendingQueued ||
+			mpDetails.BeaconState == beacon.ValidatorState_ActiveOngoing)
 
 		// Make sure the balance is high enough
 		threshold := uint64(32000000000)

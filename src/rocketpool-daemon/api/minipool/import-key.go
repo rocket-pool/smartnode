@@ -16,11 +16,11 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -43,8 +43,8 @@ func (f *minipoolImportKeyContextFactory) Create(args url.Values) (*minipoolImpo
 }
 
 func (f *minipoolImportKeyContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*minipoolImportKeyContext, api.SuccessData](
-		router, "import-key", f, f.handler.serviceProvider,
+	server.RegisterSingleStageRoute[*minipoolImportKeyContext, types.SuccessData](
+		router, "import-key", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -55,7 +55,7 @@ func (f *minipoolImportKeyContextFactory) RegisterRoute(router *mux.Router) {
 type minipoolImportKeyContext struct {
 	handler     *MinipoolHandler
 	rp          *rocketpool.RocketPool
-	w           *wallet.LocalWallet
+	w           *wallet.Wallet
 	nodeAddress common.Address
 	mp          minipool.IMinipool
 
@@ -71,7 +71,7 @@ func (c *minipoolImportKeyContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 		sp.RequireWalletReady(),
 	)
 	if err != nil {
@@ -98,7 +98,7 @@ func (c *minipoolImportKeyContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *minipoolImportKeyContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+func (c *minipoolImportKeyContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
 	// Validate minipool owner
 	mpCommon := c.mp.Common()
 	if mpCommon.NodeAddress.Get() != c.nodeAddress {
@@ -138,7 +138,5 @@ func (c *minipoolImportKeyContext) PrepareData(data *api.SuccessData, opts *bind
 	if err != nil {
 		return fmt.Errorf("error saving keystore: %w", err)
 	}
-
-	data.Success = true
 	return nil
 }

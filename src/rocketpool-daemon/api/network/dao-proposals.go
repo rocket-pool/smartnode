@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -34,7 +34,7 @@ func (f *networkProposalContextFactory) Create(args url.Values) (*networkProposa
 
 func (f *networkProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkProposalContext, api.NetworkDaoProposalsData](
-		router, "dao-proposals", f, f.handler.serviceProvider,
+		router, "dao-proposals", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -55,7 +55,7 @@ func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, 
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 		sp.RequireSnapshot(),
 	)
 	if err != nil {
@@ -64,7 +64,7 @@ func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, 
 	data.AccountAddress = nodeAddress
 
 	// Get delegate address
-	idHash := cfg.Smartnode.GetVotingSnapshotID()
+	idHash := cfg.GetVotingSnapshotID()
 	err = rp.Query(func(mc *batch.MultiCaller) error {
 		snapshot.Delegation(mc, &data.VotingDelegate, nodeAddress, idHash)
 		return nil

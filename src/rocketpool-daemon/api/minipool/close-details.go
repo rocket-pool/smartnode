@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -9,14 +10,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -33,6 +33,10 @@ func (f *minipoolCloseDetailsContextFactory) Create(args url.Values) (*minipoolC
 		handler: f.handler,
 	}
 	return c, nil
+}
+
+func (f *minipoolCloseDetailsContextFactory) GetCancelContext() context.Context {
+	return f.handler.context
 }
 
 func (f *minipoolCloseDetailsContextFactory) RegisterRoute(router *mux.Router) {
@@ -58,7 +62,7 @@ func (c *minipoolCloseDetailsContext) Initialize() error {
 
 	// Requirements
 	return errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 	)
 }
 
@@ -129,7 +133,7 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 		pubkeyMap[mp.Address] = pubkey
 		pubkeys = append(pubkeys, pubkey)
 	}
-	statusMap, err := c.bc.GetValidatorStatuses(pubkeys, nil)
+	statusMap, err := c.bc.GetValidatorStatuses(c.handler.context, pubkeys, nil)
 	if err != nil {
 		return fmt.Errorf("error getting beacon status of minipools: %w", err)
 	}
@@ -140,7 +144,7 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 		validator := statusMap[pubkey]
 		if mp.Status != types.MinipoolStatus_Dissolved {
 			details[i].BeaconState = validator.Status
-			if validator.Status != sharedtypes.ValidatorState_WithdrawalDone {
+			if validator.Status != beacon.ValidatorState_WithdrawalDone {
 				details[i].CanClose = false
 			}
 		}

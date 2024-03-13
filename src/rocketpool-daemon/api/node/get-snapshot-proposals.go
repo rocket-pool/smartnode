@@ -12,10 +12,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -38,7 +38,7 @@ func (f *nodeGetSnapshotProposalsContextFactory) Create(args url.Values) (*nodeG
 
 func (f *nodeGetSnapshotProposalsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeGetSnapshotProposalsContext, api.NodeGetSnapshotProposalsData](
-		router, "get-snapshot-proposals", f, f.handler.serviceProvider,
+		router, "get-snapshot-proposals", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -63,7 +63,7 @@ func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotP
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 		sp.RequireSnapshot(),
 	)
 	if err != nil {
@@ -72,7 +72,7 @@ func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotP
 
 	var delegate common.Address
 	err = rp.Query(func(mc *batch.MultiCaller) error {
-		snapshot.Delegation(mc, &delegate, nodeAddress, cfg.Smartnode.GetVotingSnapshotID())
+		snapshot.Delegation(mc, &delegate, nodeAddress, cfg.GetVotingSnapshotID())
 		return nil
 	}, nil)
 	if err != nil {

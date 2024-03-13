@@ -7,12 +7,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -42,8 +43,8 @@ func (f *protocolDaoClaimBondsContextFactory) Create(body api.ProtocolDaoClaimBo
 }
 
 func (f *protocolDaoClaimBondsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStagePost[*protocolDaoClaimBondsContext, api.ProtocolDaoClaimBondsBody, api.DataBatch[api.ProtocolDaoClaimBondsData]](
-		router, "claim-bonds", f, f.handler.serviceProvider,
+	server.RegisterSingleStagePost[*protocolDaoClaimBondsContext, api.ProtocolDaoClaimBondsBody, types.DataBatch[api.ProtocolDaoClaimBondsData]](
+		router, "claim-bonds", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -67,7 +68,7 @@ func (c *protocolDaoClaimBondsContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -99,7 +100,7 @@ func (c *protocolDaoClaimBondsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *protocolDaoClaimBondsContext) PrepareData(dataBatch *api.DataBatch[api.ProtocolDaoClaimBondsData], opts *bind.TransactOpts) error {
+func (c *protocolDaoClaimBondsContext) PrepareData(dataBatch *types.DataBatch[api.ProtocolDaoClaimBondsData], opts *bind.TransactOpts) error {
 	dataBatch.Batch = make([]api.ProtocolDaoClaimBondsData, len(c.body.Claims))
 	for i, claim := range c.body.Claims {
 		proposal := c.proposals[i]
@@ -111,9 +112,9 @@ func (c *protocolDaoClaimBondsContext) PrepareData(dataBatch *api.DataBatch[api.
 		data.DoesNotExist = (claim.ProposalID > c.pdaoMgr.ProposalCount.Formatted())
 		data.IsProposer = (proposer == c.nodeAddress)
 		if data.IsProposer {
-			data.InvalidState = (state == types.ProtocolDaoProposalState_Defeated || state < types.ProtocolDaoProposalState_QuorumNotMet)
+			data.InvalidState = (state == rptypes.ProtocolDaoProposalState_Defeated || state < rptypes.ProtocolDaoProposalState_QuorumNotMet)
 		} else {
-			data.InvalidState = (state == types.ProtocolDaoProposalState_Pending)
+			data.InvalidState = (state == rptypes.ProtocolDaoProposalState_Pending)
 		}
 		data.CanClaim = !(data.DoesNotExist || data.InvalidState)
 

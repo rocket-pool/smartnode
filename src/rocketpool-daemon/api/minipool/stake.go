@@ -9,13 +9,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -37,8 +38,8 @@ func (f *minipoolStakeContextFactory) Create(args url.Values) (*minipoolStakeCon
 }
 
 func (f *minipoolStakeContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*minipoolStakeContext, api.BatchTxInfoData](
-		router, "stake", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*minipoolStakeContext, types.BatchTxInfoData](
+		router, "stake", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -51,7 +52,7 @@ type minipoolStakeContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
+func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	w := sp.GetWallet()
@@ -59,7 +60,7 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 		sp.RequireWalletReady(),
 	)
 	if err != nil {
@@ -67,7 +68,7 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 	}
 
 	// Get eth2 config
-	eth2Config, err := bc.GetEth2Config()
+	eth2Config, err := bc.GetEth2Config(c.handler.context)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon config: %w", err)
 	}
@@ -111,9 +112,9 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 
 		var depositAmount uint64
 		switch depositType {
-		case types.Full, types.Half, types.Empty:
+		case rptypes.Full, rptypes.Half, rptypes.Empty:
 			depositAmount = uint64(16e9) // 16 ETH in gwei
-		case types.Variable:
+		case rptypes.Variable:
 			depositAmount = uint64(31e9) // 31 ETH in gwei
 		default:
 			return fmt.Errorf("error staking minipool %s: unknown deposit type %d", mpCommon.Address.Hex(), depositType)
@@ -124,7 +125,7 @@ func (c *minipoolStakeContext) PrepareData(data *api.BatchTxInfoData, opts *bind
 		if err != nil {
 			return fmt.Errorf("error getting deposit data for validator %s: %w", pubkey.Hex(), err)
 		}
-		signature := types.BytesToValidatorSignature(depositData.Signature)
+		signature := beacon.ValidatorSignature(depositData.Signature)
 
 		txInfo, err := mpCommon.Stake(signature, depositDataRoot, opts)
 		if err != nil {

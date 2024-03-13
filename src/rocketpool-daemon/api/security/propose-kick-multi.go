@@ -13,9 +13,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 const (
@@ -42,7 +42,7 @@ func (f *securityProposeKickMultiContextFactory) Create(args url.Values) (*secur
 
 func (f *securityProposeKickMultiContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityProposeKickMultiContext, api.SecurityProposeKickMultiData](
-		router, "propose-kick-multi", f, f.handler.serviceProvider,
+		router, "propose-kick-multi", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -66,7 +66,7 @@ func (c *securityProposeKickMultiContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnSecurityCouncil()
+	err := sp.RequireOnSecurityCouncil(c.handler.context)
 	if err != nil {
 		return err
 	}

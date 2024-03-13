@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -35,7 +35,7 @@ func (f *auctionCreateContextFactory) Create(args url.Values) (*auctionCreateCon
 
 func (f *auctionCreateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*auctionCreateContext, api.AuctionCreateLotData](
-		router, "lots/create", f, f.handler.serviceProvider,
+		router, "lots/create", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -57,7 +57,7 @@ func (c *auctionCreateContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

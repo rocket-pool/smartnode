@@ -10,10 +10,10 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -34,7 +34,7 @@ func (f *securityMembersContextFactory) Create(args url.Values) (*securityMember
 
 func (f *securityMembersContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityMembersContext, api.SecurityMembersData](
-		router, "members", f, f.handler.serviceProvider,
+		router, "members", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

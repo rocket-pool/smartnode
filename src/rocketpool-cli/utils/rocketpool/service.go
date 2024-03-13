@@ -3,6 +3,7 @@ package rocketpool
 import (
 	"net/http"
 
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -32,8 +33,8 @@ func (r *ServiceRequester) ClientStatus() (*api.ApiResponse[api.ServiceClientSta
 }
 
 // Restarts the Validator client
-func (r *ServiceRequester) RestartVc() (*api.ApiResponse[api.SuccessData], error) {
-	return sendGetRequest[api.SuccessData](r, "restart-vc", "RestartVc", nil)
+func (r *ServiceRequester) RestartVc() (*api.ApiResponse[types.SuccessData], error) {
+	return sendGetRequest[types.SuccessData](r, "restart-vc", "RestartVc", nil)
 }
 
 // Deletes the data folder including the wallet file, password file, and all validator keys.

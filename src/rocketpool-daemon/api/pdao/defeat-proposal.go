@@ -15,9 +15,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -41,7 +41,7 @@ func (f *protocolDaoDefeatProposalContextFactory) Create(args url.Values) (*prot
 
 func (f *protocolDaoDefeatProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoDefeatProposalContext, api.ProtocolDaoDefeatProposalData](
-		router, "proposal/defeat", f, f.handler.serviceProvider,
+		router, "proposal/defeat", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -67,7 +67,7 @@ func (c *protocolDaoDefeatProposalContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

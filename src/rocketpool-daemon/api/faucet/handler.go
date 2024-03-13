@@ -1,20 +1,24 @@
 package faucet
 
 import (
+	"context"
+
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 )
 
 type FaucetHandler struct {
 	serviceProvider *services.ServiceProvider
+	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewFaucetHandler(serviceProvider *services.ServiceProvider) *FaucetHandler {
+func NewFaucetHandler(context context.Context, serviceProvider *services.ServiceProvider) *FaucetHandler {
 	h := &FaucetHandler{
 		serviceProvider: serviceProvider,
+		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&faucetStatusContextFactory{h},

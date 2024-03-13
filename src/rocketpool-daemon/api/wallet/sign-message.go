@@ -10,10 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -36,7 +36,7 @@ func (f *walletSignMessageContextFactory) Create(args url.Values) (*walletSignMe
 
 func (f *walletSignMessageContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletSignMessageContext, api.WalletSignMessageData](
-		router, "sign-message", f, f.handler.serviceProvider,
+		router, "sign-message", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

@@ -10,15 +10,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -43,7 +43,7 @@ func (f *protocolDaoProposeRewardsPercentagesContextFactory) Create(args url.Val
 
 func (f *protocolDaoProposeRewardsPercentagesContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeRewardsPercentagesContext, api.ProtocolDaoGeneralProposeData](
-		router, "rewards-percentages/propose", f, f.handler.serviceProvider,
+		router, "rewards-percentages/propose", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -73,7 +73,7 @@ func (c *protocolDaoProposeRewardsPercentagesContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (c *protocolDaoProposeRewardsPercentagesContext) PrepareData(data *api.Prot
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
 		message := "update RPL rewards distribution"
 		txInfo, err := c.pdaoMgr.ProposeSetRewardsPercentages(message, c.odaoPercent, c.pdaoPercent, c.nodePercent, blockNumber, pollard, opts)
 		if err != nil {

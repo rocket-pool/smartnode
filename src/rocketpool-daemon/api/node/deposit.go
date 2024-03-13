@@ -24,15 +24,14 @@ import (
 
 	prdeposit "github.com/prysmaticlabs/prysm/v4/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	nodewallet "github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/collateral"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	rputils "github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
@@ -58,7 +57,7 @@ func (f *nodeDepositContextFactory) Create(args url.Values) (*nodeDepositContext
 
 func (f *nodeDepositContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeDepositContext, api.NodeDepositData](
-		router, "deposit", f, f.handler.serviceProvider,
+		router, "deposit", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -71,7 +70,7 @@ type nodeDepositContext struct {
 	cfg     *config.SmartNodeConfig
 	rp      *rocketpool.RocketPool
 	bc      beacon.IBeaconClient
-	w       *wallet.LocalWallet
+	w       *nodewallet.Wallet
 
 	amount      *big.Int
 	minNodeFee  float64
@@ -93,7 +92,7 @@ func (c *nodeDepositContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 		sp.RequireWalletReady(),
 	)
 	if err != nil {
@@ -143,7 +142,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	data.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Formatted()
 
 	// Get Beacon config
-	eth2Config, err := c.bc.GetEth2Config()
+	eth2Config, err := c.bc.GetEth2Config(c.handler.context)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon config: %w", err)
 	}
@@ -200,7 +199,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	}
 
 	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rputils.GetDepositContractInfo(c.rp, c.cfg, c.bc)
+	depositContractInfo, err := rputils.GetDepositContractInfo(c.handler.context, c.rp, c.cfg, c.bc)
 	if err != nil {
 		return fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
 	}
@@ -258,12 +257,12 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	if err != nil {
 		return fmt.Errorf("error getting deposit data: %w", err)
 	}
-	pubkey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
-	signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+	pubkey := beacon.ValidatorPubkey(depositData.PublicKey)
+	signature := beacon.ValidatorSignature(depositData.Signature)
 	data.ValidatorPubkey = pubkey
 
 	// Make sure a validator with this pubkey doesn't already exist
-	status, err := c.bc.GetValidatorStatus(pubkey, nil)
+	status, err := c.bc.GetValidatorStatus(c.handler.context, pubkey, nil)
 	if err != nil {
 		return fmt.Errorf("Error checking for existing validator status: %w\nYour funds have not been deposited for your own safety.", err)
 	}
@@ -318,7 +317,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	return nil
 }
 
-func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey rpbeacon.ValidatorPubkey, withdrawalCredentials common.Hash, signature rptypes.ValidatorSignature) error {
+func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey beacon.ValidatorPubkey, withdrawalCredentials common.Hash, signature rptypes.ValidatorSignature) error {
 
 	// Get the deposit domain based on the eth2 config
 	depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
@@ -329,7 +328,7 @@ func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pub
 	// Create the deposit struct
 	depositData := new(ethpb.Deposit_Data)
 	depositData.Amount = depositAmount
-	depositData.PublicKey = pubkey.Bytes()
+	depositData.PublicKey = pubkey[:]
 	depositData.WithdrawalCredentials = withdrawalCredentials.Bytes()
 	depositData.Signature = signature.Bytes()
 

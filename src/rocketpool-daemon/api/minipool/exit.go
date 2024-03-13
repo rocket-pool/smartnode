@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -12,12 +13,12 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
@@ -39,8 +40,12 @@ func (f *minipoolExitContextFactory) Create(args url.Values) (*minipoolExitConte
 	return c, errors.Join(inputErrs...)
 }
 
+func (f *minipoolExitContextFactory) GetCancelContext() context.Context {
+	return f.handler.context
+}
+
 func (f *minipoolExitContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterMinipoolRoute[*minipoolExitContext, api.SuccessData](
+	server.RegisterMinipoolRoute[*minipoolExitContext, types.SuccessData](
 		router, "exit", f, f.handler.serviceProvider,
 	)
 }
@@ -52,7 +57,7 @@ func (f *minipoolExitContextFactory) RegisterRoute(router *mux.Router) {
 type minipoolExitContext struct {
 	handler *MinipoolHandler
 	rp      *rocketpool.RocketPool
-	w       *wallet.LocalWallet
+	w       *wallet.Wallet
 	bc      beacon.IBeaconClient
 
 	minipoolAddresses []common.Address
@@ -66,8 +71,8 @@ func (c *minipoolExitContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
+		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireBeaconClientSynced(c.handler.context),
 		sp.RequireWalletReady(),
 	)
 	if err != nil {
@@ -79,7 +84,7 @@ func (c *minipoolExitContext) Initialize() error {
 func (c *minipoolExitContext) GetState(node *node.Node, mc *batch.MultiCaller) {
 }
 
-func (c *minipoolExitContext) CheckState(node *node.Node, response *api.SuccessData) bool {
+func (c *minipoolExitContext) CheckState(node *node.Node, response *types.SuccessData) bool {
 	return true
 }
 
@@ -87,15 +92,15 @@ func (c *minipoolExitContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minip
 	mp.Common().Pubkey.AddToQuery(mc)
 }
 
-func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.SuccessData) error {
+func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.SuccessData) error {
 	// Get beacon head
-	head, err := c.bc.GetBeaconHead()
+	head, err := c.bc.GetBeaconHead(c.handler.context)
 	if err != nil {
 		return fmt.Errorf("error getting beacon head: %w", err)
 	}
 
 	// Get voluntary exit signature domain
-	signatureDomain, err := c.bc.GetDomainData(eth2types.DomainVoluntaryExit[:], head.Epoch, false)
+	signatureDomain, err := c.bc.GetDomainData(c.handler.context, eth2types.DomainVoluntaryExit[:], head.Epoch, false)
 	if err != nil {
 		return fmt.Errorf("error getting beacon domain data: %w", err)
 	}
@@ -112,7 +117,7 @@ func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []mini
 		}
 
 		// Get validator index
-		validatorIndex, err := c.bc.GetValidatorIndex(validatorPubkey)
+		validatorIndex, err := c.bc.GetValidatorIndex(c.handler.context, validatorPubkey)
 		if err != nil {
 			return fmt.Errorf("error getting index of minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
 		}
@@ -124,10 +129,9 @@ func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []mini
 		}
 
 		// Broadcast voluntary exit message
-		if err := c.bc.ExitValidator(validatorIndex, head.Epoch, signature); err != nil {
+		if err := c.bc.ExitValidator(c.handler.context, validatorIndex, head.Epoch, signature); err != nil {
 			return fmt.Errorf("error submitting exit message for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
 		}
 	}
-	data.Success = true
 	return nil
 }

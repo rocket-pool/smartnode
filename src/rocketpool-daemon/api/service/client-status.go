@@ -5,7 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -26,7 +26,7 @@ func (f *serviceClientStatusContextFactory) Create(args url.Values) (*serviceCli
 
 func (f *serviceClientStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*serviceClientStatusContext, api.ServiceClientStatusData](
-		router, "client-status", f, f.handler.serviceProvider,
+		router, "client-status", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -40,16 +40,15 @@ type serviceClientStatusContext struct {
 
 func (c *serviceClientStatusContext) PrepareData(data *api.ServiceClientStatusData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	cfg := sp.GetConfig()
 	ec := sp.GetEthClient()
 	bc := sp.GetBeaconClient()
 
 	// Get the EC manager status
-	ecMgrStatus := ec.CheckStatus(cfg)
+	ecMgrStatus := ec.CheckStatus(c.handler.context)
 	data.EcManagerStatus = *ecMgrStatus
 
 	// Get the BC manager status
-	bcMgrStatus := bc.CheckStatus()
+	bcMgrStatus := bc.CheckStatus(c.handler.context)
 	data.BcManagerStatus = *bcMgrStatus
 
 	return nil

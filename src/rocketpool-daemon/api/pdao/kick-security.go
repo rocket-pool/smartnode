@@ -10,16 +10,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -42,7 +42,7 @@ func (f *protocolDaoProposeKickFromSecurityCouncilContextFactory) Create(args ur
 
 func (f *protocolDaoProposeKickFromSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeKickFromSecurityCouncilContext, api.ProtocolDaoProposeKickFromSecurityCouncilData](
-		router, "security/kick", f, f.handler.serviceProvider,
+		router, "security/kick", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -71,7 +71,7 @@ func (c *protocolDaoProposeKickFromSecurityCouncilContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (c *protocolDaoProposeKickFromSecurityCouncilContext) PrepareData(data *api
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
 		message := fmt.Sprintf("kick %s (%s) from the security council", c.member.ID.Get(), c.address.Hex())
 		txInfo, err := c.pdaoMgr.ProposeKickFromSecurityCouncil(message, c.address, blockNumber, pollard, opts)
 		if err != nil {

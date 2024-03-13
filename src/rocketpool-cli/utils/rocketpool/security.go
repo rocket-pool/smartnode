@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -54,11 +55,11 @@ func (r *SecurityRequester) CancelProposal(id uint64) (*api.ApiResponse[api.Secu
 }
 
 // Execute a proposal
-func (r *SecurityRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[api.DataBatch[api.SecurityExecuteProposalData]], error) {
+func (r *SecurityRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[types.DataBatch[api.SecurityExecuteProposalData]], error) {
 	args := map[string]string{
 		"ids": makeBatchArg(ids),
 	}
-	return sendGetRequest[api.DataBatch[api.SecurityExecuteProposalData]](r, "proposal/execute", "ExecuteProposals", args)
+	return sendGetRequest[types.DataBatch[api.SecurityExecuteProposalData]](r, "proposal/execute", "ExecuteProposals", args)
 }
 
 // Vote on a proposal
@@ -85,8 +86,8 @@ func (r *SecurityRequester) ProposeInvite(id string, address common.Address) (*a
 }
 
 // Request leaving the security council
-func (r *SecurityRequester) ProposeLeave() (*api.ApiResponse[api.TxInfoData], error) {
-	return sendGetRequest[api.TxInfoData](r, "propose-leave", "ProposeLeave", nil)
+func (r *SecurityRequester) ProposeLeave() (*api.ApiResponse[types.TxInfoData], error) {
+	return sendGetRequest[types.TxInfoData](r, "propose-leave", "ProposeLeave", nil)
 }
 
 // Kick a member from the security council

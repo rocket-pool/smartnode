@@ -14,9 +14,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -41,7 +41,7 @@ func (f *securityProposeReplaceContextFactory) Create(args url.Values) (*securit
 
 func (f *securityProposeReplaceContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityProposeReplaceContext, api.SecurityProposeReplaceData](
-		router, "propose-replace", f, f.handler.serviceProvider,
+		router, "propose-replace", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -68,7 +68,7 @@ func (c *securityProposeReplaceContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnSecurityCouncil()
+	err := sp.RequireOnSecurityCouncil(c.handler.context)
 	if err != nil {
 		return err
 	}

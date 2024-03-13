@@ -12,11 +12,12 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 const (
@@ -42,8 +43,8 @@ func (f *protocolDaoExecuteProposalsContextFactory) Create(args url.Values) (*pr
 }
 
 func (f *protocolDaoExecuteProposalsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*protocolDaoExecuteProposalsContext, api.DataBatch[api.ProtocolDaoExecuteProposalData]](
-		router, "proposal/execute", f, f.handler.serviceProvider,
+	server.RegisterSingleStageRoute[*protocolDaoExecuteProposalsContext, types.DataBatch[api.ProtocolDaoExecuteProposalData]](
+		router, "proposal/execute", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -67,7 +68,7 @@ func (c *protocolDaoExecuteProposalsContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -96,13 +97,13 @@ func (c *protocolDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *protocolDaoExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[api.ProtocolDaoExecuteProposalData], opts *bind.TransactOpts) error {
+func (c *protocolDaoExecuteProposalsContext) PrepareData(dataBatch *types.DataBatch[api.ProtocolDaoExecuteProposalData], opts *bind.TransactOpts) error {
 	dataBatch.Batch = make([]api.ProtocolDaoExecuteProposalData, len(c.ids))
 	for i, prop := range c.proposals {
 		// Check proposal details
 		data := &dataBatch.Batch[i]
 		data.DoesNotExist = (c.ids[i] > c.pdaoMgr.ProposalCount.Formatted())
-		data.InvalidState = (prop.State.Formatted() != types.ProtocolDaoProposalState_Succeeded)
+		data.InvalidState = (prop.State.Formatted() != rptypes.ProtocolDaoProposalState_Succeeded)
 		data.CanExecute = !(data.DoesNotExist || data.InvalidState)
 
 		// Get the tx

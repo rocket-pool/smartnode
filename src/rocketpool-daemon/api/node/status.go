@@ -22,10 +22,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 	ens "github.com/wealdtech/go-ens/v3"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/collateral"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -52,7 +52,7 @@ func (f *nodeStatusContextFactory) Create(args url.Values) (*nodeStatusContext, 
 
 func (f *nodeStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeStatusContext, api.NodeStatusData](
-		router, "status", f, f.handler.serviceProvider,
+		router, "status", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -182,16 +182,16 @@ func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 	c.reth.BalanceOf(mc, &c.rethBalance, c.node.Address)
 
 	// Snapshot
-	c.snapshot.Delegation(mc, &c.delegate, c.node.Address, c.cfg.Smartnode.GetVotingSnapshotID())
+	c.snapshot.Delegation(mc, &c.delegate, c.node.Address, c.cfg.GetVotingSnapshotID())
 }
 
 func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.TransactOpts) error {
 	// Beacon info
-	beaconConfig, err := c.bc.GetEth2Config()
+	beaconConfig, err := c.bc.GetEth2Config(c.handler.context)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon config: %w", err)
 	}
-	beaconHead, err := c.bc.GetBeaconHead()
+	beaconHead, err := c.bc.GetBeaconHead(c.handler.context)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon head: %w", err)
 	}
@@ -263,7 +263,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
-	data.FeeRecipientInfo.SmoothingPoolAddress = *sp.Address
+	data.FeeRecipientInfo.SmoothingPoolAddress = sp.Address
 	data.FeeRecipientInfo.FeeDistributorAddress = c.node.DistributorAddress.Get()
 	data.FeeRecipientInfo.IsInSmoothingPool = c.node.SmoothingPoolRegistrationState.Get()
 	if !data.FeeRecipientInfo.IsInSmoothingPool {
@@ -569,7 +569,7 @@ func (c *nodeStatusContext) getTrueBorrowAndBondAmounts(mps []minipool.IMinipool
 		}
 	}
 
-	statuses, err := c.bc.GetValidatorStatuses(pubkeys, nil)
+	statuses, err := c.bc.GetValidatorStatuses(c.handler.context, pubkeys, nil)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("error loading validator statuses: %w", err)
 	}

@@ -16,7 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -41,7 +41,7 @@ func (f *securityStatusContextFactory) Create(args url.Values) (*securityStatusC
 
 func (f *securityStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityStatusContext, api.SecurityStatusData](
-		router, "status", f, f.handler.serviceProvider,
+		router, "status", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

@@ -10,9 +10,9 @@ import (
 	"github.com/gorilla/mux"
 	ens "github.com/wealdtech/go-ens/v3"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -36,7 +36,7 @@ func (f *nodeResolveEnsContextFactory) Create(args url.Values) (*nodeResolveEnsC
 
 func (f *nodeResolveEnsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeResolveEnsContext, api.NodeResolveEnsData](
-		router, "resolve-ens", f, f.handler.serviceProvider,
+		router, "resolve-ens", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

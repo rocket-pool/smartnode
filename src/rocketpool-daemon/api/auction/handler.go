@@ -1,20 +1,24 @@
 package auction
 
 import (
+	"context"
+
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 )
 
 type AuctionHandler struct {
 	serviceProvider *services.ServiceProvider
+	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewAuctionHandler(serviceProvider *services.ServiceProvider) *AuctionHandler {
+func NewAuctionHandler(context context.Context, serviceProvider *services.ServiceProvider) *AuctionHandler {
 	h := &AuctionHandler{
 		serviceProvider: serviceProvider,
+		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&auctionBidContextFactory{h},

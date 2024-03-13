@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"net/http"
 
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -38,11 +39,11 @@ func (r *AuctionRequester) BidOnLot(lotIndex uint64, amountWei *big.Int) (*api.A
 }
 
 // Claim RPL from lots
-func (r *AuctionRequester) ClaimFromLots(indices []uint64) (*api.ApiResponse[api.DataBatch[api.AuctionClaimFromLotData]], error) {
+func (r *AuctionRequester) ClaimFromLots(indices []uint64) (*api.ApiResponse[types.DataBatch[api.AuctionClaimFromLotData]], error) {
 	args := map[string]string{
 		"indices": makeBatchArg(indices),
 	}
-	return sendGetRequest[api.DataBatch[api.AuctionClaimFromLotData]](r, "lots/claim", "ClaimFromLots", args)
+	return sendGetRequest[types.DataBatch[api.AuctionClaimFromLotData]](r, "lots/claim", "ClaimFromLots", args)
 }
 
 // Create a new lot
@@ -56,11 +57,11 @@ func (r *AuctionRequester) Lots() (*api.ApiResponse[api.AuctionLotsData], error)
 }
 
 // Recover unclaimed RPL from lots (returning it to the auction contract)
-func (r *AuctionRequester) RecoverUnclaimedRplFromLots(indices []uint64) (*api.ApiResponse[api.DataBatch[api.AuctionRecoverRplFromLotData]], error) {
+func (r *AuctionRequester) RecoverUnclaimedRplFromLots(indices []uint64) (*api.ApiResponse[types.DataBatch[api.AuctionRecoverRplFromLotData]], error) {
 	args := map[string]string{
 		"indices": makeBatchArg(indices),
 	}
-	return sendGetRequest[api.DataBatch[api.AuctionRecoverRplFromLotData]](r, "lots/recover", "RecoverUnclaimedRplFromLots", args)
+	return sendGetRequest[types.DataBatch[api.AuctionRecoverRplFromLotData]](r, "lots/recover", "RecoverUnclaimedRplFromLots", args)
 }
 
 // Get RPL auction status

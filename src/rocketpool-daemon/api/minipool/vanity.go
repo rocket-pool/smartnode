@@ -11,10 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/mux"
 
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 const (
@@ -41,7 +41,7 @@ func (f *minipoolVanityContextFactory) Create(args url.Values) (*minipoolVanityC
 
 func (f *minipoolVanityContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolVanityContext, api.MinipoolVanityArtifactsData](
-		router, "vanity-artifacts", f, f.handler.serviceProvider,
+		router, "vanity-artifacts", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -90,8 +90,8 @@ func (c *minipoolVanityContext) PrepareData(data *api.MinipoolVanityArtifactsDat
 	if err != nil {
 		return fmt.Errorf("error getting minipool base address: %w", err)
 	}
-	bytecodeString := fmt.Sprintf(ozMinipoolBytecode, hexutils.RemovePrefix(rocketMinipoolBase.Address.Hex()))
-	bytecodeString = hexutils.RemovePrefix(bytecodeString)
+	bytecodeString := fmt.Sprintf(ozMinipoolBytecode, utils.RemovePrefix(rocketMinipoolBase.Address.Hex()))
+	bytecodeString = utils.RemovePrefix(bytecodeString)
 	minipoolBytecode, err := hex.DecodeString(bytecodeString)
 	if err != nil {
 		return fmt.Errorf("error decoding minipool bytecode [%s]: %w", bytecodeString, err)
@@ -109,7 +109,7 @@ func (c *minipoolVanityContext) PrepareData(data *api.MinipoolVanityArtifactsDat
 
 	// Update & return response
 	data.NodeAddress = nodeAddress
-	data.MinipoolFactoryAddress = *rocketMinipoolFactory.Address
+	data.MinipoolFactoryAddress = rocketMinipoolFactory.Address
 	data.InitHash = initHash
 	return nil
 }

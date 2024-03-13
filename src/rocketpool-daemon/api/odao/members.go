@@ -8,9 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -31,7 +31,7 @@ func (f *oracleDaoMembersContextFactory) Create(args url.Values) (*oracleDaoMemb
 
 func (f *oracleDaoMembersContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoMembersContext, api.OracleDaoMembersData](
-		router, "members", f, f.handler.serviceProvider,
+		router, "members", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -53,7 +53,7 @@ func (c *oracleDaoMembersContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.context)
 	if err != nil {
 		return err
 	}

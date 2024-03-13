@@ -14,8 +14,8 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -36,7 +36,7 @@ func (f *faucetStatusContextFactory) Create(args url.Values) (*faucetStatusConte
 
 func (f *faucetStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*faucetStatusContext, api.FaucetStatusData](
-		router, "status", f, f.handler.serviceProvider,
+		router, "status", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -61,7 +61,7 @@ func (c *faucetStatusContext) Initialize() error {
 
 	// Requirements
 	return errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 		sp.RequireRplFaucet(),
 	)
 }

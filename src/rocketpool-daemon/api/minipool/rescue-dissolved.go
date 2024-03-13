@@ -9,17 +9,16 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	beacon "github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/beacon"
+	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/input"
+	rpbeacon "github.com/rocket-pool/rocketpool-go/beacon"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
-	rpbeacon "github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -42,8 +41,8 @@ func (f *minipoolRescueDissolvedContextFactory) Create(args url.Values) (*minipo
 }
 
 func (f *minipoolRescueDissolvedContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*minipoolRescueDissolvedContext, api.BatchTxInfoData](
-		router, "rescue-dissolved", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*minipoolRescueDissolvedContext, types.BatchTxInfoData](
+		router, "rescue-dissolved", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -56,13 +55,13 @@ type minipoolRescueDissolvedContext struct {
 	minipoolAddresses []common.Address
 	depositAmounts    []*big.Int
 	rp                *rocketpool.RocketPool
-	w                 *wallet.LocalWallet
-	bc                rpbeacon.IBeaconClient
+	w                 *wallet.Wallet
+	bc                beacon.IBeaconClient
 
 	mpMgr *minipool.MinipoolManager
 }
 
-func (c *minipoolRescueDissolvedContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
+func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
 	// Sanity check
 	if len(c.minipoolAddresses) != len(c.depositAmounts) {
 		return fmt.Errorf("addresses and deposit amounts must have the same length (%d vs. %d)", len(c.minipoolAddresses), len(c.depositAmounts))
@@ -75,8 +74,8 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *api.BatchTxInfoData, 
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
+		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireBeaconClientSynced(c.handler.context),
 	)
 	if err != nil {
 		return err
@@ -106,7 +105,7 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *api.BatchTxInfoData, 
 
 // Create a transaction for submitting a rescue deposit, optionally simulating it only for gas estimation
 func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Address, amount *big.Int, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	beaconDeposit, err := beacon.NewBeaconDeposit(c.rp)
+	beaconDeposit, err := rpbeacon.NewBeaconDeposit(c.rp)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Beacon deposit contract binding: %w", err)
 	}
@@ -119,7 +118,7 @@ func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Add
 	mpCommon := mp.Common()
 
 	// Get eth2 config
-	eth2Config, err := c.bc.GetEth2Config()
+	eth2Config, err := c.bc.GetEth2Config(c.handler.context)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +143,7 @@ func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Add
 	if err != nil {
 		return nil, err
 	}
-	signature := types.BytesToValidatorSignature(depositData.Signature)
+	signature := beacon.ValidatorSignature(depositData.Signature)
 
 	// Get the tx info
 	txInfo, err := beaconDeposit.Deposit(opts, validatorPubkey, withdrawalCredentials, signature, depositDataRoot)

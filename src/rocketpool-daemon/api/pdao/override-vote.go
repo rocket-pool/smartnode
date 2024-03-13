@@ -15,11 +15,12 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // ===============
@@ -36,14 +37,14 @@ func (f *protocolDaoOverrideVoteOnProposalContextFactory) Create(args url.Values
 	}
 	inputErrs := []error{
 		server.ValidateArg("id", args, input.ValidatePositiveUint, &c.proposalID),
-		server.ValidateArg("vote", args, input.ValidateVoteDirection, &c.voteDirection),
+		server.ValidateArg("vote", args, utils.ValidateVoteDirection, &c.voteDirection),
 	}
 	return c, errors.Join(inputErrs...)
 }
 
 func (f *protocolDaoOverrideVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoOverrideVoteOnProposalContext, api.ProtocolDaoOverrideVoteOnProposalData](
-		router, "proposal/override-vote", f, f.handler.serviceProvider,
+		router, "proposal/override-vote", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -74,7 +75,7 @@ func (c *protocolDaoOverrideVoteOnProposalContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

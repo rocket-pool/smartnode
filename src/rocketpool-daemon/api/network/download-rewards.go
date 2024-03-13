@@ -7,10 +7,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -32,8 +32,8 @@ func (f *networkDownloadRewardsContextFactory) Create(args url.Values) (*network
 }
 
 func (f *networkDownloadRewardsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*networkDownloadRewardsContext, api.SuccessData](
-		router, "download-rewards-file", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*networkDownloadRewardsContext, types.SuccessData](
+		router, "download-rewards-file", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -47,14 +47,14 @@ type networkDownloadRewardsContext struct {
 	interval uint64
 }
 
-func (c *networkDownloadRewardsContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+func (c *networkDownloadRewardsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -66,10 +66,9 @@ func (c *networkDownloadRewardsContext) PrepareData(data *api.SuccessData, opts 
 	}
 
 	// Download the rewards file
-	err = rewards.DownloadRewardsFile(cfg, &intervalInfo, true)
+	err = rewards.DownloadRewardsFile(cfg, &intervalInfo)
 	if err != nil {
 		return fmt.Errorf("error downloading interval %d rewards file: %w", c.interval, err)
 	}
-	data.Success = true
 	return nil
 }

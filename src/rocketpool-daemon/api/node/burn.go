@@ -14,9 +14,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -39,7 +39,7 @@ func (f *nodeBurnContextFactory) Create(args url.Values) (*nodeBurnContext, erro
 
 func (f *nodeBurnContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeBurnContext, api.NodeBurnData](
-		router, "burn", f, f.handler.serviceProvider,
+		router, "burn", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

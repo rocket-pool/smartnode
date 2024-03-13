@@ -12,11 +12,12 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 const (
@@ -42,8 +43,8 @@ func (f *securityExecuteProposalsContextFactory) Create(args url.Values) (*secur
 }
 
 func (f *securityExecuteProposalsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*securityExecuteProposalsContext, api.DataBatch[api.SecurityExecuteProposalData]](
-		router, "proposal/execute", f, f.handler.serviceProvider,
+	server.RegisterSingleStageRoute[*securityExecuteProposalsContext, types.DataBatch[api.SecurityExecuteProposalData]](
+		router, "proposal/execute", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -96,7 +97,7 @@ func (c *securityExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *securityExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[api.SecurityExecuteProposalData], opts *bind.TransactOpts) error {
+func (c *securityExecuteProposalsContext) PrepareData(dataBatch *types.DataBatch[api.SecurityExecuteProposalData], opts *bind.TransactOpts) error {
 	dataBatch.Batch = make([]api.SecurityExecuteProposalData, len(c.ids))
 	for i, prop := range c.proposals {
 
@@ -104,7 +105,7 @@ func (c *securityExecuteProposalsContext) PrepareData(dataBatch *api.DataBatch[a
 		data := &dataBatch.Batch[i]
 		state := prop.State.Formatted()
 		data.DoesNotExist = (c.ids[i] > c.dpm.ProposalCount.Formatted())
-		data.InvalidState = !(state == types.ProposalState_Succeeded)
+		data.InvalidState = !(state == rptypes.ProposalState_Succeeded)
 		data.CanExecute = !(data.DoesNotExist || data.InvalidState)
 
 		// Get the tx

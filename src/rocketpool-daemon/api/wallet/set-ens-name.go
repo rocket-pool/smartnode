@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	ens "github.com/wealdtech/go-ens/v3"
 )
@@ -32,7 +32,7 @@ func (f *walletSetEnsNameContextFactory) Create(args url.Values) (*walletSetEnsN
 
 func (f *walletSetEnsNameContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletSetEnsNameContext, api.WalletSetEnsNameData](
-		router, "set-ens-name", f, f.handler.serviceProvider,
+		router, "set-ens-name", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

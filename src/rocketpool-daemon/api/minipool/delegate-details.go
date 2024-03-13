@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -9,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -33,6 +35,10 @@ func (f *minipoolDelegateDetailsContextFactory) Create(args url.Values) (*minipo
 	return c, nil
 }
 
+func (f *minipoolDelegateDetailsContextFactory) GetCancelContext() context.Context {
+	return f.handler.context
+}
+
 func (f *minipoolDelegateDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterMinipoolRoute[*minipoolDelegateDetailsContext, api.MinipoolDelegateDetailsData](
 		router, "delegate/details", f, f.handler.serviceProvider,
@@ -46,7 +52,7 @@ func (f *minipoolDelegateDetailsContextFactory) RegisterRoute(router *mux.Router
 type minipoolDelegateDetailsContext struct {
 	handler  *MinipoolHandler
 	rp       *rocketpool.RocketPool
-	delegate *eth.Contract
+	delegate *core.Contract
 }
 
 func (c *minipoolDelegateDetailsContext) Initialize() error {
@@ -55,7 +61,7 @@ func (c *minipoolDelegateDetailsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 	)
 	if err != nil {
 		return err
@@ -138,7 +144,7 @@ func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address,
 		}
 	}
 
-	data.LatestDelegate = *c.delegate.Address
+	data.LatestDelegate = c.delegate.Address
 	data.Details = details
 	return nil
 }

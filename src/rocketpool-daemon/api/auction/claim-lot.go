@@ -14,9 +14,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 const (
@@ -42,8 +43,8 @@ func (f *auctionClaimContextFactory) Create(args url.Values) (*auctionClaimConte
 }
 
 func (f *auctionClaimContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*auctionClaimContext, api.DataBatch[api.AuctionClaimFromLotData]](
-		router, "lots/claim", f, f.handler.serviceProvider,
+	server.RegisterSingleStageRoute[*auctionClaimContext, types.DataBatch[api.AuctionClaimFromLotData]](
+		router, "lots/claim", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -67,7 +68,7 @@ func (c *auctionClaimContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -93,7 +94,7 @@ func (c *auctionClaimContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *auctionClaimContext) PrepareData(dataBatch *api.DataBatch[api.AuctionClaimFromLotData], opts *bind.TransactOpts) error {
+func (c *auctionClaimContext) PrepareData(dataBatch *types.DataBatch[api.AuctionClaimFromLotData], opts *bind.TransactOpts) error {
 	dataBatch.Batch = make([]api.AuctionClaimFromLotData, len(c.indices))
 	for i, lot := range c.lots {
 		addressBidAmount := c.addressBidAmounts[i]

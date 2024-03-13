@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -48,7 +48,7 @@ func (f *txBatchSubmitTxsContextFactory) Create(body api.BatchSubmitTxsBody) (*t
 
 func (f *txBatchSubmitTxsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessPost[*txBatchSubmitTxsContext, api.BatchSubmitTxsBody, api.BatchTxData](
-		router, "batch-submit-txs", f, f.handler.serviceProvider,
+		router, "batch-submit-txs", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

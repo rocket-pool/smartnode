@@ -77,7 +77,7 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 }
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
-func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider, cancelContext context.Context) (*types.ApiResponse[DataType], error) {
+func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider, context context.Context) (*types.ApiResponse[DataType], error) {
 	// Load contracts
 	err := serviceProvider.LoadContractsIfStale()
 	if err != nil {
@@ -85,7 +85,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	}
 
 	// Common requirements
-	err = serviceProvider.RequireNodeRegistered(cancelContext)
+	err = serviceProvider.RequireNodeRegistered(context)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	nodeAddress, _ := serviceProvider.GetWallet().GetAddress()
 
 	// Get the latest block for consistency
-	latestBlock, err := rp.Client.BlockNumber(context.Background())
+	latestBlock, err := rp.Client.BlockNumber(context)
 	if err != nil {
 		return nil, fmt.Errorf("error getting latest block number: %w", err)
 	}

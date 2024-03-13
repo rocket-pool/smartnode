@@ -8,11 +8,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -34,8 +34,8 @@ func (f *minipoolReduceBondContextFactory) Create(args url.Values) (*minipoolRed
 }
 
 func (f *minipoolReduceBondContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*minipoolReduceBondContext, api.BatchTxInfoData](
-		router, "reduce-bond", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*minipoolReduceBondContext, types.BatchTxInfoData](
+		router, "reduce-bond", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -48,8 +48,8 @@ type minipoolReduceBondContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolReduceBondContext) PrepareData(data *api.BatchTxInfoData, opts *bind.TransactOpts) error {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "reduce-bond")
+func (c *minipoolReduceBondContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
+	return prepareMinipoolBatchTxData(c.handler.context, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "reduce-bond")
 }
 
 func (c *minipoolReduceBondContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {

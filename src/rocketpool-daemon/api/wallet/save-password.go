@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 )
 
 // ===============
@@ -27,8 +27,8 @@ func (f *walletSavePasswordContextFactory) Create(args url.Values) (*walletSaveP
 }
 
 func (f *walletSavePasswordContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*walletSavePasswordContext, api.SuccessData](
-		router, "save-password", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*walletSavePasswordContext, types.SuccessData](
+		router, "save-password", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -40,7 +40,7 @@ type walletSavePasswordContext struct {
 	handler *WalletHandler
 }
 
-func (c *walletSavePasswordContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+func (c *walletSavePasswordContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 

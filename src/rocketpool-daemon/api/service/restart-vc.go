@@ -6,9 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 )
 
 // ===============
@@ -27,8 +26,8 @@ func (f *serviceRestartVcContextFactory) Create(args url.Values) (*serviceRestar
 }
 
 func (f *serviceRestartVcContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*serviceRestartVcContext, api.SuccessData](
-		router, "restart-vc", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*serviceRestartVcContext, types.SuccessData](
+		router, "restart-vc", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -40,7 +39,7 @@ type serviceRestartVcContext struct {
 	handler *ServiceHandler
 }
 
-func (c *serviceRestartVcContext) PrepareData(data *api.SuccessData, opts *bind.TransactOpts) error {
+func (c *serviceRestartVcContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	bc := sp.GetBeaconClient()
@@ -50,7 +49,5 @@ func (c *serviceRestartVcContext) PrepareData(data *api.SuccessData, opts *bind.
 	if err != nil {
 		return fmt.Errorf("error restarting validator client: %w", err)
 	}
-
-	data.Success = true
 	return nil
 }

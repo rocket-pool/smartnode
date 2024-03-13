@@ -36,6 +36,10 @@ func (f *minipoolStakeDetailsContextFactory) Create(args url.Values) (*minipoolS
 	return c, nil
 }
 
+func (f *minipoolStakeDetailsContextFactory) GetCancelContext() context.Context {
+	return f.handler.context
+}
+
 func (f *minipoolStakeDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterMinipoolRoute[*minipoolStakeDetailsContext, api.MinipoolStakeDetailsData](
 		router, "stake/details", f, f.handler.serviceProvider,
@@ -59,7 +63,7 @@ func (c *minipoolStakeDetailsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 	)
 	if err != nil {
 		return err

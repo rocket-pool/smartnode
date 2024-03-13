@@ -9,7 +9,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -31,7 +31,7 @@ func (f *nodeGetSnapshotVotingPowerContextFactory) Create(args url.Values) (*nod
 
 func (f *nodeGetSnapshotVotingPowerContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeGetSnapshotVotingPowerContext, api.NodeGetSnapshotVotingPowerData](
-		router, "get-snapshot-voting-power", f, f.handler.serviceProvider,
+		router, "get-snapshot-voting-power", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -53,7 +53,7 @@ func (c *nodeGetSnapshotVotingPowerContext) PrepareData(data *api.NodeGetSnapsho
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(),
+		sp.RequireNodeRegistered(c.handler.context),
 		sp.RequireSnapshot(),
 	)
 	if err != nil {

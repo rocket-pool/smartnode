@@ -15,12 +15,13 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/beacon"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/proposals"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // ===============
@@ -37,14 +38,14 @@ func (f *protocolDaoVoteOnProposalContextFactory) Create(args url.Values) (*prot
 	}
 	inputErrs := []error{
 		server.ValidateArg("id", args, input.ValidatePositiveUint, &c.proposalID),
-		server.ValidateArg("vote", args, input.ValidateVoteDirection, &c.voteDirection),
+		server.ValidateArg("vote", args, utils.ValidateVoteDirection, &c.voteDirection),
 	}
 	return c, errors.Join(inputErrs...)
 }
 
 func (f *protocolDaoVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoVoteOnProposalContext, api.ProtocolDaoVoteOnProposalData](
-		router, "proposal/vote", f, f.handler.serviceProvider,
+		router, "proposal/vote", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -75,7 +76,7 @@ func (c *protocolDaoVoteOnProposalContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -124,7 +125,7 @@ func (c *protocolDaoVoteOnProposalContext) PrepareData(data *api.ProtocolDaoVote
 	// Get the tx
 	if data.CanVote && opts != nil {
 		// Get the proposal artifacts
-		propMgr, err := proposals.NewProposalManager(nil, c.cfg, c.rp, c.bc)
+		propMgr, err := proposals.NewProposalManager(c.handler.context, nil, c.cfg, c.rp, c.bc)
 		if err != nil {
 			return fmt.Errorf("error creating proposal manager: %w")
 		}

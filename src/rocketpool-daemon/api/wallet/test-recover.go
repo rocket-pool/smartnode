@@ -8,11 +8,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -38,7 +38,7 @@ func (f *walletTestRecoverContextFactory) Create(args url.Values) (*walletTestRe
 
 func (f *walletTestRecoverContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletTestRecoverContext, api.WalletRecoverData](
-		router, "test-recover", f, f.handler.serviceProvider,
+		router, "test-recover", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -60,7 +60,7 @@ func (c *walletTestRecoverContext) PrepareData(data *api.WalletRecoverData, opts
 	rp := sp.GetRocketPool()
 
 	if !c.skipValidatorKeyRecovery {
-		err := sp.RequireEthClientSynced()
+		err := sp.RequireEthClientSynced(c.handler.context)
 		if err != nil {
 			return err
 		}

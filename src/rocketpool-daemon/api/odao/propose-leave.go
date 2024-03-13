@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -35,7 +35,7 @@ func (f *oracleDaoProposeLeaveContextFactory) Create(args url.Values) (*oracleDa
 
 func (f *oracleDaoProposeLeaveContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoProposeLeaveContext, api.OracleDaoProposeLeaveData](
-		router, "propose-leave", f, f.handler.serviceProvider,
+		router, "propose-leave", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -59,7 +59,7 @@ func (c *oracleDaoProposeLeaveContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnOracleDao()
+	err := sp.RequireOnOracleDao(c.handler.context)
 	if err != nil {
 		return err
 	}

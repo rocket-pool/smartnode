@@ -7,8 +7,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/collateral"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -29,7 +29,7 @@ func (f *nodeCheckCollateralContextFactory) Create(args url.Values) (*nodeCheckC
 
 func (f *nodeCheckCollateralContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeCheckCollateralContext, api.NodeCheckCollateralData](
-		router, "check-collateral", f, f.handler.serviceProvider,
+		router, "check-collateral", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -47,7 +47,7 @@ func (c *nodeCheckCollateralContext) PrepareData(data *api.NodeCheckCollateralDa
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

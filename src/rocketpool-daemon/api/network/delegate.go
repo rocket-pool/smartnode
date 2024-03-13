@@ -6,8 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -28,7 +28,7 @@ func (f *networkDelegateContextFactory) Create(args url.Values) (*networkDelegat
 
 func (f *networkDelegateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkDelegateContext, api.NetworkLatestDelegateData](
-		router, "latest-delegate", f, f.handler.serviceProvider,
+		router, "latest-delegate", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -45,7 +45,7 @@ func (c *networkDelegateContext) PrepareData(data *api.NetworkLatestDelegateData
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -56,6 +56,6 @@ func (c *networkDelegateContext) PrepareData(data *api.NetworkLatestDelegateData
 		return fmt.Errorf("error getting minipool delegate contract: %w", err)
 	}
 
-	data.Address = *delegateContract.Address
+	data.Address = delegateContract.Address
 	return nil
 }

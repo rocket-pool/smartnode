@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -51,7 +52,7 @@ func (r *NodeRequester) CheckCollateral() (*api.ApiResponse[api.NodeCheckCollate
 }
 
 // Claim rewards for the given reward intervals
-func (r *NodeRequester) ClaimAndStake(indices []*big.Int, stakeAmount *big.Int) (*api.ApiResponse[api.TxInfoData], error) {
+func (r *NodeRequester) ClaimAndStake(indices []*big.Int, stakeAmount *big.Int) (*api.ApiResponse[types.TxInfoData], error) {
 	indicesStrings := make([]string, len(indices))
 	for i, index := range indices {
 		indicesStrings[i] = index.String()
@@ -60,7 +61,7 @@ func (r *NodeRequester) ClaimAndStake(indices []*big.Int, stakeAmount *big.Int) 
 		"indices":      strings.Join(indicesStrings, ","),
 		"stake-amount": stakeAmount.String(),
 	}
-	return sendGetRequest[api.TxInfoData](r, "claim-and-stake", "ClaimAndStake", args)
+	return sendGetRequest[types.TxInfoData](r, "claim-and-stake", "ClaimAndStake", args)
 }
 
 // Create a vacant minipool, which can be used to migrate a solo staker
@@ -185,24 +186,24 @@ func (r *NodeRequester) SetStakeRplForAllowed(caller common.Address, allowed boo
 }
 
 // Set the node's timezone location
-func (r *NodeRequester) SetTimezone(timezoneLocation string) (*api.ApiResponse[api.TxInfoData], error) {
+func (r *NodeRequester) SetTimezone(timezoneLocation string) (*api.ApiResponse[types.TxInfoData], error) {
 	args := map[string]string{
 		"timezone": timezoneLocation,
 	}
-	return sendGetRequest[api.TxInfoData](r, "set-timezone", "SetTimezone", args)
+	return sendGetRequest[types.TxInfoData](r, "set-timezone", "SetTimezone", args)
 }
 
 // Clear the node's voting snapshot delegate
-func (r *NodeRequester) ClearSnapshotDelegate() (*api.ApiResponse[api.TxInfoData], error) {
-	return sendGetRequest[api.TxInfoData](r, "snapshot-delegate/clear", "ClearSnapshotDelegate", nil)
+func (r *NodeRequester) ClearSnapshotDelegate() (*api.ApiResponse[types.TxInfoData], error) {
+	return sendGetRequest[types.TxInfoData](r, "snapshot-delegate/clear", "ClearSnapshotDelegate", nil)
 }
 
 // Set a voting snapshot delegate for the node
-func (r *NodeRequester) SetSnapshotDelegate(delegate common.Address) (*api.ApiResponse[api.TxInfoData], error) {
+func (r *NodeRequester) SetSnapshotDelegate(delegate common.Address) (*api.ApiResponse[types.TxInfoData], error) {
 	args := map[string]string{
 		"delegate": delegate.Hex(),
 	}
-	return sendGetRequest[api.TxInfoData](r, "snapshot-delegate/set", "SetSnapshotDelegate", args)
+	return sendGetRequest[types.TxInfoData](r, "snapshot-delegate/set", "SetSnapshotDelegate", args)
 }
 
 // Stake RPL against the node

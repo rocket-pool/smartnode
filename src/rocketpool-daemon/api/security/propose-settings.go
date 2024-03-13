@@ -7,13 +7,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -38,7 +38,7 @@ func (f *securityProposeSettingContextFactory) Create(args url.Values) (*securit
 
 func (f *securityProposeSettingContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*securityProposeSettingContext, api.SecurityProposeSettingData](
-		router, "setting/propose", f, f.handler.serviceProvider,
+		router, "setting/propose", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -59,7 +59,7 @@ func (c *securityProposeSettingContext) PrepareData(data *api.SecurityProposeSet
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireOnSecurityCouncil()
+	err := sp.RequireOnSecurityCouncil(c.handler.context)
 	if err != nil {
 		return err
 	}

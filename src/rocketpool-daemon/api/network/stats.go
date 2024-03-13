@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -17,7 +18,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -38,7 +39,7 @@ func (f *networkStatsContextFactory) Create(args url.Values) (*networkStatsConte
 
 func (f *networkStatsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkStatsContext, api.NetworkStatsData](
-		router, "stats", f, f.handler.serviceProvider,
+		router, "stats", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -55,7 +56,7 @@ type networkStatsContext struct {
 	mpMgr         *minipool.MinipoolManager
 	networkMgr    *network.NetworkManager
 	reth          *tokens.TokenReth
-	smoothingPool *eth.Contract
+	smoothingPool *core.Contract
 }
 
 func (c *networkStatsContext) Initialize() error {
@@ -63,7 +64,7 @@ func (c *networkStatsContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -149,8 +150,8 @@ func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind
 	data.SmoothingPoolNodes = spCount
 
 	// Get the smoothing pool balance
-	data.SmoothingPoolAddress = *c.smoothingPool.Address
-	smoothingPoolBalance, err := c.rp.Client.BalanceAt(context.Background(), *c.smoothingPool.Address, nil)
+	data.SmoothingPoolAddress = c.smoothingPool.Address
+	smoothingPoolBalance, err := c.rp.Client.BalanceAt(context.Background(), c.smoothingPool.Address, nil)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool balance: %w", err)
 	}

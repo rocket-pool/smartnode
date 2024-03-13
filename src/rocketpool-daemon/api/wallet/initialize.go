@@ -8,11 +8,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -38,7 +38,7 @@ func (f *walletInitializeContextFactory) Create(args url.Values) (*walletInitial
 
 func (f *walletInitializeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletInitializeContext, api.WalletInitializeData](
-		router, "initialize", f, f.handler.serviceProvider,
+		router, "initialize", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

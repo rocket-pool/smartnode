@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -35,7 +35,7 @@ func (f *securityJoinContextFactory) Create(args url.Values) (*securityJoinConte
 
 func (f *securityJoinContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityJoinContext, api.SecurityJoinData](
-		router, "join", f, f.handler.serviceProvider,
+		router, "join", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

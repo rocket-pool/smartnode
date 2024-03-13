@@ -14,12 +14,12 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 
+	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet"
 	"github.com/rocket-pool/smartnode/shared/config"
 )
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -28,7 +28,7 @@ func (f *nodeBalanceContextFactory) Create(args url.Values) (*nodeBalanceContext
 
 func (f *nodeBalanceContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeBalanceContext, api.NodeBalanceData](
-		router, "balance", f, f.handler.serviceProvider,
+		router, "balance", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

@@ -16,7 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -37,7 +37,7 @@ func (f *oracleDaoJoinContextFactory) Create(args url.Values) (*oracleDaoJoinCon
 
 func (f *oracleDaoJoinContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoJoinContext, api.OracleDaoJoinData](
-		router, "join", f, f.handler.serviceProvider,
+		router, "join", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -63,7 +63,7 @@ func (c *oracleDaoJoinContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bi
 			return fmt.Errorf("error getting RPL token contract: %w", err)
 		}
 
-		approveTxInfo, err := c.rpl.Approve(*dnta.Address, rplBond, opts)
+		approveTxInfo, err := c.rpl.Approve(dnta.Address, rplBond, opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for RPL approval: %w", err)
 		}

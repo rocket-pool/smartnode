@@ -13,9 +13,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -38,7 +38,7 @@ func (f *nodeSwapRplContextFactory) Create(args url.Values) (*nodeSwapRplContext
 
 func (f *nodeSwapRplContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSwapRplContext, api.NodeSwapRplData](
-		router, "swap-rpl", f, f.handler.serviceProvider,
+		router, "swap-rpl", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -65,7 +65,7 @@ func (c *nodeSwapRplContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (c *nodeSwapRplContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating RPL contract: %w", err)
 	}
-	c.rplAddress = *rplContract.Address
+	c.rplAddress = rplContract.Address
 	return nil
 }
 

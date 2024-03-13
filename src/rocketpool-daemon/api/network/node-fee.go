@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -33,7 +33,7 @@ func (f *networkFeeContextFactory) Create(args url.Values) (*networkFeeContext, 
 
 func (f *networkFeeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkFeeContext, api.NetworkNodeFeeData](
-		router, "node-fee", f, f.handler.serviceProvider,
+		router, "node-fee", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -54,7 +54,7 @@ func (c *networkFeeContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.context)
 	if err != nil {
 		return err
 	}

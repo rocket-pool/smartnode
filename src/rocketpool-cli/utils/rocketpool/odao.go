@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -59,11 +60,11 @@ func (r *ODaoRequester) CancelProposal(id uint64) (*api.ApiResponse[api.OracleDa
 }
 
 // Execute a proposal
-func (r *ODaoRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[api.DataBatch[api.OracleDaoExecuteProposalData]], error) {
+func (r *ODaoRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[types.DataBatch[api.OracleDaoExecuteProposalData]], error) {
 	args := map[string]string{
 		"ids": makeBatchArg(ids),
 	}
-	return sendGetRequest[api.DataBatch[api.OracleDaoExecuteProposalData]](r, "proposal/execute", "ExecuteProposals", args)
+	return sendGetRequest[types.DataBatch[api.OracleDaoExecuteProposalData]](r, "proposal/execute", "ExecuteProposals", args)
 }
 
 // Vote on a proposal

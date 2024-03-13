@@ -15,9 +15,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // ===============
@@ -34,7 +35,7 @@ func (f *oracleDaoProposeInviteContextFactory) Create(args url.Values) (*oracleD
 	}
 	inputErrs := []error{
 		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
-		server.ValidateArg("id", args, input.ValidateDAOMemberID, &c.id),
+		server.ValidateArg("id", args, utils.ValidateDAOMemberID, &c.id),
 		server.GetStringFromVars("url", args, &c.url),
 	}
 	return c, errors.Join(inputErrs...)
@@ -42,7 +43,7 @@ func (f *oracleDaoProposeInviteContextFactory) Create(args url.Values) (*oracleD
 
 func (f *oracleDaoProposeInviteContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoProposeInviteContext, api.OracleDaoProposeInviteData](
-		router, "propose-invite", f, f.handler.serviceProvider,
+		router, "propose-invite", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -70,7 +71,7 @@ func (c *oracleDaoProposeInviteContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnOracleDao()
+	err := sp.RequireOnOracleDao(c.handler.context)
 	if err != nil {
 		return err
 	}

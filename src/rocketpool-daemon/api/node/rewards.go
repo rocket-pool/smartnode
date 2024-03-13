@@ -16,8 +16,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
 
+	"github.com/rocket-pool/node-manager-core/api/server"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -43,7 +43,7 @@ func (f *nodeRewardsContextFactory) Create(args url.Values) (*nodeRewardsContext
 
 func (f *nodeRewardsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeRewardsContext, api.NodeRewardsData](
-		router, "rewards", f, f.handler.serviceProvider,
+		router, "rewards", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -64,7 +64,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	}, nil)
 
 	// This thing is so complex it's easier to just get the state snapshot and go from there
-	stateMgr, err := state.NewNetworkStateManager(rp, cfg, ec, bc, nil)
+	stateMgr, err := state.NewNetworkStateManager(c.handler.context, rp, cfg, ec, bc, nil)
 	if err != nil {
 		return fmt.Errorf("error creating network state manager: %w", err)
 	}
@@ -99,7 +99,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	if err != nil {
 		return fmt.Errorf("error creating minipool manager binding: %w", err)
 	}
-	state, totalEffectiveStake, err := stateMgr.GetHeadStateForNode(nodeAddress, true)
+	state, totalEffectiveStake, err := stateMgr.GetHeadStateForNode(c.handler.context, nodeAddress, true)
 	if err != nil {
 		return fmt.Errorf("error getting network state for node %s: %w", nodeAddress.Hex(), err)
 	}

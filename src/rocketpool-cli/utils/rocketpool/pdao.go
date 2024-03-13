@@ -34,11 +34,11 @@ func (r *PDaoRequester) GetClient() *http.Client {
 }
 
 // Claim / unlock bonds from a proposal
-func (r *PDaoRequester) ClaimBonds(claims []api.ProtocolDaoClaimBonds) (*api.ApiResponse[api.DataBatch[api.ProtocolDaoClaimBondsData]], error) {
+func (r *PDaoRequester) ClaimBonds(claims []api.ProtocolDaoClaimBonds) (*api.ApiResponse[types.DataBatch[api.ProtocolDaoClaimBondsData]], error) {
 	body := api.ProtocolDaoClaimBondsBody{
 		Claims: claims,
 	}
-	return sendPostRequest[api.DataBatch[api.ProtocolDaoClaimBondsData]](r, "claim-bonds", "ClaimBonds", body)
+	return sendPostRequest[types.DataBatch[api.ProtocolDaoClaimBondsData]](r, "claim-bonds", "ClaimBonds", body)
 }
 
 // Get the list of proposals with claimable / rewardable bonds, and the relevant indices for each one
@@ -66,11 +66,11 @@ func (r *PDaoRequester) DefeatProposal(proposalID uint64, index uint64) (*api.Ap
 }
 
 // Execute one or more proposals
-func (r *PDaoRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[api.DataBatch[api.ProtocolDaoExecuteProposalData]], error) {
+func (r *PDaoRequester) ExecuteProposals(ids []uint64) (*api.ApiResponse[types.DataBatch[api.ProtocolDaoExecuteProposalData]], error) {
 	args := map[string]string{
 		"ids": makeBatchArg(ids),
 	}
-	return sendGetRequest[api.DataBatch[api.ProtocolDaoExecuteProposalData]](r, "proposal/execute", "ExecuteProposals", args)
+	return sendGetRequest[types.DataBatch[api.ProtocolDaoExecuteProposalData]](r, "proposal/execute", "ExecuteProposals", args)
 }
 
 // Finalize a proposal if it's been vetoed by burning the proposer's bond

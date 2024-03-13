@@ -11,10 +11,10 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/api/security"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/api/service"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/api/tx"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/api/auction"

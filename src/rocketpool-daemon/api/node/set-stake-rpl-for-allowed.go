@@ -10,9 +10,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/rocketpool-go/node"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 // ===============
@@ -36,7 +36,7 @@ func (f *nodeSetStakeRplForAllowedContextFactory) Create(args url.Values) (*node
 
 func (f *nodeSetStakeRplForAllowedContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeSetStakeRplForAllowedContext, api.NodeSetStakeRplForAllowedData](
-		router, "set-stake-rpl-for-allowed", f, f.handler.serviceProvider,
+		router, "set-stake-rpl-for-allowed", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -57,7 +57,7 @@ func (c *nodeSetStakeRplForAllowedContext) PrepareData(data *api.NodeSetStakeRpl
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

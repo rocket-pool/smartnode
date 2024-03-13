@@ -10,9 +10,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/rocketpool-go/node"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 )
 
 // ===============
@@ -34,8 +34,8 @@ func (f *nodeSetTimezoneContextFactory) Create(args url.Values) (*nodeSetTimezon
 }
 
 func (f *nodeSetTimezoneContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*nodeSetTimezoneContext, api.TxInfoData](
-		router, "set-timezone", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*nodeSetTimezoneContext, types.TxInfoData](
+		router, "set-timezone", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -49,13 +49,13 @@ type nodeSetTimezoneContext struct {
 	timezoneLocation string
 }
 
-func (c *nodeSetTimezoneContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+func (c *nodeSetTimezoneContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}

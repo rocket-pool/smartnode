@@ -62,6 +62,9 @@ type SmartNodeResources struct {
 	// Addresses for RocketRewardsPool that have been upgraded during development
 	PreviousRewardsPoolAddresses []common.Address
 
+	// Addresses for RocketDAOProtocolVerifier that have been upgraded during development
+	PreviousProtocolDaoVerifierAddresses []common.Address
+
 	// Addresses for RocketNetworkPrices that have been upgraded during development
 	PreviousRocketNetworkPricesAddresses []common.Address
 
@@ -120,6 +123,7 @@ func newSmartNodeResources(network config.Network) *SmartNodeResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 		},
+		PreviousProtocolDaoVerifierAddresses: []common.Address{},
 		PreviousRocketNetworkPricesAddresses: []common.Address{
 			common.HexToAddress("0x751826b107672360b764327631cC5764515fFC37"),
 		},
@@ -139,24 +143,25 @@ func newSmartNodeResources(network config.Network) *SmartNodeResources {
 
 	// Holesky
 	holeskyResources := &SmartNodeResources{
-		NetworkResources:               config.NewResources(config.Network_Holesky),
-		StakeUrl:                       "https://testnet.rocketpool.net",
-		StorageAddress:                 common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
-		RethAddress:                    common.HexToAddress("0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1"),
-		RplTokenAddress:                common.HexToAddress("0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0"),
-		RplFaucetAddress:               hexToAddressPtr("0xb4565BDe40Cb22282D7287A839c4ce8534674070"),
-		V1_0_0_RewardsPoolAddress:      nil,
-		V1_0_0_ClaimNodeAddress:        nil,
-		V1_0_0_ClaimTrustedNodeAddress: nil,
-		V1_0_0_MinipoolManagerAddress:  nil,
-		V1_1_0_NetworkPricesAddress:    nil,
-		V1_1_0_NodeStakingAddress:      nil,
-		V1_1_0_NodeDepositAddress:      nil,
-		V1_1_0_MinipoolQueueAddress:    nil,
-		V1_1_0_MinipoolFactoryAddress:  nil,
-		SnapshotDelegationAddress:      nil,
-		SnapshotApiDomain:              "",
-		PreviousRewardsPoolAddresses:   []common.Address{},
+		NetworkResources:                     config.NewResources(config.Network_Holesky),
+		StakeUrl:                             "https://testnet.rocketpool.net",
+		StorageAddress:                       common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
+		RethAddress:                          common.HexToAddress("0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1"),
+		RplTokenAddress:                      common.HexToAddress("0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0"),
+		RplFaucetAddress:                     hexToAddressPtr("0xb4565BDe40Cb22282D7287A839c4ce8534674070"),
+		V1_0_0_RewardsPoolAddress:            nil,
+		V1_0_0_ClaimNodeAddress:              nil,
+		V1_0_0_ClaimTrustedNodeAddress:       nil,
+		V1_0_0_MinipoolManagerAddress:        nil,
+		V1_1_0_NetworkPricesAddress:          nil,
+		V1_1_0_NodeStakingAddress:            nil,
+		V1_1_0_NodeDepositAddress:            nil,
+		V1_1_0_MinipoolQueueAddress:          nil,
+		V1_1_0_MinipoolFactoryAddress:        nil,
+		SnapshotDelegationAddress:            nil,
+		SnapshotApiDomain:                    "",
+		PreviousRewardsPoolAddresses:         []common.Address{},
+		PreviousProtocolDaoVerifierAddresses: []common.Address{},
 		PreviousRocketNetworkPricesAddresses: []common.Address{
 			common.HexToAddress("0x029d946f28f93399a5b0d09c879fc8c94e596aeb"),
 		},
@@ -196,6 +201,9 @@ func newSmartNodeResources(network config.Network) *SmartNodeResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0xd88f4d99e52eb202801628ae37ea1a15e2904d12"),
 			common.HexToAddress("0x99856894b360843EB487E252ccED703752cE7C64"),
+		},
+		PreviousProtocolDaoVerifierAddresses: []common.Address{
+			common.HexToAddress("0x30dF9293490C8388DF35398dA31C19EF61f5115A"),
 		},
 		PreviousRocketNetworkPricesAddresses: []common.Address{
 			common.HexToAddress("0xdBe07d7b0B2be5C2EaFe521255245c745422038e"),

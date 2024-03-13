@@ -11,11 +11,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/eth"
 
+	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/input"
 )
 
 const (
@@ -42,8 +42,8 @@ func (f *nodeClaimAndStakeContextFactory) Create(args url.Values) (*nodeClaimAnd
 }
 
 func (f *nodeClaimAndStakeContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*nodeClaimAndStakeContext, api.TxInfoData](
-		router, "claim-and-stake", f, f.handler.serviceProvider,
+	server.RegisterQuerylessGet[*nodeClaimAndStakeContext, types.TxInfoData](
+		router, "claim-and-stake", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -58,14 +58,14 @@ type nodeClaimAndStakeContext struct {
 	stakeAmount *big.Int
 }
 
-func (c *nodeClaimAndStakeContext) PrepareData(data *api.TxInfoData, opts *bind.TransactOpts) error {
+func (c *nodeClaimAndStakeContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	err := sp.RequireNodeRegistered(c.handler.context)
 	if err != nil {
 		return err
 	}
