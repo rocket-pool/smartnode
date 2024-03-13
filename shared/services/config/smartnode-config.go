@@ -566,7 +566,7 @@ func (cfg *SmartnodeConfig) GetV110MinipoolFactoryAddress() common.Address {
 }
 
 func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() []common.Address {
-	addresses := []common.Address{}
+	addresses := make([]common.Address, 0, len(cfg.GetNetworkInfo().Addresses.PreviousRewardsPools))
 	for _, address := range cfg.GetNetworkInfo().Addresses.PreviousRewardsPools {
 		addresses = append(addresses, common.HexToAddress(address))
 	}
