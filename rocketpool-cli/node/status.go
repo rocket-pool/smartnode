@@ -313,15 +313,18 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Alerts
-	if cfg.EnableMetrics.Value == true {
+	if cfg.EnableMetrics.Value == true && len(status.Alerts) > 0 {
 		// only print alerts if enabled; to avoid misleading the user to thinking everything is fine (since we really don't know).
 		fmt.Printf("\n%s=== Alerts ===%s\n", colorGreen, colorReset)
-		for _, alert := range status.Alerts {
+		const maxItems = 3
+		for i, alert := range status.Alerts {
 			fmt.Println(alert.ColorString())
+			if i == maxItems-1 {
+				break
+			}
 		}
-
-		if len(status.Alerts) == 0 {
-			fmt.Println("No alerts are currently active.")
+		if len(status.Alerts) > maxItems {
+			fmt.Printf("... and %d more.\n", len(status.Alerts)-maxItems)
 		}
 	}
 
