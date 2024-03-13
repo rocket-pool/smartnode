@@ -152,7 +152,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
-			Options:            getNetworkOptions(cfg.networks.GetNetworks()),
+			Options:            getNetworkOptions(cfg.networks.AllNetworks()),
 		},
 
 		ManualMaxFee: config.Parameter{
@@ -338,14 +338,12 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 
 // Gets the currently chosen network's configuration
 func (cfg *SmartnodeConfig) GetNetworkInfo() *config.NetworkInfo {
-	for _, network := range cfg.parent.networks.GetNetworks() {
-		networkName := fmt.Sprintf("%s", cfg.Network.Value)
-		if network.Name == networkName {
-			return network
-		}
+	network := cfg.parent.networks.GetNetwork(cfg.Network.Value.(config.Network))
+	if network == nil {
+		fmt.Printf("Network info not found for network %s\n", cfg.Network.Value.(string))
+		return nil
 	}
-	fmt.Printf("Network info not found for network %s\n", cfg.Network.Value.(string))
-	return nil
+	return network
 }
 
 func (cfg *SmartnodeConfig) GetTxWatchUrl() string {

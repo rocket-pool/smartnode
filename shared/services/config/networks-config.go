@@ -15,12 +15,14 @@ const (
 )
 
 type NetworksConfig struct {
-	Networks []*config.NetworkInfo `yaml:"networks"`
+	Networks      []*config.NetworkInfo `yaml:"networks"`
+	networkLookup map[config.Network]*config.NetworkInfo
 }
 
 func NewNetworksConfig() *NetworksConfig {
 	return &NetworksConfig{
-		Networks: make([]*config.NetworkInfo, 0),
+		Networks:      make([]*config.NetworkInfo, 0),
+		networkLookup: make(map[config.Network]*config.NetworkInfo),
 	}
 }
 
@@ -31,7 +33,7 @@ func LoadNetworksFromFile(configPath string) (*NetworksConfig, error) {
 	}
 
 	filePath := path.Join(configPath, defaultNetworksConfigPath)
-	defaultNetworks, err := loadFile(filePath)
+	defaultNetworks, err := loadNetworksFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not load default networks file: %w", err)
 	}
@@ -42,16 +44,22 @@ func LoadNetworksFromFile(configPath string) (*NetworksConfig, error) {
 		// if the file didn't exist, we just use the default networks
 		return defaultNetworks, nil
 	}
-	extraNetworks, err := loadFile(filePath)
+	extraNetworks, err := loadNetworksFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not load extra networks file: %w", err)
 	}
 	defaultNetworks.Networks = append(defaultNetworks.Networks, extraNetworks.Networks...)
 
+	// save the networks for lookup
+	defaultNetworks.networkLookup = make(map[config.Network]*config.NetworkInfo) // Update the type of networkLookup
+	for _, network := range defaultNetworks.Networks {
+		defaultNetworks.networkLookup[config.Network(network.Name)] = network // Update the assignment statement with type assertion
+	}
+
 	return defaultNetworks, nil
 }
 
-func loadFile(filePath string) (*NetworksConfig, error) {
+func loadNetworksFile(filePath string) (*NetworksConfig, error) {
 	bytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read default networks file: %w", err)
@@ -66,6 +74,14 @@ func loadFile(filePath string) (*NetworksConfig, error) {
 	return &networks, nil
 }
 
-func (nc *NetworksConfig) GetNetworks() []*config.NetworkInfo {
+func (nc *NetworksConfig) AllNetworks() []*config.NetworkInfo {
 	return nc.Networks
+}
+
+func (nc *NetworksConfig) GetNetwork(name config.Network) *config.NetworkInfo {
+	network, ok := nc.networkLookup[name]
+	if !ok {
+		return nil
+	}
+	return network
 }
