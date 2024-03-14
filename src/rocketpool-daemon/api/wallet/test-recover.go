@@ -9,9 +9,9 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
-	"github.com/rocket-pool/node-manager-core/node/wallet"
+	nodewallet "github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/node-manager-core/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -56,8 +56,8 @@ type walletTestRecoverContext struct {
 
 func (c *walletTestRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	cfg := sp.GetConfig()
-	rp := sp.GetRocketPool()
+	rs := sp.GetNetworkResources()
+	vMgr := sp.GetValidatorManager()
 
 	if !c.skipValidatorKeyRecovery {
 		err := sp.RequireEthClientSynced(c.handler.context)
@@ -67,21 +67,13 @@ func (c *walletTestRecoverContext) PrepareData(data *api.WalletRecoverData, opts
 	}
 
 	// Parse the derivation path
-	pathType := types.DerivationPath(c.derivationPath)
-	var path string
-	switch pathType {
-	case types.DerivationPath_Default:
-		path = wallet.DefaultNodeKeyPath
-	case types.DerivationPath_LedgerLive:
-		path = wallet.LedgerLiveNodeKeyPath
-	case types.DerivationPath_Mew:
-		path = wallet.MyEtherWalletNodeKeyPath
-	default:
-		return fmt.Errorf("[%s] is not a valid derivation path type", c.derivationPath)
+	path, err := nodewallet.GetDerivationPath(wallet.DerivationPath(c.derivationPath))
+	if err != nil {
+		return err
 	}
 
 	// Recover the wallet
-	w, err := wallet.TestRecovery(path, uint(c.index), c.mnemonic, cfg.Smartnode.GetChainID())
+	w, err := nodewallet.TestRecovery(path, uint(c.index), c.mnemonic, rs.ChainID)
 	if err != nil {
 		return fmt.Errorf("error recovering wallet: %w", err)
 	}
@@ -89,11 +81,10 @@ func (c *walletTestRecoverContext) PrepareData(data *api.WalletRecoverData, opts
 
 	// Recover validator keys
 	if !c.skipValidatorKeyRecovery {
-		data.ValidatorKeys, err = wallet.RecoverMinipoolKeys(cfg, rp, w, true)
+		data.ValidatorKeys, err = vMgr.RecoverMinipoolKeys(true)
 		if err != nil {
 			return fmt.Errorf("error recovering minipool keys: %w", err)
 		}
 	}
-
 	return nil
 }

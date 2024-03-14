@@ -53,8 +53,8 @@ type walletTestSearchAndRecoverContext struct {
 
 func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRecoverData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	cfg := sp.GetConfig()
-	rp := sp.GetRocketPool()
+	rs := sp.GetNetworkResources()
+	vMgr := sp.GetValidatorManager()
 
 	if !c.skipValidatorKeyRecovery {
 		err := sp.RequireEthClientSynced(c.handler.context)
@@ -64,7 +64,7 @@ func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAn
 	}
 
 	// Try each derivation path across all of the iterations
-	var recoveredWallet *wallet.LocalWallet
+	var recoveredWallet *wallet.Wallet
 	paths := []string{
 		wallet.DefaultNodeKeyPath,
 		wallet.LedgerLiveNodeKeyPath,
@@ -74,7 +74,7 @@ func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAn
 		for j := 0; j < len(paths); j++ {
 			var err error
 			derivationPath := paths[j]
-			recoveredWallet, err = wallet.TestRecovery(derivationPath, i, c.mnemonic, cfg.Smartnode.GetChainID())
+			recoveredWallet, err = wallet.TestRecovery(derivationPath, i, c.mnemonic, rs.ChainID)
 			if err != nil {
 				return fmt.Errorf("error recovering wallet with path [%s], index [%d]: %w", derivationPath, i, err)
 			}
@@ -102,7 +102,7 @@ func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAn
 	// Recover validator keys
 	if !c.skipValidatorKeyRecovery {
 		var err error
-		data.ValidatorKeys, err = wallet.RecoverMinipoolKeys(cfg, rp, recoveredWallet, true)
+		data.ValidatorKeys, err = vMgr.RecoverMinipoolKeys(true)
 		if err != nil {
 			return fmt.Errorf("error recovering minipool keys: %w", err)
 		}

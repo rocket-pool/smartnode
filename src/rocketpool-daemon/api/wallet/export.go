@@ -51,21 +51,26 @@ func (c *walletExportContext) PrepareData(data *api.WalletExportData, opts *bind
 	}
 
 	// Get password
-	pw, isSet := w.GetPassword()
+	pw, isSet, err := w.GetPassword()
+	if err != nil {
+		return fmt.Errorf("error getting wallet password: %w", err)
+	}
 	if !isSet {
 		return fmt.Errorf("password has not been set; cannot decrypt wallet keystore without it")
 	}
 	data.Password = pw
 
 	// Serialize wallet
-	walletString, err := w.String()
+	walletString, err := w.SerializeData()
 	if err != nil {
 		return fmt.Errorf("error serializing wallet keystore: %w", err)
 	}
 	data.Wallet = walletString
 
 	// Get account private key
-	data.AccountPrivateKey = w.GetNodePrivateKeyBytes()
-
+	data.AccountPrivateKey, err = w.GetNodePrivateKeyBytes()
+	if err != nil {
+		return fmt.Errorf("error getting node wallet private key: %w", err)
+	}
 	return nil
 }

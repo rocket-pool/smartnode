@@ -9,9 +9,9 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
-	"github.com/rocket-pool/node-manager-core/node/wallet"
+	nodewallet "github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/node-manager-core/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -30,8 +30,9 @@ func (f *walletInitializeContextFactory) Create(args url.Values) (*walletInitial
 	server.GetOptionalStringFromVars("derivation-path", args, &c.derivationPath)
 	inputErrs := []error{
 		server.ValidateOptionalArg("index", args, input.ValidateUint, &c.index, nil),
-		server.ValidateOptionalArg("password", args, input.ValidateNodePassword, &c.password, &c.passwordExists),
-		server.ValidateOptionalArg("save-password", args, input.ValidateBool, &c.savePassword, nil),
+		server.ValidateArg("password", args, input.ValidateNodePassword, &c.password),
+		server.ValidateArg("save-wallet", args, input.ValidateBool, &c.saveWallet),
+		server.ValidateArg("save-password", args, input.ValidateBool, &c.savePassword),
 	}
 	return c, errors.Join(inputErrs...)
 }
@@ -50,56 +51,54 @@ type walletInitializeContext struct {
 	handler        *WalletHandler
 	derivationPath string
 	index          uint64
-	password       []byte
+	password       string
 	passwordExists bool
 	savePassword   bool
+	saveWallet     bool
 }
 
 func (c *walletInitializeContext) PrepareData(data *api.WalletInitializeData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	w := sp.GetWallet()
-
-	// Requirements
-	status := w.GetStatus()
-	if status.HasKeystore {
-		return fmt.Errorf("a wallet is already present")
-	}
-
-	// Use the provided password if there is one
-	if c.passwordExists {
-		w.RememberPassword(c.password)
-		if c.savePassword {
-			err := w.SavePassword()
-			if err != nil {
-				return fmt.Errorf("error saving wallet password to disk: %w", err)
-			}
-		}
-	} else {
-		_, hasPassword := w.GetPassword()
-		if !hasPassword {
-			return fmt.Errorf("you must set a password before recovering a wallet, or provide one in this call")
-		}
-	}
 
 	// Parse the derivation path
-	pathType := types.DerivationPath(c.derivationPath)
-	var path string
-	switch pathType {
-	case types.DerivationPath_Default:
-		path = wallet.DefaultNodeKeyPath
-	case types.DerivationPath_LedgerLive:
-		path = wallet.LedgerLiveNodeKeyPath
-	case types.DerivationPath_Mew:
-		path = wallet.MyEtherWalletNodeKeyPath
-	default:
-		return fmt.Errorf("[%s] is not a valid derivation path type", c.derivationPath)
+	path, err := nodewallet.GetDerivationPath(wallet.DerivationPath(c.derivationPath))
+	if err != nil {
+		return err
 	}
 
-	// Create the new wallet
-	mnemonic, err := w.CreateNewWallet(path, uint(c.index))
-	if err != nil {
-		return fmt.Errorf("error initializing new wallet: %w", err)
+	var w *nodewallet.Wallet
+	var mnemonic string
+	if !c.saveWallet {
+		// Make a dummy wallet for the sake of creating a mnemonic and derived address
+		mnemonic, err = nodewallet.GenerateNewMnemonic()
+		if err != nil {
+			return fmt.Errorf("error generating new mnemonic: %w", err)
+		}
+
+		w, err = nodewallet.TestRecovery(path, uint(c.index), mnemonic, 0)
+		if err != nil {
+			return fmt.Errorf("error generating wallet from new mnemonic: %w", err)
+		}
+	} else {
+		// Initialize the daemon wallet
+		w = sp.GetWallet()
+
+		// Requirements
+		status, err := w.GetStatus()
+		if err != nil {
+			return fmt.Errorf("error getting wallet status: %w", err)
+		}
+		if status.Wallet.IsOnDisk {
+			return fmt.Errorf("a wallet is already present")
+		}
+
+		// Create the new wallet
+		mnemonic, err = w.CreateNewLocalWallet(path, uint(c.index), c.password, c.savePassword)
+		if err != nil {
+			return fmt.Errorf("error initializing new wallet: %w", err)
+		}
 	}
+
 	data.Mnemonic = mnemonic
 	data.AccountAddress, _ = w.GetAddress()
 	return nil

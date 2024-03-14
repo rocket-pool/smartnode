@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/url"
@@ -13,7 +12,6 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // ===============
@@ -64,6 +62,6 @@ func (c *walletSignMessageContext) PrepareData(data *api.WalletSignMessageData, 
 	if err != nil {
 		return fmt.Errorf("error signing message: %w", err)
 	}
-	data.SignedMessage = hexutils.AddPrefix(hex.EncodeToString(signedBytes))
+	data.SignedMessage = signedBytes
 	return nil
 }

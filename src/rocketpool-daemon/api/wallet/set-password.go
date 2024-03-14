@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -44,7 +43,7 @@ func (f *walletSetPasswordContextFactory) RegisterRoute(router *mux.Router) {
 
 type walletSetPasswordContext struct {
 	handler  *WalletHandler
-	password []byte
+	password string
 	save     bool
 }
 
@@ -52,18 +51,5 @@ func (c *walletSetPasswordContext) PrepareData(data *types.SuccessData, opts *bi
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 
-	_, hasPassword := w.GetPassword()
-	if hasPassword {
-		return fmt.Errorf("wallet password has already been set")
-	}
-	w.RememberPassword(c.password)
-	if c.save {
-		err := w.SavePassword()
-		if err != nil {
-			return fmt.Errorf("error saving wallet password to disk: %w", err)
-		}
-	}
-
-	data.Success = true
-	return nil
+	return w.SetPassword(c.password, c.save)
 }

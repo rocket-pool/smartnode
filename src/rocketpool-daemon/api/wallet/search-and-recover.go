@@ -34,8 +34,8 @@ func (f *walletSearchAndRecoverContextFactory) Create(args url.Values) (*walletS
 		server.ValidateArg("mnemonic", args, input.ValidateWalletMnemonic, &c.mnemonic),
 		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
 		server.ValidateOptionalArg("skip-validator-key-recovery", args, input.ValidateBool, &c.skipValidatorKeyRecovery, nil),
-		server.ValidateOptionalArg("password", args, input.ValidateNodePassword, &c.password, &c.passwordExists),
-		server.ValidateOptionalArg("save-password", args, input.ValidateBool, &c.savePassword, nil),
+		server.ValidateArg("password", args, input.ValidateNodePassword, &c.password),
+		server.ValidateArg("save-password", args, input.ValidateBool, &c.savePassword),
 	}
 	return c, errors.Join(inputErrs...)
 }
@@ -55,35 +55,25 @@ type walletSearchAndRecoverContext struct {
 	skipValidatorKeyRecovery bool
 	mnemonic                 string
 	address                  common.Address
-	password                 []byte
+	password                 string
 	passwordExists           bool
 	savePassword             bool
 }
 
 func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRecoverData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	cfg := sp.GetConfig()
-	rp := sp.GetRocketPool()
 	w := sp.GetWallet()
+	rs := sp.GetNetworkResources()
+	vMgr := sp.GetValidatorManager()
 
 	// Requirements
-	status := w.GetStatus()
-	if status.HasKeystore {
+	status, err := w.GetStatus()
+	if err != nil {
+		return fmt.Errorf("error getting wallet status: %w", err)
+	}
+	if status.Wallet.IsOnDisk {
 		return fmt.Errorf("a wallet is already present")
 	}
-
-	_, hasPassword := w.GetPassword()
-	if !hasPassword && !c.passwordExists {
-		return fmt.Errorf("you must set a password before recovering a wallet, or provide one in this call")
-	}
-	w.RememberPassword(c.password)
-	if c.savePassword {
-		err := w.SavePassword()
-		if err != nil {
-			return fmt.Errorf("error saving wallet password to disk: %w", err)
-		}
-	}
-
 	if !c.skipValidatorKeyRecovery {
 		err := sp.RequireEthClientSynced(c.handler.context)
 		if err != nil {
@@ -100,7 +90,7 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 	for i := uint(0); i < findIterations; i++ {
 		for j := 0; j < len(paths); j++ {
 			derivationPath := paths[j]
-			recoveredWallet, err := wallet.TestRecovery(derivationPath, i, c.mnemonic, cfg.Smartnode.GetChainID())
+			recoveredWallet, err := wallet.TestRecovery(derivationPath, i, c.mnemonic, rs.ChainID)
 			if err != nil {
 				return fmt.Errorf("error recovering wallet with path [%s], index [%d]: %w", derivationPath, i, err)
 			}
@@ -125,7 +115,7 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 	}
 
 	// Recover the wallet
-	err := w.Recover(data.DerivationPath, data.Index, c.mnemonic)
+	err = w.Recover(data.DerivationPath, data.Index, c.mnemonic, c.password, c.savePassword, false)
 	if err != nil {
 		return fmt.Errorf("error recovering wallet: %w", err)
 	}
@@ -133,11 +123,10 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 
 	// Recover validator keys
 	if !c.skipValidatorKeyRecovery {
-		data.ValidatorKeys, err = wallet.RecoverMinipoolKeys(cfg, rp, w, false)
+		data.ValidatorKeys, err = vMgr.RecoverMinipoolKeys(false)
 		if err != nil {
 			return fmt.Errorf("error recovering minipool keys: %w", err)
 		}
 	}
-
 	return nil
 }

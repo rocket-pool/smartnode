@@ -6,11 +6,14 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/fatih/color"
 	"github.com/rocket-pool/node-manager-core/node/services"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 	"github.com/rocket-pool/smartnode/shared/config"
 )
 
@@ -21,6 +24,7 @@ type ServiceProvider struct {
 	// Services
 	cfg                *config.SmartNodeConfig
 	rocketPool         *rocketpool.RocketPool
+	validatorManager   *validator.ValidatorManager
 	rplFaucet          *contracts.RplFaucet
 	snapshotDelegation *contracts.SnapshotDelegation
 
@@ -40,7 +44,14 @@ func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
 		return nil, fmt.Errorf("Smartnode config settings file [%s] not found", settingsFile)
 	}
 
-	// Core provider
+	// Attempt a wallet upgrade before anything
+	upgradeLog := log.NewColorLogger(color.FgHiWhite)
+	err = validator.CheckAndUpgradeWallet(cfg.GetWalletFilePath(), cfg.GetNextAccountFilePath(), &upgradeLog)
+	if err != nil {
+		return nil, fmt.Errorf("error checking for legacy wallet upgrade: %w", err)
+	}
+
+	// Make the core provider
 	sp, err := services.NewServiceProvider(cfg, config.ClientTimeout, cfg.DebugMode.Value)
 	if err != nil {
 		return nil, fmt.Errorf("error creating core service provider: %w", err)
@@ -57,6 +68,12 @@ func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Rocket Pool binding: %w", err)
+	}
+
+	// Validator Manager
+	vMgr, err := validator.NewValidatorManager(cfg, rp, sp.GetWallet(), sp.GetQueryManager())
+	if err != nil {
+		return nil, fmt.Errorf("error creating validator manager: %w", err)
 	}
 
 	// RPL Faucet
@@ -84,6 +101,7 @@ func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
 		ServiceProvider:    sp,
 		cfg:                cfg,
 		rocketPool:         rp,
+		validatorManager:   vMgr,
 		rplFaucet:          rplFaucet,
 		snapshotDelegation: snapshotDelegation,
 	}
@@ -100,6 +118,10 @@ func (p *ServiceProvider) GetConfig() *config.SmartNodeConfig {
 
 func (p *ServiceProvider) GetRocketPool() *rocketpool.RocketPool {
 	return p.rocketPool
+}
+
+func (p *ServiceProvider) GetValidatorManager() *validator.ValidatorManager {
+	return p.validatorManager
 }
 
 func (p *ServiceProvider) GetRplFaucet() *contracts.RplFaucet {

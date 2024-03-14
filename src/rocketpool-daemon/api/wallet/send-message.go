@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	_ "time/tzdata"
 
@@ -52,7 +51,7 @@ type walletSendMessageContext struct {
 
 func (c *walletSendMessageContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	ec := sp.GetEthClient()
+	txMgr := sp.GetTransactionManager()
 
 	err := errors.Join(
 		sp.RequireWalletReady(),
@@ -61,10 +60,7 @@ func (c *walletSendMessageContext) PrepareData(data *types.TxInfoData, opts *bin
 		return err
 	}
 
-	txInfo, err := eth.NewTransactionInfoRaw(ec, c.address, c.message, opts)
-	if err != nil {
-		return fmt.Errorf("error creating TX info: %w", err)
-	}
+	txInfo := txMgr.CreateTransactionInfoRaw(c.address, c.message, opts)
 	data.TxInfo = txInfo
 	return nil
 }

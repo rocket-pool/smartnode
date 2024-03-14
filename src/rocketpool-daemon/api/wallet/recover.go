@@ -9,9 +9,9 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
-	"github.com/rocket-pool/node-manager-core/node/wallet"
+	nodewallet "github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/node-manager-core/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -32,8 +32,8 @@ func (f *walletRecoverContextFactory) Create(args url.Values) (*walletRecoverCon
 		server.ValidateArg("mnemonic", args, input.ValidateWalletMnemonic, &c.mnemonic),
 		server.ValidateOptionalArg("skip-validator-key-recovery", args, input.ValidateBool, &c.skipValidatorKeyRecovery, nil),
 		server.ValidateOptionalArg("index", args, input.ValidateUint, &c.index, nil),
-		server.ValidateOptionalArg("password", args, input.ValidateNodePassword, &c.password, &c.passwordExists),
-		server.ValidateOptionalArg("save-password", args, input.ValidateBool, &c.savePassword, nil),
+		server.ValidateArg("password", args, input.ValidateNodePassword, &c.password),
+		server.ValidateArg("save-password", args, input.ValidateBool, &c.savePassword),
 	}
 	return c, errors.Join(inputErrs...)
 }
@@ -54,39 +54,23 @@ type walletRecoverContext struct {
 	mnemonic                 string
 	derivationPath           string
 	index                    uint64
-	password                 []byte
-	passwordExists           bool
+	password                 string
 	savePassword             bool
 }
 
 func (c *walletRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	cfg := sp.GetConfig()
-	rp := sp.GetRocketPool()
 	w := sp.GetWallet()
+	vMgr := sp.GetValidatorManager()
 
 	// Requirements
-	status := w.GetStatus()
-	if status.HasKeystore {
+	status, err := w.GetStatus()
+	if err != nil {
+		return fmt.Errorf("error getting wallet status: %w", err)
+	}
+	if status.Wallet.IsOnDisk {
 		return fmt.Errorf("a wallet is already present")
 	}
-
-	// Use the provided password if there is one
-	if c.passwordExists {
-		w.RememberPassword(c.password)
-		if c.savePassword {
-			err := w.SavePassword()
-			if err != nil {
-				return fmt.Errorf("error saving wallet password to disk: %w", err)
-			}
-		}
-	} else {
-		_, hasPassword := w.GetPassword()
-		if !hasPassword {
-			return fmt.Errorf("you must set a password before recovering a wallet, or provide one in this call")
-		}
-	}
-
 	if !c.skipValidatorKeyRecovery {
 		err := sp.RequireEthClientSynced(c.handler.context)
 		if err != nil {
@@ -95,21 +79,13 @@ func (c *walletRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bi
 	}
 
 	// Parse the derivation path
-	pathType := types.DerivationPath(c.derivationPath)
-	var path string
-	switch pathType {
-	case types.DerivationPath_Default:
-		path = wallet.DefaultNodeKeyPath
-	case types.DerivationPath_LedgerLive:
-		path = wallet.LedgerLiveNodeKeyPath
-	case types.DerivationPath_Mew:
-		path = wallet.MyEtherWalletNodeKeyPath
-	default:
-		return fmt.Errorf("[%s] is not a valid derivation path type", c.derivationPath)
+	path, err := nodewallet.GetDerivationPath(wallet.DerivationPath(c.derivationPath))
+	if err != nil {
+		return err
 	}
 
 	// Recover the wallet
-	err := w.Recover(path, uint(c.index), c.mnemonic)
+	err = w.Recover(path, uint(c.index), c.mnemonic, c.password, c.savePassword, false)
 	if err != nil {
 		return fmt.Errorf("error recovering wallet: %w", err)
 	}
@@ -117,7 +93,7 @@ func (c *walletRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bi
 
 	// Recover validator keys
 	if !c.skipValidatorKeyRecovery {
-		data.ValidatorKeys, err = wallet.RecoverMinipoolKeys(cfg, rp, w, false)
+		data.ValidatorKeys, err = vMgr.RecoverMinipoolKeys(false)
 		if err != nil {
 			return fmt.Errorf("error recovering minipool keys: %w", err)
 		}

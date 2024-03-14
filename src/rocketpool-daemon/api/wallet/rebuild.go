@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
-	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -44,9 +43,7 @@ type walletRebuildContext struct {
 
 func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	cfg := sp.GetConfig()
-	rp := sp.GetRocketPool()
-	w := sp.GetWallet()
+	vMgr := sp.GetValidatorManager()
 
 	// Requirements
 	err := errors.Join(
@@ -58,7 +55,7 @@ func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bi
 	}
 
 	// Recover validator keys
-	data.ValidatorKeys, err = wallet.RecoverMinipoolKeys(cfg, rp, w, false)
+	data.ValidatorKeys, err = vMgr.RecoverMinipoolKeys(false)
 	if err != nil {
 		return fmt.Errorf("error recovering minipool keys: %w", err)
 	}

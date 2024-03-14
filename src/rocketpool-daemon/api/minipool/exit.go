@@ -15,10 +15,10 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/node/validator/utils"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
@@ -123,7 +123,7 @@ func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []mini
 		}
 
 		// Get signed voluntary exit message
-		signature, err := validator.GetSignedExitMessage(validatorKey, validatorIndex, head.Epoch, signatureDomain)
+		signature, err := utils.GetSignedExitMessage(validatorKey, validatorIndex, head.Epoch, signatureDomain)
 		if err != nil {
 			return fmt.Errorf("error getting exit message signature for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
 		}

@@ -48,6 +48,7 @@ type walletSetEnsNameContext struct {
 func (c *walletSetEnsNameContext) PrepareData(data *api.WalletSetEnsNameData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	ec := sp.GetEthClient()
+	txMgr := sp.GetTransactionManager()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
@@ -92,10 +93,7 @@ func (c *walletSetEnsNameContext) PrepareData(data *api.WalletSetEnsNameData, op
 	}
 
 	// Derive the TXInfo
-	txInfo, err := eth.NewTransactionInfoRaw(ec, *tx.To(), tx.Data(), opts)
-	if err != nil {
-		return fmt.Errorf("error getting TX info for SetName: %w", err)
-	}
+	txInfo := txMgr.CreateTransactionInfoRaw(*tx.To(), tx.Data(), opts)
 	data.TxInfo = txInfo
 	return nil
 }

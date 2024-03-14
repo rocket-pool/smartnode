@@ -43,7 +43,10 @@ func (c *walletStatusContext) PrepareData(data *api.WalletStatusData, opts *bind
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 
-	data.WalletStatus = w.GetStatus()
-	data.AccountAddress, _ = w.GetAddress()
+	status, err := w.GetStatus()
+	if err != nil {
+		return err
+	}
+	data.WalletStatus = status
 	return nil
 }

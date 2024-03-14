@@ -628,10 +628,6 @@ func getDefaultRecordsDir(rpDir string) string {
 // === IConfig Implementation ===
 // ==============================
 
-// ==============================
-// === IConfig Implementation ===
-// ==============================
-
 func (cfg *SmartNodeConfig) GetNodeAddressFilePath() string {
 	return filepath.Join(cfg.UserDataPath.Value, UserAddressFilename)
 }

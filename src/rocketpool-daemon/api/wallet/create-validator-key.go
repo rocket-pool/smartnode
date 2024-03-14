@@ -51,7 +51,7 @@ type walletCreateValidatorKeyContext struct {
 
 func (c *walletCreateValidatorKeyContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
-	w := sp.GetWallet()
+	vMgr := sp.GetValidatorManager()
 
 	// Requirements
 	err := sp.RequireWalletReady()
@@ -59,7 +59,7 @@ func (c *walletCreateValidatorKeyContext) PrepareData(data *types.SuccessData, o
 		return err
 	}
 
-	_, err = w.RecoverValidatorKey(c.pubkey, uint(c.index))
+	_, err = vMgr.RecoverValidatorKey(c.pubkey, c.index)
 	if err != nil {
 		return fmt.Errorf("error creating validator key: %w", err)
 	}

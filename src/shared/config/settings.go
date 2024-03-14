@@ -14,9 +14,13 @@ const (
 	ConfigFilename           string = "user-settings.yml"
 
 	// Wallet
-	UserAddressFilename    string = "address"
-	UserWalletDataFilename string = "wallet"
-	UserPasswordFilename   string = "password"
+	UserAddressFilename       string = "address"
+	UserWalletDataFilename    string = "wallet"
+	UserNextAccountFilename   string = "next_account"
+	UserPasswordFilename      string = "password"
+	ValidatorsFolderName      string = "validators"
+	CustomKeysFolderName      string = "custom-keys"
+	CustomKeyPasswordFilename string = "custom-key-passwords"
 
 	// Scripts
 	EcStartScript string = "start-ec.sh"

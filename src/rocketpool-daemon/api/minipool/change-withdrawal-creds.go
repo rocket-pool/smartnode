@@ -17,6 +17,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/node/validator/utils"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 )
@@ -98,10 +99,10 @@ func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *
 
 	// Get the index for this validator based on the mnemonic
 	index := uint(0)
-	validatorKeyPath := validator.ValidatorKeyPath
+	validatorKeyPath := fmt.Sprintf(validator.ValidatorKeyPath, index)
 	var validatorKey *eth2types.BLSPrivateKey
 	for index < validatorKeyRetrievalLimit {
-		key, err := validator.GetPrivateKey(c.mnemonic, index, validatorKeyPath)
+		key, err := utils.GetPrivateKey(c.mnemonic, validatorKeyPath)
 		if err != nil {
 			return fmt.Errorf("error deriving key for index %d: %w", index, err)
 		}
@@ -117,7 +118,7 @@ func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *
 	}
 
 	// Get the withdrawal creds from this index
-	withdrawalKey, err := validator.GetWithdrawalKey(c.mnemonic, index, validatorKeyPath)
+	withdrawalKey, err := utils.GetWithdrawalKey(c.mnemonic, validatorKeyPath)
 	if err != nil {
 		return fmt.Errorf("error getting withdrawal key for validator: %w", err)
 	}
@@ -141,7 +142,7 @@ func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *
 	}
 
 	// Get signed withdrawal creds change message
-	signature, err := validator.GetSignedWithdrawalCredsChangeMessage(withdrawalKey, validatorIndex, c.minipoolAddress, signatureDomain)
+	signature, err := utils.GetSignedWithdrawalCredsChangeMessage(withdrawalKey, validatorIndex, c.minipoolAddress, signatureDomain)
 	if err != nil {
 		return fmt.Errorf("error getting signed withdrawal credentials change message: %w", err)
 	}

@@ -38,3 +38,19 @@ func (cfg *SmartNodeConfig) GetVotingSnapshotID() [32]byte {
 func (cfg *SmartNodeConfig) GetRegenerateRewardsTreeRequestPath(interval uint64) string {
 	return filepath.Join(cfg.UserDataPath.Value, WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
 }
+
+func (cfg *SmartNodeConfig) GetNextAccountFilePath() string {
+	return filepath.Join(cfg.UserDataPath.Value, UserNextAccountFilename)
+}
+
+func (cfg *SmartNodeConfig) GetValidatorsFolderPath() string {
+	return filepath.Join(cfg.UserDataPath.Value, ValidatorsFolderName)
+}
+
+func (cfg *SmartNodeConfig) GetCustomKeyPath() string {
+	return filepath.Join(cfg.UserDataPath.Value, CustomKeysFolderName)
+}
+
+func (cfg *SmartNodeConfig) GetCustomKeyPasswordFilePath() string {
+	return filepath.Join(cfg.UserDataPath.Value, CustomKeyPasswordFilename)
+}
