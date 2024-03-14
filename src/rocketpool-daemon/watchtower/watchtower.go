@@ -13,9 +13,9 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/collectors"
@@ -109,16 +109,16 @@ func (t *TaskLoop) Run() error {
 
 	// Initialize tasks
 	respondChallenges := NewRespondChallenges(t.sp, log.NewColorLogger(RespondChallengesColor), m)
-	submitRplPrice := NewSubmitRplPrice(t.sp, log.NewColorLogger(SubmitRplPriceColor), errorLog)
-	submitNetworkBalances := NewSubmitNetworkBalances(t.sp, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
+	submitRplPrice := NewSubmitRplPrice(t.ctx, t.sp, log.NewColorLogger(SubmitRplPriceColor), errorLog)
+	submitNetworkBalances := NewSubmitNetworkBalances(t.ctx, t.sp, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
 	dissolveTimedOutMinipools := NewDissolveTimedOutMinipools(t.sp, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
 	submitScrubMinipools := NewSubmitScrubMinipools(t.sp, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
 	var submitRewardsTree_Stateless *SubmitRewardsTree_Stateless
 	var submitRewardsTree_Rolling *SubmitRewardsTree_Rolling
 	if !useRollingRecords {
-		submitRewardsTree_Stateless = NewSubmitRewardsTree_Stateless(t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+		submitRewardsTree_Stateless = NewSubmitRewardsTree_Stateless(t.ctx, t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	} else {
-		submitRewardsTree_Rolling, err = NewSubmitRewardsTree_Rolling(t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+		submitRewardsTree_Rolling, err = NewSubmitRewardsTree_Rolling(t.ctx, t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 		if err != nil {
 			return fmt.Errorf("error during rolling rewards tree check: %w", err)
 		}
@@ -127,7 +127,7 @@ func (t *TaskLoop) Run() error {
 	if err != nil {
 		return fmt.Errorf("error during penalties check: %w", err)
 	}*/
-	generateRewardsTree := NewGenerateRewardsTree(t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+	generateRewardsTree := NewGenerateRewardsTree(t.ctx, t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
 	cancelBondReductions := NewCancelBondReductions(t.sp, log.NewColorLogger(CancelBondsColor), errorLog, bondReductionCollector)
 	checkSoloMigrations := NewCheckSoloMigrations(t.sp, log.NewColorLogger(CheckSoloMigrationsColor), errorLog, soloMigrationCollector)
 	finalizePdaoProposals := NewFinalizePdaoProposals(t.sp, log.NewColorLogger(FinalizeProposalsColor))
@@ -220,7 +220,7 @@ func (t *TaskLoop) Run() error {
 				}
 
 				// Update the network state
-				state, err := updateNetworkState(m, &updateLog, latestBlock)
+				state, err := updateNetworkState(t.ctx, m, &updateLog, latestBlock)
 				if err != nil {
 					errorLog.Println(err)
 					if t.sleepAndCheckIfCancelled(taskCooldown) {

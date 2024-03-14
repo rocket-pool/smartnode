@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
@@ -27,7 +27,7 @@ type DissolveTimedOutMinipools struct {
 	sp    *services.ServiceProvider
 	log   log.ColorLogger
 	cfg   *config.SmartNodeConfig
-	w     *wallet.LocalWallet
+	w     *wallet.Wallet
 	rp    *rocketpool.RocketPool
 	ec    eth.IExecutionClient
 	mpMgr *minipool.MinipoolManager
@@ -122,20 +122,20 @@ func (t *DissolveTimedOutMinipools) dissolveMinipool(mp minipool.IMinipool) erro
 	if err != nil {
 		return fmt.Errorf("error getting dissolve tx for minipool %s: %w", address.Hex(), err)
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating dissolve TX failed: %s", txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating dissolve TX failed: %s", txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)

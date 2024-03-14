@@ -12,17 +12,16 @@ import (
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
 const (
@@ -37,7 +36,7 @@ type CheckSoloMigrations struct {
 	log              log.ColorLogger
 	errLog           log.ColorLogger
 	cfg              *config.SmartNodeConfig
-	w                *wallet.LocalWallet
+	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
 	ec               eth.IExecutionClient
 	bc               beacon.IBeaconClient
@@ -154,7 +153,7 @@ func (t *CheckSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 		}
 
 		// Scrub minipools that are in the wrong state
-		if validator.Status != sharedtypes.ValidatorState_ActiveOngoing {
+		if validator.Status != beacon.ValidatorState_ActiveOngoing {
 			t.scrubVacantMinipool(state, mpd.MinipoolAddress, fmt.Sprintf("minipool %s (pubkey %s) was in state %v, but is required to be active_ongoing for migration", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex(), validator.Status))
 			invalidStateCount += 1
 			continue
@@ -256,21 +255,21 @@ func (t *CheckSoloMigrations) scrubVacantMinipool(state *state.NetworkState, add
 		t.printMessage(fmt.Sprintf("error getting scrub tx for minipool: %s", err.Error()))
 		return
 	}
-	if txInfo.SimError != "" {
-		t.printMessage(fmt.Sprintf("simulating scrub TX failed: %s", txInfo.SimError))
+	if txInfo.SimulationResult.SimulationError != "" {
+		t.printMessage(fmt.Sprintf("simulating scrub TX failed: %s", txInfo.SimulationResult.SimulationError))
 		return
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)

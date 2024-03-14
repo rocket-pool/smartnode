@@ -58,3 +58,11 @@ func (cfg *SmartNodeConfig) GetCustomKeyPasswordFilePath() string {
 func (cfg *SmartNodeConfig) GetFeeRecipientFilePath() string {
 	return filepath.Join(cfg.UserDataPath.Value, ValidatorsFolderName, FeeRecipientFilename)
 }
+
+func (cfg *SmartNodeConfig) GetWatchtowerFolder() string {
+	return filepath.Join(cfg.UserDataPath.Value, WatchtowerFolder)
+}
+
+func (cfg *SmartNodeConfig) GetMinipoolPerformancePath(interval uint64) string {
+	return filepath.Join(cfg.UserDataPath.Value, RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value), interval))
+}

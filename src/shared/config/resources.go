@@ -95,8 +95,8 @@ type RocketPoolResources struct {
 	// The Scroll L2 message fee estimator address for each network
 	ScrollFeeEstimatorAddress *common.Address
 
-	// The UniswapV3 pool address for each network (used for RPL price TWAP info
-	RplTwapPoolAddress common.Address
+	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
+	RplTwapPoolAddress *common.Address
 }
 
 // Creates a new resource collection for the given network
@@ -138,7 +138,7 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		BasePriceMessengerAddress:       hexToAddressPtr("0x64A5856869C06B0188C84A5F83d712bbAc03517d"),
 		ScrollPriceMessengerAddress:     hexToAddressPtr("0x0f22dc9b9c03757d4676539203d7549c8f22c15c"),
 		ScrollFeeEstimatorAddress:       hexToAddressPtr("0x0d7E906BD9cAFa154b048cFa766Cc1E54E39AF9B"),
-		RplTwapPoolAddress:              common.HexToAddress("0xe42318ea3b998e8355a3da364eb9d48ec725eb45"),
+		RplTwapPoolAddress:              hexToAddressPtr("0xe42318ea3b998e8355a3da364eb9d48ec725eb45"),
 	}
 
 	// Holesky
@@ -176,7 +176,7 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		BasePriceMessengerAddress:       nil,
 		ScrollPriceMessengerAddress:     nil,
 		ScrollFeeEstimatorAddress:       nil,
-		RplTwapPoolAddress:              common.HexToAddress("0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d"),
+		RplTwapPoolAddress:              hexToAddressPtr("0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d"),
 	}
 
 	// Devnet
@@ -219,7 +219,7 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		BasePriceMessengerAddress:       nil,
 		ScrollPriceMessengerAddress:     nil,
 		ScrollFeeEstimatorAddress:       nil,
-		RplTwapPoolAddress:              common.HexToAddress("0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d"),
+		RplTwapPoolAddress:              hexToAddressPtr("0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d"),
 	}
 	devnetResources.NetworkResources.Network = Network_Devnet
 

@@ -48,6 +48,7 @@ const (
 	RegenerateRewardsTreeRequestSuffix string = ".request"
 	RegenerateRewardsTreeRequestFormat string = "%d" + RegenerateRewardsTreeRequestSuffix
 	FeeRecipientFilename               string = "rp-fee-recipient.txt"
+	MinipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d.json"
 
 	// Container Names
 	ExecutionClientSuffix string = "eth1"

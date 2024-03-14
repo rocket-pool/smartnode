@@ -19,16 +19,16 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/eth1"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
-	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 // Settings
@@ -46,12 +46,13 @@ type poolObserveResponse struct {
 
 // Submit RPL price task
 type SubmitRplPrice struct {
+	ctx       context.Context
 	sp        *services.ServiceProvider
 	log       log.ColorLogger
 	errLog    log.ColorLogger
 	cfg       *config.SmartNodeConfig
 	ec        eth.IExecutionClient
-	w         *wallet.LocalWallet
+	w         *wallet.Wallet
 	rp        *rocketpool.RocketPool
 	bc        beacon.IBeaconClient
 	lock      *sync.Mutex
@@ -59,9 +60,10 @@ type SubmitRplPrice struct {
 }
 
 // Create submit RPL price task
-func NewSubmitRplPrice(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger) *SubmitRplPrice {
+func NewSubmitRplPrice(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger) *SubmitRplPrice {
 	lock := &sync.Mutex{}
 	return &SubmitRplPrice{
+		ctx:    ctx,
 		sp:     sp,
 		log:    logger,
 		errLog: errorLogger,
@@ -151,7 +153,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 
 	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
-	ecBlock, err := utils.FindLastExistingELBlockFromSlot(t.bc, slotNumber)
+	ecBlock, err := utils.FindLastExistingELBlockFromSlot(t.ctx, t.bc, slotNumber)
 	if err != nil {
 		return err
 	}
@@ -165,7 +167,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 
 	// Check if the required epoch is finalized yet
 	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
-	beaconHead, err := t.bc.GetBeaconHead()
+	beaconHead, err := t.bc.GetBeaconHead(t.ctx)
 	if err != nil {
 		return err
 	}
@@ -211,7 +213,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 		}
 
 		// Log
-		t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
+		t.log.Printlnf("RPL price: %.6f ETH", math.RoundDown(eth.WeiToEth(rplPrice), 6))
 
 		// Check if we have reported these specific values before
 		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAddress, blockNumber, uint64(nextSubmissionTime.Unix()), rplPrice, true)
@@ -302,18 +304,18 @@ func (t *SubmitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 		BlockNumber: big.NewInt(int64(blockNumber)),
 	}
 
-	poolAddressStr := t.cfg.Smartnode.GetRplTwapPoolAddress()
-	if poolAddressStr == "" {
+	rs := t.cfg.GetRocketPoolResources()
+	poolAddress := rs.RplTwapPoolAddress
+	if poolAddress == nil {
 		return nil, fmt.Errorf("RPL TWAP pool contract not deployed on this network")
 	}
-	poolAddress := common.HexToAddress(poolAddressStr)
 
 	// Get a client with the block number available
 	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
 	if err != nil {
 		return nil, err
 	}
-	twap, err := contracts.NewRplTwapPool(poolAddress, client.Client)
+	twap, err := contracts.NewRplTwapPool(*poolAddress, client.Client)
 	if err != nil {
 		return nil, fmt.Errorf("error creating TWAP pool binding: %w", err)
 	}
@@ -380,20 +382,20 @@ func (t *SubmitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 	if err != nil {
 		return fmt.Errorf("error getting the TX for submitting RPL price: %w", err)
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating SubmitPrices tx failed: %s", txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating SubmitPrices tx failed: %s", txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
@@ -414,56 +416,62 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 	cfg := t.sp.GetConfig()
 	rp := t.sp.GetRocketPool()
 	ec := t.sp.GetEthClient()
+	txMgr := t.sp.GetTransactionManager()
+	rs := cfg.GetRocketPoolResources()
 
 	// Create bindings
 	errs := []error{}
-	optimismMessengerAddress := cfg.Smartnode.GetOptimismMessengerAddress()
+	optimismMessengerAddress := rs.OptimismPriceMessengerAddress
 	var optimismMessenger *contracts.OptimismMessenger
-	if optimismMessengerAddress != "" {
+	if optimismMessengerAddress != nil {
 		var err error
-		optimismMessenger, err = contracts.NewOptimismMessenger(common.HexToAddress(optimismMessengerAddress), ec)
+		optimismMessenger, err = contracts.NewOptimismMessenger(*optimismMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 	}
-	polygonMessengerAddress := cfg.Smartnode.GetPolygonMessengerAddress()
+	polygonMessengerAddress := rs.PolygonPriceMessengerAddress
 	var polygonMessenger *contracts.PolygonMessenger
-	if polygonMessengerAddress != "" {
+	if polygonMessengerAddress != nil {
 		var err error
-		polygonMessenger, err = contracts.NewPolygonMessenger(common.HexToAddress(polygonMessengerAddress), ec)
+		polygonMessenger, err = contracts.NewPolygonMessenger(*polygonMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 	}
-	arbitrumMessengerAddress := cfg.Smartnode.GetArbitrumMessengerAddress()
+	arbitrumMessengerAddress := rs.ArbitrumPriceMessengerAddress
 	var arbitrumMessenger *contracts.ArbitrumMessenger
-	if arbitrumMessengerAddress != "" {
+	if arbitrumMessengerAddress != nil {
 		var err error
-		arbitrumMessenger, err = contracts.NewArbitrumMessenger(common.HexToAddress(arbitrumMessengerAddress), ec)
+		arbitrumMessenger, err = contracts.NewArbitrumMessenger(*arbitrumMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 	}
-	arbitrumMessengerV2Address := cfg.Smartnode.GetArbitrumMessengerAddressV2()
+	arbitrumMessengerV2Address := rs.ArbitrumPriceMessengerAddressV2
 	var arbitrumMessengerV2 *contracts.ArbitrumMessenger
-	if arbitrumMessengerV2Address != "" {
+	if arbitrumMessengerV2Address != nil {
 		var err error
-		arbitrumMessengerV2, err = contracts.NewArbitrumMessenger(common.HexToAddress(arbitrumMessengerV2Address), ec)
+		arbitrumMessengerV2, err = contracts.NewArbitrumMessenger(*arbitrumMessengerV2Address, ec, txMgr)
 		errs = append(errs, err)
 	}
-	zksyncEraMessengerAddress := cfg.Smartnode.GetZkSyncEraMessengerAddress()
+	zksyncEraMessengerAddress := rs.ZkSyncEraPriceMessengerAddress
 	var zkSyncEraMessenger *contracts.ZkSyncEraMessenger
-	if zksyncEraMessengerAddress != "" {
+	if zksyncEraMessengerAddress != nil {
 		var err error
-		zkSyncEraMessenger, err = contracts.NewZkSyncEraMessenger(common.HexToAddress(zksyncEraMessengerAddress), ec)
+		zkSyncEraMessenger, err = contracts.NewZkSyncEraMessenger(*zksyncEraMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 	}
-	baseMessengerAddress := cfg.Smartnode.GetBaseMessengerAddress()
+	baseMessengerAddress := rs.BasePriceMessengerAddress
 	var baseMessenger *contracts.OptimismMessenger // Base uses the same contract as Optimism
-	if baseMessengerAddress != "" {
+	if baseMessengerAddress != nil {
 		var err error
-		baseMessenger, err = contracts.NewOptimismMessenger(common.HexToAddress(baseMessengerAddress), ec)
+		baseMessenger, err = contracts.NewOptimismMessenger(*baseMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 	}
-	scrollMessengerAddress := cfg.Smartnode.GetScrollMessengerAddress()
+	scrollMessengerAddress := rs.ScrollPriceMessengerAddress
 	var scrollMessenger *contracts.ScrollMessenger
-	if scrollMessengerAddress != "" {
+	var scrollEstimator *contracts.ScrollFeeEstimator
+	if scrollMessengerAddress != nil {
 		var err error
-		scrollMessenger, err = contracts.NewScrollMessenger(common.HexToAddress(scrollMessengerAddress), ec)
+		scrollMessenger, err = contracts.NewScrollMessenger(*scrollMessengerAddress, ec, txMgr)
+		errs = append(errs, err)
+
+		scrollEstimator, err = contracts.NewScrollFeeEstimator(*rs.ScrollFeeEstimatorAddress, ec)
 		errs = append(errs, err)
 	}
 	if err := errors.Join(errs...); err != nil {
@@ -563,7 +571,7 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 			errs = append(errs, t.updateBase(cfg, rp, baseMessenger, blockNumber, opts))
 		}
 		if scrollStale {
-			errs = append(errs, t.updateScroll(cfg, rp, ec, scrollMessenger, blockNumber, opts))
+			errs = append(errs, t.updateScroll(cfg, rp, ec, scrollMessenger, scrollEstimator, blockNumber, opts))
 		}
 		return errors.Join(errs...)
 	}
@@ -577,20 +585,20 @@ func (t *SubmitRplPrice) updateOptimism(cfg *config.SmartNodeConfig, rp *rocketp
 	if err != nil {
 		return fmt.Errorf("error getting tx for Optimism price update: %w", err)
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating tx for Optimism price update failed: %s", txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating tx for Optimism price update failed: %s", txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
@@ -610,20 +618,20 @@ func (t *SubmitRplPrice) updatePolygon(cfg *config.SmartNodeConfig, rp *rocketpo
 	if err != nil {
 		return fmt.Errorf("error getting tx for Polygon price update: %w", err)
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating tx for Polygon price update failed: %s", txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating tx for Polygon price update failed: %s", txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
@@ -670,20 +678,20 @@ func (t *SubmitRplPrice) updateArbitrum(cfg *config.SmartNodeConfig, rp *rocketp
 	if err != nil {
 		return fmt.Errorf("error getting tx for Arbitrum %s price update: %w", version, err)
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating tx for Arbitrum %s price update failed: %s", version, txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating tx for Arbitrum %s price update failed: %s", version, txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
@@ -723,19 +731,19 @@ func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.SmartNodeConfig, rp *rocket
 	if err != nil {
 		return fmt.Errorf("error getting tx for zkSync Era price update: %w", err)
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating tx for zkSync Era price update failed: %s", txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating tx for zkSync Era price update failed: %s", txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
@@ -755,20 +763,20 @@ func (t *SubmitRplPrice) updateBase(cfg *config.SmartNodeConfig, rp *rocketpool.
 	if err != nil {
 		return fmt.Errorf("error getting tx for Base price update: %w", err)
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating tx for Base price update failed: %s", txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating tx for Base price update failed: %s", txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
@@ -782,23 +790,16 @@ func (t *SubmitRplPrice) updateBase(cfg *config.SmartNodeConfig, rp *rocketpool.
 }
 
 // Submit a price update to Scroll
-func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, scrollMessenger *contracts.ScrollMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, scrollMessenger *contracts.ScrollMessenger, scrollEstimator *contracts.ScrollFeeEstimator, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.log.Println("Submitting rate to Scroll...")
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
-
-	l2GasEstimatorAddress := t.cfg.Smartnode.GetScrollFeeEstimatorAddress()
-	l2GasEstimatorAddr := common.HexToAddress(l2GasEstimatorAddress)
-	scrollEstimator, err := contracts.NewScrollFeeEstimator(l2GasEstimatorAddr, ec)
-	if err != nil {
-		return fmt.Errorf("error creating scroll fee estimator binding: %w", err)
-	}
 
 	// Set a fixed gas limit a bit above the estimated 85,283
 	l2GasLimit := big.NewInt(90000)
 
 	// Query the L2 message fee
 	var messageFee *big.Int
-	err = rp.Query(func(mc *batch.MultiCaller) error {
+	err := rp.Query(func(mc *batch.MultiCaller) error {
 		scrollEstimator.EstimateCrossDomainMessageFee(mc, &messageFee, l2GasLimit)
 		return nil
 	}, nil)
@@ -812,19 +813,19 @@ func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, rp *rocketpoo
 	if err != nil {
 		return fmt.Errorf("error getting tx for scroll price update: %w", err)
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating tx for scroll price update failed: %s", txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating tx for scroll price update failed: %s", txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)

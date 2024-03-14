@@ -8,7 +8,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/collectors"
 )
@@ -18,7 +18,7 @@ func runMetricsServer(sp *services.ServiceProvider, logger log.ColorLogger, scru
 	cfg := sp.GetConfig()
 
 	// Return if metrics are disabled
-	if cfg.EnableMetrics.Value == false {
+	if !cfg.MetricsConfig.EnableMetrics.Value {
 		if strings.ToLower(os.Getenv("ENABLE_METRICS")) == "true" {
 			logger.Printlnf("ENABLE_METRICS override set to true, will start Metrics exporter anyway!")
 		} else {
@@ -35,7 +35,7 @@ func runMetricsServer(sp *services.ServiceProvider, logger log.ColorLogger, scru
 	// Start the HTTP server
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	metricsAddress := os.Getenv("WATCHTOWER_METRICS_ADDRESS")
-	metricsPort := cfg.WatchtowerMetricsPort.Value.(uint64)
+	metricsPort := cfg.MetricsConfig.WatchtowerMetricsPort.Value
 	logger.Printlnf("Starting metrics exporter on %s:%d.", metricsAddress, metricsPort)
 	metricsPath := "/metrics"
 	http.Handle(metricsPath, handler)

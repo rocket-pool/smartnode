@@ -14,12 +14,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/nodeset-org/eth-utils/eth"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -29,6 +29,7 @@ import (
 
 // Generate rewards Merkle Tree task
 type GenerateRewardsTree struct {
+	ctx       context.Context
 	sp        *services.ServiceProvider
 	log       log.ColorLogger
 	errLog    log.ColorLogger
@@ -42,9 +43,10 @@ type GenerateRewardsTree struct {
 }
 
 // Create generate rewards Merkle Tree task
-func NewGenerateRewardsTree(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) *GenerateRewardsTree {
+func NewGenerateRewardsTree(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) *GenerateRewardsTree {
 	lock := &sync.Mutex{}
 	return &GenerateRewardsTree{
+		ctx:       ctx,
 		sp:        sp,
 		log:       logger,
 		errLog:    errorLogger,
@@ -73,7 +75,7 @@ func (t *GenerateRewardsTree) Run() error {
 	t.lock.Unlock()
 
 	// Check for requests
-	requestDir := t.cfg.Smartnode.GetWatchtowerFolder(true)
+	requestDir := t.cfg.GetWatchtowerFolder()
 	files, err := os.ReadDir(requestDir)
 	if os.IsNotExist(err) {
 		t.log.Println("Watchtower storage directory doesn't exist, creating...")
@@ -137,6 +139,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 	}
 
 	// Try getting the rETH address as a canary to see if the block is available
+	rs := t.cfg.GetRocketPoolResources()
 	client := t.rp
 	opts := &bind.CallOpts{
 		BlockNumber: elBlockHeader.Number,
@@ -154,7 +157,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 			strings.Contains(errMessage, "Internal error") { // Besu
 
 			// The state was missing so fall back to the archive node
-			archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
+			archiveEcUrl := t.cfg.ArchiveEcUrl.Value
 			if archiveEcUrl != "" {
 				t.log.Printlnf("%s Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", generationPrefix, elBlockHeader.Number.Uint64(), archiveEcUrl)
 				ec, err := ethclient.Dial(archiveEcUrl)
@@ -162,7 +165,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 					t.handleError(fmt.Errorf("Error connecting to archive EC: %w", err))
 					return
 				}
-				client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(t.cfg.Smartnode.GetStorageAddress()), common.HexToAddress(t.cfg.Smartnode.GetMulticallAddress()), common.HexToAddress(t.cfg.Smartnode.GetBalanceBatcherAddress()))
+				client, err = rocketpool.NewRocketPool(ec, rs.StorageAddress, rs.MulticallAddress, rs.BalanceBatcherAddress)
 				if err != nil {
 					t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", err))
 					return
@@ -187,13 +190,13 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 	}
 
 	// Sanity check the rETH address to make sure the client is working right
-	if address != t.cfg.Smartnode.GetRethAddress() {
-		t.handleError(fmt.Errorf("***ERROR*** Your Primary EC provided %s as the rETH address, but it should have been %s!", address.Hex(), t.cfg.Smartnode.GetRethAddress().Hex()))
+	if address != rs.RethAddress {
+		t.handleError(fmt.Errorf("***ERROR*** Your Primary EC provided %s as the rETH address, but it should have been %s!", address.Hex(), rs.RethAddress.Hex()))
 		return
 	}
 
 	// Get the state for the target slot
-	state, err := t.m.GetStateForSlot(rewardsEvent.ConsensusBlock.Uint64())
+	state, err := t.m.GetStateForSlot(t.ctx, rewardsEvent.ConsensusBlock.Uint64())
 	if err != nil {
 		t.handleError(fmt.Errorf("%s error getting state for beacon slot %d: %w", generationPrefix, rewardsEvent.ConsensusBlock.Uint64(), err))
 		return
@@ -212,7 +215,7 @@ func (t *GenerateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 		t.handleError(fmt.Errorf("%s Error creating Merkle tree generator: %w", generationPrefix, err))
 		return
 	}
-	rewardsFile, err := treegen.GenerateTree()
+	rewardsFile, err := treegen.GenerateTree(t.ctx)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
 		return
@@ -236,11 +239,11 @@ func (t *GenerateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
 	localMinipoolPerformanceFile := rprewards.NewLocalFile[sharedtypes.IMinipoolPerformanceFile](
 		rewardsFile.GetMinipoolPerformanceFile(),
-		t.cfg.Smartnode.GetMinipoolPerformancePath(index, true),
+		t.cfg.GetMinipoolPerformancePath(index),
 	)
 	localRewardsFile := rprewards.NewLocalFile[sharedtypes.IRewardsFile](
 		rewardsFile,
-		t.cfg.Smartnode.GetRewardsTreePath(index, true),
+		t.cfg.GetRewardsTreePath(index),
 	)
 
 	// Write the files

@@ -68,8 +68,8 @@ func refundMinipools(c *cli.Context) error {
 	txs := make([]*eth.TransactionInfo, len(selectedMinipools))
 	for i, minipool := range selectedMinipools {
 		txInfo := response.Data.TxInfos[i]
-		if txInfo.SimError != "" {
-			return fmt.Errorf("error simulating refund for minipool %s: %s", minipool.Address.Hex(), txInfo.SimError)
+		if txInfo.SimulationResult.SimulationError != "" {
+			return fmt.Errorf("error simulating refund for minipool %s: %s", minipool.Address.Hex(), txInfo.SimulationResult.SimulationError)
 		}
 		txs[i] = txInfo
 	}

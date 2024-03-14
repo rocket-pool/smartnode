@@ -29,7 +29,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 )
 
 // Number of slots to go back in time and scan for penalties if state is empty (400k is approx. 8 weeks)
@@ -41,7 +41,7 @@ type processPenalties struct {
 	log            log.ColorLogger
 	errLog         log.ColorLogger
 	cfg            *config.SmartNodeConfig
-	w              *wallet.LocalWallet
+	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
 	ec             rocketpool.ExecutionClient
 	bc             beacon.IBeaconClient

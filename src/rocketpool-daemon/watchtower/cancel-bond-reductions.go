@@ -9,19 +9,19 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/collectors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/types"
 )
 
 const (
@@ -33,7 +33,7 @@ type CancelBondReductions struct {
 	log              log.ColorLogger
 	errLog           log.ColorLogger
 	cfg              *config.SmartNodeConfig
-	w                *wallet.LocalWallet
+	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
 	ec               eth.IExecutionClient
 	mpMgr            *minipool.MinipoolManager
@@ -133,12 +133,12 @@ func (t *CancelBondReductions) checkBondReductions(state *state.NetworkState) er
 		validator := state.ValidatorDetails[mpd.Pubkey]
 		if validator.Exists {
 			switch validator.Status {
-			case types.ValidatorState_PendingInitialized,
-				types.ValidatorState_PendingQueued:
+			case beacon.ValidatorState_PendingInitialized,
+				beacon.ValidatorState_PendingQueued:
 				// Do nothing because this validator isn't live yet
 				continue
 
-			case types.ValidatorState_ActiveOngoing:
+			case beacon.ValidatorState_ActiveOngoing:
 				// Check the balance
 				if validator.Balance < threshold {
 					// Cancel because it's under-balance
@@ -146,12 +146,12 @@ func (t *CancelBondReductions) checkBondReductions(state *state.NetworkState) er
 					balanceTooLowCount += 1
 				}
 
-			case types.ValidatorState_ActiveExiting,
-				types.ValidatorState_ActiveSlashed,
-				types.ValidatorState_ExitedUnslashed,
-				types.ValidatorState_ExitedSlashed,
-				types.ValidatorState_WithdrawalPossible,
-				types.ValidatorState_WithdrawalDone:
+			case beacon.ValidatorState_ActiveExiting,
+				beacon.ValidatorState_ActiveSlashed,
+				beacon.ValidatorState_ExitedUnslashed,
+				beacon.ValidatorState_ExitedSlashed,
+				beacon.ValidatorState_WithdrawalPossible,
+				beacon.ValidatorState_WithdrawalDone:
 				t.cancelBondReduction(state, mpd.MinipoolAddress, "minipool is already slashed, exiting, or exited")
 				invalidStateCount += 1
 
@@ -218,21 +218,21 @@ func (t *CancelBondReductions) cancelBondReduction(state *state.NetworkState, ad
 		t.printMessage(fmt.Sprintf("error getting voteCancelReduction tx for minipool %s: %s", address.Hex(), err.Error()))
 		return
 	}
-	if txInfo.SimError != "" {
-		t.printMessage(fmt.Sprintf("simulating voteCancelReduction tx for minipool %s failed: %s", address.Hex(), txInfo.SimError))
+	if txInfo.SimulationResult.SimulationError != "" {
+		t.printMessage(fmt.Sprintf("simulating voteCancelReduction tx for minipool %s failed: %s", address.Hex(), txInfo.SimulationResult.SimulationError))
 		return
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)

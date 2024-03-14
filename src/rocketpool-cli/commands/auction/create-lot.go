@@ -31,8 +31,8 @@ func createLot(c *cli.Context) error {
 		}
 		return nil
 	}
-	if response.Data.TxInfo.SimError != "" {
-		return fmt.Errorf("error simulating create lot: %s", response.Data.TxInfo.SimError)
+	if response.Data.txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("error simulating create lot: %s", response.Data.txInfo.SimulationResult.SimulationError)
 	}
 
 	// Run the TX

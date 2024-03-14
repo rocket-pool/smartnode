@@ -21,8 +21,8 @@ import (
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
@@ -44,7 +44,7 @@ type SubmitScrubMinipools struct {
 	log       log.ColorLogger
 	errLog    log.ColorLogger
 	cfg       *config.SmartNodeConfig
-	w         *wallet.LocalWallet
+	w         *wallet.Wallet
 	rp        *rocketpool.RocketPool
 	ec        eth.IExecutionClient
 	bc        beacon.IBeaconClient
@@ -319,11 +319,7 @@ func (t *SubmitScrubMinipools) getEth1SearchArtifacts(state *state.NetworkState)
 	t.it.startBlock = targetBlock.Number
 
 	// Check the prestake event from the minipool and validate its signature
-	eventLogInterval, err := t.cfg.GetEventLogInterval()
-	if err != nil {
-		return fmt.Errorf("error getting event log interval %w", err)
-	}
-	t.it.eventLogInterval = big.NewInt(int64(eventLogInterval))
+	t.it.eventLogInterval = big.NewInt(int64(config.EventLogInterval))
 
 	// Put together the signature validation data
 	eth2Config := state.BeaconConfig
@@ -355,9 +351,9 @@ func (t *SubmitScrubMinipools) verifyPrestakeEvents() {
 		// Convert it into Prysm's deposit data struct
 		depositData := new(ethpb.Deposit_Data)
 		depositData.Amount = prestakeData.Amount.Uint64()
-		depositData.PublicKey = prestakeData.Pubkey.Bytes()
+		depositData.PublicKey = prestakeData.Pubkey[:]
 		depositData.WithdrawalCredentials = prestakeData.WithdrawalCredentials.Bytes()
-		depositData.Signature = prestakeData.Signature.Bytes()
+		depositData.Signature = prestakeData.Signature[:]
 
 		// Validate the signature
 		err = prdeposit.VerifyDepositSignature(depositData, t.it.depositDomain)
@@ -418,9 +414,9 @@ func (t *SubmitScrubMinipools) verifyDeposits() error {
 		for depositIndex, deposit := range deposits {
 			depositData := new(ethpb.Deposit_Data)
 			depositData.Amount = deposit.Amount
-			depositData.PublicKey = deposit.Pubkey.Bytes()
+			depositData.PublicKey = deposit.Pubkey[:]
 			depositData.WithdrawalCredentials = deposit.WithdrawalCredentials.Bytes()
-			depositData.Signature = deposit.Signature.Bytes()
+			depositData.Signature = deposit.Signature[:]
 
 			err := prdeposit.VerifyDepositSignature(depositData, t.it.depositDomain)
 			if err != nil {
@@ -539,20 +535,20 @@ func (t *SubmitScrubMinipools) submitVoteScrubMinipool(mp minipool.IMinipool) er
 	if err != nil {
 		return fmt.Errorf("error getting voteScrub TX: %w", err)
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating voteScrub tx for minipool %s failed: %s", mp.Common().Address.Hex(), txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating voteScrub tx for minipool %s failed: %s", mp.Common().Address.Hex(), txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)

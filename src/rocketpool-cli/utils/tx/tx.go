@@ -19,8 +19,8 @@ import (
 // Handle a transaction, either printing its details, signing it, or submitting it and waiting for it to be included
 func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, confirmMessage string, identifier string, submissionMessage string) error {
 	// Make sure the TX was successful
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating %s failed: %s", identifier, txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating %s failed: %s", identifier, txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the TX data if requested
@@ -29,13 +29,13 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, co
 		fmt.Printf("\tTo:       %s\n", txInfo.To.Hex())
 		fmt.Printf("\tData:     %s\n", hexutil.Encode(txInfo.Data))
 		fmt.Printf("\tValue:    %s\n", txInfo.Value.String())
-		fmt.Printf("\tEst. Gas: %d\n", txInfo.GasInfo.EstGasLimit)
-		fmt.Printf("\tSafe Gas: %d\n", txInfo.GasInfo.SafeGasLimit)
+		fmt.Printf("\tEst. Gas: %d\n", txInfo.SimulationResult.EstGasLimit)
+		fmt.Printf("\tSafe Gas: %d\n", txInfo.SimulationResult.SafeGasLimit)
 		return nil
 	}
 
 	// Assign max fees
-	maxFee, maxPrioFee, err := gas.GetMaxFees(c, rp, txInfo.GasInfo)
+	maxFee, maxPrioFee, err := gas.GetMaxFees(c, rp, txInfo.SimulationResult)
 	if err != nil {
 		return fmt.Errorf("error getting fee information: %w", err)
 	}
@@ -89,8 +89,8 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, co
 func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.TransactionInfo, confirmMessage string, identifierFunc func(int) string, submissionMessage string) error {
 	// Make sure the TXs were successful
 	for i, txInfo := range txInfos {
-		if txInfo.SimError != "" {
-			return fmt.Errorf("simulating %s failed: %s", identifierFunc(i), txInfo.SimError)
+		if txInfo.SimulationResult.SimulationError != "" {
+			return fmt.Errorf("simulating %s failed: %s", identifierFunc(i), txInfo.SimulationResult.SimulationError)
 		}
 	}
 

@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -23,9 +22,9 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/eth1"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -40,11 +39,12 @@ const (
 
 // Submit network balances task
 type SubmitNetworkBalances struct {
+	ctx       context.Context
 	sp        *services.ServiceProvider
 	log       *log.ColorLogger
 	errLog    *log.ColorLogger
 	cfg       *config.SmartNodeConfig
-	w         *wallet.LocalWallet
+	w         *wallet.Wallet
 	ec        eth.IExecutionClient
 	rp        *rocketpool.RocketPool
 	bc        beacon.IBeaconClient
@@ -71,9 +71,10 @@ type minipoolBalanceDetails struct {
 }
 
 // Create submit network balances task
-func NewSubmitNetworkBalances(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger) *SubmitNetworkBalances {
+func NewSubmitNetworkBalances(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger) *SubmitNetworkBalances {
 	lock := &sync.Mutex{}
 	return &SubmitNetworkBalances{
+		ctx:       ctx,
 		sp:        sp,
 		log:       &logger,
 		errLog:    &errorLogger,
@@ -157,13 +158,13 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 
 	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
-	ecBlock, err := utils.FindLastExistingELBlockFromSlot(t.bc, slotNumber)
+	ecBlock, err := utils.FindLastExistingELBlockFromSlot(t.ctx, t.bc, slotNumber)
 	if err != nil {
 		return err
 	}
 
 	// Fetch the target block
-	targetBlockHeader, err := t.ec.HeaderByHash(context.Background(), ecBlock.BlockHash)
+	targetBlockHeader, err := t.ec.HeaderByHash(t.ctx, ecBlock.BlockHash)
 	if err != nil {
 		return err
 	}
@@ -171,7 +172,7 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 
 	// Check if the required epoch is finalized yet
 	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
-	beaconHead, err := t.bc.GetBeaconHead()
+	beaconHead, err := t.bc.GetBeaconHead(t.ctx)
 	if err != nil {
 		return err
 	}
@@ -342,13 +343,13 @@ func (t *SubmitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	}
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(client, t.cfg, client.Client, t.bc, t.log)
+	mgr, err := state.NewNetworkStateManager(t.ctx, client, t.cfg, client.Client, t.bc, t.log)
 	if err != nil {
 		return networkBalances{}, fmt.Errorf("error creating network state manager for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
 	}
 
 	// Create a new state for the target block
-	state, err := mgr.GetStateForSlot(beaconBlock)
+	state, err := mgr.GetStateForSlot(t.ctx, beaconBlock)
 	if err != nil {
 		return networkBalances{}, fmt.Errorf("couldn't get network state for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
 	}
@@ -403,7 +404,7 @@ func (t *SubmitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		if err != nil {
 			return fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
 		}
-		smoothingPoolShare, err = treegen.ApproximateStakerShareOfSmoothingPool()
+		smoothingPoolShare, err = treegen.ApproximateStakerShareOfSmoothingPool(t.ctx)
 		if err != nil {
 			return fmt.Errorf("error getting approximate share of smoothing pool: %w", err)
 		}
@@ -550,29 +551,29 @@ func (t *SubmitNetworkBalances) submitBalances(balances networkBalances, isHoust
 	if err != nil {
 		if enableSubmissionAfterConsensus_Balances && strings.Contains(err.Error(), "Network balances for an equal or higher block are set") {
 			// Set a gas limit which will intentionally be too low and revert
-			txInfo.GasInfo = core.GasInfo{
-				EstGasLimit:  utils.BalanceSubmissionForcedGas,
-				SafeGasLimit: utils.BalanceSubmissionForcedGas,
+			txInfo.SimulationResult = eth.SimulationResult{
+				EstimatedGasLimit: utils.BalanceSubmissionForcedGas,
+				SafeGasLimit:      utils.BalanceSubmissionForcedGas,
 			}
 			t.log.Println("Network balance consensus has already been reached but submitting anyway for the health check.")
 		} else {
 			return fmt.Errorf("error getting TX for submitting network balances: %w", err)
 		}
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating TX for submitting network balances failed: %s", txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating TX for submitting network balances failed: %s", txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	// Set the gas settings
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.log, txInfo, opts)

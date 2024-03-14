@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -17,7 +18,7 @@ const (
 
 // Get the max fee for watchtower transactions
 func GetWatchtowerMaxFee(cfg *config.SmartNodeConfig) float64 {
-	setting := cfg.Smartnode.WatchtowerMaxFeeOverride.Value.(float64)
+	setting := cfg.WatchtowerMaxFeeOverride.Value
 	if setting < MinWatchtowerMaxFee {
 		return MinWatchtowerMaxFee
 	}
@@ -26,18 +27,18 @@ func GetWatchtowerMaxFee(cfg *config.SmartNodeConfig) float64 {
 
 // Get the priority fee for watchtower transactions
 func GetWatchtowerPrioFee(cfg *config.SmartNodeConfig) float64 {
-	setting := cfg.Smartnode.WatchtowerPrioFeeOverride.Value.(float64)
+	setting := cfg.WatchtowerPriorityFeeOverride.Value
 	if setting < MinWatchtowerPriorityFee {
 		return MinWatchtowerPriorityFee
 	}
 	return setting
 }
 
-func FindLastExistingELBlockFromSlot(bc beacon.IBeaconClient, slotNumber uint64) (beacon.Eth1Data, error) {
+func FindLastExistingELBlockFromSlot(ctx context.Context, bc beacon.IBeaconClient, slotNumber uint64) (beacon.Eth1Data, error) {
 	ecBlock := beacon.Eth1Data{}
 	var err error
 	for blockExists, searchSlot := false, slotNumber; !blockExists; searchSlot -= 1 {
-		ecBlock, blockExists, err = bc.GetEth1DataForEth2Block(strconv.FormatUint(searchSlot, 10))
+		ecBlock, blockExists, err = bc.GetEth1DataForEth2Block(ctx, strconv.FormatUint(searchSlot, 10))
 		if err != nil {
 			return ecBlock, err
 		}

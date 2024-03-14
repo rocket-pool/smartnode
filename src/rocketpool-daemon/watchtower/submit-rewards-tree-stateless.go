@@ -19,13 +19,13 @@ import (
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
-	"github.com/rocket-pool/rocketpool-go/core"
+	nmc_utils "github.com/rocket-pool/node-manager-core/utils"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/eth1"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -33,17 +33,16 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Submit rewards Merkle Tree task
 type SubmitRewardsTree_Stateless struct {
+	ctx              context.Context
 	sp               *services.ServiceProvider
 	log              *log.ColorLogger
 	errLog           *log.ColorLogger
 	cfg              *config.SmartNodeConfig
-	w                *wallet.LocalWallet
+	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
 	ec               eth.IExecutionClient
 	bc               beacon.IBeaconClient
@@ -55,9 +54,10 @@ type SubmitRewardsTree_Stateless struct {
 }
 
 // Create submit rewards Merkle Tree task
-func NewSubmitRewardsTree_Stateless(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) *SubmitRewardsTree_Stateless {
+func NewSubmitRewardsTree_Stateless(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) *SubmitRewardsTree_Stateless {
 	lock := &sync.Mutex{}
 	return &SubmitRewardsTree_Stateless{
+		ctx:              ctx,
 		sp:               sp,
 		log:              &logger,
 		errLog:           &errorLogger,
@@ -72,12 +72,12 @@ func NewSubmitRewardsTree_Stateless(sp *services.ServiceProvider, logger log.Col
 func (t *SubmitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.NetworkState, beaconSlot uint64) error {
 	// Check node trusted status
 	if !nodeTrusted {
-		if t.cfg.Smartnode.RewardsTreeMode.Value.(cfgtypes.RewardsMode) != cfgtypes.RewardsMode_Generate {
+		if t.cfg.RewardsTreeMode.Value != config.RewardsMode_Generate {
 			return nil
 		} else {
 			// Create the state, since it's not done except for manual generators
 			var err error
-			state, err = t.m.GetStateForSlot(beaconSlot)
+			state, err = t.m.GetStateForSlot(t.ctx, beaconSlot)
 			if err != nil {
 				return fmt.Errorf("error getting state for beacon slot %d: %w", beaconSlot, err)
 			}
@@ -159,9 +159,9 @@ func (t *SubmitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 
 	// Get the expected file paths
-	rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
+	rewardsTreePath := t.cfg.GetRewardsTreePath(currentIndex)
 	compressedRewardsTreePath := rewardsTreePath + config.RewardsTreeIpfsExtension
-	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
+	minipoolPerformancePath := t.cfg.GetMinipoolPerformancePath(currentIndex)
 	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval
@@ -289,13 +289,13 @@ func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(rp, t.cfg, rp.Client, t.bc, t.log)
+	mgr, err := state.NewNetworkStateManager(t.ctx, rp, t.cfg, rp.Client, t.bc, t.log)
 	if err != nil {
 		return fmt.Errorf("error creating network state manager for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
 	}
 
 	// Create a new state for the target block
-	state, err := mgr.GetStateForSlot(snapshotBeaconBlock)
+	state, err := mgr.GetStateForSlot(t.ctx, snapshotBeaconBlock)
 	if err != nil {
 		return fmt.Errorf("couldn't get network state for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
 	}
@@ -305,7 +305,7 @@ func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	if err != nil {
 		return fmt.Errorf("error creating Merkle tree generator: %w", err)
 	}
-	rewardsFile, err := treegen.GenerateTree()
+	rewardsFile, err := treegen.GenerateTree(t.ctx)
 	if err != nil {
 		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}
@@ -374,7 +374,7 @@ func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 
 // Submit rewards info to the contracts
 func (t *SubmitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFileHeader *sharedtypes.RewardsFileHeader, cid string, intervalsPassed *big.Int) error {
-	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFileHeader.MerkleRoot))
+	treeRootBytes, err := hex.DecodeString(nmc_utils.RemovePrefix(rewardsFileHeader.MerkleRoot))
 	if err != nil {
 		return fmt.Errorf("error decoding merkle root: %w", err)
 	}
@@ -426,28 +426,28 @@ func (t *SubmitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	if err != nil {
 		if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
 			// Set a gas limit which will intentionally be too low and revert
-			txInfo.GasInfo = core.GasInfo{
-				EstGasLimit:  utils.RewardsSubmissionForcedGas,
-				SafeGasLimit: utils.RewardsSubmissionForcedGas,
+			txInfo.SimulationResult = eth.SimulationResult{
+				EstimatedGasLimit: utils.RewardsSubmissionForcedGas,
+				SafeGasLimit:      utils.RewardsSubmissionForcedGas,
 			}
 			t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
 		} else {
 			return fmt.Errorf("error getting TX for submitting the rewards tree: %w", err)
 		}
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating TX for submitting the rewards tree failed: %s", txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating TX for submitting the rewards tree failed: %s", txInfo.SimulationResult.SimulationError)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, false, 0, t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.log, txInfo, opts)
@@ -462,7 +462,7 @@ func (t *SubmitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 // Get the first finalized, successful consensus block that occurred after the given target time
 func (t *SubmitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Time, state *state.NetworkState) (uint64, uint64, error) {
 	// Get the beacon head
-	beaconHead, err := t.bc.GetBeaconHead()
+	beaconHead, err := t.bc.GetBeaconHead(t.ctx)
 	if err != nil {
 		return 0, 0, fmt.Errorf("error getting Beacon head: %w", err)
 	}
@@ -484,7 +484,7 @@ func (t *SubmitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Tim
 	// Get the first successful block
 	for {
 		// Try to get the current block
-		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
+		block, exists, err := t.bc.GetBeaconBlock(t.ctx, fmt.Sprint(targetSlot))
 		if err != nil {
 			return 0, 0, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
 		}
