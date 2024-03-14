@@ -14,17 +14,18 @@ type NimbusPruningMode string
 // Enum to describe which container(s) a parameter impacts, so the Smartnode knows which
 // ones to restart upon a settings change
 const (
-	ContainerID_Unknown    ContainerID = ""
-	ContainerID_Api        ContainerID = "api"
-	ContainerID_Node       ContainerID = "node"
-	ContainerID_Watchtower ContainerID = "watchtower"
-	ContainerID_Eth1       ContainerID = "eth1"
-	ContainerID_Eth2       ContainerID = "eth2"
-	ContainerID_Validator  ContainerID = "validator"
-	ContainerID_Grafana    ContainerID = "grafana"
-	ContainerID_Prometheus ContainerID = "prometheus"
-	ContainerID_Exporter   ContainerID = "exporter"
-	ContainerID_MevBoost   ContainerID = "mev-boost"
+	ContainerID_Unknown      ContainerID = ""
+	ContainerID_Api          ContainerID = "api"
+	ContainerID_Node         ContainerID = "node"
+	ContainerID_Watchtower   ContainerID = "watchtower"
+	ContainerID_Eth1         ContainerID = "eth1"
+	ContainerID_Eth2         ContainerID = "eth2"
+	ContainerID_Validator    ContainerID = "validator"
+	ContainerID_Grafana      ContainerID = "grafana"
+	ContainerID_Prometheus   ContainerID = "prometheus"
+	ContainerID_Alertmanager ContainerID = "alertmanager"
+	ContainerID_Exporter     ContainerID = "exporter"
+	ContainerID_MevBoost     ContainerID = "mev-boost"
 )
 
 // Enum to describe which network the system is on

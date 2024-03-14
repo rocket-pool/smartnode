@@ -22,6 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -226,6 +227,24 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.FeeDistributorBalance, err = rp.Client.BalanceAt(context.Background(), feeRecipientInfo.FeeDistributorAddress, nil)
 		}
 		return err
+	})
+
+	// Get alerts from Alertmanager
+	wg.Go(func() error {
+		alerts, err := alerting.FetchAlerts(cfg)
+		if err != nil {
+			return err
+		}
+		response.Alerts = make([]api.NodeAlert, len(alerts))
+
+		for i, a := range alerts {
+			response.Alerts[i] = api.NodeAlert{
+				State:       *a.Status.State,
+				Labels:      a.Labels,
+				Annotations: a.Annotations,
+			}
+		}
+		return nil
 	})
 
 	// Wait for data

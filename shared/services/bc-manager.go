@@ -161,6 +161,16 @@ func (m *BeaconClientManager) GetBeaconBlock(blockId string) (beacon.BeaconBlock
 	return result1.(beacon.BeaconBlock), result2.(bool), nil
 }
 
+func (m *BeaconClientManager) GetBeaconBlockHeader(blockId string) (beacon.BeaconBlockHeader, bool, error) {
+	result1, result2, err := m.runFunction2(func(client beacon.Client) (interface{}, interface{}, error) {
+		return client.GetBeaconBlockHeader(blockId)
+	})
+	if err != nil {
+		return beacon.BeaconBlockHeader{}, false, err
+	}
+	return result1.(beacon.BeaconBlockHeader), result2.(bool), nil
+}
+
 // Get the Beacon chain's head information
 func (m *BeaconClientManager) GetBeaconHead() (beacon.BeaconHead, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {

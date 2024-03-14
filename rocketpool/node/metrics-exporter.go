@@ -62,7 +62,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *colle
 	supplyCollector := collectors.NewSupplyCollector(rp, stateLocker)
 	rplCollector := collectors.NewRplCollector(rp, cfg, stateLocker)
 	odaoCollector := collectors.NewOdaoCollector(rp, stateLocker)
-	nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg, stateLocker)
+	nodeCollector := collectors.NewNodeCollector(rp, bc, ec, nodeAccount.Address, cfg, stateLocker)
 	trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg, stateLocker)
 	beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address, stateLocker)
 	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(rp, ec, stateLocker)

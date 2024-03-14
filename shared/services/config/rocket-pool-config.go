@@ -36,6 +36,7 @@ const (
 	MevBoostContainerName     string = "mev-boost"
 	NodeContainerName         string = "node"
 	PrometheusContainerName   string = "prometheus"
+	AlertmanagerContainerName string = "alertmanager"
 	ValidatorContainerName    string = "validator"
 	WatchtowerContainerName   string = "watchtower"
 )
@@ -113,6 +114,7 @@ type RocketPoolConfig struct {
 	// Metrics
 	Grafana           *GrafanaConfig           `yaml:"grafana,omitempty"`
 	Prometheus        *PrometheusConfig        `yaml:"prometheus,omitempty"`
+	Alertmanager      *AlertmanagerConfig      `yaml:"alertmanager,omitempty"`
 	Exporter          *ExporterConfig          `yaml:"exporter,omitempty"`
 	BitflyNodeMetrics *BitflyNodeMetricsConfig `yaml:"bitflyNodeMetrics,omitempty"`
 
@@ -339,7 +341,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Enable the Smartnode's performance and status metrics system. This will provide you with the node operator's Grafana dashboard.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: true},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter, config.ContainerID_Alertmanager},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
@@ -470,6 +472,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	cfg.ExternalTeku = NewExternalTekuConfig(cfg)
 	cfg.Grafana = NewGrafanaConfig(cfg)
 	cfg.Prometheus = NewPrometheusConfig(cfg)
+	cfg.Alertmanager = NewAlertmanagerConfig(cfg)
 	cfg.Exporter = NewExporterConfig(cfg)
 	cfg.BitflyNodeMetrics = NewBitflyNodeMetricsConfig(cfg)
 	cfg.Native = NewNativeConfig(cfg)
@@ -575,6 +578,7 @@ func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 		"fallbackPrysm":      cfg.FallbackPrysm,
 		"grafana":            cfg.Grafana,
 		"prometheus":         cfg.Prometheus,
+		"alertmanager":       cfg.Alertmanager,
 		"exporter":           cfg.Exporter,
 		"bitflyNodeMetrics":  cfg.BitflyNodeMetrics,
 		"native":             cfg.Native,
@@ -1516,6 +1520,7 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Grafana.Port, errors)
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.MevBoost.Port, errors)
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Prometheus.Port, errors)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Alertmanager.Port, errors)
 	_, errors = addAndCheckForDuplicate(portMap, cfg.Lighthouse.P2pQuicPort, errors)
 
 	return errors
