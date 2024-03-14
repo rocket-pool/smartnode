@@ -4,13 +4,13 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/shared/config"
 )
 
 func getAutoTxInfo(cfg *config.SmartNodeConfig, logger *log.ColorLogger) (*big.Int, *big.Int) {
 	// Get the user-requested max fee
-	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
+	maxFeeGwei := cfg.AutoTxMaxFee.Value
 	var maxFee *big.Int
 	if maxFeeGwei == 0 {
 		maxFee = nil
@@ -19,7 +19,7 @@ func getAutoTxInfo(cfg *config.SmartNodeConfig, logger *log.ColorLogger) (*big.I
 	}
 
 	// Get the user-requested max fee
-	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
+	priorityFeeGwei := cfg.MaxPriorityFee.Value
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
 		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")

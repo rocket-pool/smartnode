@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -20,7 +20,6 @@ import (
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
@@ -36,7 +35,7 @@ type ReduceBonds struct {
 	sp             *services.ServiceProvider
 	log            log.ColorLogger
 	cfg            *config.SmartNodeConfig
-	w              *wallet.LocalWallet
+	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
 	mpMgr          *minipool.MinipoolManager
 	gasThreshold   float64
@@ -70,7 +69,7 @@ func (t *ReduceBonds) Run(state *state.NetworkState) error {
 	t.w = t.sp.GetWallet()
 	nodeAddress, _ := t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
-	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
+	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
 
 	// Check if auto-bond-reduction is disabled
 	if t.gasThreshold == 0 {
@@ -206,8 +205,8 @@ func (t *ReduceBonds) forceFeeDistribution(state *state.NetworkState) (bool, err
 	if err != nil {
 		return false, fmt.Errorf("could not get TX info for distributing node fees: %w", err)
 	}
-	if txInfo.SimError != "" {
-		return false, fmt.Errorf("simulating distribute node fees failed: %s", txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return false, fmt.Errorf("simulating distribute node fees failed: %s", txInfo.SimulationResult.SimulationError)
 	}
 
 	// Get the max fee
@@ -220,13 +219,13 @@ func (t *ReduceBonds) forceFeeDistribution(state *state.NetworkState) (bool, err
 	}
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, true, t.gasThreshold, &t.log, maxFee, txInfo.GasInfo.SafeGasLimit) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, true, t.gasThreshold, &t.log, maxFee, txInfo.SimulationResult.SafeGasLimit) {
 		return false, nil
 	}
 
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = t.maxPriorityFee
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
@@ -321,11 +320,11 @@ func (t *ReduceBonds) createReduceBondTx(mpd *rpstate.NativeMinipoolDetails) (*e
 	if err != nil {
 		return nil, fmt.Errorf("error getting reduce bond TX info for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
-	if txInfo.SimError != "" {
-		return nil, fmt.Errorf("simulating reduce bond TX for minipool %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return nil, fmt.Errorf("simulating reduce bond TX for minipool %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimulationResult.SimulationError)
 	}
 
-	submission, err := core.CreateTxSubmissionFromInfo(txInfo, nil)
+	submission, err := eth.CreateTxSubmissionFromInfo(txInfo, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating distribute tx submission for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}

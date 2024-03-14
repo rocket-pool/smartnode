@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
@@ -10,11 +11,11 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/proposals"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -28,12 +29,14 @@ type defendableProposal struct {
 }
 
 type DefendPdaoProps struct {
+	ctx              context.Context
 	sp               *services.ServiceProvider
 	log              *log.ColorLogger
 	cfg              *config.SmartNodeConfig
-	w                *wallet.LocalWallet
+	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
 	bc               beacon.IBeaconClient
+	rs               *config.RocketPoolResources
 	gasThreshold     float64
 	maxFee           *big.Int
 	maxPriorityFee   *big.Int
@@ -47,8 +50,9 @@ type DefendPdaoProps struct {
 	intervalSize *big.Int
 }
 
-func NewDefendPdaoProps(sp *services.ServiceProvider, logger log.ColorLogger) *DefendPdaoProps {
+func NewDefendPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger) *DefendPdaoProps {
 	return &DefendPdaoProps{
+		ctx:              ctx,
 		sp:               sp,
 		log:              &logger,
 		lastScannedBlock: nil,
@@ -64,11 +68,12 @@ func (t *DefendPdaoProps) Run(state *state.NetworkState) error {
 	t.w = t.sp.GetWallet()
 	t.nodeAddress, _ = t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, t.log)
-	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
-	t.intervalSize = big.NewInt(int64(t.cfg.Geth.EventLogInterval))
+	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
+	t.intervalSize = big.NewInt(int64(config.EventLogInterval))
+	t.rs = t.cfg.GetRocketPoolResources()
 
 	// Bindings
-	propMgr, err := proposals.NewProposalManager(t.log, t.cfg, t.rp, t.bc)
+	propMgr, err := proposals.NewProposalManager(t.ctx, t.log, t.cfg, t.rp, t.bc)
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager: %w", err)
 	}
@@ -133,7 +138,7 @@ func (t *DefendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 		startSlot := uint64(startTime.Sub(genesisTime) / secondsPerSlot)
 
 		// Get the Beacon block for the slot
-		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(startSlot))
+		block, exists, err := t.bc.GetBeaconBlock(t.ctx, fmt.Sprint(startSlot))
 		if err != nil {
 			return nil, fmt.Errorf("error getting Beacon block at slot %d: %w", startSlot, err)
 		}
@@ -156,7 +161,7 @@ func (t *DefendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 	}
 
 	// Get any challenges issued for the proposals
-	challengeEvents, err := t.pdaoMgr.GetChallengeSubmittedEvents(ids, t.intervalSize, startBlock, endBlock, opts)
+	challengeEvents, err := t.pdaoMgr.GetChallengeSubmittedEvents(ids, t.intervalSize, startBlock, endBlock, t.rs.PreviousProtocolDaoVerifierAddresses, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error scanning for ChallengeSubmitted events: %w", err)
 	}
@@ -211,8 +216,8 @@ func (t *DefendPdaoProps) defendProposal(prop defendableProposal) error {
 	if err != nil {
 		return fmt.Errorf("error estimating the gas required to respond to challenge against proposal %d, index %d: %w", propID, challengedIndex, err)
 	}
-	if txInfo.SimError != "" {
-		return fmt.Errorf("simulating response to challenge against proposal %d, index %d failed: %s", propID, challengedIndex, txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating response to challenge against proposal %d, index %d failed: %s", propID, challengedIndex, txInfo.SimulationResult.SimulationError)
 	}
 
 	// Get the max fee
@@ -225,13 +230,13 @@ func (t *DefendPdaoProps) defendProposal(prop defendableProposal) error {
 	}
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.GasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
 		t.log.Println("NOTICE: Challenge responses bypass the automatic TX gas threshold, responding for safety.")
 	}
 
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = t.maxPriorityFee
-	opts.GasLimit = txInfo.GasInfo.SafeGasLimit
+	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
 	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.log, txInfo, opts)

@@ -8,7 +8,7 @@ import (
 )
 
 // A collection of network-specific resources and getters for them
-type SmartNodeResources struct {
+type RocketPoolResources struct {
 	*config.NetworkResources
 
 	// The URL to use for staking rETH
@@ -100,9 +100,9 @@ type SmartNodeResources struct {
 }
 
 // Creates a new resource collection for the given network
-func newSmartNodeResources(network config.Network) *SmartNodeResources {
+func newRocketPoolResources(network config.Network) *RocketPoolResources {
 	// Mainnet
-	mainnetResources := &SmartNodeResources{
+	mainnetResources := &RocketPoolResources{
 		NetworkResources:               config.NewResources(config.Network_Mainnet),
 		StakeUrl:                       "https://stake.rocketpool.net",
 		StorageAddress:                 common.HexToAddress("0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46"),
@@ -142,7 +142,7 @@ func newSmartNodeResources(network config.Network) *SmartNodeResources {
 	}
 
 	// Holesky
-	holeskyResources := &SmartNodeResources{
+	holeskyResources := &RocketPoolResources{
 		NetworkResources:                     config.NewResources(config.Network_Holesky),
 		StakeUrl:                             "https://testnet.rocketpool.net",
 		StorageAddress:                       common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
@@ -180,7 +180,7 @@ func newSmartNodeResources(network config.Network) *SmartNodeResources {
 	}
 
 	// Devnet
-	devnetResources := &SmartNodeResources{
+	devnetResources := &RocketPoolResources{
 		NetworkResources:               config.NewResources(config.Network_Holesky),
 		StakeUrl:                       "TBD",
 		StorageAddress:                 common.HexToAddress("0x24503C4f4CEfCfa2d3930Ec7C8CFD44a78c7a25E"),

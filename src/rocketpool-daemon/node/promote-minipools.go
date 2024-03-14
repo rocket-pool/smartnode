@@ -8,7 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -16,7 +16,6 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
@@ -28,7 +27,7 @@ type PromoteMinipools struct {
 	sp             *services.ServiceProvider
 	log            log.ColorLogger
 	cfg            *config.SmartNodeConfig
-	w              *wallet.LocalWallet
+	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
 	mpMgr          *minipool.MinipoolManager
 	gasThreshold   float64
@@ -53,7 +52,7 @@ func (t *PromoteMinipools) Run(state *state.NetworkState) error {
 	t.w = t.sp.GetWallet()
 	nodeAddress, _ := t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
-	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
+	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
 
 	// Log
 	t.log.Println("Checking for minipools to promote...")
@@ -154,11 +153,11 @@ func (t *PromoteMinipools) createPromoteMinipoolTx(mpd *rpstate.NativeMinipoolDe
 	if err != nil {
 		return nil, fmt.Errorf("error getting promote minipool tx for %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
-	if txInfo.SimError != "" {
-		return nil, fmt.Errorf("simulating promote minipool tx for %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return nil, fmt.Errorf("simulating promote minipool tx for %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimulationResult.SimulationError)
 	}
 
-	submission, err := core.CreateTxSubmissionFromInfo(txInfo, nil)
+	submission, err := eth.CreateTxSubmissionFromInfo(txInfo, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating promote tx submission for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}

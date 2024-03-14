@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/config"
 )
 
 // Manage download rewards trees task
@@ -33,7 +33,7 @@ func (t *DownloadRewardsTrees) Run(state *state.NetworkState) error {
 	nodeAddress, _ := t.sp.GetWallet().GetAddress()
 
 	// Check if the user opted into downloading rewards files
-	if cfg.Smartnode.RewardsTreeMode.Value.(cfgtypes.RewardsMode) != cfgtypes.RewardsMode_Download {
+	if cfg.RewardsTreeMode.Value != config.RewardsMode_Download {
 		return nil
 	}
 
@@ -47,7 +47,7 @@ func (t *DownloadRewardsTrees) Run(state *state.NetworkState) error {
 	missingIntervals := []uint64{}
 	for i := uint64(0); i < currentIndex; i++ {
 		// Check if the tree file exists
-		treeFilePath := cfg.Smartnode.GetRewardsTreePath(i, true)
+		treeFilePath := cfg.GetRewardsTreePath(i)
 		_, err := os.Stat(treeFilePath)
 		if os.IsNotExist(err) {
 			t.log.Printlnf("You are missing the rewards tree file for interval %d.", i)
@@ -68,7 +68,7 @@ func (t *DownloadRewardsTrees) Run(state *state.NetworkState) error {
 		if err != nil {
 			return fmt.Errorf("error getting interval %d info: %w", missingInterval, err)
 		}
-		err = rprewards.DownloadRewardsFile(cfg, &intervalInfo, true)
+		err = rprewards.DownloadRewardsFile(cfg, &intervalInfo)
 		if err != nil {
 			fmt.Println()
 			return err

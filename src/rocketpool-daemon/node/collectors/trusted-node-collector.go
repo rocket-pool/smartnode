@@ -8,9 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 )
 
@@ -97,7 +97,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	// Services
 	rp := collector.sp.GetRocketPool()
 	cfg := collector.sp.GetConfig()
-	if !cfg.EnableODaoMetrics.Value.(bool) {
+	if !cfg.MetricsConfig.EnableOdaoMetrics.Value {
 		return
 	}
 

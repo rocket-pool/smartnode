@@ -1,6 +1,7 @@
 package collectors
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -19,6 +20,9 @@ type BeaconCollector struct {
 	// The number of upcoming proposals for this node's validators
 	upcomingProposals *prometheus.Desc
 
+	// Context for graceful shutdowns
+	ctx context.Context
+
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
@@ -30,7 +34,7 @@ type BeaconCollector struct {
 }
 
 // Create a new BeaconCollector instance
-func NewBeaconCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *BeaconCollector {
+func NewBeaconCollector(ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *BeaconCollector {
 	subsystem := "beacon"
 	return &BeaconCollector{
 		activeSyncCommittee: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "active_sync_committee"),
@@ -45,6 +49,7 @@ func NewBeaconCollector(sp *services.ServiceProvider, stateLocker *StateLocker) 
 			"The number of proposals assigned to validators in this epoch and the next",
 			nil, nil,
 		),
+		ctx:         ctx,
 		sp:          sp,
 		stateLocker: stateLocker,
 		logPrefix:   "Beacon Collector",
@@ -91,7 +96,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
 		wg.Go(func() error {
 			// Get current duties
-			duties, err := bc.GetValidatorSyncDuties(validatorIndices, epoch)
+			duties, err := bc.GetValidatorSyncDuties(collector.ctx, validatorIndices, epoch)
 			if err != nil {
 				return fmt.Errorf("Error getting sync duties: %w", err)
 			}
@@ -110,7 +115,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 			config := state.BeaconConfig
 
 			// Get upcoming duties
-			duties, err := bc.GetValidatorSyncDuties(validatorIndices, epoch+config.EpochsPerSyncCommitteePeriod)
+			duties, err := bc.GetValidatorSyncDuties(collector.ctx, validatorIndices, epoch+config.EpochsPerSyncCommitteePeriod)
 			if err != nil {
 				return fmt.Errorf("Error getting sync duties: %w", err)
 			}
@@ -126,7 +131,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
 		wg.Go(func() error {
 			// Get proposals in this epoch
-			duties, err := bc.GetValidatorProposerDuties(validatorIndices, epoch)
+			duties, err := bc.GetValidatorProposerDuties(collector.ctx, validatorIndices, epoch)
 			if err != nil {
 				return fmt.Errorf("Error getting proposer duties: %w", err)
 			}

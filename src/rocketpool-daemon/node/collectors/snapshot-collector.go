@@ -110,7 +110,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		// Services
 		rp := collector.sp.GetRocketPool()
 		cfg := collector.sp.GetConfig()
-		snapshotID := cfg.Smartnode.GetVotingSnapshotID()
+		snapshotID := cfg.GetVotingSnapshotID()
 		nodeAddress, hasNodeAddress := collector.sp.GetWallet().GetAddress()
 		if !hasNodeAddress {
 			return

@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
@@ -24,6 +25,7 @@ const (
 
 // Manage fee recipient task
 type ManageFeeRecipient struct {
+	ctx context.Context
 	sp  *services.ServiceProvider
 	cfg *config.SmartNodeConfig
 	log log.ColorLogger
@@ -31,8 +33,9 @@ type ManageFeeRecipient struct {
 }
 
 // Create manage fee recipient task
-func NewManageFeeRecipient(sp *services.ServiceProvider, logger log.ColorLogger) *ManageFeeRecipient {
+func NewManageFeeRecipient(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger) *ManageFeeRecipient {
 	return &ManageFeeRecipient{
+		ctx: ctx,
 		sp:  sp,
 		log: logger,
 	}
@@ -85,7 +88,7 @@ func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 		t.log.Printlnf("Error updating fee recipient files: %s", err.Error())
 		t.log.Println("Shutting down the validator client for safety to prevent you from being penalized...")
 
-		err = validator.StopValidator(t.cfg, t.bc, &t.log, d)
+		err = validator.StopValidator(t.cfg, t.bc, &t.log, d, false)
 		if err != nil {
 			return fmt.Errorf("error stopping validator client: %w", err)
 		}
@@ -94,7 +97,7 @@ func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 
 	// Restart the VC
 	t.log.Println("Fee recipient files updated successfully! Restarting validator client...")
-	err = validator.RestartValidator(t.cfg, t.bc, &t.log, d)
+	err = validator.StopValidator(t.cfg, t.bc, &t.log, d, true)
 	if err != nil {
 		return fmt.Errorf("error restarting validator client: %w", err)
 	}
@@ -125,7 +128,7 @@ func (t *ManageFeeRecipient) getFeeRecipientInfo(nodeAddress common.Address, sta
 
 		// Get the Beacon info
 		beaconConfig := state.BeaconConfig
-		beaconHead, err := t.bc.GetBeaconHead()
+		beaconHead, err := t.bc.GetBeaconHead(t.ctx)
 		if err != nil {
 			return nil, fmt.Errorf("Error getting Beacon head: %w", err)
 		}
@@ -153,7 +156,7 @@ func (t *ManageFeeRecipient) getFeeRecipientInfo(nodeAddress common.Address, sta
 // The first return value is for file existence, the second is for validation of the fee recipient address inside.
 func (t *ManageFeeRecipient) checkFeeRecipientFile(feeRecipient common.Address) (bool, bool, error) {
 	// Check if the file exists
-	path := t.cfg.Smartnode.GetFeeRecipientFilePath()
+	path := t.cfg.GetFeeRecipientFilePath()
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, false, nil
@@ -185,7 +188,7 @@ func (t *ManageFeeRecipient) updateFeeRecipientFile(feeRecipient common.Address)
 	bytes := []byte(expectedString)
 
 	// Write the file
-	path := t.cfg.Smartnode.GetFeeRecipientFilePath()
+	path := t.cfg.GetFeeRecipientFilePath()
 	err := os.WriteFile(path, bytes, FileMode)
 	if err != nil {
 		return fmt.Errorf("error writing fee recipient file: %w", err)

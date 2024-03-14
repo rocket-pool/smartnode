@@ -6,7 +6,7 @@ import (
 )
 
 type MetricsConfig struct {
-	base                  *config.MetricsConfig
+	*config.MetricsConfig
 	EnableOdaoMetrics     config.Parameter[bool]
 	WatchtowerMetricsPort config.Parameter[uint16]
 }
@@ -19,7 +19,7 @@ func NewMetricsConfig() *MetricsConfig {
 	}
 
 	return &MetricsConfig{
-		base: cfg,
+		MetricsConfig: cfg,
 		EnableOdaoMetrics: config.Parameter[bool]{
 			ParameterCommon: &config.ParameterCommon{
 				ID:                 ids.MetricsEnableOdaoID,
@@ -52,12 +52,12 @@ func NewMetricsConfig() *MetricsConfig {
 
 // The title for the config
 func (cfg *MetricsConfig) GetTitle() string {
-	return cfg.base.GetTitle()
+	return cfg.MetricsConfig.GetTitle()
 }
 
 // Get the parameters for this config
 func (cfg *MetricsConfig) GetParameters() []config.IParameter {
-	params := cfg.base.GetParameters()
+	params := cfg.MetricsConfig.GetParameters()
 	params = append(params,
 		&cfg.EnableOdaoMetrics,
 		&cfg.WatchtowerMetricsPort,
@@ -67,5 +67,5 @@ func (cfg *MetricsConfig) GetParameters() []config.IParameter {
 
 // Get the sections underneath this one
 func (cfg *MetricsConfig) GetSubconfigs() map[string]config.IConfigSection {
-	return cfg.base.GetSubconfigs()
+	return cfg.MetricsConfig.GetSubconfigs()
 }

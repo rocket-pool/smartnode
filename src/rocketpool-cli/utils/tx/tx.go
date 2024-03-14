@@ -47,7 +47,7 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, co
 	}
 
 	// Create the submission from the TX info
-	submission, _ := core.CreateTxSubmissionFromInfo(txInfo, nil)
+	submission, _ := eth.CreateTxSubmissionFromInfo(txInfo, nil)
 
 	// Sign only (no submission) if requested
 	if c.Bool(utils.SignTxOnlyFlag) {
@@ -128,7 +128,7 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.Transaction
 	// Create the submissions from the TX infos
 	submissions := make([]*eth.TransactionSubmission, len(txInfos))
 	for i, info := range txInfos {
-		submission, _ := core.CreateTxSubmissionFromInfo(info, nil)
+		submission, _ := eth.CreateTxSubmissionFromInfo(info, nil)
 		submissions[i] = submission
 	}
 

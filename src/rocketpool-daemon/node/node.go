@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
@@ -98,18 +98,18 @@ func (t *TaskLoop) Run() error {
 	stateLocker := collectors.NewStateLocker()
 
 	// Initialize tasks
-	manageFeeRecipient := NewManageFeeRecipient(t.sp, log.NewColorLogger(ManageFeeRecipientColor))
+	manageFeeRecipient := NewManageFeeRecipient(t.ctx, t.sp, log.NewColorLogger(ManageFeeRecipientColor))
 	distributeMinipools := NewDistributeMinipools(t.sp, log.NewColorLogger(DistributeMinipoolsColor))
 	stakePrelaunchMinipools := NewStakePrelaunchMinipools(t.sp, log.NewColorLogger(StakePrelaunchMinipoolsColor))
 	promoteMinipools := NewPromoteMinipools(t.sp, log.NewColorLogger(PromoteMinipoolsColor))
 	downloadRewardsTrees := NewDownloadRewardsTrees(t.sp, log.NewColorLogger(DownloadRewardsTreesColor))
 	reduceBonds := NewReduceBonds(t.sp, log.NewColorLogger(ReduceBondAmountColor))
-	defendPdaoProps := NewReduceBonds(t.sp, log.NewColorLogger(DefendPdaoPropsColor))
+	defendPdaoProps := NewDefendPdaoProps(t.ctx, t.sp, log.NewColorLogger(DefendPdaoPropsColor))
 	var verifyPdaoProps *VerifyPdaoProps
 	// Make sure the user opted into this duty
 	verifyEnabled := cfg.VerifyProposals.Value
 	if verifyEnabled {
-		verifyPdaoProps = NewVerifyPdaoProps(t.sp, log.NewColorLogger(VerifyPdaoPropsColor))
+		verifyPdaoProps = NewVerifyPdaoProps(t.ctx, t.sp, log.NewColorLogger(VerifyPdaoPropsColor))
 		if err != nil {
 			return err
 		}
@@ -166,7 +166,7 @@ func (t *TaskLoop) Run() error {
 			if !hasNodeAddress {
 				continue
 			}
-			state, totalEffectiveStake, err := updateNetworkState(m, &updateLog, nodeAddress, updateTotalEffectiveStake)
+			state, totalEffectiveStake, err := updateNetworkState(t.ctx, m, &updateLog, nodeAddress, updateTotalEffectiveStake)
 			if err != nil {
 				errorLog.Println(err)
 				if t.sleepAndCheckIfCancelled(taskCooldown) {
@@ -255,7 +255,7 @@ func (t *TaskLoop) Run() error {
 
 	// Run metrics loop
 	go func() {
-		err := runMetricsServer(t.sp, log.NewColorLogger(MetricsColor), stateLocker)
+		err := runMetricsServer(t.ctx, t.sp, log.NewColorLogger(MetricsColor), stateLocker)
 		if err != nil {
 			errorLog.Println(err)
 		}

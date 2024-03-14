@@ -11,8 +11,8 @@ func (cfg *SmartNodeConfig) GetNetworkResources() *config.NetworkResources {
 	return cfg.GetRocketPoolResources().NetworkResources
 }
 
-func (cfg *SmartNodeConfig) GetRocketPoolResources() *SmartNodeResources {
-	return newSmartNodeResources(cfg.Network.Value)
+func (cfg *SmartNodeConfig) GetRocketPoolResources() *RocketPoolResources {
+	return cfg.resources
 }
 
 func (cfg *SmartNodeConfig) GetVotingPath() string {

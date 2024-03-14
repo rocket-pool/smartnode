@@ -77,6 +77,7 @@ type SmartNodeConfig struct {
 	Version             string
 	RocketPoolDirectory string
 	IsNativeMode        bool
+	resources           *RocketPoolResources
 }
 
 // Load configuration settings from a file
@@ -551,8 +552,23 @@ func (cfg *SmartNodeConfig) Deserialize(masterMap map[string]any) error {
 		return fmt.Errorf("expected a native toggle parameter named [%s] but it was not found", ids.IsNativeKey)
 	}
 	cfg.IsNativeMode, _ = strconv.ParseBool(isNativeMode.(string))
+	cfg.updateResources()
 
 	return nil
+}
+
+// Changes the current network, propagating new parameter settings if they are affected
+func (cfg *SmartNodeConfig) ChangeNetwork(newNetwork config.Network) {
+	// Get the current network
+	oldNetwork := cfg.Network.Value
+	if oldNetwork == newNetwork {
+		return
+	}
+	cfg.Network.Value = newNetwork
+
+	// Run the changes
+	config.ChangeNetwork(cfg, oldNetwork, newNetwork)
+	cfg.updateResources()
 }
 
 // =====================
@@ -563,6 +579,15 @@ func (cfg *SmartNodeConfig) Deserialize(masterMap map[string]any) error {
 func (cfg *SmartNodeConfig) applyAllDefaults() {
 	network := cfg.Network.Value
 	config.ApplyDefaults(cfg, network)
+}
+
+func (cfg *SmartNodeConfig) updateResources() {
+	switch cfg.Network.Value {
+	case Network_Devnet:
+		cfg.resources = newRocketPoolResources(config.Network_Holesky)
+	default:
+		cfg.resources = newRocketPoolResources(cfg.Network.Value)
+	}
 }
 
 // Get the list of options for networks to run on

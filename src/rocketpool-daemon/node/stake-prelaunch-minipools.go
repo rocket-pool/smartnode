@@ -8,17 +8,18 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
+	nmc_config "github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
+	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
@@ -31,7 +32,8 @@ type StakePrelaunchMinipools struct {
 	sp             *services.ServiceProvider
 	log            log.ColorLogger
 	cfg            *config.SmartNodeConfig
-	w              *wallet.LocalWallet
+	w              *wallet.Wallet
+	vMgr           *validator.ValidatorManager
 	rp             *rocketpool.RocketPool
 	bc             beacon.IBeaconClient
 	d              *client.Client
@@ -58,9 +60,10 @@ func (t *StakePrelaunchMinipools) Run(state *state.NetworkState) error {
 	t.bc = t.sp.GetBeaconClient()
 	t.w = t.sp.GetWallet()
 	t.d = t.sp.GetDocker()
+	t.vMgr = t.sp.GetValidatorManager()
 	nodeAddress, _ := t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
-	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
+	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
 
 	// Log
 	t.log.Println("Checking for minipools to launch...")
@@ -164,7 +167,7 @@ func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinip
 
 	// Get the validator key for the minipool
 	validatorPubkey := mpd.Pubkey
-	validatorKey, err := t.w.GetValidatorKeyByPubkey(validatorPubkey)
+	validatorKey, err := t.vMgr.LoadValidatorKey(validatorPubkey)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +186,8 @@ func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinip
 	}
 
 	// Get validator deposit data
-	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, state.BeaconConfig, depositAmount)
+	rs := t.cfg.GetNetworkResources()
+	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, nmc_config.Network(rs.EthNetworkName))
 	if err != nil {
 		return nil, err
 	}
@@ -195,16 +199,17 @@ func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinip
 	}
 
 	// Get the tx info
-	signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+	signature := beacon.ValidatorSignature(depositData.Signature)
+	depositDataRoot := common.BytesToHash(depositData.DepositDataRoot)
 	txInfo, err := mp.Common().Stake(signature, depositDataRoot, opts)
 	if err != nil {
 		return nil, fmt.Errorf("Could not estimate the gas required to stake the minipool: %w", err)
 	}
-	if txInfo.SimError != "" {
-		return nil, fmt.Errorf("simulating stake minipool tx for %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return nil, fmt.Errorf("simulating stake minipool tx for %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimulationResult.SimulationError)
 	}
 
-	submission, err := core.CreateTxSubmissionFromInfo(txInfo, nil)
+	submission, err := eth.CreateTxSubmissionFromInfo(txInfo, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating stake tx submission for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}

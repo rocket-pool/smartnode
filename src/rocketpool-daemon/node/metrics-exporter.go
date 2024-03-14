@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -8,17 +9,17 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
 )
 
-func runMetricsServer(sp *services.ServiceProvider, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {
+func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {
 	// Get services
 	cfg := sp.GetConfig()
 
 	// Return if metrics are disabled
-	if cfg.EnableMetrics.Value == false {
+	if !cfg.MetricsConfig.EnableMetrics.Value {
 		if strings.ToLower(os.Getenv("ENABLE_METRICS")) == "true" {
 			logger.Printlnf("ENABLE_METRICS override set to true, will start Metrics exporter anyway!")
 		} else {
@@ -34,7 +35,7 @@ func runMetricsServer(sp *services.ServiceProvider, logger log.ColorLogger, stat
 	odaoCollector := collectors.NewOdaoCollector(sp, stateLocker)
 	nodeCollector := collectors.NewNodeCollector(sp, stateLocker)
 	trustedNodeCollector := collectors.NewTrustedNodeCollector(sp, stateLocker)
-	beaconCollector := collectors.NewBeaconCollector(sp, stateLocker)
+	beaconCollector := collectors.NewBeaconCollector(ctx, sp, stateLocker)
 	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(sp, stateLocker)
 	snapshotCollector := collectors.NewSnapshotCollector(sp)
 
@@ -54,7 +55,7 @@ func runMetricsServer(sp *services.ServiceProvider, logger log.ColorLogger, stat
 	// Start the HTTP server
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	metricsAddress := os.Getenv("NODE_METRICS_ADDRESS")
-	metricsPort := cfg.NodeMetricsPort.Value.(uint64)
+	metricsPort := cfg.MetricsConfig.DaemonMetricsPort.Value
 	logger.Printlnf("Starting metrics exporter on %s:%d.", metricsAddress, metricsPort)
 	metricsPath := "/metrics"
 	http.Handle(metricsPath, handler)

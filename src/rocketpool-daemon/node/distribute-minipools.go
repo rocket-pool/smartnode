@@ -7,7 +7,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
@@ -16,7 +16,6 @@ import (
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
@@ -28,7 +27,7 @@ type DistributeMinipools struct {
 	sp                  *services.ServiceProvider
 	log                 log.ColorLogger
 	cfg                 *config.SmartNodeConfig
-	w                   *wallet.LocalWallet
+	w                   *wallet.Wallet
 	rp                  *rocketpool.RocketPool
 	bc                  beacon.IBeaconClient
 	d                   *client.Client
@@ -60,14 +59,14 @@ func (t *DistributeMinipools) Run(state *state.NetworkState) error {
 	t.w = t.sp.GetWallet()
 	nodeAddress, _ := t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
-	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
+	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
 
 	// Check if auto-distributing is disabled
 	if t.gasThreshold == 0 {
 		t.log.Println("Automatic tx gas threshold is 0, disabling auto-distribute.")
 		return nil
 	}
-	distributeThreshold := t.cfg.Smartnode.DistributeThreshold.Value.(float64)
+	distributeThreshold := t.cfg.DistributeThreshold.Value
 	// Safety clamp
 	if distributeThreshold >= 8 {
 		t.log.Printlnf("WARNING: Auto-distribute threshold is more than 8 ETH (%.6f ETH), reducing to 7.5 ETH for safety", distributeThreshold)
@@ -169,11 +168,11 @@ func (t *DistributeMinipools) createDistributeMinipoolTx(mpd *rpstate.NativeMini
 	if err != nil {
 		return nil, fmt.Errorf("error getting distribute minipool tx for %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}
-	if txInfo.SimError != "" {
-		return nil, fmt.Errorf("simulating distribute minipool tx for %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return nil, fmt.Errorf("simulating distribute minipool tx for %s failed: %s", mpd.MinipoolAddress.Hex(), txInfo.SimulationResult.SimulationError)
 	}
 
-	submission, err := core.CreateTxSubmissionFromInfo(txInfo, nil)
+	submission, err := eth.CreateTxSubmissionFromInfo(txInfo, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating distribute tx submission for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 	}

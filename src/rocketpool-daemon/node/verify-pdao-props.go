@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
@@ -11,12 +12,11 @@ import (
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/proposals"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -37,10 +37,11 @@ type defeat struct {
 }
 
 type VerifyPdaoProps struct {
+	ctx                 context.Context
 	sp                  *services.ServiceProvider
 	log                 *log.ColorLogger
 	cfg                 *config.SmartNodeConfig
-	w                   *wallet.LocalWallet
+	w                   *wallet.Wallet
 	rp                  *rocketpool.RocketPool
 	bc                  beacon.IBeaconClient
 	gasThreshold        float64
@@ -57,8 +58,9 @@ type VerifyPdaoProps struct {
 	intervalSize *big.Int
 }
 
-func NewVerifyPdaoProps(sp *services.ServiceProvider, logger log.ColorLogger) *VerifyPdaoProps {
+func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger) *VerifyPdaoProps {
 	return &VerifyPdaoProps{
+		ctx:                 ctx,
 		sp:                  sp,
 		log:                 &logger,
 		lastScannedBlock:    nil,
@@ -76,11 +78,11 @@ func (t *VerifyPdaoProps) Run(state *state.NetworkState) error {
 	t.w = t.sp.GetWallet()
 	t.nodeAddress, _ = t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, t.log)
-	t.gasThreshold = t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
-	t.intervalSize = big.NewInt(int64(t.cfg.Geth.EventLogInterval))
+	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
+	t.intervalSize = big.NewInt(int64(config.EventLogInterval))
 
 	// Bindings
-	propMgr, err := proposals.NewProposalManager(t.log, t.cfg, t.rp, t.bc)
+	propMgr, err := proposals.NewProposalManager(t.ctx, t.log, t.cfg, t.rp, t.bc)
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager: %w", err)
 	}
@@ -210,7 +212,7 @@ func (t *VerifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 		startSlot := uint64(startTime.Sub(genesisTime) / secondsPerSlot)
 
 		// Get the Beacon block for the slot
-		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(startSlot))
+		block, exists, err := t.bc.GetBeaconBlock(t.ctx, fmt.Sprint(startSlot))
 		if err != nil {
 			return nil, nil, fmt.Errorf("error getting Beacon block at slot %d: %w", startSlot, err)
 		}
@@ -233,7 +235,8 @@ func (t *VerifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 	}
 
 	// Get and cache all root submissions for the proposals
-	rootSubmissionEvents, err := t.pdaoMgr.GetRootSubmittedEvents(ids, t.intervalSize, startBlock, endBlock, opts)
+	rs := t.cfg.GetRocketPoolResources()
+	rootSubmissionEvents, err := t.pdaoMgr.GetRootSubmittedEvents(ids, t.intervalSize, startBlock, endBlock, rs.PreviousProtocolDaoVerifierAddresses, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error scanning for RootSubmitted events: %w", err)
 	}
@@ -347,11 +350,11 @@ func (t *VerifyPdaoProps) createSubmitChallengeTx(challenge challenge) (*eth.Tra
 	if err != nil {
 		return nil, fmt.Errorf("error estimating the gas required to submit challenge against proposal %d, index %d: %w", prop.ID, challengedIndex, err)
 	}
-	if txInfo.SimError != "" {
-		return nil, fmt.Errorf("simulating challenge against proposal %d, index %d failed: %s", prop.ID, challengedIndex, txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return nil, fmt.Errorf("simulating challenge against proposal %d, index %d failed: %s", prop.ID, challengedIndex, txInfo.SimulationResult.SimulationError)
 	}
 
-	submission, err := core.CreateTxSubmissionFromInfo(txInfo, nil)
+	submission, err := eth.CreateTxSubmissionFromInfo(txInfo, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating submission to challenge against proposal %d, index %d: %w", prop.ID, challengedIndex, err)
 	}
@@ -375,11 +378,11 @@ func (t *VerifyPdaoProps) createSubmitDefeatTx(defeat defeat) (*eth.TransactionS
 	if err != nil {
 		return nil, fmt.Errorf("error creating TX to defeat proposal %d with index %d: %w", prop.ID, challengedIndex, err)
 	}
-	if txInfo.SimError != "" {
-		return nil, fmt.Errorf("simulating defeat of proposal %d with index %d failed: %s", prop.ID, challengedIndex, txInfo.SimError)
+	if txInfo.SimulationResult.SimulationError != "" {
+		return nil, fmt.Errorf("simulating defeat of proposal %d with index %d failed: %s", prop.ID, challengedIndex, txInfo.SimulationResult.SimulationError)
 	}
 
-	submission, err := core.CreateTxSubmissionFromInfo(txInfo, nil)
+	submission, err := eth.CreateTxSubmissionFromInfo(txInfo, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating submission to defeat proposal %d with index %d: %w", prop.ID, challengedIndex, err)
 	}
