@@ -12,7 +12,9 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	beacon "github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
+	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	rpbeacon "github.com/rocket-pool/rocketpool-go/beacon"
@@ -56,7 +58,9 @@ type minipoolRescueDissolvedContext struct {
 	depositAmounts    []*big.Int
 	rp                *rocketpool.RocketPool
 	w                 *wallet.Wallet
+	vMgr              *validator.ValidatorManager
 	bc                beacon.IBeaconClient
+	rs                *config.NetworkResources
 
 	mpMgr *minipool.MinipoolManager
 }
@@ -69,8 +73,10 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData
 
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
+	c.vMgr = sp.GetValidatorManager()
 	c.w = sp.GetWallet()
 	c.bc = sp.GetBeaconClient()
+	c.rs = sp.GetNetworkResources()
 
 	// Requirements
 	err := errors.Join(
@@ -117,12 +123,6 @@ func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Add
 	}
 	mpCommon := mp.Common()
 
-	// Get eth2 config
-	eth2Config, err := c.bc.GetEth2Config(c.handler.context)
-	if err != nil {
-		return nil, err
-	}
-
 	// Get the contract state
 	err = c.rp.Query(nil, nil, mpCommon.WithdrawalCredentials, mpCommon.Pubkey)
 	if err != nil {
@@ -132,20 +132,21 @@ func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Add
 	// Get minipool withdrawal credentials and keys
 	withdrawalCredentials := mpCommon.WithdrawalCredentials.Get()
 	validatorPubkey := mpCommon.Pubkey.Get()
-	validatorKey, err := c.w.GetValidatorKeyByPubkey(validatorPubkey)
+	validatorKey, err := c.vMgr.LoadValidatorKey(validatorPubkey)
 	if err != nil {
 		return nil, fmt.Errorf("error getting validator private key for pubkey %s: %w", validatorPubkey.Hex(), err)
 	}
 
 	// Get validator deposit data
 	amountGwei := big.NewInt(0).Div(amount, big.NewInt(1e9)).Uint64()
-	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, amountGwei)
+	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, c.rs.GenesisForkVersion, amountGwei, config.Network(c.rs.EthNetworkName))
 	if err != nil {
 		return nil, err
 	}
 	signature := beacon.ValidatorSignature(depositData.Signature)
 
 	// Get the tx info
+	depositDataRoot := common.BytesToHash(depositData.DepositDataRoot)
 	txInfo, err := beaconDeposit.Deposit(opts, validatorPubkey, withdrawalCredentials, signature, depositDataRoot)
 	if err != nil {
 		return nil, fmt.Errorf("error performing rescue deposit: %s", err.Error())

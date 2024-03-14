@@ -18,6 +18,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
+	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
@@ -56,6 +57,7 @@ type minipoolImportKeyContext struct {
 	handler     *MinipoolHandler
 	rp          *rocketpool.RocketPool
 	w           *wallet.Wallet
+	vMgr        *validator.ValidatorManager
 	nodeAddress common.Address
 	mp          minipool.IMinipool
 
@@ -117,7 +119,8 @@ func (c *minipoolImportKeyContext) PrepareData(data *types.SuccessData, opts *bi
 	validatorKeyPath := validator.ValidatorKeyPath
 	var validatorKey *eth2types.BLSPrivateKey
 	for index < validatorKeyRetrievalLimit {
-		key, err := validator.GetPrivateKey(c.mnemonic, index, validatorKeyPath)
+		validatorKeyPath := fmt.Sprintf(validatorKeyPath, index)
+		key, err := nmc_validator.GetPrivateKey(c.mnemonic, validatorKeyPath)
 		if err != nil {
 			return fmt.Errorf("error deriving key for index %d: %w", index, err)
 		}
@@ -134,7 +137,7 @@ func (c *minipoolImportKeyContext) PrepareData(data *types.SuccessData, opts *bi
 
 	// Save the keystore to disk
 	derivationPath := fmt.Sprintf(validatorKeyPath, index)
-	err := c.w.StoreValidatorKey(validatorKey, derivationPath)
+	err := c.vMgr.StoreValidatorKey(validatorKey, derivationPath)
 	if err != nil {
 		return fmt.Errorf("error saving keystore: %w", err)
 	}

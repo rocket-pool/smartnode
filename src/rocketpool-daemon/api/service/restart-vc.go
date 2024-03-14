@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 )
 
 // ===============
@@ -45,7 +46,7 @@ func (c *serviceRestartVcContext) PrepareData(data *types.SuccessData, opts *bin
 	bc := sp.GetBeaconClient()
 	d := sp.GetDocker()
 
-	err := validator.RestartValidator(cfg, bc, nil, d)
+	err := validator.StopValidator(cfg, bc, nil, d, true)
 	if err != nil {
 		return fmt.Errorf("error restarting validator client: %w", err)
 	}

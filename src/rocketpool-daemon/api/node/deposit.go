@@ -20,16 +20,18 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
 	prdeposit "github.com/prysmaticlabs/prysm/v4/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	nmc_config "github.com/rocket-pool/node-manager-core/config"
+	"github.com/rocket-pool/node-manager-core/node/validator"
 	nodewallet "github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/collateral"
 	rputils "github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
+	snValidator "github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -71,6 +73,7 @@ type nodeDepositContext struct {
 	rp      *rocketpool.RocketPool
 	bc      beacon.IBeaconClient
 	w       *nodewallet.Wallet
+	vMgr    *snValidator.ValidatorManager
 
 	amount      *big.Int
 	minNodeFee  float64
@@ -88,6 +91,7 @@ func (c *nodeDepositContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	c.w = sp.GetWallet()
+	c.vMgr = sp.GetValidatorManager()
 	nodeAddress, _ := c.w.GetAddress()
 
 	// Requirements
@@ -135,6 +139,8 @@ func (c *nodeDepositContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.TransactOpts) error {
+	rs := c.cfg.GetNetworkResources()
+
 	// Initial population
 	data.CreditBalance = c.node.TotalCreditAndDonatedBalance.Get()
 	data.DepositDisabled = !c.pSettings.Node.IsDepositingEnabled.Get()
@@ -224,7 +230,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	}
 
 	// Get the next available validator key without saving it
-	validatorKey, index, err := c.w.GetNextValidatorKey()
+	validatorKey, index, err := c.vMgr.GetNextValidatorKey(false)
 	if err != nil {
 		return fmt.Errorf("error getting next available validator key: %w", err)
 	}
@@ -253,7 +259,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 
 	// Get validator deposit data and associated parameters
 	depositAmount := uint64(1e9) // 1 ETH in gwei
-	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
+	depositData, err := validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, nmc_config.Network(rs.EthNetworkName))
 	if err != nil {
 		return fmt.Errorf("error getting deposit data: %w", err)
 	}
@@ -302,6 +308,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	// Get tx info
 	var txInfo *eth.TransactionInfo
 	var funcName string
+	depositDataRoot := common.BytesToHash(depositData.DepositDataRoot)
 	if data.CanUseCredit {
 		txInfo, err = c.node.DepositWithCredit(c.amount, c.minNodeFee, pubkey, signature, depositDataRoot, c.salt, minipoolAddress, opts)
 		funcName = "DepositWithCredit"
@@ -317,7 +324,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	return nil
 }
 
-func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey beacon.ValidatorPubkey, withdrawalCredentials common.Hash, signature rptypes.ValidatorSignature) error {
+func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey beacon.ValidatorPubkey, withdrawalCredentials common.Hash, signature beacon.ValidatorSignature) error {
 
 	// Get the deposit domain based on the eth2 config
 	depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
@@ -330,7 +337,7 @@ func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pub
 	depositData.Amount = depositAmount
 	depositData.PublicKey = pubkey[:]
 	depositData.WithdrawalCredentials = withdrawalCredentials.Bytes()
-	depositData.Signature = signature.Bytes()
+	depositData.Signature = signature[:]
 
 	// Validate the signature
 	err = prdeposit.VerifyDepositSignature(depositData, depositDomain)

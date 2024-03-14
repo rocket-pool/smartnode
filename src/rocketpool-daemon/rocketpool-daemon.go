@@ -80,7 +80,7 @@ func main() {
 			}
 
 			// Create the API server
-			apiMgr := api.NewApiManager(sp)
+			apiMgr := api.NewServerManager(sp)
 			err = apiMgr.Start()
 			if err != nil {
 				return fmt.Errorf("error starting API server: %w", err)

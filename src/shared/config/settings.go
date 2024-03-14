@@ -8,10 +8,10 @@ const (
 	WatchtowerPriorityFeeDefault uint64 = 3
 
 	// Daemon
-	EventLogInterval         int    = 1000
-	SmartNodeDaemonRoute     string = "smartnode"
-	HyperdriveSocketFilename string = SmartNodeDaemonRoute + ".sock"
-	ConfigFilename           string = "user-settings.yml"
+	EventLogInterval        int    = 1000
+	SmartNodeDaemonRoute    string = "smartnode"
+	SmartNodeSocketFilename string = SmartNodeDaemonRoute + ".sock"
+	ConfigFilename          string = "user-settings.yml"
 
 	// Wallet
 	UserAddressFilename       string = "address"
@@ -47,6 +47,11 @@ const (
 	WatchtowerFolder                   string = "watchtower"
 	RegenerateRewardsTreeRequestSuffix string = ".request"
 	RegenerateRewardsTreeRequestFormat string = "%d" + RegenerateRewardsTreeRequestSuffix
+
+	// Container Names
+	ExecutionClientSuffix string = "eth1"
+	BeaconNodeSuffix      string = "eth2"
+	ValidatorClientSuffix string = "validator"
 
 	// Snapshot
 	SnapshotID string = "rocketpool-dao.eth"

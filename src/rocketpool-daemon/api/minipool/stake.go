@@ -12,11 +12,12 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
+	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 )
 
 // ===============
@@ -55,8 +56,8 @@ type minipoolStakeContext struct {
 func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
-	w := sp.GetWallet()
-	bc := sp.GetBeaconClient()
+	vMgr := sp.GetValidatorManager()
+	rs := sp.GetNetworkResources()
 
 	// Requirements
 	err := errors.Join(
@@ -65,12 +66,6 @@ func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bi
 	)
 	if err != nil {
 		return err
-	}
-
-	// Get eth2 config
-	eth2Config, err := bc.GetEth2Config(c.handler.context)
-	if err != nil {
-		return fmt.Errorf("error getting Beacon config: %w", err)
 	}
 
 	// Create minipools
@@ -104,7 +99,7 @@ func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bi
 		pubkey := mpCommon.Pubkey.Get()
 
 		withdrawalCredentials := mpCommon.WithdrawalCredentials.Get()
-		validatorKey, err := w.GetValidatorKeyByPubkey(pubkey)
+		validatorKey, err := vMgr.LoadValidatorKey(pubkey)
 		if err != nil {
 			return fmt.Errorf("error getting validator %s (minipool %s) key: %w", pubkey.Hex(), mpCommon.Address.Hex(), err)
 		}
@@ -121,12 +116,13 @@ func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bi
 		}
 
 		// Get validator deposit data
-		depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
+		depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, config.Network(rs.EthNetworkName))
 		if err != nil {
 			return fmt.Errorf("error getting deposit data for validator %s: %w", pubkey.Hex(), err)
 		}
 		signature := beacon.ValidatorSignature(depositData.Signature)
 
+		depositDataRoot := common.BytesToHash(depositData.DepositDataRoot)
 		txInfo, err := mpCommon.Stake(signature, depositDataRoot, opts)
 		if err != nil {
 			return fmt.Errorf("error simulating stake transaction for minipool %s: %w", mpCommon.Address.Hex(), err)

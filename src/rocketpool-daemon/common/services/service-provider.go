@@ -112,6 +112,10 @@ func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
 // === Getters ===
 // ===============
 
+func (p *ServiceProvider) GetUserDir() string {
+	return p.userDir
+}
+
 func (p *ServiceProvider) GetConfig() *config.SmartNodeConfig {
 	return p.cfg
 }

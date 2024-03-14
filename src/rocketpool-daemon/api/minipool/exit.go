@@ -15,10 +15,10 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
-	"github.com/rocket-pool/node-manager-core/node/validator/utils"
-	"github.com/rocket-pool/node-manager-core/node/wallet"
+	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
@@ -57,7 +57,7 @@ func (f *minipoolExitContextFactory) RegisterRoute(router *mux.Router) {
 type minipoolExitContext struct {
 	handler *MinipoolHandler
 	rp      *rocketpool.RocketPool
-	w       *wallet.Wallet
+	vMgr    *validator.ValidatorManager
 	bc      beacon.IBeaconClient
 
 	minipoolAddresses []common.Address
@@ -66,7 +66,7 @@ type minipoolExitContext struct {
 func (c *minipoolExitContext) Initialize() error {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
-	c.w = sp.GetWallet()
+	c.vMgr = sp.GetValidatorManager()
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
@@ -111,7 +111,7 @@ func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []mini
 		validatorPubkey := mpCommon.Pubkey.Get()
 
 		// Get validator private key
-		validatorKey, err := c.w.GetValidatorKeyByPubkey(validatorPubkey)
+		validatorKey, err := c.vMgr.LoadValidatorKey(validatorPubkey)
 		if err != nil {
 			return fmt.Errorf("error getting private key for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
 		}
@@ -123,7 +123,7 @@ func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []mini
 		}
 
 		// Get signed voluntary exit message
-		signature, err := utils.GetSignedExitMessage(validatorKey, validatorIndex, head.Epoch, signatureDomain)
+		signature, err := nmc_validator.GetSignedExitMessage(validatorKey, validatorIndex, head.Epoch, signatureDomain)
 		if err != nil {
 			return fmt.Errorf("error getting exit message signature for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
 		}

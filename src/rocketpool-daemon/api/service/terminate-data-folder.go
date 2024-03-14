@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -66,7 +67,7 @@ func (c *serviceTerminateDataFolderContext) PrepareData(data *api.ServiceTermina
 	// Delete the children
 	for _, file := range files {
 		// Skip the validators directory - that get special treatment
-		if file.Name() != "validators" && !file.IsDir() {
+		if file.Name() != config.ValidatorsFolderName && !file.IsDir() {
 			fullPath := filepath.Join(dataFolder, file.Name())
 			if file.IsDir() {
 				err = os.RemoveAll(fullPath)
@@ -80,7 +81,7 @@ func (c *serviceTerminateDataFolderContext) PrepareData(data *api.ServiceTermina
 	}
 
 	// Traverse the validators dir
-	validatorsDir := filepath.Join(dataFolder, "validators")
+	validatorsDir := filepath.Join(dataFolder, config.ValidatorsFolderName)
 	files, err = os.ReadDir(validatorsDir)
 	if err != nil {
 		return fmt.Errorf("error enumerating validator files: %w", err)
