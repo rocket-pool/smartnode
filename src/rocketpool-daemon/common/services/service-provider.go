@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"os"
+	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/fatih/color"
@@ -34,14 +36,15 @@ type ServiceProvider struct {
 }
 
 // Creates a new ServiceProvider instance
-func NewServiceProvider(settingsFile string) (*ServiceProvider, error) {
+func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 	// Config
-	cfg, err := client.LoadConfigFromFile(settingsFile)
+	cfgPath := filepath.Join(userDir, config.ConfigFilename)
+	cfg, err := client.LoadConfigFromFile(os.ExpandEnv(cfgPath))
 	if err != nil {
 		return nil, fmt.Errorf("error loading Smartnode config: %w", err)
 	}
 	if cfg == nil {
-		return nil, fmt.Errorf("Smartnode config settings file [%s] not found", settingsFile)
+		return nil, fmt.Errorf("Smartnode config settings file [%s] not found", cfgPath)
 	}
 
 	// Attempt a wallet upgrade before anything

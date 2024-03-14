@@ -47,6 +47,7 @@ const (
 	WatchtowerFolder                   string = "watchtower"
 	RegenerateRewardsTreeRequestSuffix string = ".request"
 	RegenerateRewardsTreeRequestFormat string = "%d" + RegenerateRewardsTreeRequestSuffix
+	FeeRecipientFilename               string = "rp-fee-recipient.txt"
 
 	// Container Names
 	ExecutionClientSuffix string = "eth1"

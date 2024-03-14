@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"os"
@@ -14,18 +15,16 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet/keystore/lighthouse"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet/keystore/nimbus"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet/keystore/prysm"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/wallet/keystore/teku"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/config"
 )
 
 // Config
-var tasksInterval, _ = time.ParseDuration("5m")
-var taskCooldown, _ = time.ParseDuration("10s")
-var totalEffectiveStakeCooldown, _ = time.ParseDuration("1h")
+const (
+	tasksInterval               time.Duration = time.Minute * 5
+	taskCooldown                time.Duration = time.Second * 10
+	totalEffectiveStakeCooldown time.Duration = time.Hour * 1
+)
 
 const (
 	MaxConcurrentEth1Requests = 200
@@ -44,13 +43,30 @@ const (
 	UpdateColor                  = color.FgHiWhite
 )
 
+type TaskLoop struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+	sp     *services.ServiceProvider
+	wg     *sync.WaitGroup
+}
+
+func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &TaskLoop{
+		ctx:    ctx,
+		cancel: cancel,
+		sp:     sp,
+		wg:     wg,
+	}
+}
+
 // Run daemon
-func Run(sp *services.ServiceProvider) error {
+func (t *TaskLoop) Run() error {
 	// Get services
-	cfg := sp.GetConfig()
-	rp := sp.GetRocketPool()
-	ec := sp.GetEthClient()
-	bc := sp.GetBeaconClient()
+	cfg := t.sp.GetConfig()
+	rp := t.sp.GetRocketPool()
+	ec := t.sp.GetEthClient()
+	bc := t.sp.GetBeaconClient()
 
 	// Handle the initial fee recipient file deployment
 	err := deployDefaultFeeRecipientFile(cfg)
@@ -58,14 +74,8 @@ func Run(sp *services.ServiceProvider) error {
 		return err
 	}
 
-	// Clean up old fee recipient files
-	err = removeLegacyFeeRecipientFiles(cfg)
-	if err != nil {
-		return err
-	}
-
 	// Wait until node is registered
-	if err := sp.WaitNodeRegistered(true); err != nil {
+	if err := t.sp.WaitNodeRegistered(t.ctx, true); err != nil {
 		return err
 	}
 
@@ -81,25 +91,25 @@ func Run(sp *services.ServiceProvider) error {
 	updateLog := log.NewColorLogger(UpdateColor)
 
 	// Create the state manager
-	m, err := state.NewNetworkStateManager(rp, cfg, ec, bc, &updateLog)
+	m, err := state.NewNetworkStateManager(t.ctx, rp, cfg, ec, bc, &updateLog)
 	if err != nil {
 		return err
 	}
 	stateLocker := collectors.NewStateLocker()
 
 	// Initialize tasks
-	manageFeeRecipient := NewManageFeeRecipient(sp, log.NewColorLogger(ManageFeeRecipientColor))
-	distributeMinipools := NewDistributeMinipools(sp, log.NewColorLogger(DistributeMinipoolsColor))
-	stakePrelaunchMinipools := NewStakePrelaunchMinipools(sp, log.NewColorLogger(StakePrelaunchMinipoolsColor))
-	promoteMinipools := NewPromoteMinipools(sp, log.NewColorLogger(PromoteMinipoolsColor))
-	downloadRewardsTrees := NewDownloadRewardsTrees(sp, log.NewColorLogger(DownloadRewardsTreesColor))
-	reduceBonds := NewReduceBonds(sp, log.NewColorLogger(ReduceBondAmountColor))
-	defendPdaoProps := NewReduceBonds(sp, log.NewColorLogger(DefendPdaoPropsColor))
+	manageFeeRecipient := NewManageFeeRecipient(t.sp, log.NewColorLogger(ManageFeeRecipientColor))
+	distributeMinipools := NewDistributeMinipools(t.sp, log.NewColorLogger(DistributeMinipoolsColor))
+	stakePrelaunchMinipools := NewStakePrelaunchMinipools(t.sp, log.NewColorLogger(StakePrelaunchMinipoolsColor))
+	promoteMinipools := NewPromoteMinipools(t.sp, log.NewColorLogger(PromoteMinipoolsColor))
+	downloadRewardsTrees := NewDownloadRewardsTrees(t.sp, log.NewColorLogger(DownloadRewardsTreesColor))
+	reduceBonds := NewReduceBonds(t.sp, log.NewColorLogger(ReduceBondAmountColor))
+	defendPdaoProps := NewReduceBonds(t.sp, log.NewColorLogger(DefendPdaoPropsColor))
 	var verifyPdaoProps *VerifyPdaoProps
 	// Make sure the user opted into this duty
-	verifyEnabled := cfg.Smartnode.VerifyProposals.Value.(bool)
+	verifyEnabled := cfg.VerifyProposals.Value
 	if verifyEnabled {
-		verifyPdaoProps = NewVerifyPdaoProps(sp, log.NewColorLogger(VerifyPdaoPropsColor))
+		verifyPdaoProps = NewVerifyPdaoProps(t.sp, log.NewColorLogger(VerifyPdaoPropsColor))
 		if err != nil {
 			return err
 		}
@@ -117,26 +127,32 @@ func Run(sp *services.ServiceProvider) error {
 	go func() {
 		for {
 			// Check the EC status
-			err := sp.WaitEthClientSynced(false) // Force refresh the primary / fallback EC status
+			err := t.sp.WaitEthClientSynced(t.ctx, false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errorLog.Println(err)
-				time.Sleep(taskCooldown)
+				if t.sleepAndCheckIfCancelled(taskCooldown) {
+					break
+				}
 				continue
 			}
 
 			// Check the BC status
-			err = sp.WaitBeaconClientSynced(false) // Force refresh the primary / fallback BC status
+			err = t.sp.WaitBeaconClientSynced(t.ctx, false) // Force refresh the primary / fallback BC status
 			if err != nil {
 				errorLog.Println(err)
-				time.Sleep(taskCooldown)
+				if t.sleepAndCheckIfCancelled(taskCooldown) {
+					break
+				}
 				continue
 			}
 
 			// Load contracts
-			err = sp.LoadContractsIfStale()
+			err = t.sp.LoadContractsIfStale()
 			if err != nil {
 				errorLog.Println(fmt.Sprintf("error loading contract bindings: %s", err.Error()))
-				time.Sleep(taskCooldown)
+				if t.sleepAndCheckIfCancelled(taskCooldown) {
+					break
+				}
 				continue
 			}
 
@@ -146,14 +162,16 @@ func Run(sp *services.ServiceProvider) error {
 				updateTotalEffectiveStake = true
 				lastTotalEffectiveStakeTime = time.Now() // Even if the call below errors out, this will prevent contant errors related to this flag
 			}
-			nodeAddress, hasNodeAddress := sp.GetWallet().GetAddress()
+			nodeAddress, hasNodeAddress := t.sp.GetWallet().GetAddress()
 			if !hasNodeAddress {
 				continue
 			}
 			state, totalEffectiveStake, err := updateNetworkState(m, &updateLog, nodeAddress, updateTotalEffectiveStake)
 			if err != nil {
 				errorLog.Println(err)
-				time.Sleep(taskCooldown)
+				if t.sleepAndCheckIfCancelled(taskCooldown) {
+					break
+				}
 				continue
 			}
 			stateLocker.UpdateState(state, totalEffectiveStake)
@@ -168,27 +186,35 @@ func Run(sp *services.ServiceProvider) error {
 			if err := manageFeeRecipient.Run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if t.sleepAndCheckIfCancelled(taskCooldown) {
+				break
+			}
 
 			// Run the rewards download check
 			if err := downloadRewardsTrees.Run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if t.sleepAndCheckIfCancelled(taskCooldown) {
+				break
+			}
 
 			if state.IsHoustonDeployed {
 				// Run the pDAO proposal defender
 				if err := defendPdaoProps.Run(state); err != nil {
 					errorLog.Println(err)
 				}
-				time.Sleep(taskCooldown)
+				if t.sleepAndCheckIfCancelled(taskCooldown) {
+					break
+				}
 
 				// Run the pDAO proposal verifier
 				if verifyPdaoProps != nil {
 					if err := verifyPdaoProps.Run(state); err != nil {
 						errorLog.Println(err)
 					}
-					time.Sleep(taskCooldown)
+					if t.sleepAndCheckIfCancelled(taskCooldown) {
+						break
+					}
 				}
 			}
 
@@ -196,32 +222,40 @@ func Run(sp *services.ServiceProvider) error {
 			if err := stakePrelaunchMinipools.Run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if t.sleepAndCheckIfCancelled(taskCooldown) {
+				break
+			}
 
 			// Run the balance distribution check
 			if err := distributeMinipools.Run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if t.sleepAndCheckIfCancelled(taskCooldown) {
+				break
+			}
 
 			// Run the reduce bond check
 			if err := reduceBonds.Run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if t.sleepAndCheckIfCancelled(taskCooldown) {
+				break
+			}
 
 			// Run the minipool promotion check
 			if err := promoteMinipools.Run(state); err != nil {
 				errorLog.Println(err)
 			}
 
-			time.Sleep(tasksInterval)
+			if t.sleepAndCheckIfCancelled(tasksInterval) {
+				break
+			}
 		}
 	}()
 
 	// Run metrics loop
 	go func() {
-		err := runMetricsServer(sp, log.NewColorLogger(MetricsColor), stateLocker)
+		err := runMetricsServer(t.sp, log.NewColorLogger(MetricsColor), stateLocker)
 		if err != nil {
 			errorLog.Println(err)
 		}
@@ -236,7 +270,7 @@ func Run(sp *services.ServiceProvider) error {
 
 // Copy the default fee recipient file into the proper location
 func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig) error {
-	feeRecipientPath := cfg.Smartnode.GetFeeRecipientFilePath()
+	feeRecipientPath := cfg.GetFeeRecipientFilePath()
 	_, err := os.Stat(feeRecipientPath)
 	if os.IsNotExist(err) {
 		// Make sure the validators dir is created
@@ -247,13 +281,14 @@ func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig) error {
 		}
 
 		// Create the file
+		rs := cfg.GetRocketPoolResources()
 		var defaultFeeRecipientFileContents string
 		if cfg.IsNativeMode {
 			// Native mode needs an environment variable definition
-			defaultFeeRecipientFileContents = fmt.Sprintf("FEE_RECIPIENT=%s", cfg.Smartnode.GetRethAddress().Hex())
+			defaultFeeRecipientFileContents = fmt.Sprintf("FEE_RECIPIENT=%s", rs.RethAddress.Hex())
 		} else {
 			// Docker and Hybrid just need the address itself
-			defaultFeeRecipientFileContents = cfg.Smartnode.GetRethAddress().Hex()
+			defaultFeeRecipientFileContents = rs.RethAddress.Hex()
 		}
 		err := os.WriteFile(feeRecipientPath, []byte(defaultFeeRecipientFileContents), 0664)
 		if err != nil {
@@ -266,31 +301,28 @@ func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig) error {
 	return nil
 }
 
-// Remove the old fee recipient files that were created in v1.5.0
-func removeLegacyFeeRecipientFiles(cfg *config.SmartNodeConfig) error {
-	legacyFeeRecipientFile := "rp-fee-recipient.txt"
-	validatorsFolder := cfg.Smartnode.GetValidatorKeychainPath()
+func (t *TaskLoop) Stop() {
+	t.cancel()
+}
 
-	// Remove the legacy files
-	keystoreDirs := []string{lighthouse.KeystoreDir, nimbus.KeystoreDir, prysm.KeystoreDir, teku.KeystoreDir}
-	for _, keystoreDir := range keystoreDirs {
-		oldFile := filepath.Join(validatorsFolder, keystoreDir, legacyFeeRecipientFile)
-		_, err := os.Stat(oldFile)
-		if !os.IsNotExist(err) {
-			err = os.Remove(oldFile)
-			if err != nil {
-				fmt.Printf("NOTE: Couldn't remove old fee recipient file (%s): %s\nThis file is no longer used, you may remove it manually if you wish.\n", oldFile, err.Error())
-			}
-		}
+func (t *TaskLoop) sleepAndCheckIfCancelled(duration time.Duration) bool {
+	timer := time.NewTimer(duration)
+	select {
+	case <-t.ctx.Done():
+		// Cancel occurred
+		timer.Stop()
+		return true
+
+	case <-timer.C:
+		// Duration has passed without a cancel
+		return false
 	}
-
-	return nil
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*state.NetworkState, *big.Int, error) {
+func updateNetworkState(ctx context.Context, m *state.NetworkStateManager, log *log.ColorLogger, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*state.NetworkState, *big.Int, error) {
 	// Get the state of the network
-	state, totalEffectiveStake, err := m.GetHeadStateForNode(nodeAddress, calculateTotalEffectiveStake)
+	state, totalEffectiveStake, err := m.GetHeadStateForNode(ctx, nodeAddress, calculateTotalEffectiveStake)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error updating network state: %w", err)
 	}

@@ -54,3 +54,7 @@ func (cfg *SmartNodeConfig) GetCustomKeyPath() string {
 func (cfg *SmartNodeConfig) GetCustomKeyPasswordFilePath() string {
 	return filepath.Join(cfg.UserDataPath.Value, CustomKeyPasswordFilename)
 }
+
+func (cfg *SmartNodeConfig) GetFeeRecipientFilePath() string {
+	return filepath.Join(cfg.UserDataPath.Value, ValidatorsFolderName, FeeRecipientFilename)
+}

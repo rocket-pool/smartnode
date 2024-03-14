@@ -1,16 +1,23 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"os/signal"
+	"path/filepath"
+	"sync"
+	"syscall"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/api"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower"
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/config"
 )
 
 // Run
@@ -22,7 +29,7 @@ func main() {
 	app.Name = "rocketpool"
 	app.Usage = "Rocket Pool service"
 	app.Version = shared.RocketPoolVersion
-	app.Authors = []cli.Author{
+	app.Authors = []*cli.Author{
 		{
 			Name:  "David Rugendyke",
 			Email: "david@rocketpool.net",
@@ -40,75 +47,134 @@ func main() {
 			Email: "kane@rocketpool.net",
 		},
 	}
-	app.Copyright = "(C) 2023 Rocket Pool Pty Ltd"
+	app.Copyright = "(C) 2024 Rocket Pool Pty Ltd"
+
+	userDirFlag := &cli.StringFlag{
+		Name:     "user-dir",
+		Aliases:  []string{"u"},
+		Usage:    "The path of the user data directory, which contains the configuration file to load and all of the user's runtime data",
+		Required: true,
+	}
 
 	// Set application flags
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "settings, s",
-			Usage: "Rocket Pool service user config absolute `path`",
-			Value: "/.rocketpool/user-settings.yml",
-		},
-		cli.StringFlag{
-			Name:  "metricsAddress, m",
-			Usage: "Address to serve metrics on if enabled",
-			Value: "0.0.0.0",
-		},
-		cli.BoolFlag{
-			Name:  "use-protected-api",
-			Usage: "Set this to true to use the Flashbots Protect RPC instead of your local Execution Client. Useful to ensure your transactions aren't front-run.",
-		},
+		userDirFlag,
 	}
 
 	// Register primary daemon
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:    "node",
 		Aliases: []string{"n"},
 		Usage:   "Run primary Rocket Pool node activity daemon and API server",
 		Action: func(c *cli.Context) error {
-			// Create env vars
-			metricsAddress := c.String("metricsAddress")
-			if metricsAddress == "" {
-				metricsAddress = "0.0.0.0"
+			// Get the config file
+			userDir := c.String(userDirFlag.Name)
+			cfgPath := filepath.Join(userDir, config.ConfigFilename)
+			_, err := os.Stat(cfgPath)
+			if errors.Is(err, fs.ErrNotExist) {
+				fmt.Printf("Configuration file not found at [%s].", cfgPath)
+				os.Exit(1)
 			}
-			os.Setenv("NODE_METRICS_ADDRESS", metricsAddress)
+
+			// Wait group to handle graceful stopping
+			stopWg := new(sync.WaitGroup)
 
 			// Create the service provider
-			sp, err := services.NewServiceProvider(c)
+			sp, err := services.NewServiceProvider(userDir)
 			if err != nil {
 				return fmt.Errorf("error creating service provider: %w", err)
 			}
 
-			// Create the API server
-			apiMgr := api.NewServerManager(sp)
-			err = apiMgr.Start()
+			// Create the data dir
+			dataDir := sp.GetConfig().UserDataPath.Value
+			err = os.MkdirAll(dataDir, 0700)
 			if err != nil {
-				return fmt.Errorf("error starting API server: %w", err)
+				return fmt.Errorf("error creating user data directory [%s]: %w", dataDir, err)
 			}
 
-			return node.Run(sp)
+			// Create the server manager
+			serverMgr, err := api.NewServerManager(sp, cfgPath, stopWg)
+			if err != nil {
+				return fmt.Errorf("error creating server manager: %w", err)
+			}
+
+			// Start the task loop
+			taskLoop := node.NewTaskLoop(sp, stopWg)
+			err = taskLoop.Run()
+			if err != nil {
+				return fmt.Errorf("error starting task loop: %w", err)
+			}
+
+			// Handle process closures
+			termListener := make(chan os.Signal, 1)
+			signal.Notify(termListener, os.Interrupt, syscall.SIGTERM)
+			go func() {
+				<-termListener
+				fmt.Println("Shutting down node...")
+				serverMgr.Stop()
+				taskLoop.Stop()
+			}()
+
+			// Run the daemon until closed
+			fmt.Println("Node online.")
+			stopWg.Wait()
+			fmt.Println("Node stopped.")
+			return nil
 		},
 	})
 
 	// Register watchtower daemon
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:    "watchtower",
 		Aliases: []string{"w"},
 		Usage:   "Run Rocket Pool watchtower activity daemon for Oracle DAO duties",
 		Action: func(c *cli.Context) error {
-			// Create env vars
-			metricsAddress := c.String("metricsAddress")
-			if metricsAddress == "" {
-				metricsAddress = "0.0.0.0"
+			// Get the config file
+			userDir := c.String(userDirFlag.Name)
+			cfgPath := filepath.Join(userDir, config.ConfigFilename)
+			_, err := os.Stat(cfgPath)
+			if errors.Is(err, fs.ErrNotExist) {
+				fmt.Printf("Configuration file not found at [%s].", cfgPath)
+				os.Exit(1)
 			}
-			os.Setenv("WATCHTOWER_METRICS_ADDRESS", metricsAddress)
+
+			// Wait group to handle graceful stopping
+			stopWg := new(sync.WaitGroup)
 
 			// Create the service provider
-			sp, err := services.NewServiceProvider(c)
+			sp, err := services.NewServiceProvider(userDir)
 			if err != nil {
 				return fmt.Errorf("error creating service provider: %w", err)
 			}
-			return watchtower.Run(sp)
+
+			// Create the data dir
+			dataDir := sp.GetConfig().UserDataPath.Value
+			err = os.MkdirAll(dataDir, 0700)
+			if err != nil {
+				return fmt.Errorf("error creating user data directory [%s]: %w", dataDir, err)
+			}
+
+			// Start the task loop
+			taskLoop := watchtower.NewTaskLoop(sp, stopWg)
+			err = taskLoop.Run()
+			if err != nil {
+				return fmt.Errorf("error starting task loop: %w", err)
+			}
+
+			// Handle process closures
+			termListener := make(chan os.Signal, 1)
+			signal.Notify(termListener, os.Interrupt, syscall.SIGTERM)
+			go func() {
+				<-termListener
+				fmt.Println("Shutting down watchtower...")
+				taskLoop.Stop()
+			}()
+
+			// Run the daemon until closed
+			fmt.Println("Watchtower online.")
+			stopWg.Wait()
+			fmt.Println("Watchtower stopped.")
+			return nil
 		},
 	})
 
