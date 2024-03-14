@@ -15,8 +15,8 @@ type SmartNodeContext struct {
 	// The path to the configuration file
 	ConfigPath string
 
-	// The path to use for the daemon's API socket
-	ApiSocketPath string
+	// True if this CLI should be run in Native Mode
+	NativeMode bool
 
 	// The max fee for transactions
 	MaxFee float64

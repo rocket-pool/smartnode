@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/alessio/shellescape"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/types/api"
 	"gopkg.in/yaml.v2"
 )
 
@@ -100,7 +100,7 @@ func SaveConfig(cfg *config.SmartNodeConfig, directory string, filename string) 
 }
 
 // Parse and augment the status of a client into a human-readable format
-func getClientStatusString(clientStatus api.ClientStatus) string {
+func getClientStatusString(clientStatus types.ClientStatus) string {
 	if clientStatus.IsSynced {
 		return "synced and ready"
 	}

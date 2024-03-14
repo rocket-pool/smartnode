@@ -7,6 +7,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -192,7 +193,7 @@ func createSettingCommandStub[ValueType SettingType, SettingNameType any](
 		Flags:     flags,
 		Action: func(c *cli.Context) error {
 			// Validate args
-			if err := input.ValidateArgCount(c, 1); err != nil {
+			if err := utils.ValidateArgCount(c, 1); err != nil {
 				return err
 			}
 

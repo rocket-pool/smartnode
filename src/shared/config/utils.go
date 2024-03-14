@@ -66,3 +66,15 @@ func (cfg *SmartNodeConfig) GetWatchtowerFolder() string {
 func (cfg *SmartNodeConfig) GetMinipoolPerformancePath(interval uint64) string {
 	return filepath.Join(cfg.UserDataPath.Value, RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value), interval))
 }
+
+func (cfg *SmartNodeConfig) GetNodeAddressPath() string {
+	return filepath.Join(cfg.UserDataPath.Value, UserAddressFilename)
+}
+
+func (cfg *SmartNodeConfig) GetWalletPath() string {
+	return filepath.Join(cfg.UserDataPath.Value, UserWalletDataFilename)
+}
+
+func (cfg *SmartNodeConfig) GetPasswordPath() string {
+	return filepath.Join(cfg.UserDataPath.Value, UserPasswordFilename)
+}

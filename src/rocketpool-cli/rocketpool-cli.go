@@ -10,19 +10,19 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/auction"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/faucet"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/network"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/node"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/odao"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/pdao"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/security"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/auction"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/faucet"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/minipool"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/network"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/node"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/odao"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/pdao"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/queue"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/security"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/service"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/context"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
 )
 
@@ -42,10 +42,10 @@ var (
 		Aliases: []string{"c"},
 		Usage:   "Directory to install and save all of Rocket Pool's configuration and data to",
 	}
-	apiSocketPathFlag *cli.StringFlag = &cli.StringFlag{
-		Name:    "api-socket-path",
-		Aliases: []string{"a"},
-		Usage:   "The path of the socket file used to communicate with the Smart Node daemon. Only use this if you are running in Native Mode.",
+	nativeFlag *cli.BoolFlag = &cli.BoolFlag{
+		Name:    "native-mode",
+		Aliases: []string{"n"},
+		Usage:   "Set this if you're running the Smart Node in Native Mode (where you manage your own Node process and don't use Docker for automatic management)",
 	}
 	maxFeeFlag *cli.Float64Flag = &cli.Float64Flag{
 		Name:    "max-fee",
@@ -121,7 +121,7 @@ ______           _        _    ______           _
 	app.Flags = []cli.Flag{
 		allowRootFlag,
 		configPathFlag,
-		apiSocketPathFlag,
+		nativeFlag,
 		maxFeeFlag,
 		maxPriorityFeeFlag,
 		nonceFlag,
@@ -174,7 +174,7 @@ func setDefaultPaths() {
 	// Get the home directory
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Printf("Cannot get user's home directory: %w\n", err)
+		fmt.Printf("Cannot get user's home directory: %s\n", err.Error())
 		os.Exit(1)
 	}
 
@@ -208,15 +208,11 @@ func validateFlags(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
 	}
-	snCtx.ConfigPath = configPath
+	snCtx.ConfigPath = path
 
 	// Grab the daemon socket path; don't error out if it doesn't exist yet because this might be a new installation that hasn't configured and started it yet
-	socketPath := c.String(apiSocketPathFlag.Name)
-	path, err = homedir.Expand(strings.TrimSpace(socketPath))
-	if err != nil {
-		return fmt.Errorf("error expanding API socket path [%s]: %w", socketPath, err)
-	}
-	snCtx.ApiSocketPath = path
+	nativeMode := c.Bool(nativeFlag.Name)
+	snCtx.NativeMode = nativeMode
 
 	// TODO: more here
 	context.SetSmartnodeContext(c, snCtx)

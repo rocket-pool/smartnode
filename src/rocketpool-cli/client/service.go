@@ -16,20 +16,28 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/fatih/color"
 	"github.com/mitchellh/go-homedir"
-	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client/template"
+	nmc_config "github.com/rocket-pool/node-manager-core/config"
+	gww "github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client/template"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/docker"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const (
 	debugColor color.Attribute = color.FgYellow
+
+	nethermindPruneStarterCommand string = "dotnet /setup/NethermindPruneStarter/NethermindPruneStarter.dll"
+	nethermindAdminUrl            string = "http://127.0.0.1:7434"
+
+	templatesDir       string = "/usr/share/rocketpool/templates"
+	overrideSourceDir  string = "/usr/share/rocketpool/override"
+	overrideDir        string = "override"
+	runtimeDir         string = "runtime"
+	extraScrapeJobsDir string = "extra-scrape-jobs"
 )
 
 // Install the Rocket Pool service
-func (c *Client) InstallService(verbose, noDeps bool, version, path string, dataPath string) error {
+func (c *Client) InstallService(verbose bool, noDeps bool, version string, path string, useLocalInstaller bool) error {
 	// Get installation script flags
 	flags := []string{
 		"-v", shellescape.Quote(version),
@@ -40,32 +48,56 @@ func (c *Client) InstallService(verbose, noDeps bool, version, path string, data
 	if noDeps {
 		flags = append(flags, "-d")
 	}
-	if dataPath != "" {
-		flags = append(flags, fmt.Sprintf("-u %s", dataPath))
+
+	var script []byte
+	if useLocalInstaller {
+		// Make sure it exists
+		_, err := os.Stat(InstallerName)
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("local install script [%s] does not exist", InstallerName)
+		}
+		if err != nil {
+			return fmt.Errorf("error checking install script [%s]: %w", InstallerName, err)
+		}
+
+		// Read it
+		script, err = os.ReadFile(InstallerName)
+		if err != nil {
+			return fmt.Errorf("error reading local install script [%s]: %w", InstallerName, err)
+		}
+
+		// Set the "local mode" flag
+		flags = append(flags, "-l")
+	} else {
+		// Download the installation script
+		resp, err := http.Get(fmt.Sprintf(InstallerURL, version))
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("unexpected http status downloading installation script: %d", resp.StatusCode)
+		}
+
+		// Sanity check that the script octet length matches content-length
+		script, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		if fmt.Sprint(len(script)) != resp.Header.Get("content-length") {
+			return fmt.Errorf("downloaded script length %d did not match content-length header %s", len(script), resp.Header.Get("content-length"))
+		}
 	}
 
-	// Download the installation script
-	resp, err := http.Get(fmt.Sprintf(InstallerURL, version))
+	// Get the escalation command
+	escalationCmd, err := c.getEscalationCommand()
 	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected http status downloading installation script: %d", resp.StatusCode)
-	}
-
-	// Sanity check that the script octet length matches content-length
-	script, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if fmt.Sprint(len(script)) != resp.Header.Get("content-length") {
-		return fmt.Errorf("downloaded script length %d did not match content-length header %s", len(script), resp.Header.Get("content-length"))
+		return fmt.Errorf("error getting escalation command: %w", err)
 	}
 
 	// Initialize installation command
-	cmd := c.newCommand(fmt.Sprintf("sh -s -- %s", strings.Join(flags, " ")))
+	cmd := c.newCommand(fmt.Sprintf("%s sh -s -- %s", escalationCmd, strings.Join(flags, " ")))
 
 	// Pass the script to sh via its stdin fd
 	cmd.SetStdin(bytes.NewReader(script))
@@ -104,45 +136,72 @@ func (c *Client) InstallService(verbose, noDeps bool, version, path string, data
 	// Run command and return error output
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("Could not install Rocket Pool service: %s", errMessage)
+		return fmt.Errorf("could not install Smart Node service: %s", errMessage)
 	}
 	return nil
 }
 
 // Install the update tracker
-func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
+func (c *Client) InstallUpdateTracker(verbose bool, version string, useLocalInstaller bool) error {
 	// Get installation script flags
 	flags := []string{
 		"-v", fmt.Sprintf("%s", shellescape.Quote(version)),
 	}
 
-	// Download the installer package
-	url := fmt.Sprintf(UpdateTrackerURL, version)
-	resp, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("error downloading installer package: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("downloading installer package failed with code %d - [%s]", resp.StatusCode, resp.Status)
+	var script []byte
+	if useLocalInstaller {
+		// Make sure it exists
+		_, err := os.Stat(UpdateTrackerInstallerName)
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("local update tracker install script [%s] does not exist", UpdateTrackerInstallerName)
+		}
+		if err != nil {
+			return fmt.Errorf("error checking update tracker install script [%s]: %w", UpdateTrackerInstallerName, err)
+		}
+
+		// Read it
+		script, err = os.ReadFile(UpdateTrackerInstallerName)
+		if err != nil {
+			return fmt.Errorf("error reading local update tracker install script [%s]: %w", UpdateTrackerInstallerName, err)
+		}
+
+		// Set the "local mode" flag
+		flags = append(flags, "-l")
+	} else {
+		// Download the update tracker script
+		resp, err := http.Get(fmt.Sprintf(UpdateTrackerURL, version))
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("unexpected http status downloading update tracker installer script: %d", resp.StatusCode)
+		}
+
+		// Sanity check that the script octet length matches content-length
+		script, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		if fmt.Sprint(len(script)) != resp.Header.Get("content-length") {
+			return fmt.Errorf("downloaded script length %d did not match content-length header %s", len(script), resp.Header.Get("content-length"))
+		}
 	}
 
-	// Create a temp file for it
-	path := filepath.Join(os.TempDir(), "install-update-tracker.sh")
-	tempFile, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0755)
+	// Get the escalation command
+	escalationCmd, err := c.getEscalationCommand()
 	if err != nil {
-		return fmt.Errorf("error creating temporary file for installer script: %w", err)
+		return fmt.Errorf("error getting escalation command: %w", err)
 	}
-	defer tempFile.Close()
-	defer os.Remove(tempFile.Name())
-	_, err = io.Copy(tempFile, resp.Body)
-	if err != nil {
-		return fmt.Errorf("error writing installer package to disk: %w", err)
-	}
-	tempFile.Close()
 
 	// Initialize installation command
-	cmd := c.newCommand(fmt.Sprintf("sh -c \"%s %s\"", path, strings.Join(flags, " ")))
+	cmd := c.newCommand(fmt.Sprintf("%s sh -s -- %s", escalationCmd, strings.Join(flags, " ")))
+
+	// Pass the script to sh via its stdin fd
+	cmd.SetStdin(bytes.NewReader(script))
+
+	// Get command output pipes
 	cmdOut, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
@@ -176,25 +235,13 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 	// Run command and return error output
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("Could not install Rocket Pool update tracker: %s", errMessage)
+		return fmt.Errorf("could not install Rocket Pool update tracker: %s", errMessage)
 	}
 	return nil
 }
 
 // Start the Rocket Pool service
 func (c *Client) StartService(composeFiles []string) error {
-	/*
-		// Start the API container first
-		cmd, err := c.compose([]string{}, "up -d --quiet-pull")
-		if err != nil {
-			return fmt.Errorf("error creating compose command for API container: %w", err)
-		}
-		err = c.printOutput(cmd)
-		if err != nil {
-			return fmt.Errorf("error starting API container: %w", err)
-		}
-	*/
-	// Start all of the containers
 	cmd, err := c.compose(composeFiles, "up -d --remove-orphans --quiet-pull")
 	if err != nil {
 		return err
@@ -348,20 +395,44 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 		return fmt.Errorf("error stopping Docker containers: %w", err)
 	}
 
+	// Delete the address
+	nodeAddressPath, err := homedir.Expand(cfg.GetNodeAddressPath())
+	if err != nil {
+		return fmt.Errorf("error loading node address file path: %w", err)
+	}
+	fmt.Println("Deleting node address file...")
+	cmd := fmt.Sprintf("%s rm -f %s", rootCmd, nodeAddressPath)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting node address file: %w", err)
+	}
+
 	// Delete the wallet
-	walletPath, err := homedir.Expand(cfg.Smartnode.GetWalletPathInCLI())
+	walletPath, err := homedir.Expand(cfg.GetWalletPath())
 	if err != nil {
 		return fmt.Errorf("error loading wallet path: %w", err)
 	}
 	fmt.Println("Deleting wallet...")
-	cmd := fmt.Sprintf("%s rm -f %s", rootCmd, walletPath)
+	cmd = fmt.Sprintf("%s rm -f %s", rootCmd, walletPath)
 	_, err = c.readOutput(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting wallet: %w", err)
 	}
 
+	// Delete the next account file
+	nextAccountPath, err := homedir.Expand(cfg.GetNextAccountFilePath())
+	if err != nil {
+		return fmt.Errorf("error loading next account file path: %w", err)
+	}
+	fmt.Println("Deleting next account file...")
+	cmd = fmt.Sprintf("%s rm -f %s", rootCmd, nextAccountPath)
+	_, err = c.readOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error deleting next account file: %w", err)
+	}
+
 	// Delete the password
-	passwordPath, err := homedir.Expand(cfg.Smartnode.GetPasswordPathInCLI())
+	passwordPath, err := homedir.Expand(cfg.GetPasswordPath())
 	if err != nil {
 		return fmt.Errorf("error loading password path: %w", err)
 	}
@@ -373,7 +444,7 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 	}
 
 	// Delete the validators dir
-	validatorsPath, err := homedir.Expand(cfg.Smartnode.GetValidatorKeychainPathInCLI())
+	validatorsPath, err := homedir.Expand(cfg.GetValidatorsFolderPath())
 	if err != nil {
 		return fmt.Errorf("error loading validators folder path: %w", err)
 	}
@@ -403,7 +474,6 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 
 // Runs the prune provisioner
 func (c *Client) RunPruneProvisioner(container string, volume string, image string) error {
-
 	// Run the prune provisioner
 	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s", container, volume, image)
 	output, err := c.readOutput(cmd)
@@ -417,7 +487,6 @@ func (c *Client) RunPruneProvisioner(container string, volume string, image stri
 	}
 
 	return nil
-
 }
 
 // Runs the prune provisioner
@@ -460,10 +529,9 @@ func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string, ima
 
 // Build a docker compose command
 func (c *Client) compose(composeFiles []string, args string) (string, error) {
-
-	// Cancel if running in non-docker mode
-	if c.Context.ApiSocketPath != "" {
-		return "", errors.New("command unavailable in Native Mode (with '--daemon-path' option specified)")
+	// Cancel if running in native mode
+	if c.Context.NativeMode {
+		return "", errors.New("command unavailable in Native Mode")
 	}
 
 	// Get the expanded config path
@@ -483,15 +551,13 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Check config
-	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Unknown {
-		return "", fmt.Errorf("You haven't selected local or external mode for your Execution (ETH1) client.\nPlease run 'rocketpool service config' before running this command.")
-	} else if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient) == cfgtypes.ExecutionClient_Unknown {
-		return "", errors.New("No Execution (ETH1) client selected. Please run 'rocketpool service config' before running this command.")
+	if cfg.ClientMode.Value == nmc_config.ClientMode_Unknown {
+		return "", fmt.Errorf("You haven't selected local or external mode for your clients yet.\nPlease run 'rocketpool service config' before running this command.")
+	} else if cfg.IsLocalMode() && cfg.LocalExecutionConfig.ExecutionClient.Value == nmc_config.ExecutionClient_Unknown {
+		return "", errors.New("no Execution Client selected. Please run 'rocketpool service config' before running this command")
 	}
-	if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Unknown {
-		return "", fmt.Errorf("You haven't selected local or external mode for your Consensus (ETH2) client.\nPlease run 'rocketpool service config' before running this command.")
-	} else if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ConsensusClient.Value.(cfgtypes.ConsensusClient) == cfgtypes.ConsensusClient_Unknown {
-		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
+	if cfg.IsLocalMode() && cfg.LocalBeaconConfig.BeaconNode.Value == nmc_config.BeaconNode_Unknown {
+		return "", errors.New("no Beacon Node selected. Please run 'rocketpool service config' before running this command")
 	}
 
 	// Deploy the templates and run environment variable substitution on them
@@ -510,27 +576,18 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Return command
-	return fmt.Sprintf("COMPOSE_PROJECT_NAME=%s docker compose --project-directory %s %s %s", cfg.Smartnode.ProjectName.Value.(string), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
-
+	return fmt.Sprintf("COMPOSE_PROJECT_NAME=%s docker compose --project-directory %s %s %s", cfg.ProjectName.Value, shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
 }
 
 // Deploys all of the appropriate docker compose template files and provisions them based on the provided configuration
-func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, rocketpoolDir string) ([]string, error) {
-	// Check for the folders
-	runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir)
-	templatesFolder := filepath.Join(rocketpoolDir, templatesDir)
-	_, err := os.Stat(templatesFolder)
-	if os.IsNotExist(err) {
-		return []string{}, fmt.Errorf("templates folder [%s] does not exist", templatesFolder)
-	}
-	overrideFolder := filepath.Join(rocketpoolDir, overrideDir)
-	_, err = os.Stat(overrideFolder)
-	if os.IsNotExist(err) {
-		return []string{}, fmt.Errorf("override folder [%s] does not exist", overrideFolder)
-	}
+func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir string) ([]string, error) {
+	// Prep the override folder
+	overrideFolder := filepath.Join(smartNodeDir, overrideDir)
+	copyOverrideFiles(overrideSourceDir, overrideFolder)
 
 	// Clear out the runtime folder and remake it
-	err = os.RemoveAll(runtimeFolder)
+	runtimeFolder := filepath.Join(smartNodeDir, runtimeDir)
+	err := os.RemoveAll(runtimeFolder)
 	if err != nil {
 		return []string{}, fmt.Errorf("error deleting runtime folder [%s]: %w", runtimeFolder, err)
 	}
@@ -539,9 +596,16 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, rocketpoolDir stri
 		return []string{}, fmt.Errorf("error creating runtime folder [%s]: %w", runtimeFolder, err)
 	}
 
+	// Make the extra scrape jobs folder
+	extraScrapeJobsFolder := filepath.Join(smartNodeDir, extraScrapeJobsDir)
+	err = os.MkdirAll(extraScrapeJobsFolder, 0755)
+	if err != nil {
+		return []string{}, fmt.Errorf("error creating extra-scrape-jobs folder: %w", err)
+	}
+
 	composePaths := template.ComposePaths{
 		RuntimePath:  runtimeFolder,
-		TemplatePath: templatesFolder,
+		TemplatePath: templatesDir,
 		OverridePath: overrideFolder,
 	}
 
@@ -549,36 +613,33 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, rocketpoolDir stri
 	deployedContainers := []string{}
 
 	// These containers always run
-	toDeploy := []docker.ContainerName{
-		docker.ContainerName_Node,
-		docker.ContainerName_Watchtower,
-		docker.ContainerName_ValidatorClient,
+	toDeploy := []string{
+		config.NodeSuffix,
+		string(config.ContainerID_Watchtower),
+		config.ValidatorClientSuffix,
 	}
 
 	// Check if we are running the Execution Layer locally
-	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		toDeploy = append(toDeploy, docker.ContainerName_ExecutionClient)
-	}
-
-	// Check if we are running the Consensus Layer locally
-	if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		toDeploy = append(toDeploy, docker.ContainerName_BeaconNode)
+	if cfg.IsLocalMode() {
+		toDeploy = append(toDeploy, string(nmc_config.ContainerID_ExecutionClient))
+		toDeploy = append(toDeploy, string(nmc_config.ContainerID_BeaconNode))
 	}
 
 	// Check the metrics containers
-	if cfg.EnableMetrics.Value == true {
+	if cfg.MetricsConfig.EnableMetrics.Value {
 		toDeploy = append(toDeploy,
-			docker.ContainerName_Grafana,
-			docker.ContainerName_Exporter,
-			docker.ContainerName_Prometheus,
+			string(nmc_config.ContainerID_Grafana),
+			string(nmc_config.ContainerID_Exporter),
+			string(nmc_config.ContainerID_Prometheus),
 		)
 	}
 
-	// Check if we are running the Mev-Boost container locally
-	if cfg.EnableMevBoost.Value == true && cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		toDeploy = append(toDeploy, docker.ContainerName_MevBoost)
+	// Check if we are running the MEV-Boost container locally
+	if cfg.MevBoostConfig.EnableMevBoost.Value && cfg.MevBoostConfig.Mode.Value == nmc_config.ClientMode_Local {
+		toDeploy = append(toDeploy, string(nmc_config.ContainerID_MevBoost))
 	}
 
+	// Deploy main containers
 	for _, containerName := range toDeploy {
 		containers, err := composePaths.File(string(containerName)).Write(cfg)
 		if err != nil {
@@ -588,18 +649,18 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, rocketpoolDir stri
 	}
 
 	// Create the custom keys dir
-	customKeyDir, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys"))
+	customKeyDir, err := homedir.Expand(filepath.Join(cfg.UserDataPath.Value, config.CustomKeysFolderName))
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder manually.%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
+		fmt.Printf("%sWARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder manually.%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 		return deployedContainers, nil
 	}
 	err = os.MkdirAll(customKeyDir, 0775)
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder [%s] manually.%s\n", terminal.ColorYellow, err.Error(), customKeyDir, terminal.ColorReset)
+		fmt.Printf("%sWARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder [%s] manually.%s\n", terminal.ColorYellow, err.Error(), customKeyDir, terminal.ColorReset)
 	}
 
 	// Create the rewards file dir
-	rewardsFilePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(0, false))
+	rewardsFilePath, err := homedir.Expand(cfg.GetRewardsTreePath(0))
 	if err != nil {
 		fmt.Printf("%sWARNING: Couldn't expand the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder manually.%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 		return deployedContainers, nil
@@ -610,18 +671,62 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, rocketpoolDir stri
 		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", terminal.ColorYellow, err.Error(), rewardsFileDir, terminal.ColorReset)
 	}
 
-	return c.composeAddons(cfg, rocketpoolDir, deployedContainers)
+	return c.composeAddons(cfg, smartNodeDir, deployedContainers)
+}
+
+// Make sure the override files have all been copied to the local user dir
+func copyOverrideFiles(sourceDir string, targetDir string) error {
+	err := os.MkdirAll(targetDir, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating override folder: %w", err)
+	}
+
+	files, err := os.ReadDir(sourceDir)
+	if err != nil {
+		return fmt.Errorf("error enumerating override source folder: %w", err)
+	}
+
+	// Copy any override files that don't exist in the local user directory
+	for _, file := range files {
+		filename := file.Name()
+		targetPath := filepath.Join(targetDir, filename)
+		if file.IsDir() {
+			// Recurse
+			srcPath := filepath.Join(sourceDir, file.Name())
+			copyOverrideFiles(srcPath, targetPath)
+		}
+
+		_, err := os.Stat(targetPath)
+		if !os.IsNotExist(err) {
+			// Ignore files that already exist
+			continue
+		}
+
+		// Read the source
+		srcPath := filepath.Join(sourceDir, filename)
+		contents, err := os.ReadFile(srcPath)
+		if err != nil {
+			return fmt.Errorf("error reading override file [%s]: %w", srcPath, err)
+		}
+
+		// Write a copy to the user dir
+		err = os.WriteFile(targetPath, contents, 0644)
+		if err != nil {
+			return fmt.Errorf("error writing local override file [%s]: %w", targetPath, err)
+		}
+	}
+	return nil
 }
 
 // Handle composing for addons
 func (c *Client) composeAddons(cfg *config.SmartNodeConfig, rocketpoolDir string, deployedContainers []string) ([]string, error) {
 	// GWW
-	if cfg.GraffitiWallWriter.GetEnabledParameter().Value == true {
-
+	if cfg.AddonsConfig.GraffitiWallWriter.Enabled.Value {
+		gwwCfgName := string(gww.ContainerID_GraffitiWallWriter)
 		composePaths := template.ComposePaths{
-			RuntimePath:  filepath.Join(rocketpoolDir, runtimeDir, "addons", "gww"),
-			TemplatePath: filepath.Join(rocketpoolDir, templatesDir, "addons", "gww"),
-			OverridePath: filepath.Join(rocketpoolDir, overrideDir, "addons", "gww"),
+			RuntimePath:  filepath.Join(rocketpoolDir, runtimeDir, config.AddonsFolderName, gwwCfgName),
+			TemplatePath: filepath.Join(rocketpoolDir, templatesDir, config.AddonsFolderName, gwwCfgName),
+			OverridePath: filepath.Join(rocketpoolDir, overrideDir, config.AddonsFolderName, gwwCfgName),
 		}
 
 		// Make the addon folder
@@ -630,7 +735,7 @@ func (c *Client) composeAddons(cfg *config.SmartNodeConfig, rocketpoolDir string
 			return []string{}, fmt.Errorf("error creating addon runtime folder (%s): %w", composePaths.RuntimePath, err)
 		}
 
-		containers, err := composePaths.File(graffiti_wall_writer.GraffitiWallWriterContainerName).Write(cfg)
+		containers, err := composePaths.File(gww.GraffitiWallWriterContainerName).Write(cfg)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not create gww container definition: %w", err)
 		}

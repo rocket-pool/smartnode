@@ -8,9 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/core"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/gas"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
@@ -19,9 +18,11 @@ import (
 // Handle a transaction, either printing its details, signing it, or submitting it and waiting for it to be included
 func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, confirmMessage string, identifier string, submissionMessage string) error {
 	// Make sure the TX was successful
-	if txInfo.SimulationResult.SimulationError != "" {
-		return fmt.Errorf("simulating %s failed: %s", identifier, txInfo.SimulationResult.SimulationError)
-	}
+	/*
+		if txInfo.SimulationResult.SimulationError != "" {
+			return fmt.Errorf("simulating %s failed: %s", identifier, txInfo.SimulationResult.SimulationError)
+		}
+	*/
 
 	// Print the TX data if requested
 	if c.Bool(utils.PrintTxDataFlag) {
@@ -29,7 +30,7 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, co
 		fmt.Printf("\tTo:       %s\n", txInfo.To.Hex())
 		fmt.Printf("\tData:     %s\n", hexutil.Encode(txInfo.Data))
 		fmt.Printf("\tValue:    %s\n", txInfo.Value.String())
-		fmt.Printf("\tEst. Gas: %d\n", txInfo.SimulationResult.EstGasLimit)
+		fmt.Printf("\tEst. Gas: %d\n", txInfo.SimulationResult.EstimatedGasLimit)
 		fmt.Printf("\tSafe Gas: %d\n", txInfo.SimulationResult.SafeGasLimit)
 		return nil
 	}
@@ -101,18 +102,18 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.Transaction
 			fmt.Printf("\tTo:       %s\n", info.To.Hex())
 			fmt.Printf("\tData:     %s\n", hexutil.Encode(info.Data))
 			fmt.Printf("\tValue:    %s\n", info.Value.String())
-			fmt.Printf("\tEst. Gas: %d\n", info.GasInfo.EstGasLimit)
-			fmt.Printf("\tSafe Gas: %d\n", info.GasInfo.SafeGasLimit)
+			fmt.Printf("\tEst. Gas: %d\n", info.SimulationResult.EstimatedGasLimit)
+			fmt.Printf("\tSafe Gas: %d\n", info.SimulationResult.SafeGasLimit)
 			fmt.Println()
 		}
 		return nil
 	}
 
 	// Assign max fees
-	var gasInfo core.GasInfo
+	var gasInfo eth.SimulationResult
 	for _, info := range txInfos {
-		gasInfo.EstGasLimit += info.GasInfo.EstGasLimit
-		gasInfo.SafeGasLimit += info.GasInfo.SafeGasLimit
+		gasInfo.EstimatedGasLimit += info.SimulationResult.EstimatedGasLimit
+		gasInfo.SafeGasLimit += info.SimulationResult.SafeGasLimit
 	}
 	maxFee, maxPrioFee, err := gas.GetMaxFees(c, rp, gasInfo)
 	if err != nil {

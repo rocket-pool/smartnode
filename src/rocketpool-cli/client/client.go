@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 
+	docker "github.com/docker/docker/client"
+	"github.com/rocket-pool/smartnode/client"
+	rocketpool "github.com/rocket-pool/smartnode/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/context"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/urfave/cli/v2"
@@ -13,35 +15,25 @@ import (
 
 // Config
 const (
-	InstallerURL     string = "https://github.com/rocket-pool/smartnode/releases/download/%s/install.sh"
-	UpdateTrackerURL string = "https://github.com/rocket-pool/smartnode/releases/download/%s/install-update-tracker.sh"
+	InstallerName              string = "install.sh"
+	UpdateTrackerInstallerName string = "install-update-tracker.sh"
+	InstallerURL               string = "https://github.com/rocket-pool/smartnode/releases/download/%s/" + InstallerName
+	UpdateTrackerURL           string = "https://github.com/rocket-pool/smartnode/releases/download/%s/" + UpdateTrackerInstallerName
 
-	SettingsFile             string = "user-settings.yml"
-	BackupSettingsFile       string = "user-settings-backup.yml"
-	PrometheusConfigTemplate string = "prometheus.tmpl"
-	PrometheusFile           string = "prometheus.yml"
+	SettingsFile       string = "user-settings.yml"
+	BackupSettingsFile string = "user-settings-backup.yml"
 
-	APIContainerSuffix string = "_api"
-	APIBinPath         string = "/go/bin/rocketpool"
-
-	templatesDir                  string = "templates"
-	overrideDir                   string = "override"
-	runtimeDir                    string = "runtime"
 	defaultFeeRecipientFile       string = "fr-default.tmpl"
 	defaultNativeFeeRecipientFile string = "fr-default-env.tmpl"
-
-	templateSuffix    string = ".tmpl"
-	composeFileSuffix string = ".yml"
-
-	nethermindPruneStarterCommand string = "dotnet /setup/NethermindPruneStarter/NethermindPruneStarter.dll"
-	nethermindAdminUrl            string = "http://127.0.0.1:7434"
 )
 
 // Rocket Pool client
 type Client struct {
-	Api      *rocketpool.ApiRequester
+	Api      *client.ApiClient
 	Context  *context.SmartNodeContext
-	isNative bool
+	docker   *docker.Client
+	cfg      *config.SmartNodeConfig
+	isNewCfg bool
 }
 
 // Create new Rocket Pool client from CLI context without checking for sync status
@@ -49,19 +41,11 @@ type Client struct {
 // Most users should call NewClientFromCtx(c).WithStatus() or NewClientFromCtx(c).WithReady()
 func NewClientFromCtx(c *cli.Context) *Client {
 	snCtx := context.GetSmartNodeContext(c)
-
-	// Set up the default API socket file if it's not specified
-	socketPath := snCtx.ApiSocketPath
-	isNative := true
-	if socketPath == "" {
-		socketPath = filepath.Join(snCtx.ConfigPath, "data", config.SocketFilename)
-		isNative = false
-	}
+	socketPath := filepath.Join(snCtx.ConfigPath, config.SmartNodeSocketFilename)
 
 	client := &Client{
-		Api:      rocketpool.NewApiRequester(socketPath),
-		Context:  snCtx,
-		isNative: isNative,
+		Api:     rocketpool.NewApiClient(config.SmartNodeDaemonRoute, socketPath, snCtx.DebugEnabled),
+		Context: snCtx,
 	}
 	return client
 }
@@ -90,6 +74,19 @@ func (c *Client) WithReady() (*Client, error) {
 	}
 
 	return c, nil
+}
+
+// Get the Docker client
+func (c *Client) GetDocker() (*docker.Client, error) {
+	if c.docker == nil {
+		var err error
+		c.docker, err = docker.NewClientWithOpts(docker.WithAPIVersionNegotiation())
+		if err != nil {
+			return nil, fmt.Errorf("error creating Docker client: %w", err)
+		}
+	}
+
+	return c.docker, nil
 }
 
 // Check the status of the Execution and Consensus client(s) and provision the API with them
@@ -132,8 +129,4 @@ func (c *Client) checkClientStatus() (bool, error) {
 	// Primary isn't ready and fallback isn't enabled
 	fmt.Printf("Error: primary client pair isn't ready and fallback clients aren't enabled.\n\tPrimary EC status: %s\n\tPrimary CC status: %s\n", primaryEcStatus, primaryBcStatus)
 	return false, nil
-}
-
-func (c *Client) IsNative() bool {
-	return c.isNative
 }

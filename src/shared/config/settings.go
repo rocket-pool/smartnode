@@ -35,6 +35,7 @@ const (
 	BeaconNodeDataVolume      string = "eth2clientdata"
 
 	// Smart Node
+	AddonsFolderName                   string = "addons"
 	ChecksumTableFilename              string = "checksums.sha384"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreeFilenameFormat          string = "rp-rewards-%s-%d.json"
@@ -51,6 +52,7 @@ const (
 	MinipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d.json"
 
 	// Container Names
+	NodeSuffix            string = "node"
 	ExecutionClientSuffix string = "eth1"
 	BeaconNodeSuffix      string = "eth2"
 	ValidatorClientSuffix string = "validator"

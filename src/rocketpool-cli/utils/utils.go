@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 	"github.com/urfave/cli/v2"
 )
 
@@ -87,7 +88,8 @@ func getTxWatchUrl(rp *client.Client) string {
 		return ""
 	}
 
-	return cfg.Smartnode.GetTxWatchUrl()
+	rs := cfg.GetNetworkResources()
+	return rs.TxWatchUrl
 }
 
 // Convert a Unix datetime to a string, or `---` if it's zero
@@ -156,19 +158,17 @@ func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress
 }
 
 // Prints what network you're currently on
-func PrintNetwork(currentNetwork cfgtypes.Network, isNew bool) error {
+func PrintNetwork(currentNetwork config.Network, isNew bool) error {
 	if isNew {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	switch currentNetwork {
-	case cfgtypes.Network_Mainnet:
+	case config.Network_Mainnet:
 		fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", terminal.ColorGreen, terminal.ColorReset)
-	case cfgtypes.Network_Prater:
-		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", terminal.ColorBlue, terminal.ColorReset)
-	case cfgtypes.Network_Devnet:
+	case snCfg.Network_Devnet:
 		fmt.Printf("Your Smartnode is currently using the %sHolesky Development Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
-	case cfgtypes.Network_Holesky:
+	case config.Network_Holesky:
 		fmt.Printf("Your Smartnode is currently using the %sHolesky Test Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 	default:
 		fmt.Printf("%sYou are on an unexpected network [%v].%s\n\n", terminal.ColorYellow, currentNetwork, terminal.ColorReset)
