@@ -22,7 +22,7 @@ const (
 // Configuration for MEV-Boost
 type MevBoostConfig struct {
 	// Toggle to enable / disable
-	EnableMevBoost config.Parameter[bool]
+	Enable config.Parameter[bool]
 
 	// Ownership mode
 	Mode config.Parameter[config.ClientMode]
@@ -92,7 +92,7 @@ func NewMevBoostConfig(parent *SmartNodeConfig) *MevBoostConfig {
 	return &MevBoostConfig{
 		parent: parent,
 
-		EnableMevBoost: config.Parameter[bool]{
+		Enable: config.Parameter[bool]{
 			ParameterCommon: &config.ParameterCommon{
 				ID:                 ids.MevBoostEnableID,
 				Name:               "Enable MEV-Boost",

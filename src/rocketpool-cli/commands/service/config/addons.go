@@ -40,8 +40,8 @@ func NewAddonsPage(home *settingsHome) *AddonsPage {
 	)
 
 	// Create the addon subpages
-	addonsPage.gwwPage = NewAddonGwwPage(addonsPage, home.md.Config.AddonsConfig.GraffitiWallWriter)
-	addonsPage.rescueNodePage = NewAddonRescueNodePage(addonsPage, home.md.Config.AddonsConfig.RescueNode)
+	addonsPage.gwwPage = NewAddonGwwPage(addonsPage, home.md.Config.Addons.GraffitiWallWriter)
+	addonsPage.rescueNodePage = NewAddonRescueNodePage(addonsPage, home.md.Config.Addons.RescueNode)
 	addonSubpages := []settingsPage{
 		addonsPage.gwwPage,
 		addonsPage.rescueNodePage,

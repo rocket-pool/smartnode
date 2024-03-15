@@ -3,8 +3,8 @@ package config
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 // The page wrapper for the MEV-boost config
@@ -12,7 +12,7 @@ type MevBoostConfigPage struct {
 	home                  *settingsHome
 	page                  *page
 	layout                *standardLayout
-	masterConfig          *config.SmartNodeConfig
+	masterConfig          *snCfg.SmartNodeConfig
 	enableBox             *parameterizedFormItem
 	modeBox               *parameterizedFormItem
 	selectionModeBox      *parameterizedFormItem
@@ -30,7 +30,6 @@ type MevBoostConfigPage struct {
 
 // Creates a new page for the MEV-Boost settings
 func NewMevBoostConfigPage(home *settingsHome) *MevBoostConfigPage {
-
 	configPage := &MevBoostConfigPage{
 		home:         home,
 		masterConfig: home.md.Config,
@@ -46,7 +45,6 @@ func NewMevBoostConfigPage(home *settingsHome) *MevBoostConfigPage {
 	)
 
 	return configPage
-
 }
 
 // Get the underlying page
@@ -56,10 +54,9 @@ func (configPage *MevBoostConfigPage) getPage() *page {
 
 // Creates the content for the MEV-Boost settings page
 func (configPage *MevBoostConfigPage) createContent() {
-
 	// Create the layout
 	configPage.layout = newStandardLayout()
-	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "MEV-Boost Settings")
+	configPage.layout.createForm(&configPage.masterConfig.Network, "MEV-Boost Settings")
 
 	// Return to the home page after pressing Escape
 	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -81,17 +78,17 @@ func (configPage *MevBoostConfigPage) createContent() {
 	})
 
 	// Set up the form items
-	configPage.enableBox = createParameterizedCheckbox(&configPage.masterConfig.EnableMevBoost)
+	configPage.enableBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.Enable)
 	configPage.modeBox = createParameterizedDropDown(&configPage.masterConfig.MevBoost.Mode, configPage.layout.descriptionBox)
 	configPage.selectionModeBox = createParameterizedDropDown(&configPage.masterConfig.MevBoost.SelectionMode, configPage.layout.descriptionBox)
 
-	localParams := []*cfgtypes.Parameter{
+	localParams := []config.IParameter{
 		&configPage.masterConfig.MevBoost.Port,
 		&configPage.masterConfig.MevBoost.OpenRpcPort,
 		&configPage.masterConfig.MevBoost.ContainerTag,
 		&configPage.masterConfig.MevBoost.AdditionalFlags,
 	}
-	externalParams := []*cfgtypes.Parameter{&configPage.masterConfig.MevBoost.ExternalUrl}
+	externalParams := []config.IParameter{&configPage.masterConfig.MevBoost.ExternalUrl}
 
 	configPage.localItems = createParameterizedFormItems(localParams, configPage.layout.descriptionBox)
 	configPage.externalItems = createParameterizedFormItems(externalParams, configPage.layout.descriptionBox)
@@ -111,10 +108,10 @@ func (configPage *MevBoostConfigPage) createContent() {
 
 	// Set up the setting callbacks
 	configPage.enableBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
-		if configPage.masterConfig.EnableMevBoost.Value == checked {
+		if configPage.masterConfig.MevBoost.Enable.Value == checked {
 			return
 		}
-		configPage.masterConfig.EnableMevBoost.Value = checked
+		configPage.masterConfig.MevBoost.Enable.Value = checked
 		configPage.handleLayoutChanged()
 	})
 	configPage.modeBox.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
@@ -140,15 +137,15 @@ func (configPage *MevBoostConfigPage) createContent() {
 func (configPage *MevBoostConfigPage) handleModeChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enableBox.item)
-	if configPage.masterConfig.EnableMevBoost.Value == true {
+	if configPage.masterConfig.MevBoost.Enable.Value == true {
 		configPage.layout.form.AddFormItem(configPage.modeBox.item)
 
-		selectedMode := configPage.masterConfig.MevBoost.Mode.Value.(cfgtypes.Mode)
+		selectedMode := configPage.masterConfig.MevBoost.Mode.Value
 		switch selectedMode {
-		case cfgtypes.Mode_Local:
+		case config.ClientMode_Local:
 			configPage.handleSelectionModeChanged()
-		case cfgtypes.Mode_External:
-			if configPage.masterConfig.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+		case config.ClientMode_External:
+			if configPage.masterConfig.IsLocalMode() {
 				// Only show these to Docker users, not Hybrid users
 				configPage.layout.addFormItems(configPage.externalItems)
 			}
@@ -165,9 +162,9 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 	configPage.layout.form.AddFormItem(configPage.modeBox.item)
 
 	configPage.layout.form.AddFormItem(configPage.selectionModeBox.item)
-	selectedMode := configPage.masterConfig.MevBoost.SelectionMode.Value.(cfgtypes.MevSelectionMode)
+	selectedMode := configPage.masterConfig.MevBoost.SelectionMode.Value
 	switch selectedMode {
-	case cfgtypes.MevSelectionMode_Profile:
+	case snCfg.MevSelectionMode_Profile:
 		regulatedAllMev, unregulatedAllMev := configPage.masterConfig.MevBoost.GetAvailableProfiles()
 		if unregulatedAllMev {
 			configPage.layout.form.AddFormItem(configPage.unregulatedAllMevBox.item)
@@ -176,21 +173,21 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 			configPage.layout.form.AddFormItem(configPage.regulatedAllMevBox.item)
 		}
 
-	case cfgtypes.MevSelectionMode_Relay:
+	case snCfg.MevSelectionMode_Relay:
 		relays := configPage.masterConfig.MevBoost.GetAvailableRelays()
 		for _, relay := range relays {
 			switch relay.ID {
-			case cfgtypes.MevRelayID_Flashbots:
+			case snCfg.MevRelayID_Flashbots:
 				configPage.layout.form.AddFormItem(configPage.flashbotsBox.item)
-			case cfgtypes.MevRelayID_BloxrouteMaxProfit:
+			case snCfg.MevRelayID_BloxrouteMaxProfit:
 				configPage.layout.form.AddFormItem(configPage.bloxrouteMaxProfitBox.item)
-			case cfgtypes.MevRelayID_BloxrouteRegulated:
+			case snCfg.MevRelayID_BloxrouteRegulated:
 				configPage.layout.form.AddFormItem(configPage.bloxrouteRegulatedBox.item)
-			case cfgtypes.MevRelayID_Eden:
+			case snCfg.MevRelayID_Eden:
 				configPage.layout.form.AddFormItem(configPage.edenBox.item)
-			case cfgtypes.MevRelayID_Ultrasound:
+			case snCfg.MevRelayID_Ultrasound:
 				configPage.layout.form.AddFormItem(configPage.ultrasoundBox.item)
-			case cfgtypes.MevRelayID_Aestus:
+			case snCfg.MevRelayID_Aestus:
 				configPage.layout.form.AddFormItem(configPage.aestusBox.item)
 			}
 		}

@@ -73,13 +73,13 @@ func (configPage *ExecutionConfigPage) createContent() {
 	})
 	// Set up the form items
 	configPage.clientModeDropdown = createParameterizedDropDown(&configPage.masterConfig.ClientMode, configPage.layout.descriptionBox)
-	configPage.localEcDropdown = createParameterizedDropDown(&configPage.masterConfig.LocalExecutionConfig.ExecutionClient, configPage.layout.descriptionBox)
-	configPage.externalEcDropdown = createParameterizedDropDown(&configPage.masterConfig.ExternalExecutionConfig.ExecutionClient, configPage.layout.descriptionBox)
-	configPage.localEcItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionConfig.GetParameters(), configPage.layout.descriptionBox)
-	configPage.gethItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionConfig.Geth.GetParameters(), configPage.layout.descriptionBox)
-	configPage.nethermindItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionConfig.Nethermind.GetParameters(), configPage.layout.descriptionBox)
-	configPage.besuItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionConfig.Besu.GetParameters(), configPage.layout.descriptionBox)
-	configPage.externalEcItems = createParameterizedFormItems(configPage.masterConfig.ExternalExecutionConfig.GetParameters(), configPage.layout.descriptionBox)
+	configPage.localEcDropdown = createParameterizedDropDown(&configPage.masterConfig.LocalExecutionClient.ExecutionClient, configPage.layout.descriptionBox)
+	configPage.externalEcDropdown = createParameterizedDropDown(&configPage.masterConfig.ExternalExecutionClient.ExecutionClient, configPage.layout.descriptionBox)
+	configPage.localEcItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionClient.GetParameters(), configPage.layout.descriptionBox)
+	configPage.gethItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionClient.Geth.GetParameters(), configPage.layout.descriptionBox)
+	configPage.nethermindItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionClient.Nethermind.GetParameters(), configPage.layout.descriptionBox)
+	configPage.besuItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionClient.Besu.GetParameters(), configPage.layout.descriptionBox)
+	configPage.externalEcItems = createParameterizedFormItems(configPage.masterConfig.ExternalExecutionClient.GetParameters(), configPage.layout.descriptionBox)
 
 	// Take the client selections out since they're done explicitly
 	localEcItems := []*parameterizedFormItem{}
@@ -117,17 +117,17 @@ func (configPage *ExecutionConfigPage) createContent() {
 		configPage.handleEcModeChanged()
 	})
 	configPage.localEcDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
-		if configPage.masterConfig.LocalExecutionConfig.ExecutionClient.Value == configPage.masterConfig.LocalExecutionConfig.ExecutionClient.Options[index].Value {
+		if configPage.masterConfig.LocalExecutionClient.ExecutionClient.Value == configPage.masterConfig.LocalExecutionClient.ExecutionClient.Options[index].Value {
 			return
 		}
-		configPage.masterConfig.LocalExecutionConfig.ExecutionClient.Value = configPage.masterConfig.LocalExecutionConfig.ExecutionClient.Options[index].Value
+		configPage.masterConfig.LocalExecutionClient.ExecutionClient.Value = configPage.masterConfig.LocalExecutionClient.ExecutionClient.Options[index].Value
 		configPage.handleLocalEcChanged()
 	})
 	configPage.externalEcDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
-		if configPage.masterConfig.ExternalExecutionConfig.ExecutionClient.Value == configPage.masterConfig.ExternalExecutionConfig.ExecutionClient.Options[index].Value {
+		if configPage.masterConfig.ExternalExecutionClient.ExecutionClient.Value == configPage.masterConfig.ExternalExecutionClient.ExecutionClient.Options[index].Value {
 			return
 		}
-		configPage.masterConfig.ExternalExecutionConfig.ExecutionClient.Value = configPage.masterConfig.ExternalExecutionConfig.ExecutionClient.Options[index].Value
+		configPage.masterConfig.ExternalExecutionClient.ExecutionClient.Value = configPage.masterConfig.ExternalExecutionClient.ExecutionClient.Options[index].Value
 		configPage.handleExternalEcChanged()
 	})
 
@@ -157,7 +157,7 @@ func (configPage *ExecutionConfigPage) handleLocalEcChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.clientModeDropdown.item)
 	configPage.layout.form.AddFormItem(configPage.localEcDropdown.item)
-	selectedEc := configPage.masterConfig.LocalExecutionConfig.ExecutionClient.Value
+	selectedEc := configPage.masterConfig.LocalExecutionClient.ExecutionClient.Value
 
 	switch selectedEc {
 	case config.ExecutionClient_Geth:

@@ -2,8 +2,7 @@ package config
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/config/ids"
 )
 
 // The page wrapper for the Smartnode config
@@ -45,7 +44,7 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	masterConfig := configPage.home.md.Config
 	layout := newStandardLayout()
 	configPage.layout = layout
-	layout.createForm(&masterConfig.Smartnode.Network, "Smartnode and TX Fee Settings")
+	layout.createForm(&masterConfig.Network, "Smartnode and TX Fee Settings")
 
 	// Return to the home page after pressing Escape
 	layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -67,14 +66,14 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	})
 
 	// Set up the form items
-	formItems := createParameterizedFormItems(masterConfig.Smartnode.GetParameters(), layout.descriptionBox)
+	formItems := createParameterizedFormItems(masterConfig.GetParameters(), layout.descriptionBox)
 	for _, formItem := range formItems {
 		layout.form.AddFormItem(formItem.item)
 		layout.parameters[formItem.item] = formItem
-		if formItem.parameter.ID == config.NetworkID {
+		if formItem.parameter.GetCommon().ID == ids.NetworkID {
 			dropDown := formItem.item.(*DropDown)
 			dropDown.SetSelectedFunc(func(text string, index int) {
-				newNetwork := configPage.home.md.Config.Smartnode.Network.Options[index].Value.(cfgtypes.Network)
+				newNetwork := configPage.home.md.Config.Network.Options[index].Value
 				configPage.home.md.Config.ChangeNetwork(newNetwork)
 				configPage.home.refresh()
 			})

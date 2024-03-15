@@ -48,10 +48,10 @@ func getStatus(c *cli.Context) error {
 	// the EC is still syncing.
 	if wallet.IsWalletReady(walletStatus) {
 		defer func() {
-			if cfg.AddonsConfig.RescueNode.Enabled.Value {
+			if cfg.Addons.RescueNode.Enabled.Value {
 				fmt.Println()
 
-				rn := rescue_node.NewRescueNode(cfg.AddonsConfig.RescueNode)
+				rn := rescue_node.NewRescueNode(cfg.Addons.RescueNode)
 				rn.PrintStatusText(walletStatus.Address.NodeAddress)
 			}
 		}()

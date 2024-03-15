@@ -5,7 +5,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
 )
 
 // A layout container with the standard elements and design
@@ -16,12 +16,10 @@ type standardLayout struct {
 	footer         tview.Primitive
 	form           *Form
 	parameters     map[tview.FormItem]*parameterizedFormItem
-	cfg            cfgtypes.Config
 }
 
 // Creates a new StandardLayout instance, which includes the grid and description box preconstructed.
 func newStandardLayout() *standardLayout {
-
 	// Create the main display grid
 	grid := tview.NewGrid().
 		SetColumns(-5, 2, -3).
@@ -43,13 +41,11 @@ func newStandardLayout() *standardLayout {
 		grid:           grid,
 		descriptionBox: descriptionBox,
 	}
-
 }
 
 // Sets the main content (the box on the left side of the screen) for this layout,
 // applying the default styles to it.
 func (layout *standardLayout) setContent(content tview.Primitive, contentBox *tview.Box, title string) {
-
 	// Set the standard properties for the content (border and title)
 	contentBox.SetBorder(true)
 	contentBox.SetBorderPadding(1, 1, 1, 1)
@@ -62,7 +58,6 @@ func (layout *standardLayout) setContent(content tview.Primitive, contentBox *tv
 
 // Sets the footer for this layout.
 func (layout *standardLayout) setFooter(footer tview.Primitive, height int) {
-
 	if footer == nil {
 		layout.grid.SetRows(0, 1)
 	} else {
@@ -71,12 +66,10 @@ func (layout *standardLayout) setFooter(footer tview.Primitive, height int) {
 		layout.grid.SetRows(0, 1, height)
 		layout.grid.AddItem(footer, 2, 0, 1, 3, 0, 0, false)
 	}
-
 }
 
 // Create a standard form for this layout (for settings pages)
-func (layout *standardLayout) createForm(networkParam *cfgtypes.Parameter, title string) {
-
+func (layout *standardLayout) createForm(networkParam *config.Parameter[config.Network], title string) {
 	layout.parameters = map[tview.FormItem]*parameterizedFormItem{}
 
 	// Create the form
@@ -91,8 +84,8 @@ func (layout *standardLayout) createForm(networkParam *cfgtypes.Parameter, title
 		if index < form.GetFormItemCount() {
 			formItem := form.GetFormItem(index)
 			param := layout.parameters[formItem].parameter
-			defaultValue, _ := param.GetDefault(networkParam.Value.(cfgtypes.Network))
-			descriptionText := fmt.Sprintf("Default: %v\n\n%s", defaultValue, param.Description)
+			defaultValue := param.GetDefaultAsAny(networkParam.Value)
+			descriptionText := fmt.Sprintf("Default: %v\n\n%s", defaultValue, param.GetCommon().Description)
 			layout.descriptionBox.SetText(descriptionText)
 			layout.descriptionBox.ScrollToBeginning()
 		}
@@ -105,36 +98,33 @@ func (layout *standardLayout) createForm(networkParam *cfgtypes.Parameter, title
 
 // Refreshes all of the form items to show the current configured values
 func (layout *standardLayout) refresh() {
-
 	for i := 0; i < layout.form.GetFormItemCount(); i++ {
 		formItem := layout.form.GetFormItem(i)
 		param := layout.parameters[formItem].parameter
 
 		// Set the form item to the current value
-		switch param.Type {
-		case cfgtypes.ParameterType_Bool:
-			formItem.(*tview.Checkbox).SetChecked(param.Value == true)
-
-		case cfgtypes.ParameterType_Int, cfgtypes.ParameterType_Uint, cfgtypes.ParameterType_Uint16, cfgtypes.ParameterType_String, cfgtypes.ParameterType_Float:
-			formItem.(*tview.InputField).SetText(fmt.Sprint(param.Value))
-
-		case cfgtypes.ParameterType_Choice:
-			for i := 0; i < len(param.Options); i++ {
-				if param.Options[i].Value == param.Value {
+		if boolParam, ok := param.(*config.Parameter[bool]); ok {
+			// Bool
+			formItem.(*tview.Checkbox).SetChecked(boolParam.Value)
+		} else if len(param.GetOptions()) > 0 {
+			// Choice
+			for i, option := range param.GetOptions() {
+				if option.String() == param.String() {
 					formItem.(*DropDown).SetCurrentOption(i)
 				}
 			}
+		} else {
+			// Everything else
+			formItem.(*tview.InputField).SetText(param.String())
 		}
 	}
 
 	// Focus the first element
 	layout.form.SetFocus(0)
-
 }
 
 // Create the footer, including the nav bar
 func (layout *standardLayout) createSettingFooter() {
-
 	// Nav bar
 	navString1 := "Arrow keys: Navigate   Space/Enter: Change Setting"
 	navTextView1 := tview.NewTextView().
@@ -164,7 +154,6 @@ func (layout *standardLayout) createSettingFooter() {
 			1, 1, false)
 
 	layout.setFooter(navBar, 2)
-
 }
 
 // Add a collection of form items to this layout's form
@@ -177,12 +166,11 @@ func (layout *standardLayout) addFormItems(params []*parameterizedFormItem) {
 // Add a collection of "common" and "specific" form items to this layout's form, where some of the common
 // items may not be valid and should be excluded
 func (layout *standardLayout) addFormItemsWithCommonParams(commonParams []*parameterizedFormItem, specificParams []*parameterizedFormItem, unsupportedCommonParams []string) {
-
 	// Add the common params if they aren't in the unsupported list
 	for _, commonParam := range commonParams {
 		isSupported := true
 		for _, unsupportedParam := range unsupportedCommonParams {
-			if commonParam.parameter.ID == unsupportedParam {
+			if commonParam.parameter.GetCommon().ID == unsupportedParam {
 				isSupported = false
 				break
 			}
@@ -197,7 +185,6 @@ func (layout *standardLayout) addFormItemsWithCommonParams(commonParams []*param
 	for _, specificParam := range specificParams {
 		layout.form.AddFormItem(specificParam.item)
 	}
-
 }
 
 func (layout *standardLayout) mapParameterizedFormItems(params ...*parameterizedFormItem) {

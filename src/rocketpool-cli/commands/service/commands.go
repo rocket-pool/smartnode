@@ -38,51 +38,52 @@ func createFlagsFromConfigParams(sectionName string, params []config.IParameter,
 		}
 
 		defaultVal := param.GetDefaultAsAny(network)
+		description := param.GetCommon().Description
 
 		switch param.Type {
 		case cfgtypes.ParameterType_Bool:
 			configFlags = append(configFlags, &cli.BoolFlag{
 				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: bool\n", param.Description),
+				Usage: fmt.Sprintf("%s\n\tType: bool\n", description),
 			})
 		case cfgtypes.ParameterType_Int:
 			configFlags = append(configFlags, &cli.IntFlag{
 				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: int\n", param.Description),
+				Usage: fmt.Sprintf("%s\n\tType: int\n", description),
 				Value: int(defaultVal.(int64)),
 			})
 		case cfgtypes.ParameterType_Float:
 			configFlags = append(configFlags, &cli.Float64Flag{
 				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: float\n", param.Description),
+				Usage: fmt.Sprintf("%s\n\tType: float\n", description),
 				Value: defaultVal.(float64),
 			})
 		case cfgtypes.ParameterType_String:
 			configFlags = append(configFlags, &cli.StringFlag{
 				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: string\n", param.Description),
+				Usage: fmt.Sprintf("%s\n\tType: string\n", description),
 				Value: defaultVal.(string),
 			})
 		case cfgtypes.ParameterType_Uint:
 			configFlags = append(configFlags, &cli.UintFlag{
 				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: uint\n", param.Description),
+				Usage: fmt.Sprintf("%s\n\tType: uint\n", description),
 				Value: uint(defaultVal.(uint64)),
 			})
 		case cfgtypes.ParameterType_Uint16:
 			configFlags = append(configFlags, &cli.UintFlag{
 				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: uint16\n", param.Description),
+				Usage: fmt.Sprintf("%s\n\tType: uint16\n", description),
 				Value: uint(defaultVal.(uint16)),
 			})
 		case cfgtypes.ParameterType_Choice:
 			optionStrings := []string{}
-			for _, option := range param.Options {
-				optionStrings = append(optionStrings, fmt.Sprint(option.Value))
+			for _, option := range param.GetOptions() {
+				optionStrings = append(optionStrings, fmt.Sprint(option.String()))
 			}
 			configFlags = append(configFlags, &cli.StringFlag{
 				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: choice\n\tOptions: %s\n", param.Description, strings.Join(optionStrings, ", ")),
+				Usage: fmt.Sprintf("%s\n\tType: choice\n\tOptions: %s\n", description, strings.Join(optionStrings, ", ")),
 				Value: fmt.Sprint(defaultVal),
 			})
 		}

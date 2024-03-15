@@ -5,7 +5,8 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 const settingsHomeID string = "settings-home"
@@ -18,7 +19,7 @@ type settingsHome struct {
 	smartnodePage    *SmartnodeConfigPage
 	ecPage           *ExecutionConfigPage
 	fallbackPage     *FallbackConfigPage
-	ccPage           *BeaconConfigPage
+	bnPage           *BeaconConfigPage
 	mevBoostPage     *MevBoostConfigPage
 	metricsPage      *MetricsConfigPage
 	addonsPage       *AddonsPage
@@ -42,7 +43,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	// Create the settings subpages
 	home.smartnodePage = NewSmartnodeConfigPage(home)
 	home.ecPage = NewExecutionConfigPage(home)
-	home.ccPage = NewBeaconConfigPage(home)
+	home.bnPage = NewBeaconConfigPage(home)
 	home.fallbackPage = NewFallbackConfigPage(home)
 	home.mevBoostPage = NewMevBoostConfigPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
@@ -50,7 +51,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	settingsSubpages := []settingsPage{
 		home.smartnodePage,
 		home.ecPage,
-		home.ccPage,
+		home.bnPage,
 		home.fallbackPage,
 		home.mevBoostPage,
 		home.metricsPage,
@@ -77,7 +78,7 @@ func (home *settingsHome) createContent() {
 	// Create the category list
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-			if (home.md.Config.Smartnode.Network.Value == config.Network_Holesky || home.md.Config.Smartnode.Network.Value == config.Network_Devnet) && home.settingsSubpages[index].getPage().id == "settings-mev-boost" {
+			if (home.md.Config.Network.Value == config.Network_Holesky || home.md.Config.Network.Value == snCfg.Network_Devnet) && home.settingsSubpages[index].getPage().id == "settings-mev-boost" {
 				// Disable MEV-Boost for Holesky
 				layout.descriptionBox.SetText("MEV-Boost is currently disabled for the Holesky test network.")
 			} else {
@@ -102,7 +103,7 @@ func (home *settingsHome) createContent() {
 		categoryList.AddItem(subpage.getPage().title, "", 0, nil)
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
-		if (home.md.Config.Smartnode.Network.Value == config.Network_Holesky || home.md.Config.Smartnode.Network.Value == config.Network_Devnet) && home.settingsSubpages[i].getPage().id == "settings-mev-boost" {
+		if (home.md.Config.Network.Value == config.Network_Holesky || home.md.Config.Network.Value == snCfg.Network_Devnet) && home.settingsSubpages[i].getPage().id == "settings-mev-boost" {
 			// Disable MEV-Boost for Holesky
 			return
 		} else {
@@ -226,8 +227,8 @@ func (home *settingsHome) refresh() {
 		home.ecPage.layout.refresh()
 	}
 
-	if home.ccPage != nil {
-		home.ccPage.layout.refresh()
+	if home.bnPage != nil {
+		home.bnPage.layout.refresh()
 	}
 
 	if home.fallbackPage != nil {

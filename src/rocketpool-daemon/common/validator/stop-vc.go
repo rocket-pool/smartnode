@@ -72,12 +72,12 @@ func StopValidator(cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, log *lo
 		// Get validator control command
 		var command string
 		if restart {
-			command = os.ExpandEnv(cfg.ValidatorClientConfig.NativeValidatorRestartCommand.Value)
+			command = os.ExpandEnv(cfg.ValidatorClient.NativeValidatorRestartCommand.Value)
 			if log != nil {
 				log.Printlnf("Restarting validator client process with command '%s'...", command)
 			}
 		} else {
-			command = os.ExpandEnv(cfg.ValidatorClientConfig.NativeValidatorStopCommand.Value)
+			command = os.ExpandEnv(cfg.ValidatorClient.NativeValidatorStopCommand.Value)
 			if log != nil {
 				log.Printlnf("Stopping validator client process with command '%s'...", command)
 			}

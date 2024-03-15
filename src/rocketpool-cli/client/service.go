@@ -553,10 +553,10 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	// Check config
 	if cfg.ClientMode.Value == nmc_config.ClientMode_Unknown {
 		return "", fmt.Errorf("You haven't selected local or external mode for your clients yet.\nPlease run 'rocketpool service config' before running this command.")
-	} else if cfg.IsLocalMode() && cfg.LocalExecutionConfig.ExecutionClient.Value == nmc_config.ExecutionClient_Unknown {
+	} else if cfg.IsLocalMode() && cfg.LocalExecutionClient.ExecutionClient.Value == nmc_config.ExecutionClient_Unknown {
 		return "", errors.New("no Execution Client selected. Please run 'rocketpool service config' before running this command")
 	}
-	if cfg.IsLocalMode() && cfg.LocalBeaconConfig.BeaconNode.Value == nmc_config.BeaconNode_Unknown {
+	if cfg.IsLocalMode() && cfg.LocalBeaconClient.BeaconNode.Value == nmc_config.BeaconNode_Unknown {
 		return "", errors.New("no Beacon Node selected. Please run 'rocketpool service config' before running this command")
 	}
 
@@ -626,7 +626,7 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir strin
 	}
 
 	// Check the metrics containers
-	if cfg.MetricsConfig.EnableMetrics.Value {
+	if cfg.Metrics.EnableMetrics.Value {
 		toDeploy = append(toDeploy,
 			nmc_config.ContainerID_Grafana,
 			nmc_config.ContainerID_Exporter,
@@ -635,7 +635,7 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir strin
 	}
 
 	// Check if we are running the MEV-Boost container locally
-	if cfg.MevBoostConfig.EnableMevBoost.Value && cfg.MevBoostConfig.Mode.Value == nmc_config.ClientMode_Local {
+	if cfg.MevBoost.Enable.Value && cfg.MevBoost.Mode.Value == nmc_config.ClientMode_Local {
 		toDeploy = append(toDeploy, nmc_config.ContainerID_MevBoost)
 	}
 
@@ -722,7 +722,7 @@ func copyOverrideFiles(sourceDir string, targetDir string) error {
 // Handle composing for addons
 func (c *Client) composeAddons(cfg *config.SmartNodeConfig, rocketpoolDir string, deployedContainers []string) ([]string, error) {
 	// GWW
-	if cfg.AddonsConfig.GraffitiWallWriter.Enabled.Value {
+	if cfg.Addons.GraffitiWallWriter.Enabled.Value {
 		gwwCfgName := string(gww.ContainerID_GraffitiWallWriter)
 		composePaths := template.ComposePaths{
 			RuntimePath:  filepath.Join(rocketpoolDir, runtimeDir, config.AddonsFolderName, gwwCfgName),

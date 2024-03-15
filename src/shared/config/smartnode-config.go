@@ -51,27 +51,27 @@ type SmartNodeConfig struct {
 	VerifyProposals               config.Parameter[bool]
 
 	// Execution client settings
-	LocalExecutionConfig    *config.LocalExecutionConfig
-	ExternalExecutionConfig *config.ExternalExecutionConfig
+	LocalExecutionClient    *config.LocalExecutionConfig
+	ExternalExecutionClient *config.ExternalExecutionConfig
 
 	// Beacon node settings
-	LocalBeaconConfig    *config.LocalBeaconConfig
-	ExternalBeaconConfig *config.ExternalBeaconConfig
+	LocalBeaconClient    *config.LocalBeaconConfig
+	ExternalBeaconClient *config.ExternalBeaconConfig
 
 	// Fallback clients
 	Fallback *config.FallbackConfig
 
 	// Validator client settings
-	ValidatorClientConfig *ValidatorClientConfig
+	ValidatorClient *ValidatorClientConfig
 
 	// Metrics
-	MetricsConfig *MetricsConfig
+	Metrics *MetricsConfig
 
 	// MEV-Boost
-	MevBoostConfig *MevBoostConfig
+	MevBoost *MevBoostConfig
 
 	// Addons
-	AddonsConfig *AddonsConfig
+	Addons *AddonsConfig
 
 	// Internal fields
 	Version             string
@@ -428,14 +428,14 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 	}
 
 	// Create the subconfigs
-	cfg.LocalExecutionConfig = NewLocalExecutionConfig()
-	cfg.ExternalExecutionConfig = config.NewExternalExecutionConfig()
-	cfg.LocalBeaconConfig = NewLocalBeaconConfig()
-	cfg.ExternalBeaconConfig = config.NewExternalBeaconConfig()
+	cfg.LocalExecutionClient = NewLocalExecutionConfig()
+	cfg.ExternalExecutionClient = config.NewExternalExecutionConfig()
+	cfg.LocalBeaconClient = NewLocalBeaconConfig()
+	cfg.ExternalBeaconClient = config.NewExternalBeaconConfig()
 	cfg.Fallback = config.NewFallbackConfig()
-	cfg.MetricsConfig = NewMetricsConfig()
-	cfg.MevBoostConfig = NewMevBoostConfig(cfg)
-	cfg.AddonsConfig = NewAddonsConfig()
+	cfg.Metrics = NewMetricsConfig()
+	cfg.MevBoost = NewMevBoostConfig(cfg)
+	cfg.Addons = NewAddonsConfig()
 
 	// Apply the default values for mainnet
 	cfg.Network.Value = config.Network_Mainnet
@@ -479,15 +479,15 @@ func (cfg *SmartNodeConfig) GetParameters() []config.IParameter {
 // Get the subconfigurations for this config
 func (cfg *SmartNodeConfig) GetSubconfigs() map[string]config.IConfigSection {
 	return map[string]config.IConfigSection{
-		ids.LocalExecutionID:    cfg.LocalExecutionConfig,
-		ids.ExternalExecutionID: cfg.ExternalExecutionConfig,
-		ids.LocalBeaconID:       cfg.LocalBeaconConfig,
-		ids.ExternalBeaconID:    cfg.ExternalBeaconConfig,
-		ids.ValidatorClientID:   cfg.ValidatorClientConfig,
+		ids.LocalExecutionID:    cfg.LocalExecutionClient,
+		ids.ExternalExecutionID: cfg.ExternalExecutionClient,
+		ids.LocalBeaconID:       cfg.LocalBeaconClient,
+		ids.ExternalBeaconID:    cfg.ExternalBeaconClient,
+		ids.ValidatorClientID:   cfg.ValidatorClient,
 		ids.FallbackID:          cfg.Fallback,
-		ids.MetricsID:           cfg.MetricsConfig,
-		ids.MevBoostID:          cfg.MevBoostConfig,
-		ids.AddonsID:            cfg.AddonsConfig,
+		ids.MetricsID:           cfg.Metrics,
+		ids.MevBoostID:          cfg.MevBoost,
+		ids.AddonsID:            cfg.Addons,
 	}
 }
 
@@ -624,35 +624,35 @@ func (cfg *SmartNodeConfig) Validate() []string {
 
 	// Make sure the EC and BN are specified
 	if cfg.IsLocalMode() {
-		if cfg.LocalExecutionConfig.ExecutionClient.Value == config.ExecutionClient_Unknown {
+		if cfg.LocalExecutionClient.ExecutionClient.Value == config.ExecutionClient_Unknown {
 			errors = append(errors, "You do not have an Execution Client specified. Please select a client before continuing.")
 		}
-		if cfg.LocalBeaconConfig.BeaconNode.Value == config.BeaconNode_Unknown {
+		if cfg.LocalBeaconClient.BeaconNode.Value == config.BeaconNode_Unknown {
 			errors = append(errors, "You do not have a Beacon Node specified. Please select a client before continuing.")
 		}
 	} else {
-		if cfg.ExternalExecutionConfig.ExecutionClient.Value == config.ExecutionClient_Unknown {
+		if cfg.ExternalExecutionClient.ExecutionClient.Value == config.ExecutionClient_Unknown {
 			errors = append(errors, "You do not have an Execution Client specified. Please select a client before continuing.")
 		}
-		if cfg.ExternalBeaconConfig.BeaconNode.Value == config.BeaconNode_Unknown {
+		if cfg.ExternalBeaconClient.BeaconNode.Value == config.BeaconNode_Unknown {
 			errors = append(errors, "You do not have a Beacon Node specified. Please select a client before continuing.")
 		}
 	}
 
 	// Ensure there's a MEV-boost URL
 	if cfg.Network.Value == config.Network_Holesky || cfg.Network.Value == Network_Devnet {
-		cfg.MevBoostConfig.EnableMevBoost.Value = false
-	} else if cfg.MevBoostConfig.EnableMevBoost.Value {
-		switch cfg.MevBoostConfig.Mode.Value {
+		cfg.MevBoost.Enable.Value = false
+	} else if cfg.MevBoost.Enable.Value {
+		switch cfg.MevBoost.Mode.Value {
 		case config.ClientMode_Local:
 			// In local MEV-boost mode, the user has to have at least one relay
-			relays := cfg.MevBoostConfig.GetEnabledMevRelays()
+			relays := cfg.MevBoost.GetEnabledMevRelays()
 			if len(relays) == 0 {
 				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any profiles or relays enabled. Please select at least one profile or relay to use MEV-boost.")
 			}
 		case config.ClientMode_External:
 			// In external MEV-boost mode, the user has to have an external URL if they're running Docker mode
-			if cfg.IsLocalMode() && cfg.MevBoostConfig.ExternalUrl.Value == "" {
+			if cfg.IsLocalMode() && cfg.MevBoost.ExternalUrl.Value == "" {
 				errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
 			}
 		default:
@@ -662,15 +662,15 @@ func (cfg *SmartNodeConfig) Validate() []string {
 
 	// Technically not required since native mode doesn't support addons, but defensively check to make sure a native mode
 	// user hasn't tried to configure the rescue node via the TUI
-	if cfg.AddonsConfig.RescueNode.Enabled.Value {
+	if cfg.Addons.RescueNode.Enabled.Value {
 		if cfg.IsNativeMode {
 			errors = append(errors, "Rescue Node add-on is incompatible with native mode.\nYou can still connect manually, visit the rescue node website for more information.")
 		}
 
-		if cfg.AddonsConfig.RescueNode.Username.Value == "" {
+		if cfg.Addons.RescueNode.Username.Value == "" {
 			errors = append(errors, "Resuce Node requires a username.")
 		}
-		if cfg.AddonsConfig.RescueNode.Password.Value == "" {
+		if cfg.Addons.RescueNode.Password.Value == "" {
 			errors = append(errors, "Resuce Node requires a password.")
 		}
 	}
@@ -678,27 +678,27 @@ func (cfg *SmartNodeConfig) Validate() []string {
 	// Ensure the selected port numbers are unique. Keeps track of all the errors
 	portMap := make(map[uint16]bool)
 	if cfg.ClientMode.Value == config.ClientMode_Local {
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconConfig.HttpPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconConfig.P2pPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconConfig.Lighthouse.P2pQuicPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconConfig.Prysm.RpcPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionConfig.EnginePort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionConfig.WebsocketPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionConfig.P2pPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionConfig.HttpPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconClient.HttpPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconClient.P2pPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconClient.Lighthouse.P2pQuicPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconClient.Prysm.RpcPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionClient.EnginePort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionClient.WebsocketPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionClient.P2pPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionClient.HttpPort, errors)
 	}
-	if cfg.MetricsConfig.EnableMetrics.Value {
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.BnMetricsPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.EcMetricsPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.ExporterMetricsPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.DaemonMetricsPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.ValidatorClientConfig.VcCommon.MetricsPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.WatchtowerMetricsPort, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.Grafana.Port, errors)
-		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.Prometheus.Port, errors)
+	if cfg.Metrics.EnableMetrics.Value {
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Metrics.BnMetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Metrics.EcMetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Metrics.ExporterMetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Metrics.DaemonMetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.ValidatorClient.VcCommon.MetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Metrics.WatchtowerMetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Metrics.Grafana.Port, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Metrics.Prometheus.Port, errors)
 	}
-	if cfg.MevBoostConfig.EnableMevBoost.Value && cfg.MevBoostConfig.Mode.Value == config.ClientMode_Local {
-		_, errors = addAndCheckForDuplicate(portMap, cfg.MevBoostConfig.Port, errors)
+	if cfg.MevBoost.Enable.Value && cfg.MevBoost.Mode.Value == config.ClientMode_Local {
+		_, errors = addAndCheckForDuplicate(portMap, cfg.MevBoost.Port, errors)
 	}
 
 	return errors

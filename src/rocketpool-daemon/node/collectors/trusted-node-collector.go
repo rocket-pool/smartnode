@@ -97,7 +97,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	// Services
 	rp := collector.sp.GetRocketPool()
 	cfg := collector.sp.GetConfig()
-	if !cfg.MetricsConfig.EnableOdaoMetrics.Value {
+	if !cfg.Metrics.EnableOdaoMetrics.Value {
 		return
 	}
 

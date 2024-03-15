@@ -6,8 +6,8 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 // Constants
@@ -16,14 +16,13 @@ const reviewNativePageID string = "review-native-settings"
 // The changed settings review page
 type ReviewNativePage struct {
 	md              *mainDisplay
-	changedSettings map[string][]cfgtypes.ChangedSetting
+	changedSettings []*config.ChangedSection
 	page            *page
 }
 
 // Create a page to review any changes
-func NewReviewNativePage(md *mainDisplay, oldConfig *config.SmartNodeConfig, newConfig *config.SmartNodeConfig) *ReviewPage {
-
-	var changedSettings map[string][]cfgtypes.ChangedSetting
+func NewReviewNativePage(md *mainDisplay, oldConfig *snCfg.SmartNodeConfig, newConfig *snCfg.SmartNodeConfig) *ReviewPage {
+	var changedSettings []*config.ChangedSection
 
 	// Create the visual list for all of the changed settings
 	changeBox := tview.NewTextView().
@@ -43,13 +42,10 @@ func NewReviewNativePage(md *mainDisplay, oldConfig *config.SmartNodeConfig, new
 		// Get the map of changed settings by category
 		changedSettings, _, _ = newConfig.GetChanges(oldConfig)
 
-		for categoryName, changedSettingsList := range changedSettings {
-			if len(changedSettingsList) > 0 {
-				builder.WriteString(fmt.Sprintf("%s\n", categoryName))
-				for _, pair := range changedSettingsList {
-					builder.WriteString(fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue))
-				}
-				builder.WriteString("\n")
+		// Get the map of changed settings by section name
+		if len(changedSettings) > 0 {
+			for _, change := range changedSettings {
+				addChangesToDescription(change, "", &builder)
 			}
 		}
 

@@ -78,7 +78,7 @@ func (cfg *SmartNodeConfig) GetVcStartScript() string {
 func (cfg *SmartNodeConfig) BnHttpUrl() (string, error) {
 	// Check if Rescue Node is in-use
 	bn := cfg.GetSelectedBeaconNode()
-	rescueNode := rn.NewRescueNode(cfg.AddonsConfig.RescueNode)
+	rescueNode := rn.NewRescueNode(cfg.Addons.RescueNode)
 	overrides, err := rescueNode.GetOverrides(bn)
 	if err != nil {
 		return "", fmt.Errorf("error using Rescue Node: %w", err)
@@ -97,7 +97,7 @@ func (cfg *SmartNodeConfig) BnRpcUrl() (string, error) {
 		return "", nil
 	}
 
-	rescueNode := rn.NewRescueNode(cfg.AddonsConfig.RescueNode)
+	rescueNode := rn.NewRescueNode(cfg.Addons.RescueNode)
 	overrides, err := rescueNode.GetOverrides(bn)
 	if err != nil {
 		return "", fmt.Errorf("error using Rescue Node: %w", err)
@@ -107,9 +107,9 @@ func (cfg *SmartNodeConfig) BnRpcUrl() (string, error) {
 		return overrides.CcRpcEndpoint, nil
 	}
 	if cfg.IsLocalMode() {
-		return fmt.Sprintf("%s:%d", config.ContainerID_BeaconNode, cfg.LocalBeaconConfig.Prysm.RpcPort.Value), nil
+		return fmt.Sprintf("%s:%d", config.ContainerID_BeaconNode, cfg.LocalBeaconClient.Prysm.RpcPort.Value), nil
 	}
-	return cfg.ExternalBeaconConfig.PrysmRpcUrl.Value, nil
+	return cfg.ExternalBeaconClient.PrysmRpcUrl.Value, nil
 }
 
 func (cfg *SmartNodeConfig) FallbackBnHttpUrl() string {
@@ -149,15 +149,15 @@ func (cfg *SmartNodeConfig) GetSmartNodeContainerTag() string {
 // Get the selected Beacon Node
 func (cfg *SmartNodeConfig) GetSelectedExecutionClient() config.ExecutionClient {
 	if cfg.IsLocalMode() {
-		return cfg.LocalExecutionConfig.ExecutionClient.Value
+		return cfg.LocalExecutionClient.ExecutionClient.Value
 	}
-	return cfg.ExternalExecutionConfig.ExecutionClient.Value
+	return cfg.ExternalExecutionClient.ExecutionClient.Value
 }
 
 // Gets the port mapping of the ec container
 // Used by text/template to format ec.yml
 func (cfg *SmartNodeConfig) GetEcOpenApiPorts() string {
-	return cfg.LocalExecutionConfig.GetOpenApiPortMapping()
+	return cfg.LocalExecutionClient.GetOpenApiPortMapping()
 }
 
 // Gets the max peers of the ec container
@@ -166,7 +166,7 @@ func (cfg *SmartNodeConfig) GetEcMaxPeers() (uint16, error) {
 	if cfg.ClientMode.Value != config.ClientMode_Local {
 		return 0, fmt.Errorf("Execution client is external, there is no max peers")
 	}
-	return cfg.LocalExecutionConfig.GetMaxPeers(), nil
+	return cfg.LocalExecutionClient.GetMaxPeers(), nil
 }
 
 // Gets the tag of the ec container
@@ -175,7 +175,7 @@ func (cfg *SmartNodeConfig) GetEcContainerTag() (string, error) {
 	if cfg.ClientMode.Value != config.ClientMode_Local {
 		return "", fmt.Errorf("Execution client is external, there is no container tag")
 	}
-	return cfg.LocalExecutionConfig.GetContainerTag(), nil
+	return cfg.LocalExecutionClient.GetContainerTag(), nil
 }
 
 // Used by text/template to format ec.yml
@@ -183,7 +183,7 @@ func (cfg *SmartNodeConfig) GetEcAdditionalFlags() (string, error) {
 	if cfg.ClientMode.Value != config.ClientMode_Local {
 		return "", fmt.Errorf("Execution client is external, there are no additional flags")
 	}
-	return cfg.LocalExecutionConfig.GetAdditionalFlags(), nil
+	return cfg.LocalExecutionClient.GetAdditionalFlags(), nil
 }
 
 // Used by text/template to format ec.yml
@@ -206,10 +206,10 @@ func (cfg *SmartNodeConfig) GetExternalIP() string {
 // Used by text/template to format bn.yml
 func (cfg *SmartNodeConfig) GetEcHttpEndpoint() string {
 	if cfg.ClientMode.Value == config.ClientMode_Local {
-		return fmt.Sprintf("http://%s:%d", config.ContainerID_ExecutionClient, cfg.LocalExecutionConfig.HttpPort.Value)
+		return fmt.Sprintf("http://%s:%d", config.ContainerID_ExecutionClient, cfg.LocalExecutionClient.HttpPort.Value)
 	}
 
-	return cfg.ExternalExecutionConfig.HttpUrl.Value
+	return cfg.ExternalExecutionClient.HttpUrl.Value
 }
 
 // Get the endpoints of the EC, including the fallback if applicable
@@ -229,9 +229,9 @@ func (cfg *SmartNodeConfig) GetEcHttpEndpointsWithFallback() string {
 // Get the selected Beacon Node
 func (cfg *SmartNodeConfig) GetSelectedBeaconNode() config.BeaconNode {
 	if cfg.IsLocalMode() {
-		return cfg.LocalBeaconConfig.BeaconNode.Value
+		return cfg.LocalBeaconClient.BeaconNode.Value
 	}
-	return cfg.ExternalBeaconConfig.BeaconNode.Value
+	return cfg.ExternalBeaconClient.BeaconNode.Value
 }
 
 // Gets the tag of the bn container
@@ -240,21 +240,21 @@ func (cfg *SmartNodeConfig) GetBnContainerTag() (string, error) {
 	if cfg.ClientMode.Value != config.ClientMode_Local {
 		return "", fmt.Errorf("Beacon Node is external, there is no container tag")
 	}
-	return cfg.LocalBeaconConfig.GetContainerTag(), nil
+	return cfg.LocalBeaconClient.GetContainerTag(), nil
 }
 
 // Used by text/template to format bn.yml
 func (cfg *SmartNodeConfig) GetBnOpenPorts() []string {
-	return cfg.LocalBeaconConfig.GetOpenApiPortMapping()
+	return cfg.LocalBeaconClient.GetOpenApiPortMapping()
 }
 
 // Used by text/template to format bn.yml
 func (cfg *SmartNodeConfig) GetEcWsEndpoint() string {
 	if cfg.ClientMode.Value == config.ClientMode_Local {
-		return fmt.Sprintf("ws://%s:%d", config.ContainerID_ExecutionClient, cfg.LocalExecutionConfig.WebsocketPort.Value)
+		return fmt.Sprintf("ws://%s:%d", config.ContainerID_ExecutionClient, cfg.LocalExecutionClient.WebsocketPort.Value)
 	}
 
-	return cfg.ExternalExecutionConfig.WebsocketUrl.Value
+	return cfg.ExternalExecutionClient.WebsocketUrl.Value
 }
 
 // Gets the max peers of the bn container
@@ -263,7 +263,7 @@ func (cfg *SmartNodeConfig) GetBnMaxPeers() (uint16, error) {
 	if cfg.ClientMode.Value != config.ClientMode_Local {
 		return 0, fmt.Errorf("Beacon Node is external, there is no max peers")
 	}
-	return cfg.LocalBeaconConfig.GetMaxPeers(), nil
+	return cfg.LocalBeaconClient.GetMaxPeers(), nil
 }
 
 // Used by text/template to format bn.yml
@@ -271,16 +271,16 @@ func (cfg *SmartNodeConfig) GetBnAdditionalFlags() (string, error) {
 	if cfg.ClientMode.Value != config.ClientMode_Local {
 		return "", fmt.Errorf("Beacon Node is external, there is no additional flags")
 	}
-	return cfg.LocalBeaconConfig.GetAdditionalFlags(), nil
+	return cfg.LocalBeaconClient.GetAdditionalFlags(), nil
 }
 
 // Get the HTTP API endpoint for the provided BN
 func (cfg *SmartNodeConfig) GetBnHttpEndpoint() string {
 	if cfg.IsLocalMode() {
-		return fmt.Sprintf("http://%s:%d", config.ContainerID_BeaconNode, cfg.LocalBeaconConfig.HttpPort.Value)
+		return fmt.Sprintf("http://%s:%d", config.ContainerID_BeaconNode, cfg.LocalBeaconClient.HttpPort.Value)
 	}
 
-	return cfg.ExternalBeaconConfig.HttpUrl.Value
+	return cfg.ExternalBeaconClient.HttpUrl.Value
 }
 
 // Get the endpoints of the BN, including the fallback if applicable
@@ -303,9 +303,9 @@ func (cfg *SmartNodeConfig) GetExecutionHostname() (string, error) {
 	if cfg.ClientMode.Value == config.ClientMode_Local {
 		return string(config.ContainerID_ExecutionClient), nil
 	}
-	ecUrl, err := url.Parse(cfg.ExternalExecutionConfig.HttpUrl.Value)
+	ecUrl, err := url.Parse(cfg.ExternalExecutionClient.HttpUrl.Value)
 	if err != nil {
-		return "", fmt.Errorf("Invalid External Execution URL %s: %w", cfg.ExternalExecutionConfig.HttpUrl.Value, err)
+		return "", fmt.Errorf("Invalid External Execution URL %s: %w", cfg.ExternalExecutionClient.HttpUrl.Value, err)
 	}
 
 	return ecUrl.Hostname(), nil
@@ -317,9 +317,9 @@ func (cfg *SmartNodeConfig) GetBeaconHostname() (string, error) {
 	if cfg.ClientMode.Value == config.ClientMode_Local {
 		return string(config.ContainerID_BeaconNode), nil
 	}
-	ccUrl, err := url.Parse(cfg.ExternalBeaconConfig.HttpUrl.Value)
+	ccUrl, err := url.Parse(cfg.ExternalBeaconClient.HttpUrl.Value)
 	if err != nil {
-		return "", fmt.Errorf("Invalid External Consensus URL %s: %w", cfg.ExternalBeaconConfig.HttpUrl.Value, err)
+		return "", fmt.Errorf("Invalid External Consensus URL %s: %w", cfg.ExternalBeaconClient.HttpUrl.Value, err)
 	}
 
 	return ccUrl.Hostname(), nil
@@ -332,24 +332,24 @@ func (cfg *SmartNodeConfig) GetBeaconHostname() (string, error) {
 // Gets the tag of the VC container
 func (cfg *SmartNodeConfig) GetVcContainerTag() string {
 	bn := cfg.GetSelectedBeaconNode()
-	return cfg.ValidatorClientConfig.GetVcContainerTag(bn)
+	return cfg.ValidatorClient.GetVcContainerTag(bn)
 }
 
 // Gets the additional flags of the selected VC
 func (cfg *SmartNodeConfig) GetVcAdditionalFlags() string {
 	bn := cfg.GetSelectedBeaconNode()
-	return cfg.ValidatorClientConfig.GetVcAdditionalFlags(bn)
+	return cfg.ValidatorClient.GetVcAdditionalFlags(bn)
 }
 
 // Check if doppelganger detection is enabled
 func (cfg *SmartNodeConfig) IsDoppelgangerEnabled() bool {
-	return cfg.ValidatorClientConfig.VcCommon.DoppelgangerDetection.Value
+	return cfg.ValidatorClient.VcCommon.DoppelgangerDetection.Value
 }
 
 // Used by text/template to format validator.yml
 // Only returns the user-entered value, not the prefixed value
 func (cfg *SmartNodeConfig) CustomGraffiti() string {
-	return cfg.ValidatorClientConfig.VcCommon.Graffiti.Value
+	return cfg.ValidatorClient.VcCommon.Graffiti.Value
 }
 
 // Used by text/template to format validator.yml

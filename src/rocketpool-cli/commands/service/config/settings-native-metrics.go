@@ -17,7 +17,6 @@ type NativeMetricsConfigPage struct {
 
 // Creates a new page for the metrics / stats settings
 func NewNativeMetricsConfigPage(home *settingsNativeHome) *NativeMetricsConfigPage {
-
 	configPage := &NativeMetricsConfigPage{
 		home:         home,
 		masterConfig: home.md.Config,
@@ -33,15 +32,13 @@ func NewNativeMetricsConfigPage(home *settingsNativeHome) *NativeMetricsConfigPa
 	)
 
 	return configPage
-
 }
 
 // Creates the content for the monitoring / stats settings page
 func (configPage *NativeMetricsConfigPage) createContent() {
-
 	// Create the layout
 	configPage.layout = newStandardLayout()
-	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Monitoring / Metrics Settings")
+	configPage.layout.createForm(&configPage.masterConfig.Network, "Monitoring / Metrics Settings")
 
 	// Return to the home page after pressing Escape
 	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -63,17 +60,17 @@ func (configPage *NativeMetricsConfigPage) createContent() {
 	})
 
 	// Set up the form items
-	configPage.enableMetricsBox = createParameterizedCheckbox(&configPage.masterConfig.EnableMetrics)
+	configPage.enableMetricsBox = createParameterizedCheckbox(&configPage.masterConfig.Metrics.EnableMetrics)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableMetricsBox)
 
 	// Set up the setting callbacks
 	configPage.enableMetricsBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
-		if configPage.masterConfig.EnableMetrics.Value == checked {
+		if configPage.masterConfig.Metrics.EnableMetrics.Value == checked {
 			return
 		}
-		configPage.masterConfig.EnableMetrics.Value = checked
+		configPage.masterConfig.Metrics.EnableMetrics.Value = checked
 		configPage.handleEnableMetricsChanged()
 	})
 
@@ -87,7 +84,7 @@ func (configPage *NativeMetricsConfigPage) handleEnableMetricsChanged() {
 	configPage.layout.form.AddFormItem(configPage.enableMetricsBox.item)
 
 	// Only add the supporting stuff if metrics are enabled
-	if configPage.masterConfig.EnableMetrics.Value == false {
+	if !configPage.masterConfig.Metrics.EnableMetrics.Value {
 		return
 	}
 
