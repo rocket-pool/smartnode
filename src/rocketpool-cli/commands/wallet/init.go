@@ -5,8 +5,8 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/term"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 )

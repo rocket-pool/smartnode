@@ -7,8 +7,8 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/node-manager-core/utils/math"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 )
 
 func getStatus(c *cli.Context) error {

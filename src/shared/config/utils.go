@@ -78,3 +78,14 @@ func (cfg *SmartNodeConfig) GetWalletPath() string {
 func (cfg *SmartNodeConfig) GetPasswordPath() string {
 	return filepath.Join(cfg.UserDataPath.Value, UserPasswordFilename)
 }
+
+// Check a port setting to see if it's already used elsewhere
+func addAndCheckForDuplicate(portMap map[uint16]bool, param config.Parameter[uint16], errors []string) (map[uint16]bool, []string) {
+	port := param.Value
+	if portMap[port] {
+		return portMap, append(errors, fmt.Sprintf("Port %d for %s is already in use", port, param.GetCommon().Name))
+	} else {
+		portMap[port] = true
+	}
+	return portMap, errors
+}

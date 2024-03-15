@@ -5,9 +5,9 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/types/addons"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
+	gww "github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 // The page wrapper for the Graffiti Wall Writer addon config
@@ -15,32 +15,33 @@ type AddonGwwPage struct {
 	addonsPage   *AddonsPage
 	page         *page
 	layout       *standardLayout
-	masterConfig *config.SmartNodeConfig
-	addon        addons.SmartnodeAddon
+	masterConfig *snCfg.SmartNodeConfig
+	gwwConfig    *gww.GraffitiWallWriterConfig
+	gww          *gww.GraffitiWallWriter
 	enabledBox   *parameterizedFormItem
 	otherParams  []*parameterizedFormItem
 }
 
 // Creates a new page for the Graffiti Wall Writer addon settings
-func NewAddonGwwPage(addonsPage *AddonsPage, addon addons.SmartnodeAddon) *AddonGwwPage {
-
+func NewAddonGwwPage(addonsPage *AddonsPage, gwwConfig *gww.GraffitiWallWriterConfig) *AddonGwwPage {
+	gww := gww.NewGraffitiWallWriter(gwwConfig)
 	configPage := &AddonGwwPage{
 		addonsPage:   addonsPage,
 		masterConfig: addonsPage.home.md.Config,
-		addon:        addon,
+		gwwConfig:    gwwConfig,
+		gww:          gww,
 	}
 	configPage.createContent()
 
 	configPage.page = newPage(
 		addonsPage.page,
 		"settings-addon-gww",
-		addon.GetName(),
-		addon.GetDescription(),
+		gww.GetName(),
+		gww.GetDescription(),
 		configPage.layout.grid,
 	)
 
 	return configPage
-
 }
 
 // Get the underlying page
@@ -50,10 +51,9 @@ func (configPage *AddonGwwPage) getPage() *page {
 
 // Creates the content for the GWW settings page
 func (configPage *AddonGwwPage) createContent() {
-
 	// Create the layout
 	configPage.layout = newStandardLayout()
-	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, fmt.Sprintf("%s Settings", configPage.addon.GetName()))
+	configPage.layout.createForm(&configPage.masterConfig.Network, fmt.Sprintf("%s Settings", configPage.gww.GetName()))
 
 	// Return to the home page after pressing Escape
 	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -75,11 +75,11 @@ func (configPage *AddonGwwPage) createContent() {
 	})
 
 	// Get the parameters
-	enabledParam := configPage.addon.GetEnabledParameter()
-	otherParams := []*cfgtypes.Parameter{}
+	enabledParam := &configPage.gwwConfig.Enabled
+	otherParams := []config.IParameter{}
 
-	for _, param := range configPage.addon.GetConfig().GetParameters() {
-		if param.ID != enabledParam.ID {
+	for _, param := range configPage.gwwConfig.GetParameters() {
+		if param.GetCommon().ID != enabledParam.ID {
 			otherParams = append(otherParams, param)
 		}
 	}
@@ -103,7 +103,6 @@ func (configPage *AddonGwwPage) createContent() {
 
 	// Do the initial draw
 	configPage.handleEnableChanged()
-
 }
 
 // Handle all of the form changes when the Use Fallback EC box has changed
@@ -112,7 +111,7 @@ func (configPage *AddonGwwPage) handleEnableChanged() {
 	configPage.layout.form.AddFormItem(configPage.enabledBox.item)
 
 	// Only add the supporting stuff if external clients are enabled
-	if configPage.addon.GetEnabledParameter().Value == false {
+	if !configPage.gwwConfig.Enabled.Value {
 		return
 	}
 	configPage.layout.addFormItems(configPage.otherParams)

@@ -3,8 +3,8 @@ package service
 import (
 	"fmt"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/urfave/cli/v2"
 )

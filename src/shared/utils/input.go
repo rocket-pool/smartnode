@@ -77,7 +77,7 @@ func ValidateBurnableTokenType(name, value string) (string, error) {
 }
 
 // Validate a DAO member ID
-func ValidateDAOMemberID(name, value string) (string, error) {
+func ValidateDaoMemberID(name, value string) (string, error) {
 	val := strings.TrimSpace(value)
 	if len(val) < MinDaoMemberIDLength {
 		return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, val, MinDaoMemberIDLength)

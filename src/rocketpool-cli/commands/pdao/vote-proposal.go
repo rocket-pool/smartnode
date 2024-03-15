@@ -8,11 +8,11 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 func voteOnProposal(c *cli.Context) error {
@@ -75,7 +75,7 @@ func voteOnProposal(c *cli.Context) error {
 				eth.WeiToEth(proposal.VotingPowerToVeto),
 				proposal.ProposerAddress)
 		}
-		selected, _ := utils.Select("Please select a proposal to vote on:", options)
+		selected, _ := cliutils.Select("Please select a proposal to vote on:", options)
 		selectedProposal = votableProposals[selected]
 	}
 
@@ -85,7 +85,7 @@ func voteOnProposal(c *cli.Context) error {
 	if c.String(voteDirectionFlag.Name) != "" {
 		// Parse vote dirrection
 		var err error
-		voteDirection, err = input.ValidateVoteDirection("vote-direction", c.String(voteDirectionFlag.Name))
+		voteDirection, err = utils.ValidateVoteDirection("vote-direction", c.String(voteDirectionFlag.Name))
 		if err != nil {
 			return err
 		}
@@ -99,7 +99,7 @@ func voteOnProposal(c *cli.Context) error {
 			"Veto",
 		}
 		var selected int
-		selected, voteDirectionLabel = utils.Select("How would you like to vote on the proposal?", options)
+		selected, voteDirectionLabel = cliutils.Select("How would you like to vote on the proposal?", options)
 		voteDirection = types.VoteDirection(selected + 1)
 	}
 

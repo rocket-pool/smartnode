@@ -5,9 +5,9 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/types/addons"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
+	"github.com/rocket-pool/smartnode/addons/rescue_node"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 // The page wrapper for the Rescue Node addon config
@@ -15,27 +15,29 @@ type AddonRescueNodePage struct {
 	addonsPage   *AddonsPage
 	page         *page
 	layout       *standardLayout
-	masterConfig *config.SmartNodeConfig
-	addon        addons.SmartnodeAddon
+	masterConfig *snCfg.SmartNodeConfig
+	rnConfig     *rescue_node.RescueNodeConfig
+	rn           *rescue_node.RescueNode
 	enabledBox   *parameterizedFormItem
 	otherParams  []*parameterizedFormItem
 }
 
 // Creates a new page for the Graffiti Wall Writer addon settings
-func NewAddonRescueNodePage(addonsPage *AddonsPage, addon addons.SmartnodeAddon) *AddonRescueNodePage {
-
+func NewAddonRescueNodePage(addonsPage *AddonsPage, rnConfig *rescue_node.RescueNodeConfig) *AddonRescueNodePage {
+	rn := rescue_node.NewRescueNode(rnConfig)
 	configPage := &AddonRescueNodePage{
 		addonsPage:   addonsPage,
 		masterConfig: addonsPage.home.md.Config,
-		addon:        addon,
+		rnConfig:     rnConfig,
+		rn:           rn,
 	}
 	configPage.createContent()
 
 	configPage.page = newPage(
 		addonsPage.page,
 		"settings-addon-rescue-node",
-		addon.GetName(),
-		addon.GetDescription(),
+		rn.GetName(),
+		rn.GetDescription(),
 		configPage.layout.grid,
 	)
 
@@ -49,10 +51,9 @@ func (configPage *AddonRescueNodePage) getPage() *page {
 
 // Creates the content for the Rescue Node settings page
 func (configPage *AddonRescueNodePage) createContent() {
-
 	// Create the layout
 	configPage.layout = newStandardLayout()
-	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, fmt.Sprintf("%s Settings", configPage.addon.GetName()))
+	configPage.layout.createForm(&configPage.masterConfig.Network, fmt.Sprintf("%s Settings", configPage.rn.GetName()))
 
 	// Return to the home page after pressing Escape
 	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -74,11 +75,10 @@ func (configPage *AddonRescueNodePage) createContent() {
 	})
 
 	// Get the parameters
-	enabledParam := configPage.addon.GetEnabledParameter()
-	otherParams := []*cfgtypes.Parameter{}
-
-	for _, param := range configPage.addon.GetConfig().GetParameters() {
-		if param.ID != enabledParam.ID {
+	enabledParam := &configPage.rnConfig.Enabled
+	otherParams := []config.IParameter{}
+	for _, param := range configPage.rnConfig.GetParameters() {
+		if param.GetCommon().ID != enabledParam.ID {
 			otherParams = append(otherParams, param)
 		}
 	}
@@ -102,7 +102,6 @@ func (configPage *AddonRescueNodePage) createContent() {
 
 	// Do the initial draw
 	configPage.handleEnableChanged()
-
 }
 
 // Handle all of the form changes when the Enabled box has changed
@@ -111,7 +110,7 @@ func (configPage *AddonRescueNodePage) handleEnableChanged() {
 	configPage.layout.form.AddFormItem(configPage.enabledBox.item)
 
 	// Only add the supporting stuff if the rescue node is enabled
-	if configPage.addon.GetEnabledParameter().Value == false {
+	if !configPage.rnConfig.Enabled.Value {
 		return
 	}
 	configPage.layout.addFormItems(configPage.otherParams)

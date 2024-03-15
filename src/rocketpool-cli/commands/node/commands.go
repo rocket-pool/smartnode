@@ -4,7 +4,8 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // Register commands
@@ -22,7 +23,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool node status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -45,7 +46,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -68,7 +69,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool node rewards",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -83,7 +84,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Set the node's primary withdrawal address, which will receive all ETH rewards (and RPL if the RPL withdrawal address is not set)",
 				UsageText: "rocketpool node set-primary-withdrawal-address [options] address",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 					&cli.BoolFlag{
 						Name:  setPrimaryWithdrawalAddressForceFlag,
 						Usage: "Force update the primary withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
@@ -91,7 +92,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					withdrawalAddress := c.Args().Get(0)
@@ -107,11 +108,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Confirm the node's pending primary withdrawal address if it has been set back to the node's address itself",
 				UsageText: "rocketpool node confirm-primary-withdrawal-address [options]",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -126,7 +127,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Set the node's RPL withdrawal address, which will receive all RPL rewards and staked RPL withdrawals",
 				UsageText: "rocketpool node set-rpl-withdrawal-address [options] address",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 					&cli.BoolFlag{
 						Name:  setRplWithdrawalAddressForceFlag,
 						Usage: "Force update the RPL withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
@@ -134,7 +135,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					withdrawalAddress := c.Args().Get(0)
@@ -150,11 +151,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Confirm the node's pending RPL withdrawal address if it has been set back to the node's address itself",
 				UsageText: "rocketpool node confirm-rpl-withdrawal-address [options]",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -169,11 +170,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Allow the node to lock RPL when creating governance proposals/challenges",
 				UsageText: "rocketpool node allow-rpl-locking [options]",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -188,11 +189,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Do not allow the node to lock RPL when creating governance proposals/challenges",
 				UsageText: "rocketpool node deny-rpl-locking [options]",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 					// Run
@@ -214,7 +215,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -244,7 +245,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -271,7 +272,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "The amount of RPL to stake (also accepts 'min8' / 'max8' for 8-ETH minipools, 'min16' / 'max16' for 16-ETH minipools, or 'all' for all of your RPL)",
 					},
-					utils.YesFlag,
+					cliutils.YesFlag,
 					&cli.BoolFlag{
 						Name:    swapFlag,
 						Aliases: []string{"s"},
@@ -280,7 +281,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -308,7 +309,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool node add-address-to-stake-rpl-whitelist address",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 
@@ -327,7 +328,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 
@@ -350,11 +351,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "The amount of RPL to automatically restake during claiming (or '150%' to stake up to 150% collateral, or 'all' for all available RPL)",
 					},
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -374,11 +375,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "The amount of RPL to withdraw (or 'max')",
 					},
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -404,11 +405,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "The amount of ETH to withdraw (or 'max')",
 					},
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -440,7 +441,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"s"},
 						Usage:   "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
 					},
-					utils.YesFlag,
+					cliutils.YesFlag,
 					&cli.StringFlag{
 						Name:    saltFlag,
 						Aliases: []string{"l"},
@@ -449,7 +450,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -491,7 +492,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"s"},
 						Usage:   "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
 					},
-					utils.YesFlag,
+					cliutils.YesFlag,
 					&cli.StringFlag{
 						Name:    saltFlag,
 						Aliases: []string{"l"},
@@ -503,13 +504,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Usage:   "Use this flag if you want to recreate your validator's private key within the Smartnode's VC instead of running it via your own VC, and have the Smartnode reassign your validator's withdrawal credentials to the new minipool address automatically.",
 					},
 					&cli.BoolFlag{
-						Name:  utils.NoRestartFlag,
+						Name:  cliutils.NoRestartFlag,
 						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
 					},
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					pubkey, err := input.ValidatePubkey("pubkey", c.Args().Get(0))
@@ -545,18 +546,18 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).",
 				UsageText: "rocketpool node send [options] amount token to",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 3); err != nil {
+					if err := utils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
 					amount, err := input.ValidatePositiveEthAmount("send amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
-					token, err := input.ValidateTokenType("token type", c.Args().Get(1))
+					token, err := utils.ValidateTokenType("token type", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
@@ -572,11 +573,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Set the address you want to use when voting on Rocket Pool governance proposals, or the address you want to delegate your voting power to.",
 				UsageText: "rocketpool node set-voting-delegate address",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					delegate := c.Args().Get(0)
@@ -591,11 +592,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Remove the address you've set for voting on Rocket Pool governance proposals.",
 				UsageText: "rocketpool node clear-voting-delegate",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -610,11 +611,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Create the fee distributor contract for your node, so you can withdraw priority fees and MEV rewards after the merge",
 				UsageText: "rocketpool node initialize-fee-distributor",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -629,11 +630,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Distribute the priority fee and MEV rewards from your fee distributor to your withdrawal address and the rETH contract (based on your node's average commission)",
 				UsageText: "rocketpool node distribute-fees",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -648,11 +649,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Opt your node into the Smoothing Pool",
 				UsageText: "rocketpool node join-smoothing-pool",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -667,11 +668,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Leave the Smoothing Pool",
 				UsageText: "rocketpool node leave-smoothing-pool",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 

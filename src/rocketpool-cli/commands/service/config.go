@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/rivo/tview"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"

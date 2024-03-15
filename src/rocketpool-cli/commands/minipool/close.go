@@ -5,17 +5,17 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/node-manager-core/utils/math"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const (
@@ -61,7 +61,7 @@ func closeMinipools(c *cli.Context) error {
 				balanceLessThanRefundMinipools = append(balanceLessThanRefundMinipools, mp)
 			}
 			if mp.Status != types.MinipoolStatus_Dissolved &&
-				mp.BeaconState != sharedtypes.ValidatorState_WithdrawalDone {
+				mp.BeaconState != beacon.ValidatorState_WithdrawalDone {
 				unwithdrawnMinipools = append(unwithdrawnMinipools, mp)
 			}
 		}

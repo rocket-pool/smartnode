@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 )
 
 func getSettings(c *cli.Context) error {

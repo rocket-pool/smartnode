@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"

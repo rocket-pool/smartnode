@@ -2,28 +2,29 @@ package config
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
+	"github.com/rocket-pool/node-manager-core/config/ids"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 // The page wrapper for the EC config
 type ExecutionConfigPage struct {
-	home            *settingsHome
-	page            *page
-	layout          *standardLayout
-	masterConfig    *config.SmartNodeConfig
-	ecModeDropdown  *parameterizedFormItem
-	ecDropdown      *parameterizedFormItem
-	ecCommonItems   []*parameterizedFormItem
-	gethItems       []*parameterizedFormItem
-	nethermindItems []*parameterizedFormItem
-	besuItems       []*parameterizedFormItem
-	externalEcItems []*parameterizedFormItem
+	home               *settingsHome
+	page               *page
+	layout             *standardLayout
+	masterConfig       *snCfg.SmartNodeConfig
+	clientModeDropdown *parameterizedFormItem
+	localEcDropdown    *parameterizedFormItem
+	externalEcDropdown *parameterizedFormItem
+	localEcItems       []*parameterizedFormItem
+	gethItems          []*parameterizedFormItem
+	nethermindItems    []*parameterizedFormItem
+	besuItems          []*parameterizedFormItem
+	externalEcItems    []*parameterizedFormItem
 }
 
 // Creates a new page for the Execution client settings
 func NewExecutionConfigPage(home *settingsHome) *ExecutionConfigPage {
-
 	configPage := &ExecutionConfigPage{
 		home:         home,
 		masterConfig: home.md.Config,
@@ -33,13 +34,12 @@ func NewExecutionConfigPage(home *settingsHome) *ExecutionConfigPage {
 	configPage.page = newPage(
 		home.homePage,
 		"settings-execution",
-		"Execution Client (ETH1)",
-		"Select this to choose your Execution client (formerly called \"ETH1 client\") and configure its settings.",
+		"Execution Client",
+		"Select this to choose your Execution Client and configure its settings.",
 		configPage.layout.grid,
 	)
 
 	return configPage
-
 }
 
 // Get the underlying page
@@ -49,10 +49,9 @@ func (configPage *ExecutionConfigPage) getPage() *page {
 
 // Creates the content for the Execution client settings page
 func (configPage *ExecutionConfigPage) createContent() {
-
 	// Create the layout
 	configPage.layout = newStandardLayout()
-	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Execution Client (ETH1) Settings")
+	configPage.layout.createForm(&configPage.masterConfig.Network, "Execution Client Settings")
 
 	// Return to the home page after pressing Escape
 	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -72,82 +71,114 @@ func (configPage *ExecutionConfigPage) createContent() {
 		}
 		return event
 	})
-
 	// Set up the form items
-	configPage.ecModeDropdown = createParameterizedDropDown(&configPage.masterConfig.ExecutionClientMode, configPage.layout.descriptionBox)
-	configPage.ecDropdown = createParameterizedDropDown(&configPage.masterConfig.ExecutionClient, configPage.layout.descriptionBox)
-	configPage.ecCommonItems = createParameterizedFormItems(configPage.masterConfig.ExecutionCommon.GetParameters(), configPage.layout.descriptionBox)
-	configPage.gethItems = createParameterizedFormItems(configPage.masterConfig.Geth.GetParameters(), configPage.layout.descriptionBox)
-	configPage.nethermindItems = createParameterizedFormItems(configPage.masterConfig.Nethermind.GetParameters(), configPage.layout.descriptionBox)
-	configPage.besuItems = createParameterizedFormItems(configPage.masterConfig.Besu.GetParameters(), configPage.layout.descriptionBox)
-	configPage.externalEcItems = createParameterizedFormItems(configPage.masterConfig.ExternalExecution.GetParameters(), configPage.layout.descriptionBox)
+	configPage.clientModeDropdown = createParameterizedDropDown(&configPage.masterConfig.ClientMode, configPage.layout.descriptionBox)
+	configPage.localEcDropdown = createParameterizedDropDown(&configPage.masterConfig.LocalExecutionConfig.ExecutionClient, configPage.layout.descriptionBox)
+	configPage.externalEcDropdown = createParameterizedDropDown(&configPage.masterConfig.ExternalExecutionConfig.ExecutionClient, configPage.layout.descriptionBox)
+	configPage.localEcItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionConfig.GetParameters(), configPage.layout.descriptionBox)
+	configPage.gethItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionConfig.Geth.GetParameters(), configPage.layout.descriptionBox)
+	configPage.nethermindItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionConfig.Nethermind.GetParameters(), configPage.layout.descriptionBox)
+	configPage.besuItems = createParameterizedFormItems(configPage.masterConfig.LocalExecutionConfig.Besu.GetParameters(), configPage.layout.descriptionBox)
+	configPage.externalEcItems = createParameterizedFormItems(configPage.masterConfig.ExternalExecutionConfig.GetParameters(), configPage.layout.descriptionBox)
+
+	// Take the client selections out since they're done explicitly
+	localEcItems := []*parameterizedFormItem{}
+	for _, item := range configPage.localEcItems {
+		if item.parameter.GetCommon().ID == ids.EcID {
+			continue
+		}
+		localEcItems = append(localEcItems, item)
+	}
+	configPage.localEcItems = localEcItems
+
+	externalEcItems := []*parameterizedFormItem{}
+	for _, item := range configPage.externalEcItems {
+		if item.parameter.GetCommon().ID == ids.EcID {
+			continue
+		}
+		externalEcItems = append(externalEcItems, item)
+	}
+	configPage.externalEcItems = externalEcItems
 
 	// Map the parameters to the form items in the layout
-	configPage.layout.mapParameterizedFormItems(configPage.ecModeDropdown, configPage.ecDropdown)
-	configPage.layout.mapParameterizedFormItems(configPage.ecCommonItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.clientModeDropdown, configPage.localEcDropdown, configPage.externalEcDropdown)
+	configPage.layout.mapParameterizedFormItems(configPage.localEcItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.gethItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.nethermindItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.besuItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalEcItems...)
 
 	// Set up the setting callbacks
-	configPage.ecModeDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
-		if configPage.masterConfig.ExecutionClientMode.Value == configPage.masterConfig.ExecutionClientMode.Options[index].Value {
+	configPage.clientModeDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
+		if configPage.masterConfig.ClientMode.Value == configPage.masterConfig.ClientMode.Options[index].Value {
 			return
 		}
-		configPage.masterConfig.ExecutionClientMode.Value = configPage.masterConfig.ExecutionClientMode.Options[index].Value
-		configPage.masterConfig.ConsensusClientMode.Value = configPage.masterConfig.ConsensusClientMode.Options[index].Value
+		configPage.masterConfig.ClientMode.Value = configPage.masterConfig.ClientMode.Options[index].Value
 		configPage.handleEcModeChanged()
 	})
-	configPage.ecDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
-		if configPage.masterConfig.ExecutionClient.Value == configPage.masterConfig.ExecutionClient.Options[index].Value {
+	configPage.localEcDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
+		if configPage.masterConfig.LocalExecutionConfig.ExecutionClient.Value == configPage.masterConfig.LocalExecutionConfig.ExecutionClient.Options[index].Value {
 			return
 		}
-		configPage.masterConfig.ExecutionClient.Value = configPage.masterConfig.ExecutionClient.Options[index].Value
+		configPage.masterConfig.LocalExecutionConfig.ExecutionClient.Value = configPage.masterConfig.LocalExecutionConfig.ExecutionClient.Options[index].Value
 		configPage.handleLocalEcChanged()
+	})
+	configPage.externalEcDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
+		if configPage.masterConfig.ExternalExecutionConfig.ExecutionClient.Value == configPage.masterConfig.ExternalExecutionConfig.ExecutionClient.Options[index].Value {
+			return
+		}
+		configPage.masterConfig.ExternalExecutionConfig.ExecutionClient.Value = configPage.masterConfig.ExternalExecutionConfig.ExecutionClient.Options[index].Value
+		configPage.handleExternalEcChanged()
 	})
 
 	// Do the initial draw
 	configPage.handleEcModeChanged()
-
 }
 
 // Handle all of the form changes when the EC mode has changed
 func (configPage *ExecutionConfigPage) handleEcModeChanged() {
 	configPage.layout.form.Clear(true)
-	configPage.layout.form.AddFormItem(configPage.ecModeDropdown.item)
+	configPage.layout.form.AddFormItem(configPage.clientModeDropdown.item)
 
-	selectedMode := configPage.masterConfig.ExecutionClientMode.Value.(cfgtypes.Mode)
+	selectedMode := configPage.masterConfig.ClientMode.Value
 	switch selectedMode {
-	case cfgtypes.Mode_Local:
+	case config.ClientMode_Local:
 		// Local (Docker mode)
 		configPage.handleLocalEcChanged()
 
-	case cfgtypes.Mode_External:
+	case config.ClientMode_External:
 		// External (Hybrid mode)
-		for _, param := range configPage.externalEcItems {
-			configPage.layout.form.AddFormItem(param.item)
-		}
-		configPage.layout.refresh()
+		configPage.handleExternalEcChanged()
 	}
 }
 
-// Handle all of the form changes when the EC has changed
+// Handle all of the form changes when the local EC has changed
 func (configPage *ExecutionConfigPage) handleLocalEcChanged() {
 	configPage.layout.form.Clear(true)
-	configPage.layout.form.AddFormItem(configPage.ecModeDropdown.item)
-	configPage.layout.form.AddFormItem(configPage.ecDropdown.item)
-	selectedEc := configPage.masterConfig.ExecutionClient.Value.(cfgtypes.ExecutionClient)
+	configPage.layout.form.AddFormItem(configPage.clientModeDropdown.item)
+	configPage.layout.form.AddFormItem(configPage.localEcDropdown.item)
+	selectedEc := configPage.masterConfig.LocalExecutionConfig.ExecutionClient.Value
 
 	switch selectedEc {
-	case cfgtypes.ExecutionClient_Geth:
-		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.gethItems, configPage.masterConfig.Geth.UnsupportedCommonParams)
-	case cfgtypes.ExecutionClient_Nethermind:
-		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.nethermindItems, configPage.masterConfig.Nethermind.UnsupportedCommonParams)
-	case cfgtypes.ExecutionClient_Besu:
-		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.besuItems, configPage.masterConfig.Besu.UnsupportedCommonParams)
+	case config.ExecutionClient_Geth:
+		configPage.layout.addFormItemsWithCommonParams(configPage.localEcItems, configPage.gethItems, nil)
+	case config.ExecutionClient_Nethermind:
+		configPage.layout.addFormItemsWithCommonParams(configPage.localEcItems, configPage.nethermindItems, nil)
+	case config.ExecutionClient_Besu:
+		configPage.layout.addFormItemsWithCommonParams(configPage.localEcItems, configPage.besuItems, nil)
 	}
 
+	configPage.layout.refresh()
+}
+
+// Handle all of the form changes when the external EC has changed
+func (configPage *ExecutionConfigPage) handleExternalEcChanged() {
+	configPage.layout.form.Clear(true)
+	configPage.layout.form.AddFormItem(configPage.clientModeDropdown.item)
+	configPage.layout.form.AddFormItem(configPage.externalEcDropdown.item)
+	for _, param := range configPage.externalEcItems {
+		configPage.layout.form.AddFormItem(param.item)
+	}
 	configPage.layout.refresh()
 }
 

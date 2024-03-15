@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/dustin/go-humanize"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/urfave/cli/v2"
 )

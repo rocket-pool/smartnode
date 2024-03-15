@@ -10,8 +10,8 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 )
@@ -130,7 +130,8 @@ func setRplWithdrawalAddress(c *cli.Context, withdrawalAddressOrEns string) erro
 		stakeUrl := ""
 		config, _, err := rp.LoadConfig()
 		if err == nil {
-			stakeUrl = config.Smartnode.GetStakeUrl()
+			rs := config.GetRocketPoolResources()
+			stakeUrl = rs.StakeUrl
 		}
 		if stakeUrl != "" {
 			fmt.Printf("The node's RPL withdrawal address update to %s is now pending.\n"+

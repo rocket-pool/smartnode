@@ -18,7 +18,7 @@ type settingsHome struct {
 	smartnodePage    *SmartnodeConfigPage
 	ecPage           *ExecutionConfigPage
 	fallbackPage     *FallbackConfigPage
-	ccPage           *ConsensusConfigPage
+	ccPage           *BeaconConfigPage
 	mevBoostPage     *MevBoostConfigPage
 	metricsPage      *MetricsConfigPage
 	addonsPage       *AddonsPage
@@ -42,7 +42,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	// Create the settings subpages
 	home.smartnodePage = NewSmartnodeConfigPage(home)
 	home.ecPage = NewExecutionConfigPage(home)
-	home.ccPage = NewConsensusConfigPage(home)
+	home.ccPage = NewBeaconConfigPage(home)
 	home.fallbackPage = NewFallbackConfigPage(home)
 	home.mevBoostPage = NewMevBoostConfigPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)

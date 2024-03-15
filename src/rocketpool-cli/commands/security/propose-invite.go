@@ -6,9 +6,10 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 var inviteIdFlag *cli.StringFlag = &cli.StringFlag{
@@ -33,9 +34,9 @@ func proposeInvite(c *cli.Context) error {
 	// Get the ID
 	id := c.String(inviteIdFlag.Name)
 	if id == "" {
-		id = utils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
+		id = cliutils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
 	}
-	id, err = input.ValidateDAOMemberID("id", id)
+	id, err = utils.ValidateDaoMemberID("id", id)
 	if err != nil {
 		return err
 	}
@@ -43,7 +44,7 @@ func proposeInvite(c *cli.Context) error {
 	// Get the address
 	addressString := c.String(inviteAddressFlag.Name)
 	if addressString == "" {
-		addressString = utils.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
+		addressString = cliutils.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
 	}
 	address, err := input.ValidateAddress("address", addressString)
 	if err != nil {

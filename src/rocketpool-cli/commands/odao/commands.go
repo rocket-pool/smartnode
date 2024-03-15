@@ -6,44 +6,45 @@ import (
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
 	// Create the member settings commands
 	membersContract := rocketpool.ContractName_RocketDAONodeTrustedSettingsMembers
-	memberSettingsCmd := utils.CreateSetterCategory("members", "Member", "m", membersContract)
+	memberSettingsCmd := cliutils.CreateSetterCategory("members", "Member", "m", membersContract)
 	memberSettingsCmd.Subcommands = []*cli.Command{
-		utils.CreatePercentSetter("quorum", "q", membersContract, oracle.SettingName_Member_Quorum, proposeSetting),
-		utils.CreateRplSetter("rpl-bond", "r", membersContract, oracle.SettingName_Member_RplBond, proposeSetting),
-		utils.CreateDurationSetter("challenge-cooldown", "cd", membersContract, oracle.SettingName_Member_ChallengeCooldown, proposeSetting),
-		utils.CreateDurationSetter("challenge-window", "cw", membersContract, oracle.SettingName_Member_ChallengeWindow, proposeSetting),
-		utils.CreateEthSetter("challenge-cost", "cc", membersContract, oracle.SettingName_Member_ChallengeCost, proposeSetting),
+		cliutils.CreatePercentSetter("quorum", "q", membersContract, oracle.SettingName_Member_Quorum, proposeSetting),
+		cliutils.CreateRplSetter("rpl-bond", "r", membersContract, oracle.SettingName_Member_RplBond, proposeSetting),
+		cliutils.CreateDurationSetter("challenge-cooldown", "cd", membersContract, oracle.SettingName_Member_ChallengeCooldown, proposeSetting),
+		cliutils.CreateDurationSetter("challenge-window", "cw", membersContract, oracle.SettingName_Member_ChallengeWindow, proposeSetting),
+		cliutils.CreateEthSetter("challenge-cost", "cc", membersContract, oracle.SettingName_Member_ChallengeCost, proposeSetting),
 	}
 
 	// Create the minipool settings commands
 	minipoolContract := rocketpool.ContractName_RocketDAONodeTrustedSettingsMinipool
-	minipoolSettingsCmd := utils.CreateSetterCategory("minipool", "Minipool", "n", minipoolContract)
+	minipoolSettingsCmd := cliutils.CreateSetterCategory("minipool", "Minipool", "n", minipoolContract)
 	minipoolSettingsCmd.Subcommands = []*cli.Command{
-		utils.CreateDurationSetter("scrub-period", "sp", minipoolContract, oracle.SettingName_Minipool_ScrubPeriod, proposeSetting),
-		utils.CreatePercentSetter("scrub-quorum", "sq", minipoolContract, oracle.SettingName_Minipool_ScrubQuorum, proposeSetting),
-		utils.CreateDurationSetter("promotion-scrub-period", "psp", minipoolContract, oracle.SettingName_Minipool_PromotionScrubPeriod, proposeSetting),
-		utils.CreateBoolSetter("is-scrub-penalty-enabled", "ispe", minipoolContract, oracle.SettingName_Minipool_IsScrubPenaltyEnabled, proposeSetting),
-		utils.CreateDurationSetter("bond-reduction-window-start", "brws", minipoolContract, oracle.SettingName_Minipool_BondReductionWindowStart, proposeSetting),
-		utils.CreateDurationSetter("bond-reduction-window-length", "brwl", minipoolContract, oracle.SettingName_Minipool_BondReductionWindowLength, proposeSetting),
-		utils.CreatePercentSetter("bond-reduction-cancellation-quorum", "brcq", minipoolContract, oracle.SettingName_Minipool_BondReductionCancellationQuorum, proposeSetting),
+		cliutils.CreateDurationSetter("scrub-period", "sp", minipoolContract, oracle.SettingName_Minipool_ScrubPeriod, proposeSetting),
+		cliutils.CreatePercentSetter("scrub-quorum", "sq", minipoolContract, oracle.SettingName_Minipool_ScrubQuorum, proposeSetting),
+		cliutils.CreateDurationSetter("promotion-scrub-period", "psp", minipoolContract, oracle.SettingName_Minipool_PromotionScrubPeriod, proposeSetting),
+		cliutils.CreateBoolSetter("is-scrub-penalty-enabled", "ispe", minipoolContract, oracle.SettingName_Minipool_IsScrubPenaltyEnabled, proposeSetting),
+		cliutils.CreateDurationSetter("bond-reduction-window-start", "brws", minipoolContract, oracle.SettingName_Minipool_BondReductionWindowStart, proposeSetting),
+		cliutils.CreateDurationSetter("bond-reduction-window-length", "brwl", minipoolContract, oracle.SettingName_Minipool_BondReductionWindowLength, proposeSetting),
+		cliutils.CreatePercentSetter("bond-reduction-cancellation-quorum", "brcq", minipoolContract, oracle.SettingName_Minipool_BondReductionCancellationQuorum, proposeSetting),
 	}
 
 	// Create the proposal settings commands
 	proposalContract := rocketpool.ContractName_RocketDAONodeTrustedSettingsProposals
-	proposalSettingsCmd := utils.CreateSetterCategory("proposal", "Proposal", "p", proposalContract)
+	proposalSettingsCmd := cliutils.CreateSetterCategory("proposal", "Proposal", "p", proposalContract)
 	proposalSettingsCmd.Subcommands = []*cli.Command{
-		utils.CreateDurationSetter("cooldown-time", "ct", proposalContract, oracle.SettingName_Proposal_CooldownTime, proposeSetting),
-		utils.CreateDurationSetter("vote-time", "vt", proposalContract, oracle.SettingName_Proposal_VoteTime, proposeSetting),
-		utils.CreateDurationSetter("vote-delay-time", "vdt", proposalContract, oracle.SettingName_Proposal_VoteDelayTime, proposeSetting),
-		utils.CreateDurationSetter("execute-time", "et", proposalContract, oracle.SettingName_Proposal_ExecuteTime, proposeSetting),
-		utils.CreateDurationSetter("action-time", "at", proposalContract, oracle.SettingName_Proposal_ActionTime, proposeSetting),
+		cliutils.CreateDurationSetter("cooldown-time", "ct", proposalContract, oracle.SettingName_Proposal_CooldownTime, proposeSetting),
+		cliutils.CreateDurationSetter("vote-time", "vt", proposalContract, oracle.SettingName_Proposal_VoteTime, proposeSetting),
+		cliutils.CreateDurationSetter("vote-delay-time", "vdt", proposalContract, oracle.SettingName_Proposal_VoteDelayTime, proposeSetting),
+		cliutils.CreateDurationSetter("execute-time", "et", proposalContract, oracle.SettingName_Proposal_ExecuteTime, proposeSetting),
+		cliutils.CreateDurationSetter("action-time", "at", proposalContract, oracle.SettingName_Proposal_ActionTime, proposeSetting),
 	}
 
 	app.Commands = append(app.Commands, &cli.Command{
@@ -57,7 +58,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get oracle DAO status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -72,7 +73,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the oracle DAO members",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -108,14 +109,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								ArgsUsage: "member-address member-id member-url",
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := input.ValidateArgCount(c, 3); err != nil {
+									if err := utils.ValidateArgCount(c, 3); err != nil {
 										return err
 									}
 									memberAddress, err := input.ValidateAddress("member address", c.Args().Get(0))
 									if err != nil {
 										return err
 									}
-									memberId, err := input.ValidateDAOMemberID("member ID", c.Args().Get(1))
+									memberId, err := utils.ValidateDaoMemberID("member ID", c.Args().Get(1))
 									if err != nil {
 										return err
 									}
@@ -131,7 +132,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Usage:   "Propose leaving the oracle DAO",
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := input.ValidateArgCount(c, 0); err != nil {
+									if err := utils.ValidateArgCount(c, 0); err != nil {
 										return err
 									}
 
@@ -145,12 +146,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Aliases: []string{"k"},
 								Usage:   "Propose kicking a member",
 								Flags: []cli.Flag{
-									utils.InstantiateFlag(memberFlag, "The address of the member to propose kicking"),
+									cliutils.InstantiateFlag(memberFlag, "The address of the member to propose kicking"),
 									kickFineFlag,
 								},
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := input.ValidateArgCount(c, 0); err != nil {
+									if err := utils.ValidateArgCount(c, 0); err != nil {
 										return err
 									}
 
@@ -201,7 +202,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := input.ValidateArgCount(c, 0); err != nil {
+							if err := utils.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
@@ -218,7 +219,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Action: func(c *cli.Context) error {
 							// Validate args
 							var err error
-							if err = input.ValidateArgCount(c, 1); err != nil {
+							if err = utils.ValidateArgCount(c, 1); err != nil {
 								return err
 							}
 							id, err := input.ValidateUint("proposal-id", c.Args().Get(0))
@@ -237,11 +238,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Usage:     "Cancel a proposal made by the node",
 						UsageText: "rocketpool odao proposals cancel [options]",
 						Flags: []cli.Flag{
-							utils.InstantiateFlag(proposalFlag, "The ID of the proposal to cancel"),
+							cliutils.InstantiateFlag(proposalFlag, "The ID of the proposal to cancel"),
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := input.ValidateArgCount(c, 0); err != nil {
+							if err := utils.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
@@ -255,13 +256,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"v"},
 						Usage:   "Vote on a proposal",
 						Flags: []cli.Flag{
-							utils.InstantiateFlag(proposalFlag, "The ID of the proposal to vote on"),
+							cliutils.InstantiateFlag(proposalFlag, "The ID of the proposal to vote on"),
 							voteSupportFlag,
-							utils.YesFlag,
+							cliutils.YesFlag,
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := input.ValidateArgCount(c, 0); err != nil {
+							if err := utils.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
@@ -286,7 +287,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := input.ValidateArgCount(c, 0); err != nil {
+							if err := utils.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
@@ -303,12 +304,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Join the oracle DAO (requires an executed invite proposal)",
 				UsageText: "rocketpool odao join [options]",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 					joinSwapFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -324,12 +325,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool odao leave [options]",
 				Flags: []cli.Flag{
 					leaveRefundAddressFlag,
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 

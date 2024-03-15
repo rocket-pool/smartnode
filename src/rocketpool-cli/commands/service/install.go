@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/mitchellh/go-homedir"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/urfave/cli/v2"

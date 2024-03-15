@@ -1,14 +1,13 @@
 package security
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -31,11 +30,12 @@ func cancelProposal(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	status := wallet.Data.WalletStatus
 
 	// Get cancelable proposals
 	cancelableProposals := []api.SecurityProposalDetails{}
 	for _, proposal := range proposals.Data.Proposals {
-		if bytes.Equal(proposal.ProposerAddress.Bytes(), wallet.Data.AccountAddress.Bytes()) && (proposal.State == types.ProposalState_Pending || proposal.State == types.ProposalState_Active) {
+		if (proposal.ProposerAddress == status.Address.NodeAddress) && (proposal.State == types.ProposalState_Pending || proposal.State == types.ProposalState_Active) {
 			cancelableProposals = append(cancelableProposals, proposal)
 		}
 	}

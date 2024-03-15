@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/urfave/cli/v2"
 )
@@ -29,7 +29,7 @@ func generateRewardsTree(c *cli.Context) error {
 	}
 
 	// Print archive node info
-	archiveEcUrl := cfg.Smartnode.ArchiveECUrl.Value.(string)
+	archiveEcUrl := cfg.ArchiveEcUrl.Value
 	if archiveEcUrl == "" {
 		fmt.Printf("%sNOTE: in order to generate a Merkle rewards tree for a past rewards interval, you will likely need to have access to an Execution client with archival state.\nBy default, your Smartnode's Execution client will not provide this.\n\nPlease specify the URL of an archive-capable EC in the Smartnode section of the `rocketpool service config` Terminal UI.\nIf you need one, Alchemy provides a free service which you can use: https://www.alchemy.com/ethereum%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 	} else {
@@ -77,13 +77,10 @@ func generateRewardsTree(c *cli.Context) error {
 	fmt.Printf("Your request to generate the rewards tree for interval %d has been applied, and your `watchtower` container will begin the process during its next duty check (typically 5 minutes).\nYou can follow its progress with %s`rocketpool service logs watchtower`%s.\n\n", index, terminal.ColorGreen, terminal.ColorReset)
 
 	if c.Bool("yes") || utils.Confirm("Would you like to restart the watchtower container now, so it starts generating the file immediately?") {
-		container := fmt.Sprintf("%s_watchtower", cfg.Smartnode.ProjectName.Value.(string))
-		response, err := rp.RestartContainer(container)
+		container := fmt.Sprintf("%s_watchtower", cfg.ProjectName.Value)
+		err := rp.RestartContainer(container)
 		if err != nil {
 			return fmt.Errorf("error restarting watchtower: %w", err)
-		}
-		if response != container {
-			return fmt.Errorf("unexpected output while restarting watchtower: %s", response)
 		}
 
 		fmt.Println("Done!")

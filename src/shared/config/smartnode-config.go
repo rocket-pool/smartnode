@@ -571,6 +571,139 @@ func (cfg *SmartNodeConfig) ChangeNetwork(newNetwork config.Network) {
 	cfg.updateResources()
 }
 
+// Create a copy of this configuration.
+func (cfg *SmartNodeConfig) CreateCopy() *SmartNodeConfig {
+	network := cfg.Network.Value
+	copy := NewSmartNodeConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode)
+	config.Clone(cfg, copy, network)
+	return copy
+}
+
+// Get all of the settings that have changed between an old config and this config, and get all of the containers that are affected by those changes - also returns whether or not the selected network was changed
+func (cfg *SmartNodeConfig) GetChanges(oldConfig *SmartNodeConfig) ([]*config.ChangedSection, map[config.ContainerID]bool, bool) {
+	sectionList := []*config.ChangedSection{}
+	changedContainers := map[config.ContainerID]bool{}
+
+	// Process all configs for changes
+	section, changeCount := config.GetChangedSettings(oldConfig, cfg)
+	section.Name = cfg.GetTitle()
+	if changeCount > 0 {
+		config.GetAffectedContainers(section, changedContainers)
+		sectionList = append(sectionList, section)
+	}
+
+	// Check if the network has changed
+	changeNetworks := false
+	if oldConfig.Network.Value != cfg.Network.Value {
+		changeNetworks = true
+	}
+
+	return sectionList, changedContainers, changeNetworks
+}
+
+// Checks to see if the current configuration is valid; if not, returns a list of errors
+func (cfg *SmartNodeConfig) Validate() []string {
+	errors := []string{}
+
+	// Check for illegal blank strings
+	/* TODO - this needs to be smarter and ignore irrelevant settings
+	for _, param := range config.GetParameters() {
+		if param.Type == ParameterType_String && !param.CanBeBlank && param.Value == "" {
+			errors = append(errors, fmt.Sprintf("[%s] cannot be blank.", param.Name))
+		}
+	}
+
+	for name, subconfig := range config.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			if param.Type == ParameterType_String && !param.CanBeBlank && param.Value == "" {
+				errors = append(errors, fmt.Sprintf("[%s - %s] cannot be blank.", name, param.Name))
+			}
+		}
+	}
+	*/
+
+	// Make sure the EC and BN are specified
+	if cfg.IsLocalMode() {
+		if cfg.LocalExecutionConfig.ExecutionClient.Value == config.ExecutionClient_Unknown {
+			errors = append(errors, "You do not have an Execution Client specified. Please select a client before continuing.")
+		}
+		if cfg.LocalBeaconConfig.BeaconNode.Value == config.BeaconNode_Unknown {
+			errors = append(errors, "You do not have a Beacon Node specified. Please select a client before continuing.")
+		}
+	} else {
+		if cfg.ExternalExecutionConfig.ExecutionClient.Value == config.ExecutionClient_Unknown {
+			errors = append(errors, "You do not have an Execution Client specified. Please select a client before continuing.")
+		}
+		if cfg.ExternalBeaconConfig.BeaconNode.Value == config.BeaconNode_Unknown {
+			errors = append(errors, "You do not have a Beacon Node specified. Please select a client before continuing.")
+		}
+	}
+
+	// Ensure there's a MEV-boost URL
+	if cfg.Network.Value == config.Network_Holesky || cfg.Network.Value == Network_Devnet {
+		cfg.MevBoostConfig.EnableMevBoost.Value = false
+	} else if cfg.MevBoostConfig.EnableMevBoost.Value {
+		switch cfg.MevBoostConfig.Mode.Value {
+		case config.ClientMode_Local:
+			// In local MEV-boost mode, the user has to have at least one relay
+			relays := cfg.MevBoostConfig.GetEnabledMevRelays()
+			if len(relays) == 0 {
+				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any profiles or relays enabled. Please select at least one profile or relay to use MEV-boost.")
+			}
+		case config.ClientMode_External:
+			// In external MEV-boost mode, the user has to have an external URL if they're running Docker mode
+			if cfg.IsLocalMode() && cfg.MevBoostConfig.ExternalUrl.Value == "" {
+				errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
+			}
+		default:
+			errors = append(errors, "You do not have a MEV-Boost mode configured. You must either select a mode in the `rocketpool service config` UI, or disable MEV-Boost.\nNote that MEV-Boost will be required in a future update, at which point you can no longer disable it.")
+		}
+	}
+
+	// Technically not required since native mode doesn't support addons, but defensively check to make sure a native mode
+	// user hasn't tried to configure the rescue node via the TUI
+	if cfg.AddonsConfig.RescueNode.Enabled.Value {
+		if cfg.IsNativeMode {
+			errors = append(errors, "Rescue Node add-on is incompatible with native mode.\nYou can still connect manually, visit the rescue node website for more information.")
+		}
+
+		if cfg.AddonsConfig.RescueNode.Username.Value == "" {
+			errors = append(errors, "Resuce Node requires a username.")
+		}
+		if cfg.AddonsConfig.RescueNode.Password.Value == "" {
+			errors = append(errors, "Resuce Node requires a password.")
+		}
+	}
+
+	// Ensure the selected port numbers are unique. Keeps track of all the errors
+	portMap := make(map[uint16]bool)
+	if cfg.ClientMode.Value == config.ClientMode_Local {
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconConfig.HttpPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconConfig.P2pPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconConfig.Lighthouse.P2pQuicPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconConfig.Prysm.RpcPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionConfig.EnginePort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionConfig.WebsocketPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionConfig.P2pPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalExecutionConfig.HttpPort, errors)
+	}
+	if cfg.MetricsConfig.EnableMetrics.Value {
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.BnMetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.EcMetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.ExporterMetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.DaemonMetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.ValidatorClientConfig.VcCommon.MetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.WatchtowerMetricsPort, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.Grafana.Port, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.MetricsConfig.Prometheus.Port, errors)
+	}
+	if cfg.MevBoostConfig.EnableMevBoost.Value && cfg.MevBoostConfig.Mode.Value == config.ClientMode_Local {
+		_, errors = addAndCheckForDuplicate(portMap, cfg.MevBoostConfig.Port, errors)
+	}
+
+	return errors
+}
+
 // =====================
 // === Field Helpers ===
 // =====================

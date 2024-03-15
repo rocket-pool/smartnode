@@ -9,14 +9,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/wallet"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	sharedutils "github.com/rocket-pool/smartnode/shared/utils"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const (
@@ -44,21 +44,21 @@ func getStatus(c *cli.Context) error {
 	// when the eth1 node is syncing by deferring it here.
 	//
 	// Since we collected all the data we need for this message, we can safely
-	// defer it and let it execute even if we fail further down, eg because
+	// defer it and let it execute even if we fail further down, e.g. because
 	// the EC is still syncing.
-
-	if sharedutils.IsWalletReady(walletStatus) {
+	if wallet.IsWalletReady(walletStatus) {
 		defer func() {
-			if cfg.RescueNode.GetEnabledParameter().Value.(bool) {
+			if cfg.AddonsConfig.RescueNode.Enabled.Value {
 				fmt.Println()
 
-				cfg.RescueNode.(*rescue_node.RescueNode).PrintStatusText(walletStatus.NodeAddress)
+				rn := rescue_node.NewRescueNode(cfg.AddonsConfig.RescueNode)
+				rn.PrintStatusText(walletStatus.Address.NodeAddress)
 			}
 		}()
 	}
 
 	// Print what network we're on
-	err = utils.PrintNetwork(cfg.GetNetwork(), isNew)
+	err = utils.PrintNetwork(cfg.Network.Value, isNew)
 	if err != nil {
 		return err
 	}

@@ -7,9 +7,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/shared/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -51,7 +52,7 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 		for i, member := range membersResponse.Data.Members {
 			options[i] = fmt.Sprintf("%d: %s (%s), joined %s\n", i+1, member.ID, member.Address, member.JoinedTime)
 		}
-		selection, _ := utils.Select("Which member would you like to replace?", options)
+		selection, _ := cliutils.Select("Which member would you like to replace?", options)
 		member := membersResponse.Data.Members[selection]
 		oldID = member.ID
 		oldAddress = member.Address
@@ -76,9 +77,9 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	// Get the new ID
 	newID := c.String(scReplaceNewIdFlag.Name)
 	if newID == "" {
-		newID = utils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
+		newID = cliutils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
 	}
-	newID, err = input.ValidateDAOMemberID("id", newID)
+	newID, err = utils.ValidateDaoMemberID("id", newID)
 	if err != nil {
 		return err
 	}
@@ -86,7 +87,7 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	// Get the new address
 	newAddressString := c.String(scReplaceNewAddressFlag.Name)
 	if newAddressString == "" {
-		newAddressString = utils.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
+		newAddressString = cliutils.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
 	}
 	newAddress, err := input.ValidateAddress("address", newAddressString)
 	if err != nil {

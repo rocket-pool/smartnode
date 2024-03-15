@@ -1,7 +1,7 @@
 package queue
 
 import (
-	"github.com/rocket-pool/node-manager-core/utils/input"
+	"github.com/rocket-pool/smartnode/shared/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -18,7 +18,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the deposit pool and minipool queue status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -33,7 +33,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Process the deposit pool",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 

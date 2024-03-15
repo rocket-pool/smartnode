@@ -5,16 +5,16 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/node-manager-core/eth"
 	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 func dissolveMinipools(c *cli.Context) error {

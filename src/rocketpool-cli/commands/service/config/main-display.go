@@ -5,9 +5,9 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 // This represents the primary TUI for the configuration command
@@ -25,16 +25,15 @@ type mainDisplay struct {
 	isNative            bool
 	previousWidth       int
 	previousHeight      int
-	PreviousConfig      *config.SmartNodeConfig
-	Config              *config.SmartNodeConfig
+	PreviousConfig      *snCfg.SmartNodeConfig
+	Config              *snCfg.SmartNodeConfig
 	ShouldSave          bool
-	ContainersToRestart []cfgtypes.ContainerID
+	ContainersToRestart []config.ContainerID
 	ChangeNetworks      bool
 }
 
 // Creates a new MainDisplay instance.
-func NewMainDisplay(app *tview.Application, previousConfig *config.SmartNodeConfig, config *config.SmartNodeConfig, isNew bool, isUpdate bool, isNative bool) *mainDisplay {
-
+func NewMainDisplay(app *tview.Application, previousConfig *snCfg.SmartNodeConfig, config *snCfg.SmartNodeConfig, isNew bool, isUpdate bool, isNative bool) *mainDisplay {
 	// Create a copy of the original config for comparison purposes
 	if previousConfig == nil {
 		previousConfig = config.CreateCopy()

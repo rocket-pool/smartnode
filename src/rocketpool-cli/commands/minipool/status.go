@@ -5,16 +5,16 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli/v2"
 
+	nmc_utils "github.com/rocket-pool/node-manager-core/utils"
+	"github.com/rocket-pool/node-manager-core/utils/math"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/hex"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const (
@@ -175,7 +175,7 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 	// Validator details - prelaunch and staking minipools
 	if minipool.Status.Status == types.MinipoolStatus_Prelaunch ||
 		minipool.Status.Status == types.MinipoolStatus_Staking {
-		fmt.Printf("Validator pubkey:      %s\n", hex.AddPrefix(minipool.ValidatorPubkey.Hex()))
+		fmt.Printf("Validator pubkey:      %s\n", nmc_utils.AddPrefix(minipool.ValidatorPubkey.Hex()))
 		fmt.Printf("Validator index:       %s\n", minipool.Validator.Index)
 		if minipool.Validator.Exists {
 			if minipool.Validator.Active {

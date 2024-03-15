@@ -9,11 +9,11 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/node-manager-core/utils/math"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 // Config
@@ -258,12 +258,9 @@ func nodeDeposit(c *cli.Context) error {
 	if cfg.IsNativeMode {
 		fmt.Println("Your Validator Client must be restarted in order to load the new validator key so it can begin attesting once it has been activated on the Beacon Chain.")
 		if c.Bool(utils.YesFlag.Name) || utils.Confirm("Would you like to restart the Validator Client now?") {
-			success, err := rp.Api.Service.RestartVc()
+			_, err := rp.Api.Service.RestartVc()
 			if err != nil {
 				fmt.Printf("%sWARNING: Error restarting Validator Client: %s%s\n", terminal.ColorRed, err.Error(), terminal.ColorReset)
-			}
-			if !success.Data.Success {
-				fmt.Printf("%sWARNING: restarting the Validator Client failed.%s\n", terminal.ColorYellow, terminal.ColorReset)
 			} else {
 				fmt.Println("Successfully restarted the Validator Client. Your new validator key is now loaded.")
 				return nil

@@ -3,8 +3,8 @@ package network
 import (
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // Register commands
@@ -21,7 +21,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool network stats",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -37,7 +37,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool network timezone-map",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -53,7 +53,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool network node-fee",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -69,7 +69,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool network rpl-price",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -93,11 +93,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  generateTreeIndexFlag,
 						Usage: "The index of the rewards interval you want to generate the tree for",
 					},
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -113,7 +113,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool network dao-proposals",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 

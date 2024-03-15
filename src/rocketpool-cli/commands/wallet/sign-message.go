@@ -7,8 +7,8 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	sharedutils "github.com/rocket-pool/smartnode/shared/utils"
 )
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 )
 
@@ -31,8 +31,8 @@ func createLot(c *cli.Context) error {
 		}
 		return nil
 	}
-	if response.Data.txInfo.SimulationResult.SimulationError != "" {
-		return fmt.Errorf("error simulating create lot: %s", response.Data.txInfo.SimulationResult.SimulationError)
+	if response.Data.TxInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("error simulating create lot: %s", response.Data.TxInfo.SimulationResult.SimulationError)
 	}
 
 	// Run the TX

@@ -613,35 +613,36 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir strin
 	deployedContainers := []string{}
 
 	// These containers always run
-	toDeploy := []string{
-		config.NodeSuffix,
-		string(config.ContainerID_Watchtower),
-		config.ValidatorClientSuffix,
+	toDeploy := []nmc_config.ContainerID{
+		nmc_config.ContainerID_Daemon,
+		config.ContainerID_Watchtower,
+		nmc_config.ContainerID_ValidatorClient,
 	}
 
 	// Check if we are running the Execution Layer locally
 	if cfg.IsLocalMode() {
-		toDeploy = append(toDeploy, string(nmc_config.ContainerID_ExecutionClient))
-		toDeploy = append(toDeploy, string(nmc_config.ContainerID_BeaconNode))
+		toDeploy = append(toDeploy, nmc_config.ContainerID_ExecutionClient)
+		toDeploy = append(toDeploy, nmc_config.ContainerID_BeaconNode)
 	}
 
 	// Check the metrics containers
 	if cfg.MetricsConfig.EnableMetrics.Value {
 		toDeploy = append(toDeploy,
-			string(nmc_config.ContainerID_Grafana),
-			string(nmc_config.ContainerID_Exporter),
-			string(nmc_config.ContainerID_Prometheus),
+			nmc_config.ContainerID_Grafana,
+			nmc_config.ContainerID_Exporter,
+			nmc_config.ContainerID_Prometheus,
 		)
 	}
 
 	// Check if we are running the MEV-Boost container locally
 	if cfg.MevBoostConfig.EnableMevBoost.Value && cfg.MevBoostConfig.Mode.Value == nmc_config.ClientMode_Local {
-		toDeploy = append(toDeploy, string(nmc_config.ContainerID_MevBoost))
+		toDeploy = append(toDeploy, nmc_config.ContainerID_MevBoost)
 	}
 
 	// Deploy main containers
-	for _, containerName := range toDeploy {
-		containers, err := composePaths.File(string(containerName)).Write(cfg)
+	for _, containerID := range toDeploy {
+		containerName := config.GetContainerName(containerID)
+		containers, err := composePaths.File(containerName).Write(cfg)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not create %s container definition: %w", containerName, err)
 		}

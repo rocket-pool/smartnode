@@ -33,7 +33,7 @@ func (f *securityProposeInviteContextFactory) Create(args url.Values) (*security
 		handler: f.handler,
 	}
 	inputErrs := []error{
-		server.ValidateArg("id", args, utils.ValidateDAOMemberID, &c.id),
+		server.ValidateArg("id", args, utils.ValidateDaoMemberID, &c.id),
 		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
 	}
 	return c, errors.Join(inputErrs...)

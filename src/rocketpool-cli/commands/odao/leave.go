@@ -6,8 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 )
 
@@ -32,7 +32,7 @@ func leave(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		bondRefundAddress = wallet.Data.AccountAddress
+		bondRefundAddress = wallet.Data.WalletStatus.Address.NodeAddress
 	} else if c.String(leaveRefundAddressFlag.Name) != "" {
 		// Parse bond refund address
 		bondRefundAddress = common.HexToAddress(c.String(leaveRefundAddressFlag.Name))
@@ -44,8 +44,9 @@ func leave(c *cli.Context) error {
 		}
 
 		// Prompt for node address
-		if utils.Confirm(fmt.Sprintf("Would you like to refund your RPL bond to your node account (%s)?", wallet.Data.AccountAddress.Hex())) {
-			bondRefundAddress = wallet.Data.AccountAddress
+		address := wallet.Data.WalletStatus.Address.NodeAddress
+		if utils.Confirm(fmt.Sprintf("Would you like to refund your RPL bond to your node account (%s)?", address.Hex())) {
+			bondRefundAddress = address
 		} else {
 			// Prompt for custom address
 			inputAddress := utils.Prompt("Please enter the address to refund your RPL bond to:", "^0x[0-9a-fA-F]{40}$", "Invalid address")

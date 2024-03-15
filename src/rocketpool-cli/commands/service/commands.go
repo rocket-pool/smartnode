@@ -6,11 +6,12 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/node-manager-core/config"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/shared/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 var (
@@ -27,19 +28,16 @@ var (
 )
 
 // Creates CLI argument flags from the parameters of the configuration struct
-func createFlagsFromConfigParams(sectionName string, params []*cfgtypes.Parameter, configFlags []cli.Flag, network cfgtypes.Network) []cli.Flag {
+func createFlagsFromConfigParams(sectionName string, params []config.IParameter, configFlags []cli.Flag, network config.Network) []cli.Flag {
 	for _, param := range params {
 		var paramName string
 		if sectionName == "" {
-			paramName = param.ID
+			paramName = param.GetCommon().ID
 		} else {
-			paramName = fmt.Sprintf("%s-%s", sectionName, param.ID)
+			paramName = fmt.Sprintf("%s-%s", sectionName, param.GetCommon().ID)
 		}
 
-		defaultVal, err := param.GetDefault(network)
-		if err != nil {
-			panic(fmt.Sprintf("Error getting default value for [%s]: %s\n", paramName, err.Error()))
-		}
+		defaultVal := param.GetDefaultAsAny(network)
 
 		switch param.Type {
 		case cfgtypes.ParameterType_Bool:
@@ -97,8 +95,8 @@ func createFlagsFromConfigParams(sectionName string, params []*cfgtypes.Paramete
 func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 	configFlags := []cli.Flag{}
-	cfgTemplate := config.NewRocketPoolConfig("", false)
-	network := cfgTemplate.Smartnode.Network.Value.(cfgtypes.Network)
+	cfgTemplate := snCfg.NewSmartNodeConfig("", false)
+	network := cfgTemplate.Network.Value
 
 	// Root params
 	configFlags = createFlagsFromConfigParams("", cfgTemplate.GetParameters(), configFlags, network)
@@ -113,7 +111,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage Rocket Pool service",
 		Flags: []cli.Flag{
-			utils.ComposeFileFlag,
+			cliutils.ComposeFileFlag,
 		},
 		Subcommands: []*cli.Command{
 			{
@@ -121,7 +119,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Aliases: []string{"i"},
 				Usage:   "Install the Rocket Pool service",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 					installVerboseFlag,
 					installNoDepsFlag,
 					installPathFlag,
@@ -129,7 +127,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -145,7 +143,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags:   configFlags,
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -160,7 +158,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the sync progress of the Execution and Consensus clients",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -175,7 +173,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "View the Rocket Pool service status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -190,11 +188,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Start the Rocket Pool service",
 				Flags: []cli.Flag{
 					ignoreSlashTimerFlag,
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -209,11 +207,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Pause the Rocket Pool service",
 				UsageText: "rocketpool service pause [options]",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -242,7 +240,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "View the Rocket Pool service stats",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -256,7 +254,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage: "View the Rocket Pool service docker compose config",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -271,7 +269,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "View the Rocket Pool service version information",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -286,7 +284,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Shuts down the main ETH1 client and prunes its database, freeing up disk space, then restarts it when it's done.",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -300,13 +298,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Aliases: []string{"d"},
 				Usage:   "Install the update tracker that provides the available system update count to the metrics dashboard",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 					installUpdateTrackerVerboseFlag,
 					installUpdateTrackerVersionFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -321,7 +319,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Checks if your CPU supports all of the features required by the \"modern\" version of certain client images. If not, it prints what features are missing.",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -335,7 +333,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage: "Generate YAML that shows the current configuration schema, including all of the parameters and their descriptions",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -352,11 +350,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					exportEcDataForceFlag,
 					exportEcDataDirtyFlag,
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					targetDir := c.Args().Get(0)
@@ -373,7 +371,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				ArgsUsage: "source-folder",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					sourceDir := c.Args().Get(0)
@@ -389,7 +387,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   fmt.Sprintf("%sDeletes the main Execution client's chain data and resyncs it from scratch. Only use this as a last resort!%s", terminal.ColorRed, terminal.ColorReset),
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -404,7 +402,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   fmt.Sprintf("%sDeletes the Consensus client's chain data and resyncs it from scratch. Only use this as a last resort!%s", terminal.ColorRed, terminal.ColorReset),
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -418,11 +416,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Aliases: []string{"t"},
 				Usage:   fmt.Sprintf("%sDeletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Also removes your entire `.rocketpool` configuration folder, including your wallet, password, and validator keys. Only use this if you are cleaning up the Smartnode and want to start over!%s", terminal.ColorRed, terminal.ColorReset),
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 

@@ -6,9 +6,9 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 // Constants
@@ -17,17 +17,16 @@ const reviewPageID string = "review-settings"
 // The changed settings review page
 type ReviewPage struct {
 	md              *mainDisplay
-	changedSettings map[string][]cfgtypes.ChangedSetting
+	changedSettings []*config.ChangedSection
 	page            *page
 }
 
 // Create a page to review any changes
-func NewReviewPage(md *mainDisplay, oldConfig *config.SmartNodeConfig, newConfig *config.SmartNodeConfig) *ReviewPage {
-
-	var changedSettings map[string][]cfgtypes.ChangedSetting
-	var totalAffectedContainers map[cfgtypes.ContainerID]bool
+func NewReviewPage(md *mainDisplay, oldConfig *snCfg.SmartNodeConfig, newConfig *snCfg.SmartNodeConfig) *ReviewPage {
+	var changedSettings []*config.ChangedSection
+	var totalAffectedContainers map[config.ContainerID]bool
 	var changeNetworks bool
-	var containersToRestart []cfgtypes.ContainerID
+	var containersToRestart []config.ContainerID
 
 	// Create the visual list for all of the changed settings
 	changeBox := tview.NewTextView().
@@ -45,36 +44,31 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.SmartNodeConfig, newConfig
 			builder.WriteString(fmt.Sprintf("%s\n\n", err))
 		}
 	} else {
-		// Get the map of changed settings by category
 		changedSettings, totalAffectedContainers, changeNetworks = newConfig.GetChanges(oldConfig)
 
+		// Add changed containers if this is an update
 		if md.isUpdate {
-			totalAffectedContainers[cfgtypes.ContainerID_Api] = true
-			totalAffectedContainers[cfgtypes.ContainerID_Node] = true
-			totalAffectedContainers[cfgtypes.ContainerID_Watchtower] = true
-
-			if newConfig.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && newConfig.ExecutionClient.Value.(cfgtypes.ExecutionClient) != cfgtypes.ExecutionClient_Geth {
-				totalAffectedContainers[cfgtypes.ContainerID_Eth1] = true
-			}
+			totalAffectedContainers[config.ContainerID_Daemon] = true
+			totalAffectedContainers[snCfg.ContainerID_Watchtower] = true
 			builder.WriteString(fmt.Sprintf("Updated to Smartnode v%s (will affect several containers)\n\n", shared.RocketPoolVersion))
 		}
 
-		for categoryName, changedSettingsList := range changedSettings {
-			if len(changedSettingsList) > 0 {
-				builder.WriteString(fmt.Sprintf("%s\n", categoryName))
-				for _, pair := range changedSettingsList {
-					builder.WriteString(fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue))
-				}
-				builder.WriteString("\n")
+		// Get the map of changed settings by section name
+		if len(changedSettings) > 0 {
+			for _, change := range changedSettings {
+				addChangesToDescription(change, "", &builder)
 			}
 		}
 
+		// Print the list of containers to restart
 		if builder.String() == "" {
 			builder.WriteString("<No changes>")
 		} else {
 			builder.WriteString("The following containers must be restarted for these changes to take effect:")
-			for container, _ := range totalAffectedContainers {
-				builder.WriteString(fmt.Sprintf("\n\t%v", container))
+			for container := range totalAffectedContainers {
+				suffix := snCfg.GetContainerName(container)
+				containerName := oldConfig.GetDockerArtifactName(suffix)
+				builder.WriteString(fmt.Sprintf("\n\t%s", containerName))
 				containersToRestart = append(containersToRestart, container)
 			}
 		}
@@ -221,5 +215,29 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.SmartNodeConfig, newConfig
 		changedSettings: changedSettings,
 		page:            page,
 	}
+}
 
+// Add all of the changed parameters to the description builder
+func addChangesToDescription(section *config.ChangedSection, titlePrefix string, description *strings.Builder) {
+	// Get the full section name, including the title
+	var sectionName string
+	if titlePrefix == "" {
+		sectionName = section.Name
+	} else {
+		sectionName = fmt.Sprintf("%s > %s", titlePrefix, section.Name)
+	}
+
+	// Handle the parameters
+	if len(section.Settings) > 0 {
+		description.WriteString(fmt.Sprintf("{%s}\n", sectionName))
+		for _, setting := range section.Settings {
+			description.WriteString(fmt.Sprintf("\t%s: %s => %s\n", setting.Name, setting.OldValue, setting.NewValue))
+		}
+		description.WriteString("\n")
+	}
+
+	// Handle the subsections
+	for _, subsection := range section.Subsections {
+		addChangesToDescription(subsection, sectionName, description)
+	}
 }

@@ -4,7 +4,8 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // Register commands
@@ -28,7 +29,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -51,7 +52,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -67,14 +68,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool set-withdrawal-creds minipool-address [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    utils.MnemonicFlag,
+						Name:    cliutils.MnemonicFlag,
 						Aliases: []string{"m"},
 						Usage:   "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
 					},
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					address, err := input.ValidateAddress("minipool-address", c.Args().Get(0))
@@ -93,19 +94,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool minipool import-key minipool-address [options]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    utils.MnemonicFlag,
+						Name:    cliutils.MnemonicFlag,
 						Aliases: []string{"m"},
 						Usage:   "Use this flag to provide the mnemonic for your validator key instead of typing it interactively.",
 					},
 					&cli.BoolFlag{
-						Name:  utils.NoRestartFlag,
+						Name:  cliutils.NoRestartFlag,
 						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
 					},
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					address, err := input.ValidateAddress("minipool-address", c.Args().Get(0))
@@ -131,7 +132,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -154,7 +155,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -177,7 +178,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -200,7 +201,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -228,7 +229,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -276,7 +277,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Exit staking minipools from the beacon chain",
 				UsageText: "rocketpool minipool exit [options]",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 					&cli.StringFlag{
 						Name:    minipoolsFlag,
 						Aliases: []string{"m"},
@@ -285,7 +286,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -312,7 +313,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -335,7 +336,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -358,7 +359,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -381,7 +382,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 1); err != nil {
+					if err := utils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 					setting, err := input.ValidateBool("setting", c.Args().Get(0))
@@ -423,7 +424,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -451,7 +452,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 

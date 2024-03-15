@@ -7,17 +7,17 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/node-manager-core/utils/math"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const (
@@ -76,7 +76,7 @@ func rescueDissolved(c *cli.Context) error {
 			balanceCompletedMinipools = append(balanceCompletedMinipools, mp)
 			continue
 		}
-		if mp.BeaconState != sharedtypes.ValidatorState_PendingInitialized {
+		if mp.BeaconState != beacon.ValidatorState_PendingInitialized {
 			invalidBeaconStateMinipools = append(invalidBeaconStateMinipools, mp)
 			continue
 		}

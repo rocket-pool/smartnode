@@ -6,52 +6,53 @@ import (
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
 	// Create the auction settings commands
 	auctionContract := rocketpool.ContractName_RocketDAOProtocolSettingsAuction
-	auctionSettingsCmd := utils.CreateSetterCategory("auction", "Auction", "a", auctionContract)
+	auctionSettingsCmd := cliutils.CreateSetterCategory("auction", "Auction", "a", auctionContract)
 	auctionSettingsCmd.Subcommands = []*cli.Command{
-		utils.CreateBoolSetter("is-create-lot-enabled", "icle", auctionContract, protocol.SettingName_Auction_IsCreateLotEnabled, proposeSetting),
-		utils.CreateBoolSetter("is-bid-on-lot-enabled", "ibole", auctionContract, protocol.SettingName_Auction_IsBidOnLotEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-create-lot-enabled", "icle", auctionContract, protocol.SettingName_Auction_IsCreateLotEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-bid-on-lot-enabled", "ibole", auctionContract, protocol.SettingName_Auction_IsBidOnLotEnabled, proposeSetting),
 	}
 
 	// Create the deposit settings commands
 	depositContract := rocketpool.ContractName_RocketDAOProtocolSettingsDeposit
-	depositSettingsCmd := utils.CreateSetterCategory("deposit", "Deposit pool", "d", depositContract)
+	depositSettingsCmd := cliutils.CreateSetterCategory("deposit", "Deposit pool", "d", depositContract)
 	depositSettingsCmd.Subcommands = []*cli.Command{
-		utils.CreateBoolSetter("is-depositing-enabled", "ide", depositContract, protocol.SettingName_Deposit_IsDepositingEnabled, proposeSetting),
-		utils.CreateBoolSetter("are-deposit-assignments-enabled", "adae", depositContract, protocol.SettingName_Deposit_AreDepositAssignmentsEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-depositing-enabled", "ide", depositContract, protocol.SettingName_Deposit_IsDepositingEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("are-deposit-assignments-enabled", "adae", depositContract, protocol.SettingName_Deposit_AreDepositAssignmentsEnabled, proposeSetting),
 	}
 
 	// Create the minipool settings commands
 	minipoolContract := rocketpool.ContractName_RocketDAOProtocolSettingsMinipool
-	minipoolSettingsCmd := utils.CreateSetterCategory("minipool", "Minipool", "m", minipoolContract)
+	minipoolSettingsCmd := cliutils.CreateSetterCategory("minipool", "Minipool", "m", minipoolContract)
 	minipoolSettingsCmd.Subcommands = []*cli.Command{
-		utils.CreateBoolSetter("is-submit-withdrawable-enabled", "iswe", minipoolContract, protocol.SettingName_Minipool_IsSubmitWithdrawableEnabled, proposeSetting),
-		utils.CreateBoolSetter("is-bond-reduction-enabled", "ibre", minipoolContract, protocol.SettingName_Minipool_IsBondReductionEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-submit-withdrawable-enabled", "iswe", minipoolContract, protocol.SettingName_Minipool_IsSubmitWithdrawableEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-bond-reduction-enabled", "ibre", minipoolContract, protocol.SettingName_Minipool_IsBondReductionEnabled, proposeSetting),
 	}
 
 	// Create the network settings commands
 	networkContract := rocketpool.ContractName_RocketDAOProtocolSettingsNetwork
-	networkSettingsCmd := utils.CreateSetterCategory("network", "Network", "ne", networkContract)
+	networkSettingsCmd := cliutils.CreateSetterCategory("network", "Network", "ne", networkContract)
 	networkSettingsCmd.Subcommands = []*cli.Command{
-		utils.CreateBoolSetter("is-submit-balances-enabled", "isbe", networkContract, protocol.SettingName_Network_IsSubmitBalancesEnabled, proposeSetting),
-		utils.CreateBoolSetter("is-submit-prices-enabled", "ispe", networkContract, protocol.SettingName_Network_IsSubmitPricesEnabled, proposeSetting),
-		utils.CreateBoolSetter("is-submit-rewards-enabled", "isre", networkContract, protocol.SettingName_Network_IsSubmitRewardsEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-submit-balances-enabled", "isbe", networkContract, protocol.SettingName_Network_IsSubmitBalancesEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-submit-prices-enabled", "ispe", networkContract, protocol.SettingName_Network_IsSubmitPricesEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-submit-rewards-enabled", "isre", networkContract, protocol.SettingName_Network_IsSubmitRewardsEnabled, proposeSetting),
 	}
 
 	// Create the node settings commands
 	nodeContract := rocketpool.ContractName_RocketDAOProtocolSettingsNode
-	nodeSettingsCmd := utils.CreateSetterCategory("node", "Node", "no", nodeContract)
+	nodeSettingsCmd := cliutils.CreateSetterCategory("node", "Node", "no", nodeContract)
 	nodeSettingsCmd.Subcommands = []*cli.Command{
-		utils.CreateBoolSetter("is-registration-enabled", "ire", nodeContract, protocol.SettingName_Node_IsRegistrationEnabled, proposeSetting),
-		utils.CreateBoolSetter("is-smoothing-pool-registration-enabled", "ispre", nodeContract, protocol.SettingName_Node_IsSmoothingPoolRegistrationEnabled, proposeSetting),
-		utils.CreateBoolSetter("is-depositing-enabled", "ide", nodeContract, protocol.SettingName_Node_IsDepositingEnabled, proposeSetting),
-		utils.CreateBoolSetter("are-vacant-minipools-enabled", "avme", nodeContract, protocol.SettingName_Node_AreVacantMinipoolsEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-registration-enabled", "ire", nodeContract, protocol.SettingName_Node_IsRegistrationEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-smoothing-pool-registration-enabled", "ispre", nodeContract, protocol.SettingName_Node_IsSmoothingPoolRegistrationEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("is-depositing-enabled", "ide", nodeContract, protocol.SettingName_Node_IsDepositingEnabled, proposeSetting),
+		cliutils.CreateBoolSetter("are-vacant-minipools-enabled", "avme", nodeContract, protocol.SettingName_Node_AreVacantMinipoolsEnabled, proposeSetting),
 	}
 
 	app.Commands = append(app.Commands, &cli.Command{
@@ -65,7 +66,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get security council status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -80,7 +81,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the security council members",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -104,13 +105,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Aliases: []string{"i"},
 								Usage:   "Propose inviting a new member",
 								Flags: []cli.Flag{
-									utils.YesFlag,
+									cliutils.YesFlag,
 									inviteIdFlag,
 									inviteAddressFlag,
 								},
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := input.ValidateArgCount(c, 0); err != nil {
+									if err := utils.ValidateArgCount(c, 0); err != nil {
 										return err
 									}
 
@@ -124,11 +125,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Aliases: []string{"l"},
 								Usage:   "Propose leaving the security council",
 								Flags: []cli.Flag{
-									utils.YesFlag,
+									cliutils.YesFlag,
 								},
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := input.ValidateArgCount(c, 0); err != nil {
+									if err := utils.ValidateArgCount(c, 0); err != nil {
 										return err
 									}
 
@@ -142,12 +143,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Aliases: []string{"k"},
 								Usage:   "Propose kicking one or more members",
 								Flags: []cli.Flag{
-									utils.YesFlag,
+									cliutils.YesFlag,
 									kickAddressesFlag,
 								},
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := input.ValidateArgCount(c, 0); err != nil {
+									if err := utils.ValidateArgCount(c, 0); err != nil {
 										return err
 									}
 
@@ -161,14 +162,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Aliases: []string{"r"},
 								Usage:   "Propose replacing an existing member with a new member",
 								Flags: []cli.Flag{
-									utils.YesFlag,
+									cliutils.YesFlag,
 									replaceExistingAddressFlag,
 									replaceNewIdFlag,
 									replaceNewAddressFlag,
 								},
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := input.ValidateArgCount(c, 0); err != nil {
+									if err := utils.ValidateArgCount(c, 0); err != nil {
 										return err
 									}
 
@@ -208,7 +209,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := input.ValidateArgCount(c, 0); err != nil {
+							if err := utils.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
@@ -225,7 +226,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Action: func(c *cli.Context) error {
 							// Validate args
 							var err error
-							if err = input.ValidateArgCount(c, 1); err != nil {
+							if err = utils.ValidateArgCount(c, 1); err != nil {
 								return err
 							}
 							id, err := input.ValidateUint("proposal-id", c.Args().Get(0))
@@ -243,11 +244,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"c"},
 						Usage:   "Cancel a proposal made by the node",
 						Flags: []cli.Flag{
-							utils.InstantiateFlag(proposalFlag, "The ID of the proposal to cancel"),
+							cliutils.InstantiateFlag(proposalFlag, "The ID of the proposal to cancel"),
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := input.ValidateArgCount(c, 0); err != nil {
+							if err := utils.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
@@ -261,13 +262,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"v"},
 						Usage:   "Vote on a proposal",
 						Flags: []cli.Flag{
-							utils.InstantiateFlag(proposalFlag, "The ID of the proposal to vote on"),
+							cliutils.InstantiateFlag(proposalFlag, "The ID of the proposal to vote on"),
 							voteSupportFlag,
-							utils.YesFlag,
+							cliutils.YesFlag,
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := input.ValidateArgCount(c, 0); err != nil {
+							if err := utils.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
@@ -292,7 +293,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := input.ValidateArgCount(c, 0); err != nil {
+							if err := utils.ValidateArgCount(c, 0); err != nil {
 								return err
 							}
 
@@ -308,11 +309,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Aliases: []string{"j"},
 				Usage:   "Join the security council (requires an executed invite proposal)",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -326,11 +327,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Aliases: []string{"l"},
 				Usage:   "Leave the security council (requires an executed leave proposal)",
 				Flags: []cli.Flag{
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 

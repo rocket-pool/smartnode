@@ -51,12 +51,6 @@ const (
 	FeeRecipientFilename               string = "rp-fee-recipient.txt"
 	MinipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d.json"
 
-	// Container Names
-	NodeSuffix            string = "node"
-	ExecutionClientSuffix string = "eth1"
-	BeaconNodeSuffix      string = "eth2"
-	ValidatorClientSuffix string = "validator"
-
 	// Snapshot
 	SnapshotID string = "rocketpool-dao.eth"
 )

@@ -21,13 +21,13 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/rocket-pool/node-manager-core/eth"
+	nmc_utils "github.com/rocket-pool/node-manager-core/utils"
+	"github.com/rocket-pool/node-manager-core/utils/math"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const (
@@ -331,11 +331,10 @@ func promptMinNodeFee(networkCurrentNodeFee, networkMinNodeFee float64) float64 
 func promptForSoloKeyPassword(rp *client.Client, cfg *config.SmartNodeConfig, pubkey beacon.ValidatorPubkey) (string, error) {
 
 	// Check for the custom key directory
-	datapath, err := homedir.Expand(cfg.Smartnode.DataPath.Value.(string))
+	customKeyDir, err := homedir.Expand(cfg.GetCustomKeyPath())
 	if err != nil {
-		return "", fmt.Errorf("error expanding data directory: %w", err)
+		return "", fmt.Errorf("error expanding custom keys directory: %w", err)
 	}
-	customKeyDir := filepath.Join(datapath, "custom-keys")
 	info, err := os.Stat(customKeyDir)
 	if os.IsNotExist(err) || !info.IsDir() {
 		return "", nil
@@ -372,7 +371,7 @@ func promptForSoloKeyPassword(rp *client.Client, cfg *config.SmartNodeConfig, pu
 				fmt.Sprintf("Please enter the password that the keystore for %s was encrypted with:", pubkey.Hex()), "^.*$", "",
 			)
 
-			formattedPubkey := strings.ToUpper(hexutils.RemovePrefix(pubkey.Hex()))
+			formattedPubkey := strings.ToUpper(nmc_utils.RemovePrefix(pubkey.Hex()))
 			pubkeyPasswords[formattedPubkey] = password
 
 			fmt.Println()
@@ -389,7 +388,7 @@ func promptForSoloKeyPassword(rp *client.Client, cfg *config.SmartNodeConfig, pu
 	if err != nil {
 		return "", fmt.Errorf("error serializing keystore passwords file: %w", err)
 	}
-	passwordFile := filepath.Join(datapath, "custom-key-passwords")
+	passwordFile := cfg.GetCustomKeyPasswordFilePath()
 	err = os.WriteFile(passwordFile, fileBytes, 0600)
 	if err != nil {
 		return "", fmt.Errorf("error writing keystore passwords file: %w", err)

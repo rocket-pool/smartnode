@@ -4,7 +4,8 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
 // Register commands
@@ -21,7 +22,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool auction status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -37,7 +38,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool auction lots",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -53,7 +54,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool auction create-lot",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -78,11 +79,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "The amount of ETH to bid (or 'max')",
 					},
-					utils.YesFlag,
+					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -117,7 +118,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
@@ -140,7 +141,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := input.ValidateArgCount(c, 0); err != nil {
+					if err := utils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 

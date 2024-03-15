@@ -35,7 +35,7 @@ func (f *oracleDaoProposeInviteContextFactory) Create(args url.Values) (*oracleD
 	}
 	inputErrs := []error{
 		server.ValidateArg("address", args, input.ValidateAddress, &c.address),
-		server.ValidateArg("id", args, utils.ValidateDAOMemberID, &c.id),
+		server.ValidateArg("id", args, utils.ValidateDaoMemberID, &c.id),
 		server.GetStringFromVars("url", args, &c.url),
 	}
 	return c, errors.Join(inputErrs...)
