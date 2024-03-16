@@ -17,3 +17,15 @@ Dockerfile
 /rocketpool/rocketpool-daemon-linux-amd64
 /rocketpool/rocketpool-daemon-darwin-arm64
 /rocketpool/rocketpool-daemon-linux-arm64
+
+# Packaging
+build/
+*.build
+*.dsc
+*.tar.gz
+*debhelper*
+install/packages/debian/rocketpool
+install/packages/debian/debian/rocketpool*
+install/packages/debian/_build/
+bin
+pkg

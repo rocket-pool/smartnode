@@ -30,6 +30,18 @@ build_cli() {
 }
 
 
+# Builds the smart node distro packages
+build_distro_packages() {
+    cd smartnode || fail "Directory ${PWD}/smartnode does not exist or you don't have permissions to access it."
+
+    echo -n "Building deb packages..."
+    docker buildx build --rm -f install/packages/debian/package.dockerfile --output ../$VERSION --target package . || fail "Error building deb packages."
+    echo "done!"
+
+    cd ..
+}
+
+
 # Builds the .tar.xz file packages with the RP configuration files
 build_install_packages() {
     cd smartnode || fail "Directory ${PWD}/smartnode does not exist or you don't have permissions to access it."
@@ -116,8 +128,9 @@ usage() {
 # Parse arguments
 while getopts "acpdlv:" FLAG; do
     case "$FLAG" in
-        a) CLI=true PACKAGES=true DAEMON=true LATEST_MANIFEST=true ;;
+        a) CLI=true DISTRO=true PACKAGES=true DAEMON=true ;;
         c) CLI=true ;;
+        t) DISTRO=true ;;
         p) PACKAGES=true ;;
         d) DAEMON=true ;;
         l) LATEST_MANIFEST=true ;;
@@ -146,3 +159,43 @@ fi
 if [ "$LATEST_MANIFEST" = true ]; then
     build_latest_docker_manifest
 fi
+
+
+# =======================
+# === Manual Routines ===
+# =======================
+
+# Builds the deb package builder image
+build_deb_builder() {
+    cd smartnode || fail "Directory ${PWD}/smartnode does not exist or you don't have permissions to access it."
+
+    echo -n "Building deb builder..."
+    docker buildx build --rm --platform=linux/amd64,linux/arm64 -t rocketpool/smartnode-deb-builder:$VERSION -f install/packages/debian/builder.dockerfile --push . || fail "Error building deb builder."
+    echo "done!"
+
+    cd ..
+}
+
+
+# Builds the prune provisioner image and pushes it to Docker Hub
+build_docker_prune_provision() {
+    cd smartnode || fail "Directory ${PWD}/smartnode does not exist or you don't have permissions to access it."
+
+    echo "Building Prune Provisioner image..."
+    docker buildx build --platform=linux/amd64,linux/arm64 -t rocketpool/eth1-prune-provision:$VERSION -f util-containers/prune-provision.dockerfile --push . || fail "Error building Prune Provision image."
+    echo "done!"
+
+    cd ..
+}
+
+
+# Builds the EC migrator image and pushes it to Docker Hub
+build_ec_migrator() {
+    cd smartnode || fail "Directory ${PWD}/smartnode does not exist or you don't have permissions to access it."
+
+    echo "Building EC Migrator image..."
+    docker buildx build --platform=linux/amd64,linux/arm64 -t rocketpool/ec-migrator:$VERSION -f util-containers/ec-migrator.dockerfile --push . || fail "Error building EC Migrator image."
+    echo "done!"
+
+    cd ..
+}

@@ -1,0 +1,24 @@
+Source: rocketpool
+Maintainer: Rocket Pool <dev@rocketpool.net>
+Section: utils
+Priority: optional
+Build-Depends: debhelper (>= 13.4),
+               debhelper-compat (= 13),
+               dh-sequence-golang,
+               golang-any (>= 1.21.0)
+Standards-Version: 4.6.1
+Vcs-Browser: https://github.com/rocket-pool/smartnode
+Vcs-Git: https://github.com/rocket-pool/smartnode.git
+XS-Go-Import-Path: github.com/rocket-pool/smartnode
+
+Package: rocketpool
+Architecture: any
+Section: utils
+Priority: optional
+Depends:  chrony (>= 4.0),
+          docker-ce (>= 5:24.0.9),
+          docker-ce-cli,
+          docker-compose-plugin (>= 2.24.1),
+          containerd.io (>= 1.6.4),
+          ${misc:Depends}, ${shlibs:Depends}
+Description: (Placeholder description)
