@@ -1,13 +1,6 @@
 package config
 
-import (
-	"fmt"
-
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-)
-
 func createExternalMevStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWizardStep {
-
 	// Create the labels
 	urlLabel := wiz.md.Config.MevBoost.ExternalUrl.Name
 
@@ -18,16 +11,15 @@ func createExternalMevStep(wiz *wizard, currentStep int, totalSteps int) *textBo
 		modal.focus()
 		for label, box := range modal.textboxes {
 			for _, param := range wiz.md.Config.MevBoost.GetParameters() {
-				if param.Name == label {
-					box.SetText(fmt.Sprint(param.Value))
+				if param.GetCommon().Name == label {
+					box.SetText(param.String())
 				}
 			}
 		}
 	}
 
 	done := func(text map[string]string) {
-		wiz.md.Config.EnableMevBoost.Value = true
-		wiz.md.Config.MevBoost.Mode.Value = cfgtypes.Mode_External
+		wiz.md.Config.MevBoost.Enable.Value = true
 		wiz.md.Config.MevBoost.ExternalUrl.Value = text[urlLabel]
 		wiz.finishedModal.show()
 	}
@@ -51,5 +43,4 @@ func createExternalMevStep(wiz *wizard, currentStep int, totalSteps int) *textBo
 		back,
 		"step-external-mev",
 	)
-
 }

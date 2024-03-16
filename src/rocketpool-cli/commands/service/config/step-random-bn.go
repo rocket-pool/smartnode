@@ -6,12 +6,11 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-const randomCcPrysmID string = "step-random-cc-prysm"
-const randomCcID string = "step-random-cc"
+const randomBnPrysmID string = "step-random-bn-prysm"
+const randomBnID string = "step-random-bn"
 
 func createRandomPrysmStep(wiz *wizard, currentStep int, totalSteps int, goodOptions []cfgtypes.ParameterOption) *choiceWizardStep {
-
-	helperText := "You have been randomly assigned to Prysm for your Consensus client.\n\n[orange]NOTE: Prysm currently has a very high representation of the Beacon Chain. For the health of the network and the overall safety of your funds, please consider choosing a client with a lower representation. Please visit https://clientdiversity.org to learn more."
+	helperText := "You have been randomly assigned to Prysm for your Beacon Node.\n\n[orange]NOTE: Prysm currently has a very high representation of the Beacon Chain. For the health of the network and the overall safety of your funds, please consider choosing a client with a lower representation. Please visit https://clientdiversity.org to learn more."
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -20,14 +19,14 @@ func createRandomPrysmStep(wiz *wizard, currentStep int, totalSteps int, goodOpt
 
 	done := func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
-			selectRandomCC(goodOptions, false, wiz, currentStep, totalSteps)
+			selectRandomBn(goodOptions, false, wiz, currentStep, totalSteps)
 		} else {
-			wiz.graffitiModal.show()
+			wiz.checkpointSyncProviderModal.show()
 		}
 	}
 
 	back := func() {
-		wiz.consensusLocalModal.show()
+		wiz.localBnModal.show()
 	}
 
 	return newChoiceStep(
@@ -38,20 +37,18 @@ func createRandomPrysmStep(wiz *wizard, currentStep int, totalSteps int, goodOpt
 		[]string{"Choose Another Random Client", "Keep Prysm"},
 		[]string{},
 		76,
-		"Consensus Client > Selection",
+		"Beacon Node > Selection",
 		DirectionalModalHorizontal,
 		show,
 		done,
 		back,
-		randomCcPrysmID,
+		randomBnPrysmID,
 	)
-
 }
 
-func createRandomCCStep(wiz *wizard, currentStep int, totalSteps int, goodOptions []cfgtypes.ParameterOption) *choiceWizardStep {
-
+func createRandomBnStep(wiz *wizard, currentStep int, totalSteps int, goodOptions []cfgtypes.ParameterOption) *choiceWizardStep {
 	var selectedClientName string
-	selectedClient := wiz.md.Config.ConsensusClient.Value
+	selectedClient := wiz.md.Config.LocalBeaconClient.BeaconNode.Value
 	for _, clientOption := range goodOptions {
 		if clientOption.Value == selectedClient {
 			selectedClientName = clientOption.Name
@@ -59,7 +56,7 @@ func createRandomCCStep(wiz *wizard, currentStep int, totalSteps int, goodOption
 		}
 	}
 
-	helperText := fmt.Sprintf("You have been randomly assigned to %s for your Consensus client.", selectedClientName)
+	helperText := fmt.Sprintf("You have been randomly assigned to %s for your Beacon Node.", selectedClientName)
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -67,11 +64,11 @@ func createRandomCCStep(wiz *wizard, currentStep int, totalSteps int, goodOption
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		wiz.graffitiModal.show()
+		wiz.checkpointSyncProviderModal.show()
 	}
 
 	back := func() {
-		wiz.consensusLocalModal.show()
+		wiz.localBnModal.show()
 	}
 
 	return newChoiceStep(
@@ -82,12 +79,11 @@ func createRandomCCStep(wiz *wizard, currentStep int, totalSteps int, goodOption
 		[]string{"Ok"},
 		[]string{},
 		76,
-		"Consensus Client > Selection",
+		"Beacon Node > Selection",
 		DirectionalModalHorizontal,
 		show,
 		done,
 		back,
-		randomCcID,
+		randomBnID,
 	)
-
 }

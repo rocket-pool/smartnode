@@ -7,9 +7,8 @@ import (
 )
 
 func createModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
-
 	// Create the button names and descriptions from the config
-	modes := wiz.md.Config.ExecutionClientMode.Options
+	modes := wiz.md.Config.ClientMode.Options
 	modeNames := []string{}
 	modeDescriptions := []string{}
 	for _, mode := range modes {
@@ -17,14 +16,14 @@ func createModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardS
 		modeDescriptions = append(modeDescriptions, mode.Description)
 	}
 
-	helperText := "Now let's decide which mode you'd like to use for the Execution and Consensus clients.\n\nWould you like Rocket Pool to run and manage its own clients, or would you like it to use an existing clients you run and manage outside of Rocket Pool (also known as \"Hybrid Mode\")?"
+	helperText := "Now let's decide which mode you'd like to use for the Execution Client and Beacon Node.\n\nWould you like the Smart Node to run and manage its own clients, or would you like it to use an existing clients you run and manage outside of the Smart Node (also known as \"Hybrid Mode\")?"
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
 		modal.focus(0) // Catch-all for safety
 
-		for i, option := range wiz.md.Config.ExecutionClientMode.Options {
-			if option.Value == wiz.md.Config.ExecutionClientMode.Value {
+		for i, option := range wiz.md.Config.ClientMode.Options {
+			if option.Value == wiz.md.Config.ClientMode.Value {
 				modal.focus(i)
 				break
 			}
@@ -32,13 +31,12 @@ func createModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardS
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		wiz.md.Config.ExecutionClientMode.Value = modes[buttonIndex].Value
-		wiz.md.Config.ConsensusClientMode.Value = modes[buttonIndex].Value
+		wiz.md.Config.ClientMode.Value = modes[buttonIndex].Value
 		switch modes[buttonIndex].Value {
 		case cfgtypes.Mode_Local:
-			wiz.executionLocalModal.show()
+			wiz.localEcModal.show()
 		case cfgtypes.Mode_External:
-			wiz.executionExternalModal.show()
+			wiz.externalEcSettingsModal.show()
 		default:
 			panic(fmt.Sprintf("Unknown client mode %s", modes[buttonIndex].Value))
 		}

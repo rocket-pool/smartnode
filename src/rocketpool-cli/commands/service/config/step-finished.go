@@ -5,13 +5,12 @@ import (
 	"strings"
 
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/types/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
-
-	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of the Smartnode and client settings next or just save and exit."
+	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of the Smart Node and client settings next or just save and exit."
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -34,7 +33,7 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	}
 
 	back := func() {
-		if wiz.md.Config.Smartnode.Network.Value == config.Network_Holesky || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
+		if wiz.md.Config.Network.Value == config.Network_Holesky || wiz.md.Config.Network.Value == snCfg.Network_Devnet {
 			// Skip MEV for Holesky
 			wiz.metricsModal.show()
 		} else {
@@ -60,7 +59,6 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 		back,
 		"step-finished",
 	)
-
 }
 
 // Processes a configuration after saving and exiting without looking at the review screen
@@ -94,12 +92,11 @@ func processConfigAfterQuit(md *mainDisplay) {
 		_, totalAffectedContainers, changeNetworks := md.Config.GetChanges(md.PreviousConfig)
 
 		if md.isUpdate {
-			totalAffectedContainers[cfgtypes.ContainerID_Api] = true
-			totalAffectedContainers[cfgtypes.ContainerID_Node] = true
-			totalAffectedContainers[cfgtypes.ContainerID_Watchtower] = true
+			totalAffectedContainers[config.ContainerID_Daemon] = true
+			totalAffectedContainers[snCfg.ContainerID_Watchtower] = true
 		}
 
-		var containersToRestart []cfgtypes.ContainerID
+		var containersToRestart []config.ContainerID
 		for container := range totalAffectedContainers {
 			containersToRestart = append(containersToRestart, container)
 		}

@@ -3,11 +3,10 @@ package config
 import (
 	"fmt"
 
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
 )
 
 func createMevModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
-
 	// Create the button names and descriptions from the config
 	modes := wiz.md.Config.MevBoost.Mode.Options
 	modeNames := []string{}
@@ -17,7 +16,7 @@ func createMevModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		modeDescriptions = append(modeDescriptions, mode.Description)
 	}
 
-	helperText := "By default, your Smartnode has MEV-Boost enabled. This allows you to capture extra profits from block proposals. Would you like Rocket Pool to manage MEV-Boost for you, or would you like to manage it yourself?\n\n[lime]Please read our guide to learn more about MEV:\nhttps://docs.rocketpool.net/guides/node/mev.html\n"
+	helperText := "By default, your Smart Node has MEV-Boost enabled. This allows you to capture extra profits from block proposals. Would you like Rocket Pool to manage MEV-Boost for you, or would you like to manage it yourself?\n\n[lime]Please read our guide to learn more about MEV:\nhttps://docs.rocketpool.net/guides/node/mev.html\n"
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -34,18 +33,13 @@ func createMevModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	done := func(buttonIndex int, buttonLabel string) {
 		wiz.md.Config.MevBoost.Mode.Value = modes[buttonIndex].Value
 		switch modes[buttonIndex].Value {
-		case cfgtypes.Mode_Local:
+		case config.ClientMode_Local:
 			wiz.localMevModal.show()
-		case cfgtypes.Mode_External:
-			switch wiz.md.Config.ExecutionClientMode.Value {
-			case cfgtypes.Mode_Local:
+		case config.ClientMode_External:
+			if wiz.md.Config.IsLocalMode() {
 				wiz.externalMevModal.show()
-			case cfgtypes.Mode_External:
-				wiz.md.Config.EnableMevBoost.Value = true
-				wiz.md.Config.MevBoost.Mode.Value = cfgtypes.Mode_External
+			} else {
 				wiz.finishedModal.show()
-			default:
-				panic(fmt.Sprintf("Unknown EC mode %s during MEV mode selection", wiz.md.Config.ExecutionClientMode.Value))
 			}
 		default:
 			panic(fmt.Sprintf("Unknown MEV mode %s", modes[buttonIndex].Value))

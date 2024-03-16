@@ -4,11 +4,10 @@ import (
 	"strings"
 
 	"github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 func createLocalMevStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxWizardStep {
-
 	// Create the labels
 	regulatedAllLabel := strings.TrimPrefix(wiz.md.Config.MevBoost.EnableRegulatedAllMev.Name, "Enable ")
 	unregulatedAllLabel := strings.TrimPrefix(wiz.md.Config.MevBoost.EnableUnregulatedAllMev.Name, "Enable ")
@@ -24,9 +23,8 @@ func createLocalMevStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxW
 	}
 
 	done := func(choices map[string]bool) {
-		wiz.md.Config.MevBoost.Mode.Value = cfgtypes.Mode_Local
-		wiz.md.Config.MevBoost.SelectionMode.Value = cfgtypes.MevSelectionMode_Profile
-		wiz.md.Config.EnableMevBoost.Value = false
+		wiz.md.Config.MevBoost.SelectionMode.Value = snCfg.MevSelectionMode_Profile
+		wiz.md.Config.MevBoost.Enable.Value = false
 
 		atLeastOneEnabled := false
 		enabled, exists := choices[regulatedAllLabel]
@@ -40,7 +38,7 @@ func createLocalMevStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxW
 			atLeastOneEnabled = atLeastOneEnabled || enabled
 		}
 
-		wiz.md.Config.EnableMevBoost.Value = atLeastOneEnabled
+		wiz.md.Config.MevBoost.Enable.Value = atLeastOneEnabled
 		wiz.finishedModal.show()
 	}
 
@@ -60,7 +58,6 @@ func createLocalMevStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxW
 		back,
 		"step-mev-local",
 	)
-
 }
 
 func getMevChoices(config *config.MevBoostConfig) ([]string, []string, []bool) {
@@ -74,13 +71,13 @@ func getMevChoices(config *config.MevBoostConfig) ([]string, []string, []bool) {
 		label := strings.TrimPrefix(config.EnableUnregulatedAllMev.Name, "Enable ")
 		labels = append(labels, label)
 		descriptions = append(descriptions, getDescriptionBody(config.EnableUnregulatedAllMev.Description))
-		settings = append(settings, config.EnableUnregulatedAllMev.Value.(bool))
+		settings = append(settings, config.EnableUnregulatedAllMev.Value)
 	}
 	if regulatedAllMev {
 		label := strings.TrimPrefix(config.EnableRegulatedAllMev.Name, "Enable ")
 		labels = append(labels, label)
 		descriptions = append(descriptions, getDescriptionBody(config.EnableRegulatedAllMev.Description))
-		settings = append(settings, config.EnableRegulatedAllMev.Value.(bool))
+		settings = append(settings, config.EnableRegulatedAllMev.Value)
 	}
 
 	return labels, descriptions, settings

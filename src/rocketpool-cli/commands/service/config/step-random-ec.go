@@ -9,9 +9,8 @@ import (
 const randomEcID string = "step-random-ec"
 
 func createRandomECStep(wiz *wizard, currentStep int, totalSteps int, goodOptions []cfgtypes.ParameterOption) *choiceWizardStep {
-
 	var selectedClientName string
-	selectedClient := wiz.md.Config.ExecutionClient.Value
+	selectedClient := wiz.md.Config.LocalExecutionClient.ExecutionClient.Value
 	for _, clientOption := range goodOptions {
 		if clientOption.Value == selectedClient {
 			selectedClientName = clientOption.Name
@@ -19,7 +18,7 @@ func createRandomECStep(wiz *wizard, currentStep int, totalSteps int, goodOption
 		}
 	}
 
-	helperText := fmt.Sprintf("You have been randomly assigned to %s for your Execution client.", selectedClientName)
+	helperText := fmt.Sprintf("You have been randomly assigned to %s for your Execution Client.", selectedClientName)
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -27,15 +26,11 @@ func createRandomECStep(wiz *wizard, currentStep int, totalSteps int, goodOption
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		if wiz.md.Config.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-			wiz.consensusLocalModal.show()
-		} else {
-			wiz.consensusExternalSelectModal.show()
-		}
+		wiz.localBnModal.show()
 	}
 
 	back := func() {
-		wiz.executionLocalModal.show()
+		wiz.localEcModal.show()
 	}
 
 	return newChoiceStep(
@@ -53,5 +48,4 @@ func createRandomECStep(wiz *wizard, currentStep int, totalSteps int, goodOption
 		back,
 		randomEcID,
 	)
-
 }

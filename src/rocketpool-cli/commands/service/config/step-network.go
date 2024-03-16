@@ -1,13 +1,8 @@
 package config
 
-import (
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-)
-
 func createNetworkStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
-
 	// Create the button names and descriptions from the config
-	networks := wiz.md.Config.Smartnode.Network.Options
+	networks := wiz.md.Config.Network.Options
 	networkNames := []string{}
 	networkDescriptions := []string{}
 	for _, network := range networks {
@@ -21,8 +16,8 @@ func createNetworkStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		wiz.md.setPage(modal.page)
 		modal.focus(0) // Catch-all for safety
 
-		for i, option := range wiz.md.Config.Smartnode.Network.Options {
-			if option.Value == wiz.md.Config.Smartnode.Network.Value {
+		for i, option := range wiz.md.Config.Network.Options {
+			if option.Value == wiz.md.Config.Network.Value {
 				modal.focus(i)
 				break
 			}
@@ -30,7 +25,7 @@ func createNetworkStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		newNetwork := networks[buttonIndex].Value.(cfgtypes.Network)
+		newNetwork := networks[buttonIndex].Value
 		wiz.md.Config.ChangeNetwork(newNetwork)
 		wiz.modeModal.show()
 	}
@@ -54,5 +49,4 @@ func createNetworkStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		back,
 		"step-network",
 	)
-
 }

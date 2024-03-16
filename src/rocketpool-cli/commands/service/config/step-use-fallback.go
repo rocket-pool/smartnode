@@ -5,12 +5,11 @@ import (
 )
 
 func createUseFallbackStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
-
-	helperText := "If you have an extra externally-managed Execution and Consensus client pair that you trust, you can use them as \"fallback\" clients.\nThe Smartnode and your Validator Client will connect to these if your primary Execution and Consensus clients go offline for any reason, so your node will continue functioning properly until your primary clients are back online.\n\nWould you like to use a fallback client pair?"
+	helperText := "If you have an extra externally-managed Execution Client and Beacon Node pair that you trust, you can use them as \"fallback\" clients.\nThe Smart Node and your Validator Client will connect to these if your primary clients go offline for any reason, so your node will continue functioning properly until your primary clients are back online.\n\nWould you like to use a fallback client pair?"
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
-		if wiz.md.Config.UseFallbackClients.Value == false {
+		if wiz.md.Config.Fallback.UseFallbackClients.Value == false {
 			modal.focus(0)
 		} else {
 			modal.focus(1)
@@ -19,22 +18,22 @@ func createUseFallbackStep(wiz *wizard, currentStep int, totalSteps int) *choice
 
 	done := func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 1 {
-			wiz.md.Config.UseFallbackClients.Value = true
-			cc, _ := wiz.md.Config.GetSelectedConsensusClient()
-			switch cc {
+			wiz.md.Config.Fallback.UseFallbackClients.Value = true
+			bn := wiz.md.Config.GetSelectedBeaconNode()
+			switch bn {
 			case cfgtypes.ConsensusClient_Prysm:
 				wiz.fallbackPrysmModal.show()
 			default:
 				wiz.fallbackNormalModal.show()
 			}
 		} else {
-			wiz.md.Config.UseFallbackClients.Value = false
+			wiz.md.Config.Fallback.UseFallbackClients.Value = false
 			wiz.metricsModal.show()
 		}
 	}
 
 	back := func() {
-		wiz.graffitiModal.show()
+		wiz.doppelgangerDetectionModal.show()
 	}
 
 	return newChoiceStep(
@@ -52,5 +51,4 @@ func createUseFallbackStep(wiz *wizard, currentStep int, totalSteps int) *choice
 		back,
 		"step-use-fallback",
 	)
-
 }

@@ -3,103 +3,195 @@ package config
 type wizard struct {
 	md *mainDisplay
 
-	// Docker mode
-	welcomeModal                    *choiceWizardStep
-	networkModal                    *choiceWizardStep
-	modeModal                       *choiceWizardStep
-	executionLocalModal             *choiceWizardStep
-	executionExternalModal          *textBoxWizardStep
-	consensusLocalModal             *choiceWizardStep
-	consensusExternalSelectModal    *choiceWizardStep
-	graffitiModal                   *textBoxWizardStep
-	checkpointSyncProviderModal     *textBoxWizardStep
-	doppelgangerDetectionModal      *choiceWizardStep
-	lighthouseExternalSettingsModal *textBoxWizardStep
-	nimbusExternalSettingsModal     *textBoxWizardStep
-	lodestarExternalSettingsModal   *textBoxWizardStep
-	prysmExternalSettingsModal      *textBoxWizardStep
-	tekuExternalSettingsModal       *textBoxWizardStep
-	externalGraffitiModal           *textBoxWizardStep
-	metricsModal                    *choiceWizardStep
-	mevModeModal                    *choiceWizardStep
-	localMevModal                   *checkBoxWizardStep
-	externalMevModal                *textBoxWizardStep
-	finishedModal                   *choiceWizardStep
-	consensusLocalRandomModal       *choiceWizardStep
-	consensusLocalRandomPrysmModal  *choiceWizardStep
-	consensusLocalPrysmWarning      *choiceWizardStep
-	consensusLocalTekuWarning       *choiceWizardStep
-	externalDoppelgangerModal       *choiceWizardStep
-	executionLocalRandomModal       *choiceWizardStep
-	useFallbackModal                *choiceWizardStep
-	fallbackNormalModal             *textBoxWizardStep
-	fallbackPrysmModal              *textBoxWizardStep
+	// ===================
+	// === Docker Mode ===
+	// ===================
 
-	// Native mode
-	nativeWelcomeModal     *choiceWizardStep
-	nativeNetworkModal     *choiceWizardStep
-	nativeEcModal          *textBoxWizardStep
-	nativeCcModal          *choiceWizardStep
-	nativeCcUrlModal       *textBoxWizardStep
-	nativeDataModal        *textBoxWizardStep
+	// Step 1 - Welcome
+	welcomeModal *choiceWizardStep
+
+	// Step 2 - Network
+	networkModal *choiceWizardStep
+
+	// Step 3 - Client mode
+	modeModal *choiceWizardStep
+
+	// Step 4 - EC settings
+	localEcModal            *choiceWizardStep
+	localEcRandomModal      *choiceWizardStep
+	externalEcSelectModal   *choiceWizardStep
+	externalEcSettingsModal *textBoxWizardStep
+
+	// Step 5 - BN settings
+	localBnModal                *choiceWizardStep
+	localBnRandomModal          *choiceWizardStep
+	localBnRandomPrysmModal     *choiceWizardStep
+	localBnPrysmWarning         *choiceWizardStep
+	localBnTekuWarning          *choiceWizardStep
+	checkpointSyncProviderModal *textBoxWizardStep
+	externalBnSelectModal       *choiceWizardStep
+	externalBnSettingsModal     *textBoxWizardStep
+	externalPrysmSettingsModal  *textBoxWizardStep
+
+	// Step 6 - VC settings
+	graffitiModal              *textBoxWizardStep
+	doppelgangerDetectionModal *choiceWizardStep
+
+	// Step 7 - Fallback clients
+	useFallbackModal    *choiceWizardStep
+	fallbackNormalModal *textBoxWizardStep
+	fallbackPrysmModal  *textBoxWizardStep
+
+	// Step 8 - Metrics
+	metricsModal *choiceWizardStep
+
+	// Step 9 - MEV Boost
+	mevModeModal     *choiceWizardStep
+	localMevModal    *checkBoxWizardStep
+	externalMevModal *textBoxWizardStep
+
+	// Done
+	finishedModal *choiceWizardStep
+
+	// ===================
+	// === Native Mode ===
+	// ===================
+
+	// Step 1 - Welcome
+	nativeWelcomeModal *choiceWizardStep
+
+	// Step 2 - Network
+	nativeNetworkModal *choiceWizardStep
+
+	// Step 3 - EC settings
+	nativeEcModal *textBoxWizardStep
+
+	// Step 4 - BN settings
+	nativeCcModal    *choiceWizardStep
+	nativeCcUrlModal *textBoxWizardStep
+
+	// Step 5 - Fallback clients
 	nativeUseFallbackModal *choiceWizardStep
 	nativeFallbackModal    *textBoxWizardStep
-	nativeMetricsModal     *choiceWizardStep
-	nativeMevModal         *choiceWizardStep
-	nativeFinishedModal    *choiceWizardStep
+
+	// Step 6 - Native stuff
+	nativeDataModal *textBoxWizardStep
+
+	// Step 7 - Metrics
+	nativeMetricsModal *choiceWizardStep
+
+	// Step 8 - MEV Boost
+	nativeMevModal *choiceWizardStep
+
+	// Done
+	nativeFinishedModal *choiceWizardStep
 }
 
 func newWizard(md *mainDisplay) *wizard {
-
 	wiz := &wizard{
 		md: md,
 	}
 
-	totalDockerSteps := 9
+	// ===================
+	// === Docker Mode ===
+	// ===================
+	totalDockerSteps := 10
+	stepCount := 0
+
+	// Step 1 - Welcome
+	wiz.welcomeModal = createWelcomeStep(wiz, stepCount, totalDockerSteps)
+	stepCount++
+
+	// Step 2 - Network
+	wiz.networkModal = createNetworkStep(wiz, stepCount, totalDockerSteps)
+	stepCount++
+
+	// Step 3 - Client mode
+	wiz.modeModal = createModeStep(wiz, stepCount, totalDockerSteps)
+	stepCount++
+
+	// Step 4 - EC settings
+	wiz.localEcModal = createLocalEcStep(wiz, stepCount, totalDockerSteps)
+	wiz.externalEcSelectModal = createExternalEcSelectStep(wiz, stepCount, totalDockerSteps)
+	wiz.externalEcSettingsModal = createExternalEcStep(wiz, stepCount, totalDockerSteps)
+	stepCount++
+
+	// Step 5 - BN settings
+	wiz.localBnModal = createLocalCcStep(wiz, stepCount, totalDockerSteps)
+	wiz.localBnPrysmWarning = createPrysmWarningStep(wiz, stepCount, totalDockerSteps)
+	wiz.localBnTekuWarning = createTekuWarningStep(wiz, stepCount, totalDockerSteps)
+	wiz.checkpointSyncProviderModal = createCheckpointSyncStep(wiz, stepCount, totalDockerSteps)
+	wiz.externalBnSelectModal = createExternalBnStep(wiz, stepCount, totalDockerSteps)
+	wiz.externalBnSettingsModal = createExternalBnSettingsStep(wiz, stepCount, totalDockerSteps)
+	wiz.externalPrysmSettingsModal = createExternalPrysmSettingsStep(wiz, stepCount, totalDockerSteps)
+	stepCount++
+
+	// Step 6 - VC settings
+	wiz.graffitiModal = createGraffitiStep(wiz, stepCount, totalDockerSteps)
+	wiz.doppelgangerDetectionModal = createDoppelgangerStep(wiz, stepCount, totalDockerSteps)
+	stepCount++
+
+	// Step 7 - Fallback clients
+	wiz.useFallbackModal = createUseFallbackStep(wiz, stepCount, totalDockerSteps)
+	wiz.fallbackNormalModal = createFallbackNormalStep(wiz, stepCount, totalDockerSteps)
+	wiz.fallbackPrysmModal = createFallbackPrysmStep(wiz, stepCount, totalDockerSteps)
+	stepCount++
+
+	// Step 8 - Metrics
+	wiz.metricsModal = createMetricsStep(wiz, stepCount, totalDockerSteps)
+	stepCount++
+
+	// Step 9 - MEV Boost
+	wiz.mevModeModal = createMevModeStep(wiz, stepCount, totalDockerSteps)
+	wiz.localMevModal = createLocalMevStep(wiz, stepCount, totalDockerSteps)
+	wiz.externalMevModal = createExternalMevStep(wiz, stepCount, totalDockerSteps)
+	stepCount++
+
+	// Done
+	wiz.finishedModal = createFinishedStep(wiz, stepCount, totalDockerSteps)
+
+	// ===================
+	// === Native Mode ===
+	// ===================
 	totalNativeSteps := 10
+	stepCount = 0
 
-	// Docker mode
-	wiz.welcomeModal = createWelcomeStep(wiz, 1, totalDockerSteps)
-	wiz.networkModal = createNetworkStep(wiz, 2, totalDockerSteps)
-	wiz.modeModal = createModeStep(wiz, 3, totalDockerSteps)
-	wiz.executionLocalModal = createLocalEcStep(wiz, 4, totalDockerSteps)
-	wiz.executionExternalModal = createExternalEcStep(wiz, 4, totalDockerSteps)
-	wiz.consensusLocalModal = createLocalCcStep(wiz, 5, totalDockerSteps)
-	wiz.consensusExternalSelectModal = createExternalCcStep(wiz, 5, totalDockerSteps)
-	wiz.consensusLocalPrysmWarning = createPrysmWarningStep(wiz, 5, totalDockerSteps)
-	wiz.consensusLocalTekuWarning = createTekuWarningStep(wiz, 5, totalDockerSteps)
-	wiz.graffitiModal = createGraffitiStep(wiz, 5, totalDockerSteps)
-	wiz.checkpointSyncProviderModal = createCheckpointSyncStep(wiz, 5, totalDockerSteps)
-	wiz.doppelgangerDetectionModal = createDoppelgangerStep(wiz, 5, totalDockerSteps)
-	wiz.lighthouseExternalSettingsModal = createExternalLhStep(wiz, 5, totalDockerSteps)
-	wiz.nimbusExternalSettingsModal = createExternalNimbusStep(wiz, 5, totalDockerSteps)
-	wiz.lodestarExternalSettingsModal = createExternalLodestarStep(wiz, 5, totalDockerSteps)
-	wiz.prysmExternalSettingsModal = createExternalPrysmStep(wiz, 5, totalDockerSteps)
-	wiz.tekuExternalSettingsModal = createExternalTekuStep(wiz, 5, totalDockerSteps)
-	wiz.externalGraffitiModal = createExternalGraffitiStep(wiz, 5, totalDockerSteps)
-	wiz.externalDoppelgangerModal = createExternalDoppelgangerStep(wiz, 5, totalDockerSteps)
-	wiz.useFallbackModal = createUseFallbackStep(wiz, 6, totalDockerSteps)
-	wiz.fallbackNormalModal = createFallbackNormalStep(wiz, 6, totalDockerSteps)
-	wiz.fallbackPrysmModal = createFallbackPrysmStep(wiz, 6, totalDockerSteps)
-	wiz.metricsModal = createMetricsStep(wiz, 7, totalDockerSteps)
-	wiz.mevModeModal = createMevModeStep(wiz, 8, totalDockerSteps)
-	wiz.localMevModal = createLocalMevStep(wiz, 8, totalDockerSteps)
-	wiz.externalMevModal = createExternalMevStep(wiz, 8, totalDockerSteps)
-	wiz.finishedModal = createFinishedStep(wiz, 9, totalDockerSteps)
+	// Step 1 - Welcome
+	wiz.nativeWelcomeModal = createNativeWelcomeStep(wiz, stepCount, totalNativeSteps)
+	stepCount++
 
-	// Native mode
-	wiz.nativeWelcomeModal = createNativeWelcomeStep(wiz, 1, totalNativeSteps)
-	wiz.nativeNetworkModal = createNativeNetworkStep(wiz, 2, totalNativeSteps)
-	wiz.nativeEcModal = createNativeEcStep(wiz, 3, totalNativeSteps)
-	wiz.nativeCcModal = createNativeCcStep(wiz, 4, totalNativeSteps)
-	wiz.nativeCcUrlModal = createNativeCcUrlStep(wiz, 5, totalNativeSteps)
-	wiz.nativeDataModal = createNativeDataStep(wiz, 6, totalNativeSteps)
-	wiz.nativeUseFallbackModal = createNativeUseFallbackStep(wiz, 7, totalNativeSteps)
-	wiz.nativeFallbackModal = createNativeFallbackStep(wiz, 7, totalNativeSteps)
-	wiz.nativeMetricsModal = createNativeMetricsStep(wiz, 8, totalNativeSteps)
-	wiz.nativeMevModal = createNativeMevStep(wiz, 9, totalNativeSteps)
-	wiz.nativeFinishedModal = createNativeFinishedStep(wiz, 10, totalNativeSteps)
+	// Step 2 - Network
+	wiz.nativeNetworkModal = createNativeNetworkStep(wiz, stepCount, totalNativeSteps)
+	stepCount++
+
+	// Step 3 - EC settings
+	wiz.nativeEcModal = createNativeEcStep(wiz, stepCount, totalNativeSteps)
+	stepCount++
+
+	// Step 4 - BN settings
+	wiz.nativeCcModal = createNativeCcStep(wiz, stepCount, totalNativeSteps)
+	wiz.nativeCcUrlModal = createNativeCcUrlStep(wiz, stepCount, totalNativeSteps)
+	stepCount++
+
+	// Step 5 - Fallback clients
+	wiz.nativeUseFallbackModal = createNativeUseFallbackStep(wiz, stepCount, totalNativeSteps)
+	wiz.nativeFallbackModal = createNativeFallbackStep(wiz, stepCount, totalNativeSteps)
+	stepCount++
+
+	// Step 6 - Native stuff
+	wiz.nativeDataModal = createNativeDataStep(wiz, stepCount, totalNativeSteps)
+	stepCount++
+
+	// Step 7 - Metrics
+	wiz.nativeMetricsModal = createNativeMetricsStep(wiz, stepCount, totalNativeSteps)
+	stepCount++
+
+	// Step 8 - MEV Boost
+	wiz.nativeMevModal = createNativeMevStep(wiz, stepCount, totalNativeSteps)
+	stepCount++
+
+	// Done
+	wiz.nativeFinishedModal = createNativeFinishedStep(wiz, stepCount, totalNativeSteps)
 
 	return wiz
-
 }

@@ -1,32 +1,27 @@
 package config
 
-import (
-	"fmt"
-)
-
 func createFallbackNormalStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWizardStep {
-
 	// Create the labels
-	ecHttpLabel := wiz.md.Config.FallbackNormal.EcHttpUrl.Name
-	ccHttpLabel := wiz.md.Config.FallbackNormal.CcHttpUrl.Name
+	ecHttpLabel := wiz.md.Config.Fallback.EcHttpUrl.Name
+	bnHttpLabel := wiz.md.Config.Fallback.BnHttpUrl.Name
 
-	helperText := "Your selected Consensus client's validator can connect to any Execution client and any Consensus client.\n\nPlease enter the URLs of the HTTP APIs for your fallback clients.\n\nFor example: `http://192.168.1.45:8545` for your Execution client and `http://192.168.1.45:5052` for your Consensus client."
+	helperText := "You can use any Execution Client and Beacon Node pair as a fallback.\n\nPlease enter the URLs of the HTTP APIs for your fallback clients.\n\nFor example: `http://192.168.1.45:8545` for your Execution Client and `http://192.168.1.45:5052` for your Beacon Node."
 
 	show := func(modal *textBoxModalLayout) {
 		wiz.md.setPage(modal.page)
 		modal.focus()
 		for label, box := range modal.textboxes {
-			for _, param := range wiz.md.Config.FallbackNormal.GetParameters() {
-				if param.Name == label {
-					box.SetText(fmt.Sprint(param.Value))
+			for _, param := range wiz.md.Config.Fallback.GetParameters() {
+				if param.GetCommon().Name == label {
+					box.SetText(param.String())
 				}
 			}
 		}
 	}
 
 	done := func(text map[string]string) {
-		wiz.md.Config.FallbackNormal.EcHttpUrl.Value = text[ecHttpLabel]
-		wiz.md.Config.FallbackNormal.CcHttpUrl.Value = text[ccHttpLabel]
+		wiz.md.Config.Fallback.EcHttpUrl.Value = text[ecHttpLabel]
+		wiz.md.Config.Fallback.BnHttpUrl.Value = text[bnHttpLabel]
 		wiz.metricsModal.show()
 	}
 
@@ -41,13 +36,12 @@ func createFallbackNormalStep(wiz *wizard, currentStep int, totalSteps int) *tex
 		helperText,
 		96,
 		"Fallback Client URLs",
-		[]string{ecHttpLabel, ccHttpLabel},
-		[]int{wiz.md.Config.FallbackNormal.EcHttpUrl.MaxLength, wiz.md.Config.FallbackNormal.CcHttpUrl.MaxLength},
-		[]string{wiz.md.Config.FallbackNormal.EcHttpUrl.Regex, wiz.md.Config.FallbackNormal.CcHttpUrl.Regex},
+		[]string{ecHttpLabel, bnHttpLabel},
+		[]int{wiz.md.Config.Fallback.EcHttpUrl.MaxLength, wiz.md.Config.Fallback.BnHttpUrl.MaxLength},
+		[]string{wiz.md.Config.Fallback.EcHttpUrl.Regex, wiz.md.Config.Fallback.BnHttpUrl.Regex},
 		show,
 		done,
 		back,
 		"step-fallback-normal",
 	)
-
 }
