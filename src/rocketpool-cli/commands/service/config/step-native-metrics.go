@@ -1,14 +1,16 @@
 package config
 
-import "github.com/rocket-pool/smartnode/shared/types/config"
+import (
+	"github.com/rocket-pool/node-manager-core/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
+)
 
 func createNativeMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
-
-	helperText := "Would you like to enable the daemon's metrics feature? This will allow you to access the Rocket Pool network's metrics and the metrics for your own node wallet in the Grafana dashboard."
+	helperText := "Would you like to enable the Smart Node's metrics feature? This will allow you to access the Rocket Pool network's metrics and the metrics for your own node wallet in the Grafana dashboard."
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
-		if wiz.md.Config.EnableMetrics.Value == false {
+		if !wiz.md.Config.Metrics.EnableMetrics.Value {
 			modal.focus(0)
 		} else {
 			modal.focus(1)
@@ -17,11 +19,11 @@ func createNativeMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choi
 
 	done := func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 1 {
-			wiz.md.Config.EnableMetrics.Value = true
+			wiz.md.Config.Metrics.EnableMetrics.Value = true
 		} else {
-			wiz.md.Config.EnableMetrics.Value = false
+			wiz.md.Config.Metrics.EnableMetrics.Value = false
 		}
-		if wiz.md.Config.Smartnode.Network.Value == config.Network_Holesky || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
+		if wiz.md.Config.Network.Value == config.Network_Holesky || wiz.md.Config.Network.Value == snCfg.Network_Devnet {
 			// Skip MEV for Holesky
 			wiz.nativeFinishedModal.show()
 		} else {
@@ -48,5 +50,4 @@ func createNativeMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choi
 		back,
 		"step-native-metrics",
 	)
-
 }

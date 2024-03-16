@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
+	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
-
 	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of the Smartnode and Native settings next or just save and exit."
 
 	show := func(modal *choiceModalLayout) {
@@ -33,7 +33,7 @@ func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *cho
 	}
 
 	back := func() {
-		if wiz.md.Config.Smartnode.Network.Value == config.Network_Holesky || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
+		if wiz.md.Config.Network.Value == config.Network_Holesky || wiz.md.Config.Network.Value == snCfg.Network_Devnet {
 			// Skip MEV for Holesky
 			wiz.nativeMetricsModal.show()
 		} else {
@@ -59,7 +59,6 @@ func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *cho
 		back,
 		"step-native-finished",
 	)
-
 }
 
 // Processes a configuration after saving and exiting without looking at the review screen

@@ -125,7 +125,7 @@ func (configPage *MetricsConfigPage) handleLayoutChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enableMetricsBox.item)
 
-	if configPage.masterConfig.Metrics.EnableMetrics.Value == true {
+	if configPage.masterConfig.Metrics.EnableMetrics.Value {
 		configPage.layout.addFormItems([]*parameterizedFormItem{configPage.enableOdaoMetricsBox})
 		if configPage.masterConfig.IsLocalMode() {
 			configPage.layout.addFormItems([]*parameterizedFormItem{configPage.ecMetricsPortBox, configPage.bnMetricsPortBox})

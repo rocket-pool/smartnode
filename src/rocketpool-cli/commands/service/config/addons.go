@@ -11,17 +11,14 @@ const addonPageID string = "addons"
 
 // The addons page
 type AddonsPage struct {
-	home             *settingsHome
-	page             *page
-	layout           *standardLayout
-	masterConfig     *config.SmartNodeConfig
-	gwwPage          *AddonGwwPage
-	gwwButton        *parameterizedFormItem
-	rescueNodePage   *AddonRescueNodePage
-	rescueNodeButton *parameterizedFormItem
-	categoryList     *tview.List
-	addonSubpages    []settingsPage
-	content          tview.Primitive
+	home           *settingsHome
+	page           *page
+	layout         *standardLayout
+	masterConfig   *config.SmartNodeConfig
+	gwwPage        *AddonGwwPage
+	rescueNodePage *AddonRescueNodePage
+	categoryList   *tview.List
+	addonSubpages  []settingsPage
 }
 
 // Create a new addons page

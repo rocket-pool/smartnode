@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
 )
 
 func createModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
@@ -33,9 +33,9 @@ func createModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardS
 	done := func(buttonIndex int, buttonLabel string) {
 		wiz.md.Config.ClientMode.Value = modes[buttonIndex].Value
 		switch modes[buttonIndex].Value {
-		case cfgtypes.Mode_Local:
+		case config.ClientMode_Local:
 			wiz.localEcModal.show()
-		case cfgtypes.Mode_External:
+		case config.ClientMode_External:
 			wiz.externalEcSettingsModal.show()
 		default:
 			panic(fmt.Sprintf("Unknown client mode %s", modes[buttonIndex].Value))

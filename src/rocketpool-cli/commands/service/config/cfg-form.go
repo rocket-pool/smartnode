@@ -70,7 +70,7 @@ func getTypedFormItem(param config.IParameter, descriptionBox *tview.TextView) *
 func createParameterizedCheckbox(param *config.Parameter[bool]) *parameterizedFormItem {
 	item := tview.NewCheckbox().
 		SetLabel(param.Name).
-		SetChecked(param.Value == true).
+		SetChecked(param.Value).
 		SetChangedFunc(func(checked bool) {
 			param.Value = checked
 		})

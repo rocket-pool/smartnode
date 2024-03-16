@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/rocket-pool/smartnode/shared/config"
-	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 func createLocalMevStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxWizardStep {
@@ -23,7 +22,7 @@ func createLocalMevStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxW
 	}
 
 	done := func(choices map[string]bool) {
-		wiz.md.Config.MevBoost.SelectionMode.Value = snCfg.MevSelectionMode_Profile
+		wiz.md.Config.MevBoost.SelectionMode.Value = config.MevSelectionMode_Profile
 		wiz.md.Config.MevBoost.Enable.Value = false
 
 		atLeastOneEnabled := false

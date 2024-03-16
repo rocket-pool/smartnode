@@ -105,7 +105,7 @@ func (configPage *NativeFallbackConfigPage) handleUseFallbackChanged() {
 	configPage.layout.form.AddFormItem(configPage.useFallbackBox.item)
 
 	// Only add the supporting stuff if external clients are enabled
-	if configPage.masterConfig.Fallback.UseFallbackClients.Value == false {
+	if !configPage.masterConfig.Fallback.UseFallbackClients.Value {
 		return
 	}
 	configPage.layout.form.AddFormItem(configPage.reconnectDelay.item)

@@ -5,7 +5,7 @@ func createDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int) *choic
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
-		if wiz.md.Config.ValidatorClient.VcCommon.DoppelgangerDetection.Value == false {
+		if !wiz.md.Config.ValidatorClient.VcCommon.DoppelgangerDetection.Value {
 			modal.focus(0)
 		} else {
 			modal.focus(1)

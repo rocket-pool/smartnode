@@ -64,11 +64,12 @@ type wizard struct {
 	nativeNetworkModal *choiceWizardStep
 
 	// Step 3 - EC settings
-	nativeEcModal *textBoxWizardStep
+	nativeEcModal    *choiceWizardStep
+	nativeEcUrlModal *textBoxWizardStep
 
 	// Step 4 - BN settings
-	nativeCcModal    *choiceWizardStep
-	nativeCcUrlModal *textBoxWizardStep
+	nativeBnModal    *choiceWizardStep
+	nativeBnUrlModal *textBoxWizardStep
 
 	// Step 5 - Fallback clients
 	nativeUseFallbackModal *choiceWizardStep
@@ -166,11 +167,12 @@ func newWizard(md *mainDisplay) *wizard {
 
 	// Step 3 - EC settings
 	wiz.nativeEcModal = createNativeEcStep(wiz, stepCount, totalNativeSteps)
+	wiz.nativeEcUrlModal = createNativeEcUrlStep(wiz, stepCount, totalNativeSteps)
 	stepCount++
 
 	// Step 4 - BN settings
-	wiz.nativeCcModal = createNativeCcStep(wiz, stepCount, totalNativeSteps)
-	wiz.nativeCcUrlModal = createNativeCcUrlStep(wiz, stepCount, totalNativeSteps)
+	wiz.nativeBnModal = createNativeBnStep(wiz, stepCount, totalNativeSteps)
+	wiz.nativeBnUrlModal = createNativeBnUrlStep(wiz, stepCount, totalNativeSteps)
 	stepCount++
 
 	// Step 5 - Fallback clients

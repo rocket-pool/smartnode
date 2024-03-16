@@ -1,49 +1,52 @@
 package config
 
-import "fmt"
+func createNativeEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
+	// Create the button names and descriptions from the config
+	clients := wiz.md.Config.ExternalExecutionClient.ExecutionClient.Options
+	clientNames := []string{}
+	for _, client := range clients {
+		clientNames = append(clientNames, client.Name)
+	}
 
-func createNativeEcStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWizardStep {
+	helperText := "Which Execution Client are you externally managing? Each of them has small behavioral differences, so we'll need to know which one you're using in order to connect to it properly"
 
-	// Create the labels
-	httpLabel := wiz.md.Config.Native.EcHttpUrl.Name
-
-	helperText := "Please enter the URL of the HTTP-based RPC API for your Execution client (e.g. Geth).\n\nFor example: `http://127.0.0.1:8545`"
-
-	show := func(modal *textBoxModalLayout) {
+	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
-		modal.focus()
-		for label, box := range modal.textboxes {
-			for _, param := range wiz.md.Config.Native.GetParameters() {
-				if param.Name == label {
-					box.SetText(fmt.Sprint(param.Value))
+		modal.focus(0) // Catch-all for safety
+
+		if !wiz.md.isNew {
+			for i, option := range wiz.md.Config.ExternalExecutionClient.ExecutionClient.Options {
+				if option.Value == wiz.md.Config.ExternalExecutionClient.ExecutionClient.Value {
+					modal.focus(i)
+					break
 				}
 			}
 		}
 	}
 
-	done := func(text map[string]string) {
-		wiz.md.Config.Native.EcHttpUrl.Value = text[httpLabel]
-		wiz.nativeCcModal.show()
+	done := func(buttonIndex int, buttonLabel string) {
+		selectedClient := clients[buttonIndex].Value
+		wiz.md.Config.ExternalExecutionClient.ExecutionClient.Value = selectedClient
+		wiz.nativeEcUrlModal.show()
 	}
 
 	back := func() {
 		wiz.nativeNetworkModal.show()
 	}
 
-	return newTextBoxWizardStep(
+	return newChoiceStep(
 		wiz,
 		currentStep,
 		totalSteps,
 		helperText,
-		84,
-		"Execution Client > URL",
-		[]string{httpLabel},
-		[]int{wiz.md.Config.Native.EcHttpUrl.MaxLength},
-		[]string{wiz.md.Config.Native.EcHttpUrl.Regex},
+		clientNames,
+		[]string{},
+		70,
+		"Execution Client > Selection",
+		DirectionalModalVertical,
 		show,
 		done,
 		back,
 		"step-native-ec",
 	)
-
 }

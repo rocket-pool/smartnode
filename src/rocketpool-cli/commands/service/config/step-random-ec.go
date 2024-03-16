@@ -3,12 +3,12 @@ package config
 import (
 	"fmt"
 
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/node-manager-core/config"
 )
 
 const randomEcID string = "step-random-ec"
 
-func createRandomECStep(wiz *wizard, currentStep int, totalSteps int, goodOptions []cfgtypes.ParameterOption) *choiceWizardStep {
+func createRandomECStep(wiz *wizard, currentStep int, totalSteps int, goodOptions []*config.ParameterOption[config.ExecutionClient]) *choiceWizardStep {
 	var selectedClientName string
 	selectedClient := wiz.md.Config.LocalExecutionClient.ExecutionClient.Value
 	for _, clientOption := range goodOptions {
