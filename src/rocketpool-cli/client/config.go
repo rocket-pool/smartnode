@@ -85,3 +85,23 @@ func (c *Client) UpdatePrometheusConfiguration(config *config.SmartNodeConfig) e
 
 	return t.Write(config)
 }
+
+// Load the Grafana config template, do a template variable substitution, and save it
+func (c *Client) UpdateGrafanaDatabaseConfiguration(config *config.SmartNodeConfig) error {
+	grafanaConfigTemplatePath, err := homedir.Expand(filepath.Join(templatesDir, grafanaConfigTemplate))
+	if err != nil {
+		return fmt.Errorf("error expanding Grafana config template path: %w", err)
+	}
+
+	grafanaConfigTargetPath, err := homedir.Expand(filepath.Join(c.Context.ConfigPath, grafanaConfigTarget))
+	if err != nil {
+		return fmt.Errorf("error expanding Grafana config target path: %w", err)
+	}
+
+	t := template.Template{
+		Src: grafanaConfigTemplatePath,
+		Dst: grafanaConfigTargetPath,
+	}
+
+	return t.Write(config)
+}

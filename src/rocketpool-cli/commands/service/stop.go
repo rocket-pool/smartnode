@@ -21,10 +21,7 @@ func stopService(c *cli.Context) error {
 	}
 
 	// Write a note on doppelganger protection
-	doppelgangerEnabled, err := cfg.IsDoppelgangerEnabled()
-	if err != nil {
-		fmt.Printf("%sCouldn't check if you have Doppelganger Protection enabled: %s\nIf you do, stopping your validator will cause it to miss up to 3 attestations when it next starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
-	} else if doppelgangerEnabled {
+	if cfg.ValidatorClient.VcCommon.DoppelgangerDetection.Value {
 		fmt.Printf("%sNOTE: You currently have Doppelganger Protection enabled.\nIf you stop your validator, it will miss up to 3 attestations when it next starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 	}
 

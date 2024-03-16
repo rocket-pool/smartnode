@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
@@ -15,17 +14,8 @@ import (
 
 // Settings
 const (
-	ExporterContainerSuffix         string = "_exporter"
-	ValidatorContainerSuffix        string = "_validator"
-	BeaconContainerSuffix           string = "_eth2"
-	ExecutionContainerSuffix        string = "_eth1"
-	NodeContainerSuffix             string = "_node"
-	ApiContainerSuffix              string = "_api"
-	WatchtowerContainerSuffix       string = "_watchtower"
-	PruneProvisionerContainerSuffix string = "_prune_provisioner"
-	EcMigratorContainerSuffix       string = "_ec_migrator"
-	clientDataVolumeName            string = "/ethclient"
-	dataFolderVolumeName            string = "/.rocketpool/data"
+	clientDataVolumeName string = "/ethclient"
+	dataFolderVolumeName string = "/.rocketpool/data"
 
 	PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
 	dockerImageRegex       string = ".*/(?P<image>.*):.*"
@@ -48,12 +38,9 @@ func changeNetworks(c *cli.Context, rp *client.Client, apiContainerName string) 
 
 	// Restart the API container
 	fmt.Print("Starting API container... ")
-	output, err := rp.StartContainer(apiContainerName)
+	err = rp.StartContainer(apiContainerName)
 	if err != nil {
 		return fmt.Errorf("error starting API container: %w", err)
-	}
-	if output != apiContainerName {
-		return fmt.Errorf("starting API container had unexpected output: %s", output)
 	}
 	fmt.Println("done")
 
@@ -97,36 +84,6 @@ func changeNetworks(c *cli.Context, rp *client.Client, apiContainerName string) 
 	fmt.Println("done")
 
 	return nil
-}
-
-// Get the time that the container responsible for validator duties exited
-func getValidatorFinishTime(CurrentValidatorClientName string, rp *client.Client) (time.Time, error) {
-	prefix, err := getContainerPrefix(rp)
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	var validatorFinishTime time.Time
-	if CurrentValidatorClientName == "nimbus" {
-		validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + BeaconContainerSuffix)
-	} else {
-		validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + ValidatorContainerSuffix)
-	}
-
-	return validatorFinishTime, err
-}
-
-// Gets the prefix specified for Rocket Pool's Docker containers
-func getContainerPrefix(rp *client.Client) (string, error) {
-	cfg, isNew, err := rp.LoadConfig()
-	if err != nil {
-		return "", err
-	}
-	if isNew {
-		return "", fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
-	}
-
-	return cfg.Smartnode.ProjectName.Value.(string), nil
 }
 
 // Get the amount of free space available in the target dir

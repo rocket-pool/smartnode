@@ -446,7 +446,7 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 
 // Get the title for this config
 func (cfg *SmartNodeConfig) GetTitle() string {
-	return "Hyperdrive"
+	return "Smart Node"
 }
 
 // Get the config.Parameters for this config
@@ -577,6 +577,12 @@ func (cfg *SmartNodeConfig) CreateCopy() *SmartNodeConfig {
 	copy := NewSmartNodeConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode)
 	config.Clone(cfg, copy, network)
 	return copy
+}
+
+// Updates the default parameters based on the current network value
+func (cfg *SmartNodeConfig) UpdateDefaults() {
+	network := cfg.Network.Value
+	config.UpdateDefaults(cfg, network)
 }
 
 // Get all of the settings that have changed between an old config and this config, and get all of the containers that are affected by those changes - also returns whether or not the selected network was changed

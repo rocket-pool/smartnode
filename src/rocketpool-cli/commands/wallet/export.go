@@ -18,8 +18,8 @@ func exportWallet(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	if !status.Data.WalletStatus.HasKeystore {
-		fmt.Println("The node wallet is not initialized.")
+	if !status.Data.WalletStatus.Wallet.IsLoaded {
+		fmt.Println("The node wallet is not loaded and ready for usage. Please run `rocketpool wallet status` for more details.")
 		return nil
 	}
 

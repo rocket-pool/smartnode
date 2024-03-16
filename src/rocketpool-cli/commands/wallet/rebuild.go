@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rocket-pool/node-manager-core/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/urfave/cli/v2"
 )
@@ -27,12 +28,8 @@ func rebuildWallet(c *cli.Context) error {
 		return err
 	}
 	status := statusResponse.Data.WalletStatus
-	if !status.HasKeystore {
-		fmt.Println("The node wallet is not initialized.")
-		return nil
-	}
-	if !status.HasPassword {
-		fmt.Println("The node's wallet password has not been set. Please run <placeholder> to set it.")
+	if !wallet.IsWalletReady(status) {
+		fmt.Println("The node wallet is not loaded or your node is in read-only mode. Please run `rocketpool wallet status` for more details.")
 		return nil
 	}
 

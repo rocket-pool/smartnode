@@ -64,7 +64,7 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// rp.NodeStatus() will fail with an error, but we can short-circuit it here.
-	if !walletStatus.HasKeystore {
+	if !walletStatus.Wallet.IsOnDisk {
 		return errors.New("The node wallet is not initialized.")
 	}
 

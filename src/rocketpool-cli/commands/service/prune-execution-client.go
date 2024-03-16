@@ -5,10 +5,11 @@ import (
 	"strings"
 
 	"github.com/dustin/go-humanize"
+	nmc_config "github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/urfave/cli/v2"
 )
@@ -24,24 +25,24 @@ func pruneExecutionClient(c *cli.Context) error {
 		return err
 	}
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	// Sanity checks
-	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External {
-		fmt.Println("You are using an externally managed Execution client.\nThe Smartnode cannot prune it for you.")
+	if cfg.IsNativeMode {
+		fmt.Println("You are using Native Mode.\nThe Smart Node cannot prune your Execution client for you, you'll have to do it manually.")
+	}
+	if !cfg.IsLocalMode() {
+		fmt.Println("You are using an externally managed Execution client.\nThe Smart Node cannot prune it for you.")
 		return nil
 	}
-	if cfg.IsNativeMode {
-		fmt.Println("You are using Native Mode.\nThe Smartnode cannot prune your Execution client for you, you'll have to do it manually.")
-	}
-	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
+	selectedEc := cfg.GetSelectedExecutionClient()
 	switch selectedEc {
-	case cfgtypes.ExecutionClient_Besu:
+	case nmc_config.ExecutionClient_Besu:
 		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
 		return nil
-	case cfgtypes.ExecutionClient_Geth:
-		if cfg.Geth.EnablePbss.Value == true {
+	case nmc_config.ExecutionClient_Geth:
+		if cfg.LocalExecutionClient.Geth.EnablePbss.Value {
 			fmt.Println("You have PBSS enabled for Geth. Pruning is no longer required when using PBSS.")
 			return nil
 		}
@@ -50,18 +51,12 @@ func pruneExecutionClient(c *cli.Context) error {
 	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 	fmt.Println("Once pruning is complete, your execution client will restart automatically.\n")
 
-	if selectedEc == cfgtypes.ExecutionClient_Geth {
-		if cfg.UseFallbackClients.Value == false {
+	if selectedEc == nmc_config.ExecutionClient_Geth {
+		if cfg.Fallback.UseFallbackClients.Value == false {
 			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until Geth is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", terminal.ColorRed, terminal.ColorReset)
 		} else {
 			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 		}
-	}
-
-	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
-	if err != nil {
-		return fmt.Errorf("Error getting container prefix: %w", err)
 	}
 
 	// Prompt for confirmation
@@ -70,11 +65,8 @@ func pruneExecutionClient(c *cli.Context) error {
 		return nil
 	}
 
-	// Get the prune provisioner image
-	pruneProvisioner := cfg.Smartnode.GetPruneProvisionerContainerTag()
-
 	// Check for enough free space
-	executionContainerName := prefix + ExecutionContainerSuffix
+	executionContainerName := cfg.GetDockerArtifactName(config.ExecutionClientSuffix)
 	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting execution volume source path: %w", err)
@@ -105,12 +97,9 @@ func pruneExecutionClient(c *cli.Context) error {
 	fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
 
 	fmt.Printf("Stopping %s...\n", executionContainerName)
-	result, err := rp.StopContainer(executionContainerName)
+	err = rp.StopContainer(executionContainerName)
 	if err != nil {
 		return fmt.Errorf("Error stopping main execution container: %w", err)
-	}
-	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
 	}
 
 	// Get the ETH1 volume name
@@ -121,29 +110,27 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	// Run the prune provisioner
 	fmt.Printf("Provisioning pruning on volume %s...\n", volume)
-	err = rp.RunPruneProvisioner(prefix+PruneProvisionerContainerSuffix, volume, pruneProvisioner)
+	pruneProvisionerName := cfg.GetDockerArtifactName(config.PruneProvisionerSuffix)
+	err = rp.RunPruneProvisioner(pruneProvisionerName, volume)
 	if err != nil {
 		return fmt.Errorf("Error running prune provisioner: %w", err)
 	}
 
 	// Restart ETH1
 	fmt.Printf("Restarting %s...\n", executionContainerName)
-	result, err = rp.StartContainer(executionContainerName)
+	err = rp.StartContainer(executionContainerName)
 	if err != nil {
 		return fmt.Errorf("Error starting main execution client: %w", err)
 	}
-	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
-	}
 
-	if selectedEc == cfgtypes.ExecutionClient_Nethermind {
+	if selectedEc == nmc_config.ExecutionClient_Nethermind {
 		err = rp.RunNethermindPruneStarter(executionContainerName)
 		if err != nil {
 			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
 		}
 	}
 
-	fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
+	fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs ec`.\n")
 	fmt.Println("Once it's done, it will restart automatically and resume normal operation.")
 
 	fmt.Printf("%sNOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!%s\n", terminal.ColorYellow, terminal.ColorReset)

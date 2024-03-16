@@ -10,7 +10,6 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	snCfg "github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils"
 )
 
@@ -28,55 +27,19 @@ var (
 )
 
 // Creates CLI argument flags from the parameters of the configuration struct
-func createFlagsFromConfigParams(sectionName string, params []config.IParameter, configFlags []cli.Flag, network config.Network) []cli.Flag {
+func createFlagsFromConfigParams(prefix string, section config.IConfigSection, configFlags []cli.Flag, network config.Network) []cli.Flag {
+	// Create CLI flags from this section's parameters
+	params := section.GetParameters()
 	for _, param := range params {
 		var paramName string
-		if sectionName == "" {
+		if prefix == "" {
 			paramName = param.GetCommon().ID
 		} else {
-			paramName = fmt.Sprintf("%s-%s", sectionName, param.GetCommon().ID)
+			paramName = fmt.Sprintf("%s-%s", prefix, param.GetCommon().ID)
 		}
-
-		defaultVal := param.GetDefaultAsAny(network)
 		description := param.GetCommon().Description
 
-		switch param.Type {
-		case cfgtypes.ParameterType_Bool:
-			configFlags = append(configFlags, &cli.BoolFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: bool\n", description),
-			})
-		case cfgtypes.ParameterType_Int:
-			configFlags = append(configFlags, &cli.IntFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: int\n", description),
-				Value: int(defaultVal.(int64)),
-			})
-		case cfgtypes.ParameterType_Float:
-			configFlags = append(configFlags, &cli.Float64Flag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: float\n", description),
-				Value: defaultVal.(float64),
-			})
-		case cfgtypes.ParameterType_String:
-			configFlags = append(configFlags, &cli.StringFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: string\n", description),
-				Value: defaultVal.(string),
-			})
-		case cfgtypes.ParameterType_Uint:
-			configFlags = append(configFlags, &cli.UintFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: uint\n", description),
-				Value: uint(defaultVal.(uint64)),
-			})
-		case cfgtypes.ParameterType_Uint16:
-			configFlags = append(configFlags, &cli.UintFlag{
-				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tType: uint16\n", description),
-				Value: uint(defaultVal.(uint16)),
-			})
-		case cfgtypes.ParameterType_Choice:
+		if len(param.GetOptions()) > 0 {
 			optionStrings := []string{}
 			for _, option := range param.GetOptions() {
 				optionStrings = append(optionStrings, fmt.Sprint(option.String()))
@@ -84,9 +47,53 @@ func createFlagsFromConfigParams(sectionName string, params []config.IParameter,
 			configFlags = append(configFlags, &cli.StringFlag{
 				Name:  paramName,
 				Usage: fmt.Sprintf("%s\n\tType: choice\n\tOptions: %s\n", description, strings.Join(optionStrings, ", ")),
-				Value: fmt.Sprint(defaultVal),
+				Value: fmt.Sprint(param.GetDefaultAsAny(network)),
 			})
+		} else if boolParam, ok := param.(*config.Parameter[bool]); ok {
+			configFlags = append(configFlags, &cli.BoolFlag{
+				Name:  paramName,
+				Usage: fmt.Sprintf("%s\n\tType: bool\n", description),
+				Value: boolParam.GetDefault(network),
+			})
+		} else if intParam, ok := param.(*config.Parameter[int]); ok {
+			configFlags = append(configFlags, &cli.IntFlag{
+				Name:  paramName,
+				Usage: fmt.Sprintf("%s\n\tType: int\n", description),
+				Value: intParam.GetDefault(network),
+			})
+		} else if floatParam, ok := param.(*config.Parameter[float64]); ok {
+			configFlags = append(configFlags, &cli.Float64Flag{
+				Name:  paramName,
+				Usage: fmt.Sprintf("%s\n\tType: float\n", description),
+				Value: floatParam.GetDefault(network),
+			})
+		} else if stringParam, ok := param.(*config.Parameter[string]); ok {
+			configFlags = append(configFlags, &cli.StringFlag{
+				Name:  paramName,
+				Usage: fmt.Sprintf("%s\n\tType: string\n", description),
+				Value: stringParam.GetDefault(network),
+			})
+		} else if uintParam, ok := param.(*config.Parameter[uint64]); ok {
+			configFlags = append(configFlags, &cli.Uint64Flag{
+				Name:  paramName,
+				Usage: fmt.Sprintf("%s\n\tType: uint\n", description),
+				Value: uintParam.GetDefault(network),
+			})
+		} else if uint16Param, ok := param.(*config.Parameter[uint16]); ok {
+			configFlags = append(configFlags, &cli.UintFlag{
+				Name:  paramName,
+				Usage: fmt.Sprintf("%s\n\tType: uint16\n", description),
+				Value: uint(uint16Param.GetDefault(network)),
+			})
+		} else {
+			panic(fmt.Sprintf("param [%s] is not a supported type for form item binding", paramName))
 		}
+	}
+
+	// Handle subconfigs
+	for subconfigName, subconfig := range section.GetSubconfigs() {
+		header := prefix + "-" + subconfigName
+		configFlags = createFlagsFromConfigParams(header, subconfig, configFlags, network)
 	}
 
 	return configFlags
@@ -94,18 +101,10 @@ func createFlagsFromConfigParams(sectionName string, params []config.IParameter,
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-
-	configFlags := []cli.Flag{}
+	// Create config flags from parameters
 	cfgTemplate := snCfg.NewSmartNodeConfig("", false)
 	network := cfgTemplate.Network.Value
-
-	// Root params
-	configFlags = createFlagsFromConfigParams("", cfgTemplate.GetParameters(), configFlags, network)
-
-	// Subconfigs
-	for sectionName, subconfig := range cfgTemplate.GetSubconfigs() {
-		configFlags = createFlagsFromConfigParams(sectionName, subconfig.GetParameters(), configFlags, network)
-	}
+	configFlags := createFlagsFromConfigParams("", cfgTemplate, []cli.Flag{}, network)
 
 	app.Commands = append(app.Commands, &cli.Command{
 		Name:    name,

@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/urfave/cli/v2"
 )
 
@@ -31,16 +32,10 @@ func importEcData(c *cli.Context, sourceDir string) error {
 		return fmt.Errorf("Error converting to absolute path: %w", err)
 	}
 
-	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
-	if err != nil {
-		return fmt.Errorf("Error getting container prefix: %w", err)
-	}
-
 	// Check the source dir
 	fmt.Println("Checking source directory...")
-	ecMigrator := cfg.Smartnode.GetEcMigratorContainerTag()
-	sourceBytes, err := rp.GetDirSizeViaEcMigrator(prefix+EcMigratorContainerSuffix, sourceDir, ecMigrator)
+	migratorName := cfg.GetDockerArtifactName(config.EcMigratorSuffix)
+	sourceBytes, err := rp.GetDirSizeViaEcMigrator(migratorName, sourceDir)
 	if err != nil {
 		return err
 	}
@@ -50,7 +45,7 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	fmt.Println("Once the import is complete, your execution client will restart automatically.\n")
 
 	// Get the volume to import into
-	executionContainerName := prefix + ExecutionContainerSuffix
+	executionContainerName := cfg.GetDockerArtifactName(config.ExecutionClientSuffix)
 	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting execution client volume name: %w", err)
@@ -92,29 +87,23 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	}
 
 	fmt.Printf("Stopping %s...\n", executionContainerName)
-	result, err := rp.StopContainer(executionContainerName)
+	err = rp.StopContainer(executionContainerName)
 	if err != nil {
 		return fmt.Errorf("Error stopping main execution container: %w", err)
-	}
-	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
 	}
 
 	// Run the migrator
 	fmt.Printf("Importing data from %s to volume %s...\n", sourceDir, volume)
-	err = rp.RunEcMigrator(prefix+EcMigratorContainerSuffix, volume, sourceDir, "import", ecMigrator)
+	err = rp.RunEcMigrator(migratorName, volume, sourceDir, "import")
 	if err != nil {
 		return fmt.Errorf("Error running EC migrator: %w", err)
 	}
 
-	// Restart ETH1
+	// Restart the EC
 	fmt.Printf("Restarting %s...\n", executionContainerName)
-	result, err = rp.StartContainer(executionContainerName)
+	err = rp.StartContainer(executionContainerName)
 	if err != nil {
 		return fmt.Errorf("Error starting main execution client: %w", err)
-	}
-	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
 	}
 
 	fmt.Println("\nDone! Your chain data has been imported.")

@@ -31,7 +31,7 @@ func recoverWallet(c *cli.Context) error {
 		return err
 	}
 	status := statusResponse.Data.WalletStatus
-	if status.HasKeystore {
+	if status.Wallet.IsOnDisk {
 		fmt.Println("The node wallet is already initialized.")
 		return nil
 	}
@@ -42,16 +42,14 @@ func recoverWallet(c *cli.Context) error {
 	// Set password if not set
 	var password string
 	var savePassword bool
-	if !status.HasPassword {
-		if c.String(passwordFlag.Name) != "" {
-			password = c.String(passwordFlag.Name)
-		} else {
-			password = promptPassword()
-		}
-
-		// Ask about saving
-		savePassword = utils.Confirm("Would you like to save the password to disk? If you do, your node will be able to handle transactions automatically after a client restart; otherwise, you will have to manually enter the password after each restart with <placeholder>.")
+	if c.String(PasswordFlag.Name) != "" {
+		password = c.String(PasswordFlag.Name)
+	} else {
+		password = PromptNewPassword()
 	}
+
+	// Ask about saving
+	savePassword = utils.Confirm("Would you like to save the password to disk? If you do, your node will be able to handle transactions automatically after a client restart; otherwise, you will have to manually enter the password after each restart with `rocketpool wallet set-password`.")
 
 	// Handle validator key recovery skipping
 	skipValidatorKeyRecovery := c.Bool(skipValidatorRecoveryFlag.Name)
@@ -110,7 +108,7 @@ func recoverWallet(c *cli.Context) error {
 		}
 
 		// Recover wallet
-		response, err := rp.Api.Wallet.SearchAndRecover(mnemonic, address, &skipValidatorKeyRecovery, []byte(password), &savePassword)
+		response, err := rp.Api.Wallet.SearchAndRecover(mnemonic, address, &skipValidatorKeyRecovery, password, savePassword)
 		if err != nil {
 			return err
 		}
@@ -124,7 +122,7 @@ func recoverWallet(c *cli.Context) error {
 			if len(response.Data.ValidatorKeys) > 0 {
 				fmt.Println("Validator keys:")
 				for _, key := range response.Data.ValidatorKeys {
-					fmt.Println(key.Hex())
+					fmt.Println(key.HexWithPrefix())
 				}
 			} else {
 				fmt.Println("No validator keys were found.")
@@ -155,7 +153,7 @@ func recoverWallet(c *cli.Context) error {
 		}
 
 		// Recover wallet
-		response, err := rp.Api.Wallet.Recover(derivationPath, &mnemonic, &skipValidatorKeyRecovery, walletIndex, &password, &savePassword)
+		response, err := rp.Api.Wallet.Recover(derivationPath, mnemonic, &skipValidatorKeyRecovery, walletIndex, password, savePassword)
 		if err != nil {
 			return err
 		}
@@ -167,7 +165,7 @@ func recoverWallet(c *cli.Context) error {
 			if len(response.Data.ValidatorKeys) > 0 {
 				fmt.Println("Validator keys:")
 				for _, key := range response.Data.ValidatorKeys {
-					fmt.Println(key.Hex())
+					fmt.Println(key.HexWithPrefix())
 				}
 			} else {
 				fmt.Println("No validator keys were found.")

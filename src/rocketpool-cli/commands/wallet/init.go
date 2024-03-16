@@ -19,19 +19,21 @@ var (
 	}
 )
 
-func initWallet(c *cli.Context) error {
-	// Get RP client
-	rp := client.NewClientFromCtx(c)
+func InitWallet(c *cli.Context, rp *client.Client) error {
+	if rp == nil {
+		// Get RP client
+		rp := client.NewClientFromCtx(c)
 
-	// Get & check wallet status
-	statusResponse, err := rp.Api.Wallet.Status()
-	if err != nil {
-		return err
-	}
-	status := statusResponse.Data.WalletStatus
-	if status.HasKeystore {
-		fmt.Println("The node wallet is already initialized.")
-		return nil
+		// Get & check wallet status
+		statusResponse, err := rp.Api.Wallet.Status()
+		if err != nil {
+			return err
+		}
+		status := statusResponse.Data.WalletStatus
+		if status.Wallet.IsOnDisk {
+			fmt.Println("The node wallet is already initialized.")
+			return nil
+		}
 	}
 
 	// Prompt for user confirmation before printing sensitive information
@@ -42,17 +44,14 @@ func initWallet(c *cli.Context) error {
 
 	// Set password if not set
 	var password string
-	var savePassword bool
-	if !status.HasPassword {
-		if c.String(passwordFlag.Name) != "" {
-			password = c.String(passwordFlag.Name)
-		} else {
-			password = promptPassword()
-		}
-
-		// Ask about saving
-		savePassword = utils.Confirm("Would you like to save the password to disk? If you do, your node will be able to handle transactions automatically after a client restart; otherwise, you will have to manually enter the password after each restart with <placeholder>.")
+	if c.String(PasswordFlag.Name) != "" {
+		password = c.String(PasswordFlag.Name)
+	} else {
+		password = PromptNewPassword()
 	}
+
+	// Ask about saving
+	savePassword := utils.Confirm("Would you like to save the password to disk? If you do, your node will be able to handle transactions automatically after a client restart; otherwise, you will have to manually enter the password after each restart with `rocketpool wallet set-password`.")
 
 	// Get the derivation path
 	derivationPathString := c.String(derivationPathFlag.Name)
@@ -71,7 +70,7 @@ func initWallet(c *cli.Context) error {
 	}
 
 	// Initialize wallet
-	response, err := rp.Api.Wallet.Initialize(derivationPath, walletIndex, &password, &savePassword)
+	response, err := rp.Api.Wallet.Initialize(derivationPath, walletIndex, false, password, false)
 	if err != nil {
 		return fmt.Errorf("error initializing wallet: %w", err)
 	}
@@ -93,14 +92,14 @@ func initWallet(c *cli.Context) error {
 
 	// Do a recover to save the wallet
 	skipRecovery := true
-	recoverResponse, err := rp.Api.Wallet.Recover(derivationPath, &response.Data.Mnemonic, &skipRecovery, walletIndex, nil, nil)
+	recoverResponse, err := rp.Api.Wallet.Recover(derivationPath, response.Data.Mnemonic, &skipRecovery, walletIndex, password, savePassword)
 	if err != nil {
 		return fmt.Errorf("error saving wallet: %w", err)
 	}
 
 	// Sanity check the addresses
 	if recoverResponse.Data.AccountAddress != response.Data.AccountAddress {
-		return fmt.Errorf("expected %s, but generated %s upon saving", response.Data.AccountAddress, recoverResponse.Data.AccountAddress)
+		return fmt.Errorf("expected %s, but generated %s upon testing recovery", response.Data.AccountAddress, recoverResponse.Data.AccountAddress)
 	}
 
 	// Clear terminal output

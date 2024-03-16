@@ -7,9 +7,10 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/node-manager-core/utils"
+	"github.com/rocket-pool/node-manager-core/wallet"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	sharedutils "github.com/rocket-pool/smartnode/shared/utils"
+	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 )
 
 const (
@@ -40,15 +41,15 @@ func signMessage(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	if !sharedutils.IsWalletReady(status.Data.WalletStatus) {
-		fmt.Println("The node wallet is not initialized.")
+	if !wallet.IsWalletReady(status.Data.WalletStatus) {
+		fmt.Println("The node wallet is not loaded or your node is in read-only mode. Please run `rocketpool wallet status` for more details.")
 		return nil
 	}
 
 	// Get the message
 	message := c.String(signMessageFlag.Name)
 	for message == "" {
-		message = utils.Prompt("Please enter the message you want to sign: (EIP-191 personal_sign)", "^.+$", "Please enter the message you want to sign: (EIP-191 personal_sign)")
+		message = cliutils.Prompt("Please enter the message you want to sign: (EIP-191 personal_sign)", "^.+$", "Please enter the message you want to sign: (EIP-191 personal_sign)")
 	}
 
 	// Build the TX
@@ -59,9 +60,9 @@ func signMessage(c *cli.Context) error {
 
 	// Print the signature
 	formattedSignature := PersonalSignature{
-		Address:   status.Data.AccountAddress,
+		Address:   status.Data.WalletStatus.Wallet.WalletAddress,
 		Message:   message,
-		Signature: response.Data.SignedMessage,
+		Signature: utils.EncodeHexWithPrefix(response.Data.SignedMessage),
 		Version:   fmt.Sprint(signatureVersion),
 	}
 	bytes, err := json.MarshalIndent(formattedSignature, "", "    ")

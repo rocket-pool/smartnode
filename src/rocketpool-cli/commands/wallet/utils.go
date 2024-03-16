@@ -8,26 +8,29 @@ import (
 	"strings"
 
 	"github.com/goccy/go-json"
-	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/wallet/bip39"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet/bip39"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 var (
-	passwordFlag *cli.StringFlag = &cli.StringFlag{
+	PasswordFlag *cli.StringFlag = &cli.StringFlag{
 		Name:    "password",
 		Aliases: []string{"p"},
 		Usage:   "The password to secure the wallet with (if not already set)",
+	}
+	SavePasswordFlag *cli.StringFlag = &cli.StringFlag{
+		Name:    "save-password",
+		Aliases: []string{"s"},
+		Usage:   "Save the node wallet password to disk, so the wallet can be automatically reloaded upon starting up",
 	}
 	derivationPathFlag *cli.StringFlag = &cli.StringFlag{
 		Name:    "derivation-path",
@@ -57,8 +60,8 @@ var (
 	}
 )
 
-// Prompt for a wallet password
-func promptPassword() string {
+// Prompt for a new wallet password
+func PromptNewPassword() string {
 	for {
 		password := utils.PromptPassword(
 			"Please enter a password to secure your wallet with:",
@@ -71,6 +74,18 @@ func promptPassword() string {
 		}
 		fmt.Println("Password confirmation does not match.")
 		fmt.Println("")
+	}
+}
+
+// Prompt for the password to a wallet that already exists
+func PromptExistingPassword() string {
+	for {
+		password := utils.PromptPassword(
+			"Please enter the password your wallet was originally secured with:",
+			fmt.Sprintf("^.{%d,}$", input.MinPasswordLength),
+			fmt.Sprintf("Your password must be at least %d characters long. Please try again:", input.MinPasswordLength),
+		)
+		return password
 	}
 }
 
@@ -134,13 +149,8 @@ func confirmMnemonic(mnemonic string) {
 
 // Check for custom keys, prompt for their passwords, and store them in the custom keys file
 func promptForCustomKeyPasswords(rp *client.Client, cfg *config.SmartNodeConfig, testOnly bool) (string, error) {
-
 	// Check for the custom key directory
-	datapath, err := homedir.Expand(cfg.Smartnode.DataPath.Value.(string))
-	if err != nil {
-		return "", fmt.Errorf("error expanding data directory: %w", err)
-	}
-	customKeyDir := filepath.Join(datapath, "custom-keys")
+	customKeyDir := cfg.GetCustomKeyPath()
 	info, err := os.Stat(customKeyDir)
 	if os.IsNotExist(err) || !info.IsDir() {
 		return "", nil
@@ -191,10 +201,10 @@ func promptForCustomKeyPasswords(rp *client.Client, cfg *config.SmartNodeConfig,
 	pubkeyPasswords := map[string]string{}
 	for _, pubkey := range customPubkeys {
 		password := utils.PromptPassword(
-			fmt.Sprintf("Please enter the password that the keystore for %s was encrypted with:", pubkey.Hex()), "^.*$", "",
+			fmt.Sprintf("Please enter the password that the keystore for %s was encrypted with:", pubkey.HexWithPrefix()), "^.*$", "",
 		)
 
-		formattedPubkey := strings.ToUpper(hexutils.RemovePrefix(pubkey.Hex()))
+		formattedPubkey := strings.ToUpper(pubkey.Hex())
 		pubkeyPasswords[formattedPubkey] = password
 
 		fmt.Println()
@@ -205,14 +215,13 @@ func promptForCustomKeyPasswords(rp *client.Client, cfg *config.SmartNodeConfig,
 	if err != nil {
 		return "", fmt.Errorf("error serializing keystore passwords file: %w", err)
 	}
-	passwordFile := filepath.Join(datapath, "custom-key-passwords")
+	passwordFile := cfg.GetCustomKeyPasswordFilePath()
 	err = os.WriteFile(passwordFile, fileBytes, 0600)
 	if err != nil {
 		return "", fmt.Errorf("error writing keystore passwords file: %w", err)
 	}
 
 	return passwordFile, nil
-
 }
 
 // Deletes the custom key password file

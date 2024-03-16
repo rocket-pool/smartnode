@@ -2,14 +2,17 @@ package service
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/rivo/tview"
+	nmc_config "github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
-	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
+	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/commands/service/config"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/urfave/cli/v2"
 )
 
@@ -18,6 +21,13 @@ func configureService(c *cli.Context) error {
 	// Get RP client
 	rp := client.NewClientFromCtx(c)
 
+	// Make sure the config directory exists first
+	err := os.MkdirAll(rp.Context.ConfigPath, 0700)
+	if err != nil {
+		fmt.Printf("%sYour Smart Node user configuration directory of [%s] could not be created:%s.%s\n", terminal.ColorYellow, rp.Context.ConfigPath, err.Error(), terminal.ColorReset)
+		return nil
+	}
+
 	// Load the config, checking to see if it's new (hasn't been installed before)
 	var oldCfg *config.SmartNodeConfig
 	cfg, isNew, err := rp.LoadConfig()
@@ -25,36 +35,30 @@ func configureService(c *cli.Context) error {
 		return fmt.Errorf("error loading user settings: %w", err)
 	}
 
-	// Check if this is a new install
-	isUpdate, err := rp.IsFirstRun()
-	if err != nil {
-		return fmt.Errorf("error checking for first-run status: %w", err)
-	}
+	// Check if this is an update
+	oldVersion := strings.TrimPrefix(cfg.Version, "v")
+	currentVersion := strings.TrimPrefix(shared.RocketPoolVersion, "v")
+	isUpdate := c.Bool(installUpdateDefaultsFlag.Name) || (oldVersion != currentVersion)
 
 	// For upgrades, move the config to the old one and create a new upgraded copy
 	if isUpdate {
 		oldCfg = cfg
 		cfg = cfg.CreateCopy()
-		err = cfg.UpdateDefaults()
-		if err != nil {
-			return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
-		}
+		cfg.UpdateDefaults()
 	}
 
 	// Save the config and exit in headless mode
 	if c.NumFlags() > 0 {
-		err := configureHeadless(c, cfg)
+		err := updateConfigParamsFromCliArgs(c, "", cfg)
 		if err != nil {
 			return fmt.Errorf("error updating config from provided arguments: %w", err)
 		}
 		return rp.SaveConfig(cfg)
 	}
 
-	// Check for native mode
-	isNative := rp.IsNative()
-
+	// Run the TUI
 	app := tview.NewApplication()
-	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isUpdate, isNative)
+	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isUpdate, cfg.IsNativeMode)
 	err = app.Run()
 	if err != nil {
 		return err
@@ -70,16 +74,15 @@ func configureService(c *cli.Context) error {
 		fmt.Println("Your changes have been saved!")
 
 		// Exit immediately if we're in native mode
-		if isNative {
+		if cfg.IsNativeMode {
 			fmt.Println("Please restart your daemon service for them to take effect.")
 			return nil
 		}
 
 		// Handle network changes
-		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
 		if md.ChangeNetworks {
 			// Remove the checkpoint sync provider
-			md.Config.ConsensusCommon.CheckpointSyncProvider.Value = ""
+			md.Config.LocalBeaconClient.CheckpointSyncProvider.Value = ""
 			err = rp.SaveConfig(md.Config)
 			if err != nil {
 				return fmt.Errorf("error saving config: %w", err)
@@ -87,14 +90,16 @@ func configureService(c *cli.Context) error {
 
 			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed. If you had a Checkpoint Sync URL provided for your Consensus client, it will be removed and you will need to specify a different one that supports the new network.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", terminal.ColorYellow, terminal.ColorReset)
 
-			if !utils.Confirm("Would you like the Smartnode to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of Rocket Pool's Docker containers.") {
+			if !utils.Confirm("Would you like the Smart Node to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of it's Docker containers.") {
 				fmt.Println("To change networks manually, please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).")
 				return nil
 			}
 
-			err = changeNetworks(c, rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix))
+			nodeSuffix := config.GetContainerName(nmc_config.ContainerID_Daemon)
+			nodeName := cfg.GetDockerArtifactName(nodeSuffix)
+			err = changeNetworks(c, rp, nodeName)
 			if err != nil {
-				fmt.Printf("%s%s%s\nThe Smartnode could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).\n", terminal.ColorRed, err.Error(), terminal.ColorReset)
+				fmt.Printf("%s%s%s\nThe Smart Node could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).\n", terminal.ColorRed, err.Error(), terminal.ColorReset)
 			}
 			return nil
 		}
@@ -112,7 +117,9 @@ func configureService(c *cli.Context) error {
 		if len(md.ContainersToRestart) > 0 {
 			fmt.Println("The following containers must be restarted for the changes to take effect:")
 			for _, container := range md.ContainersToRestart {
-				fmt.Printf("\t%s_%s\n", prefix, container)
+				suffix := config.GetContainerName(container)
+				name := cfg.GetDockerArtifactName(suffix)
+				fmt.Printf("\t%s\n", name)
 			}
 			if !utils.Confirm("Would you like to restart them automatically now?") {
 				fmt.Println("Please run `rocketpool service start` when you are ready to apply the changes.")
@@ -121,9 +128,10 @@ func configureService(c *cli.Context) error {
 
 			fmt.Println()
 			for _, container := range md.ContainersToRestart {
-				fullName := fmt.Sprintf("%s_%s", prefix, container)
-				fmt.Printf("Stopping %s... ", fullName)
-				rp.StopContainer(fullName)
+				suffix := config.GetContainerName(container)
+				name := cfg.GetDockerArtifactName(suffix)
+				fmt.Printf("Stopping %s... ", name)
+				rp.StopContainer(name)
 				fmt.Print("done!\n")
 			}
 
@@ -132,69 +140,36 @@ func configureService(c *cli.Context) error {
 			return startService(c, true)
 		}
 	} else {
-		fmt.Println("Your changes have not been saved. Your Smartnode configuration is the same as it was before.")
+		fmt.Println("Your changes have not been saved. Your Smart Node configuration is the same as it was before.")
 		return nil
 	}
 
 	return err
 }
 
-// Updates a configuration from the provided CLI arguments headlessly
-func configureHeadless(c *cli.Context, cfg *config.SmartNodeConfig) error {
-	// Root params
-	for _, param := range cfg.GetParameters() {
-		err := updateConfigParamFromCliArg(c, "", param, cfg)
-		if err != nil {
-			return err
+// Updates a config section's parameters from the CLI flags
+func updateConfigParamsFromCliArgs(c *cli.Context, prefix string, section nmc_config.IConfigSection) error {
+	// Handle this section's parameters
+	params := section.GetParameters()
+	for _, param := range params {
+		var paramName string
+		if prefix == "" {
+			paramName = param.GetCommon().ID
+		} else {
+			paramName = fmt.Sprintf("%s-%s", prefix, param.GetCommon().ID)
 		}
-	}
 
-	// Subconfigs
-	for sectionName, subconfig := range cfg.GetSubconfigs() {
-		for _, param := range subconfig.GetParameters() {
-			err := updateConfigParamFromCliArg(c, sectionName, param, cfg)
-			if err != nil {
-				return err
-			}
+		// Ignore if it's not set
+		if !c.IsSet(paramName) {
+			continue
 		}
-	}
 
-	return nil
-}
-
-// Updates a config parameter from a CLI flag
-func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *cfgtypes.Parameter, cfg *config.SmartNodeConfig) error {
-	var paramName string
-	if sectionName == "" {
-		paramName = param.ID
-	} else {
-		paramName = fmt.Sprintf("%s-%s", sectionName, param.ID)
-	}
-
-	if c.IsSet(paramName) {
-		switch param.Type {
-		case cfgtypes.ParameterType_Bool:
-			param.Value = c.Bool(paramName)
-		case cfgtypes.ParameterType_Int:
-			param.Value = c.Int(paramName)
-		case cfgtypes.ParameterType_Float:
-			param.Value = c.Float64(paramName)
-		case cfgtypes.ParameterType_String:
-			setting := c.String(paramName)
-			if param.MaxLength > 0 && len(setting) > param.MaxLength {
-				return fmt.Errorf("error setting value for %s: [%s] is too long (max length %d)", paramName, setting, param.MaxLength)
-			}
-			param.Value = c.String(paramName)
-		case cfgtypes.ParameterType_Uint:
-			param.Value = c.Uint(paramName)
-		case cfgtypes.ParameterType_Uint16:
-			param.Value = uint16(c.Uint(paramName))
-		case cfgtypes.ParameterType_Choice:
+		if len(param.GetOptions()) > 0 {
 			selection := c.String(paramName)
 			found := false
-			for _, option := range param.Options {
-				if fmt.Sprint(option.Value) == selection {
-					param.Value = option.Value
+			for _, option := range param.GetOptions() {
+				if option.String() == selection {
+					param.SetValue(option.GetValueAsAny())
 					found = true
 					break
 				}
@@ -202,6 +177,33 @@ func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *cfgt
 			if !found {
 				return fmt.Errorf("error setting value for %s: [%s] is not one of the valid options", paramName, selection)
 			}
+		} else if boolParam, ok := param.(*nmc_config.Parameter[bool]); ok {
+			boolParam.Value = c.Bool(paramName)
+		} else if intParam, ok := param.(*nmc_config.Parameter[int]); ok {
+			intParam.Value = c.Int(paramName)
+		} else if floatParam, ok := param.(*nmc_config.Parameter[float64]); ok {
+			floatParam.Value = c.Float64(paramName)
+		} else if stringParam, ok := param.(*nmc_config.Parameter[string]); ok {
+			setting := c.String(paramName)
+			if param.GetCommon().MaxLength > 0 && len(setting) > param.GetCommon().MaxLength {
+				return fmt.Errorf("error setting value for %s: [%s] is too long (max length %d)", paramName, setting, param.GetCommon().MaxLength)
+			}
+			stringParam.Value = c.String(paramName)
+		} else if uintParam, ok := param.(*nmc_config.Parameter[uint64]); ok {
+			uintParam.Value = c.Uint64(paramName)
+		} else if uint16Param, ok := param.(*nmc_config.Parameter[uint16]); ok {
+			uint16Param.Value = uint16(c.Uint(paramName))
+		} else {
+			panic(fmt.Sprintf("param [%s] is not a supported type for form item binding", paramName))
+		}
+	}
+
+	// Handle subconfigs
+	for subconfigName, subconfig := range section.GetSubconfigs() {
+		header := prefix + "-" + subconfigName
+		err := updateConfigParamsFromCliArgs(c, header, subconfig)
+		if err != nil {
+			return fmt.Errorf("error updating params for section [%s]: %w", header, err)
 		}
 	}
 

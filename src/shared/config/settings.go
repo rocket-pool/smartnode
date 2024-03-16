@@ -53,4 +53,8 @@ const (
 
 	// Snapshot
 	SnapshotID string = "rocketpool-dao.eth"
+
+	// Utility Containers
+	PruneProvisionerTag string = "rocketpool/eth1-prune-provision:v0.0.1"
+	EcMigratorTag       string = "rocketpool/ec-migrator:v1.0.0"
 )

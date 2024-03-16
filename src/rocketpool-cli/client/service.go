@@ -473,9 +473,9 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 }
 
 // Runs the prune provisioner
-func (c *Client) RunPruneProvisioner(container string, volume string, image string) error {
+func (c *Client) RunPruneProvisioner(container string, volume string) error {
 	// Run the prune provisioner
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s", container, volume, image)
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s", container, volume, config.PruneProvisionerTag)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return err
@@ -500,8 +500,8 @@ func (c *Client) RunNethermindPruneStarter(container string) error {
 }
 
 // Runs the EC migrator
-func (c *Client) RunEcMigrator(container string, volume string, targetDir string, mode string, image string) error {
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient -v %s:/mnt/external -e EC_MIGRATE_MODE='%s' %s", container, volume, targetDir, mode, image)
+func (c *Client) RunEcMigrator(container string, volume string, targetDir string, mode string) error {
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient -v %s:/mnt/external -e EC_MIGRATE_MODE='%s' %s", container, volume, targetDir, mode, config.EcMigratorTag)
 	err := c.printOutput(cmd)
 	if err != nil {
 		return err
@@ -511,8 +511,8 @@ func (c *Client) RunEcMigrator(container string, volume string, targetDir string
 }
 
 // Gets the size of the target directory via the EC migrator for importing, which should have the same permissions as exporting
-func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string, image string) (uint64, error) {
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/mnt/external -e OPERATION='size' %s", container, targetDir, image)
+func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string) (uint64, error) {
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/mnt/external -e OPERATION='size' %s", container, targetDir, config.EcMigratorTag)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return 0, fmt.Errorf("Error getting source directory size: %w", err)

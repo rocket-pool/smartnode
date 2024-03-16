@@ -8,10 +8,10 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 // When printing sync percents, we should avoid printing 100%.
@@ -27,7 +27,7 @@ const (
 	ethClientRecentBlockThreshold time.Duration = 5 * time.Minute
 )
 
-func printClientStatus(status *api.ClientStatus, name string) {
+func printClientStatus(status *types.ClientStatus, name string) {
 
 	if status.Error != "" {
 		fmt.Printf("Your %s is unavailable (%s).\n", name, status.Error)
@@ -45,7 +45,7 @@ func printClientStatus(status *api.ClientStatus, name string) {
 	}
 }
 
-func printSyncProgress(status *api.ClientManagerStatus, name string) {
+func printSyncProgress(status *types.ClientManagerStatus, name string) {
 
 	// Print primary client status
 	printClientStatus(&status.PrimaryClientStatus, fmt.Sprintf("primary %s client", name))
@@ -70,7 +70,7 @@ func getSyncProgress(c *cli.Context) error {
 	}
 
 	// Print what network we're on
-	err = utils.PrintNetwork(cfg.GetNetwork(), isNew)
+	err = utils.PrintNetwork(cfg.Network.Value, isNew)
 	if err != nil {
 		return err
 	}
@@ -81,8 +81,8 @@ func getSyncProgress(c *cli.Context) error {
 		return err
 	}
 	if !depositContractInfo.Data.SufficientSync {
-		fmt.Printf("%sYour execution client hasn't synced enough to determine if your execution and consensus clients are on the same network.\n", terminal.ColorYellow)
-		fmt.Printf("To run this safety check, try again later when the execution client has made more sync progress.%s\n\n", terminal.ColorReset)
+		fmt.Printf("%sYour Execution Client hasn't synced enough to determine if your Execution Client and Beacon Node are on the same network.\n", terminal.ColorYellow)
+		fmt.Printf("To run this safety check, try again later when the Execution Client has made more sync progress.%s\n\n", terminal.ColorReset)
 	} else if depositContractInfo.Data.RPNetwork != depositContractInfo.Data.BeaconNetwork ||
 		depositContractInfo.Data.RPDepositContract != depositContractInfo.Data.BeaconDepositContract {
 		utils.PrintDepositMismatchError(
@@ -92,7 +92,7 @@ func getSyncProgress(c *cli.Context) error {
 			depositContractInfo.Data.BeaconDepositContract)
 		return nil
 	} else {
-		fmt.Println("Your consensus client is on the correct network.\n")
+		fmt.Println("Your Beacon Node is on the correct network.\n")
 	}
 
 	// Get node status
@@ -105,7 +105,7 @@ func getSyncProgress(c *cli.Context) error {
 	printSyncProgress(&status.Data.EcManagerStatus, "execution")
 
 	// Print CC status
-	printSyncProgress(&status.Data.BcManagerStatus, "consensus")
+	printSyncProgress(&status.Data.BcManagerStatus, "beacon")
 
 	// Return
 	return nil

@@ -3,7 +3,6 @@ package config
 import "github.com/rocket-pool/node-manager-core/config"
 
 func createExternalBnStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
-
 	// Create the button names and descriptions from the config
 	clients := wiz.md.Config.ExternalBeaconClient.BeaconNode.Options
 	clientNames := []string{}
@@ -55,5 +54,4 @@ func createExternalBnStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 		back,
 		"step-external-bn-select",
 	)
-
 }

@@ -38,7 +38,7 @@ func installUpdateTracker(c *cli.Context) error {
 	rp := client.NewClientFromCtx(c)
 
 	// Install service
-	err := rp.InstallUpdateTracker(c.Bool(installUpdateTrackerVerboseFlag.Name), c.String(installUpdateTrackerVersionFlag.Name))
+	err := rp.InstallUpdateTracker(c.Bool(installUpdateTrackerVerboseFlag.Name), c.String(installUpdateTrackerVersionFlag.Name), c.Bool(installLocalFlag.Name))
 	if err != nil {
 		return err
 	}

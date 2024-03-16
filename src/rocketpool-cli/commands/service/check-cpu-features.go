@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/shared/utils/sys"
+	"github.com/rocket-pool/node-manager-core/utils/sys"
 )
 
 // Get the list of features required for modern client containers but not supported by the CPU

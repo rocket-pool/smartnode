@@ -4,10 +4,12 @@ import "github.com/rocket-pool/node-manager-core/config"
 
 const (
 	// Container Names
-	NodeSuffix            string = "node"
-	ExecutionClientSuffix string = "eth1"
-	BeaconNodeSuffix      string = "eth2"
-	ValidatorClientSuffix string = "validator"
+	NodeSuffix             string = "node"
+	ExecutionClientSuffix  string = "eth1"
+	BeaconNodeSuffix       string = "eth2"
+	ValidatorClientSuffix  string = "validator"
+	EcMigratorSuffix       string = "ec_migrator"
+	PruneProvisionerSuffix string = "prune_provisioner"
 )
 
 func GetContainerName(id config.ContainerID) string {

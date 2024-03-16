@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/urfave/cli/v2"
 )
 
@@ -58,14 +59,8 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	fmt.Println("If your execution client is running, it will be shut down.")
 	fmt.Println("Once the export is complete, your execution client will restart automatically.\n")
 
-	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
-	if err != nil {
-		return fmt.Errorf("Error getting container prefix: %w", err)
-	}
-
 	// Get the EC volume name
-	executionContainerName := prefix + ExecutionContainerSuffix
+	executionContainerName := cfg.GetDockerArtifactName(config.ExecutionClientSuffix)
 	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting execution client volume name: %w", err)
@@ -73,7 +68,8 @@ func exportEcData(c *cli.Context, targetDir string) error {
 
 	if !c.Bool(exportEcDataForceFlag.Name) {
 		// Make sure the target dir has enough space
-		volumeBytes, err := getVolumeSpaceUsed(rp, volume)
+		volumeBytesInt, err := rp.GetVolumeSize(volume)
+		volumeBytes := uint64(volumeBytesInt)
 		if err != nil {
 			fmt.Printf("%sWARNING: Couldn't check the disk space used by the Execution client volume: %s\nPlease verify you have enough free space to store the chain data in the target folder before proceeding!%s\n\n", terminal.ColorRed, err.Error(), terminal.ColorReset)
 		} else {
@@ -101,24 +97,20 @@ func exportEcData(c *cli.Context, targetDir string) error {
 		return nil
 	}
 
-	var result string
 	// If dirty flag is used, copies chain data without stopping the eth1 client.
 	// This requires a second quick pass to sync the remaining files after stopping the client.
 	if !c.Bool(exportEcDataDirtyFlag.Name) {
 		fmt.Printf("Stopping %s...\n", executionContainerName)
-		result, err := rp.StopContainer(executionContainerName)
+		err := rp.StopContainer(executionContainerName)
 		if err != nil {
 			return fmt.Errorf("Error stopping main execution container: %w", err)
-		}
-		if result != executionContainerName {
-			return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
 		}
 	}
 
 	// Run the migrator
-	ecMigrator := cfg.Smartnode.GetEcMigratorContainerTag()
 	fmt.Printf("Exporting data from volume %s to %s...\n", volume, targetDir)
-	err = rp.RunEcMigrator(prefix+EcMigratorContainerSuffix, volume, targetDir, "export", ecMigrator)
+	migratorName := cfg.GetDockerArtifactName(config.EcMigratorSuffix)
+	err = rp.RunEcMigrator(migratorName, volume, targetDir, "export")
 	if err != nil {
 		return fmt.Errorf("Error running EC migrator: %w", err)
 	}
@@ -126,28 +118,12 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	if !c.Bool(exportEcDataDirtyFlag.Name) {
 		// Restart ETH1
 		fmt.Printf("Restarting %s...\n", executionContainerName)
-		result, err = rp.StartContainer(executionContainerName)
+		err = rp.StartContainer(executionContainerName)
 		if err != nil {
 			return fmt.Errorf("Error starting main execution client: %w", err)
-		}
-		if result != executionContainerName {
-			return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
 		}
 	}
 
 	fmt.Println("\nDone! Your chain data has been exported.")
 	return nil
-}
-
-// Get the amount of space used by a Docker volume
-func getVolumeSpaceUsed(rp *client.Client, volume string) (uint64, error) {
-	size, err := rp.GetVolumeSize(volume)
-	if err != nil {
-		return 0, fmt.Errorf("error getting execution client volume name: %w", err)
-	}
-	volumeBytes, err := humanize.ParseBytes(size)
-	if err != nil {
-		return 0, fmt.Errorf("couldn't parse size of EC volume (%s): %w", size, err)
-	}
-	return volumeBytes, nil
 }
