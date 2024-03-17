@@ -7,12 +7,12 @@
 
 version: "3.7"
 services:
-  prometheus:
-    image: {{.Prometheus.ContainerTag}}
-    container_name: {{.Smartnode.ProjectName}}_prometheus
+  {{.PrometheusContainerName}}:
+    image: {{.Metrics.Prometheus.ContainerTag}}
+    container_name: {{.ProjectName}}_{{.PrometheusContainerName}}
     restart: unless-stopped
     command:
-      - "--web.listen-address=:{{or .Prometheus.Port.Value "9091"}}"
+      - "--web.listen-address=:{{or .Metrics.Prometheus.Port "9091"}}"
       - "--config.file=/etc/prometheus/prometheus.yml"
       {{- range $flag := .GetPrometheusAdditionalFlags}}
       - "{{$flag}}"

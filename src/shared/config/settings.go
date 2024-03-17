@@ -23,9 +23,10 @@ const (
 	CustomKeyPasswordFilename string = "custom-key-passwords"
 
 	// Scripts
-	EcStartScript string = "start-ec.sh"
-	BnStartScript string = "start-bn.sh"
-	VcStartScript string = "start-vc.sh"
+	EcStartScript       string = "start-ec.sh"
+	BnStartScript       string = "start-bn.sh"
+	VcStartScript       string = "start-vc.sh"
+	MevBoostStartScript string = "start-mev-boost.sh"
 
 	// HTTP
 	ClientTimeout time.Duration = 8 * time.Second

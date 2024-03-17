@@ -7,21 +7,25 @@
 
 version: "3.7"
 services:
-  node:
-    image: {{.Smartnode.GetSmartnodeContainerTag}}
-    container_name: {{.Smartnode.ProjectName}}_node
+  {{.DaemonContainerName}}:
+    image: {{.GetSmartNodeContainerTag}}
+    container_name: {{.ProjectName}}_{{.DaemonContainerName}}
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - {{.RocketPoolDirectory}}:/.rocketpool
-      - {{.Smartnode.DataPath}}:/.rocketpool/data
+      - {{.RocketPoolDirectory}}:{{.RocketPoolDirectory}}
+      - {{.UserDataPath}}:{{.UserDataPath}}
+    command:
+      - --user-dir
+      - "{{.RocketPoolDirectory}}"
+      - "node"
     networks:
       - net
-    command: "-m 0.0.0.0 node"
     cap_drop:
       - all
     cap_add:
       - dac_override
+      - chown
     security_opt:
       - no-new-privileges
 networks:

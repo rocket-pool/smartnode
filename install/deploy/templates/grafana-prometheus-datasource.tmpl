@@ -9,7 +9,7 @@ datasources:
     type: prometheus
     access: proxy
     orgId: 1
-    url: http://prometheus:9091
+    url: http://prometheus:{{or .Metrics.Prometheus.Port "9091"}}
     basicAuth: false
     isDefault: true
     version: 1

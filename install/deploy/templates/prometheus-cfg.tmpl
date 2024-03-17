@@ -8,40 +8,40 @@ global:
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:{{or .Prometheus.Port.Value "9091"}}']
+      - targets: ['localhost:{{or .Metrics.Prometheus.Port.Value "9091"}}']
 
   - job_name: 'node'
     static_configs:
       # node-exporter is on the host network so it can get access to the actual machine's network info
       # We have to use 'hosts.docker.internal' to refer to it due to this configuration
-      - targets: ['host.docker.internal:{{or .ExporterMetricsPort.Value "9103"}}']
+      - targets: ['host.docker.internal:{{or .Metrics.ExporterMetricsPort.Value "9103"}}']
 
-  - job_name: '{{if (eq .ExecutionClient.String "geth")}}geth{{else}}eth1{{end}}'
+  - job_name: '{{if (eq .LocalExecutionClient.ExecutionClient.String "geth")}}geth{{else}}{{.ExecutionClientContainerName}}{{end}}'
     static_configs:
-      - targets: ['{{.GetExecutionHostname}}:{{or .EcMetricsPort.Value "9105"}}']
-    {{- if (eq .ExecutionClient.String "geth")}}
+      - targets: ['{{.GetExecutionHostname}}:{{or .Metrics.EcMetricsPort.Value "9105"}}']
+    {{- if (eq .LocalExecutionClient.ExecutionClient.String "geth")}}
     metrics_path: /debug/metrics/prometheus
     {{- end}}
 
-  - job_name: 'eth2'
+  - job_name: '{{.BeaconNodeContainerName}}'
     static_configs:
-      - targets: ['{{.GetConsensusHostname}}:{{or .BnMetricsPort.Value "9100"}}']
+      - targets: ['{{.GetBeaconHostname}}:{{or .Metrics.BnMetricsPort.Value "9100"}}']
 
-  - job_name: 'validator'
+  - job_name: '{{.ValidatorClientContainerName}}'
     static_configs:
-      - targets: ['validator:{{or .VcMetricsPort.Value "9101"}}']
+      - targets: ['{{.ValidatorClientContainerName}}:{{or .ValidatorClient.VcCommon.MetricsPort.Value "9101"}}']
 
   - job_name: 'rocketpool'
     scrape_interval: 5m
     scrape_timeout: 5m
     static_configs:
-      - targets: ['node:{{or .NodeMetricsPort.Value "9102"}}']
+      - targets: ['{{.DaemonContainerName}}:{{or .Metrics.DaemonMetricsPort.Value "9102"}}']
 
   - job_name: 'watchtower'
     scrape_interval: 5m
     scrape_timeout: 5m
     static_configs:
-      - targets: ['watchtower:{{or .WatchtowerMetricsPort.Value "9104"}}']
+      - targets: ['{{.WatchtowerContainerName}}:{{or .Metrics.WatchtowerMetricsPort.Value "9104"}}']
 
   - job_name: 'custom_jobs' # Mandatory field, but will be ignored.
     file_sd_configs:

@@ -7,21 +7,21 @@
 
 version: "3.7"
 services:
-  mev-boost:
+  {{.MevBoostContainerName}}:
     image: {{.MevBoost.ContainerTag}}
-    container_name: {{.Smartnode.ProjectName}}_mev-boost
+    container_name: {{.ProjectName}}_{{.MevBoostContainerName}}
     restart: unless-stopped
     ports: [{{.GetMevBoostOpenPorts}}]
     volumes:
-      - {{.RocketPoolDirectory}}/scripts:/setup:ro
+      - /usr/share/rocketpool/scripts:/usr/share/rocketpool/scripts:ro
     networks:
       - net
     environment:
-      - NETWORK={{.Smartnode.Network}}
+      - NETWORK={{.Network}}
       - MEV_BOOST_PORT={{.MevBoost.Port}}
       - MEV_BOOST_RELAYS={{.MevBoost.GetRelayString}}
     entrypoint: sh
-    command: "/setup/start-mev-boost.sh"
+    command: "/usr/share/hyperdrive/scripts/{{.GetMevBoostStartScript}}"
     cap_drop:
       - all
     cap_add:

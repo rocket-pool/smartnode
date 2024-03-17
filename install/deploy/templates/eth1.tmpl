@@ -7,49 +7,46 @@
 
 version: "3.7"
 services:
-  eth1:
-    image: {{.GetECContainerTag}}
+  {{.ExecutionClientContainerName}}:
+    image: {{.GetEcContainerTag}}
     user: root
-    container_name: {{.Smartnode.ProjectName}}_eth1
+    container_name: {{.ProjectName}}_{{.ExecutionClientContainerName}}
     restart: unless-stopped
-    stop_signal: {{.GetECStopSignal}}
     stop_grace_period: 15m
-    {{- $p2p := (or .ExecutionCommon.P2pPort.Value "30303")}}
-    ports: [ "{{$p2p}}:{{$p2p}}/udp", "{{$p2p}}:{{$p2p}}/tcp"{{.GetECOpenAPIPorts}} ]
+    {{- $p2p := (or .LocalExecutionClient.P2pPort.String "30303")}}
+    ports: [ "{{$p2p}}:{{$p2p}}/udp", "{{$p2p}}:{{$p2p}}/tcp"{{.GetEcOpenApiPorts}} ]
     volumes:
-      - eth1clientdata:/ethclient
-      - {{.RocketPoolDirectory}}/scripts:/setup:ro
-      - {{.Smartnode.DataPath}}/secrets:/secrets
+      - {{.ExecutionClientDataVolume}}:/ethclient
+      - /usr/share/rocketpool/scripts:/usr/share/rocketpool/scripts:ro
+      - /var/lib/rocketpool/data/{{.ProjectName}}:/secrets
     networks:
       - net
     environment:
-      - NETWORK={{.Smartnode.Network}}
-      - CLIENT={{.ExecutionClient}}
-      - ETHSTATS_LABEL={{.ExecutionCommon.EthstatsLabel}}
-      - ETHSTATS_LOGIN={{.ExecutionCommon.EthstatsLogin}}
-      - EC_MAX_PEERS={{.GetECMaxPeers}}
+      - NETWORK={{.Network}}
+      - CLIENT={{.LocalExecutionClient.ExecutionClient}}
+      - EC_MAX_PEERS={{.GetEcMaxPeers}}
       - EC_P2P_PORT={{$p2p}}
-      - EC_ADDITIONAL_FLAGS={{.GetECAdditionalFlags}}
-      - EC_HTTP_PORT={{.ExecutionCommon.HttpPort}}
-      - EC_WS_PORT={{.ExecutionCommon.WsPort}}
-      - EC_ENGINE_PORT={{.ExecutionCommon.EnginePort}}
-      - EXTERNAL_IP={{.GetExternalIp}}
-      - ENABLE_METRICS={{.EnableMetrics}}
-      - EC_METRICS_PORT={{.EcMetricsPort}}
+      - EC_ADDITIONAL_FLAGS={{.GetEcAdditionalFlags}}
+      - EC_HTTP_PORT={{.LocalExecutionClient.HttpPort}}
+      - EC_WS_PORT={{.LocalExecutionClient.WebsocketPort}}
+      - EC_ENGINE_PORT={{.LocalExecutionClient.EnginePort}}
+      - EXTERNAL_IP={{.GetExternalIP}}
+      - ENABLE_METRICS={{.Metrics.EnableMetrics}}
+      - EC_METRICS_PORT={{.Metrics.EcMetricsPort}}
       {{- /* Client-specific values */}}
-      {{- if eq .ExecutionClient.String "besu"}}
-      - BESU_MAX_BACK_LAYERS={{.Besu.MaxBackLayers}}
-      - BESU_JVM_HEAP_SIZE={{.Besu.JvmHeapSize}}
-      {{- else if eq .ExecutionClient.String "nethermind"}}
-      - EC_CACHE_SIZE={{.Nethermind.CacheSize}}
-      - RP_NETHERMIND_PRUNE_MEM_SIZE={{.Nethermind.PruneMemSize}}
-      - RP_NETHERMIND_ADDITIONAL_MODULES={{.Nethermind.AdditionalModules}}
-      - RP_NETHERMIND_ADDITIONAL_URLS={{.Nethermind.AdditionalUrls}}
-      {{- else if eq .ExecutionClient.String "geth"}}
-      - RP_GETH_ENABLE_PBSS={{.Geth.EnablePbss}}
+      {{- if eq .LocalExecutionClient.ExecutionClient.String "besu"}}
+      - BESU_MAX_BACK_LAYERS={{.LocalExecutionClient.Besu.MaxBackLayers}}
+      - BESU_JVM_HEAP_SIZE={{.LocalExecutionClient.Besu.JvmHeapSize}}
+      {{- else if eq .LocalExecutionClient.ExecutionClient.String "nethermind"}}
+      - EC_CACHE_SIZE={{.LocalExecutionClient.Nethermind.CacheSize}}
+      - RP_NETHERMIND_PRUNE_MEM_SIZE={{.LocalExecutionClient.Nethermind.PruneMemSize}}
+      - RP_NETHERMIND_ADDITIONAL_MODULES={{.LocalExecutionClient.Nethermind.AdditionalModules}}
+      - RP_NETHERMIND_ADDITIONAL_URLS={{.LocalExecutionClient.Nethermind.AdditionalUrls}}
+      {{- else if eq .LocalExecutionClient.ExecutionClient.String "geth"}}
+      - RP_GETH_ENABLE_PBSS={{.LocalExecutionClient.Geth.EnablePbss}}
       {{- end}}
     entrypoint: sh
-    command: "/setup/start-ec.sh"
+    command: "/usr/share/hyperdrive/scripts/{{.GetEcStartScript}}"
     cap_drop:
       - all
     cap_add:
@@ -59,4 +56,4 @@ services:
 networks:
   net:
 volumes:
-  eth1clientdata:
+  {{.ExecutionClientDataVolume}}:

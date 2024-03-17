@@ -7,9 +7,9 @@
 
 version: "3.7"
 services:
-  node-exporter:
-    image: {{.Exporter.ContainerTag}}
-    container_name: {{.Smartnode.ProjectName}}_exporter
+  {{.ExporterContainerName}}:
+    image: {{.Metrics.Exporter.ContainerTag}}
+    container_name: {{.ProjectName}}_{{.ExporterContainerName}}
     cap_drop:
       - ALL
     user: "65534:65534"
@@ -18,8 +18,8 @@ services:
       - "--path.procfs=/host/proc"
       - "--path.sysfs=/host/sys"
       - "--collector.textfile.directory=/host/textfile_collector"
-      - "--web.listen-address=:{{or .ExporterMetricsPort.Value "9103"}}"
-      {{- if .Exporter.RootFs.Value }}
+      - "--web.listen-address=:{{or .Metrics.ExporterMetricsPort.Value "9103"}}"
+      {{- if .Metrics.Exporter.RootFs.Value }}
       - "--path.rootfs=/rootfs"
       {{- end}}
       {{- range $flag := .GetExporterAdditionalFlags}}
@@ -29,7 +29,7 @@ services:
       - "/proc:/host/proc:ro,rslave"
       - "/sys:/host/sys:ro,rslave"
       - "/var/lib/node_exporter/textfile_collector:/host/textfile_collector:ro"
-      {{- if .Exporter.RootFs.Value }}
+      {{- if .Metrics.Exporter.RootFs.Value }}
       - "/:/rootfs:ro"
       {{- end}}
     network_mode: host

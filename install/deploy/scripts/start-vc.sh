@@ -1,8 +1,6 @@
 #!/bin/sh
 # This script launches ETH2 validator clients for Rocket Pool's docker stack; only edit if you know what you're doing ;)
 
-GWW_GRAFFITI_FILE="/addons/gww/graffiti.txt"
-
 # Set up the network-based flags
 if [ "$NETWORK" = "mainnet" ]; then
     LH_NETWORK="mainnet"
@@ -30,28 +28,28 @@ else
 fi
 
 # Report a missing fee recipient file
-if [ ! -f "/validators/$FEE_RECIPIENT_FILE" ]; then
+if [ ! -f "$VALIDATORS_DIR/$FEE_RECIPIENT_FILE" ]; then
     echo "Fee recipient file not found, please wait for the rocketpool_node process to create one."
     exit 1
 fi
 
 
 # Lighthouse startup
-if [ "$CC_CLIENT" = "lighthouse" ]; then
+if [ "$CLIENT" = "lighthouse" ]; then
 
     # Set up the CC + fallback string
-    CC_URL_STRING=$CC_API_ENDPOINT
-    if [ ! -z "$FALLBACK_CC_API_ENDPOINT" ]; then
-        CC_URL_STRING="$CC_API_ENDPOINT,$FALLBACK_CC_API_ENDPOINT"
+    BN_URL_STRING=$BN_API_ENDPOINT
+    if [ ! -z "$FALLBACK_BN_API_ENDPOINT" ]; then
+        BN_URL_STRING="$BN_API_ENDPOINT,$FALLBACK_BN_API_ENDPOINT"
     fi
 
     CMD="/usr/local/bin/lighthouse validator \
         --network $LH_NETWORK \
-        --datadir /validators/lighthouse \
+        --datadir $VALIDATORS_DIR/lighthouse \
         --init-slashing-protection \
         --logfile-max-number 0 \
-        --beacon-nodes $CC_URL_STRING \
-        --suggested-fee-recipient $(cat /validators/$FEE_RECIPIENT_FILE) \
+        --beacon-nodes $BN_URL_STRING \
+        --suggested-fee-recipient $(cat $VALIDATORS_DIR/$FEE_RECIPIENT_FILE) \
         $VC_ADDITIONAL_FLAGS"
 
     if [ "$DOPPELGANGER_DETECTION" = "true" ]; then
@@ -80,25 +78,25 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
 fi
 
 # Lodestar startup
-if [ "$CC_CLIENT" = "lodestar" ]; then
+if [ "$CLIENT" = "lodestar" ]; then
 
     # Remove any lock files that were left over accidentally after an unclean shutdown
-    find /validators/lodestar/validators -name voting-keystore.json.lock -delete
+    find $VALIDATORS_DIR/lodestar$VALIDATORS_DIR -name voting-keystore.json.lock -delete
 
     # Set up the CC + fallback string
-    CC_URL_STRING=$CC_API_ENDPOINT
-    if [ ! -z "$FALLBACK_CC_API_ENDPOINT" ]; then
-        CC_URL_STRING="$CC_API_ENDPOINT,$FALLBACK_CC_API_ENDPOINT"
+    BN_URL_STRING=$BN_API_ENDPOINT
+    if [ ! -z "$FALLBACK_BN_API_ENDPOINT" ]; then
+        BN_URL_STRING="$BN_API_ENDPOINT,$FALLBACK_BN_API_ENDPOINT"
     fi
 
     CMD="/usr/app/node_modules/.bin/lodestar validator \
         --network $LODESTAR_NETWORK \
-        --dataDir /validators/lodestar \
-        --beacon-nodes $CC_URL_STRING \
-        $FALLBACK_CC_STRING \
-        --keystoresDir /validators/lodestar/validators \
-        --secretsDir /validators/lodestar/secrets \
-        --suggestedFeeRecipient $(cat /validators/$FEE_RECIPIENT_FILE) \
+        --dataDir $VALIDATORS_DIR/lodestar \
+        --beacon-nodes $BN_URL_STRING \
+        $FALLBACK_BN_STRING \
+        --keystoresDir $VALIDATORS_DIR/lodestar$VALIDATORS_DIR \
+        --secretsDir $VALIDATORS_DIR/lodestar/secrets \
+        --suggestedFeeRecipient $(cat $VALIDATORS_DIR/$FEE_RECIPIENT_FILE) \
         $VC_ADDITIONAL_FLAGS"
 
     if [ "$DOPPELGANGER_DETECTION" = "true" ]; then
@@ -123,25 +121,25 @@ fi
 
 
 # Nimbus startup
-if [ "$CC_CLIENT" = "nimbus" ]; then
+if [ "$CLIENT" = "nimbus" ]; then
 
     # Nimbus won't start unless the validator directories already exist
-    mkdir -p /validators/nimbus/validators
-    mkdir -p /validators/nimbus/secrets
+    mkdir -p $VALIDATORS_DIR/nimbus$VALIDATORS_DIR
+    mkdir -p $VALIDATORS_DIR/nimbus/secrets
 
     # Set up the fallback arg
-    if [ ! -z "$FALLBACK_CC_API_ENDPOINT" ]; then
-        FALLBACK_CC_ARG="--beacon-node=$FALLBACK_CC_API_ENDPOINT"
+    if [ ! -z "$FALLBACK_BN_API_ENDPOINT" ]; then
+        FALLBACK_BN_ARG="--beacon-node=$FALLBACK_BN_API_ENDPOINT"
     fi
 
     CMD="/home/user/nimbus_validator_client \
         --non-interactive \
-        --beacon-node=$CC_API_ENDPOINT $FALLBACK_CC_ARG \
+        --beacon-node=$BN_API_ENDPOINT $FALLBACK_BN_ARG \
         --data-dir=/ethclient/nimbus_vc \
-        --validators-dir=/validators/nimbus/validators \
-        --secrets-dir=/validators/nimbus/secrets \
+        --validators-dir=$VALIDATORS_DIR/nimbus$VALIDATORS_DIR \
+        --secrets-dir=$VALIDATORS_DIR/nimbus/secrets \
         --doppelganger-detection=$DOPPELGANGER_DETECTION \
-        --suggested-fee-recipient=$(cat /validators/$FEE_RECIPIENT_FILE) \
+        --suggested-fee-recipient=$(cat $VALIDATORS_DIR/$FEE_RECIPIENT_FILE) \
         --block-monitor-type=event \
         $VC_ADDITIONAL_FLAGS"
 
@@ -160,30 +158,30 @@ fi
 
 
 # Prysm startup
-if [ "$CC_CLIENT" = "prysm" ]; then
+if [ "$CLIENT" = "prysm" ]; then
 
     # Make the Prysm dir
-    mkdir -p /validators/prysm-non-hd/
+    mkdir -p $VALIDATORS_DIR/prysm-non-hd/
 
     # Get rid of the protocol prefix
-    CC_RPC_ENDPOINT=$(echo $CC_RPC_ENDPOINT | sed -E 's/.*\:\/\/(.*)/\1/')
-    if [ ! -z "$FALLBACK_CC_RPC_ENDPOINT" ]; then
-        FALLBACK_CC_RPC_ENDPOINT=$(echo $FALLBACK_CC_RPC_ENDPOINT | sed -E 's/.*\:\/\/(.*)/\1/')
+    BN_RPC_ENDPOINT=$(echo $BN_RPC_ENDPOINT | sed -E 's/.*\:\/\/(.*)/\1/')
+    if [ ! -z "$FALLBACK_BN_RPC_ENDPOINT" ]; then
+        FALLBACK_BN_RPC_ENDPOINT=$(echo $FALLBACK_BN_RPC_ENDPOINT | sed -E 's/.*\:\/\/(.*)/\1/')
     fi
 
     # Set up the CC + fallback string
-    CC_URL_STRING=$CC_RPC_ENDPOINT
-    if [ ! -z "$FALLBACK_CC_RPC_ENDPOINT" ]; then
-        CC_URL_STRING="$CC_RPC_ENDPOINT,$FALLBACK_CC_RPC_ENDPOINT"
+    BN_URL_STRING=$BN_RPC_ENDPOINT
+    if [ ! -z "$FALLBACK_BN_RPC_ENDPOINT" ]; then
+        BN_URL_STRING="$BN_RPC_ENDPOINT,$FALLBACK_BN_RPC_ENDPOINT"
     fi
 
     CMD="/app/cmd/validator/validator \
         --accept-terms-of-use \
         $PRYSM_NETWORK \
-        --wallet-dir /validators/prysm-non-hd \
-        --wallet-password-file /validators/prysm-non-hd/direct/accounts/secret \
-        --beacon-rpc-provider $CC_URL_STRING \
-        --suggested-fee-recipient $(cat /validators/$FEE_RECIPIENT_FILE) \
+        --wallet-dir $VALIDATORS_DIR/prysm-non-hd \
+        --wallet-password-file $VALIDATORS_DIR/prysm-non-hd/direct/accounts/secret \
+        --beacon-rpc-provider $BN_URL_STRING \
+        --suggested-fee-recipient $(cat $VALIDATORS_DIR/$FEE_RECIPIENT_FILE) \
         $VC_ADDITIONAL_FLAGS"
 
     if [ "$ENABLE_MEV_BOOST" = "true" ]; then
@@ -211,29 +209,29 @@ fi
 
 
 # Teku startup
-if [ "$CC_CLIENT" = "teku" ]; then
+if [ "$CLIENT" = "teku" ]; then
 
     # Teku won't start unless the validator directories already exist
-    mkdir -p /validators/teku/keys
-    mkdir -p /validators/teku/passwords
+    mkdir -p $VALIDATORS_DIR/teku/keys
+    mkdir -p $VALIDATORS_DIR/teku/passwords
 
     # Remove any lock files that were left over accidentally after an unclean shutdown
-    rm -f /validators/teku/keys/*.lock
+    rm -f $VALIDATORS_DIR/teku/keys/*.lock
 
     # Set up the CC + fallback string
-    CC_URL_STRING=$CC_API_ENDPOINT
-    if [ ! -z "$FALLBACK_CC_API_ENDPOINT" ]; then
-        CC_URL_STRING="$CC_API_ENDPOINT,$FALLBACK_CC_API_ENDPOINT"
+    BN_URL_STRING=$BN_API_ENDPOINT
+    if [ ! -z "$FALLBACK_BN_API_ENDPOINT" ]; then
+        BN_URL_STRING="$BN_API_ENDPOINT,$FALLBACK_BN_API_ENDPOINT"
     fi
 
     CMD="/opt/teku/bin/teku validator-client \
         --network=$TEKU_NETWORK \
-        --data-path=/validators/teku \
-        --validator-keys=/validators/teku/keys:/validators/teku/passwords \
-        --beacon-node-api-endpoints=$CC_URL_STRING \
+        --data-path=$VALIDATORS_DIR/teku \
+        --validator-keys=$VALIDATORS_DIR/teku/keys:$VALIDATORS_DIR/teku/passwords \
+        --beacon-node-api-endpoints=$BN_URL_STRING \
         --validators-keystore-locking-enabled=false \
         --log-destination=CONSOLE \
-        --validators-proposer-default-fee-recipient=$(cat /validators/$FEE_RECIPIENT_FILE) \
+        --validators-proposer-default-fee-recipient=$(cat $VALIDATORS_DIR/$FEE_RECIPIENT_FILE) \
         $VC_ADDITIONAL_FLAGS"
 
     if [ "$DOPPELGANGER_DETECTION" = "true" ]; then

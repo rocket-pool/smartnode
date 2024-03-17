@@ -723,11 +723,10 @@ func copyOverrideFiles(sourceDir string, targetDir string) error {
 func (c *Client) composeAddons(cfg *config.SmartNodeConfig, rocketpoolDir string, deployedContainers []string) ([]string, error) {
 	// GWW
 	if cfg.Addons.GraffitiWallWriter.Enabled.Value {
-		gwwCfgName := string(gww.ContainerID_GraffitiWallWriter)
 		composePaths := template.ComposePaths{
-			RuntimePath:  filepath.Join(rocketpoolDir, runtimeDir, config.AddonsFolderName, gwwCfgName),
-			TemplatePath: filepath.Join(rocketpoolDir, templatesDir, config.AddonsFolderName, gwwCfgName),
-			OverridePath: filepath.Join(rocketpoolDir, overrideDir, config.AddonsFolderName, gwwCfgName),
+			RuntimePath:  filepath.Join(rocketpoolDir, runtimeDir, config.AddonsFolderName, gww.FolderName),
+			TemplatePath: filepath.Join(rocketpoolDir, templatesDir, config.AddonsFolderName, gww.FolderName),
+			OverridePath: filepath.Join(rocketpoolDir, overrideDir, config.AddonsFolderName, gww.FolderName),
 		}
 
 		// Make the addon folder
@@ -736,7 +735,7 @@ func (c *Client) composeAddons(cfg *config.SmartNodeConfig, rocketpoolDir string
 			return []string{}, fmt.Errorf("error creating addon runtime folder (%s): %w", composePaths.RuntimePath, err)
 		}
 
-		containers, err := composePaths.File(gww.GraffitiWallWriterContainerName).Write(cfg)
+		containers, err := composePaths.File(string(gww.ContainerID_GraffitiWallWriter)).Write(cfg)
 		if err != nil {
 			return []string{}, fmt.Errorf("could not create gww container definition: %w", err)
 		}

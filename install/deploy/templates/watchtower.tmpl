@@ -7,16 +7,19 @@
 
 version: "3.7"
 services:
-  watchtower:
-    image: {{.Smartnode.GetSmartnodeContainerTag}}
-    container_name: {{.Smartnode.ProjectName}}_watchtower
+  {{.WatchtowerContainerName}}:
+    image: {{.GetSmartNodeContainerTag}}
+    container_name: {{.ProjectName}}_{{.WatchtowerContainerName}}
     restart: unless-stopped
     volumes:
-      - {{.RocketPoolDirectory}}:/.rocketpool
-      - {{.Smartnode.DataPath}}:/.rocketpool/data
+      - {{.RocketPoolDirectory}}:{{.RocketPoolDirectory}}
+      - {{.UserDataPath}}:{{.UserDataPath}}
+    command:
+      - --user-dir
+      - "{{.RocketPoolDirectory}}"
+      - "watchtower"
     networks:
       - net
-    command: "-m 0.0.0.0 watchtower"
     cap_drop:
       - all
     cap_add:

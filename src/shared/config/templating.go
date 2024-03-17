@@ -3,9 +3,11 @@ package config
 import (
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/rocket-pool/node-manager-core/config"
+	gww "github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
 	rn "github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared"
 )
@@ -14,16 +16,20 @@ import (
 // === Constants ===
 // =================
 
+func (c *SmartNodeConfig) ExecutionClientContainerName() string {
+	return string(ExecutionClientSuffix)
+}
+
 func (c *SmartNodeConfig) BeaconNodeContainerName() string {
-	return string(config.ContainerID_BeaconNode)
+	return string(BeaconNodeSuffix)
+}
+
+func (c *SmartNodeConfig) ValidatorClientContainerName() string {
+	return string(ValidatorClientSuffix)
 }
 
 func (c *SmartNodeConfig) DaemonContainerName() string {
-	return string(config.ContainerID_Daemon)
-}
-
-func (c *SmartNodeConfig) ExecutionClientContainerName() string {
-	return string(config.ContainerID_ExecutionClient)
+	return string(NodeSuffix)
 }
 
 func (c *SmartNodeConfig) ExporterContainerName() string {
@@ -36,6 +42,14 @@ func (c *SmartNodeConfig) GrafanaContainerName() string {
 
 func (c *SmartNodeConfig) PrometheusContainerName() string {
 	return string(config.ContainerID_Prometheus)
+}
+
+func (c *SmartNodeConfig) MevBoostContainerName() string {
+	return string(config.ContainerID_MevBoost)
+}
+
+func (c *SmartNodeConfig) WatchtowerContainerName() string {
+	return string(ContainerID_Watchtower)
 }
 
 func (c *SmartNodeConfig) ExecutionClientDataVolume() string {
@@ -172,7 +186,7 @@ func (cfg *SmartNodeConfig) GetEcMaxPeers() (uint16, error) {
 // Gets the tag of the ec container
 // Used by text/template to format ec.yml
 func (cfg *SmartNodeConfig) GetEcContainerTag() (string, error) {
-	if cfg.ClientMode.Value != config.ClientMode_Local {
+	if !cfg.IsLocalMode() {
 		return "", fmt.Errorf("Execution client is external, there is no container tag")
 	}
 	return cfg.LocalExecutionClient.GetContainerTag(), nil
@@ -297,6 +311,33 @@ func (cfg *SmartNodeConfig) GetBnHttpEndpointsWithFallback() string {
 // === Metrics ===
 // ===============
 
+// Used by text/template to format exporter.yml
+func (cfg *SmartNodeConfig) GetExporterAdditionalFlags() []string {
+	flags := strings.Trim(cfg.Metrics.Exporter.AdditionalFlags.Value, " ")
+	if flags == "" {
+		return nil
+	}
+	return strings.Split(flags, " ")
+}
+
+// Used by text/template to format prometheus.yml
+func (cfg *SmartNodeConfig) GetPrometheusAdditionalFlags() []string {
+	flags := strings.Trim(cfg.Metrics.Prometheus.AdditionalFlags.Value, " ")
+	if flags == "" {
+		return nil
+	}
+	return strings.Split(flags, " ")
+}
+
+// Used by text/template to format prometheus.yml
+func (cfg *SmartNodeConfig) GetPrometheusOpenPorts() string {
+	portMode := cfg.Metrics.Prometheus.OpenPort.Value
+	if !portMode.IsOpen() {
+		return ""
+	}
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Metrics.Prometheus.Port.Value))
+}
+
 // Gets the hostname portion of the Execution Client's URI.
 // Used by text/template to format prometheus.yml.
 func (cfg *SmartNodeConfig) GetExecutionHostname() (string, error) {
@@ -317,12 +358,12 @@ func (cfg *SmartNodeConfig) GetBeaconHostname() (string, error) {
 	if cfg.ClientMode.Value == config.ClientMode_Local {
 		return string(config.ContainerID_BeaconNode), nil
 	}
-	ccUrl, err := url.Parse(cfg.ExternalBeaconClient.HttpUrl.Value)
+	bnUrl, err := url.Parse(cfg.ExternalBeaconClient.HttpUrl.Value)
 	if err != nil {
 		return "", fmt.Errorf("Invalid External Consensus URL %s: %w", cfg.ExternalBeaconClient.HttpUrl.Value, err)
 	}
 
-	return ccUrl.Hostname(), nil
+	return bnUrl.Hostname(), nil
 }
 
 // ========================
@@ -392,4 +433,57 @@ func (cfg *SmartNodeConfig) Graffiti() (string, error) {
 		return prefix, nil
 	}
 	return fmt.Sprintf("%s (%s)", prefix, customGraffiti), nil
+}
+
+// Used by text/template to format validator.yml
+func (cfg *SmartNodeConfig) FeeRecipientFile() string {
+	return FeeRecipientFilename
+}
+
+// Used by text/template to format validator.yml
+func (cfg *SmartNodeConfig) MevBoostUrl() string {
+	if !cfg.MevBoost.Enable.Value {
+		return ""
+	}
+
+	if cfg.MevBoost.Mode.Value == config.ClientMode_Local {
+		return fmt.Sprintf("http://%s:%d", config.ContainerID_MevBoost, cfg.MevBoost.Port.Value)
+	}
+
+	return cfg.MevBoost.ExternalUrl.Value
+}
+
+// =================
+// === MEV-Boost ===
+// =================
+
+// Gets the name of the MEV-Boost start script
+func (cfg *SmartNodeConfig) GetMevBoostStartScript() string {
+	return MevBoostStartScript
+}
+
+// Used by text/template to format mev-boost.yml
+func (cfg *SmartNodeConfig) GetMevBoostOpenPorts() string {
+	portMode := cfg.MevBoost.OpenRpcPort.Value
+	if !portMode.IsOpen() {
+		return ""
+	}
+	port := cfg.MevBoost.Port.Value
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
+}
+
+// ==============
+// === Addons ===
+// ==============
+
+func (cfg *SmartNodeConfig) GetAddonsFolderPath() string {
+	return filepath.Join(cfg.RocketPoolDirectory, AddonsFolderName)
+}
+
+func (cfg *SmartNodeConfig) GetGwwPath() string {
+	return filepath.Join(cfg.GetAddonsFolderPath(), gww.FolderName)
+}
+
+func (cfg *SmartNodeConfig) GetGwwGraffitiFilePath() string {
+	return filepath.Join(cfg.GetGwwPath(), gww.GraffitiFilename)
 }

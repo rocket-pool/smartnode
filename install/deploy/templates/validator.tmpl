@@ -7,43 +7,42 @@
 
 version: "3.7"
 services:
-  validator:
-    image: {{.GetVCContainerTag}}
+  {{.ValidatorClientContainerName}}:
+    image: {{.GetVcContainerTag}}
     user: root
-    container_name: {{.Smartnode.ProjectName}}_validator
+    container_name: {{.ProjectName}}_{{.ValidatorClientContainerName}}
     restart: unless-stopped
     stop_grace_period: 3m
     volumes:
-      - {{.Smartnode.DataPath}}/validators:/validators
-      - {{.RocketPoolDirectory}}/scripts:/setup:ro
-      - {{.RocketPoolDirectory}}/addons:/addons
+      - /usr/share/rocketpool/scripts:/usr/share/rocketpool/scripts:ro
+      - {{.GetValidatorsFolderPath}}:{{.GetValidatorsFolderPath}}
+      - {{.GetAddonsFolderPath}}:{{.GetAddonsFolderPath}}
     networks:
       - net
     environment:
-      - NETWORK={{.Smartnode.Network}}
-      - EC_CLIENT={{if .ExecutionClientLocal}}{{.ExecutionClient}}{{else}}X{{end}}
-      - CC_CLIENT={{if .ConsensusClientLocal}}{{.ConsensusClient}}{{else}}{{.ExternalConsensusClient}}{{end}}
-      - CC_API_ENDPOINT={{.ConsensusClientApiUrl}}
-      - CC_RPC_ENDPOINT={{.ConsensusClientRpcUrl}}
-      - FALLBACK_CC_API_ENDPOINT={{.FallbackCcApiUrl}}
-      - FALLBACK_CC_RPC_ENDPOINT={{.FallbackCcRpcUrl}}
-      - CUSTOM_GRAFFITI={{.CustomGraffiti}}
-      - ROCKET_POOL_VERSION=v{{.RocketPoolVersion}}
-      - ENABLE_METRICS={{.EnableMetrics}}
-      - VC_METRICS_PORT={{.VcMetricsPort}}
-      - DOPPELGANGER_DETECTION={{.IsDoppelgangerEnabled}}
-      - VC_ADDITIONAL_FLAGS={{.VcAdditionalFlags}}
-      - FEE_RECIPIENT_FILE={{.FeeRecipientFile}}
-      - ENABLE_BITFLY_NODE_METRICS={{.EnableBitflyNodeMetrics}}
-      - BITFLY_NODE_METRICS_SECRET={{.BitflyNodeMetrics.Secret}}
-      - BITFLY_NODE_METRICS_ENDPOINT={{.BitflyNodeMetrics.Endpoint}}
-      - BITFLY_NODE_METRICS_MACHINE_NAME={{.BitflyNodeMetrics.MachineName}}
+      - NETWORK={{.Network}}
+      - CLIENT={{.GetSelectedBeaconNode}}
+      - BN_API_ENDPOINT={{.BnHttpUrl}}
+      - BN_RPC_ENDPOINT={{.BnRpcUrl}}
+      - FALLBACK_BN_API_ENDPOINT={{.FallbackBnHttpUrl}}
+      - FALLBACK_BN_RPC_ENDPOINT={{.FallbackBnRpcUrl}}
       - GRAFFITI={{.Graffiti}}
-      - ADDON_GWW_ENABLED={{.GraffitiWallWriter.GetEnabledParameter}}
+      - ENABLE_METRICS={{.Metrics.EnableMetrics}}
+      - VC_METRICS_PORT={{.ValidatorClient.VcCommon.MetricsPort}}
+      - DOPPELGANGER_DETECTION={{.ValidatorClient.VcCommon.DoppelgangerDetection}}
+      - VC_ADDITIONAL_FLAGS={{.GetVcAdditionalFlags}}
+      - FEE_RECIPIENT_FILE={{.FeeRecipientFile}}
+      - ENABLE_BITFLY_NODE_METRICS={{.Metrics.EnableBitflyNodeMetrics}}
+      - BITFLY_NODE_METRICS_SECRET={{.Metrics.BitflyNodeMetrics.Secret}}
+      - BITFLY_NODE_METRICS_ENDPOINT={{.Metrics.BitflyNodeMetrics.Endpoint}}
+      - BITFLY_NODE_METRICS_MACHINE_NAME={{.Metrics.BitflyNodeMetrics.MachineName}}
+      - ADDON_GWW_ENABLED={{.Addons.GraffitiWallWriter.Enabled}}
       - MEV_BOOST_URL={{.MevBoostUrl}}
-      - ENABLE_MEV_BOOST={{.EnableMevBoost}}
+      - ENABLE_MEV_BOOST={{.MevBoost.Enable}}
+      - VALIDATORS_DIR={{.GetValidatorsFolderPath}}
+      - GWW_GRAFFITI_FILE={{.GetGwwGraffitiFilePath}}
     entrypoint: sh
-    command: "/setup/start-vc.sh"
+    command: "/usr/share/rocketpool/scripts/{{.GetVcStartScript}}"
     cap_drop:
       - all
     cap_add:

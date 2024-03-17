@@ -5,19 +5,19 @@
 # See https://docs.docker.com/compose/extends/#adding-and-overriding-configuration
 # for more information on overriding specific parameters of docker-compose files.
 
-{{$port := (or .Grafana.Port.Value 3100) -}}
+{{$port := (or .Metrics.Grafana.Port.Value 3100) -}}
 version: "3.7"
 services:
-  grafana:
-    image: {{.Grafana.ContainerTag}}
-    container_name: {{.Smartnode.ProjectName}}_grafana
+  {{.GrafanaContainerName}}:
+    image: {{.Metrics.Grafana.ContainerTag}}
+    container_name: {{.ProjectName}}_{{.GrafanaContainerName}}
     restart: unless-stopped
     environment:
       - GF_SERVER_HTTP_PORT={{$port}}
     ports: 
       - "{{$port}}:{{$port}}/tcp"
     volumes:
-      - "{{.RocketPoolDirectory}}/grafana-prometheus-datasource.yml:/etc/grafana/provisioning/datasources/prometheus.yml"
+      - "{{UserDirectory}}/grafana-prometheus-datasource.yml:/etc/grafana/provisioning/datasources/prometheus.yml"
       - "grafana-storage:/var/lib/grafana"
     networks:
       - net

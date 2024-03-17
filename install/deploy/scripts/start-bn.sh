@@ -54,14 +54,8 @@ if [ ! -f "/secrets/jwtsecret" ]; then
     exit 1
 fi
 
-# Report a missing fee recipient file
-if [ ! -f "/validators/$FEE_RECIPIENT_FILE" ]; then
-    echo "Fee recipient file not found, please wait for the rocketpool_node process to create one."
-    exit 1
-fi
-
 # Lighthouse startup
-if [ "$CC_CLIENT" = "lighthouse" ]; then
+if [ "$CLIENT" = "lighthouse" ]; then
 
     CMD="$PERF_PREFIX /usr/local/bin/lighthouse beacon \
         --network $LH_NETWORK \
@@ -113,7 +107,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
 fi
 
 # Lodestar startup
-if [ "$CC_CLIENT" = "lodestar" ]; then
+if [ "$CLIENT" = "lodestar" ]; then
 
     CMD="$PERF_PREFIX /usr/local/bin/node --max-http-header-size=65536 /usr/app/packages/cli/bin/lodestar beacon \
         --network $LODESTAR_NETWORK \
@@ -159,7 +153,7 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
 fi
 
 # Nimbus startup
-if [ "$CC_CLIENT" = "nimbus" ]; then
+if [ "$CLIENT" = "nimbus" ]; then
 
     # Handle checkpoint syncing
     if [ ! -z "$CHECKPOINT_SYNC_URL" ]; then
@@ -212,7 +206,7 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
 fi
 
 # Prysm startup
-if [ "$CC_CLIENT" = "prysm" ]; then
+if [ "$CLIENT" = "prysm" ]; then
 
     # Grab the Holesky genesis state if needed
     if [ "$NETWORK" = "holesky" ]; then
@@ -270,7 +264,7 @@ if [ "$CC_CLIENT" = "prysm" ]; then
 fi
 
 # Teku startup
-if [ "$CC_CLIENT" = "teku" ]; then
+if [ "$CLIENT" = "teku" ]; then
 
     CMD="$PERF_PREFIX /opt/teku/bin/teku \
         --network=$TEKU_NETWORK \

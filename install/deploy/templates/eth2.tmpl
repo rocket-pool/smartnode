@@ -7,70 +7,62 @@
 
 version: "3.7"
 services:
-  eth2:
-    image: {{.GetBeaconContainerTag}}
+  {{.BeaconNodeContainerName}}:
+    image: {{.GetBnContainerTag}}
     user: root
-    container_name: {{.Smartnode.ProjectName}}_eth2
+    container_name: {{.ProjectName}}_{{.BeaconNodeContainerName}}
     restart: unless-stopped
     stop_grace_period: 3m
-    {{- $p2p := (or .ConsensusCommon.P2pPort.String "9001")}}
+    {{- $p2p := (or .LocalBeaconClient.P2pPort.String "9001")}}
     ports:
       - "{{$p2p}}:{{$p2p}}/udp"
       - "{{$p2p}}:{{$p2p}}/tcp"
-      {{- if eq .ConsensusClient.String "lighthouse"}}
-      - "{{.Lighthouse.P2pQuicPort}}:{{.Lighthouse.P2pQuicPort}}/udp"
+      {{- if eq .LocalBeaconClient.BeaconNode.String "lighthouse"}}
+      - "{{.LocalBeaconClient.Lighthouse.P2pQuicPort}}:{{.LocalBeaconClient.Lighthouse.P2pQuicPort}}/udp"
       {{- end}}
       {{- range $entry := .GetBnOpenPorts}}
       - "{{$entry}}"
       {{- end}}
     volumes:
-      - {{.Smartnode.DataPath}}/validators:/validators
-      - {{.Smartnode.DataPath}}/secrets:/secrets:ro
-      - eth2clientdata:/ethclient
-      - {{.RocketPoolDirectory}}/scripts:/setup:ro
+      - {{.BeaconNodeDataVolume}}:/ethclient
+      - /usr/share/rocketpool/scripts:/usr/share/rocketpool/scripts:ro
+      - /var/lib/hyperdrive/data/{{.ProjectName}}:/secrets:ro
     networks:
       - net
     environment:
-      - NETWORK={{.Smartnode.Network}}
-      - EC_CLIENT={{if .ExecutionClientLocal}}{{.ExecutionClient}}{{else}}X{{end}}
-      - CC_CLIENT={{if .ConsensusClientLocal}}{{.ConsensusClient}}{{else}}{{.ExternalConsensusClient}}{{end}}
+      - NETWORK={{.Network}}
+      - CLIENT={{.LocalBeaconClient.BeaconNode}}
       - EC_HTTP_ENDPOINT={{.GetEcHttpEndpoint}}
       - EC_WS_ENDPOINT={{.GetEcWsEndpoint}}
-      - EC_ENGINE_ENDPOINT=http://{{.GetExecutionHostname}}:{{.ExecutionCommon.EnginePort}}
-      - EC_ENGINE_WS_ENDPOINT=ws://{{.GetExecutionHostname}}:{{.ExecutionCommon.EnginePort}}
-      - CUSTOM_GRAFFITI={{.CustomGraffiti}}
-      - ROCKET_POOL_VERSION=v{{.RocketPoolVersion}}
+      - EC_ENGINE_ENDPOINT=http://{{.GetExecutionHostname}}:{{.LocalExecutionClient.EnginePort}}
+      - EC_ENGINE_WS_ENDPOINT=ws://{{.GetExecutionHostname}}:{{.LocalExecutionClient.EnginePort}}
       - BN_P2P_PORT={{$p2p}}
-      - BN_API_PORT={{.ConsensusCommon.ApiPort}}
-      - BN_MAX_PEERS={{.GetBNMaxPeers}}
-      - ENABLE_METRICS={{.EnableMetrics}}
-      - BN_METRICS_PORT={{.BnMetricsPort}}
-      - EXTERNAL_IP={{.GetExternalIp}}
-      - CHECKPOINT_SYNC_URL={{.ConsensusCommon.CheckpointSyncProvider}}
-      - DOPPELGANGER_DETECTION={{.IsDoppelgangerEnabled}}
-      - BN_ADDITIONAL_FLAGS={{.GetBNAdditionalFlags}}
-      - FEE_RECIPIENT_FILE={{.FeeRecipientFile}}
-      - ENABLE_BITFLY_NODE_METRICS={{.EnableBitflyNodeMetrics}}
-      - BITFLY_NODE_METRICS_SECRET={{.BitflyNodeMetrics.Secret}}
-      - BITFLY_NODE_METRICS_ENDPOINT={{.BitflyNodeMetrics.Endpoint}}
-      - BITFLY_NODE_METRICS_MACHINE_NAME={{.BitflyNodeMetrics.MachineName}}
+      - BN_API_PORT={{.LocalBeaconClient.HttpPort}}
+      - BN_MAX_PEERS={{.GetBnMaxPeers}}
+      - ENABLE_METRICS={{.Metrics.EnableMetrics}}
+      - BN_METRICS_PORT={{.Metrics.BnMetricsPort}}
+      - EXTERNAL_IP={{.GetExternalIP}}
+      - CHECKPOINT_SYNC_URL={{.LocalBeaconClient.CheckpointSyncProvider}}
+      - BN_ADDITIONAL_FLAGS={{.GetBnAdditionalFlags}}
+      - ENABLE_BITFLY_NODE_METRICS={{.Metrics.EnableBitflyNodeMetrics}}
+      - BITFLY_NODE_METRICS_SECRET={{.Metrics.BitflyNodeMetrics.Secret}}
+      - BITFLY_NODE_METRICS_ENDPOINT={{.Metrics.BitflyNodeMetrics.Endpoint}}
+      - BITFLY_NODE_METRICS_MACHINE_NAME={{.Metrics.BitflyNodeMetrics.MachineName}}
       - MEV_BOOST_URL={{.MevBoostUrl}}
-      - RETH_ADDRESS={{.Smartnode.GetRethAddress.Hex}}
-      - GRAFFITI={{.Graffiti}}
-      - ADDON_GWW_ENABLED={{.GraffitiWallWriter.GetEnabledParameter}}
+      - RETH_ADDRESS={{.GetRocketPoolResources.RethAddress.Hex}}
       {{- /* Client-specific values */}}
-      {{- if eq .ConsensusClient.String "teku"}}
-      - TEKU_JVM_HEAP_SIZE={{.Teku.JvmHeapSize}}
-      - TEKU_ARCHIVE_MODE={{.Teku.ArchiveMode}}
-      {{- else if eq .ConsensusClient.String "prysm"}}
-      - BN_RPC_PORT={{.Prysm.RpcPort}}
-      {{- else if eq .ConsensusClient.String "nimbus"}}
-      - NIMBUS_PRUNING_MODE={{.Nimbus.PruningMode}}
-      {{- else if eq .ConsensusClient.String "lighthouse"}}
-      - BN_P2P_QUIC_PORT={{.Lighthouse.P2pQuicPort}}
+      {{- if eq .LocalBeaconClient.BeaconNode.String "teku"}}
+      - TEKU_JVM_HEAP_SIZE={{.LocalBeaconClient.Teku.JvmHeapSize}}
+      - TEKU_ARCHIVE_MODE={{.LocalBeaconClient.Teku.ArchiveMode}}
+      {{- else if eq .LocalBeaconClient.BeaconNode.String "prysm"}}
+      - BN_RPC_PORT={{.LocalBeaconClient.Prysm.RpcPort}}
+      {{- else if eq .LocalBeaconClient.BeaconNode.String "nimbus"}}
+      - NIMBUS_PRUNING_MODE={{.LocalBeaconClient.Nimbus.PruningMode}}
+      {{- else if eq .LocalBeaconClient.BeaconNode.String "lighthouse"}}
+      - BN_P2P_QUIC_PORT={{.LocalBeaconClient.Lighthouse.P2pQuicPort}}
       {{- end}}
     entrypoint: sh
-    command: "/setup/start-bn.sh"
+    command: "/usr/share/rocketpool/scripts/{{.GetBnStartScript}}"
     cap_drop:
       - all
     cap_add:
@@ -80,4 +72,4 @@ services:
 networks:
   net:
 volumes:
-  eth2clientdata:
+  {{.BeaconNodeDataVolume}}:

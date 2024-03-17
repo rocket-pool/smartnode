@@ -1,6 +1,8 @@
 package gww
 
 import (
+	"fmt"
+
 	"github.com/rocket-pool/node-manager-core/config"
 	nmc_ids "github.com/rocket-pool/node-manager-core/config/ids"
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer/ids"
@@ -15,7 +17,7 @@ const (
 type GraffitiWallWriterConfig struct {
 	Enabled config.Parameter[bool]
 
-	InputURL config.Parameter[string]
+	InputUrl config.Parameter[string]
 
 	UpdateWallTime config.Parameter[uint64]
 
@@ -47,7 +49,7 @@ func NewConfig() *GraffitiWallWriterConfig {
 			},
 		},
 
-		InputURL: config.Parameter[string]{
+		InputUrl: config.Parameter[string]{
 			ParameterCommon: &config.ParameterCommon{
 				ID:                 ids.GwwInputUrlID,
 				Name:               "Input URL",
@@ -142,7 +144,7 @@ func (cfg *GraffitiWallWriterConfig) GetTitle() string {
 func (cfg *GraffitiWallWriterConfig) GetParameters() []config.IParameter {
 	return []config.IParameter{
 		&cfg.Enabled,
-		&cfg.InputURL,
+		&cfg.InputUrl,
 		&cfg.UpdateWallTime,
 		&cfg.UpdateInputTime,
 		&cfg.UpdatePixelTime,
@@ -154,4 +156,8 @@ func (cfg *GraffitiWallWriterConfig) GetParameters() []config.IParameter {
 // Get the sections underneath this one
 func (cfg *GraffitiWallWriterConfig) GetSubconfigs() map[string]config.IConfigSection {
 	return map[string]config.IConfigSection{}
+}
+
+func (gww *GraffitiWallWriter) GetContainerName() string {
+	return fmt.Sprint(ContainerID_GraffitiWallWriter)
 }
