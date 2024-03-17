@@ -69,30 +69,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Usage:   "Make a security council member proposal",
 						Subcommands: []cli.Command{
 							{
-								Name:      "request-leave",
-								Aliases:   []string{"rl"},
-								Usage:     "Propose a request to leave the security council",
-								UsageText: "rocketpool security propose member request-leave",
-								Flags: []cli.Flag{
-									cli.BoolFlag{
-										Name:  "yes, y",
-										Usage: "Automatically confirm all interactive questions",
-									},
-								},
-								Action: func(c *cli.Context) error {
-
-									// Validate args
-									if err := cliutils.ValidateArgCount(c, 0); err != nil {
-										return err
-									}
-
-									// Run
-									return proposeRequestLeave(c)
-
-								},
-							},
-
-							{
 								Name:      "leave",
 								Aliases:   []string{"l"},
 								Usage:     "Propose leaving the security council",

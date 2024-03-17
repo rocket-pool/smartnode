@@ -95,7 +95,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "can-propose-request-leave",
+				Name:      "can-propose-leave",
 				Usage:     "Check whether the node can propose leaving the security council",
 				UsageText: "rocketpool api security can-propose-leave",
 				Action: func(c *cli.Context) error {
@@ -106,13 +106,13 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(canProposeRequestLeave(c))
+					api.PrintResponse(canProposeLeave(c))
 					return nil
 
 				},
 			},
 			{
-				Name:      "propose-request-leave",
+				Name:      "propose-leave",
 				Aliases:   []string{"l"},
 				Usage:     "Propose leaving the security council",
 				UsageText: "rocketpool api security propose-leave",
@@ -124,7 +124,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(proposeRequestLeave(c))
+					api.PrintResponse(proposeLeave(c))
 					return nil
 
 				},
@@ -141,7 +141,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(canProposeLeave(c))
+					api.PrintResponse(canLeave(c))
 					return nil
 
 				},
@@ -159,7 +159,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(proposeLeave(c))
+					api.PrintResponse(leave(c))
 					return nil
 
 				},
