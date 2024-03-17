@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
@@ -55,6 +56,9 @@ type NodeCollector struct {
 	// The total balances of all this node's validators on the beacon chain
 	beaconBalance *prometheus.Desc
 
+	// The sync progress of the clients
+	clientSyncProgress *prometheus.Desc
+
 	// The total EL balance of all minipools belonging to this node
 	minipoolBalance *prometheus.Desc
 
@@ -83,7 +87,10 @@ type NodeCollector struct {
 	rp *rocketpool.RocketPool
 
 	// The beacon client
-	bc beacon.Client
+	bc *services.BeaconClientManager
+
+	// The execution client
+	ec *services.ExecutionClientManager
 
 	// The node's address
 	nodeAddress common.Address
@@ -114,7 +121,7 @@ type NodeCollector struct {
 }
 
 // Create a new NodeCollector instance
-func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *NodeCollector {
+func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManager, ec *services.ExecutionClientManager, nodeAddress common.Address, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *NodeCollector {
 
 	// Get the event log interval
 	eventLogInterval, err := cfg.GetEventLogInterval()
@@ -169,6 +176,10 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			"The total balances of all this node's validators on the beacon chain",
 			nil, nil,
 		),
+		clientSyncProgress: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "sync_progress"),
+			"The sync progress of the beacon and execution clients",
+			[]string{"client"}, nil,
+		),
 		minipoolBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "minipool_balance"),
 			"The total EL balance of all minipools belonging to this node",
 			nil, nil,
@@ -203,6 +214,7 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 		),
 		rp:               rp,
 		bc:               bc,
+		ec:               ec,
 		nodeAddress:      nodeAddress,
 		eventLogInterval: big.NewInt(int64(eventLogInterval)),
 		handledIntervals: map[uint64]bool{},
@@ -225,6 +237,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.depositedEth
 	channel <- collector.beaconBalance
 	channel <- collector.beaconShare
+	channel <- collector.clientSyncProgress
 	channel <- collector.minipoolBalance
 	channel <- collector.minipoolShare
 	channel <- collector.refundBalance
@@ -255,10 +268,12 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	totalRplSupply := state.NetworkDetails.RPLTotalSupply
 	totalEffectiveStake := collector.stateLocker.GetTotalEffectiveRPLStake()
 	nodeOperatorRewardsPercent := eth.WeiToEth(state.NetworkDetails.NodeOperatorRewardsPercent)
+	previousIntervalTotalNodeWeight := big.NewInt(0)
 	ethBalance := eth.WeiToEth(nd.BalanceETH)
 	oldRplBalance := eth.WeiToEth(nd.BalanceOldRPL)
 	newRplBalance := eth.WeiToEth(nd.BalanceRPL)
 	rethBalance := eth.WeiToEth(nd.BalanceRETH)
+	eligibleBorrowedEth := state.GetEligibleBorrowedEth(nd)
 	var activeMinipoolCount float64
 	rplPriceRaw := state.NetworkDetails.RplPrice
 	rplPrice := eth.WeiToEth(rplPriceRaw)
@@ -291,6 +306,23 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		if err != nil {
 			return err
 		}
+
+		// Get the totalNodeWeight for the last completed interval
+		previousRewardIndex := state.NetworkDetails.RewardIndex
+		if previousRewardIndex > 0 {
+			previousRewardIndex = previousRewardIndex - 1
+		}
+
+		previousInterval, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, previousRewardIndex, nil)
+		if err != nil {
+			return err
+		}
+
+		if !previousInterval.TreeFileExists {
+			return fmt.Errorf("Error retrieving previous interval's total node weight: rewards file %s doesn't exist for interval %d", previousInterval.TreeFilePath, previousRewardIndex)
+		}
+		// Convert to a float, accuracy loss is meaningless compared to the heuristic's natural inaccuracy.
+		previousIntervalTotalNodeWeight = &previousInterval.TotalNodeWeight.Int
 
 		// Get the info for each claimed interval
 		for _, claimedInterval := range claimed {
@@ -339,6 +371,34 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
+	// get the beacon client sync status:
+	wg.Go(func() error {
+		progress := float64(0)
+
+		syncStatus, err := collector.bc.GetSyncStatus()
+
+		if err != nil {
+			// NOTE: returning here causes the metric to not be emitted. the endpoint stays responsive, but also slightly more accurate (progress=nothing instead of 0)
+			fmt.Printf("error getting beacon chain sync status: %w", err)
+			return nil
+		} else {
+			progress = syncStatus.Progress
+		}
+		// note this metric is emitted asynchronously, while others in this file tend to be emitted at the end of the outer function (mostly due to dependencies between metrics). See https://github.com/rocket-pool/smartnode/issues/186
+		channel <- prometheus.MustNewConstMetric(
+			collector.clientSyncProgress, prometheus.GaugeValue, progress, "beacon")
+		return nil
+	})
+
+	// get the execution client sync status:
+	wg.Go(func() error {
+		syncStatus := collector.ec.CheckStatus(collector.cfg)
+		// note this metric is emitted asynchronously, while others in this file tend to be emitted at the end of the outer function (mostly due to dependencies between metrics). See https://github.com/rocket-pool/smartnode/issues/186
+		channel <- prometheus.MustNewConstMetric(
+			collector.clientSyncProgress, prometheus.GaugeValue, syncStatus.PrimaryClientStatus.SyncProgress, "execution")
+		return nil
+	})
+
 	// Get the number of active minipools on the node
 	wg.Go(func() error {
 		minipoolCount := len(minipools)
@@ -365,6 +425,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	if err := wg.Wait(); err != nil {
 		collector.logError(err)
 		return
+	}
+
+	// Calculate the node weight
+	minCollateral := big.NewInt(0).Mul(eligibleBorrowedEth, state.NetworkDetails.MinCollateralFraction)
+	minCollateral.Div(minCollateral, state.NetworkDetails.RplPrice)
+
+	nodeWeight := big.NewInt(0)
+	// The node must satisfy collateral requirements and have eligible ETH from which to earn rewards.
+	if nd.RplStake.Cmp(minCollateral) != -1 && eligibleBorrowedEth.Sign() > 0 {
+		nodeWeight = state.GetNodeWeight(eligibleBorrowedEth, nd.RplStake)
 	}
 
 	// Calculate the rewardable RPL
@@ -445,9 +515,28 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	if totalRplAtNextCheckpoint < 0 {
 		totalRplAtNextCheckpoint = 0
 	}
+
+	/*
+	 * Calculates a RPIP-30 RPL reward estimate. Assumes that RPIP-30 has been fully phased in
+	 *
+	 * Formula:
+	 * 		current_node_weight / (current_node_weight + previous_interval_total_node_weight) * estimated_collateral_rewards
+	 *
+	 * Note that if the node has no effective stake, has no eligibleBorrowedETH, or if this is the very first rewards
+	 * period we don't attempt an estimate and simply use 0.
+	 */
 	estimatedRewards := float64(0)
-	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
-		estimatedRewards = rewardableStakeFloat / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
+	if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 && nodeWeight.Cmp(big.NewInt(0)) == 1 && state.NetworkDetails.RewardIndex > 0 {
+
+		nodeWeightSum := big.NewInt(0).Add(nodeWeight, previousIntervalTotalNodeWeight)
+
+		// nodeWeightRatio = current_node_weight / (current_node_weight + previous_interval_total_node_weight)
+		nodeWeightRatio, _ := big.NewFloat(0).Quo(
+			big.NewFloat(0).SetInt(nodeWeight),
+			big.NewFloat(0).SetInt(nodeWeightSum)).Float64()
+
+		// estimatedRewards = nodeWeightRatio * estimated_collateral_rewards
+		estimatedRewards = nodeWeightRatio * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
 	}
 
 	// Calculate the RPL APR

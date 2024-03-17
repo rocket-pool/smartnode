@@ -205,3 +205,23 @@ func (layout *standardLayout) mapParameterizedFormItems(params ...*parameterized
 		layout.parameters[param.item] = param
 	}
 }
+
+// Sets up a handler to return to the specified homePage when the user presses escape on the layout.
+func (layout *standardLayout) setupEscapeReturnHomeHandler(md *mainDisplay, homePage *page) {
+	layout.grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// Return to the home page
+		if event.Key() == tcell.KeyEsc {
+			// Close all dropdowns and break if one was open
+			for _, param := range layout.parameters {
+				dropDown, ok := param.item.(*DropDown)
+				if ok && dropDown.open {
+					dropDown.CloseList(md.app)
+					return nil
+				}
+			}
+			md.setPage(homePage)
+			return nil
+		}
+		return event
+	})
+}

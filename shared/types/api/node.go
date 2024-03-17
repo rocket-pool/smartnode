@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"math/big"
 	"time"
 
@@ -79,6 +80,72 @@ type NodeStatusResponse struct {
 		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
+	Alerts []NodeAlert
+}
+
+type NodeAlert struct {
+	// Enum: [unprocessed active suppressed]
+	State string `json:"state"`
+	// NOTE: Alertmanager puts "description" and "summary" in annotations and "alertname" is in labels (along with any configured labels and annotations).
+	Labels      map[string]string `json:"labels"`
+	Annotations map[string]string `json:"annotations"`
+}
+
+func (n NodeAlert) IsActive() bool {
+	return n.State == "active"
+}
+
+func (n NodeAlert) IsSuppressed() bool {
+	return n.State == "suppressed"
+}
+
+func (n NodeAlert) Name() string {
+	value, ok := n.Annotations["alertname"]
+	if !ok {
+		return ""
+	}
+	return value
+}
+
+func (n NodeAlert) Summary() string {
+	value, ok := n.Annotations["summary"]
+	if !ok {
+		return ""
+	}
+	return value
+}
+
+func (n NodeAlert) Description() string {
+	value, ok := n.Annotations["description"]
+	if !ok {
+		return ""
+	}
+	return value
+}
+
+func (n NodeAlert) Severity() string {
+	value, ok := n.Labels["severity"]
+	if !ok {
+		return ""
+	}
+	return value
+}
+
+func (n NodeAlert) ColorString() string {
+	const (
+		colorReset  string = "\033[0m"
+		colorRed    string = "\033[31m"
+		colorYellow string = "\033[33m"
+	)
+	suppressed := ""
+	if n.IsSuppressed() {
+		suppressed = " (suppressed)"
+	}
+	alertColor := colorYellow
+	if n.Severity() == "critical" {
+		alertColor = colorRed
+	}
+	return fmt.Sprintf("%s%s%s%s %s: %s", alertColor, n.Severity(), suppressed, colorReset, n.Summary(), n.Description())
 }
 
 type CanRegisterNodeResponse struct {
@@ -604,4 +671,11 @@ type NodeEthBalanceResponse struct {
 	Status  string   `json:"status"`
 	Error   string   `json:"error"`
 	Balance *big.Int `json:"balance"`
+}
+
+type NodeAlertsResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+	// TODO: change to GettableAlerts
+	Message string `json:"message"`
 }

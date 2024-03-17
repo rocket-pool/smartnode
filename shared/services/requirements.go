@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/urfave/cli"
 )
@@ -488,6 +489,7 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 				return false, err
 			}
 			if synced {
+				alerting.AlertExecutionClientSyncComplete(cfg)
 				return true, nil
 			}
 		}
@@ -517,6 +519,7 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 			}
 			// Only return true if the last reportedly known block is within our defined threshold
 			if isUpToDate {
+				alerting.AlertExecutionClientSyncComplete(cfg)
 				return true, nil
 			}
 		}
@@ -558,6 +561,11 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 	// Get BC status refresh time
 	bcRefreshTime := startTime
 
+	cfg, err := getConfig(c)
+	if err != nil {
+		return false, fmt.Errorf("error getting config %w", err)
+	}
+
 	// Wait for sync
 	for {
 
@@ -575,6 +583,7 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 				return false, err
 			}
 			if synced {
+				alerting.AlertBeaconClientSyncComplete(cfg)
 				return true, nil
 			}
 		}
@@ -591,6 +600,7 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 				log.Println("Eth 2.0 node syncing: %.2f%%\n", syncStatus.Progress*100)
 			}
 		} else {
+			alerting.AlertBeaconClientSyncComplete(cfg)
 			return true, nil
 		}
 

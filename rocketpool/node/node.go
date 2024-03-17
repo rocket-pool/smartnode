@@ -15,6 +15,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
@@ -170,21 +171,39 @@ func run(c *cli.Context) error {
 	// Run task loop
 	isHoustonDeployedMasterFlag := false
 	go func() {
+		// we assume clients are synced on startup so that we don't send unnecessary alerts
+		wasExecutionClientSynced := true
+		wasBeaconClientSynced := true
 		for {
 			// Check the EC status
 			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
 			if err != nil {
-				errorLog.Println(err)
+				wasExecutionClientSynced = false
+				errorLog.Printlnf("Execution client not synced: %s. Waiting for sync...", err)
 				time.Sleep(taskCooldown)
 				continue
+			}
+
+			if !wasExecutionClientSynced {
+				updateLog.Println("Execution client is now synced.")
+				wasExecutionClientSynced = true
+				alerting.AlertExecutionClientSyncComplete(cfg)
 			}
 
 			// Check the BC status
 			err = services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
 			if err != nil {
-				errorLog.Println(err)
+				// NOTE: if not synced, it returns an error - so there isn't necessarily an underlying issue
+				wasBeaconClientSynced = false
+				errorLog.Printlnf("Beacon client not synced: %s. Waiting for sync...", err)
 				time.Sleep(taskCooldown)
 				continue
+			}
+
+			if !wasBeaconClientSynced {
+				updateLog.Println("Beacon client is now synced.")
+				wasBeaconClientSynced = true
+				alerting.AlertBeaconClientSyncComplete(cfg)
 			}
 
 			// Update the network state
