@@ -135,9 +135,9 @@ func (cfg *ValidatorClientConfig) GetVcAdditionalFlags(bn config.BeaconNode) str
 }
 
 func getDefaultValidatorRestartCommand(rocketPoolDirectory string) string {
-	return filepath.Join(rocketPoolDirectory, "restart-vc.sh")
+	return filepath.Join(rocketPoolDirectory, NativeScriptsFolderName, "restart-vc.sh")
 }
 
 func getDefaultValidatorStopCommand(rocketPoolDirectory string) string {
-	return filepath.Join(rocketPoolDirectory, "stop-validator.sh")
+	return filepath.Join(rocketPoolDirectory, NativeScriptsFolderName, "stop-vc.sh")
 }

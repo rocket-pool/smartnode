@@ -37,6 +37,7 @@ const (
 
 	// Smart Node
 	AddonsFolderName                   string = "addons"
+	NativeScriptsFolderName            string = "native"
 	ChecksumTableFilename              string = "checksums.sha384"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreeFilenameFormat          string = "rp-rewards-%s-%d.json"

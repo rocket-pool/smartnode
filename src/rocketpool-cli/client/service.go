@@ -29,11 +29,13 @@ const (
 	nethermindPruneStarterCommand string = "dotnet /setup/NethermindPruneStarter/NethermindPruneStarter.dll"
 	nethermindAdminUrl            string = "http://127.0.0.1:7434"
 
-	templatesDir       string = "/usr/share/rocketpool/templates"
-	overrideSourceDir  string = "/usr/share/rocketpool/override"
-	overrideDir        string = "override"
-	runtimeDir         string = "runtime"
-	extraScrapeJobsDir string = "extra-scrape-jobs"
+	templatesDir           string = "/usr/share/rocketpool/templates"
+	addonsSourceDir        string = "/usr/share/rocketpool/addons"
+	overrideSourceDir      string = "/usr/share/rocketpool/override"
+	nativeScriptsSourceDir string = "/usr/share/rocketpool/scripts/native"
+	overrideDir            string = "override"
+	runtimeDir             string = "runtime"
+	extraScrapeJobsDir     string = "extra-scrape-jobs"
 )
 
 // Install the Rocket Pool service
@@ -583,7 +585,15 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir string) ([]string, error) {
 	// Prep the override folder
 	overrideFolder := filepath.Join(smartNodeDir, overrideDir)
-	copyOverrideFiles(overrideSourceDir, overrideFolder)
+	copyStockFiles(overrideSourceDir, overrideFolder, "override")
+
+	// Prep the addons folder
+	addonsFolder := filepath.Join(smartNodeDir, config.AddonsFolderName)
+	copyStockFiles(addonsSourceDir, addonsFolder, "addons")
+
+	// Prep the native scripts folder
+	nativeScriptsFolder := filepath.Join(smartNodeDir, config.NativeScriptsFolderName)
+	copyStockFiles(nativeScriptsSourceDir, nativeScriptsFolder, "native scripts")
 
 	// Clear out the runtime folder and remake it
 	runtimeFolder := filepath.Join(smartNodeDir, runtimeDir)
@@ -675,16 +685,16 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir strin
 	return c.composeAddons(cfg, smartNodeDir, deployedContainers)
 }
 
-// Make sure the override files have all been copied to the local user dir
-func copyOverrideFiles(sourceDir string, targetDir string) error {
+// Copy stock installation files from a directory to the user's directory for customization
+func copyStockFiles(sourceDir string, targetDir string, filetype string) error {
 	err := os.MkdirAll(targetDir, 0755)
 	if err != nil {
-		return fmt.Errorf("error creating override folder: %w", err)
+		return fmt.Errorf("error creating %s folder: %w", filetype, err)
 	}
 
 	files, err := os.ReadDir(sourceDir)
 	if err != nil {
-		return fmt.Errorf("error enumerating override source folder: %w", err)
+		return fmt.Errorf("error enumerating %s source folder: %w", filetype, err)
 	}
 
 	// Copy any override files that don't exist in the local user directory
@@ -694,7 +704,7 @@ func copyOverrideFiles(sourceDir string, targetDir string) error {
 		if file.IsDir() {
 			// Recurse
 			srcPath := filepath.Join(sourceDir, file.Name())
-			copyOverrideFiles(srcPath, targetPath)
+			copyStockFiles(srcPath, targetPath, filetype)
 		}
 
 		_, err := os.Stat(targetPath)
@@ -707,13 +717,13 @@ func copyOverrideFiles(sourceDir string, targetDir string) error {
 		srcPath := filepath.Join(sourceDir, filename)
 		contents, err := os.ReadFile(srcPath)
 		if err != nil {
-			return fmt.Errorf("error reading override file [%s]: %w", srcPath, err)
+			return fmt.Errorf("error reading %s file [%s]: %w", filetype, srcPath, err)
 		}
 
 		// Write a copy to the user dir
 		err = os.WriteFile(targetPath, contents, 0644)
 		if err != nil {
-			return fmt.Errorf("error writing local override file [%s]: %w", targetPath, err)
+			return fmt.Errorf("error writing local %s file [%s]: %w", filetype, targetPath, err)
 		}
 	}
 	return nil
