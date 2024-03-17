@@ -236,6 +236,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "initialize-voting",
+				Aliases:   []string{"iv"},
+				Usage:     "Initialize voting.",
+				UsageText: "rocketpool api network initialize-voting",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeInitializedVoting(c))
+					return nil
+
+				},
+			},
+			{
 				Name:      "estimate-set-voting-delegate-gas",
 				Usage:     "Estimate the gas required to set an on-chain voting delegate",
 				UsageText: "rocketpool api network estimate-set-voting-delegate-gas address",
