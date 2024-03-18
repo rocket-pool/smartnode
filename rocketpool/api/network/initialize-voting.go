@@ -99,6 +99,9 @@ func nodeInitializedVoting(c *cli.Context) (*api.NetworkInitializeVotingResponse
 	}
 
 	hash, err := network.InitializeVoting(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error initializing voting: %w", err)
+	}
 	response.TxHash = hash
 
 	return &response, nil

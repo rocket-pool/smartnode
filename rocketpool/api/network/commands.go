@@ -236,10 +236,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "initialized-voting",
+				Name:      "initialize-voting",
 				Aliases:   []string{"iv"},
-				Usage:     "Checks if voting can be initialized.",
-				UsageText: "rocketpool api network can-initialize-voting",
+				Usage:     "Initialize voting.",
+				UsageText: "rocketpool api network initialize-voting",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
