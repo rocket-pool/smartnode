@@ -3,14 +3,11 @@ package config
 import "github.com/rocket-pool/node-manager-core/config"
 
 const (
-	// Container Names
-	NodeSuffix             string = "node"
-	ExecutionClientSuffix  string = "eth1"
-	BeaconNodeSuffix       string = "eth2"
-	ValidatorClientSuffix  string = "validator"
-	EcMigratorSuffix       string = "ec_migrator"
-	PruneProvisionerSuffix string = "prune_provisioner"
-	PruneStarterSuffix     string = "nm_prune_starter"
+	// Container name overrides
+	NodeSuffix            string = "node"
+	ExecutionClientSuffix string = "eth1"
+	BeaconNodeSuffix      string = "eth2"
+	ValidatorClientSuffix string = "validator"
 )
 
 func GetContainerName(id config.ContainerID) string {
@@ -21,6 +18,8 @@ func GetContainerName(id config.ContainerID) string {
 		return BeaconNodeSuffix
 	case config.ContainerID_ExecutionClient:
 		return ExecutionClientSuffix
+	case config.ContainerID_ValidatorClient:
+		return ValidatorClientSuffix
 	default:
 		return string(id)
 	}

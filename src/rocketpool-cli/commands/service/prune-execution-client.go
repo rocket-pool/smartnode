@@ -71,7 +71,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	// Check for enough free space
 	executionContainerName := cfg.GetDockerArtifactName(config.ExecutionClientSuffix)
-	pruneStarterContainerName := cfg.GetDockerArtifactName(config.PruneStarterSuffix)
+	pruneStarterContainerName := cfg.GetDockerArtifactName(string(config.ContainerID_PruneStarter))
 	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting execution volume source path: %w", err)
@@ -124,7 +124,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	// Run the prune provisioner
 	fmt.Printf("Provisioning pruning on volume %s...\n", volume)
-	pruneProvisionerName := cfg.GetDockerArtifactName(config.PruneProvisionerSuffix)
+	pruneProvisionerName := cfg.GetDockerArtifactName(string(config.ContainerID_PruneProvisioner))
 	err = rp.RunPruneProvisioner(pruneProvisionerName, volume)
 	if err != nil {
 		return fmt.Errorf("Error running prune provisioner: %w", err)

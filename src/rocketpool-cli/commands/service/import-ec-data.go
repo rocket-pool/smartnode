@@ -34,7 +34,7 @@ func importEcData(c *cli.Context, sourceDir string) error {
 
 	// Check the source dir
 	fmt.Println("Checking source directory...")
-	migratorName := cfg.GetDockerArtifactName(config.EcMigratorSuffix)
+	migratorName := cfg.GetDockerArtifactName(string(config.ContainerID_EcMigrator))
 	sourceBytes, err := rp.GetDirSizeViaEcMigrator(migratorName, sourceDir)
 	if err != nil {
 		return err

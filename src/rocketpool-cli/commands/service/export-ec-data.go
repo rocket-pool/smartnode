@@ -109,7 +109,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 
 	// Run the migrator
 	fmt.Printf("Exporting data from volume %s to %s...\n", volume, targetDir)
-	migratorName := cfg.GetDockerArtifactName(config.EcMigratorSuffix)
+	migratorName := cfg.GetDockerArtifactName(string(config.ContainerID_EcMigrator))
 	err = rp.RunEcMigrator(migratorName, volume, targetDir, "export")
 	if err != nil {
 		return fmt.Errorf("Error running EC migrator: %w", err)
