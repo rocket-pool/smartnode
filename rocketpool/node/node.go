@@ -179,7 +179,7 @@ func run(c *cli.Context) error {
 			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				wasExecutionClientSynced = false
-				errorLog.Printlnf("Execution client not synced: %s. Waiting for sync...", err)
+				errorLog.Printlnf("Execution client not synced: %s. Waiting for sync...", err.Error())
 				time.Sleep(taskCooldown)
 				continue
 			}
@@ -195,7 +195,7 @@ func run(c *cli.Context) error {
 			if err != nil {
 				// NOTE: if not synced, it returns an error - so there isn't necessarily an underlying issue
 				wasBeaconClientSynced = false
-				errorLog.Printlnf("Beacon client not synced: %s. Waiting for sync...", err)
+				errorLog.Printlnf("Beacon client not synced: %s. Waiting for sync...", err.Error())
 				time.Sleep(taskCooldown)
 				continue
 			}

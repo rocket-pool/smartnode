@@ -80,7 +80,7 @@ type NodeStatusResponse struct {
 		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
-	Alerts []NodeAlert
+	Alerts []NodeAlert `json:"alerts"`
 }
 
 type NodeAlert struct {
