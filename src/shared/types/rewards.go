@@ -148,6 +148,8 @@ type IntervalInfo struct {
 	ODaoRplAmount          *QuotedBigInt `json:"oDaoRplAmount"`
 	SmoothingPoolEthAmount *QuotedBigInt `json:"smoothingPoolEthAmount"`
 	MerkleProof            []common.Hash `json:"merkleProof"`
+
+	TotalNodeWeight        *QuotedBigInt `json:"-"`
 }
 
 type QuotedBigInt struct {

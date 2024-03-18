@@ -361,7 +361,7 @@ func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.Rocke
 	return state, totalEffectiveStake, nil
 }
 
-func (s *NetworkState) getNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *big.Int) *big.Int {
+func (s *NetworkState) GetNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *big.Int) *big.Int {
 	rplPrice := s.NetworkDetails.RplPrice
 
 	// stakedRplValueInEth := nodeStake * ratio / 1 Eth
@@ -418,29 +418,7 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 		i := i
 		node := node
 		wg.Go(func() error {
-			eligibleBorrowedEth := big.NewInt(0)
-			for _, mpd := range s.MinipoolDetailsByNode[node.NodeAddress] {
-				// It must exist and be staking
-				if !mpd.Exists || mpd.Status != types.MinipoolStatus_Staking {
-					continue
-				}
-
-				// Doesn't exist on Beacon yet
-				validatorStatus, exists := s.ValidatorDetails[mpd.Pubkey]
-				if !exists {
-					//s.logLine("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
-					continue
-				}
-
-				intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
-				// Already exited
-				if validatorStatus.ExitEpoch <= intervalEndEpoch {
-					//s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
-					continue
-				}
-				// It's eligible, so add up the borrowed and bonded amounts
-				eligibleBorrowedEth.Add(eligibleBorrowedEth, mpd.UserDepositBalance)
-			}
+			eligibleBorrowedEth := s.GetEligibleBorrowedEth(&node)
 
 			// minCollateral := borrowedEth * minCollateralFraction / ratio
 			// NOTE: minCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
@@ -454,7 +432,7 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 				return nil
 			}
 
-			nodeWeight.Set(s.getNodeWeight(eligibleBorrowedEth, node.RplStake))
+			nodeWeight.Set(s.GetNodeWeight(eligibleBorrowedEth, node.RplStake))
 
 			// Scale the node weight by the participation in the current interval
 			// Get the timestamp of the node's registration
@@ -486,6 +464,37 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 	}
 
 	return weights, totalWeight, nil
+}
+
+func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
+	eligibleBorrowedEth := big.NewInt(0)
+
+	for _, mpd := range s.MinipoolDetailsByNode[node.NodeAddress] {
+
+		// It must exist and be staking
+		if !mpd.Exists || mpd.Status != types.MinipoolStatus_Staking {
+			continue
+		}
+
+		// Doesn't exist on Beacon yet
+		validatorStatus, exists := s.ValidatorDetails[mpd.Pubkey]
+		if !exists {
+			//s.logLine("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
+			continue
+		}
+
+		intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
+
+		// Already exited
+		if validatorStatus.ExitEpoch <= intervalEndEpoch {
+			//s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
+			continue
+		}
+
+		// It's eligible, so add up the borrowed and bonded amounts
+		eligibleBorrowedEth.Add(eligibleBorrowedEth, mpd.UserDepositBalance)
+	}
+	return eligibleBorrowedEth
 }
 
 // Calculate the true effective stakes of all nodes in the state, using the validator status

@@ -129,6 +129,8 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, nod
 
 	proofWrapper := localRewardsFile.Impl()
 
+	info.TotalNodeWeight = proofWrapper.GetHeader().TotalRewards.TotalNodeWeight
+
 	// Make sure the Merkle root has the expected value
 	merkleRootFromFile := common.HexToHash(proofWrapper.GetHeader().MerkleRoot)
 	if merkleRootCanon != merkleRootFromFile {
