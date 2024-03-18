@@ -100,14 +100,14 @@ func installService(c *cli.Context) error {
 func printPatchNotes() {
 	fmt.Println()
 	fmt.Println(shared.Logo)
-	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", terminal.ColorGreen, shared.RocketPoolVersion, terminal.ColorReset)
+	fmt.Printf("%s=== Smart Node v%s ===%s\n\n", terminal.ColorGreen, shared.RocketPoolVersion, terminal.ColorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
 	fmt.Printf("%s=== New Testnet: Holesky ===%s\n", terminal.ColorGreen, terminal.ColorReset)
 	fmt.Println("A new test network has been deployed named Holesky! This will replace Prater as the new long-term test network for Rocket Pool node operators. To use it, select the \"Holesky Testnet\" option from the Network dialog in the Smartnode section of `rocketpool service config`.\n")
 
-	fmt.Printf("%s=== Prater Deprecation ===%s\n", terminal.ColorGreen, terminal.ColorReset)
-	fmt.Println("The Prater test network is now deprecated, as it is being replaced by Holesky. If you are running a Prater node, please exit your minipools to gracefully clean up the network before migration (https://docs.rocketpool.net/guides/node/withdraw.html).\n")
+	fmt.Printf("%s=== Prater Removal  ===%s\n", terminal.ColorGreen, terminal.ColorReset)
+	fmt.Println("The previously deprecated Prater test network is now removed from the Smart Node.\n")
 
 	fmt.Printf("%s=== New Geth Mode: PBSS ===%s\n", terminal.ColorGreen, terminal.ColorReset)
 	fmt.Println("Geth has been updated to v1.13, which includes the much-anticipated Path-Based State Scheme (PBSS) storage mode. With PBSS, you never have to manually prune Geth again; it prunes automatically behind the scenes during runtime! To enable it, check the \"Enable PBSS\" box in the Execution Client section of the `rocketpool service config` UI. Note you **will have to resync** Geth after enabling this for it to take effect, and will lose attestations if you don't have a fallback client enabled!\n")

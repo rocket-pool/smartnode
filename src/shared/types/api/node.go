@@ -59,6 +59,7 @@ type NodeStatusData struct {
 	EffectiveRplStake                 *big.Int       `json:"effectiveRplStake"`
 	MinimumRplStake                   *big.Int       `json:"minimumRplStake"`
 	MaximumRplStake                   *big.Int       `json:"maximumRplStake"`
+	MaximumStakeFraction              *big.Int       `json:"maximumStakeFraction"`
 	BorrowedCollateralRatio           float64        `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio             float64        `json:"bondedCollateralRatio"`
 	PendingEffectiveRplStake          *big.Int       `json:"pendingEffectiveRplStake"`
@@ -159,6 +160,7 @@ type NodeSetStakeRplForAllowedData struct {
 type NodeWithdrawRplData struct {
 	CanWithdraw                      bool                 `json:"canWithdraw"`
 	InsufficientBalance              bool                 `json:"insufficientBalance"`
+	BelowMaxRplStake                 bool                 `json:"belowMaxRplStake"`
 	MinipoolsUndercollateralized     bool                 `json:"minipoolsUndercollateralized"`
 	WithdrawalDelayActive            bool                 `json:"withdrawalDelayActive"`
 	HasDifferentRplWithdrawalAddress bool                 `json:"hasDifferentRPLWithdrawalAddress"`
@@ -273,7 +275,6 @@ type NodeGetRewardsInfoData struct {
 	ActiveMinipools         uint64                     `json:"activeMinipools"`
 	EffectiveRplStake       *big.Int                   `json:"effectiveRplStake"`
 	MinimumRplStake         *big.Int                   `json:"minimumRplStake"`
-	MaximumRplStake         *big.Int                   `json:"maximumRplStake"`
 	EthMatched              *big.Int                   `json:"ethMatched"`
 	EthMatchedLimit         *big.Int                   `json:"ethMatchedLimit"`
 	PendingMatchAmount      *big.Int                   `json:"pendingMatchAmount"`

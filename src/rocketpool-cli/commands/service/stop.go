@@ -9,15 +9,15 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// Pause the Rocket Pool service
-func stopService(c *cli.Context) error {
+// Pause the Rocket Pool service. Returns whether the action proceeded (was confirmed by user and no error occurred before starting it)
+func stopService(c *cli.Context) (bool, error) {
 	// Get RP client
 	rp := client.NewClientFromCtx(c)
 
 	// Get the config
 	cfg, _, err := rp.LoadConfig()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Write a note on doppelganger protection
@@ -26,11 +26,12 @@ func stopService(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool(utils.YesFlag.Name) || utils.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
+	if !(c.Bool(utils.YesFlag.Name) || utils.Confirm("Are you sure you want to pause the Smart Node service? Any staking minipools will be penalized!")) {
 		fmt.Println("Cancelled.")
-		return nil
+		return false, nil
 	}
 
 	// Pause service
-	return rp.PauseService(getComposeFiles(c))
+	err = rp.PauseService(getComposeFiles(c))
+	return true, err
 }

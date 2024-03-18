@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/api/client"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
@@ -76,44 +75,9 @@ func (r *SecurityRequester) Proposals() (*types.ApiResponse[api.SecurityProposal
 	return client.SendGetRequest[api.SecurityProposalsData](r, "proposals", "Proposals", nil)
 }
 
-// Invite a new member to the security council
-func (r *SecurityRequester) ProposeInvite(id string, address common.Address) (*types.ApiResponse[api.SecurityProposeInviteData], error) {
-	args := map[string]string{
-		"id":      id,
-		"address": address.Hex(),
-	}
-	return client.SendGetRequest[api.SecurityProposeInviteData](r, "propose-invite", "ProposeInvite", args)
-}
-
 // Request leaving the security council
 func (r *SecurityRequester) ProposeLeave() (*types.ApiResponse[types.TxInfoData], error) {
 	return client.SendGetRequest[types.TxInfoData](r, "propose-leave", "ProposeLeave", nil)
-}
-
-// Kick a member from the security council
-func (r *SecurityRequester) ProposeKick(address common.Address) (*types.ApiResponse[api.SecurityProposeKickData], error) {
-	args := map[string]string{
-		"address": address.Hex(),
-	}
-	return client.SendGetRequest[api.SecurityProposeKickData](r, "propose-kick", "ProposeKick", args)
-}
-
-// Kick multiple members of the security council
-func (r *SecurityRequester) ProposeKickMulti(addresses []common.Address) (*types.ApiResponse[api.SecurityProposeKickMultiData], error) {
-	args := map[string]string{
-		"addresses": client.MakeBatchArg(addresses),
-	}
-	return client.SendGetRequest[api.SecurityProposeKickMultiData](r, "propose-kick-multi", "ProposeKickMulti", args)
-}
-
-// Replace a member of the security council with a new member
-func (r *SecurityRequester) ProposeReplace(existingAddress common.Address, newID string, newAddress common.Address) (*types.ApiResponse[api.SecurityProposeReplaceData], error) {
-	args := map[string]string{
-		"existing-address": existingAddress.Hex(),
-		"new-id":           newID,
-		"new-address":      newAddress.Hex(),
-	}
-	return client.SendGetRequest[api.SecurityProposeReplaceData](r, "propose-replace", "ProposeReplace", args)
 }
 
 // Propose a Protocol DAO (security council) setting update

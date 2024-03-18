@@ -91,6 +91,8 @@ func (c *nodeWithdrawRplContext) GetState(mc *batch.MultiCaller) {
 	eth.AddQueryablesToMulticall(mc,
 		c.node.RplStake,
 		c.node.MinimumRplStake,
+		c.node.MaximumRplStake,
+		c.node.RplLocked,
 		c.node.RplStakedTime,
 		c.node.IsRplWithdrawalAddressSet,
 		c.node.RplWithdrawalAddress,
@@ -107,19 +109,23 @@ func (c *nodeWithdrawRplContext) PrepareData(data *api.NodeWithdrawRplData, opts
 
 	rplStake := c.node.RplStake.Get()
 	minimumRplStake := c.node.MinimumRplStake.Get()
+	maximumRplStake := c.node.MaximumRplStake.Get()
+	nodeRplLocked := c.node.RplLocked.Get()
 	remainingRplStake := big.NewInt(0).Sub(rplStake, c.amount)
+	remainingRplStake.Sub(remainingRplStake, nodeRplLocked)
 	rplStakedTime := c.node.RplStakedTime.Formatted()
 	withdrawalDelay := c.pMgr.IntervalTime.Formatted()
 	isRplWithdrawalAddressSet := c.node.IsRplWithdrawalAddressSet.Get()
 	hasDifferentRplWithdrawalAddress := isRplWithdrawalAddressSet && c.nodeAddress != c.node.RplWithdrawalAddress.Get()
 
 	data.InsufficientBalance = (c.amount.Cmp(rplStake) > 0)
+	data.BelowMaxRplStake = (remainingRplStake.Cmp(maximumRplStake) < 0)
 	data.MinipoolsUndercollateralized = (remainingRplStake.Cmp(minimumRplStake) < 0)
 	data.HasDifferentRplWithdrawalAddress = hasDifferentRplWithdrawalAddress
 	data.WithdrawalDelayActive = (currentTime.Sub(rplStakedTime) < withdrawalDelay)
 
 	// Update & return response
-	data.CanWithdraw = !(data.InsufficientBalance || data.MinipoolsUndercollateralized || data.WithdrawalDelayActive || data.HasDifferentRplWithdrawalAddress)
+	data.CanWithdraw = !(data.InsufficientBalance || data.MinipoolsUndercollateralized || data.WithdrawalDelayActive || data.HasDifferentRplWithdrawalAddress || data.BelowMaxRplStake)
 
 	if data.CanWithdraw {
 		txInfo, err := c.node.WithdrawRpl(c.amount, opts)

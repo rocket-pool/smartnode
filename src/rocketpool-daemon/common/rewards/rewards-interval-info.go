@@ -10,7 +10,6 @@ import (
 type rewardsIntervalInfo struct {
 	rewardsRulesetVersion uint64
 	mainnetStartInterval  uint64
-	praterStartInterval   uint64
 	devnetStartInterval   uint64
 	holeskyStartInterval  uint64
 	generator             treeGeneratorImpl

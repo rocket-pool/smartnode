@@ -60,31 +60,6 @@ type SecurityProposalsData struct {
 	Proposals []SecurityProposalDetails `json:"proposals"`
 }
 
-type SecurityProposeInviteData struct {
-	CanPropose          bool                 `json:"canPropose"`
-	MemberAlreadyExists bool                 `json:"memberAlreadyExists"`
-	TxInfo              *eth.TransactionInfo `json:"txInfo"`
-}
-
-type SecurityProposeKickData struct {
-	CanPropose         bool                 `json:"canPropose"`
-	MemberDoesNotExist bool                 `json:"memberDoesNotExist"`
-	TxInfo             *eth.TransactionInfo `json:"txInfo"`
-}
-
-type SecurityProposeKickMultiData struct {
-	CanPropose        bool                 `json:"canPropose"`
-	MembersDoNotExist []common.Address     `json:"membersDoNotExist"`
-	TxInfo            *eth.TransactionInfo `json:"txInfo"`
-}
-
-type SecurityProposeReplaceData struct {
-	CanPropose             bool                 `json:"canPropose"`
-	OldMemberDoesNotExist  bool                 `json:"oldMemberDoesNotExist"`
-	NewMemberAlreadyExists bool                 `json:"newMemberAlreadyExists"`
-	TxInfo                 *eth.TransactionInfo `json:"txInfo"`
-}
-
 type SecurityProposeSettingData struct {
 	CanPropose     bool                 `json:"canPropose"`
 	UnknownSetting bool                 `json:"unknownSetting"`

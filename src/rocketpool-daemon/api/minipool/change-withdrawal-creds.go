@@ -129,7 +129,7 @@ func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *
 		return fmt.Errorf("error getting Beacon head: %w", err)
 	}
 
-	// Get voluntary exit signature domain
+	// Get the BlsToExecutionChange signature domain
 	signatureDomain, err := c.bc.GetDomainData(c.handler.context, eth2types.DomainBlsToExecutionChange[:], head.Epoch, true)
 	if err != nil {
 		return fmt.Errorf("error getting signature domain: %w", err)

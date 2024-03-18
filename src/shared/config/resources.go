@@ -201,6 +201,8 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0xd88f4d99e52eb202801628ae37ea1a15e2904d12"),
 			common.HexToAddress("0x99856894b360843EB487E252ccED703752cE7C64"),
+			common.HexToAddress("0xA426795EE32d77aE10da3147c493Cd5b89d38D8D"),
+			common.HexToAddress("0x287766868E6eA69471CB0DCE7782493a29E75b4a"),
 		},
 		PreviousProtocolDaoVerifierAddresses: []common.Address{
 			common.HexToAddress("0x30dF9293490C8388DF35398dA31C19EF61f5115A"),

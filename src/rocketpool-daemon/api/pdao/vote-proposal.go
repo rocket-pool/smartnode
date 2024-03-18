@@ -66,6 +66,7 @@ type protocolDaoVoteOnProposalContext struct {
 	existingVoteDir func() types.VoteDirection
 	pdaoMgr         *protocol.ProtocolDaoManager
 	proposal        *protocol.ProtocolDaoProposal
+	propMgr         *proposals.ProposalManager
 }
 
 func (c *protocolDaoVoteOnProposalContext) Initialize() error {
@@ -94,6 +95,10 @@ func (c *protocolDaoVoteOnProposalContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating proposal binding: %w", err)
 	}
+	c.propMgr, err = proposals.NewProposalManager(c.handler.context, nil, c.cfg, c.rp, c.bc)
+	if err != nil {
+		fmt.Errorf("error creating proposal manager: %w", err)
+	}
 	return nil
 }
 
@@ -107,13 +112,11 @@ func (c *protocolDaoVoteOnProposalContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *protocolDaoVoteOnProposalContext) PrepareData(data *api.ProtocolDaoVoteOnProposalData, opts *bind.TransactOpts) error {
-	// Get the voting power for the node as of this proposal
-	err := c.rp.Query(func(mc *batch.MultiCaller) error {
-		c.node.GetVotingPowerAtBlock(mc, &data.VotingPower, c.proposal.TargetBlock.Formatted())
-		return nil
-	}, nil)
+	var err error
+	targetBlock := c.proposal.TargetBlock.Formatted()
+	data.VotingPower, _, _, err = c.propMgr.GetArtifactsForVoting(targetBlock, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error getting node voting power at block %d: %w", c.proposal.TargetBlock.Formatted(), err)
+		return fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", c.nodeAddress.Hex(), targetBlock, err)
 	}
 
 	data.DoesNotExist = (c.proposalID > c.pdaoMgr.ProposalCount.Formatted())

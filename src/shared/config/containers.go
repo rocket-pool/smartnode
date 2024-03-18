@@ -10,6 +10,7 @@ const (
 	ValidatorClientSuffix  string = "validator"
 	EcMigratorSuffix       string = "ec_migrator"
 	PruneProvisionerSuffix string = "prune_provisioner"
+	PruneStarterSuffix     string = "nm_prune_starter"
 )
 
 func GetContainerName(id config.ContainerID) string {

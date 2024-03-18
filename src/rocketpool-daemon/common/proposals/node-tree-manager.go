@@ -233,6 +233,6 @@ func (m *NodeTreeManager) getInfoFromFilename(filename string) (uint32, uint64, 
 // Log a message to the logger
 func (m *NodeTreeManager) logMessage(message string, args ...any) {
 	if m.log != nil {
-		m.log.Printlnf(message, args)
+		m.log.Printlnf(message, args...)
 	}
 }

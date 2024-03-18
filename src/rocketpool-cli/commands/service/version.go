@@ -56,6 +56,8 @@ func serviceVersion(c *cli.Context) error {
 			executionClientString = fmt.Sprintf(ecFormat, "Nethermind", cfg.LocalExecutionClient.Nethermind.ContainerTag.Value)
 		case config.ExecutionClient_Besu:
 			executionClientString = fmt.Sprintf(ecFormat, "Besu", cfg.LocalExecutionClient.Besu.ContainerTag.Value)
+		case config.ExecutionClient_Reth:
+			executionClientString = fmt.Sprintf(ecFormat, "Reth", cfg.LocalExecutionClient.Reth.ContainerTag.Value)
 		default:
 			return fmt.Errorf("unknown local execution client [%v]", ec)
 		}
@@ -89,6 +91,8 @@ func serviceVersion(c *cli.Context) error {
 			executionClientString = fmt.Sprintf(ecFormat, "Nethermind")
 		case config.ExecutionClient_Besu:
 			executionClientString = fmt.Sprintf(ecFormat, "Besu")
+		case config.ExecutionClient_Reth:
+			executionClientString = fmt.Sprintf(ecFormat, "Reth")
 		default:
 			return fmt.Errorf("unknown external Execution Client [%v]", ec)
 		}
@@ -115,10 +119,22 @@ func serviceVersion(c *cli.Context) error {
 		return fmt.Errorf("unknown client mode [%v]", clientMode)
 	}
 
+	var mevBoostString string
+	if cfg.MevBoost.Enable.Value {
+		if cfg.MevBoost.Mode.Value == config.ClientMode_Local {
+			mevBoostString = fmt.Sprintf("Enabled (Local Mode)\n\tImage: %s", cfg.MevBoost.ContainerTag.Value)
+		} else {
+			mevBoostString = "Enabled (External Mode)"
+		}
+	} else {
+		mevBoostString = "Disabled"
+	}
+
 	// Print version info
 	fmt.Printf("Smart Node client version: %s\n", c.App.Version)
 	fmt.Printf("Smart Node service version: %s\n", serviceVersion)
 	fmt.Printf("Selected Execution Client: %s\n", executionClientString)
 	fmt.Printf("Selected Beacon Node: %s\n", beaconNodeString)
+	fmt.Printf("MEV-Boost client: %s\n", mevBoostString)
 	return nil
 }

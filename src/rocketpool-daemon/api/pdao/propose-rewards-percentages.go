@@ -99,6 +99,15 @@ func (c *protocolDaoProposeRewardsPercentagesContext) GetState(mc *batch.MultiCa
 }
 
 func (c *protocolDaoProposeRewardsPercentagesContext) PrepareData(data *api.ProtocolDaoGeneralProposeData, opts *bind.TransactOpts) error {
+	// Validate sum of percentages == 100%
+	one := eth.EthToWei(1)
+	sum := big.NewInt(0).Set(c.nodePercent)
+	sum.Add(sum, c.odaoPercent)
+	sum.Add(sum, c.pdaoPercent)
+	if sum.Cmp(one) != 0 {
+		return fmt.Errorf("values don't add up to 100%%")
+	}
+
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
 	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()

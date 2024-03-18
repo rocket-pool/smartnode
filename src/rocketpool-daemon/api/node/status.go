@@ -216,6 +216,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	data.EffectiveRplStake = c.node.EffectiveRplStake.Get()
 	data.MinimumRplStake = c.node.MinimumRplStake.Get()
 	data.MaximumRplStake = c.node.MaximumRplStake.Get()
+	data.MaximumStakeFraction = c.pSettings.Node.MaximumPerMinipoolStake.Raw()
 	data.CreditBalance = c.node.Credit.Get()
 	data.CreditAndEthOnBehalfBalance = c.node.TotalCreditAndDonatedBalance.Get()
 	data.UsableCreditAndEthOnBehalfBalance = c.node.UsableCreditAndDonatedBalance.Get()

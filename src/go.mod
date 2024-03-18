@@ -7,53 +7,52 @@ toolchain go1.21.1
 require (
 	github.com/alessio/shellescape v1.4.2
 	github.com/blang/semver/v4 v4.0.0
-	github.com/btcsuite/btcd v0.24.0
-	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/dustin/go-humanize v1.0.1
 	github.com/ethereum/go-ethereum v1.13.11
 	github.com/fatih/color v1.16.0
-	github.com/ferranbt/fastssz v0.1.3
 	github.com/gdamore/tcell/v2 v2.6.1-0.20231203215052-2917c3801e73
-	github.com/glendc/go-external-ip v0.1.0
 	github.com/goccy/go-json v0.10.2
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/ipfs/go-cid v0.4.1
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/klauspost/compress v1.17.4
-	github.com/klauspost/cpuid/v2 v2.2.6
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
 	github.com/prometheus/client_golang v1.18.0
-	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v4 v4.2.1
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
-	github.com/rocket-pool/node-manager-core v0.1.1-0.20240313095545-4dad4abc6c9e
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20240313043854-76bbff3b1b0b
-	github.com/sethvargo/go-password v0.2.0
-	github.com/shirou/gopsutil/v3 v3.23.12
+	github.com/rocket-pool/node-manager-core v0.1.1-0.20240318023148-9abef02fd4c6
+	github.com/rocket-pool/rocketpool-go v1.8.3-0.20240317073117-6e5d01c84478
+	github.com/shirou/gopsutil/v3 v3.24.2
 	github.com/tyler-smith/go-bip39 v1.1.0
-	github.com/urfave/cli v1.22.14
 	github.com/wealdtech/go-ens/v3 v3.6.0
 	github.com/wealdtech/go-eth2-types/v2 v2.8.2
 	github.com/wealdtech/go-eth2-util v1.8.2
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.4.1
 	github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a
 	golang.org/x/sync v0.6.0
-	golang.org/x/term v0.16.0
+	golang.org/x/term v0.18.0
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
+	github.com/btcsuite/btcd v0.24.0 // indirect
+	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
+	github.com/ferranbt/fastssz v0.1.3 // indirect
+	github.com/glendc/go-external-ip v0.1.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
+	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7 // indirect
+	github.com/sethvargo/go-password v0.2.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
 	google.golang.org/api v0.45.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240108191215-35c7eff3a6b1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240108191215-35c7eff3a6b1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
@@ -149,7 +148,7 @@ require (
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/genproto v0.0.0-20240102182953-50ed04b92917 // indirect

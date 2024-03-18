@@ -99,7 +99,7 @@ func (cfg *SmartNodeConfig) BnHttpUrl() (string, error) {
 	}
 	if overrides != nil {
 		// Use the rescue node
-		return overrides.CcApiEndpoint, nil
+		return overrides.BnApiEndpoint, nil
 	}
 	return cfg.GetBnHttpEndpoint(), nil
 }
@@ -121,7 +121,7 @@ func (cfg *SmartNodeConfig) BnRpcUrl() (string, error) {
 		return overrides.CcRpcEndpoint, nil
 	}
 	if cfg.IsLocalMode() {
-		return fmt.Sprintf("%s:%d", config.ContainerID_BeaconNode, cfg.LocalBeaconClient.Prysm.RpcPort.Value), nil
+		return fmt.Sprintf("%s:%d", BeaconNodeSuffix, cfg.LocalBeaconClient.Prysm.RpcPort.Value), nil
 	}
 	return cfg.ExternalBeaconClient.PrysmRpcUrl.Value, nil
 }
@@ -220,7 +220,7 @@ func (cfg *SmartNodeConfig) GetExternalIP() string {
 // Used by text/template to format bn.yml
 func (cfg *SmartNodeConfig) GetEcHttpEndpoint() string {
 	if cfg.ClientMode.Value == config.ClientMode_Local {
-		return fmt.Sprintf("http://%s:%d", config.ContainerID_ExecutionClient, cfg.LocalExecutionClient.HttpPort.Value)
+		return fmt.Sprintf("http://%s:%d", ExecutionClientSuffix, cfg.LocalExecutionClient.HttpPort.Value)
 	}
 
 	return cfg.ExternalExecutionClient.HttpUrl.Value
@@ -265,7 +265,7 @@ func (cfg *SmartNodeConfig) GetBnOpenPorts() []string {
 // Used by text/template to format bn.yml
 func (cfg *SmartNodeConfig) GetEcWsEndpoint() string {
 	if cfg.ClientMode.Value == config.ClientMode_Local {
-		return fmt.Sprintf("ws://%s:%d", config.ContainerID_ExecutionClient, cfg.LocalExecutionClient.WebsocketPort.Value)
+		return fmt.Sprintf("ws://%s:%d", ExecutionClientSuffix, cfg.LocalExecutionClient.WebsocketPort.Value)
 	}
 
 	return cfg.ExternalExecutionClient.WebsocketUrl.Value
@@ -283,7 +283,7 @@ func (cfg *SmartNodeConfig) GetBnMaxPeers() (uint16, error) {
 // Used by text/template to format bn.yml
 func (cfg *SmartNodeConfig) GetBnAdditionalFlags() (string, error) {
 	if cfg.ClientMode.Value != config.ClientMode_Local {
-		return "", fmt.Errorf("Beacon Node is external, there is no additional flags")
+		return "", fmt.Errorf("Beacon Node is external, there are no additional flags")
 	}
 	return cfg.LocalBeaconClient.GetAdditionalFlags(), nil
 }
@@ -291,7 +291,7 @@ func (cfg *SmartNodeConfig) GetBnAdditionalFlags() (string, error) {
 // Get the HTTP API endpoint for the provided BN
 func (cfg *SmartNodeConfig) GetBnHttpEndpoint() string {
 	if cfg.IsLocalMode() {
-		return fmt.Sprintf("http://%s:%d", config.ContainerID_BeaconNode, cfg.LocalBeaconClient.HttpPort.Value)
+		return fmt.Sprintf("http://%s:%d", BeaconNodeSuffix, cfg.LocalBeaconClient.HttpPort.Value)
 	}
 
 	return cfg.ExternalBeaconClient.HttpUrl.Value
@@ -342,7 +342,7 @@ func (cfg *SmartNodeConfig) GetPrometheusOpenPorts() string {
 // Used by text/template to format prometheus.yml.
 func (cfg *SmartNodeConfig) GetExecutionHostname() (string, error) {
 	if cfg.ClientMode.Value == config.ClientMode_Local {
-		return string(config.ContainerID_ExecutionClient), nil
+		return ExecutionClientSuffix, nil
 	}
 	ecUrl, err := url.Parse(cfg.ExternalExecutionClient.HttpUrl.Value)
 	if err != nil {
@@ -356,7 +356,7 @@ func (cfg *SmartNodeConfig) GetExecutionHostname() (string, error) {
 // Used by text/template to format prometheus.yml.
 func (cfg *SmartNodeConfig) GetBeaconHostname() (string, error) {
 	if cfg.ClientMode.Value == config.ClientMode_Local {
-		return string(config.ContainerID_BeaconNode), nil
+		return BeaconNodeSuffix, nil
 	}
 	bnUrl, err := url.Parse(cfg.ExternalBeaconClient.HttpUrl.Value)
 	if err != nil {

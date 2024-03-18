@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli/v2"
 
@@ -133,13 +132,14 @@ func getProposal(c *cli.Context, id uint64) error {
 	fmt.Printf("Payload (bytes):        %s\n", hex.EncodeToString(proposal.Payload))
 	fmt.Printf("Proposed by:            %s\n", proposal.ProposerAddress.Hex())
 	fmt.Printf("Created at:             %s\n", proposal.CreatedTime.Format(time.RFC822))
+	fmt.Printf("State:                  %s\n", types.ProtocolDaoProposalStates[proposal.State])
 
 	// Start block - pending proposals
 	if proposal.State == types.ProtocolDaoProposalState_Pending {
 		fmt.Printf("Voting start:           %s\n", proposal.VotingStartTime.Format(time.RFC822))
 	}
 	if proposal.State == types.ProtocolDaoProposalState_Pending {
-		fmt.Printf("Challenge window ends:  %s\n", proposal.CreatedTime.Add(proposal.ChallengeWindow).Format(time.RFC822))
+		fmt.Printf("Challenge window:       %s\n", proposal.ChallengeWindow)
 	}
 
 	// End block - active proposals
@@ -156,11 +156,11 @@ func getProposal(c *cli.Context, id uint64) error {
 	}
 
 	// Vote details
-	fmt.Printf("Voting power required:  %.2f\n", eth.WeiToEth(proposal.VotingPowerRequired))
-	fmt.Printf("Voting power for:       %.2f\n", eth.WeiToEth(proposal.VotingPowerFor))
-	fmt.Printf("Voting power against:   %.2f\n", eth.WeiToEth(proposal.VotingPowerAgainst))
-	fmt.Printf("Voting power abstained: %.2f\n", eth.WeiToEth(proposal.VotingPowerAbstained))
-	fmt.Printf("Voting power against:   %.2f\n", eth.WeiToEth(proposal.VotingPowerToVeto))
+	fmt.Printf("Voting power required:  %s\n", proposal.VotingPowerRequired.String())
+	fmt.Printf("Voting power for:       %s\n", proposal.VotingPowerFor.String())
+	fmt.Printf("Voting power against:   %s\n", proposal.VotingPowerAgainst.String())
+	fmt.Printf("Voting power abstained: %s\n", proposal.VotingPowerAbstained.String())
+	fmt.Printf("Voting power against:   %s\n", proposal.VotingPowerToVeto.String())
 	if proposal.NodeVoteDirection != types.VoteDirection_NoVote {
 		fmt.Printf("Node has voted:         %s\n", types.VoteDirections[proposal.NodeVoteDirection])
 	} else {

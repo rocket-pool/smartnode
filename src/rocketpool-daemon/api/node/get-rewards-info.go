@@ -95,11 +95,9 @@ func (c *nodeGetRewardsInfoContext) GetState(mc *batch.MultiCaller) {
 		c.node.ActiveMinipoolCount,
 		c.node.RplStake,
 		c.node.MinimumRplStake,
-		c.node.MaximumRplStake,
 		c.node.EffectiveRplStake,
 		c.networkMgr.RplPrice,
 		c.pSettings.Node.MinimumPerMinipoolStake,
-		c.pSettings.Node.MaximumPerMinipoolStake,
 		c.rewardsPool.RewardIndex,
 	)
 }
@@ -109,7 +107,6 @@ func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData
 	data.RplPrice = c.networkMgr.RplPrice.Raw()
 	data.RplStake = c.node.RplStake.Get()
 	data.MinimumRplStake = c.node.MinimumRplStake.Get()
-	data.MaximumRplStake = c.node.MaximumRplStake.Get()
 	data.EffectiveRplStake = c.node.EffectiveRplStake.Get()
 
 	// Get the claimed and unclaimed intervals
@@ -147,26 +144,14 @@ func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData
 
 		// Calculate the *real* minimum, including the pending bond reductions
 		minStakeFraction := c.pSettings.Node.MinimumPerMinipoolStake.Raw()
-		maxStakeFraction := c.pSettings.Node.MaximumPerMinipoolStake.Raw()
 		trueMinimumStake := big.NewInt(0).Add(data.EthMatched, data.PendingMatchAmount)
 		trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
 		trueMinimumStake.Div(trueMinimumStake, data.RplPrice)
 
-		// Calculate the *real* maximum, including the pending bond reductions
-		trueMaximumStake := eth.EthToWei(32)
-		trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(data.ActiveMinipools)))
-		trueMaximumStake.Sub(trueMaximumStake, data.EthMatched)
-		trueMaximumStake.Sub(trueMaximumStake, data.PendingMatchAmount) // (32 * activeMinipools - ethMatched - pendingMatch)
-		trueMaximumStake.Mul(trueMaximumStake, maxStakeFraction)
-		trueMaximumStake.Div(trueMaximumStake, data.RplPrice)
-
 		data.MinimumRplStake = trueMinimumStake
-		data.MaximumRplStake = trueMaximumStake
 
 		if data.EffectiveRplStake.Cmp(trueMinimumStake) < 0 {
 			data.EffectiveRplStake.SetUint64(0)
-		} else if data.EffectiveRplStake.Cmp(trueMaximumStake) > 0 {
-			data.EffectiveRplStake.Set(trueMaximumStake)
 		}
 
 		data.BondedCollateralRatio = eth.WeiToEth(data.RplPrice) * eth.WeiToEth(data.RplStake) / (float64(data.ActiveMinipools)*32.0 - eth.WeiToEth(data.EthMatched) - eth.WeiToEth(data.PendingMatchAmount))

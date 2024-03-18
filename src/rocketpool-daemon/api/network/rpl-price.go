@@ -78,7 +78,6 @@ func (c *networkPriceContext) GetState(mc *batch.MultiCaller) {
 		c.networkMgr.PricesBlock,
 		c.networkMgr.RplPrice,
 		c.pSettings.Node.MinimumPerMinipoolStake,
-		c.pSettings.Node.MaximumPerMinipoolStake,
 	)
 }
 
@@ -86,14 +85,11 @@ func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *b
 	var rplPrice *big.Int
 	_24Eth := eth.EthToWei(24)
 	_16Eth := eth.EthToWei(16)
-	_8Eth := eth.EthToWei(8)
 	var minPerMinipoolStake *big.Int
-	var maxPerMinipoolStake *big.Int
 
 	data.RplPriceBlock = c.networkMgr.PricesBlock.Formatted()
 	rplPrice = c.networkMgr.RplPrice.Raw()
 	minPerMinipoolStake = c.pSettings.Node.MinimumPerMinipoolStake.Raw()
-	maxPerMinipoolStake = c.pSettings.Node.MaximumPerMinipoolStake.Raw()
 
 	// Min for LEB8s
 	minPer8EthMinipoolRplStake := big.NewInt(0)
@@ -102,26 +98,12 @@ func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *b
 	minPer8EthMinipoolRplStake.Add(minPer8EthMinipoolRplStake, big.NewInt(1))
 	data.MinPer8EthMinipoolRplStake = minPer8EthMinipoolRplStake
 
-	// Max for LEB8s
-	maxPer8EthMinipoolRplStake := big.NewInt(0)
-	maxPer8EthMinipoolRplStake.Mul(_8Eth, maxPerMinipoolStake) // Max is 150% of bonded (8 ETH)
-	maxPer8EthMinipoolRplStake.Div(maxPer8EthMinipoolRplStake, rplPrice)
-	maxPer8EthMinipoolRplStake.Add(maxPer8EthMinipoolRplStake, big.NewInt(1))
-	data.MaxPer8EthMinipoolRplStake = maxPer8EthMinipoolRplStake
-
 	// Min for 16s
 	minPer16EthMinipoolRplStake := big.NewInt(0)
 	minPer16EthMinipoolRplStake.Mul(_16Eth, minPerMinipoolStake) // Min is 10% of borrowed (16 ETH)
 	minPer16EthMinipoolRplStake.Div(minPer16EthMinipoolRplStake, rplPrice)
 	minPer16EthMinipoolRplStake.Add(minPer16EthMinipoolRplStake, big.NewInt(1))
 	data.MinPer16EthMinipoolRplStake = minPer16EthMinipoolRplStake
-
-	// Max for 16s
-	maxPer16EthMinipoolRplStake := big.NewInt(0)
-	maxPer16EthMinipoolRplStake.Mul(_16Eth, maxPerMinipoolStake) // Max is 150% of bonded (16 ETH)
-	maxPer16EthMinipoolRplStake.Div(maxPer16EthMinipoolRplStake, rplPrice)
-	maxPer16EthMinipoolRplStake.Add(maxPer16EthMinipoolRplStake, big.NewInt(1))
-	data.MaxPer16EthMinipoolRplStake = maxPer16EthMinipoolRplStake
 
 	// Update & return response
 	data.RplPrice = rplPrice

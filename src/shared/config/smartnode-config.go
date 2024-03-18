@@ -134,7 +134,7 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 			ParameterCommon: &config.ParameterCommon{
 				ID:                 ids.NetworkID,
 				Name:               "Network",
-				Description:        "The Ethereum network you want to use - select Prater Testnet or Holesky Testnet to practice with fake ETH, or Mainnet to stake on the real network using real ETH.",
+				Description:        "The Ethereum network you want to use - select Holesky Testnet to practice with fake ETH, or Mainnet to stake on the real network using real ETH.",
 				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon, ContainerID_Watchtower, config.ContainerID_ExecutionClient, config.ContainerID_BeaconNode, config.ContainerID_ValidatorClient},
 				CanBeBlank:         false,
 				OverwriteOnUpgrade: false,
@@ -636,6 +636,9 @@ func (cfg *SmartNodeConfig) Validate() []string {
 		if cfg.LocalBeaconClient.BeaconNode.Value == config.BeaconNode_Unknown {
 			errors = append(errors, "You do not have a Beacon Node specified. Please select a client before continuing.")
 		}
+		if cfg.LocalExecutionClient.ExecutionClient.Value == config.ExecutionClient_Reth && cfg.Network.Value == config.Network_Mainnet {
+			errors = append(errors, "The Reth client is currently an alpha release and not to be used on Mainnet")
+		}
 	} else {
 		if cfg.ExternalExecutionClient.ExecutionClient.Value == config.ExecutionClient_Unknown {
 			errors = append(errors, "You do not have an Execution Client specified. Please select a client before continuing.")
@@ -647,6 +650,7 @@ func (cfg *SmartNodeConfig) Validate() []string {
 
 	// Ensure there's a MEV-boost URL
 	if cfg.Network.Value == config.Network_Holesky || cfg.Network.Value == Network_Devnet {
+		// Disabled on Holesky
 		cfg.MevBoost.Enable.Value = false
 	} else if cfg.MevBoost.Enable.Value {
 		switch cfg.MevBoost.Mode.Value {
@@ -741,7 +745,7 @@ func getNetworkOptions() []*config.ParameterOption[config.Network] {
 		}, {
 			ParameterOptionCommon: &config.ParameterOptionCommon{
 				Name:        "Holesky Testnet",
-				Description: "This is the Holešky (Holešovice) test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to Mainnet.",
+				Description: "This is the Holešky (Holešovice) test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smart Node in a free, safe environment before moving to Mainnet.",
 			},
 			Value: config.Network_Holesky,
 		},
@@ -751,7 +755,7 @@ func getNetworkOptions() []*config.ParameterOption[config.Network] {
 		options = append(options, &config.ParameterOption[config.Network]{
 			ParameterOptionCommon: &config.ParameterOptionCommon{
 				Name:        "Devnet",
-				Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to Holesky for staging. You should not use this network unless invited to do so by the developers.",
+				Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to a Testnet for staging. You should not use this network unless invited to do so by the developers.",
 			},
 			Value: Network_Devnet,
 		})

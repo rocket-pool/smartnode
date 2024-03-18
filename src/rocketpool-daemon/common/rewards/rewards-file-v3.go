@@ -16,7 +16,7 @@ import (
 
 // Holds information
 type MinipoolPerformanceFile_v3 struct {
-	RewardsFileVersion  uint64                                                  `json:"rewardsFileVersion"`
+	RewardsFileVersion  sharedtypes.RewardsFileVersion                          `json:"rewardsFileVersion"`
 	RulesetVersion      uint64                                                  `json:"rulesetVersion"`
 	Index               uint64                                                  `json:"index"`
 	Network             string                                                  `json:"network"`

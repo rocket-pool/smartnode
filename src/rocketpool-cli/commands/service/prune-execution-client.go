@@ -39,8 +39,10 @@ func pruneExecutionClient(c *cli.Context) error {
 	selectedEc := cfg.GetSelectedExecutionClient()
 	switch selectedEc {
 	case nmc_config.ExecutionClient_Besu:
-		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
-		return nil
+		if cfg.LocalExecutionClient.Besu.ArchiveMode.Value {
+			fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
+			return nil
+		}
 	case nmc_config.ExecutionClient_Geth:
 		if cfg.LocalExecutionClient.Geth.EnablePbss.Value {
 			fmt.Println("You have PBSS enabled for Geth. Pruning is no longer required when using PBSS.")
@@ -48,16 +50,18 @@ func pruneExecutionClient(c *cli.Context) error {
 		}
 	}
 
-	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
-	fmt.Println("Once pruning is complete, your execution client will restart automatically.\n")
-
-	if selectedEc == nmc_config.ExecutionClient_Geth {
-		if cfg.Fallback.UseFallbackClients.Value == false {
-			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until Geth is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", terminal.ColorRed, terminal.ColorReset)
+	if selectedEc == nmc_config.ExecutionClient_Geth || selectedEc == nmc_config.ExecutionClient_Besu {
+		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
+		if !cfg.Fallback.UseFallbackClients.Value {
+			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until your Execution Client is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", terminal.ColorRed, terminal.ColorReset)
 		} else {
-			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
+			fmt.Println("You have fallback clients enabled. The Smart Node (and your Validator Client) will use that while the main client is pruning.")
 		}
+	} else {
+		fmt.Println("This will request your main execution client to prune its database, freeing up disk space. This is a resource intensive operation and may lead to an increase in missed attestations until it finishes.")
 	}
+	fmt.Println("Once pruning is complete, your execution client will restart automatically.")
+	fmt.Println()
 
 	// Prompt for confirmation
 	if !(c.Bool(utils.YesFlag.Name) || utils.Confirm("Are you sure you want to prune your main execution client?")) {
@@ -67,6 +71,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	// Check for enough free space
 	executionContainerName := cfg.GetDockerArtifactName(config.ExecutionClientSuffix)
+	pruneStarterContainerName := cfg.GetDockerArtifactName(config.PruneStarterSuffix)
 	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting execution volume source path: %w", err)
@@ -96,6 +101,15 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
 
+	if selectedEc == nmc_config.ExecutionClient_Nethermind {
+		// Restarting NM is not needed anymore
+		err = rp.RunNethermindPruneStarter(executionContainerName, pruneStarterContainerName)
+		if err != nil {
+			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
+		}
+		return nil
+	}
+
 	fmt.Printf("Stopping %s...\n", executionContainerName)
 	err = rp.StopContainer(executionContainerName)
 	if err != nil {
@@ -116,24 +130,18 @@ func pruneExecutionClient(c *cli.Context) error {
 		return fmt.Errorf("Error running prune provisioner: %w", err)
 	}
 
-	// Restart ETH1
+	// Restart the EC
 	fmt.Printf("Restarting %s...\n", executionContainerName)
 	err = rp.StartContainer(executionContainerName)
 	if err != nil {
 		return fmt.Errorf("Error starting main execution client: %w", err)
 	}
 
-	if selectedEc == nmc_config.ExecutionClient_Nethermind {
-		err = rp.RunNethermindPruneStarter(executionContainerName)
-		if err != nil {
-			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
-		}
-	}
-
-	fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs ec`.\n")
+	fmt.Println()
+	fmt.Println("Done! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs ec`.")
 	fmt.Println("Once it's done, it will restart automatically and resume normal operation.")
 
-	fmt.Printf("%sNOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!%s\n", terminal.ColorYellow, terminal.ColorReset)
+	fmt.Println(terminal.ColorYellow + "NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!" + terminal.ColorReset)
 
 	return nil
 }

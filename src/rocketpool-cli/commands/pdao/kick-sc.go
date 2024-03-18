@@ -74,7 +74,14 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 			return nil
 		}
 		txInfo = response.Data.TxInfo
-		confirmMsg = fmt.Sprintf("Are you sure you want to propose kicking %s (%s) from the security council?", selectedMembers[0].ID, selectedMembers[0].Address.Hex())
+
+		// Create the kick string
+		txInfo = response.Data.TxInfo
+		var kickString string
+		for _, member := range selectedMembers {
+			kickString += fmt.Sprintf("\t- %s (%s)\n", member.ID, member.Address.Hex())
+		}
+		confirmMsg = fmt.Sprintf("Are you sure you want to propose kicking these members from the security council?\n%s", kickString)
 	} else {
 		// Handle multiple kicks
 		addresses := make([]common.Address, len(selectedMembers))

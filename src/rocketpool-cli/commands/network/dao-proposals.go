@@ -33,34 +33,39 @@ func getActiveDAOProposals(c *cli.Context) error {
 	}
 
 	// Get active DAO proposals
-	proposalsResponse, err := rp.Api.Network.GetActiveDaoProposals()
+	snapshotProposalsResponse, err := rp.Api.Network.GetActiveDaoProposals()
+	if err != nil {
+		return err
+	}
+
+	currentVotingDelegate, err := rp.Api.Network.GetCurrentVotingDelegate()
 	if err != nil {
 		return err
 	}
 
 	// Voting status
-	fmt.Printf("%s=== DAO Voting ===%s\n", terminal.ColorGreen, terminal.ColorReset)
+	fmt.Printf("%s=== DAO Snapshot Voting ===%s\n", terminal.ColorGreen, terminal.ColorReset)
 	blankAddress := common.Address{}
-	if proposalsResponse.Data.VotingDelegate == blankAddress {
-		fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool governance proposals.")
+	if snapshotProposalsResponse.Data.VotingDelegate == blankAddress {
+		fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool Snapshot governance proposals.")
 	} else {
-		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", terminal.ColorBlue, proposalsResponse.Data.VotingDelegate.Hex(), terminal.ColorReset)
+		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", terminal.ColorBlue, snapshotProposalsResponse.Data.VotingDelegate.Hex(), terminal.ColorReset)
 	}
 
 	voteCount := 0
-	for _, activeProposal := range proposalsResponse.Data.ActiveSnapshotProposals {
+	for _, activeProposal := range snapshotProposalsResponse.Data.ActiveSnapshotProposals {
 		if len(activeProposal.DelegateVotes) > 0 || len(activeProposal.UserVotes) > 0 {
 			voteCount++
 			break
 		}
 	}
-	if len(proposalsResponse.Data.ActiveSnapshotProposals) == 0 {
+	if len(snapshotProposalsResponse.Data.ActiveSnapshotProposals) == 0 {
 		fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
 	} else {
-		fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those.\n", len(proposalsResponse.Data.ActiveSnapshotProposals), voteCount)
+		fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those.\n", len(snapshotProposalsResponse.Data.ActiveSnapshotProposals), voteCount)
 	}
 
-	for _, proposal := range proposalsResponse.Data.ActiveSnapshotProposals {
+	for _, proposal := range snapshotProposalsResponse.Data.ActiveSnapshotProposals {
 		fmt.Printf("\nTitle: %s\n", proposal.Title)
 		currentTimestamp := time.Now()
 		if currentTimestamp.Before(proposal.Start) {
@@ -100,6 +105,16 @@ func getActiveDAOProposals(c *cli.Context) error {
 			}
 		}
 	}
+
+	// On-chain Voting status
+	fmt.Println()
+	fmt.Printf("%s=== DAO On-chain Voting ===%s\n", terminal.ColorGreen, terminal.ColorReset)
+	if currentVotingDelegate.Data.VotingDelegate == blankAddress {
+		fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool on-chain governance proposals.")
+	} else {
+		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool on-chain governance proposals.\n", terminal.ColorBlue, currentVotingDelegate.Data.VotingDelegate.Hex(), terminal.ColorReset)
+	}
+
 	fmt.Println("")
 	return nil
 }

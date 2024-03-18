@@ -101,26 +101,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Usage:   "Make a security council member proposal",
 						Subcommands: []*cli.Command{
 							{
-								Name:    "invite",
-								Aliases: []string{"i"},
-								Usage:   "Propose inviting a new member",
-								Flags: []cli.Flag{
-									cliutils.YesFlag,
-									inviteIdFlag,
-									inviteAddressFlag,
-								},
-								Action: func(c *cli.Context) error {
-									// Validate args
-									if err := utils.ValidateArgCount(c, 0); err != nil {
-										return err
-									}
-
-									// Run
-									return proposeInvite(c)
-								},
-							},
-
-							{
 								Name:    "leave",
 								Aliases: []string{"l"},
 								Usage:   "Propose leaving the security council",
@@ -135,46 +115,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 									// Run
 									return proposeLeave(c)
-								},
-							},
-
-							{
-								Name:    "kick",
-								Aliases: []string{"k"},
-								Usage:   "Propose kicking one or more members",
-								Flags: []cli.Flag{
-									cliutils.YesFlag,
-									kickAddressesFlag,
-								},
-								Action: func(c *cli.Context) error {
-									// Validate args
-									if err := utils.ValidateArgCount(c, 0); err != nil {
-										return err
-									}
-
-									// Run
-									return proposeKick(c)
-								},
-							},
-
-							{
-								Name:    "replace",
-								Aliases: []string{"r"},
-								Usage:   "Propose replacing an existing member with a new member",
-								Flags: []cli.Flag{
-									cliutils.YesFlag,
-									replaceExistingAddressFlag,
-									replaceNewIdFlag,
-									replaceNewAddressFlag,
-								},
-								Action: func(c *cli.Context) error {
-									// Validate args
-									if err := utils.ValidateArgCount(c, 0); err != nil {
-										return err
-									}
-
-									// Run
-									return proposeReplace(c)
 								},
 							},
 						},

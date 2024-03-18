@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
@@ -31,7 +32,7 @@ func voteOnProposal(c *cli.Context) error {
 	// Get votable proposals
 	votableProposals := []api.ProtocolDaoProposalDetails{}
 	for _, proposal := range proposals.Data.Proposals {
-		if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 && proposal.NodeVoteDirection == types.VoteDirection_NoVote {
+		if (proposal.State == rptypes.ProtocolDaoProposalState_ActivePhase1 || proposal.State == rptypes.ProtocolDaoProposalState_ActivePhase2) && proposal.NodeVoteDirection == rptypes.VoteDirection_NoVote {
 			votableProposals = append(votableProposals, proposal)
 		}
 	}
@@ -61,13 +62,19 @@ func voteOnProposal(c *cli.Context) error {
 	} else {
 		// Prompt for proposal selection
 		options := make([]string, len(votableProposals))
+		endTime := ""
 		for pi, proposal := range votableProposals {
+			if proposal.State == rptypes.ProtocolDaoProposalState_ActivePhase1 {
+				endTime = fmt.Sprintf("phase 1 end: %s", proposal.Phase1EndTime.Format(time.RFC822))
+			} else {
+				endTime = fmt.Sprintf("phase 2 end: %s", proposal.Phase2EndTime.Format(time.RFC822))
+			}
 			options[pi] = fmt.Sprintf(
-				"proposal %d (message: '%s', payload: %s, phase 1 end: %s, vp required: %.2f, for: %.2f, against: %.2f, abstained: %.2f, veto: %.2f, proposed by: %s)",
+				"proposal %d (message: '%s', payload: %s, %s, vp required: %.2f, for: %.2f, against: %.2f, abstained: %.2f, veto: %.2f, proposed by: %s)",
 				proposal.ID,
 				proposal.Message,
 				proposal.PayloadStr,
-				proposal.Phase1EndTime.Format(time.RFC822),
+				endTime,
 				eth.WeiToEth(proposal.VotingPowerRequired),
 				eth.WeiToEth(proposal.VotingPowerFor),
 				eth.WeiToEth(proposal.VotingPowerAgainst),
@@ -80,7 +87,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Get support status
-	var voteDirection types.VoteDirection
+	var voteDirection rptypes.VoteDirection
 	var voteDirectionLabel string
 	if c.String(voteDirectionFlag.Name) != "" {
 		// Parse vote dirrection
@@ -89,7 +96,7 @@ func voteOnProposal(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		voteDirectionLabel = types.VoteDirections[voteDirection]
+		voteDirectionLabel = rptypes.VoteDirections[voteDirection]
 	} else {
 		// Prompt for vote direction
 		options := []string{
@@ -100,18 +107,31 @@ func voteOnProposal(c *cli.Context) error {
 		}
 		var selected int
 		selected, voteDirectionLabel = cliutils.Select("How would you like to vote on the proposal?", options)
-		voteDirection = types.VoteDirection(selected + 1)
+		voteDirection = rptypes.VoteDirection(selected + 1)
 	}
 
 	// Build the TX
-	response, err := rp.Api.PDao.VoteOnProposal(selectedProposal.ID, voteDirection)
+	actionString := ""
+	actionPast := ""
+	var response *types.ApiResponse[api.ProtocolDaoVoteOnProposalData]
+	if selectedProposal.State == rptypes.ProtocolDaoProposalState_ActivePhase1 {
+		// Check if proposal can be voted on
+		actionString = "vote"
+		actionPast = "voted"
+		response, err = rp.Api.PDao.VoteOnProposal(selectedProposal.ID, voteDirection)
+	} else {
+		// Check if proposal can be overriden on
+		actionString = "override your delegate's vote"
+		actionPast = "overrode delegate with a vote for"
+		response, err = rp.Api.PDao.OverrideVoteOnProposal(selectedProposal.ID, voteDirection)
+	}
 	if err != nil {
 		return err
 	}
 
 	// Verify
 	if !response.Data.CanVote {
-		fmt.Println("Cannot vote on proposal:")
+		fmt.Printf("Cannot %s on proposal:\n", actionString)
 		if response.Data.InsufficientPower {
 			fmt.Println("You do not have any voting power.")
 		}
@@ -128,16 +148,16 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Print voting power
-	fmt.Printf("You currently have %.2f voting power.\n\n", eth.WeiToEth(response.Data.VotingPower))
+	fmt.Printf("You currently have %s voting power.\n\n", response.Data.VotingPower.String())
 
 	// Run the TX
 	err = tx.HandleTx(c, rp, response.Data.TxInfo,
-		fmt.Sprintf("Are you sure you want to vote '%s' on proposal %d? Your vote cannot be changed later.", voteDirectionLabel, selectedProposal.ID),
+		fmt.Sprintf("Are you sure you want to %s '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID),
 		"voting on proposal",
 		"Submitting vote...",
 	)
 
 	// Log & return
-	fmt.Printf("Successfully voted '%s' for proposal %d.\n", voteDirectionLabel, selectedProposal.ID)
+	fmt.Printf("Successfully %s '%s' for proposal %d.\n", actionPast, voteDirectionLabel, selectedProposal.ID)
 	return nil
 }

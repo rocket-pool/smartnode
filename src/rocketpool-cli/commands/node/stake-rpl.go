@@ -34,7 +34,6 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 
 	// If a custom nonce is set, print the multi-transaction warning
-
 	if rp.Context.Nonce.Cmp(common.Big0) > 0 {
 		utils.PrintMultiTransactionNonceWarning()
 	}
@@ -59,17 +58,13 @@ func nodeStakeRpl(c *cli.Context) error {
 		return fmt.Errorf("error getting RPL price: %w", err)
 	}
 
-	// Get stake mount
+	// Get stake amount
 	var amountWei *big.Int
 	switch c.String(amountFlag) {
 	case "min8":
 		amountWei = priceResponse.Data.MinPer8EthMinipoolRplStake
-	case "max8":
-		amountWei = priceResponse.Data.MaxPer8EthMinipoolRplStake
 	case "min16":
 		amountWei = priceResponse.Data.MinPer16EthMinipoolRplStake
-	case "max16":
-		amountWei = priceResponse.Data.MaxPer16EthMinipoolRplStake
 	case "all":
 		amountWei = rplBalance
 	case "":
@@ -143,17 +138,13 @@ func nodeStakeRpl(c *cli.Context) error {
 func promptForRplAmount(rp *client.Client, priceResponse *api.NetworkRplPriceData, rplBalance *big.Int) (*big.Int, error) {
 	// Get min/max per minipool RPL stake amounts
 	minAmount8 := priceResponse.MinPer8EthMinipoolRplStake
-	maxAmount8 := priceResponse.MaxPer8EthMinipoolRplStake
 	minAmount16 := priceResponse.MinPer16EthMinipoolRplStake
-	maxAmount16 := priceResponse.MaxPer16EthMinipoolRplStake
 
 	// Prompt for amount option
 	var amountWei *big.Int
 	amountOptions := []string{
 		fmt.Sprintf("The minimum minipool stake amount for an 8-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount8), 6)),
-		fmt.Sprintf("The maximum minipool stake amount for an 8-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(maxAmount8), 6)),
 		fmt.Sprintf("The minimum minipool stake amount for a 16-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount16), 6)),
-		fmt.Sprintf("The maximum minipool stake amount for a 16-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(maxAmount16), 6)),
 		fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(rplBalance), 6)),
 		"A custom amount",
 	}
@@ -162,12 +153,8 @@ func promptForRplAmount(rp *client.Client, priceResponse *api.NetworkRplPriceDat
 	case 0:
 		amountWei = minAmount8
 	case 1:
-		amountWei = maxAmount8
-	case 2:
 		amountWei = minAmount16
-	case 3:
-		amountWei = maxAmount16
-	case 4:
+	case 2:
 		amountWei = rplBalance
 	}
 

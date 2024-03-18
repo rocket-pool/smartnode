@@ -407,26 +407,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 
 					{
-						Name:    "override-vote",
-						Aliases: []string{"o"},
-						Usage:   "Override your delegate's vote on a proposal with your own",
-						Flags: []cli.Flag{
-							proposalFlag,
-							voteDirectionFlag,
-							cliutils.YesFlag,
-						},
-						Action: func(c *cli.Context) error {
-							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
-
-							// Run
-							return overrideVote(c)
-						},
-					},
-
-					{
 						Name:    "execute",
 						Aliases: []string{"x"},
 						Usage:   "Execute a proposal",

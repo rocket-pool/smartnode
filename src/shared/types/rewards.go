@@ -11,6 +11,16 @@ import (
 	"github.com/wealdtech/go-merkletree"
 )
 
+type RewardsFileVersion uint64
+
+const (
+	RewardsFileVersionUnknown = iota
+	RewardsFileVersionOne
+	RewardsFileVersionTwo
+	RewardsFileVersionThree
+	RewardsFileVersionMax = iota - 1
+)
+
 // Interface for version-agnostic minipool performance
 type IMinipoolPerformanceFile interface {
 	// Serialize a minipool performance file into bytes
@@ -73,7 +83,7 @@ type TotalRewards struct {
 	TotalSmoothingPoolEth        *QuotedBigInt `json:"totalSmoothingPoolEth"`
 	PoolStakerSmoothingPoolEth   *QuotedBigInt `json:"poolStakerSmoothingPoolEth"`
 	NodeOperatorSmoothingPoolEth *QuotedBigInt `json:"nodeOperatorSmoothingPoolEth"`
-	TotalNodeWeight              *QuotedBigInt `json:"totalNodeWeight"`
+	TotalNodeWeight              *QuotedBigInt `json:"totalNodeWeight,omitempty"`
 }
 
 // Minipool stats
@@ -96,13 +106,13 @@ type INodeRewardsInfo interface {
 
 // Small struct to test version information for rewards files during deserialization
 type VersionHeader struct {
-	RewardsFileVersion uint64 `json:"rewardsFileVersion,omitempty"`
+	RewardsFileVersion RewardsFileVersion `json:"rewardsFileVersion,omitempty"`
 }
 
 // General version-agnostic information about a rewards file
 type RewardsFileHeader struct {
 	// Serialized fields
-	RewardsFileVersion         uint64                         `json:"rewardsFileVersion"`
+	RewardsFileVersion         RewardsFileVersion             `json:"rewardsFileVersion"`
 	RulesetVersion             uint64                         `json:"rulesetVersion,omitempty"`
 	Index                      uint64                         `json:"index"`
 	Network                    string                         `json:"network"`

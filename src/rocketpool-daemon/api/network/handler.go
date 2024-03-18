@@ -31,6 +31,9 @@ func NewNetworkHandler(context context.Context, serviceProvider *services.Servic
 		&networkPriceContextFactory{h},
 		&networkStatsContextFactory{h},
 		&networkTimezoneContextFactory{h},
+		&networkInitializeVotingContextFactory{h},
+		&networkSetVotingDelegateContextFactory{h},
+		&networkCurrentVotingDelegateContextFactory{h},
 	}
 	return h
 }

@@ -29,3 +29,4 @@ install/packages/debian/debian/rocketpool*
 install/packages/debian/_build/
 bin
 pkg
+.vscode-ctags

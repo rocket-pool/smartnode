@@ -133,14 +133,10 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 			propInfos[prop.ID] = propInfo
 
 			// Get the events for all challenges against this proposal
-			startBlock, err := getElBlockForTimestamp(c.handler.context, c.bc, beaconCfg, prop.CreatedTime.Formatted())
-			if err != nil {
-				return fmt.Errorf("error getting creation block for proposal %d: %w", prop.ID, err)
-			}
-			endBlock, err := getElBlockForTimestamp(c.handler.context, c.bc, beaconCfg, prop.VotingStartTime.Formatted()) // Start of voting = end of challenge period
-			if err != nil {
-				return fmt.Errorf("error getting voting start block for proposal %d: %w", prop.ID, err)
-			}
+			startBlock := prop.TargetBlock.Raw()                                                       // Target block is a good start for the event window
+			blockSpan := uint64(prop.ChallengeWindow.Formatted().Seconds()) / beaconCfg.SecondsPerSlot // The max possible number of blocks in the challenge window
+			endBlock := big.NewInt(0).Add(startBlock, big.NewInt(int64(blockSpan)))
+
 			resources := c.cfg.GetRocketPoolResources()
 			challengeEvents, err := c.pdaoMgr.GetChallengeSubmittedEvents([]uint64{prop.ID}, intervalSize, startBlock, endBlock, resources.PreviousProtocolDaoVerifierAddresses, nil)
 			if err != nil {
@@ -288,7 +284,9 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 	// Make a sorted list of claimable bonds
 	claimableBonds := make([]api.BondClaimResult, 0, len(claimResults))
 	for _, result := range claimResults {
-		claimableBonds = append(claimableBonds, *result)
+		if result.RewardAmount.Cmp(big.NewInt(0)) > 0 || result.UnlockAmount.Cmp(big.NewInt(0)) > 0 {
+			claimableBonds = append(claimableBonds, *result)
+		}
 	}
 	sort.SliceStable(claimableBonds, func(i, j int) bool {
 		first := claimableBonds[i]

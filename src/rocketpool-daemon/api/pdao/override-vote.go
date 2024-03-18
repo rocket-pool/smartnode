@@ -43,7 +43,7 @@ func (f *protocolDaoOverrideVoteOnProposalContextFactory) Create(args url.Values
 }
 
 func (f *protocolDaoOverrideVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*protocolDaoOverrideVoteOnProposalContext, api.ProtocolDaoOverrideVoteOnProposalData](
+	server.RegisterSingleStageRoute[*protocolDaoOverrideVoteOnProposalContext, api.ProtocolDaoVoteOnProposalData](
 		router, "proposal/override-vote", f, f.handler.serviceProvider.ServiceProvider,
 	)
 }
@@ -105,7 +105,7 @@ func (c *protocolDaoOverrideVoteOnProposalContext) GetState(mc *batch.MultiCalle
 	c.existingVoteDir = c.proposal.GetAddressVoteDirection(mc, c.nodeAddress)
 }
 
-func (c *protocolDaoOverrideVoteOnProposalContext) PrepareData(data *api.ProtocolDaoOverrideVoteOnProposalData, opts *bind.TransactOpts) error {
+func (c *protocolDaoOverrideVoteOnProposalContext) PrepareData(data *api.ProtocolDaoVoteOnProposalData, opts *bind.TransactOpts) error {
 	// Get the voting power for the node as of this proposal
 	err := c.rp.Query(func(mc *batch.MultiCaller) error {
 		c.node.GetVotingPowerAtBlock(mc, &data.VotingPower, c.proposal.TargetBlock.Formatted())

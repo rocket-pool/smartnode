@@ -20,6 +20,7 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	legacyGethConfig, err := getLegacyConfigSection(err, oldConfig, "geth")
 	legacyNethermindConfig, err := getLegacyConfigSection(err, oldConfig, "nethermind")
 	legacyBesuConfig, err := getLegacyConfigSection(err, oldConfig, "besu")
+	legacyRethConfig, err := getLegacyConfigSection(err, oldConfig, "reth")
 	legacyExternalExecutionConfig, err := getLegacyConfigSection(err, oldConfig, "externalExecution")
 	legacyConsensusCommonConfig, err := getLegacyConfigSection(err, oldConfig, "consensusCommon")
 	legacyLighthouseConfig, err := getLegacyConfigSection(err, oldConfig, "lighthouse")
@@ -95,7 +96,7 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// Nethermind
 	newNethermindConfig := map[string]any{}
-	newNethermindConfig[nmc_ids.NethermindCacheSizeID] = legacyNethermindConfig["cache"]
+	newNethermindConfig[nmc_ids.CacheSizeID] = legacyNethermindConfig["cache"]
 	newNethermindConfig[nmc_ids.MaxPeersID] = legacyNethermindConfig["maxPeers"]
 	newNethermindConfig[nmc_ids.NethermindPruneMemSizeID] = legacyNethermindConfig["pruneMemSize"]
 	newNethermindConfig[nmc_ids.NethermindAdditionalModulesID] = legacyNethermindConfig["additionalModules"]
@@ -112,6 +113,14 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	newBesuConfig[nmc_ids.ContainerTagID] = legacyBesuConfig["containerTag"]
 	newBesuConfig[nmc_ids.AdditionalFlagsID] = legacyBesuConfig["additionalFlags"]
 	newLocalExecutionConfig[nmc_ids.LocalEcBesuID] = newBesuConfig
+
+	// Reth
+	newRethConfig := map[string]any{}
+	newRethConfig[nmc_ids.CacheSizeID] = legacyRethConfig["cache"]
+	newRethConfig[nmc_ids.MaxPeersID] = legacyRethConfig["maxPeers"]
+	newRethConfig[nmc_ids.ContainerTagID] = legacyRethConfig["containerTag"]
+	newRethConfig[nmc_ids.AdditionalFlagsID] = legacyRethConfig["additionalFlags"]
+	newLocalExecutionConfig[nmc_ids.LocalEcRethID] = newRethConfig
 
 	// External execution
 	newExternalExecutionConfig := map[string]any{}

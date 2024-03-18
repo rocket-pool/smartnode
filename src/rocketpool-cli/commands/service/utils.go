@@ -21,6 +21,15 @@ const (
 	dockerImageRegex       string = ".*/(?P<image>.*):.*"
 )
 
+// Flags
+var (
+	dockerRemoveAllFlag *cli.BoolFlag = &cli.BoolFlag{
+		Name:    "all",
+		Aliases: []string{"a"},
+		Usage:   "Removes all Docker images, including those currently used by the Smart Node stack. This will force a full re-download of all images when the Smart Node is restarted",
+	}
+)
+
 // Get the compose file paths for a CLI context
 func getComposeFiles(c *cli.Context) []string {
 	return c.StringSlice(utils.ComposeFileFlag.Name)

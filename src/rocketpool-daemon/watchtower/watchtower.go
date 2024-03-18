@@ -127,7 +127,7 @@ func (t *TaskLoop) Run() error {
 	if err != nil {
 		return fmt.Errorf("error during penalties check: %w", err)
 	}*/
-	generateRewardsTree := NewGenerateRewardsTree(t.ctx, t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+	generateRewardsTree := NewGenerateRewardsTree(t.ctx, t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
 	cancelBondReductions := NewCancelBondReductions(t.sp, log.NewColorLogger(CancelBondsColor), errorLog, bondReductionCollector)
 	checkSoloMigrations := NewCheckSoloMigrations(t.sp, log.NewColorLogger(CheckSoloMigrationsColor), errorLog, soloMigrationCollector)
 	finalizePdaoProposals := NewFinalizePdaoProposals(t.sp, log.NewColorLogger(FinalizeProposalsColor))

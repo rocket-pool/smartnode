@@ -102,7 +102,7 @@ func getProposals(c *cli.Context, stateFilter string) error {
 		fmt.Println()
 	}
 	if count == 0 {
-		fmt.Println("There are no matching oracle DAO proposals.")
+		fmt.Println("There are no matching Security Council proposals.")
 	}
 	return nil
 }

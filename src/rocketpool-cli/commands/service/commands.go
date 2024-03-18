@@ -204,7 +204,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "stop",
 				Aliases:   []string{"pause", "p"},
-				Usage:     "Pause the Rocket Pool service",
+				Usage:     "Stop (shut down) the Rocket Pool service without deleting any of it",
 				UsageText: "rocketpool service pause [options]",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
@@ -216,7 +216,47 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return stopService(c)
+					_, err := stopService(c)
+					return err
+				},
+			},
+
+			{
+				Name:      "reset-docker",
+				Aliases:   []string{"rd"},
+				Usage:     "Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts the Smart Node.",
+				UsageText: "rocketpool service reset [options]",
+				Flags: []cli.Flag{
+					cliutils.YesFlag,
+					dockerRemoveAllFlag,
+				},
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := utils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return resetDocker(c)
+				},
+			},
+
+			{
+				Name:      "prune-docker",
+				Aliases:   []string{"pd"},
+				Usage:     "Cleanup unused Docker resources, including stopped containers, unused images, networks and volumes. Does not restart smartnode, so the running containers and the images and networks they reference will not be pruned.",
+				UsageText: "rocketpool service prune",
+				Flags: []cli.Flag{
+					dockerRemoveAllFlag,
+				},
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := utils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return pruneDocker(c)
 				},
 			},
 

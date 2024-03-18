@@ -143,7 +143,7 @@ func (r *RescueNode) PrintStatusText(nodeAddr common.Address) {
 }
 
 type RescueNodeOverrides struct {
-	CcApiEndpoint     string
+	BnApiEndpoint     string
 	CcRpcEndpoint     string
 	VcAdditionalFlags string
 }
@@ -171,7 +171,7 @@ func (r *RescueNode) GetOverrides(bn config.BeaconNode) (*RescueNodeOverrides, e
 		rescueURL := fmt.Sprintf("https://%s:%s@%s.rescuenode.com", username, password, bn)
 
 		return &RescueNodeOverrides{
-			CcApiEndpoint: rescueURL,
+			BnApiEndpoint: rescueURL,
 		}, nil
 	case config.BeaconNode_Prysm:
 		return &RescueNodeOverrides{
