@@ -181,7 +181,7 @@ func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 			}
 
 			// Get the state of the network
-			headState, err = t.stateMgr.GetStateForSlot(t.ctx, latestBlock.Slot)
+			headState, err = t.stateMgr.GetStateForSlot(t.ctx, latestBlock.Header.Slot)
 			if err != nil {
 				t.handleError(fmt.Errorf("error getting network state: %w", err))
 				return
@@ -203,7 +203,7 @@ func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 			t.handleError(fmt.Errorf("error getting latest finalized block: %w", err))
 			return
 		}
-		latestFinalizedEpoch := latestFinalizedBlock.Slot / headState.BeaconConfig.SlotsPerEpoch
+		latestFinalizedEpoch := latestFinalizedBlock.Header.Slot / headState.BeaconConfig.SlotsPerEpoch
 
 		// Check if a rewards interval is due
 		isRewardsSubmissionDue, rewardsSlot, intervalsPassed, startTime, endTime, err := t.isRewardsIntervalSubmissionRequired(headState)
@@ -214,7 +214,7 @@ func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 
 		// If no special upcoming state is required, update normally
 		if !isRewardsSubmissionDue {
-			err = t.recordMgr.UpdateRecordToState(t.ctx, headState, latestFinalizedBlock.Slot)
+			err = t.recordMgr.UpdateRecordToState(t.ctx, headState, latestFinalizedBlock.Header.Slot)
 			if err != nil {
 				t.handleError(fmt.Errorf("error updating record: %w", err))
 				return

@@ -239,7 +239,7 @@ func (t *TaskLoop) Run() error {
 
 				if !useRollingRecords {
 					// Run the rewards tree submission check
-					if err := submitRewardsTree_Stateless.Run(isOnOdao, state, latestBlock.Slot); err != nil {
+					if err := submitRewardsTree_Stateless.Run(isOnOdao, state, latestBlock.Header.Slot); err != nil {
 						errorLog.Println(err)
 					}
 					if t.sleepAndCheckIfCancelled(taskCooldown) {
@@ -311,7 +311,7 @@ func (t *TaskLoop) Run() error {
 				 */
 				if !useRollingRecords {
 					// Run the rewards tree submission check
-					if err := submitRewardsTree_Stateless.Run(isOnOdao, nil, latestBlock.Slot); err != nil {
+					if err := submitRewardsTree_Stateless.Run(isOnOdao, nil, latestBlock.Header.Slot); err != nil {
 						errorLog.Println(err)
 					}
 				} else {
@@ -364,7 +364,7 @@ func (t *TaskLoop) sleepAndCheckIfCancelled(duration time.Duration) bool {
 func updateNetworkState(ctx context.Context, m *state.NetworkStateManager, log *log.ColorLogger, block beacon.BeaconBlock) (*state.NetworkState, error) {
 	log.Print("Getting latest network state... ")
 	// Get the state of the network
-	state, err := m.GetStateForSlot(ctx, block.Slot)
+	state, err := m.GetStateForSlot(ctx, block.Header.Slot)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network state: %w", err)
 	}
@@ -383,7 +383,7 @@ func isOnOracleDAO(rp *rocketpool.RocketPool, nodeAddress common.Address, block 
 	}
 	err = rp.Query(nil, opts, member.Exists)
 	if err != nil {
-		return false, fmt.Errorf("error checking if node is in the Oracle DAO for Beacon block %d, EL block %d: %w", block.Slot, block.ExecutionBlockNumber, err)
+		return false, fmt.Errorf("error checking if node is in the Oracle DAO for Beacon block %d, EL block %d: %w", block.Header.Slot, block.ExecutionBlockNumber, err)
 	}
 	return member.Exists.Get(), nil
 }
