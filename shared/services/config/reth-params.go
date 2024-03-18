@@ -72,7 +72,7 @@ func NewRethConfig(cfg *RocketPoolConfig) *RethConfig {
 		MaxPeers: config.Parameter{
 			ID:                 "maxPeers",
 			Name:               "Max Peers",
-			Description:        "The maximum number of peers Reth should connect to. This can be lowered to improve performance on low-power systems or constrained config.Networks. We recommend keeping it at 12 or higher.",
+			Description:        "The maximum number of peers Reth should connect to. This can be lowered to improve performance on low-power systems or constrained networks. We recommend keeping it at 12 or higher.",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: calculateRethPeers()},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
@@ -83,7 +83,7 @@ func NewRethConfig(cfg *RocketPoolConfig) *RethConfig {
 		ContainerTag: config.Parameter{
 			ID:          "containerTag",
 			Name:        "Container Tag",
-			Description: "The tag name of the Reth container you want to use on Docker Hub.",
+			Description: "The tag name of the Reth container you want to use.",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: rethTagProd,

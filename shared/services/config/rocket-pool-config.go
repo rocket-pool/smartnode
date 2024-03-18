@@ -231,8 +231,8 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Description: getAugmentedEcDescription(config.ExecutionClient_Besu, "Hyperledger Besu is a robust full Ethereum protocol client. It uses a novel system called \"Bonsai Trees\" to store its chain data efficiently, which allows it to access block states from the past and does not require pruning. Besu is fully open source and written in Java."),
 				Value:       config.ExecutionClient_Besu,
 			}, {
-				Name:        "Reth",
-				Description: getAugmentedEcDescription(config.ExecutionClient_Reth, "Reth is a new Ethereum full node implementation that is focused on being user-friendly, highly modular, as well as being fast and efficient"),
+				Name:        "Reth (Beta)",
+				Description: getAugmentedEcDescription(config.ExecutionClient_Reth, "Reth is a new Ethereum full node implementation that is focused on being user-friendly, highly modular, as well as being fast and efficient. Reth is fully open source and written in Rust.\n\n[orange]NOTE: Reth is currently in beta status. Please consider this when choosing it."),
 				Value:       config.ExecutionClient_Reth,
 			}},
 		},

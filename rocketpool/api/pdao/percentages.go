@@ -6,6 +6,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	psettings "github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -40,13 +41,11 @@ func getRewardsPercentages(c *cli.Context) (*api.PDAOGetRewardsPercentagesRespon
 
 func canProposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, pdao *big.Int) (*api.PDAOCanProposeRewardsPercentagesResponse, error) {
 	// Validate sum of percentages == 100%
-	decimalPlaces := big.NewInt(int64(18))
-	hundredPercent := new(big.Int)
-	hundredPercent.Exp(big.NewInt(10), decimalPlaces, nil) // 10^18
-	sum := new(big.Int).Set(node)
-	sum = sum.Add(sum, odao)
-	sum = sum.Add(sum, pdao)
-	if sum.Cmp(hundredPercent) != 0 {
+	one := eth.EthToWei(1)
+	sum := big.NewInt(0).Set(node)
+	sum.Add(sum, odao)
+	sum.Add(sum, pdao)
+	if sum.Cmp(one) != 0 {
 		return nil, fmt.Errorf("values don't add up to 100%%")
 	}
 
