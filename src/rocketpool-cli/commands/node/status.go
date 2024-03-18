@@ -21,6 +21,7 @@ import (
 
 const (
 	smoothingPoolLink string = "https://docs.rocketpool.net/guides/redstone/whats-new.html#smoothing-pool"
+	maxAlertItems     int    = 3
 )
 
 func getStatus(c *cli.Context) error {
@@ -336,7 +337,22 @@ func getStatus(c *cli.Context) error {
 		fmt.Println("The node is not registered with Rocket Pool.")
 	}
 
+	// Alerts
+	alerts := status.Data.Alerts
+	if cfg.Metrics.EnableMetrics.Value && len(alerts) > 0 {
+		// only print alerts if enabled; to avoid misleading the user to thinking everything is fine (since we really don't know).
+		fmt.Printf("\n%s=== Alerts ===%s\n", terminal.ColorGreen, terminal.ColorReset)
+		for i, alert := range alerts {
+			fmt.Println(alert.ColorString())
+			if i == maxAlertItems-1 {
+				break
+			}
+		}
+		if len(alerts) > maxAlertItems {
+			fmt.Printf("... and %d more.\n", len(alerts)-maxAlertItems)
+		}
+	}
+
 	// Return
 	return nil
-
 }

@@ -17,6 +17,7 @@ func NewMetricsConfig() *MetricsConfig {
 	cfg.BitflyNodeMetrics.MachineName.Default = map[config.Network]string{
 		config.Network_All: "Smart Node",
 	}
+	cfg.EnableMetrics.AffectsContainers = append(cfg.EnableMetrics.AffectsContainers, ContainerID_Alertmanager)
 
 	return &MetricsConfig{
 		MetricsConfig: cfg,

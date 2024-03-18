@@ -13,6 +13,7 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
@@ -125,25 +126,43 @@ func (t *TaskLoop) Run() error {
 	// Run task loop
 	isHoustonDeployedMasterFlag := false
 	go func() {
+		// we assume clients are synced on startup so that we don't send unnecessary alerts
+		wasExecutionClientSynced := true
+		wasBeaconClientSynced := true
 		for {
 			// Check the EC status
 			err := t.sp.WaitEthClientSynced(t.ctx, false) // Force refresh the primary / fallback EC status
 			if err != nil {
-				errorLog.Println(err)
+				wasExecutionClientSynced = false
+				errorLog.Printlnf("Execution Client not synced: %s. Waiting for sync...", err.Error())
 				if t.sleepAndCheckIfCancelled(taskCooldown) {
 					break
 				}
 				continue
 			}
 
+			if !wasExecutionClientSynced {
+				updateLog.Println("Execution Client is now synced.")
+				wasExecutionClientSynced = true
+				alerting.AlertExecutionClientSyncComplete(cfg)
+			}
+
 			// Check the BC status
 			err = t.sp.WaitBeaconClientSynced(t.ctx, false) // Force refresh the primary / fallback BC status
 			if err != nil {
-				errorLog.Println(err)
+				// NOTE: if not synced, it returns an error - so there isn't necessarily an underlying issue
+				wasBeaconClientSynced = false
+				errorLog.Printlnf("Beacon Node not synced: %s. Waiting for sync...", err.Error())
 				if t.sleepAndCheckIfCancelled(taskCooldown) {
 					break
 				}
 				continue
+			}
+
+			if !wasBeaconClientSynced {
+				updateLog.Println("Beacon Node is now synced.")
+				wasBeaconClientSynced = true
+				alerting.AlertBeaconClientSyncComplete(cfg)
 			}
 
 			// Load contracts

@@ -10,10 +10,14 @@ import (
 )
 
 const (
-	prometheusConfigTemplate string = "prometheus-cfg.tmpl"
-	prometheusConfigTarget   string = "prometheus.yml"
-	grafanaConfigTemplate    string = "grafana-prometheus-datasource.tmpl"
-	grafanaConfigTarget      string = "grafana-prometheus-datasource.yml"
+	prometheusConfigTemplate    string = "prometheus-cfg.tmpl"
+	prometheusConfigTarget      string = "prometheus.yml"
+	grafanaConfigTemplate       string = "grafana-prometheus-datasource.tmpl"
+	grafanaConfigTarget         string = "grafana-prometheus-datasource.yml"
+	alertmanagerConfigTemplate  string = "alerting/alertmanager.tmpl"
+	alertmanagerConfigFile      string = "alerting/alertmanager.yml"
+	alertingRulesConfigTemplate string = "alerting/rules/default.tmpl"
+	alertingRulesConfigFile     string = "alerting/rules/default.yml"
 )
 
 // Load the config
@@ -67,41 +71,63 @@ func (c *Client) SaveConfig(cfg *config.SmartNodeConfig) error {
 }
 
 // Load the Prometheus template, do a template variable substitution, and save it
-func (c *Client) UpdatePrometheusConfiguration(config *config.SmartNodeConfig) error {
-	prometheusConfigTemplatePath, err := homedir.Expand(filepath.Join(templatesDir, prometheusConfigTemplate))
+func (c *Client) UpdatePrometheusConfiguration(cfg *config.SmartNodeConfig) error {
+	t, err := c.createTemplateBinding(prometheusConfigTemplate, prometheusConfigTarget, "Prometheus config")
 	if err != nil {
-		return fmt.Errorf("error expanding Prometheus config template path: %w", err)
+		return err
 	}
-
-	prometheusConfigTargetPath, err := homedir.Expand(filepath.Join(c.Context.ConfigPath, prometheusConfigTarget))
-	if err != nil {
-		return fmt.Errorf("error expanding Prometheus config target path: %w", err)
-	}
-
-	t := template.Template{
-		Src: prometheusConfigTemplatePath,
-		Dst: prometheusConfigTargetPath,
-	}
-
-	return t.Write(config)
+	return t.Write(cfg)
 }
 
 // Load the Grafana config template, do a template variable substitution, and save it
-func (c *Client) UpdateGrafanaDatabaseConfiguration(config *config.SmartNodeConfig) error {
-	grafanaConfigTemplatePath, err := homedir.Expand(filepath.Join(templatesDir, grafanaConfigTemplate))
+func (c *Client) UpdateGrafanaDatabaseConfiguration(cfg *config.SmartNodeConfig) error {
+	t, err := c.createTemplateBinding(grafanaConfigTemplate, grafanaConfigTarget, "Grafana config")
 	if err != nil {
-		return fmt.Errorf("error expanding Grafana config template path: %w", err)
+		return err
+	}
+	return t.Write(cfg)
+}
+
+// Load the alerting configuration templates, do the template variable substitutions, and save them.
+func (c *Client) UpdateAlertmanagerConfiguration(cfg *config.SmartNodeConfig) error {
+	// Config
+	t, err := c.createTemplateBinding(alertmanagerConfigTemplate, alertmanagerConfigFile, "alertmanager config")
+	if err != nil {
+		return err
+	}
+	err = t.WriteWithDelims(cfg, "{{", "}}")
+	if err != nil {
+		return err
 	}
 
-	grafanaConfigTargetPath, err := homedir.Expand(filepath.Join(c.Context.ConfigPath, grafanaConfigTarget))
+	// Rules
+	t, err = c.createTemplateBinding(alertingRulesConfigTemplate, alertingRulesConfigFile, "alerting rules")
 	if err != nil {
-		return fmt.Errorf("error expanding Grafana config target path: %w", err)
+		return err
+	}
+	err = t.WriteWithDelims(cfg, "{{{", "}}}")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Create the binding for a template file to be converted in the templating engine
+func (c *Client) createTemplateBinding(templateFile string, targetFile string, description string) (template.Template, error) {
+	templatePath, err := homedir.Expand(filepath.Join(templatesDir, templateFile))
+	if err != nil {
+		return template.Template{}, fmt.Errorf("error expanding %s template path: %w", description, err)
+	}
+
+	targetPath, err := homedir.Expand(filepath.Join(c.Context.ConfigPath, targetFile))
+	if err != nil {
+		return template.Template{}, fmt.Errorf("error expanding %s target path: %w", description, err)
 	}
 
 	t := template.Template{
-		Src: grafanaConfigTemplatePath,
-		Dst: grafanaConfigTargetPath,
+		Src: templatePath,
+		Dst: targetPath,
 	}
-
-	return t.Write(config)
+	return t, nil
 }

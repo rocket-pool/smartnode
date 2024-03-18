@@ -22,6 +22,7 @@ type settingsHome struct {
 	bnPage           *BeaconConfigPage
 	mevBoostPage     *MevBoostConfigPage
 	metricsPage      *MetricsConfigPage
+	alertingPage     *AlertingConfigPage
 	addonsPage       *AddonsPage
 	categoryList     *tview.List
 	settingsSubpages []settingsPage
@@ -47,6 +48,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	home.fallbackPage = NewFallbackConfigPage(home)
 	home.mevBoostPage = NewMevBoostConfigPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
+	home.alertingPage = NewAlertingConfigPage(home)
 	home.addonsPage = NewAddonsPage(home)
 	settingsSubpages := []settingsPage{
 		home.smartnodePage,
@@ -55,6 +57,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 		home.fallbackPage,
 		home.mevBoostPage,
 		home.metricsPage,
+		home.alertingPage,
 		home.addonsPage,
 	}
 	home.settingsSubpages = settingsSubpages
@@ -245,5 +248,9 @@ func (home *settingsHome) refresh() {
 
 	if home.metricsPage != nil {
 		home.metricsPage.layout.refresh()
+	}
+
+	if home.alertingPage != nil {
+		home.alertingPage.layout.refresh()
 	}
 }

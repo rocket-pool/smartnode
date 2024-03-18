@@ -48,13 +48,17 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		}
 	}
 
-	// Update the Prometheus template with the assigned ports
+	// Update the templates for metrics and notifications
 	if cfg.Metrics.EnableMetrics.Value {
 		err := rp.UpdatePrometheusConfiguration(cfg)
 		if err != nil {
 			return err
 		}
 		err = rp.UpdateGrafanaDatabaseConfiguration(cfg)
+		if err != nil {
+			return err
+		}
+		err = rp.UpdateAlertmanagerConfiguration(cfg)
 		if err != nil {
 			return err
 		}

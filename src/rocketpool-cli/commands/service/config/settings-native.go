@@ -1,25 +1,21 @@
 package config
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"github.com/rocket-pool/node-manager-core/config"
-	snCfg "github.com/rocket-pool/smartnode/shared/config"
 )
 
 // The page wrapper for the native config
 type NativePage struct {
-	home         *settingsNativeHome
-	page         *page
-	layout       *standardLayout
-	masterConfig *snCfg.SmartNodeConfig
-	nativeItems  []*parameterizedFormItem
+	home        *settingsNativeHome
+	page        *page
+	layout      *standardLayout
+	nativeItems []*parameterizedFormItem
 }
 
 // Creates a new page for the native settings
 func NewNativePage(home *settingsNativeHome) *NativePage {
 	configPage := &NativePage{
-		home:         home,
-		masterConfig: home.md.Config,
+		home: home,
 	}
 	configPage.createContent()
 
@@ -37,36 +33,20 @@ func NewNativePage(home *settingsNativeHome) *NativePage {
 // Creates the content for the monitoring / stats settings page
 func (configPage *NativePage) createContent() {
 	// Create the layout
-	configPage.layout = newStandardLayout()
-	configPage.layout.createForm(&configPage.masterConfig.Network, "Native Mode Settings")
-
-	// Return to the home page after pressing Escape
-	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		// Return to the home page
-		if event.Key() == tcell.KeyEsc {
-			// Close all dropdowns and break if one was open
-			for _, param := range configPage.layout.parameters {
-				dropDown, ok := param.item.(*DropDown)
-				if ok && dropDown.open {
-					dropDown.CloseList(configPage.home.md.app)
-					return nil
-				}
-			}
-
-			configPage.home.md.setPage(configPage.home.homePage)
-			return nil
-		}
-		return event
-	})
+	masterConfig := configPage.home.md.Config
+	layout := newStandardLayout()
+	configPage.layout = layout
+	configPage.layout.createForm(&masterConfig.Network, "Native Mode Settings")
+	configPage.layout.setupEscapeReturnHomeHandler(configPage.home.md, configPage.home.homePage)
 
 	// Set up the form items
 	configPage.nativeItems = createParameterizedFormItems([]config.IParameter{
-		&configPage.masterConfig.ExternalExecutionClient.ExecutionClient,
-		&configPage.masterConfig.ExternalExecutionClient.HttpUrl,
-		&configPage.masterConfig.ExternalBeaconClient.BeaconNode,
-		&configPage.masterConfig.ExternalBeaconClient.HttpUrl,
-		&configPage.masterConfig.ValidatorClient.NativeValidatorRestartCommand,
-		&configPage.masterConfig.ValidatorClient.NativeValidatorStopCommand,
+		&masterConfig.ExternalExecutionClient.ExecutionClient,
+		&masterConfig.ExternalExecutionClient.HttpUrl,
+		&masterConfig.ExternalBeaconClient.BeaconNode,
+		&masterConfig.ExternalBeaconClient.HttpUrl,
+		&masterConfig.ValidatorClient.NativeValidatorRestartCommand,
+		&masterConfig.ValidatorClient.NativeValidatorStopCommand,
 	}, configPage.layout.descriptionBox)
 
 	// Map the parameters to the form items in the layout

@@ -3,6 +3,7 @@ package template
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"text/template"
 
 	"github.com/alessio/shellescape"
@@ -17,30 +18,42 @@ type Template struct {
 	Dst string
 }
 
-func (t Template) Write(data interface{}) error {
+func (t Template) Write(data any) error {
+	return t.WriteWithDelims(data, "{{", "}}")
+}
+
+func (t Template) WriteWithDelims(data any, leftDelim string, rightDelim string) error {
+	// Create the destination folder if it doesn't exist
+	destPath := filepath.Dir(t.Dst)
+	err := os.MkdirAll(destPath, 0775)
+	if err != nil {
+		return fmt.Errorf("error creating destination directory [%s]: %w", destPath, err)
+	}
+
 	// Open the output file, creating it if it doesn't exist
 	runtimeFile, err := os.OpenFile(t.Dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0664)
 	if err != nil {
-		return fmt.Errorf("Could not open templated file %s for writing: %w", shellescape.Quote(t.Dst), err)
+		return fmt.Errorf("could not open templated file %s for writing: %w", shellescape.Quote(t.Dst), err)
 	}
 	defer runtimeFile.Close()
 
 	// Parse the template
-	tmpl, err := template.ParseFiles(t.Src)
+	baseName := filepath.Base(t.Src)
+	tmpl, err := template.New(baseName).Delims(leftDelim, rightDelim).ParseFiles(t.Src)
 	if err != nil {
-		return fmt.Errorf("Error reading template file %s: %w", shellescape.Quote(t.Src), err)
+		return fmt.Errorf("error reading template file %s: %w", shellescape.Quote(t.Src), err)
 	}
 
 	// Replace template variables and write the result
 	err = tmpl.Execute(runtimeFile, data)
 	if err != nil {
-		return fmt.Errorf("Error writing and substituting template: %w", err)
+		return fmt.Errorf("error writing and substituting template: %w", err)
 	}
 
 	// If the file was newly created, 0664 may have been altered by umask, so chmod back to 0664.
 	err = os.Chmod(t.Dst, 0664)
 	if err != nil {
-		return fmt.Errorf("Could not set templated file (%s) permissions: %w", shellescape.Quote(t.Dst), err)
+		return fmt.Errorf("could not set templated file (%s) permissions: %w", shellescape.Quote(t.Dst), err)
 	}
 
 	return nil

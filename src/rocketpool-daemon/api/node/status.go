@@ -24,6 +24,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/collateral"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
@@ -288,6 +289,21 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	err = c.calculateTrueStakesAndBonds(data, mps, beaconHead.Epoch)
 	if err != nil {
 		return err
+	}
+
+	// Get alerts from Alertmanager
+	alerts, err := alerting.FetchAlerts(c.cfg)
+	if err != nil {
+		return err
+	}
+	data.Alerts = make([]api.NodeAlert, len(alerts))
+
+	for i, a := range alerts {
+		data.Alerts[i] = api.NodeAlert{
+			State:       *a.Status.State,
+			Labels:      a.Labels,
+			Annotations: a.Annotations,
+		}
 	}
 
 	return nil

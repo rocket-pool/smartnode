@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
 )
 
@@ -26,6 +27,13 @@ const (
 // ====================
 // === Requirements ===
 // ====================
+
+func (sp *ServiceProvider) RequireEthClientSynced2() error {
+	// TODO: wrap the NMC one for alerting
+	cfg := sp.GetConfig()
+	alerting.AlertExecutionClientSyncComplete(cfg)
+	// Intentially broken for now, won't compile until this is fixed
+}
 
 func (sp *ServiceProvider) RequireNodeAddress() error {
 	status, err := sp.GetWallet().GetStatus()

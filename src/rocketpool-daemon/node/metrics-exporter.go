@@ -33,7 +33,7 @@ func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger 
 	supplyCollector := collectors.NewSupplyCollector(sp, stateLocker)
 	rplCollector := collectors.NewRplCollector(sp, stateLocker)
 	odaoCollector := collectors.NewOdaoCollector(sp, stateLocker)
-	nodeCollector := collectors.NewNodeCollector(sp, stateLocker)
+	nodeCollector := collectors.NewNodeCollector(ctx, sp, stateLocker)
 	trustedNodeCollector := collectors.NewTrustedNodeCollector(sp, stateLocker)
 	beaconCollector := collectors.NewBeaconCollector(ctx, sp, stateLocker)
 	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(sp, stateLocker)

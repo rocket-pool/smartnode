@@ -11,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
@@ -83,6 +84,7 @@ func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 
 	// Regenerate the fee recipient files
 	err = t.updateFeeRecipientFile(correctFeeRecipient)
+	alerting.AlertFeeRecipientChanged(t.cfg, correctFeeRecipient, err == nil)
 	if err != nil {
 		t.log.Println("***ERROR***")
 		t.log.Printlnf("Error updating fee recipient files: %s", err.Error())

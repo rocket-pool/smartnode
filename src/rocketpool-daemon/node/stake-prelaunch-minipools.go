@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/beacon"
 	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -237,6 +238,7 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 
 	// Print the gas info
 	forceSubmissions := []*eth.TransactionSubmission{}
+	forceMinipools := []*rpstate.NativeMinipoolDetails{}
 	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, &t.log, maxFee) {
 		// Check for the timeout buffers
 		for i, mpd := range minipools {
@@ -244,20 +246,31 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 			isDue, timeUntilDue := tx.IsTransactionDue(prelaunchTime, minipoolLaunchTimeout)
 			if !isDue {
 				t.log.Printlnf("Time until staking minipool %s will be forced for safety: %s", mpd.MinipoolAddress.Hex(), timeUntilDue)
+				alerting.AlertMinipoolStaked(t.cfg, mpd.MinipoolAddress, false)
 				continue
 			}
 			t.log.Printlnf("NOTICE: Minipool %s has exceeded half of the timeout period, so it will be force-staked at the current gas price.", mpd.MinipoolAddress.Hex())
 			forceSubmissions = append(forceSubmissions, submissions[i])
+			forceMinipools = append(forceMinipools, mpd)
 		}
 
 		if len(forceSubmissions) == 0 {
 			return false, nil
 		}
 		submissions = forceSubmissions
+		minipools = forceMinipools
+	}
+
+	// Create callbacks
+	callbacks := make([]func(err error), len(minipools))
+	for i, mp := range minipools {
+		callbacks[i] = func(err error) {
+			alerting.AlertMinipoolStaked(t.cfg, mp.MinipoolAddress, err == nil)
+		}
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, callbacks, opts)
 	if err != nil {
 		return false, err
 	}

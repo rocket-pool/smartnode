@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
@@ -54,25 +53,7 @@ func (configPage *AddonRescueNodePage) createContent() {
 	// Create the layout
 	configPage.layout = newStandardLayout()
 	configPage.layout.createForm(&configPage.masterConfig.Network, fmt.Sprintf("%s Settings", configPage.rn.GetName()))
-
-	// Return to the home page after pressing Escape
-	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEsc {
-			// Close all dropdowns and break if one was open
-			for _, param := range configPage.layout.parameters {
-				dropDown, ok := param.item.(*DropDown)
-				if ok && dropDown.open {
-					dropDown.CloseList(configPage.addonsPage.home.md.app)
-					return nil
-				}
-			}
-
-			// Return to the home page
-			configPage.addonsPage.home.md.setPage(configPage.addonsPage.page)
-			return nil
-		}
-		return event
-	})
+	configPage.layout.setupEscapeReturnHomeHandler(configPage.addonsPage.home.md, configPage.addonsPage.page)
 
 	// Get the parameters
 	enabledParam := &configPage.rnConfig.Enabled

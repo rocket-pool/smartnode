@@ -60,6 +60,9 @@ type NodeCollector struct {
 	// The total balances of all this node's validators on the beacon chain
 	beaconBalance *prometheus.Desc
 
+	// The sync progress of the clients
+	clientSyncProgress *prometheus.Desc
+
 	// The total EL balance of all minipools belonging to this node
 	minipoolBalance *prometheus.Desc
 
@@ -84,6 +87,9 @@ type NodeCollector struct {
 	// The collateral ratio with respect to the amount of bonded ETH
 	bondedCollateralRatio *prometheus.Desc
 
+	// Context for graceful shutdowns
+	ctx context.Context
+
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
@@ -107,7 +113,7 @@ type NodeCollector struct {
 }
 
 // Create a new NodeCollector instance
-func NewNodeCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *NodeCollector {
+func NewNodeCollector(ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *NodeCollector {
 	subsystem := "node"
 	return &NodeCollector{
 		totalStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_staked_rpl"),
@@ -154,6 +160,10 @@ func NewNodeCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *N
 			"The total balances of all this node's validators on the beacon chain",
 			nil, nil,
 		),
+		clientSyncProgress: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "sync_progress"),
+			"The sync progress of the beacon and execution clients",
+			[]string{"client"}, nil,
+		),
 		minipoolBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "minipool_balance"),
 			"The total EL balance of all minipools belonging to this node",
 			nil, nil,
@@ -186,6 +196,7 @@ func NewNodeCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *N
 			"The collateral ratio with respect to the amount of bonded ETH",
 			nil, nil,
 		),
+		ctx:              ctx,
 		sp:               sp,
 		handledIntervals: map[uint64]bool{},
 		stateLocker:      stateLocker,
@@ -206,6 +217,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.depositedEth
 	channel <- collector.beaconBalance
 	channel <- collector.beaconShare
+	channel <- collector.clientSyncProgress
 	channel <- collector.minipoolBalance
 	channel <- collector.minipoolShare
 	channel <- collector.refundBalance
@@ -227,6 +239,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get services
 	rp := collector.sp.GetRocketPool()
 	cfg := collector.sp.GetConfig()
+	ec := collector.sp.GetEthClient()
+	bc := collector.sp.GetBeaconClient()
 	nodeAddress, hasNodeAddress := collector.sp.GetWallet().GetAddress()
 	if !hasNodeAddress {
 		return
@@ -343,6 +357,32 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		unclaimedEthRewards = eth.WeiToEth(unclaimedEthWei)
 		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
 
+		return nil
+	})
+
+	// get the beacon client sync status:
+	wg.Go(func() error {
+		progress := float64(0)
+		syncStatus, err := bc.GetSyncStatus(collector.ctx)
+		if err != nil {
+			// NOTE: returning here causes the metric to not be emitted. the endpoint stays responsive, but also slightly more accurate (progress=nothing instead of 0)
+			fmt.Printf("error getting beacon chain sync status: %w", err)
+			return nil
+		} else {
+			progress = syncStatus.Progress
+		}
+		// note this metric is emitted asynchronously, while others in this file tend to be emitted at the end of the outer function (mostly due to dependencies between metrics). See https://github.com/rocket-pool/smartnode/issues/186
+		channel <- prometheus.MustNewConstMetric(
+			collector.clientSyncProgress, prometheus.GaugeValue, progress, "beacon")
+		return nil
+	})
+
+	// get the execution client sync status:
+	wg.Go(func() error {
+		syncStatus := ec.CheckStatus(collector.ctx)
+		// note this metric is emitted asynchronously, while others in this file tend to be emitted at the end of the outer function (mostly due to dependencies between metrics). See https://github.com/rocket-pool/smartnode/issues/186
+		channel <- prometheus.MustNewConstMetric(
+			collector.clientSyncProgress, prometheus.GaugeValue, syncStatus.PrimaryClientStatus.SyncProgress, "execution")
 		return nil
 	})
 

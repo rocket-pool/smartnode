@@ -7,8 +7,8 @@ type MevRelayID string
 type MevSelectionMode string
 
 const (
-	// ID for the Watchtower
-	ContainerID_Watchtower config.ContainerID = "watchtower"
+	ContainerID_Watchtower   config.ContainerID = "watchtower"
+	ContainerID_Alertmanager config.ContainerID = "alertmanager"
 
 	// Rocket Pool networks
 	Network_Devnet config.Network = "devnet"

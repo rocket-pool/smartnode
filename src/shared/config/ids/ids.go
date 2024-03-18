@@ -37,6 +37,7 @@ const (
 	ExternalBeaconID    string = "externalBeacon"
 	ValidatorClientID   string = "validator"
 	MetricsID           string = "metrics"
+	AlertmanagerID      string = "alertmanager"
 	MevBoostID          string = "mevBoost"
 	AddonsID            string = "addons"
 
@@ -74,4 +75,24 @@ const (
 	// Addons
 	AddonsGwwID        string = "gww"
 	AddonsRescueNodeID string = "rescueNode"
+
+	// Alertmanager
+	AlertmanagerDiscordWebhookUrlID           string = "discordWebhookURL"
+	AlertmanagerClientSyncStatusBeaconID      string = "alertEnabled_ClientSyncStatusBeacon"
+	AlertmanagerClientSyncStatusExecutionID   string = "alertEnabled_ClientSyncStatusExecution"
+	AlertmanagerUpcomingSyncCommitteeID       string = "alertEnabled_UpcomingSyncCommittee"
+	AlertmanagerActiveSyncCommitteeID         string = "alertEnabled_ActiveSyncCommittee"
+	AlertmanagerUpcomingProposalID            string = "alertEnabled_UpcomingProposal"
+	AlertmanagerRecentProposalID              string = "alertEnabled_RecentProposal"
+	AlertmanagerLowDiskSpaceWarningID         string = "alertEnabled_LowDiskSpaceWarning"
+	AlertmanagerLowDiskSpaceCriticalID        string = "alertEnabled_LowDiskSpaceCritical"
+	AlertmanagerOSUpdatesAvailableID          string = "alertEnabled_OSUpdatesAvailable"
+	AlertmanagerRPUpdatesAvailableID          string = "alertEnabled_RPUpdatesAvailable"
+	AlertmanagerFeeRecipientChangedID         string = "alertEnabled_FeeRecipientChanged"
+	AlertmanagerMinipoolBondReducedID         string = "alertEnabled_MinipoolBondReduced"
+	AlertmanagerMinipoolBalanceDistributedID  string = "alertEnabled_MinipoolBalanceDistributed"
+	AlertmanagerMinipoolPromotedID            string = "alertEnabled_MinipoolPromoted"
+	AlertmanagerMinipoolStakedID              string = "alertEnabled_MinipoolStaked"
+	AlertmanagerExecutionClientSyncCompleteID string = "alertEnabled_ExecutionClientSyncComplete"
+	AlertmanagerBeaconClientSyncCompleteID    string = "alertEnabled_BeaconClientSyncComplete"
 )

@@ -67,6 +67,9 @@ type SmartNodeConfig struct {
 	// Metrics
 	Metrics *MetricsConfig
 
+	// Notifications
+	Alertmanager *AlertmanagerConfig
+
 	// MEV-Boost
 	MevBoost *MevBoostConfig
 
@@ -434,6 +437,7 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 	cfg.ExternalBeaconClient = config.NewExternalBeaconConfig()
 	cfg.Fallback = config.NewFallbackConfig()
 	cfg.Metrics = NewMetricsConfig()
+	cfg.Alertmanager = NewAlertmanagerConfig()
 	cfg.MevBoost = NewMevBoostConfig(cfg)
 	cfg.Addons = NewAddonsConfig()
 
@@ -486,6 +490,7 @@ func (cfg *SmartNodeConfig) GetSubconfigs() map[string]config.IConfigSection {
 		ids.ValidatorClientID:   cfg.ValidatorClient,
 		ids.FallbackID:          cfg.Fallback,
 		ids.MetricsID:           cfg.Metrics,
+		ids.AlertmanagerID:      cfg.Alertmanager,
 		ids.MevBoostID:          cfg.MevBoost,
 		ids.AddonsID:            cfg.Addons,
 	}
@@ -706,6 +711,7 @@ func (cfg *SmartNodeConfig) Validate() []string {
 		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Metrics.WatchtowerMetricsPort, errors)
 		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Metrics.Grafana.Port, errors)
 		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Metrics.Prometheus.Port, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Alertmanager.Port, errors)
 	}
 	if cfg.MevBoost.Enable.Value && cfg.MevBoost.Mode.Value == config.ClientMode_Local {
 		_, errors = addAndCheckForDuplicate(portMap, cfg.MevBoost.Port, errors)

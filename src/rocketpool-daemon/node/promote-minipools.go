@@ -15,6 +15,7 @@ import (
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 
 	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -204,8 +205,16 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmis
 		submissions = forceSubmissions
 	}
 
+	// Create callbacks
+	callbacks := make([]func(err error), len(minipools))
+	for i, mp := range minipools {
+		callbacks[i] = func(err error) {
+			alerting.AlertMinipoolPromoted(t.cfg, mp.MinipoolAddress, err == nil)
+		}
+	}
+
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, callbacks, opts)
 	if err != nil {
 		return err
 	}

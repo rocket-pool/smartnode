@@ -15,6 +15,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -107,7 +108,7 @@ func (t *DistributeMinipools) Run(state *state.NetworkState) error {
 	}
 
 	// Distribute
-	err = t.distributeMinipools(txSubmissions)
+	err = t.distributeMinipools(txSubmissions, minipools)
 	if err != nil {
 		return fmt.Errorf("error distributing minipools: %w", err)
 	}
@@ -180,7 +181,7 @@ func (t *DistributeMinipools) createDistributeMinipoolTx(mpd *rpstate.NativeMini
 }
 
 // Distribute all available minipools
-func (t *DistributeMinipools) distributeMinipools(submissions []*eth.TransactionSubmission) error {
+func (t *DistributeMinipools) distributeMinipools(submissions []*eth.TransactionSubmission, minipools []*rpstate.NativeMinipoolDetails) error {
 	// Get transactor
 	opts, err := t.w.GetTransactor()
 	if err != nil {
@@ -203,8 +204,16 @@ func (t *DistributeMinipools) distributeMinipools(submissions []*eth.Transaction
 		return nil
 	}
 
+	// Create callbacks
+	callbacks := make([]func(err error), len(minipools))
+	for i, mp := range minipools {
+		callbacks[i] = func(err error) {
+			alerting.AlertMinipoolBalanceDistributed(t.cfg, mp.MinipoolAddress, err == nil)
+		}
+	}
+
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, callbacks, opts)
 	if err != nil {
 		return err
 	}
