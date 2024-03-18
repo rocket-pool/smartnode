@@ -414,7 +414,7 @@ func (t *VerifyPdaoProps) submitTxs(submissions []*eth.TransactionSubmission) er
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.log, submissions, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.log, submissions, nil, opts)
 	if err != nil {
 		return err
 	}

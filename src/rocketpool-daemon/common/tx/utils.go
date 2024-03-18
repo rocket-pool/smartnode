@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -43,10 +44,18 @@ func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, rp *rocketpool.Rock
 }
 
 // Prints a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *log.ColorLogger, submissions []*eth.TransactionSubmission, opts *bind.TransactOpts) error {
+func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *log.ColorLogger, submissions []*eth.TransactionSubmission, callbacks []func(err error), opts *bind.TransactOpts) error {
 	txs, err := rp.BatchExecuteTransactions(submissions, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting transactions: %w", err)
+	}
+
+	// Make a map of hashes to callbacks
+	callbackMap := map[common.Hash]func(err error){}
+	if callbacks != nil {
+		for i, tx := range txs {
+			callbackMap[tx.Hash()] = callbacks[i]
+		}
 	}
 
 	resources := cfg.GetRocketPoolResources()
@@ -76,13 +85,19 @@ func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool
 		wg.Go(func() error {
 			err := rp.WaitForTransaction(tx)
 			if err != nil {
-				return fmt.Errorf("error waiting for transaction %s: %w", tx.Hash().String(), err)
+				err = fmt.Errorf("error waiting for transaction %s: %w", tx.Hash().String(), err)
+			} else {
+				waitLock.Lock()
+				completeCount++
+				logger.Println("TX %s complete (%d/%d)", tx.Hash().String(), completeCount, len(txs))
+				waitLock.Unlock()
 			}
-			waitLock.Lock()
-			completeCount++
-			logger.Println("TX %s complete (%d/%d)", tx.Hash().String(), completeCount, len(txs))
-			waitLock.Unlock()
-			return nil
+
+			// Run the callback with the error
+			if callbacks != nil {
+				callbackMap[tx.Hash()](err)
+			}
+			return err
 		})
 	}
 
