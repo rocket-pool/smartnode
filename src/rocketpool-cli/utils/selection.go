@@ -42,7 +42,13 @@ func GetMultiselectIndices[DataType any](c *cli.Context, flagName string, option
 	if c.Bool(YesFlag.Name) {
 		return nil, fmt.Errorf("the '%s' flag (non-interactive mode) is specified but the '%s' flag (selection) is missing", YesFlag.Name, flagName)
 	}
-	indexSelection := Prompt("%s\nUse a comma separated list (such as '1,2,3') or leave it blank to select all options.", "^$|^\\d+(,\\d+)*$", "Invalid index selection")
+	fmt.Println(prompt)
+	fmt.Println()
+	for i, option := range options {
+		fmt.Printf("%d: %s\n", i+1, option.Display)
+	}
+	fmt.Println()
+	indexSelection := Prompt("Use a comma separated list (such as '1,2,3') or leave it blank to select all options.", "^$|^\\d+(,\\d+)*$", "Invalid index selection")
 	return parseIndexSelection(indexSelection, options)
 }
 
@@ -84,6 +90,7 @@ func parseIndexSelection[DataType any](selectionString string, options []Selecti
 		if err != nil {
 			return nil, fmt.Errorf("error parsing index '%s': %w", element, err)
 		}
+		index--
 
 		// Make sure it's in the list of options
 		if index >= optionLength {
