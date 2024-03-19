@@ -16,7 +16,7 @@ const (
 	grafanaConfigTarget         string = "grafana-prometheus-datasource.yml"
 	alertmanagerConfigTemplate  string = "alerting/alertmanager.tmpl"
 	alertmanagerConfigFile      string = "alerting/alertmanager.yml"
-	alertingRulesConfigTemplate string = "alerting/rules/default.tmpl"
+	alertingRulesConfigTemplate string = "alerting/rules/default.metatmpl"
 	alertingRulesConfigFile     string = "alerting/rules/default.yml"
 )
 
