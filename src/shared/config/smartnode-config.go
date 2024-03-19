@@ -436,6 +436,7 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 	cfg.LocalBeaconClient = NewLocalBeaconConfig()
 	cfg.ExternalBeaconClient = config.NewExternalBeaconConfig()
 	cfg.Fallback = config.NewFallbackConfig()
+	cfg.ValidatorClient = NewValidatorClientConfig(rpDir)
 	cfg.Metrics = NewMetricsConfig()
 	cfg.Alertmanager = NewAlertmanagerConfig()
 	cfg.MevBoost = NewMevBoostConfig(cfg)

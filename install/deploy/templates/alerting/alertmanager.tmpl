@@ -37,11 +37,11 @@ route:
 receivers:
   - name: "node_operator_default"
     discord_configs:
-      - webhook_url: "{{ .DiscordWebhookUrl.Value }}"
+      - webhook_url: "{{ .Alertmanager.DiscordWebhookUrl.Value }}"
 
   - name: "node_operator_no_resolved"
     discord_configs:
-      - webhook_url: "{{ .DiscordWebhookUrl.Value }}"
+      - webhook_url: "{{ .Alertmanager.DiscordWebhookUrl.Value }}"
         send_resolved: false
 
 inhibit_rules:

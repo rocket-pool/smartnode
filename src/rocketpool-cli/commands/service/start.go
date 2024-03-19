@@ -213,6 +213,17 @@ func promptForPassword(c *cli.Context, rp *client.Client) error {
 func checkForValidatorChange(rp *client.Client, cfg *config.SmartNodeConfig) (bool, error) {
 	// Get the current validator client
 	vcName := cfg.GetDockerArtifactName(config.ValidatorClientSuffix)
+
+	// Check if it exists
+	exists, err := rp.CheckIfContainerExists(vcName)
+	if err != nil {
+		return false, fmt.Errorf("error checking if validator client container exists: %w", err)
+	}
+	if !exists {
+		return true, nil
+	}
+
+	// Get the client flavor
 	currentTag, err := rp.GetDockerImage(vcName)
 	if err != nil {
 		return false, fmt.Errorf("error getting current validator client image: %w", err)

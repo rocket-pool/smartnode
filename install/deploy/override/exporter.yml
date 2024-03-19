@@ -5,5 +5,5 @@
 
 version: "3.7"
 services:
-  node-exporter:
+  exporter:
     x-rp-comment: Add your customizations below this line

@@ -21,6 +21,23 @@ func (c *Client) GetDockerImage(containerName string) (string, error) {
 	return ci.Config.Image, nil
 }
 
+// Check if a container with the provided name exists
+func (c *Client) CheckIfContainerExists(containerName string) (bool, error) {
+	d, err := c.GetDocker()
+	if err != nil {
+		return false, err
+	}
+	cl, err := d.ContainerList(context.Background(), dt.ContainerListOptions{
+		All: true, Filters: filters.NewArgs(
+			filters.Arg("name", containerName),
+		),
+	})
+	if err != nil {
+		return false, fmt.Errorf("error getting container list: %w", err)
+	}
+	return len(cl) > 0, nil
+}
+
 // Get the current Docker image used by the given container
 func (c *Client) GetDockerStatus(containerName string) (string, error) {
 	ci, err := inspectContainer(c, containerName)

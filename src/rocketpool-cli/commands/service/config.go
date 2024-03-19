@@ -200,7 +200,12 @@ func updateConfigParamsFromCliArgs(c *cli.Context, prefix string, section nmc_co
 
 	// Handle subconfigs
 	for subconfigName, subconfig := range section.GetSubconfigs() {
-		header := prefix + "-" + subconfigName
+		var header string
+		if prefix == "" {
+			header = subconfigName
+		} else {
+			header = prefix + "-" + subconfigName
+		}
 		err := updateConfigParamsFromCliArgs(c, header, subconfig)
 		if err != nil {
 			return fmt.Errorf("error updating params for section [%s]: %w", header, err)

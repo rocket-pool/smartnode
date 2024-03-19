@@ -17,7 +17,7 @@ services:
     ports: 
       - "{{$port}}:{{$port}}/tcp"
     volumes:
-      - "{{UserDirectory}}/grafana-prometheus-datasource.yml:/etc/grafana/provisioning/datasources/prometheus.yml"
+      - "{{.RocketPoolDirectory}}/grafana-prometheus-datasource.yml:/etc/grafana/provisioning/datasources/prometheus.yml"
       - "grafana-storage:/var/lib/grafana"
     networks:
       - net

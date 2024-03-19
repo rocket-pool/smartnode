@@ -92,7 +92,12 @@ func createFlagsFromConfigParams(prefix string, section config.IConfigSection, c
 
 	// Handle subconfigs
 	for subconfigName, subconfig := range section.GetSubconfigs() {
-		header := prefix + "-" + subconfigName
+		var header string
+		if prefix == "" {
+			header = subconfigName
+		} else {
+			header = prefix + "-" + subconfigName
+		}
 		configFlags = createFlagsFromConfigParams(header, subconfig, configFlags, network)
 	}
 

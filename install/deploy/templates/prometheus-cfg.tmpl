@@ -12,14 +12,14 @@ scrape_configs:
 
   - job_name: 'node'
     static_configs:
-      # node-exporter is on the host network so it can get access to the actual machine's network info
+      # exporter is on the host network so it can get access to the actual machine's network info
       # We have to use 'hosts.docker.internal' to refer to it due to this configuration
       - targets: ['host.docker.internal:{{or .Metrics.ExporterMetricsPort.Value "9103"}}']
 
-  - job_name: '{{if (eq .GetSelectedExecutionClient.String "geth")}}geth{{else}}{{.ExecutionClientContainerName}}{{end}}'
+  - job_name: '{{if (eq .GetSelectedExecutionClient "geth")}}geth{{else}}{{.ExecutionClientContainerName}}{{end}}'
     static_configs:
       - targets: ['{{.GetExecutionHostname}}:{{or .Metrics.EcMetricsPort.Value "9105"}}']
-    {{- if (eq .GetSelectedExecutionClient.String "geth")}}
+    {{- if (eq .GetSelectedExecutionClient "geth")}}
     metrics_path: /debug/metrics/prometheus
     {{- end}}
 

@@ -30,3 +30,6 @@ install/packages/debian/_build/
 bin
 pkg
 .vscode-ctags
+
+# Binaries
+src/rocketpool-cli/rocketpool-cli
