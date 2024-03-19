@@ -6,7 +6,8 @@ import (
 
 // The page wrapper for the alerting config
 type AlertingConfigPage struct {
-	home              *settingsHome
+	mainDisplay       *mainDisplay
+	homePage          *page
 	page              *page
 	layout            *standardLayout
 	masterConfig      *config.RocketPoolConfig
@@ -15,21 +16,42 @@ type AlertingConfigPage struct {
 
 func NewAlertingConfigPage(home *settingsHome) *AlertingConfigPage {
 	configPage := &AlertingConfigPage{
-		home:         home,
+		mainDisplay:  home.md,
+		homePage:     home.homePage,
 		masterConfig: home.md.Config,
 	}
 
 	configPage.createContent()
+	configPage.initPage(false)
 
+	return configPage
+}
+
+func NewAlertingConfigPageForNative(home *settingsNativeHome) *AlertingConfigPage {
+	configPage := &AlertingConfigPage{
+		mainDisplay:  home.md,
+		homePage:     home.homePage,
+		masterConfig: home.md.Config,
+	}
+
+	configPage.createContent()
+	configPage.initPage(true)
+
+	return configPage
+}
+
+func (configPage *AlertingConfigPage) initPage(isNative bool) {
+	id := "settings-alerting"
+	if isNative {
+		id = "settings-alerting-native"
+	}
 	configPage.page = newPage(
-		home.homePage,
-		"settings-alerting",
+		configPage.homePage,
+		id,
 		"Monitoring / Alerting",
 		"Select this to configure the alerting of the Smartnode. Requires metrics to be enabled.",
 		configPage.layout.grid,
 	)
-
-	return configPage
 }
 
 func (configPage *AlertingConfigPage) getPage() *page {
@@ -40,7 +62,7 @@ func (configPage *AlertingConfigPage) getPage() *page {
 func (configPage *AlertingConfigPage) createContent() {
 	configPage.layout = newStandardLayout()
 	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Alerting Settings")
-	configPage.layout.setupEscapeReturnHomeHandler(configPage.home.md, configPage.home.homePage)
+	configPage.layout.setupEscapeReturnHomeHandler(configPage.mainDisplay, configPage.homePage)
 
 	// Set up the UI components
 	configPage.alertmanagerItems = createParameterizedFormItems(configPage.masterConfig.Alertmanager.GetParameters(), configPage.layout.descriptionBox)
