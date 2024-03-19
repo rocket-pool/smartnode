@@ -5,7 +5,7 @@
 
 # We're targeting just the CLI for this package
 export BUILD_DIR := _build
-export DH_GOLANG_BUILDPKG := github.com/nodeset-org/hyperdrive/hyperdrive-cli
+export DH_GOLANG_BUILDPKG := github.com/rocket-pool/smartnode/rocketpool-cli
 
 # Set up the golang variables because dh-golang defaults to them being unset, which breaks things
 export GO111MODULE := on
@@ -15,20 +15,20 @@ export GOPROXY := https://goproxy.io,direct
 %:
 	dh $@ --builddirectory=${BUILD_DIR}
 
-# We have a very nonstandard build process; we're changing the name of the binary from hyperdrive-cli to hyperdrive,
+# We have a very nonstandard build process; we're changing the name of the binary from rocketpool-cli to rocketpool,
 # and we're using CGO_ENABLED=0... neither of which the default dh-golang system can handle. Thus, we're completely
 # rolling our own build here and ignoring the dh-golang one entirely.
 override_dh_auto_build:
 #	Build the CLI with a vanilla build instead of installing it
 	mkdir -p ${BUILD_DIR}
-	cd ${BUILD_DIR} && CGO_ENABLED=0 GOOS=linux GOARCH=${DEB_TARGET_ARCH} go build -trimpath -v -o hyperdrive github.com/nodeset-org/hyperdrive/hyperdrive-cli
+	cd ${BUILD_DIR} && CGO_ENABLED=0 GOOS=linux GOARCH=${DEB_TARGET_ARCH} go build -trimpath -v -o rocketpool github.com/rocket-pool/smartnode/rocketpool-cli
 #	For whatever reason, go install will install into bin/$GOOS_$GOARCH if we're cross compiling so we have to emulate that here
 	if [ "${DEB_BUILD_ARCH}" = "${DEB_TARGET_ARCH}" ]; then \
 		mkdir -p ${BUILD_DIR}/bin && \
-		mv ${BUILD_DIR}/hyperdrive ${BUILD_DIR}/bin/; \
+		mv ${BUILD_DIR}/rocketpool ${BUILD_DIR}/bin/; \
 	else \
 		mkdir -p ${BUILD_DIR}/bin/linux_${DEB_TARGET_ARCH} && \
-		mv ${BUILD_DIR}/hyperdrive ${BUILD_DIR}/bin/linux_${DEB_TARGET_ARCH}/; \
+		mv ${BUILD_DIR}/rocketpool ${BUILD_DIR}/bin/linux_${DEB_TARGET_ARCH}/; \
 	fi
 
 # Copy the CLI and deploy files during installation
@@ -36,10 +36,10 @@ override_dh_auto_install:
 # Install the go binaries without the source copied over to /usr
 	dh_auto_install -- --no-source
 # Create the folder structure and copy the deploy files over
-	install -dm 0700 debian/hyperdrive/var/lib/hyperdrive/data
-	install -dm 0700 debian/hyperdrive/var/lib/hyperdrive/global
-	mkdir -p debian/hyperdrive/usr/share/hyperdrive/
-	cp -r deploy/* debian/hyperdrive/usr/share/hyperdrive/
-	chmod -R +x debian/hyperdrive/usr/share/hyperdrive/scripts
+	install -dm 0700 debian/rocketpool/var/lib/rocketpool/data
+	install -dm 0700 debian/rocketpool/var/lib/rocketpool/global
+	mkdir -p debian/rocketpool/usr/share/rocketpool/
+	cp -r deploy/* debian/rocketpool/usr/share/rocketpool/
+	chmod -R +x debian/rocketpool/usr/share/rocketpool/scripts
 
 override_dh_auto_test:

@@ -115,6 +115,7 @@ usage() {
     echo "Options:"
     echo $'\t-a\tBuild all of the artifacts'
     echo $'\t-c\tBuild the CLI binaries for all platforms'
+    echo $'\t-t\tBuild the distro packages (.deb)'
     echo $'\t-p\tBuild the Smart Node installer packages'
     echo $'\t-d\tBuild the Smart Node Daemon image, and push it to Docker Hub'
     echo $'\t-l\tTag the Docker image as "latest" and push it to Docker Hub'
@@ -127,7 +128,7 @@ usage() {
 # =================
 
 # Parse arguments
-while getopts "acpdlv:" FLAG; do
+while getopts "actpdlv:" FLAG; do
     case "$FLAG" in
         a) CLI=true DISTRO=true PACKAGES=true DAEMON=true ;;
         c) CLI=true ;;
@@ -150,6 +151,9 @@ mkdir -p ./$VERSION
 # Build the artifacts
 if [ "$CLI" = true ]; then
     build_cli
+fi
+if [ "$DISTRO" = true ]; then
+    build_distro_packages
 fi
 if [ "$PACKAGES" = true ]; then
     build_install_packages

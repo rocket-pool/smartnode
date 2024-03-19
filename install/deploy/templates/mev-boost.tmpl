@@ -21,7 +21,7 @@ services:
       - MEV_BOOST_PORT={{.MevBoost.Port}}
       - MEV_BOOST_RELAYS={{.MevBoost.GetRelayString}}
     entrypoint: sh
-    command: "/usr/share/hyperdrive/scripts/{{.GetMevBoostStartScript}}"
+    command: "/usr/share/rocketpool/scripts/{{.GetMevBoostStartScript}}"
     cap_drop:
       - all
     cap_add:

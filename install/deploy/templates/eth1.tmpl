@@ -49,7 +49,7 @@ services:
       - RP_GETH_ENABLE_PBSS={{.LocalExecutionClient.Geth.EnablePbss}}
       {{- end}}
     entrypoint: sh
-    command: "/usr/share/hyperdrive/scripts/{{.GetEcStartScript}}"
+    command: "/usr/share/rocketpool/scripts/{{.GetEcStartScript}}"
     cap_drop:
       - all
     cap_add:
