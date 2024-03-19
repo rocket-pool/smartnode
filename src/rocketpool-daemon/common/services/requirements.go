@@ -96,7 +96,7 @@ func (sp *ServiceProvider) RequireNodeRegistered(context context.Context) error 
 	if err := sp.RequireNodeAddress(); err != nil {
 		return err
 	}
-	if err := sp.ServiceProvider.RequireEthClientSynced(context); err != nil {
+	if err := sp.RequireEthClientSynced(context); err != nil {
 		return err
 	}
 	nodeRegistered, err := sp.getNodeRegistered()
@@ -129,7 +129,7 @@ func (sp *ServiceProvider) RequireOnOracleDao(context context.Context) error {
 	if err := sp.RequireNodeAddress(); err != nil {
 		return err
 	}
-	if err := sp.ServiceProvider.RequireEthClientSynced(context); err != nil {
+	if err := sp.RequireEthClientSynced(context); err != nil {
 		return err
 	}
 	nodeTrusted, err := sp.isMemberOfOracleDao()
@@ -146,7 +146,7 @@ func (sp *ServiceProvider) RequireOnSecurityCouncil(context context.Context) err
 	if err := sp.RequireNodeAddress(); err != nil {
 		return err
 	}
-	if err := sp.ServiceProvider.RequireEthClientSynced(context); err != nil {
+	if err := sp.RequireEthClientSynced(context); err != nil {
 		return err
 	}
 	nodeTrusted, err := sp.isMemberOfSecurityCouncil()
