@@ -81,28 +81,9 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 		return err
 	})
 
-	// Check voting power using the voting artifacts to consider delegated VP
-	wg.Go(func() error {
-		var err error
-		// Get the proposal artifacts
-		propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
-		if err != nil {
-			return err
-		}
-		response.VotingPower, _, _, err = propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
-		return err
-	})
-
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return nil, err
-	}
-
-	// Check data
-	response.InsufficientPower = (response.VotingPower.Cmp(common.Big0) == 0)
-	response.CanVote = !(response.DoesNotExist || response.InvalidState || response.InsufficientPower || response.AlreadyVoted)
-	if !response.CanVote {
-		return &response, nil
 	}
 
 	// Get the proposal artifacts
@@ -110,9 +91,18 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 	if err != nil {
 		return nil, err
 	}
+
 	totalDelegatedVP, nodeIndex, proof, err := propMgr.GetArtifactsForVoting(proposalBlock, nodeAccount.Address)
 	if err != nil {
 		return nil, err
+	}
+	response.VotingPower = totalDelegatedVP
+
+	// Check data
+	response.InsufficientPower = (response.VotingPower.Cmp(common.Big0) == 0)
+	response.CanVote = !(response.DoesNotExist || response.InvalidState || response.InsufficientPower || response.AlreadyVoted)
+	if !response.CanVote {
+		return &response, nil
 	}
 
 	// Simulate
