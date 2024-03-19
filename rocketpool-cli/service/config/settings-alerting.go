@@ -1,17 +1,21 @@
 package config
 
 import (
+	"fmt"
+
+	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 // The page wrapper for the alerting config
 type AlertingConfigPage struct {
-	mainDisplay       *mainDisplay
-	homePage          *page
-	page              *page
-	layout            *standardLayout
-	masterConfig      *config.RocketPoolConfig
-	alertmanagerItems []*parameterizedFormItem
+	mainDisplay         *mainDisplay
+	homePage            *page
+	page                *page
+	layout              *standardLayout
+	masterConfig        *config.RocketPoolConfig
+	alertingEnabledItem parameterizedFormItem
+	otherItems          []*parameterizedFormItem
 }
 
 func NewAlertingConfigPage(home *settingsHome) *AlertingConfigPage {
@@ -65,10 +69,32 @@ func (configPage *AlertingConfigPage) createContent() {
 	configPage.layout.setupEscapeReturnHomeHandler(configPage.mainDisplay, configPage.homePage)
 
 	// Set up the UI components
-	configPage.alertmanagerItems = createParameterizedFormItems(configPage.masterConfig.Alertmanager.GetParameters(), configPage.layout.descriptionBox)
+	allItems := createParameterizedFormItems(configPage.masterConfig.Alertmanager.GetParameters(), configPage.layout.descriptionBox)
 
 	// Map the config parameters to the UI form items:
-	configPage.layout.mapParameterizedFormItems(configPage.alertmanagerItems...)
+	configPage.layout.mapParameterizedFormItems(allItems...)
+
+	var enableAlertingBox *tview.Checkbox = nil
+	for _, item := range allItems {
+		if item.parameter.ID == "enableAlerting" {
+			configPage.alertingEnabledItem = *item
+			enableAlertingBox = item.item.(*tview.Checkbox)
+			continue
+		}
+		configPage.otherItems = append(configPage.otherItems, item)
+	}
+
+	if enableAlertingBox != nil {
+		enableAlertingBox.SetChangedFunc(func(checked bool) {
+			if configPage.masterConfig.Alertmanager.EnableAlerting.Value == checked {
+				return
+			}
+			configPage.masterConfig.Alertmanager.EnableAlerting.Value = checked
+			configPage.handleLayoutChanged()
+		})
+	} else {
+		fmt.Println("Error: enableAlerting checkbox not found in alertmanagerItems")
+	}
 
 	// Do the initial draw
 	configPage.handleLayoutChanged()
@@ -77,8 +103,9 @@ func (configPage *AlertingConfigPage) createContent() {
 // Handle all of the form changes when the Enable Metrics box has changed
 func (configPage *AlertingConfigPage) handleLayoutChanged() {
 	configPage.layout.form.Clear(true)
-	if configPage.masterConfig.EnableMetrics.Value == true {
-		configPage.layout.addFormItems(configPage.alertmanagerItems)
+	configPage.layout.addFormItems([]*parameterizedFormItem{&configPage.alertingEnabledItem})
+	if configPage.masterConfig.Alertmanager.EnableAlerting.Value == true {
+		configPage.layout.addFormItems(configPage.otherItems)
 	}
 	configPage.layout.refresh()
 }

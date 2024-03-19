@@ -254,7 +254,7 @@ const (
 )
 
 func isAlertingEnabled(cfg *config.RocketPoolConfig) bool {
-	return cfg.EnableMetrics.Value == true
+	return cfg.Alertmanager.EnableAlerting.Value == true
 }
 
 // Creates a uniform alert with the basic labels and annotations we expect.

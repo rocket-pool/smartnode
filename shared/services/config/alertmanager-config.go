@@ -33,6 +33,9 @@ type AlertmanagerConfig struct {
 
 	Title string `yaml:"-"`
 
+	// Whether alerting is enabled
+	EnableAlerting config.Parameter `yaml:"enableAlerting,omitempty"`
+
 	// Port for alertmanager UI & API
 	Port config.Parameter `yaml:"port,omitempty"`
 
@@ -76,13 +79,24 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 
 		Title: "Alertmanager Settings",
 
+		EnableAlerting: config.Parameter{
+			ID:                 "enableAlerting",
+			Name:               "Enable Alerting",
+			Description:        "Enable the Smartnode's alerting system. This will provide you alerts when important events occur with your node.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: true},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Alertmanager},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		Port: config.Parameter{
 			ID:                 "port",
 			Name:               "Alertmanager Port",
 			Description:        "The port Alertmanager will listen on. If using Native Mode, this is the port the node will connect to Alertmanager.",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultAlertmanagerPort},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager, config.ContainerID_Prometheus},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Alertmanager, config.ContainerID_Prometheus},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
@@ -217,7 +231,8 @@ func createParameterForAlertEnablement(uniqueName string, label string) config.P
 }
 
 func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
-	parameters := make([]*config.Parameter, 0, 22)
+	parameters := make([]*config.Parameter, 0, 23)
+	parameters = append(parameters, &cfg.EnableAlerting)
 
 	if cfg.Parent.IsNativeMode {
 		parameters = append(parameters, &cfg.Host)
@@ -225,13 +240,13 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 
 	parameters = append(parameters,
 		&cfg.Port,
-		&cfg.OpenPort,
-		&cfg.DiscordWebhookURL,
 	)
 
 	isDockerMode := !cfg.Parent.IsNativeMode
 	if isDockerMode {
 		parameters = append(parameters,
+			&cfg.OpenPort,
+			&cfg.DiscordWebhookURL,
 			&cfg.ContainerTag,
 			// This set of alerts is controlled from prometheus.yml that managed
 			// manually in native mode:
