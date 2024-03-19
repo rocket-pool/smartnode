@@ -7,11 +7,6 @@ if [ "$NETWORK" = "mainnet" ]; then
     LODESTAR_NETWORK="mainnet"
     PRYSM_NETWORK="--mainnet"
     TEKU_NETWORK="mainnet"
-elif [ "$NETWORK" = "prater" ]; then
-    LH_NETWORK="prater"
-    LODESTAR_NETWORK="goerli"
-    PRYSM_NETWORK="--prater"
-    TEKU_NETWORK="prater"
 elif [ "$NETWORK" = "devnet" ]; then
     LH_NETWORK="holesky"
     LODESTAR_NETWORK="holesky"
@@ -57,7 +52,7 @@ if [ "$CLIENT" = "lighthouse" ]; then
     fi
 
     if [ "$ENABLE_MEV_BOOST" = "true" ]; then
-        CMD="$CMD --builder-proposals"
+        CMD="$CMD --builder-proposals --prefer-builder-proposals"
     fi
 
     if [ "$ENABLE_METRICS" = "true" ]; then

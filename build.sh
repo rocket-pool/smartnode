@@ -200,3 +200,15 @@ build_ec_migrator() {
 
     cd ..
 }
+
+# Builds the Docker prune starter image and pushes it to Docker Hub
+# TODO: Move this to the NPS repo
+build_docker_prune_starter() {
+    cd NethermindPruneStarter || fail "Directory ${PWD}/smartnode does not exist or you don't have permissions to access it."
+
+    echo "Building Docker Prune Starter image..."
+    docker buildx build --platform=linux/amd64,linux/arm64 -t rocketpool/nm-prune-starter:$VERSION -f docker/rocketpool-nm-prune-starter --push . || fail "Error building Docker Prune Starter image."
+    echo "done!"
+
+    cd ..
+}

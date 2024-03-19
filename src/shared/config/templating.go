@@ -52,12 +52,24 @@ func (c *SmartNodeConfig) WatchtowerContainerName() string {
 	return string(ContainerID_Watchtower)
 }
 
+func (c *SmartNodeConfig) AlertmanagerContainerName() string {
+	return string(ContainerID_Alertmanager)
+}
+
 func (c *SmartNodeConfig) ExecutionClientDataVolume() string {
 	return ExecutionClientDataVolume
 }
 
 func (c *SmartNodeConfig) BeaconNodeDataVolume() string {
 	return BeaconNodeDataVolume
+}
+
+func (c *SmartNodeConfig) AlertmanagerDataVolume() string {
+	return AlertmanagerDataVolume
+}
+
+func (c *SmartNodeConfig) PrometheusDataVolume() string {
+	return PrometheusDataVolume
 }
 
 // ===============

@@ -16,10 +16,10 @@ scrape_configs:
       # We have to use 'hosts.docker.internal' to refer to it due to this configuration
       - targets: ['host.docker.internal:{{or .Metrics.ExporterMetricsPort.Value "9103"}}']
 
-  - job_name: '{{if (eq .LocalExecutionClient.ExecutionClient.String "geth")}}geth{{else}}{{.ExecutionClientContainerName}}{{end}}'
+  - job_name: '{{if (eq .GetSelectedExecutionClient.String "geth")}}geth{{else}}{{.ExecutionClientContainerName}}{{end}}'
     static_configs:
       - targets: ['{{.GetExecutionHostname}}:{{or .Metrics.EcMetricsPort.Value "9105"}}']
-    {{- if (eq .LocalExecutionClient.ExecutionClient.String "geth")}}
+    {{- if (eq .GetSelectedExecutionClient.String "geth")}}
     metrics_path: /debug/metrics/prometheus
     {{- end}}
 
@@ -47,3 +47,12 @@ scrape_configs:
     file_sd_configs:
       - files:
         - /extra-scrape-jobs/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:{{or .Alertmanager.Port.Value "9093"}}
+
+rule_files:
+  - /alerting/rules/*.yml

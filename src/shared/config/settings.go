@@ -34,6 +34,8 @@ const (
 	// Volumes
 	ExecutionClientDataVolume string = "eth1clientdata"
 	BeaconNodeDataVolume      string = "eth2clientdata"
+	AlertmanagerDataVolume    string = "alertmanager-data"
+	PrometheusDataVolume      string = "prometheus-data"
 
 	// Smart Node
 	AddonsFolderName                   string = "addons"

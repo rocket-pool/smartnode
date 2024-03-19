@@ -34,18 +34,17 @@ if [ "$NETWORK" = "mainnet" ]; then
     GETH_NETWORK=""
     RP_NETHERMIND_NETWORK="mainnet"
     BESU_NETWORK="--network=mainnet"
-elif [ "$NETWORK" = "prater" ]; then
-    GETH_NETWORK="--goerli"
-    RP_NETHERMIND_NETWORK="goerli"
-    BESU_NETWORK="--network=goerli"
+    RETH_NETWORK="--chain mainnet"
 elif [ "$NETWORK" = "devnet" ]; then
     GETH_NETWORK="--holesky"
     RP_NETHERMIND_NETWORK="holesky"
     BESU_NETWORK="--network=holesky"
+    RETH_NETWORK="--chain holesky"
 elif [ "$NETWORK" = "holesky" ]; then
     GETH_NETWORK="--holesky"
     RP_NETHERMIND_NETWORK="holesky"
     BESU_NETWORK="--network=holesky"
+    RETH_NETWORK="--chain holesky"
 else
     echo "Unknown network [$NETWORK]"
     exit 1
@@ -137,12 +136,6 @@ if [ "$CLIENT" = "nethermind" ]; then
         openssl rand -hex 32 | tr -d "\n" > /secrets/jwtsecret
     fi
 
-    # Check for the prune flag
-    if [ -f "/ethclient/prune.lock" ]; then
-        RP_NETHERMIND_PRUNE=1
-        rm /ethclient/prune.lock
-    fi
-
     # Set the JSON RPC logging level
     LOG_LINE=$(awk '/<logger name=\"\*\" minlevel=\"Off\" writeTo=\"seq\" \/>/{print NR}' /nethermind/NLog.config)
     sed -e "${LOG_LINE} i \    <logger name=\"JsonRpc\.\*\" final=\"true\"/>\\n" -i /nethermind/NLog.config
@@ -174,8 +167,11 @@ if [ "$CLIENT" = "nethermind" ]; then
         --JsonRpc.EngineHost 0.0.0.0 \
         --Init.WebSocketsEnabled true \
         --JsonRpc.WebSocketsPort ${EC_WS_PORT:-8546} \
-        --Merge.Enabled true \
         --JsonRpc.JwtSecretFile=/secrets/jwtsecret \
+        --Pruning.FullPruningTrigger=VolumeFreeSpace \
+        --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
+        --Pruning.FullPruningMaxDegreeOfParallelism 0 \
+        --Pruning.FullPruningMemoryBudgetMb=$RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET \
         $EC_ADDITIONAL_FLAGS"
 
     # Add optional supplemental primary JSON-RPC modules
@@ -210,12 +206,6 @@ if [ "$CLIENT" = "nethermind" ]; then
         CMD="$CMD --Network.DiscoveryPort $EC_P2P_PORT --Network.P2PPort $EC_P2P_PORT"
     fi
 
-    if [ ! -z "$RP_NETHERMIND_PRUNE" ]; then
-        CMD="$CMD --Pruning.Mode Full --Pruning.FullPruningCompletionBehavior AlwaysShutdown"
-    else
-        CMD="$CMD --Pruning.Mode Memory"
-    fi
-
     if [ ! -z "$RP_NETHERMIND_PRUNE_MEM_SIZE" ]; then
         CMD="$CMD --Pruning.CacheMb $RP_NETHERMIND_PRUNE_MEM_SIZE"
     fi
@@ -242,52 +232,95 @@ if [ "$CLIENT" = "besu" ]; then
         openssl rand -hex 32 | tr -d "\n" > /secrets/jwtsecret
     fi
 
-    CMD="$PERF_PREFIX /opt/besu/bin/besu \
-        $BESU_NETWORK \
-        --data-path=/ethclient/besu \
-        --fast-sync-min-peers=3 \
-        --sync-mode=X_SNAP \
-        --rpc-http-enabled \
-        --rpc-http-host=0.0.0.0 \
-        --rpc-http-port=${EC_HTTP_PORT:-8545} \
-        --rpc-ws-enabled \
-        --rpc-ws-host=0.0.0.0 \
-        --rpc-ws-port=${EC_WS_PORT:-8546} \
-        --host-allowlist=* \
-        --rpc-http-max-active-connections=1024 \
-        --data-storage-format=bonsai \
-        --nat-method=docker \
-        --p2p-host=$EXTERNAL_IP \
-        --engine-rpc-enabled \
-        --engine-rpc-port=${EC_ENGINE_PORT:-8551} \
-        --engine-host-allowlist=* \
-        --engine-jwt-secret=/secrets/jwtsecret \
+    # Check for the prune flag and run that first if requested
+    if [ -f "/ethclient/prune.lock" ]; then
+        $PERF_PREFIX /opt/besu/bin/besu $BESU_NETWORK --data-path=/ethclient/besu storage x-trie-log prune ; rm /ethclient/prune.lock
+
+    # Run Besu normally
+    else
+        CMD="$PERF_PREFIX /opt/besu/bin/besu \
+            $BESU_NETWORK \
+            --data-path=/ethclient/besu \
+            --fast-sync-min-peers=3 \
+            --rpc-http-enabled \
+            --rpc-http-host=0.0.0.0 \
+            --rpc-http-port=${EC_HTTP_PORT:-8545} \
+            --rpc-ws-enabled \
+            --rpc-ws-host=0.0.0.0 \
+            --rpc-ws-port=${EC_WS_PORT:-8546} \
+            --host-allowlist=* \
+            --rpc-http-max-active-connections=1024 \
+            --nat-method=docker \
+            --p2p-host=$EXTERNAL_IP \
+            --engine-rpc-enabled \
+            --engine-rpc-port=${EC_ENGINE_PORT:-8551} \
+            --engine-host-allowlist=* \
+            --engine-jwt-secret=/secrets/jwtsecret \
+            --Xsnapsync-synchronizer-flat-db-healing-enabled=true \
+            $EC_ADDITIONAL_FLAGS"
+
+        if [ "$BESU_ARCHIVE_MODE" = "true" ]; then
+            CMD="$CMD --sync-mode=FULL --data-storage-format=FOREST"
+        else 
+            CMD="$CMD --sync-mode=SNAP --data-storage-format=BONSAI --Xbonsai-limit-trie-logs-enabled=true"
+        fi
+
+        if [ ! -z "$EC_MAX_PEERS" ]; then
+            CMD="$CMD --max-peers=$EC_MAX_PEERS"
+        fi
+
+        if [ "$ENABLE_METRICS" = "true" ]; then
+            CMD="$CMD --metrics-enabled --metrics-host=0.0.0.0 --metrics-port=$EC_METRICS_PORT"
+        fi
+
+        if [ ! -z "$EC_P2P_PORT" ]; then
+            CMD="$CMD --p2p-port=$EC_P2P_PORT"
+        fi
+
+        if [ ! -z "$BESU_MAX_BACK_LAYERS" ]; then
+            CMD="$CMD --bonsai-maximum-back-layers-to-load=$BESU_MAX_BACK_LAYERS"
+        fi
+
+        if [ "$BESU_JVM_HEAP_SIZE" -gt "0" ]; then
+            CMD="env JAVA_OPTS=\"-Xmx${BESU_JVM_HEAP_SIZE}m\" $CMD"
+        fi
+
+        exec ${CMD}
+    fi
+fi
+
+# Reth startup
+if [ "$CLIENT" = "reth" ]; then
+
+    # Create the JWT secret
+    if [ ! -f "/secrets/jwtsecret" ]; then
+        openssl rand -hex 32 | tr -d "\n" > /secrets/jwtsecret
+    fi
+
+    CMD="$PERF_PREFIX /usr/local/bin/reth node $RETH_NETWORK \
+        --datadir /ethclient/reth \
+        --http \
+        --http.addr 0.0.0.0 \
+        --http.port ${EC_HTTP_PORT:-8545} \
+        --http.api eth,net,web3 \
+        --http.corsdomain '*' \
+        --ws \
+        --ws.addr 0.0.0.0 \
+        --ws.port ${EC_WS_PORT:-8546} \
+        --ws.api eth,net,web3 \
+        --ws.origins '*' \
+        --authrpc.addr 0.0.0.0 \
+        --authrpc.port ${EC_ENGINE_PORT:-8551} \
+        --authrpc.jwtsecret /secrets/jwtsecret \
         $EC_ADDITIONAL_FLAGS"
 
-    if [ ! -z "$ETHSTATS_LABEL" ] && [ ! -z "$ETHSTATS_LOGIN" ]; then
-        CMD="$CMD --ethstats $ETHSTATS_LABEL:$ETHSTATS_LOGIN"
-    fi
-
-    if [ ! -z "$EC_MAX_PEERS" ]; then
-        CMD="$CMD --max-peers=$EC_MAX_PEERS"
-    fi
-
     if [ "$ENABLE_METRICS" = "true" ]; then
-        CMD="$CMD --metrics-enabled --metrics-host=0.0.0.0 --metrics-port=$EC_METRICS_PORT"
+        CMD="$CMD --metrics 0.0.0.0:$EC_METRICS_PORT"
     fi
 
     if [ ! -z "$EC_P2P_PORT" ]; then
-        CMD="$CMD --p2p-port=$EC_P2P_PORT"
-    fi
-
-    if [ ! -z "$BESU_MAX_BACK_LAYERS" ]; then
-        CMD="$CMD --bonsai-maximum-back-layers-to-load=$BESU_MAX_BACK_LAYERS"
-    fi
-
-    if [ "$BESU_JVM_HEAP_SIZE" -gt "0" ]; then
-        CMD="env JAVA_OPTS=\"-Xmx${BESU_JVM_HEAP_SIZE}m\" $CMD"
+        CMD="$CMD --port $EC_P2P_PORT"
     fi
 
     exec ${CMD}
-
 fi

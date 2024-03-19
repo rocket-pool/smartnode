@@ -37,11 +37,14 @@ services:
       {{- if eq .LocalExecutionClient.ExecutionClient.String "besu"}}
       - BESU_MAX_BACK_LAYERS={{.LocalExecutionClient.Besu.MaxBackLayers}}
       - BESU_JVM_HEAP_SIZE={{.LocalExecutionClient.Besu.JvmHeapSize}}
+      - BESU_ARCHIVE_MODE={{.LocalExecutionClient.Besu.ArchiveMode}}
       {{- else if eq .LocalExecutionClient.ExecutionClient.String "nethermind"}}
       - EC_CACHE_SIZE={{.LocalExecutionClient.Nethermind.CacheSize}}
       - RP_NETHERMIND_PRUNE_MEM_SIZE={{.LocalExecutionClient.Nethermind.PruneMemSize}}
       - RP_NETHERMIND_ADDITIONAL_MODULES={{.LocalExecutionClient.Nethermind.AdditionalModules}}
       - RP_NETHERMIND_ADDITIONAL_URLS={{.LocalExecutionClient.Nethermind.AdditionalUrls}}
+      - RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET={{.LocalExecutionClient.Nethermind.FullPruneMemoryBudget}}
+      - RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB={{.LocalExecutionClient.Nethermind.FullPruningThresholdMb}}
       {{- else if eq .LocalExecutionClient.ExecutionClient.String "geth"}}
       - RP_GETH_ENABLE_PBSS={{.LocalExecutionClient.Geth.EnablePbss}}
       {{- end}}

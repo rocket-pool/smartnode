@@ -21,7 +21,8 @@ services:
     volumes:
       - "{{.RocketPoolDirectory}}/prometheus.yml:/etc/prometheus/prometheus.yml"
       - "{{.RocketPoolDirectory}}/extra-scrape-jobs:/extra-scrape-jobs"
-      - "prometheus-data:/prometheus"
+      - "{{.PrometheusDataVolume}}:/prometheus"
+      - "{{.RocketPoolDirectory}}/alerting/rules:/alerting/rules"
     networks:
       - net
       - monitor-net
@@ -40,4 +41,4 @@ networks:
           gateway: 172.23.5.254
   net:
 volumes:
-  prometheus-data:
+  {{.PrometheusDataVolume}}:
