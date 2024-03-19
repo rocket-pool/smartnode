@@ -26,7 +26,6 @@ type settingsNativeHome struct {
 
 // Creates a new SettingsNativeHome instance and adds (and its subpages) it to the main display.
 func newSettingsNativeHome(md *mainDisplay) *settingsNativeHome {
-
 	homePage := newPage(nil, settingsNativeHomeID, "Categories", "", nil)
 
 	// Create the page and return it
@@ -56,12 +55,10 @@ func newSettingsNativeHome(md *mainDisplay) *settingsNativeHome {
 	homePage.content = home.content
 	md.pages.AddPage(homePage.id, home.content, true, false)
 	return home
-
 }
 
 // Create the content for this page
 func (home *settingsNativeHome) createContent() {
-
 	layout := newStandardLayout()
 
 	// Create the category list
@@ -100,12 +97,10 @@ func (home *settingsNativeHome) createContent() {
 
 	// Set the home page's content to be the standard layout's grid
 	home.content = layout.grid
-
 }
 
 // Create the footer, including the nav bar and the save / quit buttons
 func (home *settingsNativeHome) createFooter() (tview.Primitive, int) {
-
 	// Nav bar
 	navString1 := "Arrow keys: Navigate             Space/Enter: Select"
 	navTextView1 := tview.NewTextView().
@@ -191,7 +186,6 @@ func (home *settingsNativeHome) createFooter() (tview.Primitive, int) {
 		AddItem(navBar2, 1, 1, false)
 
 	return footer, footer.GetItemCount()
-
 }
 
 // Refreshes the settings on all of the config pages to match the config's values

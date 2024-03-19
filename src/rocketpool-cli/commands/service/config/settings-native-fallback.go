@@ -13,7 +13,6 @@ type NativeFallbackConfigPage struct {
 	layout         *standardLayout
 	masterConfig   *config.SmartNodeConfig
 	useFallbackBox *parameterizedFormItem
-	reconnectDelay *parameterizedFormItem
 	fallbackItems  []*parameterizedFormItem
 }
 
@@ -89,7 +88,6 @@ func (configPage *NativeFallbackConfigPage) handleUseFallbackChanged() {
 	if !configPage.masterConfig.Fallback.UseFallbackClients.Value {
 		return
 	}
-	configPage.layout.form.AddFormItem(configPage.reconnectDelay.item)
 	configPage.layout.addFormItems(configPage.fallbackItems)
 
 	configPage.layout.refresh()

@@ -41,14 +41,19 @@ func (configPage *NativeSmartnodeConfigPage) createContent() {
 	// Set up the form items
 	formItems := createParameterizedFormItems(masterConfig.GetParameters(), layout.descriptionBox)
 	for _, formItem := range formItems {
-		if formItem.parameter.GetCommon().ID == snids.ProjectNameID {
+		id := formItem.parameter.GetCommon().ID
+		if id == snids.ClientModeID {
+			// Ignore the client mode since that's covered in the EC and BN sections
+			continue
+		}
+		if id == snids.ProjectNameID {
 			// Ignore the project name ID since it doesn't apply to native mode
 			continue
 		}
 
 		layout.form.AddFormItem(formItem.item)
 		layout.parameters[formItem.item] = formItem
-		if formItem.parameter.GetCommon().ID == snids.NetworkID {
+		if id == snids.NetworkID {
 			dropDown := formItem.item.(*DropDown)
 			dropDown.SetSelectedFunc(func(text string, index int) {
 				newNetwork := configPage.home.md.Config.Network.Options[index].Value
