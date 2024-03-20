@@ -114,11 +114,12 @@ func (c *protocolDaoVoteOnProposalContext) GetState(mc *batch.MultiCaller) {
 func (c *protocolDaoVoteOnProposalContext) PrepareData(data *api.ProtocolDaoVoteOnProposalData, opts *bind.TransactOpts) error {
 	var err error
 	targetBlock := c.proposal.TargetBlock.Formatted()
-	data.VotingPower, _, _, err = c.propMgr.GetArtifactsForVoting(targetBlock, c.nodeAddress)
+	totalDelegatedVP, nodeIndex, proof, err := c.propMgr.GetArtifactsForVoting(targetBlock, c.nodeAddress)
 	if err != nil {
 		return fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", c.nodeAddress.Hex(), targetBlock, err)
 	}
 
+	data.VotingPower = totalDelegatedVP
 	data.DoesNotExist = (c.proposalID > c.pdaoMgr.ProposalCount.Formatted())
 	data.InvalidState = (c.proposal.State.Formatted() != types.ProtocolDaoProposalState_ActivePhase1)
 	data.AlreadyVoted = (c.existingVoteDir() != types.VoteDirection_NoVote)
@@ -127,16 +128,6 @@ func (c *protocolDaoVoteOnProposalContext) PrepareData(data *api.ProtocolDaoVote
 
 	// Get the tx
 	if data.CanVote && opts != nil {
-		// Get the proposal artifacts
-		propMgr, err := proposals.NewProposalManager(c.handler.context, nil, c.cfg, c.rp, c.bc)
-		if err != nil {
-			return fmt.Errorf("error creating proposal manager: %w")
-		}
-		totalDelegatedVP, nodeIndex, proof, err := propMgr.GetArtifactsForVoting(c.proposal.TargetBlock.Formatted(), c.nodeAddress)
-		if err != nil {
-			return fmt.Errorf("error getting voting artifacts: %w", err)
-		}
-
 		txInfo, err := c.proposal.Vote(c.voteDirection, totalDelegatedVP, nodeIndex, proof, opts)
 		if err != nil {
 			return fmt.Errorf("error getting TX info for Vote: %w", err)
