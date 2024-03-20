@@ -2,12 +2,12 @@ package node
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -128,8 +128,9 @@ func (t *TaskLoop) Run() error {
 		// Wait until node is registered
 		err := t.sp.WaitNodeRegistered(t.ctx, true)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				errorLog.Printlnf("error waiting for node registration: %s", err.Error())
+			errMsg := err.Error()
+			if !strings.Contains(errMsg, "context canceled") {
+				errorLog.Printlnf("error waiting for node registration: %s", errMsg)
 			}
 			return
 		}
@@ -141,7 +142,8 @@ func (t *TaskLoop) Run() error {
 			// Check the EC status
 			err := t.sp.WaitEthClientSynced(t.ctx, false) // Force refresh the primary / fallback EC status
 			if err != nil {
-				if errors.Is(err, context.Canceled) {
+				errMsg := err.Error()
+				if strings.Contains(errMsg, "context canceled") {
 					break
 				}
 				wasExecutionClientSynced = false
@@ -161,7 +163,8 @@ func (t *TaskLoop) Run() error {
 			// Check the BC status
 			err = t.sp.WaitBeaconClientSynced(t.ctx, false) // Force refresh the primary / fallback BC status
 			if err != nil {
-				if errors.Is(err, context.Canceled) {
+				errMsg := err.Error()
+				if strings.Contains(errMsg, "context canceled") {
 					break
 				}
 				// NOTE: if not synced, it returns an error - so there isn't necessarily an underlying issue

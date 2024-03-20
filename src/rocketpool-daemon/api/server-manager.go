@@ -54,7 +54,7 @@ func NewServerManager(sp *services.ServiceProvider, cfgPath string, stopWg *sync
 	}
 
 	// Start the CLI server
-	cliSocketPath := filepath.Join(sp.GetUserDir(), config.SmartNodeSocketFilename)
+	cliSocketPath := filepath.Join(sp.GetUserDir(), config.SmartNodeCliSocketFilename)
 	cliServer, err := createServer(sp, cliSocketPath, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error creating CLI server: %w", err)
@@ -96,7 +96,7 @@ func createServer(sp *services.ServiceProvider, socketPath string, ctx context.C
 		wallet.NewWalletHandler(ctx, sp),
 	}
 
-	server, err := server.NewApiServer(socketPath, handlers, config.SmartNodeDaemonRoute)
+	server, err := server.NewApiServer(socketPath, handlers, config.SmartNodeDaemonBaseRoute, config.SmartNodeApiVersion)
 	if err != nil {
 		return nil, err
 	}

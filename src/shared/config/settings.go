@@ -8,10 +8,13 @@ const (
 	WatchtowerPriorityFeeDefault uint64 = 3
 
 	// Daemon
-	EventLogInterval        int    = 1000
-	SmartNodeDaemonRoute    string = "smartnode"
-	SmartNodeSocketFilename string = SmartNodeDaemonRoute + ".sock"
-	ConfigFilename          string = "user-settings.yml"
+	EventLogInterval               int    = 1000
+	SmartNodeDaemonBaseRoute       string = "rocketpool"
+	SmartNodeApiVersion            string = "1"
+	SmartNodeApiClientRoute        string = SmartNodeDaemonBaseRoute + "/api/v" + SmartNodeApiVersion
+	SmartNodeCliSocketFilename     string = "rocketpool-cli.sock"
+	SmartNodeNetworkSocketFilename string = "rocketpool-net.sock"
+	ConfigFilename                 string = "user-settings.yml"
 
 	// Wallet
 	UserAddressFilename       string = "address"

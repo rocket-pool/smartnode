@@ -41,10 +41,10 @@ type Client struct {
 // Most users should call NewClientFromCtx(c).WithStatus() or NewClientFromCtx(c).WithReady()
 func NewClientFromCtx(c *cli.Context) *Client {
 	snCtx := context.GetSmartNodeContext(c)
-	socketPath := filepath.Join(snCtx.ConfigPath, config.SmartNodeSocketFilename)
+	socketPath := filepath.Join(snCtx.ConfigPath, config.SmartNodeCliSocketFilename)
 
 	client := &Client{
-		Api:     rocketpool.NewApiClient(config.SmartNodeDaemonRoute, socketPath, snCtx.DebugEnabled),
+		Api:     rocketpool.NewApiClient(config.SmartNodeApiClientRoute, socketPath, snCtx.DebugEnabled),
 		Context: snCtx,
 	}
 	return client
