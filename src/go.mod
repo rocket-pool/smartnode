@@ -28,8 +28,8 @@ require (
 	github.com/prometheus/client_golang v1.18.0
 	github.com/prysmaticlabs/prysm/v4 v4.2.1
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
-	github.com/rocket-pool/node-manager-core v0.1.1-0.20240319034629-e65888c5527f
-	github.com/rocket-pool/rocketpool-go v1.8.3-0.20240320075624-5b06b426e919
+	github.com/rocket-pool/node-manager-core v0.1.1-0.20240320090337-d17bc7eb55e3
+	github.com/rocket-pool/rocketpool-go v1.8.3-0.20240320090534-e91519d7200f
 	github.com/shirou/gopsutil/v3 v3.24.2
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/wealdtech/go-ens/v3 v3.6.0
@@ -180,4 +180,6 @@ replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a 
 
 // replace github.com/wealdtech/go-eth2-types/v2 => github.com/rocket-pool/go-eth2-types/v2 v2.0.0-20230130220714-d88838162252
 
-// replace github.com/rocket-pool/rocketpool-go => ../../rocketpool-go
+//replace github.com/rocket-pool/rocketpool-go => ../../rocketpool-go
+
+//replace github.com/rocket-pool/node-manager-core => ../../node-manager-core
