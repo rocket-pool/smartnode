@@ -2,10 +2,12 @@ package node
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -14,7 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
 )
 
-func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {
+func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, stateLocker *collectors.StateLocker, wg *sync.WaitGroup) *http.Server {
 	// Get services
 	cfg := sp.GetConfig()
 
@@ -69,10 +71,21 @@ func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger 
             </html>`,
 		))
 	})
-	err := http.ListenAndServe(fmt.Sprintf("%s:%d", metricsAddress, metricsPort), nil)
-	if err != nil {
-		return fmt.Errorf("Error running HTTP server: %w", err)
-	}
 
-	return nil
+	// Run the server
+	server := &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", metricsAddress, metricsPort),
+		Handler: nil,
+	}
+	go func() {
+		defer wg.Done()
+
+		wg.Add(1)
+		err := server.ListenAndServe()
+		if !errors.Is(err, http.ErrServerClosed) {
+			logger.Printlnf("error running metrics HTTP server: %s", err.Error())
+		}
+	}()
+
+	return server
 }

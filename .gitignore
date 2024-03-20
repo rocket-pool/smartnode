@@ -33,3 +33,4 @@ pkg
 
 # Binaries
 src/rocketpool-cli/rocketpool-cli
+src/rocketpool-daemon/rocketpool-daemon

@@ -163,7 +163,7 @@ func (sp *ServiceProvider) RequireOnSecurityCouncil(context context.Context) err
 // === Service Synchronization ===
 // ===============================
 
-func (sp *ServiceProvider) WaitWalletReady(verbose bool) error {
+func (sp *ServiceProvider) WaitWalletReady(ctx context.Context, verbose bool) error {
 	for {
 		status, err := sp.GetWallet().GetStatus()
 		if err != nil {
@@ -192,16 +192,18 @@ func (sp *ServiceProvider) WaitWalletReady(verbose bool) error {
 		if verbose {
 			log.Printf("%s, retrying in %s...\n", message, checkNodeWalletInterval.String())
 		}
-		time.Sleep(checkNodeWalletInterval)
+		if utils.SleepWithCancel(ctx, checkNodeWalletInterval) {
+			return nil
+		}
 	}
 }
 
 // Wait until the node has been registered with the Rocket Pool network
-func (sp *ServiceProvider) WaitNodeRegistered(context context.Context, verbose bool) error {
-	if err := sp.WaitWalletReady(verbose); err != nil {
+func (sp *ServiceProvider) WaitNodeRegistered(ctx context.Context, verbose bool) error {
+	if err := sp.WaitWalletReady(ctx, verbose); err != nil {
 		return err
 	}
-	if err := sp.WaitEthClientSynced(context, verbose); err != nil {
+	if err := sp.WaitEthClientSynced(ctx, verbose); err != nil {
 		return err
 	}
 	if err := sp.LoadContractsIfStale(); err != nil {
@@ -218,7 +220,9 @@ func (sp *ServiceProvider) WaitNodeRegistered(context context.Context, verbose b
 		if verbose {
 			log.Printf("The node is not registered with Rocket Pool, retrying in %s...\n", checkNodeRegisteredInterval.String())
 		}
-		time.Sleep(checkNodeRegisteredInterval)
+		if utils.SleepWithCancel(ctx, checkNodeRegisteredInterval) {
+			return nil
+		}
 	}
 }
 
@@ -438,7 +442,9 @@ func (sp *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool
 		}
 
 		// Pause before next poll
-		time.Sleep(ethClientSyncPollInterval)
+		if utils.SleepWithCancel(ctx, ethClientSyncPollInterval) {
+			return false, nil
+		}
 	}
 }
 
@@ -500,6 +506,8 @@ func (sp *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose b
 		}
 
 		// Pause before next poll
-		time.Sleep(beaconClientSyncPollInterval)
+		if utils.SleepWithCancel(ctx, beaconClientSyncPollInterval) {
+			return false, nil
+		}
 	}
 }

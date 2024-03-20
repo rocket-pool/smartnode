@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -16,6 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/config"
 )
@@ -25,6 +27,7 @@ const (
 	tasksInterval               time.Duration = time.Minute * 5
 	taskCooldown                time.Duration = time.Second * 10
 	totalEffectiveStakeCooldown time.Duration = time.Hour * 1
+	metricsShutdownTimeout      time.Duration = time.Second * 5
 )
 
 const (
@@ -45,10 +48,11 @@ const (
 )
 
 type TaskLoop struct {
-	ctx    context.Context
-	cancel context.CancelFunc
-	sp     *services.ServiceProvider
-	wg     *sync.WaitGroup
+	ctx           context.Context
+	cancel        context.CancelFunc
+	sp            *services.ServiceProvider
+	wg            *sync.WaitGroup
+	metricsServer *http.Server
 }
 
 func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
@@ -69,22 +73,17 @@ func (t *TaskLoop) Run() error {
 	ec := t.sp.GetEthClient()
 	bc := t.sp.GetBeaconClient()
 
-	// Handle the initial fee recipient file deployment
-	err := deployDefaultFeeRecipientFile(cfg)
-	if err != nil {
-		return err
-	}
-
-	// Wait until node is registered
-	if err := t.sp.WaitNodeRegistered(t.ctx, true); err != nil {
-		return err
-	}
-
 	// Print the current mode
 	if cfg.IsNativeMode {
 		fmt.Println("Starting node daemon in Native Mode.")
 	} else {
 		fmt.Println("Starting node daemon in Docker Mode.")
+	}
+
+	// Handle the initial fee recipient file deployment
+	err := deployDefaultFeeRecipientFile(cfg)
+	if err != nil {
+		return err
 	}
 
 	// Initialize loggers
@@ -116,16 +115,21 @@ func (t *TaskLoop) Run() error {
 		}
 	}
 
-	// Wait group to handle the various threads
-	wg := new(sync.WaitGroup)
-	wg.Add(2)
-
 	// Timestamp for caching total effective RPL stake
 	lastTotalEffectiveStakeTime := time.Unix(0, 0)
 
 	// Run task loop
+	t.wg.Add(1)
 	isHoustonDeployedMasterFlag := false
 	go func() {
+		defer t.wg.Done()
+
+		// Wait until node is registered
+		if err := t.sp.WaitNodeRegistered(t.ctx, true); err != nil {
+			errorLog.Printlnf("error waiting for node registration: %s", err.Error())
+			return
+		}
+
 		// we assume clients are synced on startup so that we don't send unnecessary alerts
 		wasExecutionClientSynced := true
 		wasBeaconClientSynced := true
@@ -135,7 +139,7 @@ func (t *TaskLoop) Run() error {
 			if err != nil {
 				wasExecutionClientSynced = false
 				errorLog.Printlnf("Execution Client not synced: %s. Waiting for sync...", err.Error())
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 				continue
@@ -153,7 +157,7 @@ func (t *TaskLoop) Run() error {
 				// NOTE: if not synced, it returns an error - so there isn't necessarily an underlying issue
 				wasBeaconClientSynced = false
 				errorLog.Printlnf("Beacon Node not synced: %s. Waiting for sync...", err.Error())
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 				continue
@@ -169,7 +173,7 @@ func (t *TaskLoop) Run() error {
 			err = t.sp.LoadContractsIfStale()
 			if err != nil {
 				errorLog.Println(fmt.Sprintf("error loading contract bindings: %s", err.Error()))
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 				continue
@@ -188,7 +192,7 @@ func (t *TaskLoop) Run() error {
 			state, totalEffectiveStake, err := updateNetworkState(t.ctx, m, &updateLog, nodeAddress, updateTotalEffectiveStake)
 			if err != nil {
 				errorLog.Println(err)
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 				continue
@@ -205,7 +209,7 @@ func (t *TaskLoop) Run() error {
 			if err := manageFeeRecipient.Run(state); err != nil {
 				errorLog.Println(err)
 			}
-			if t.sleepAndCheckIfCancelled(taskCooldown) {
+			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
 			}
 
@@ -213,7 +217,7 @@ func (t *TaskLoop) Run() error {
 			if err := downloadRewardsTrees.Run(state); err != nil {
 				errorLog.Println(err)
 			}
-			if t.sleepAndCheckIfCancelled(taskCooldown) {
+			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
 			}
 
@@ -222,7 +226,7 @@ func (t *TaskLoop) Run() error {
 				if err := defendPdaoProps.Run(state); err != nil {
 					errorLog.Println(err)
 				}
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 
@@ -231,7 +235,7 @@ func (t *TaskLoop) Run() error {
 					if err := verifyPdaoProps.Run(state); err != nil {
 						errorLog.Println(err)
 					}
-					if t.sleepAndCheckIfCancelled(taskCooldown) {
+					if utils.SleepWithCancel(t.ctx, taskCooldown) {
 						break
 					}
 				}
@@ -241,7 +245,7 @@ func (t *TaskLoop) Run() error {
 			if err := stakePrelaunchMinipools.Run(state); err != nil {
 				errorLog.Println(err)
 			}
-			if t.sleepAndCheckIfCancelled(taskCooldown) {
+			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
 			}
 
@@ -249,7 +253,7 @@ func (t *TaskLoop) Run() error {
 			if err := distributeMinipools.Run(state); err != nil {
 				errorLog.Println(err)
 			}
-			if t.sleepAndCheckIfCancelled(taskCooldown) {
+			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
 			}
 
@@ -257,7 +261,7 @@ func (t *TaskLoop) Run() error {
 			if err := reduceBonds.Run(state); err != nil {
 				errorLog.Println(err)
 			}
-			if t.sleepAndCheckIfCancelled(taskCooldown) {
+			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
 			}
 
@@ -266,25 +270,16 @@ func (t *TaskLoop) Run() error {
 				errorLog.Println(err)
 			}
 
-			if t.sleepAndCheckIfCancelled(tasksInterval) {
+			if utils.SleepWithCancel(t.ctx, tasksInterval) {
 				break
 			}
 		}
 	}()
 
 	// Run metrics loop
-	go func() {
-		err := runMetricsServer(t.ctx, t.sp, log.NewColorLogger(MetricsColor), stateLocker)
-		if err != nil {
-			errorLog.Println(err)
-		}
-		wg.Done()
-	}()
+	t.metricsServer = runMetricsServer(t.ctx, t.sp, log.NewColorLogger(MetricsColor), stateLocker, t.wg)
 
-	// Wait for both threads to stop
-	wg.Wait()
 	return nil
-
 }
 
 // Copy the default fee recipient file into the proper location
@@ -322,19 +317,11 @@ func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig) error {
 
 func (t *TaskLoop) Stop() {
 	t.cancel()
-}
-
-func (t *TaskLoop) sleepAndCheckIfCancelled(duration time.Duration) bool {
-	timer := time.NewTimer(duration)
-	select {
-	case <-t.ctx.Done():
-		// Cancel occurred
-		timer.Stop()
-		return true
-
-	case <-timer.C:
-		// Duration has passed without a cancel
-		return false
+	if t.metricsServer != nil {
+		// Shut down the metrics server
+		ctx, cancel := context.WithTimeout(context.Background(), metricsShutdownTimeout)
+		defer cancel()
+		t.metricsServer.Shutdown(ctx)
 	}
 }
 

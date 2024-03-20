@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/collectors"
 )
 
@@ -150,7 +151,7 @@ func (t *TaskLoop) Run() error {
 			err := t.sp.WaitEthClientSynced(t.ctx, false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errorLog.Println(err)
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 				continue
@@ -160,7 +161,7 @@ func (t *TaskLoop) Run() error {
 			err = t.sp.WaitBeaconClientSynced(t.ctx, false) // Force refresh the primary / fallback BC status
 			if err != nil {
 				errorLog.Println(err)
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 				continue
@@ -170,7 +171,7 @@ func (t *TaskLoop) Run() error {
 			err = t.sp.LoadContractsIfStale()
 			if err != nil {
 				errorLog.Println(fmt.Sprintf("error loading contract bindings: %s", err.Error()))
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 				continue
@@ -181,7 +182,7 @@ func (t *TaskLoop) Run() error {
 			latestBlock, err := m.GetLatestBeaconBlock(t.ctx)
 			if err != nil {
 				errorLog.Println(fmt.Errorf("error getting latest Beacon block: %w", err))
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 				continue
@@ -196,7 +197,7 @@ func (t *TaskLoop) Run() error {
 			isOnOdao, err := isOnOracleDAO(rp, nodeAddress, latestBlock)
 			if err != nil {
 				errorLog.Println(err)
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 				continue
@@ -206,7 +207,7 @@ func (t *TaskLoop) Run() error {
 			if err := generateRewardsTree.Run(); err != nil {
 				errorLog.Println(err)
 			}
-			if t.sleepAndCheckIfCancelled(taskCooldown) {
+			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
 			}
 
@@ -215,7 +216,7 @@ func (t *TaskLoop) Run() error {
 				if err := respondChallenges.Run(); err != nil {
 					errorLog.Println(err)
 				}
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 
@@ -223,7 +224,7 @@ func (t *TaskLoop) Run() error {
 				state, err := updateNetworkState(t.ctx, m, &updateLog, latestBlock)
 				if err != nil {
 					errorLog.Println(err)
-					if t.sleepAndCheckIfCancelled(taskCooldown) {
+					if utils.SleepWithCancel(t.ctx, taskCooldown) {
 						break
 					}
 					continue
@@ -233,7 +234,7 @@ func (t *TaskLoop) Run() error {
 				if err := submitNetworkBalances.Run(state); err != nil {
 					errorLog.Println(err)
 				}
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 
@@ -242,7 +243,7 @@ func (t *TaskLoop) Run() error {
 					if err := submitRewardsTree_Stateless.Run(isOnOdao, state, latestBlock.Header.Slot); err != nil {
 						errorLog.Println(err)
 					}
-					if t.sleepAndCheckIfCancelled(taskCooldown) {
+					if utils.SleepWithCancel(t.ctx, taskCooldown) {
 						break
 					}
 				} else {
@@ -250,7 +251,7 @@ func (t *TaskLoop) Run() error {
 					if err := submitRewardsTree_Rolling.Run(state); err != nil {
 						errorLog.Println(err)
 					}
-					if t.sleepAndCheckIfCancelled(taskCooldown) {
+					if utils.SleepWithCancel(t.ctx, taskCooldown) {
 						break
 					}
 				}
@@ -259,7 +260,7 @@ func (t *TaskLoop) Run() error {
 				if err := submitRplPrice.Run(state); err != nil {
 					errorLog.Println(err)
 				}
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 
@@ -267,7 +268,7 @@ func (t *TaskLoop) Run() error {
 				if err := dissolveTimedOutMinipools.Run(state); err != nil {
 					errorLog.Println(err)
 				}
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 
@@ -275,7 +276,7 @@ func (t *TaskLoop) Run() error {
 				if err := finalizePdaoProposals.Run(state); err != nil {
 					errorLog.Println(err)
 				}
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 
@@ -283,7 +284,7 @@ func (t *TaskLoop) Run() error {
 				if err := submitScrubMinipools.Run(state); err != nil {
 					errorLog.Println(err)
 				}
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 
@@ -291,7 +292,7 @@ func (t *TaskLoop) Run() error {
 				if err := cancelBondReductions.Run(state); err != nil {
 					errorLog.Println(err)
 				}
-				if t.sleepAndCheckIfCancelled(taskCooldown) {
+				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 
@@ -322,7 +323,7 @@ func (t *TaskLoop) Run() error {
 				}
 			}
 
-			if t.sleepAndCheckIfCancelled(interval) {
+			if utils.SleepWithCancel(t.ctx, interval) {
 				break
 			}
 		}
@@ -344,20 +345,6 @@ func (t *TaskLoop) Run() error {
 
 func (t *TaskLoop) Stop() {
 	t.cancel()
-}
-
-func (t *TaskLoop) sleepAndCheckIfCancelled(duration time.Duration) bool {
-	timer := time.NewTimer(duration)
-	select {
-	case <-t.ctx.Done():
-		// Cancel occurred
-		timer.Stop()
-		return true
-
-	case <-timer.C:
-		// Duration has passed without a cancel
-		return false
-	}
 }
 
 // Update the latest network state at each cycle
