@@ -42,7 +42,8 @@ func CheckAndUpgradeWallet(walletDataPath string, nextAccountPath string, log *l
 	// Check if it's a legacy wallet
 	legacyWallet := new(legacyWallet)
 	err = json.Unmarshal(bytes, legacyWallet)
-	if err != nil {
+	if err != nil || len(legacyWallet.Crypto) == 0 {
+		// Nothing to decode so this isn't a legacy wallet
 		return nil
 	}
 
