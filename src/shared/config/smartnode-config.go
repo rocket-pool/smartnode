@@ -582,6 +582,8 @@ func (cfg *SmartNodeConfig) CreateCopy() *SmartNodeConfig {
 	network := cfg.Network.Value
 	copy := NewSmartNodeConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode)
 	config.Clone(cfg, copy, network)
+	copy.updateResources()
+	copy.Version = cfg.Version
 	return copy
 }
 
@@ -729,15 +731,11 @@ func (cfg *SmartNodeConfig) Validate() []string {
 func (cfg *SmartNodeConfig) applyAllDefaults() {
 	network := cfg.Network.Value
 	config.ApplyDefaults(cfg, network)
+	cfg.updateResources()
 }
 
 func (cfg *SmartNodeConfig) updateResources() {
-	switch cfg.Network.Value {
-	case Network_Devnet:
-		cfg.resources = newRocketPoolResources(config.Network_Holesky)
-	default:
-		cfg.resources = newRocketPoolResources(cfg.Network.Value)
-	}
+	cfg.resources = newRocketPoolResources(cfg.Network.Value)
 }
 
 // Get the list of options for networks to run on
