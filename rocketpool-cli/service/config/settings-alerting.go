@@ -7,6 +7,44 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
+var alertingParametersNativeMode map[string]interface{} = map[string]interface{}{
+	"enableAlerting":                           nil,
+	"nativeModeHost":                           nil,
+	"nativeModePort":                           nil,
+	"discordWebhookURL":                        nil,
+	"alertEnabled_FeeRecipientChanged":         nil,
+	"alertEnabled_MinipoolBondReduced":         nil,
+	"alertEnabled_MinipoolBalanceDistributed":  nil,
+	"alertEnabled_MinipoolPromoted":            nil,
+	"alertEnabled_MinipoolStaked":              nil,
+	"alertEnabled_ExecutionClientSyncComplete": nil,
+	"alertEnabled_BeaconClientSyncComplete":    nil,
+}
+
+var alertingParametersDockerMode map[string]interface{} = map[string]interface{}{
+	"enableAlerting":                           nil,
+	"port":                                     nil,
+	"openPort":                                 nil,
+	"containerTag":                             nil,
+	"discordWebhookURL":                        nil,
+	"alertEnabled_ClientSyncStatusBeacon":      nil,
+	"alertEnabled_UpcomingSyncCommittee":       nil,
+	"alertEnabled_ActiveSyncCommittee":         nil,
+	"alertEnabled_UpcomingProposal":            nil,
+	"alertEnabled_RecentProposal":              nil,
+	"alertEnabled_LowDiskSpaceWarning":         nil,
+	"alertEnabled_LowDiskSpaceCritical":        nil,
+	"alertEnabled_OSUpdatesAvailable":          nil,
+	"alertEnabled_RPUpdatesAvailable":          nil,
+	"alertEnabled_FeeRecipientChanged":         nil,
+	"alertEnabled_MinipoolBondReduced":         nil,
+	"alertEnabled_MinipoolBalanceDistributed":  nil,
+	"alertEnabled_MinipoolPromoted":            nil,
+	"alertEnabled_MinipoolStaked":              nil,
+	"alertEnabled_ExecutionClientSyncComplete": nil,
+	"alertEnabled_BeaconClientSyncComplete":    nil,
+}
+
 // The page wrapper for the alerting config
 type AlertingConfigPage struct {
 	mainDisplay         *mainDisplay
@@ -81,7 +119,11 @@ func (configPage *AlertingConfigPage) createContent() {
 			enableAlertingBox = item.item.(*tview.Checkbox)
 			continue
 		}
-		configPage.otherItems = append(configPage.otherItems, item)
+		_, isNativeParameter := alertingParametersNativeMode[item.parameter.ID]
+		_, isDockerParameter := alertingParametersDockerMode[item.parameter.ID]
+		if (configPage.masterConfig.IsNativeMode && isNativeParameter) || (!configPage.masterConfig.IsNativeMode && isDockerParameter) {
+			configPage.otherItems = append(configPage.otherItems, item)
+		}
 	}
 
 	if enableAlertingBox != nil {

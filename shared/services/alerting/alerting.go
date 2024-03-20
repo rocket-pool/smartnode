@@ -284,7 +284,7 @@ func createClient(cfg *config.RocketPoolConfig) *apiclient.Alertmanager {
 	host := fmt.Sprintf("%s:%d", config.AlertmanagerContainerName, cfg.Alertmanager.Port.Value)
 
 	if cfg.IsNativeMode {
-		host = fmt.Sprintf("%s:%d", cfg.Alertmanager.Host.Value, cfg.Alertmanager.Port.Value)
+		host = fmt.Sprintf("%s:%d", cfg.Alertmanager.NativeModeHost.Value, cfg.Alertmanager.NativeModePort.Value)
 	}
 
 	transport := apiclient.DefaultTransportConfig().WithHost(host)

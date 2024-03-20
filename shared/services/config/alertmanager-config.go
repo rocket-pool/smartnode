@@ -39,8 +39,10 @@ type AlertmanagerConfig struct {
 	// Port for alertmanager UI & API
 	Port config.Parameter `yaml:"port,omitempty"`
 
-	// Host for alertmanager UI & API. ONLY USED IN NATIVE MODE. In Docker, the host is derived from the container name
-	Host config.Parameter `yaml:"host,omitempty"`
+	// Host for alertmanager UI & API. ONLY USED IN NATIVE MODE. In Docker, the host is derived from the container name.
+	NativeModeHost config.Parameter `yaml:"nativeModeHost,omitempty"`
+	// Port for alertmanager UI & API. ONLY USED IN NATIVE MODE. In Docker, the host is derived from the container.
+	NativeModePort config.Parameter `yaml:"nativeModePort,omitempty"`
 
 	// Toggle for forwarding the API port outside of Docker; useful for ability to silence alerts
 	OpenPort config.Parameter `yaml:"openPort,omitempty"`
@@ -93,7 +95,7 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 		Port: config.Parameter{
 			ID:                 "port",
 			Name:               "Alertmanager Port",
-			Description:        "The port Alertmanager will listen on. If using Native Mode, this is the port the node will connect to Alertmanager.",
+			Description:        "The port Alertmanager will listen on.",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultAlertmanagerPort},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Alertmanager, config.ContainerID_Prometheus},
@@ -101,12 +103,23 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 			OverwriteOnUpgrade: false,
 		},
 
-		Host: config.Parameter{
-			ID:                 "host",
+		NativeModeHost: config.Parameter{
+			ID:                 "nativeModeHost",
 			Name:               "Alertmanager Host",
-			Description:        "The host that the node should use to communicate with Alertmanager. This setting is used in native mode only. In Docker mode this setting is ignored.",
+			Description:        "The host that the node should use to communicate with Alertmanager.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultAlertmanagerHost},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		NativeModePort: config.Parameter{
+			ID:                 "nativeModePort",
+			Name:               "Alertmanager Port",
+			Description:        "The port that the node should use to communicate with Alertmanager.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultAlertmanagerPort},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
@@ -231,41 +244,24 @@ func createParameterForAlertEnablement(uniqueName string, label string) config.P
 }
 
 func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
-	parameters := make([]*config.Parameter, 0, 23)
-	parameters = append(parameters, &cfg.EnableAlerting)
-
-	if cfg.Parent.IsNativeMode {
-		parameters = append(parameters, &cfg.Host)
-	}
-
-	parameters = append(parameters,
+	return []*config.Parameter{
+		&cfg.EnableAlerting,
 		&cfg.Port,
-	)
-
-	isDockerMode := !cfg.Parent.IsNativeMode
-	if isDockerMode {
-		parameters = append(parameters,
-			&cfg.OpenPort,
-			&cfg.DiscordWebhookURL,
-			&cfg.ContainerTag,
-			// This set of alerts is controlled from prometheus.yml that managed
-			// manually in native mode:
-			&cfg.AlertEnabled_ClientSyncStatusBeacon,
-			&cfg.AlertEnabled_ClientSyncStatusExecution,
-			&cfg.AlertEnabled_UpcomingSyncCommittee,
-			&cfg.AlertEnabled_ActiveSyncCommittee,
-			&cfg.AlertEnabled_UpcomingProposal,
-			&cfg.AlertEnabled_RecentProposal,
-			&cfg.AlertEnabled_LowDiskSpaceWarning,
-			&cfg.AlertEnabled_LowDiskSpaceCritical,
-			&cfg.AlertEnabled_OSUpdatesAvailable,
-			&cfg.AlertEnabled_RPUpdatesAvailable,
-		)
-	}
-
-	// This set of alerts are sent from the smartnode itself, so they're
-	// applicable to both docker & native mode:
-	parameters = append(parameters,
+		&cfg.OpenPort,
+		&cfg.NativeModeHost,
+		&cfg.NativeModePort,
+		&cfg.DiscordWebhookURL,
+		&cfg.ContainerTag,
+		&cfg.AlertEnabled_ClientSyncStatusBeacon,
+		&cfg.AlertEnabled_ClientSyncStatusExecution,
+		&cfg.AlertEnabled_UpcomingSyncCommittee,
+		&cfg.AlertEnabled_ActiveSyncCommittee,
+		&cfg.AlertEnabled_UpcomingProposal,
+		&cfg.AlertEnabled_RecentProposal,
+		&cfg.AlertEnabled_LowDiskSpaceWarning,
+		&cfg.AlertEnabled_LowDiskSpaceCritical,
+		&cfg.AlertEnabled_OSUpdatesAvailable,
+		&cfg.AlertEnabled_RPUpdatesAvailable,
 		&cfg.AlertEnabled_FeeRecipientChanged,
 		&cfg.AlertEnabled_MinipoolBondReduced,
 		&cfg.AlertEnabled_MinipoolBalanceDistributed,
@@ -273,9 +269,7 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.AlertEnabled_MinipoolStaked,
 		&cfg.AlertEnabled_ExecutionClientSyncComplete,
 		&cfg.AlertEnabled_BeaconClientSyncComplete,
-	)
-
-	return parameters
+	}
 }
 
 func (cfg *AlertmanagerConfig) GetConfigTitle() string {
