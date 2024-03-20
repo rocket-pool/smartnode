@@ -44,7 +44,7 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 		return nil, fmt.Errorf("error loading Smartnode config: %w", err)
 	}
 	if cfg == nil {
-		return nil, fmt.Errorf("Smartnode config settings file [%s] not found", cfgPath)
+		return nil, fmt.Errorf("smart node config settings file [%s] not found", cfgPath)
 	}
 
 	// Attempt a wallet upgrade before anything
@@ -101,6 +101,7 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 
 	// Create the provider
 	provider := &ServiceProvider{
+		userDir:            userDir,
 		ServiceProvider:    sp,
 		cfg:                cfg,
 		rocketPool:         rp,
