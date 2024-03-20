@@ -237,6 +237,8 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			// no reason to make `rocketpool node status` fail if we can't get alerts
 			// (this is more likely to happen in native mode than docker where
 			// alertmanager is more complex to set up)
+			// Do save a warning though to print to the user
+			response.Warning = fmt.Sprintf("Error fetching alerts from Alertmanager: %s", err)
 			alerts = make([]*models.GettableAlert, 0)
 		}
 		response.Alerts = make([]api.NodeAlert, len(alerts))
