@@ -22,7 +22,7 @@ var (
 func InitWallet(c *cli.Context, rp *client.Client) error {
 	if rp == nil {
 		// Get RP client
-		rp := client.NewClientFromCtx(c)
+		rp = client.NewClientFromCtx(c)
 
 		// Get & check wallet status
 		statusResponse, err := rp.Api.Wallet.Status()
