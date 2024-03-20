@@ -332,7 +332,7 @@ func getElBlockForTimestamp(context context.Context, bc beacon.IBeaconClient, be
 		return nil, fmt.Errorf("error getting Beacon block at slot %d: %w", startSlot, err)
 	}
 	if !exists {
-		return nil, fmt.Errorf("Beacon block at slot %d was missing", startSlot)
+		return nil, fmt.Errorf("beacon block at slot %d was missing", startSlot)
 	}
 
 	// Get the EL block for this slot

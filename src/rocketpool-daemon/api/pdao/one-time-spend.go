@@ -109,6 +109,10 @@ func (c *protocolDaoProposeOneTimeSpendContext) PrepareData(data *api.ProtocolDa
 	// Get the tx
 	if data.CanPropose && opts != nil {
 		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+		if err != nil {
+			return fmt.Errorf("error creating pollard for proposal creation: %w", err)
+		}
+
 		message := fmt.Sprintf("one-time spend for invoice %s", c.invoiceID)
 		txInfo, err := c.pdaoMgr.ProposeOneTimeTreasurySpend(message, c.invoiceID, c.recipient, c.amount, blockNumber, pollard, opts)
 		if err != nil {

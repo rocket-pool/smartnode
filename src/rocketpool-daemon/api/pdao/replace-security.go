@@ -125,6 +125,10 @@ func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) PrepareData(da
 	// Get the tx
 	if data.CanPropose && opts != nil {
 		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+		if err != nil {
+			return fmt.Errorf("error creating pollard for proposal creation: %w", err)
+		}
+
 		message := fmt.Sprintf("replace %s (%s) on the security council with %s (%s)", c.existingMember.ID.Get(), c.existingAddress.Hex(), c.newID, c.newAddress.Hex())
 		txInfo, err := c.pdaoMgr.ProposeReplaceSecurityCouncilMember(message, c.existingAddress, c.newID, c.newAddress, blockNumber, pollard, opts)
 		if err != nil {

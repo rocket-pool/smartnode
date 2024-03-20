@@ -118,6 +118,10 @@ func (c *protocolDaoProposeRewardsPercentagesContext) PrepareData(data *api.Prot
 	// Get the tx
 	if data.CanPropose && opts != nil {
 		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+		if err != nil {
+			return fmt.Errorf("error creating pollard for proposal creation: %w", err)
+		}
+
 		message := "update RPL rewards distribution"
 		txInfo, err := c.pdaoMgr.ProposeSetRewardsPercentages(message, c.odaoPercent, c.pdaoPercent, c.nodePercent, blockNumber, pollard, opts)
 		if err != nil {

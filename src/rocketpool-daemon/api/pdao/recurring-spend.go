@@ -116,6 +116,10 @@ func (c *protocolDaoProposeRecurringSpendContext) PrepareData(data *api.Protocol
 	// Get the tx
 	if data.CanPropose && opts != nil {
 		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+		if err != nil {
+			return fmt.Errorf("error creating pollard for proposal creation: %w", err)
+		}
+
 		message := fmt.Sprintf("recurring payment to %s", c.contractName)
 		txInfo, err := c.pdaoMgr.ProposeRecurringTreasurySpend(message, c.contractName, c.recipient, c.amountPerPeriod, c.periodLength, c.startTime, c.numberOfPeriods, blockNumber, pollard, opts)
 		if err != nil {

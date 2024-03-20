@@ -114,6 +114,10 @@ func (c *protocolDaoProposeKickFromSecurityCouncilContext) PrepareData(data *api
 	// Get the tx
 	if data.CanPropose && opts != nil {
 		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+		if err != nil {
+			return fmt.Errorf("error creating pollard for proposal creation: %w", err)
+		}
+
 		message := fmt.Sprintf("kick %s (%s) from the security council", c.member.ID.Get(), c.address.Hex())
 		txInfo, err := c.pdaoMgr.ProposeKickFromSecurityCouncil(message, c.address, blockNumber, pollard, opts)
 		if err != nil {

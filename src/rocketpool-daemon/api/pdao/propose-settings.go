@@ -143,6 +143,10 @@ func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.Se
 				return false, nil, fmt.Errorf("error parsing value '%s' as bool: %w", c.valueString, err), nil
 			}
 			blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+			if err != nil {
+				return false, nil, fmt.Errorf("error creating pollard for proposal creation: %w", err), nil
+			}
+
 			txInfo, err := setting.ProposeSet(value, blockNumber, pollard, opts)
 			return true, txInfo, nil, err
 		}
@@ -156,6 +160,10 @@ func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.Se
 				return false, nil, fmt.Errorf("error parsing value '%s' as *big.Int: %w", c.valueString, err), nil
 			}
 			blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+			if err != nil {
+				return false, nil, fmt.Errorf("error creating pollard for proposal creation: %w", err), nil
+			}
+
 			txInfo, err := setting.ProposeSet(value, blockNumber, pollard, opts)
 			return true, txInfo, nil, err
 		}

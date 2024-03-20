@@ -5,7 +5,6 @@ import (
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -40,9 +39,8 @@ func (f *protocolDaoRewardsPercentagesContextFactory) RegisterRoute(router *mux.
 // ===============
 
 type protocolDaoRewardsPercentagesContext struct {
-	handler     *ProtocolDaoHandler
-	rp          *rocketpool.RocketPool
-	nodeAddress common.Address
+	handler *ProtocolDaoHandler
+	rp      *rocketpool.RocketPool
 
 	percentages protocol.RplRewardsPercentages
 	pdaoMgr     *protocol.ProtocolDaoManager

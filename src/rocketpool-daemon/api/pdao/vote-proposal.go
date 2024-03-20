@@ -97,7 +97,7 @@ func (c *protocolDaoVoteOnProposalContext) Initialize() error {
 	}
 	c.propMgr, err = proposals.NewProposalManager(c.handler.context, nil, c.cfg, c.rp, c.bc)
 	if err != nil {
-		fmt.Errorf("error creating proposal manager: %w", err)
+		return fmt.Errorf("error creating proposal manager: %w", err)
 	}
 	return nil
 }

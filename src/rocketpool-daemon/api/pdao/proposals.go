@@ -9,13 +9,11 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
-	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -51,12 +49,8 @@ func (f *protocolDaoProposalsContextFactory) RegisterRoute(router *mux.Router) {
 type protocolDaoProposalsContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
-	cfg         *config.SmartNodeConfig
-	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
-	id      string
-	address common.Address
 	node    *node.Node
 	pdaoMgr *protocol.ProtocolDaoManager
 }
