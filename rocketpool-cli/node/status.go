@@ -378,6 +378,10 @@ func getStatus(c *cli.Context) error {
 		}
 	}
 
+	if status.Warning != "" {
+		fmt.Printf("\n%sWARNING: %s%s\n", colorRed, status.Warning, colorReset)
+	}
+
 	// Return
 	return nil
 
