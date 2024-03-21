@@ -90,8 +90,7 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 
 		if prop.ProposerAddress == nodeAccount.Address {
 			isProposer = true
-			if prop.State != types.ProtocolDaoProposalState_Defeated &&
-				prop.State >= types.ProtocolDaoProposalState_QuorumNotMet {
+			if prop.State >= types.ProtocolDaoProposalState_QuorumNotMet {
 				shouldProcess = true
 			}
 		} else {
@@ -175,9 +174,8 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 
 		// Handle proposals we were the proposer of
 		if claimResult.IsProposer {
-			if propInfo.State == types.ProtocolDaoProposalState_Defeated ||
-				propInfo.State < types.ProtocolDaoProposalState_QuorumNotMet {
-				// Proposer gets nothing if the challenge was defeated or isn't done yet
+			if propInfo.State < types.ProtocolDaoProposalState_QuorumNotMet {
+				// Proposer gets nothing if the challenge isn't done yet
 				continue
 			}
 			for challengedIndex, challengeInfo := range propInfo.Challenges {
@@ -206,13 +204,13 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 
 				// Make sure the prop and challenge are in the right states
 				if challengeInfo.State != types.ChallengeState_Challenged {
-					if propInfo.State == types.ProtocolDaoProposalState_Defeated {
+					if propInfo.State == types.ProtocolDaoProposalState_Destroyed {
 						if challengeInfo.State != types.ChallengeState_Responded {
-							// If the proposal is defeated, a challenge must be in the challenged or responded states
+							// If the proposal is destroyed, a challenge must be in the challenged or responded states
 							continue
 						}
 					} else {
-						// Only refund non-responded challenges if the proposal wasn't defeated
+						// Only refund non-responded challenges if the proposal was destroyed
 						continue
 					}
 				}

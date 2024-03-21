@@ -52,7 +52,7 @@ func canDefeatProposal(c *cli.Context, proposalId uint64, index uint64) (*api.PD
 	wg.Go(func() error {
 		proposalState, err := protocol.GetProposalState(rp, proposalId, nil)
 		if err == nil {
-			response.AlreadyDefeated = (proposalState == types.ProtocolDaoProposalState_Defeated)
+			response.AlreadyDefeated = (proposalState == types.ProtocolDaoProposalState_Destroyed)
 		}
 		return err
 	})
@@ -88,8 +88,8 @@ func canDefeatProposal(c *cli.Context, proposalId uint64, index uint64) (*api.PD
 	// Validate
 	defeatStart := creationTime.Add(challengeWindow)
 	response.StillInChallengeWindow = (time.Until(defeatStart) > 0)
-	response.CanDefeat = !(response.DoesNotExist || response.AlreadyDefeated || response.InvalidChallengeState || response.StillInChallengeWindow)
-	if !response.CanDefeat {
+	response.CanDestroy = !(response.DoesNotExist || response.AlreadyDestroyed || response.InvalidChallengeState || response.StillInChallengeWindow)
+	if !response.CanDestroy {
 		return &response, nil
 	}
 

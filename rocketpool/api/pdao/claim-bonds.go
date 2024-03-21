@@ -72,7 +72,7 @@ func canClaimBonds(c *cli.Context, proposalId uint64, indices []uint64) (*api.PD
 
 	// Check if it's in the right state
 	if response.IsProposer {
-		response.InvalidState = (propState == types.ProtocolDaoProposalState_Defeated || propState < types.ProtocolDaoProposalState_QuorumNotMet)
+		response.InvalidState = (propState < types.ProtocolDaoProposalState_QuorumNotMet)
 	} else {
 		response.InvalidState = (propState == types.ProtocolDaoProposalState_Pending)
 	}
