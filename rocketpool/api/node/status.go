@@ -23,6 +23,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
+	"github.com/rocket-pool/smartnode/shared/services/alerting/alertmanager/models"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -233,7 +234,12 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	wg.Go(func() error {
 		alerts, err := alerting.FetchAlerts(cfg)
 		if err != nil {
-			return err
+			// no reason to make `rocketpool node status` fail if we can't get alerts
+			// (this is more likely to happen in native mode than docker where
+			// alertmanager is more complex to set up)
+			// Do save a warning though to print to the user
+			response.Warning = fmt.Sprintf("Error fetching alerts from Alertmanager: %s", err)
+			alerts = make([]*models.GettableAlert, 0)
 		}
 		response.Alerts = make([]api.NodeAlert, len(alerts))
 
