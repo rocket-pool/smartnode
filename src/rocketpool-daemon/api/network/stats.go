@@ -163,11 +163,12 @@ func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind
 		data.StakingMinipoolCount +
 		data.WithdrawableMinipoolCount +
 		data.DissolvedMinipoolCount
-	tvl := big.NewInt(int64(activeMinipools))
+	tvl := eth.EthToWei(float64(activeMinipools))
 	tvl.Mul(tvl, big.NewInt(32))
 	tvl.Add(tvl, data.DepositPoolBalance)
 	tvl.Add(tvl, data.MinipoolCapacity)
 	rplWorth := big.NewInt(0).Mul(data.TotalRplStaked, data.RplPrice)
+	rplWorth.Div(rplWorth, eth.EthToWei(1))
 	tvl.Add(tvl, rplWorth)
 	data.TotalValueLocked = tvl
 
