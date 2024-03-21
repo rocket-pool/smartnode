@@ -10,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/node/services"
+	nmcutils "github.com/rocket-pool/node-manager-core/utils"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -192,7 +193,7 @@ func (sp *ServiceProvider) WaitWalletReady(ctx context.Context, verbose bool) er
 		if verbose {
 			log.Printf("%s, retrying in %s...\n", message, checkNodeWalletInterval.String())
 		}
-		if utils.SleepWithCancel(ctx, checkNodeWalletInterval) {
+		if nmcutils.SleepWithCancel(ctx, checkNodeWalletInterval) {
 			return nil
 		}
 	}
@@ -220,7 +221,7 @@ func (sp *ServiceProvider) WaitNodeRegistered(ctx context.Context, verbose bool)
 		if verbose {
 			log.Printf("The node is not registered with Rocket Pool, retrying in %s...\n", checkNodeRegisteredInterval.String())
 		}
-		if utils.SleepWithCancel(ctx, checkNodeRegisteredInterval) {
+		if nmcutils.SleepWithCancel(ctx, checkNodeRegisteredInterval) {
 			return nil
 		}
 	}
@@ -442,7 +443,7 @@ func (sp *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool
 		}
 
 		// Pause before next poll
-		if utils.SleepWithCancel(ctx, ethClientSyncPollInterval) {
+		if nmcutils.SleepWithCancel(ctx, ethClientSyncPollInterval) {
 			return false, nil
 		}
 	}
@@ -506,7 +507,7 @@ func (sp *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose b
 		}
 
 		// Pause before next poll
-		if utils.SleepWithCancel(ctx, beaconClientSyncPollInterval) {
+		if nmcutils.SleepWithCancel(ctx, beaconClientSyncPollInterval) {
 			return false, nil
 		}
 	}
