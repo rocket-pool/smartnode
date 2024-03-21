@@ -33,7 +33,7 @@ require (
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v3 v3.2.0
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20240312134208-ae623947c9d6
+	github.com/rocket-pool/rocketpool-go v1.8.3-0.20240321071240-9ec9754d06e6
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/tyler-smith/go-bip39 v1.1.0
@@ -46,6 +46,7 @@ require (
 	golang.org/x/crypto v0.6.0
 	golang.org/x/sync v0.5.0
 	golang.org/x/term v0.5.0
+	golang.org/x/text v0.7.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -154,7 +155,6 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.45.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
