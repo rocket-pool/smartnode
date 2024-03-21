@@ -11,18 +11,22 @@ import (
 	psettings "github.com/rocket-pool/rocketpool-go/settings/protocol"
 )
 
+const (
+	auctionNamespace string = "auction"
+)
+
 // Lot creation currently enabled
 func ProposeCreateLotEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return security.ProposeSetBool(rp, fmt.Sprintf("set %s", psettings.CreateLotEnabledSettingPath), psettings.AuctionSettingsContractName, psettings.CreateLotEnabledSettingPath, value, opts)
+	return security.ProposeSetBool(rp, fmt.Sprintf("set %s", psettings.CreateLotEnabledSettingPath), auctionNamespace, psettings.CreateLotEnabledSettingPath, value, opts)
 }
 func EstimateProposeCreateLotEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.CreateLotEnabledSettingPath), psettings.AuctionSettingsContractName, psettings.CreateLotEnabledSettingPath, value, opts)
+	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.CreateLotEnabledSettingPath), auctionNamespace, psettings.CreateLotEnabledSettingPath, value, opts)
 }
 
 // Lot bidding currently enabled
 func ProposeBidOnLotEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return security.ProposeSetBool(rp, fmt.Sprintf("set %s", psettings.BidOnLotEnabledSettingPath), psettings.AuctionSettingsContractName, psettings.BidOnLotEnabledSettingPath, value, opts)
+	return security.ProposeSetBool(rp, fmt.Sprintf("set %s", psettings.BidOnLotEnabledSettingPath), auctionNamespace, psettings.BidOnLotEnabledSettingPath, value, opts)
 }
 func EstimateProposeBidOnLotEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.BidOnLotEnabledSettingPath), psettings.AuctionSettingsContractName, psettings.BidOnLotEnabledSettingPath, value, opts)
+	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.BidOnLotEnabledSettingPath), auctionNamespace, psettings.BidOnLotEnabledSettingPath, value, opts)
 }
