@@ -73,8 +73,8 @@ func (c *minipoolCanChangeCredsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
-		sp.RequireBeaconClientSynced(c.handler.context),
+		sp.RequireNodeRegistered(),
+		sp.RequireBeaconClientSynced(),
 	)
 	if err != nil {
 		return err
@@ -107,6 +107,8 @@ func (c *minipoolCanChangeCredsContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeWithdrawalCredentialsData, opts *bind.TransactOpts) error {
+	ctx := c.handler.serviceProvider.GetContext()
+
 	// Validate minipool owner
 	if c.mpv3.Common().NodeAddress.Get() != c.nodeAddress {
 		return fmt.Errorf("minipool %s does not belong to the node", c.minipoolAddress.Hex())
@@ -122,7 +124,7 @@ func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeW
 
 	// Check the validator's status and current creds
 	pubkey := c.mpv3.Common().Pubkey.Get()
-	beaconStatus, err := c.bc.GetValidatorStatus(c.handler.context, pubkey, nil)
+	beaconStatus, err := c.bc.GetValidatorStatus(ctx, pubkey, nil)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon status for minipool %s (pubkey %s): %w", c.minipoolAddress.Hex(), pubkey.Hex(), err)
 	}

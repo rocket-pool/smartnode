@@ -15,8 +15,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -35,12 +33,8 @@ func (f *minipoolPromoteDetailsContextFactory) Create(args url.Values) (*minipoo
 	return c, nil
 }
 
-func (f *minipoolPromoteDetailsContextFactory) GetCancelContext() context.Context {
-	return f.handler.context
-}
-
 func (f *minipoolPromoteDetailsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterMinipoolRoute[*minipoolPromoteDetailsContext, api.MinipoolPromoteDetailsData](
+	RegisterMinipoolRoute[*minipoolPromoteDetailsContext, api.MinipoolPromoteDetailsData](
 		router, "promote/details", f, f.handler.serviceProvider,
 	)
 }
@@ -62,7 +56,7 @@ func (c *minipoolPromoteDetailsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireNodeRegistered(),
 	)
 	if err != nil {
 		return err

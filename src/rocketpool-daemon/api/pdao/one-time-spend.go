@@ -73,7 +73,7 @@ func (c *protocolDaoProposeOneTimeSpendContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return err
 	}
@@ -99,6 +99,7 @@ func (c *protocolDaoProposeOneTimeSpendContext) GetState(mc *batch.MultiCaller) 
 }
 
 func (c *protocolDaoProposeOneTimeSpendContext) PrepareData(data *api.ProtocolDaoGeneralProposeData, opts *bind.TransactOpts) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
 	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()
@@ -108,7 +109,7 @@ func (c *protocolDaoProposeOneTimeSpendContext) PrepareData(data *api.ProtocolDa
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(ctx, c.rp, c.cfg, c.bc)
 		if err != nil {
 			return fmt.Errorf("error creating pollard for proposal creation: %w", err)
 		}

@@ -62,7 +62,7 @@ func (c *securityProposalsContext) Initialize() error {
 	c.nodeAddress, c.hasAddress = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireEthClientSynced(c.handler.context)
+	err := sp.RequireEthClientSynced()
 	if err != nil {
 		return err
 	}

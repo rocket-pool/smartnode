@@ -43,10 +43,6 @@ func (f *minipoolStatusContextFactory) Create(args url.Values) (*minipoolStatusC
 	return c, nil
 }
 
-func (f *minipoolStatusContextFactory) GetCancelContext() context.Context {
-	return f.handler.context
-}
-
 func (f *minipoolStatusContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolStatusContext, api.MinipoolStatusData](
 		router, "status", f, f.handler.serviceProvider,
@@ -80,8 +76,8 @@ func (c *minipoolStatusContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
-		sp.RequireBeaconClientSynced(c.handler.context),
+		sp.RequireNodeRegistered(),
+		sp.RequireBeaconClientSynced(),
 	)
 	if err != nil {
 		return err
@@ -143,6 +139,7 @@ func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp min
 }
 
 func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolStatusData) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	// Data
 	var wg1 errgroup.Group
 	var eth2Config beacon.Eth2Config
@@ -162,7 +159,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	// Get eth2 config
 	wg1.Go(func() error {
 		var err error
-		eth2Config, err = c.bc.GetEth2Config(c.handler.context)
+		eth2Config, err = c.bc.GetEth2Config(ctx)
 		if err != nil {
 			return fmt.Errorf("error getting Beacon config: %w", err)
 		}
@@ -204,7 +201,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 			pubkeys = append(pubkeys, mpCommon.Pubkey.Get())
 		}
 	}
-	beaconStatuses, err := c.bc.GetValidatorStatuses(c.handler.context, pubkeys, nil)
+	beaconStatuses, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
 		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}

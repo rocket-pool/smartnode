@@ -80,7 +80,7 @@ func (c *nodeCreateVacantMinipoolContext) Initialize() error {
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return err
 	}
@@ -117,6 +117,7 @@ func (c *nodeCreateVacantMinipoolContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *nodeCreateVacantMinipoolContext) PrepareData(data *api.NodeCreateVacantMinipoolData, opts *bind.TransactOpts) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	// Initial population
 	data.DepositDisabled = !c.pSettings.Node.AreVacantMinipoolsEnabled.Get()
 	data.ScrubPeriod = c.oSettings.Minipool.PromotionScrubPeriod.Formatted()
@@ -160,7 +161,7 @@ func (c *nodeCreateVacantMinipoolContext) PrepareData(data *api.NodeCreateVacant
 		return nil
 	}
 	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rputils.GetDepositContractInfo(c.handler.context, c.rp, c.cfg, c.bc)
+	depositContractInfo, err := rputils.GetDepositContractInfo(ctx, c.rp, c.cfg, c.bc)
 	if err != nil {
 		return fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
 	}
@@ -174,7 +175,7 @@ func (c *nodeCreateVacantMinipoolContext) PrepareData(data *api.NodeCreateVacant
 	}
 
 	// Check if the pubkey is for an existing active_ongoing validator
-	validatorStatus, err := c.bc.GetValidatorStatus(c.handler.context, c.pubkey, nil)
+	validatorStatus, err := c.bc.GetValidatorStatus(ctx, c.pubkey, nil)
 	if err != nil {
 		return fmt.Errorf("error checking status of existing validator: %w", err)
 	}

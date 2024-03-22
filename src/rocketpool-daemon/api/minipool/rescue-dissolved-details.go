@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -34,10 +33,6 @@ func (f *minipoolRescueDissolvedDetailsContextFactory) Create(args url.Values) (
 	return c, nil
 }
 
-func (f *minipoolRescueDissolvedDetailsContextFactory) GetCancelContext() context.Context {
-	return f.handler.context
-}
-
 func (f *minipoolRescueDissolvedDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolRescueDissolvedDetailsContext, api.MinipoolRescueDissolvedDetailsData](
 		router, "rescue-dissolved/details", f, f.handler.serviceProvider,
@@ -59,8 +54,8 @@ func (c *minipoolRescueDissolvedDetailsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
-		sp.RequireBeaconClientSynced(c.handler.context),
+		sp.RequireNodeRegistered(),
+		sp.RequireBeaconClientSynced(),
 	)
 	if err != nil {
 		return err
@@ -85,6 +80,7 @@ func (c *minipoolRescueDissolvedDetailsContext) GetMinipoolDetails(mc *batch.Mul
 }
 
 func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRescueDissolvedDetailsData) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	// Get the rescue details
 	pubkeys := []beacon.ValidatorPubkey{}
 	detailsMap := map[beacon.ValidatorPubkey]int{}
@@ -109,7 +105,7 @@ func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.A
 	}
 
 	// Get the statuses on Beacon
-	beaconStatuses, err := c.bc.GetValidatorStatuses(c.handler.context, pubkeys, nil)
+	beaconStatuses, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
 		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}

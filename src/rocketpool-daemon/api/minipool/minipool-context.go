@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -46,9 +45,6 @@ type IMinipoolCallContext[DataType any] interface {
 type IMinipoolCallContextFactory[ContextType IMinipoolCallContext[DataType], DataType any] interface {
 	// Create the context for the route
 	Create(args url.Values) (ContextType, error)
-
-	// Get the cancel context
-	GetCancelContext() context.Context
 }
 
 // Registers a new route with the router, which will invoke the provided factory to create and execute the context
@@ -84,13 +80,13 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 		}
 
 		// Run the context's processing routine
-		response, err := runMinipoolRoute[DataType](context, serviceProvider, factory.GetCancelContext())
+		response, err := runMinipoolRoute[DataType](context, serviceProvider)
 		server.HandleResponse(log, w, response, err, isDebug)
 	})
 }
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
-func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider, context context.Context) (*types.ApiResponse[DataType], error) {
+func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider) (*types.ApiResponse[DataType], error) {
 	// Get the services
 	w := serviceProvider.GetWallet()
 	q := serviceProvider.GetQueryManager()
@@ -104,13 +100,13 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	}
 
 	// Common requirements
-	err = serviceProvider.RequireNodeRegistered(context)
+	err = serviceProvider.RequireNodeRegistered()
 	if err != nil {
 		return nil, err
 	}
 
 	// Get the latest block for consistency
-	latestBlock, err := rp.Client.BlockNumber(context)
+	latestBlock, err := rp.Client.BlockNumber(serviceProvider.GetContext())
 	if err != nil {
 		return nil, fmt.Errorf("error getting latest block number: %w", err)
 	}

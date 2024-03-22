@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -38,10 +37,6 @@ func (f *minipoolCloseContextFactory) Create(args url.Values) (*minipoolCloseCon
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *minipoolCloseContextFactory) GetCancelContext() context.Context {
-	return f.handler.context
-}
-
 func (f *minipoolCloseContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolCloseContext, types.BatchTxInfoData](
 		router, "close", f, f.handler.serviceProvider,
@@ -63,7 +58,7 @@ func (c *minipoolCloseContext) Initialize() error {
 
 	// Requirements
 	return errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireNodeRegistered(),
 		sp.RequireWalletReady(),
 	)
 }
@@ -84,7 +79,7 @@ func (c *minipoolCloseContext) GetMinipoolDetails(mc *batch.MultiCaller, mp mini
 }
 
 func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.BatchTxInfoData) error {
-	return prepareMinipoolBatchTxData(c.handler.context, c.handler.serviceProvider, addresses, data, c.CreateTx, "close")
+	return prepareMinipoolBatchTxData(c.handler.serviceProvider, addresses, data, c.CreateTx, "close")
 }
 
 func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {

@@ -64,7 +64,7 @@ func (c *networkStatsContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced(c.handler.context)
+	err := sp.RequireEthClientSynced()
 	if err != nil {
 		return err
 	}

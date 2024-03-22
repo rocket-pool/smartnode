@@ -1,8 +1,6 @@
 package security
 
 import (
-	"context"
-
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -11,14 +9,12 @@ import (
 
 type SecurityCouncilHandler struct {
 	serviceProvider *services.ServiceProvider
-	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewSecurityCouncilHandler(context context.Context, serviceProvider *services.ServiceProvider) *SecurityCouncilHandler {
+func NewSecurityCouncilHandler(serviceProvider *services.ServiceProvider) *SecurityCouncilHandler {
 	h := &SecurityCouncilHandler{
 		serviceProvider: serviceProvider,
-		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&securityCancelProposalContextFactory{h},

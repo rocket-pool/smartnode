@@ -73,7 +73,7 @@ func (c *protocolDaoProposeSettingContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return err
 	}
@@ -133,6 +133,7 @@ func (c *protocolDaoProposeSettingContext) PrepareData(data *api.ProtocolDaoProp
 }
 
 func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.SettingsCategory, opts *bind.TransactOpts) (bool, *eth.TransactionInfo, error, error) {
+	ctx := c.handler.serviceProvider.GetContext()
 	valueName := "value"
 
 	// Try the bool settings
@@ -142,7 +143,7 @@ func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.Se
 			if err != nil {
 				return false, nil, fmt.Errorf("error parsing value '%s' as bool: %w", c.valueString, err), nil
 			}
-			blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+			blockNumber, pollard, err := createPollard(ctx, c.rp, c.cfg, c.bc)
 			if err != nil {
 				return false, nil, fmt.Errorf("error creating pollard for proposal creation: %w", err), nil
 			}
@@ -159,7 +160,7 @@ func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.Se
 			if err != nil {
 				return false, nil, fmt.Errorf("error parsing value '%s' as *big.Int: %w", c.valueString, err), nil
 			}
-			blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+			blockNumber, pollard, err := createPollard(ctx, c.rp, c.cfg, c.bc)
 			if err != nil {
 				return false, nil, fmt.Errorf("error creating pollard for proposal creation: %w", err), nil
 			}

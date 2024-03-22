@@ -42,13 +42,14 @@ func (c *serviceClientStatusContext) PrepareData(data *api.ServiceClientStatusDa
 	sp := c.handler.serviceProvider
 	ec := sp.GetEthClient()
 	bc := sp.GetBeaconClient()
+	ctx := sp.GetContext()
 
 	// Get the EC manager status
-	ecMgrStatus := ec.CheckStatus(c.handler.context)
+	ecMgrStatus := ec.CheckStatus(ctx)
 	data.EcManagerStatus = *ecMgrStatus
 
 	// Get the BC manager status
-	bcMgrStatus := bc.CheckStatus(c.handler.context)
+	bcMgrStatus := bc.CheckStatus(ctx)
 	data.BcManagerStatus = *bcMgrStatus
 
 	return nil

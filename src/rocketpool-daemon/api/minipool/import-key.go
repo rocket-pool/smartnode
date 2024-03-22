@@ -73,7 +73,7 @@ func (c *minipoolImportKeyContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireNodeRegistered(),
 		sp.RequireWalletReady(),
 	)
 	if err != nil {

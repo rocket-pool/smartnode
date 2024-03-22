@@ -68,7 +68,7 @@ func (c *oracleDaoVoteContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnOracleDao(c.handler.context)
+	err := sp.RequireOnOracleDao()
 	if err != nil {
 		return err
 	}

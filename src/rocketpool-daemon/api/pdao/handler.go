@@ -1,8 +1,6 @@
 package pdao
 
 import (
-	"context"
-
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -11,14 +9,12 @@ import (
 
 type ProtocolDaoHandler struct {
 	serviceProvider *services.ServiceProvider
-	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewProtocolDaoHandler(context context.Context, serviceProvider *services.ServiceProvider) *ProtocolDaoHandler {
+func NewProtocolDaoHandler(serviceProvider *services.ServiceProvider) *ProtocolDaoHandler {
 	h := &ProtocolDaoHandler{
 		serviceProvider: serviceProvider,
-		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&protocolDaoClaimBondsContextFactory{h},

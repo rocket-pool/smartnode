@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"sync"
@@ -28,24 +27,10 @@ import (
 type ServerManager struct {
 	// The server for the CLI to interact with
 	cliServer *server.ApiServer
-
-	// The daemon's main closing waitgroup
-	stopWg *sync.WaitGroup
-
-	// Context for gracefully stopping API requests during shutdown
-	ctx    context.Context
-	cancel context.CancelFunc
 }
 
 // Creates a new server manager
 func NewServerManager(sp *services.ServiceProvider, cfgPath string, stopWg *sync.WaitGroup) (*ServerManager, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	mgr := &ServerManager{
-		stopWg: stopWg,
-		ctx:    ctx,
-		cancel: cancel,
-	}
-
 	// Get the owner of the config file
 	var cfgFileStat syscall.Stat_t
 	err := syscall.Stat(cfgPath, &cfgFileStat)
@@ -55,7 +40,7 @@ func NewServerManager(sp *services.ServiceProvider, cfgPath string, stopWg *sync
 
 	// Start the CLI server
 	cliSocketPath := filepath.Join(sp.GetUserDir(), config.SmartNodeCliSocketFilename)
-	cliServer, err := createServer(sp, cliSocketPath, ctx)
+	cliServer, err := createServer(sp, cliSocketPath)
 	if err != nil {
 		return nil, fmt.Errorf("error creating CLI server: %w", err)
 	}
@@ -63,37 +48,38 @@ func NewServerManager(sp *services.ServiceProvider, cfgPath string, stopWg *sync
 	if err != nil {
 		return nil, fmt.Errorf("error starting CLI server: %w", err)
 	}
-	mgr.cliServer = cliServer
 	fmt.Printf("CLI daemon started on %s\n", cliSocketPath)
 
+	// Create the manager
+	mgr := &ServerManager{
+		cliServer: cliServer,
+	}
 	return mgr, nil
 }
 
 // Stops and shuts down the servers
 func (m *ServerManager) Stop() {
-	m.cancel()
 	err := m.cliServer.Stop()
 	if err != nil {
 		fmt.Printf("WARNING: CLI server didn't shutdown cleanly: %s\n", err.Error())
-		m.stopWg.Done()
 	}
 }
 
 // Creates a new Smart Node API server
-func createServer(sp *services.ServiceProvider, socketPath string, ctx context.Context) (*server.ApiServer, error) {
+func createServer(sp *services.ServiceProvider, socketPath string) (*server.ApiServer, error) {
 	handlers := []server.IHandler{
-		auction.NewAuctionHandler(ctx, sp),
-		faucet.NewFaucetHandler(ctx, sp),
-		minipool.NewMinipoolHandler(ctx, sp),
-		network.NewNetworkHandler(ctx, sp),
-		node.NewNodeHandler(ctx, sp),
-		odao.NewOracleDaoHandler(ctx, sp),
-		pdao.NewProtocolDaoHandler(ctx, sp),
-		queue.NewQueueHandler(ctx, sp),
-		security.NewSecurityCouncilHandler(ctx, sp),
-		service.NewServiceHandler(ctx, sp),
-		tx.NewTxHandler(ctx, sp),
-		wallet.NewWalletHandler(ctx, sp),
+		auction.NewAuctionHandler(sp),
+		faucet.NewFaucetHandler(sp),
+		minipool.NewMinipoolHandler(sp),
+		network.NewNetworkHandler(sp),
+		node.NewNodeHandler(sp),
+		odao.NewOracleDaoHandler(sp),
+		pdao.NewProtocolDaoHandler(sp),
+		queue.NewQueueHandler(sp),
+		security.NewSecurityCouncilHandler(sp),
+		service.NewServiceHandler(sp),
+		tx.NewTxHandler(sp),
+		wallet.NewWalletHandler(sp),
 	}
 
 	server, err := server.NewApiServer(socketPath, handlers, config.SmartNodeDaemonBaseRoute, config.SmartNodeApiVersion)

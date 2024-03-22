@@ -47,7 +47,7 @@ func (c *nodeCheckCollateralContext) PrepareData(data *api.NodeCheckCollateralDa
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return err
 	}

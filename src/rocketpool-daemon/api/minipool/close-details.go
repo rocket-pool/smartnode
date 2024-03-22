@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -34,10 +33,6 @@ func (f *minipoolCloseDetailsContextFactory) Create(args url.Values) (*minipoolC
 	return c, nil
 }
 
-func (f *minipoolCloseDetailsContextFactory) GetCancelContext() context.Context {
-	return f.handler.context
-}
-
 func (f *minipoolCloseDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolCloseDetailsContext, api.MinipoolCloseDetailsData](
 		router, "close/details", f, f.handler.serviceProvider,
@@ -61,7 +56,7 @@ func (c *minipoolCloseDetailsContext) Initialize() error {
 
 	// Requirements
 	return errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireNodeRegistered(),
 	)
 }
 
@@ -91,6 +86,7 @@ func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, 
 }
 
 func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	// Get the current ETH balances of each minipool
 	balances, err := c.rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {
@@ -132,7 +128,7 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 		pubkeyMap[mp.Address] = pubkey
 		pubkeys = append(pubkeys, pubkey)
 	}
-	statusMap, err := c.bc.GetValidatorStatuses(c.handler.context, pubkeys, nil)
+	statusMap, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
 		return fmt.Errorf("error getting beacon status of minipools: %w", err)
 	}

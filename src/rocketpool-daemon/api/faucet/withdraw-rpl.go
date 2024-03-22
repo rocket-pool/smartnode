@@ -60,7 +60,7 @@ func (c *faucetWithdrawContext) Initialize() error {
 
 	// Requirements
 	return errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireNodeRegistered(),
 		sp.RequireRplFaucet(),
 	)
 }

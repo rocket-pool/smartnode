@@ -1,8 +1,6 @@
 package tx
 
 import (
-	"context"
-
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -11,14 +9,12 @@ import (
 
 type TxHandler struct {
 	serviceProvider *services.ServiceProvider
-	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewTxHandler(context context.Context, serviceProvider *services.ServiceProvider) *TxHandler {
+func NewTxHandler(serviceProvider *services.ServiceProvider) *TxHandler {
 	h := &TxHandler{
 		serviceProvider: serviceProvider,
-		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&txBatchSignTxsContextFactory{h},

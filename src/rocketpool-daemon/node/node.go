@@ -50,19 +50,16 @@ const (
 
 type TaskLoop struct {
 	ctx           context.Context
-	cancel        context.CancelFunc
 	sp            *services.ServiceProvider
 	wg            *sync.WaitGroup
 	metricsServer *http.Server
 }
 
 func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
-	ctx, cancel := context.WithCancel(context.Background())
 	return &TaskLoop{
-		ctx:    ctx,
-		cancel: cancel,
-		sp:     sp,
-		wg:     wg,
+		sp:  sp,
+		ctx: sp.GetContext(),
+		wg:  wg,
 	}
 }
 
@@ -126,7 +123,7 @@ func (t *TaskLoop) Run() error {
 		defer t.wg.Done()
 
 		// Wait until node is registered
-		err := t.sp.WaitNodeRegistered(t.ctx, true)
+		err := t.sp.WaitNodeRegistered(true)
 		if err != nil {
 			errMsg := err.Error()
 			if !strings.Contains(errMsg, "context canceled") {
@@ -140,7 +137,7 @@ func (t *TaskLoop) Run() error {
 		wasBeaconClientSynced := true
 		for {
 			// Check the EC status
-			err := t.sp.WaitEthClientSynced(t.ctx, false) // Force refresh the primary / fallback EC status
+			err := t.sp.WaitEthClientSynced(false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errMsg := err.Error()
 				if strings.Contains(errMsg, "context canceled") {
@@ -161,7 +158,7 @@ func (t *TaskLoop) Run() error {
 			}
 
 			// Check the BC status
-			err = t.sp.WaitBeaconClientSynced(t.ctx, false) // Force refresh the primary / fallback BC status
+			err = t.sp.WaitBeaconClientSynced(false) // Force refresh the primary / fallback BC status
 			if err != nil {
 				errMsg := err.Error()
 				if strings.Contains(errMsg, "context canceled") {
@@ -329,7 +326,6 @@ func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig) error {
 }
 
 func (t *TaskLoop) Stop() {
-	t.cancel()
 	if t.metricsServer != nil {
 		// Shut down the metrics server
 		ctx, cancel := context.WithTimeout(context.Background(), metricsShutdownTimeout)

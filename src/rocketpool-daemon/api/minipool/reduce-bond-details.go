@@ -36,10 +36,6 @@ func (f *minipoolReduceBondDetailsContextFactory) Create(args url.Values) (*mini
 	return c, nil
 }
 
-func (f *minipoolReduceBondDetailsContextFactory) GetCancelContext() context.Context {
-	return f.handler.context
-}
-
 func (f *minipoolReduceBondDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolReduceBondDetailsContext, api.MinipoolReduceBondDetailsData](
 		router, "reduce-bond/details", f, f.handler.serviceProvider,
@@ -68,8 +64,8 @@ func (c *minipoolReduceBondDetailsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
-		sp.RequireBeaconClientSynced(c.handler.context),
+		sp.RequireNodeRegistered(),
+		sp.RequireBeaconClientSynced(),
 	)
 	if err != nil {
 		return err
@@ -126,6 +122,7 @@ func (c *minipoolReduceBondDetailsContext) GetMinipoolDetails(mc *batch.MultiCal
 }
 
 func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolReduceBondDetailsData) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	// General vars
 	data.IsFeeDistributorInitialized = c.node.IsFeeDistributorInitialized.Get()
 	data.BondReductionWindowStart = c.oSettings.Minipool.BondReductionWindowStart.Formatted()
@@ -150,7 +147,7 @@ func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Addres
 	}
 
 	// Get the statuses on Beacon
-	beaconStatuses, err := c.bc.GetValidatorStatuses(c.handler.context, pubkeys, nil)
+	beaconStatuses, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
 		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}

@@ -45,7 +45,7 @@ func (c *networkDelegateContext) PrepareData(data *api.NetworkLatestDelegateData
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced(c.handler.context)
+	err := sp.RequireEthClientSynced()
 	if err != nil {
 		return err
 	}

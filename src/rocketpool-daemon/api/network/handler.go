@@ -1,8 +1,6 @@
 package network
 
 import (
-	"context"
-
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -11,14 +9,12 @@ import (
 
 type NetworkHandler struct {
 	serviceProvider *services.ServiceProvider
-	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewNetworkHandler(context context.Context, serviceProvider *services.ServiceProvider) *NetworkHandler {
+func NewNetworkHandler(serviceProvider *services.ServiceProvider) *NetworkHandler {
 	h := &NetworkHandler{
 		serviceProvider: serviceProvider,
-		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&networkProposalContextFactory{h},

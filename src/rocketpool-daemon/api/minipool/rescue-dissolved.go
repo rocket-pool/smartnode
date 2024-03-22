@@ -80,8 +80,8 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
-		sp.RequireBeaconClientSynced(c.handler.context),
+		sp.RequireNodeRegistered(),
+		sp.RequireBeaconClientSynced(),
 	)
 	if err != nil {
 		return err

@@ -1,8 +1,6 @@
 package minipool
 
 import (
-	"context"
-
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -11,14 +9,12 @@ import (
 
 type MinipoolHandler struct {
 	serviceProvider *services.ServiceProvider
-	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewMinipoolHandler(context context.Context, serviceProvider *services.ServiceProvider) *MinipoolHandler {
+func NewMinipoolHandler(serviceProvider *services.ServiceProvider) *MinipoolHandler {
 	h := &MinipoolHandler{
 		serviceProvider: serviceProvider,
-		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&minipoolBeginReduceBondDetailsContextFactory{h},

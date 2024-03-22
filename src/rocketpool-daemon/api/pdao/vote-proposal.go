@@ -74,10 +74,11 @@ func (c *protocolDaoVoteOnProposalContext) Initialize() error {
 	c.cfg = sp.GetConfig()
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
+	ctx := sp.GetContext()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return err
 	}
@@ -95,7 +96,7 @@ func (c *protocolDaoVoteOnProposalContext) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error creating proposal binding: %w", err)
 	}
-	c.propMgr, err = proposals.NewProposalManager(c.handler.context, nil, c.cfg, c.rp, c.bc)
+	c.propMgr, err = proposals.NewProposalManager(ctx, nil, c.cfg, c.rp, c.bc)
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager: %w", err)
 	}

@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -33,10 +32,6 @@ func (f *minipoolDelegateDetailsContextFactory) Create(args url.Values) (*minipo
 	return c, nil
 }
 
-func (f *minipoolDelegateDetailsContextFactory) GetCancelContext() context.Context {
-	return f.handler.context
-}
-
 func (f *minipoolDelegateDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolDelegateDetailsContext, api.MinipoolDelegateDetailsData](
 		router, "delegate/details", f, f.handler.serviceProvider,
@@ -59,7 +54,7 @@ func (c *minipoolDelegateDetailsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireNodeRegistered(),
 	)
 	if err != nil {
 		return err

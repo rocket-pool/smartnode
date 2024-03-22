@@ -45,15 +45,16 @@ func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContract
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
 	bc := sp.GetBeaconClient()
+	ctx := sp.GetContext()
 
 	// Requirements
-	err := sp.RequireEthClientSynced(c.handler.context)
+	err := sp.RequireEthClientSynced()
 	if err != nil {
 		return err
 	}
 
 	// Get the deposit contract info
-	info, err := rputils.GetDepositContractInfo(c.handler.context, rp, cfg, bc)
+	info, err := rputils.GetDepositContractInfo(ctx, rp, cfg, bc)
 	if err != nil {
 		return fmt.Errorf("error getting deposit contract info: %w", err)
 	}

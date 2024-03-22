@@ -48,7 +48,7 @@ func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bi
 	// Requirements
 	err := errors.Join(
 		sp.RequireWalletReady(),
-		sp.RequireEthClientSynced(c.handler.context),
+		sp.RequireEthClientSynced(),
 	)
 	if err != nil {
 		return err

@@ -61,10 +61,11 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	rp := sp.GetRocketPool()
 	ec := sp.GetEthClient()
 	bc := sp.GetBeaconClient()
+	ctx := sp.GetContext()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return err
 	}
@@ -91,7 +92,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	}, nil)
 
 	// This thing is so complex it's easier to just get the state snapshot and go from there
-	stateMgr, err := state.NewNetworkStateManager(c.handler.context, rp, cfg, ec, bc, nil)
+	stateMgr, err := state.NewNetworkStateManager(ctx, rp, cfg, ec, bc, nil)
 	if err != nil {
 		return fmt.Errorf("error creating network state manager: %w", err)
 	}
@@ -99,7 +100,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	if err != nil {
 		return fmt.Errorf("error creating minipool manager binding: %w", err)
 	}
-	state, totalEffectiveStake, err := stateMgr.GetHeadStateForNode(c.handler.context, nodeAddress, true)
+	state, totalEffectiveStake, err := stateMgr.GetHeadStateForNode(ctx, nodeAddress, true)
 	if err != nil {
 		return fmt.Errorf("error getting network state for node %s: %w", nodeAddress.Hex(), err)
 	}

@@ -72,7 +72,7 @@ func (c *walletRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bi
 		return fmt.Errorf("a wallet is already present")
 	}
 	if !c.skipValidatorKeyRecovery {
-		err := sp.RequireEthClientSynced(c.handler.context)
+		err := sp.RequireEthClientSynced()
 		if err != nil {
 			return err
 		}

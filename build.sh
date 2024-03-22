@@ -69,11 +69,9 @@ build_install_packages() {
 build_daemon() {
     cd smartnode || fail "Directory ${PWD}/smartnode does not exist or you don't have permissions to access it."
 
-    # Make a multiarch builder, ignore if it's already there
-    docker buildx create --name multiarch-builder --driver docker-container --use > /dev/null 2>&1
-
     echo "Building Smart Node daemon binaries..."
     docker buildx build --rm --platform=linux/amd64,linux/arm64 -f docker/daemon-build.dockerfile --output ../$VERSION --target daemon . || fail "Error building Smart Node daemon binaries."
+    echo "done!"
 
     # Copy the daemon binaries to a build folder so the image can access them
     mkdir -p ./build
@@ -147,6 +145,9 @@ fi
 # Cleanup old artifacts
 rm -f ./$VERSION/*
 mkdir -p ./$VERSION
+
+# Make a multiarch builder, ignore if it's already there
+docker buildx create --name multiarch-builder --driver docker-container --use > /dev/null 2>&1
 
 # Build the artifacts
 if [ "$CLI" = true ]; then

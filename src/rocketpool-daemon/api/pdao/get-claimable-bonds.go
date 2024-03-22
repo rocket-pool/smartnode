@@ -69,7 +69,7 @@ func (c *protocolDaoGetClaimableBondsContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return err
 	}
@@ -89,6 +89,7 @@ func (c *protocolDaoGetClaimableBondsContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoGetClaimableBondsData, opts *bind.TransactOpts) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	// Get the proposals
 	props, err := c.pdaoMgr.GetProposals(c.pdaoMgr.ProposalCount.Formatted(), true, nil)
 	if err != nil {
@@ -96,7 +97,7 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 	}
 
 	// Get some common vars
-	beaconCfg, err := c.bc.GetEth2Config(c.handler.context)
+	beaconCfg, err := c.bc.GetEth2Config(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon config: %w", err)
 	}

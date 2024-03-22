@@ -59,7 +59,7 @@ func (c *securityProposeSettingContext) PrepareData(data *api.SecurityProposeSet
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireOnSecurityCouncil(c.handler.context)
+	err := sp.RequireOnSecurityCouncil()
 	if err != nil {
 		return err
 	}

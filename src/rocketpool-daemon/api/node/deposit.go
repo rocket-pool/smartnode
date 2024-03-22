@@ -96,7 +96,7 @@ func (c *nodeDepositContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireNodeRegistered(),
 		sp.RequireWalletReady(),
 	)
 	if err != nil {
@@ -139,6 +139,7 @@ func (c *nodeDepositContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.TransactOpts) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	rs := c.cfg.GetNetworkResources()
 
 	// Initial population
@@ -148,7 +149,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	data.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Formatted()
 
 	// Get Beacon config
-	eth2Config, err := c.bc.GetEth2Config(c.handler.context)
+	eth2Config, err := c.bc.GetEth2Config(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon config: %w", err)
 	}
@@ -205,7 +206,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	}
 
 	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rputils.GetDepositContractInfo(c.handler.context, c.rp, c.cfg, c.bc)
+	depositContractInfo, err := rputils.GetDepositContractInfo(ctx, c.rp, c.cfg, c.bc)
 	if err != nil {
 		return fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
 	}
@@ -268,7 +269,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	data.ValidatorPubkey = pubkey
 
 	// Make sure a validator with this pubkey doesn't already exist
-	status, err := c.bc.GetValidatorStatus(c.handler.context, pubkey, nil)
+	status, err := c.bc.GetValidatorStatus(ctx, pubkey, nil)
 	if err != nil {
 		return fmt.Errorf("Error checking for existing validator status: %w\nYour funds have not been deposited for your own safety.", err)
 	}

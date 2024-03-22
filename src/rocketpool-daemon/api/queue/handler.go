@@ -1,8 +1,6 @@
 package queue
 
 import (
-	"context"
-
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -11,14 +9,12 @@ import (
 
 type QueueHandler struct {
 	serviceProvider *services.ServiceProvider
-	context         context.Context
 	factories       []server.IContextFactory
 }
 
-func NewQueueHandler(context context.Context, serviceProvider *services.ServiceProvider) *QueueHandler {
+func NewQueueHandler(serviceProvider *services.ServiceProvider) *QueueHandler {
 	h := &QueueHandler{
 		serviceProvider: serviceProvider,
-		context:         context,
 	}
 	h.factories = []server.IContextFactory{
 		&queueProcessContextFactory{h},

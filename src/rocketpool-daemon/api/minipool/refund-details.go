@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"context"
 	"errors"
 	"math/big"
 	"net/url"
@@ -30,10 +29,6 @@ func (f *minipoolRefundDetailsContextFactory) Create(args url.Values) (*minipool
 	return c, nil
 }
 
-func (f *minipoolRefundDetailsContextFactory) GetCancelContext() context.Context {
-	return f.handler.context
-}
-
 func (f *minipoolRefundDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolRefundDetailsContext, api.MinipoolRefundDetailsData](
 		router, "refund/details", f, f.handler.serviceProvider,
@@ -53,7 +48,7 @@ func (c *minipoolRefundDetailsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireNodeRegistered(),
 	)
 	if err != nil {
 		return err

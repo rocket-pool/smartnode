@@ -47,7 +47,7 @@ func (c *securityProposeLeaveContext) PrepareData(data *types.TxInfoData, opts *
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireOnSecurityCouncil(c.handler.context)
+	err := sp.RequireOnSecurityCouncil()
 	if err != nil {
 		return err
 	}

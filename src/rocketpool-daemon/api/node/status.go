@@ -187,12 +187,13 @@ func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.TransactOpts) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	// Beacon info
-	beaconConfig, err := c.bc.GetEth2Config(c.handler.context)
+	beaconConfig, err := c.bc.GetEth2Config(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon config: %w", err)
 	}
-	beaconHead, err := c.bc.GetBeaconHead(c.handler.context)
+	beaconHead, err := c.bc.GetBeaconHead(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon head: %w", err)
 	}
@@ -586,7 +587,8 @@ func (c *nodeStatusContext) getTrueBorrowAndBondAmounts(mps []minipool.IMinipool
 		}
 	}
 
-	statuses, err := c.bc.GetValidatorStatuses(c.handler.context, pubkeys, nil)
+	ctx := c.handler.serviceProvider.GetContext()
+	statuses, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("error loading validator statuses: %w", err)
 	}

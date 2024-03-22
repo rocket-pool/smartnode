@@ -53,7 +53,7 @@ func (c *oracleDaoMembersContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireEthClientSynced(c.handler.context)
+	err := sp.RequireEthClientSynced()
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -19,10 +18,10 @@ const (
 )
 
 // Get transaction info for an operation on all of the provided minipools, using the common minipool API (for version-agnostic functions)
-func prepareMinipoolBatchTxData(context context.Context, sp *services.ServiceProvider, minipoolAddresses []common.Address, data *types.BatchTxInfoData, txCreator func(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error), txName string) error {
+func prepareMinipoolBatchTxData(sp *services.ServiceProvider, minipoolAddresses []common.Address, data *types.BatchTxInfoData, txCreator func(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error), txName string) error {
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(context),
+		sp.RequireNodeRegistered(),
 		sp.RequireWalletReady(),
 	)
 	if err != nil {

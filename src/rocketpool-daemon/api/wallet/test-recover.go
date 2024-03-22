@@ -60,7 +60,7 @@ func (c *walletTestRecoverContext) PrepareData(data *api.WalletRecoverData, opts
 	vMgr := sp.GetValidatorManager()
 
 	if !c.skipValidatorKeyRecovery {
-		err := sp.RequireEthClientSynced(c.handler.context)
+		err := sp.RequireEthClientSynced()
 		if err != nil {
 			return err
 		}

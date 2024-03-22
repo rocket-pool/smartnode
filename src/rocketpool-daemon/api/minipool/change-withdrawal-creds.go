@@ -70,8 +70,8 @@ func (c *minipoolChangeCredsContext) Initialize() error {
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
-		sp.RequireBeaconClientSynced(c.handler.context),
+		sp.RequireNodeRegistered(),
+		sp.RequireBeaconClientSynced(),
 	)
 	if err != nil {
 		return err
@@ -94,6 +94,7 @@ func (c *minipoolChangeCredsContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	// Get minipool validator pubkey
 	pubkey := c.mp.Common().Pubkey.Get()
 
@@ -124,19 +125,19 @@ func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *
 	}
 
 	// Get beacon head
-	head, err := c.bc.GetBeaconHead(c.handler.context)
+	head, err := c.bc.GetBeaconHead(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting Beacon head: %w", err)
 	}
 
 	// Get the BlsToExecutionChange signature domain
-	signatureDomain, err := c.bc.GetDomainData(c.handler.context, eth2types.DomainBlsToExecutionChange[:], head.Epoch, true)
+	signatureDomain, err := c.bc.GetDomainData(ctx, eth2types.DomainBlsToExecutionChange[:], head.Epoch, true)
 	if err != nil {
 		return fmt.Errorf("error getting signature domain: %w", err)
 	}
 
 	// Get validator index
-	validatorIndex, err := c.bc.GetValidatorIndex(c.handler.context, pubkey)
+	validatorIndex, err := c.bc.GetValidatorIndex(ctx, pubkey)
 	if err != nil {
 		return fmt.Errorf("error getting validator index: %w", err)
 	}
@@ -149,7 +150,7 @@ func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *
 
 	// Broadcast withdrawal creds change message
 	withdrawalPubkey := beacon.ValidatorPubkey(withdrawalKey.PublicKey().Marshal())
-	if err := c.bc.ChangeWithdrawalCredentials(c.handler.context, validatorIndex, withdrawalPubkey, c.minipoolAddress, signature); err != nil {
+	if err := c.bc.ChangeWithdrawalCredentials(ctx, validatorIndex, withdrawalPubkey, c.minipoolAddress, signature); err != nil {
 		return fmt.Errorf("error submitting withdrawal credentials change message: %w", err)
 	}
 	return nil

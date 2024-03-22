@@ -63,7 +63,7 @@ func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotP
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireNodeRegistered(),
 		sp.RequireSnapshot(),
 	)
 	if err != nil {

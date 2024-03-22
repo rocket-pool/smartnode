@@ -55,7 +55,7 @@ func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, 
 
 	// Requirements
 	err := errors.Join(
-		sp.RequireNodeRegistered(c.handler.context),
+		sp.RequireNodeRegistered(),
 		sp.RequireSnapshot(),
 	)
 	if err != nil {

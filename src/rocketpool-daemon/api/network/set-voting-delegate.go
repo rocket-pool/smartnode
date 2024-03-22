@@ -55,7 +55,7 @@ func (c *nodeSetSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opt
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return nil
 	}

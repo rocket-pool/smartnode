@@ -73,7 +73,7 @@ func (c *protocolDaoProposeRewardsPercentagesContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return err
 	}
@@ -99,6 +99,7 @@ func (c *protocolDaoProposeRewardsPercentagesContext) GetState(mc *batch.MultiCa
 }
 
 func (c *protocolDaoProposeRewardsPercentagesContext) PrepareData(data *api.ProtocolDaoGeneralProposeData, opts *bind.TransactOpts) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	// Validate sum of percentages == 100%
 	one := eth.EthToWei(1)
 	sum := big.NewInt(0).Set(c.nodePercent)
@@ -117,7 +118,7 @@ func (c *protocolDaoProposeRewardsPercentagesContext) PrepareData(data *api.Prot
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(ctx, c.rp, c.cfg, c.bc)
 		if err != nil {
 			return fmt.Errorf("error creating pollard for proposal creation: %w", err)
 		}

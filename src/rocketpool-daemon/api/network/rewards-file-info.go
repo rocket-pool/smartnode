@@ -60,7 +60,7 @@ func (c *networkRewardsFileContext) Initialize() error {
 	c.cfg = sp.GetConfig()
 
 	// Requirements
-	err := sp.RequireEthClientSynced(c.handler.context)
+	err := sp.RequireEthClientSynced()
 	if err != nil {
 		return err
 	}

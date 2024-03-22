@@ -111,6 +111,7 @@ func main() {
 			go func() {
 				<-termListener
 				fmt.Println("Shutting down node...")
+				sp.CancelContextOnShutdown()
 				serverMgr.Stop()
 				taskLoop.Stop()
 			}()
@@ -167,7 +168,7 @@ func main() {
 			go func() {
 				<-termListener
 				fmt.Println("Shutting down watchtower...")
-				taskLoop.Stop()
+				sp.CancelContextOnShutdown()
 			}()
 
 			// Run the daemon until closed

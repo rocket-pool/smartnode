@@ -65,7 +65,7 @@ func (c *nodeClaimAndStakeContext) PrepareData(data *types.TxInfoData, opts *bin
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return err
 	}

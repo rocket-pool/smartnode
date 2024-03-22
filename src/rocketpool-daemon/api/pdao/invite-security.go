@@ -73,7 +73,7 @@ func (c *protocolDaoProposeInviteToSecurityCouncilContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered(c.handler.context)
+	err := sp.RequireNodeRegistered()
 	if err != nil {
 		return err
 	}
@@ -104,6 +104,7 @@ func (c *protocolDaoProposeInviteToSecurityCouncilContext) GetState(mc *batch.Mu
 }
 
 func (c *protocolDaoProposeInviteToSecurityCouncilContext) PrepareData(data *api.ProtocolDaoProposeInviteToSecurityCouncilData, opts *bind.TransactOpts) error {
+	ctx := c.handler.serviceProvider.GetContext()
 	data.MemberAlreadyExists = c.member.Exists.Get()
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
@@ -114,7 +115,7 @@ func (c *protocolDaoProposeInviteToSecurityCouncilContext) PrepareData(data *api
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(c.handler.context, c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(ctx, c.rp, c.cfg, c.bc)
 		if err != nil {
 			return fmt.Errorf("error creating pollard for proposal creation: %w", err)
 		}
