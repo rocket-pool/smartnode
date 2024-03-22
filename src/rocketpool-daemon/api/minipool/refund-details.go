@@ -12,8 +12,6 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
-
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -37,7 +35,7 @@ func (f *minipoolRefundDetailsContextFactory) GetCancelContext() context.Context
 }
 
 func (f *minipoolRefundDetailsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterMinipoolRoute[*minipoolRefundDetailsContext, api.MinipoolRefundDetailsData](
+	RegisterMinipoolRoute[*minipoolRefundDetailsContext, api.MinipoolRefundDetailsData](
 		router, "refund/details", f, f.handler.serviceProvider,
 	)
 }

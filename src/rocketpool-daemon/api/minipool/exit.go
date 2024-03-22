@@ -13,11 +13,11 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
@@ -45,7 +45,7 @@ func (f *minipoolExitContextFactory) GetCancelContext() context.Context {
 }
 
 func (f *minipoolExitContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterMinipoolRoute[*minipoolExitContext, types.SuccessData](
+	RegisterMinipoolRoute[*minipoolExitContext, types.SuccessData](
 		router, "exit", f, f.handler.serviceProvider,
 	)
 }

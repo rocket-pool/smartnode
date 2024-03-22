@@ -15,8 +15,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -40,7 +38,7 @@ func (f *minipoolDistributeDetailsContextFactory) GetCancelContext() context.Con
 }
 
 func (f *minipoolDistributeDetailsContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterMinipoolRoute[*minipoolDistributeDetailsContext, api.MinipoolDistributeDetailsData](
+	RegisterMinipoolRoute[*minipoolDistributeDetailsContext, api.MinipoolDistributeDetailsData](
 		router, "distribute/details", f, f.handler.serviceProvider,
 	)
 }

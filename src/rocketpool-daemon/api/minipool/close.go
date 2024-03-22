@@ -10,12 +10,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/server"
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
 )
@@ -43,7 +43,7 @@ func (f *minipoolCloseContextFactory) GetCancelContext() context.Context {
 }
 
 func (f *minipoolCloseContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterMinipoolRoute[*minipoolCloseContext, types.BatchTxInfoData](
+	RegisterMinipoolRoute[*minipoolCloseContext, types.BatchTxInfoData](
 		router, "close", f, f.handler.serviceProvider,
 	)
 }

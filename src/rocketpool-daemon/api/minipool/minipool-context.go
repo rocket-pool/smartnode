@@ -1,4 +1,4 @@
-package server
+package minipool
 
 import (
 	"context"
@@ -11,14 +11,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
-)
-
-const (
-	minipoolBatchSize int = 100
 )
 
 // Wrapper for callbacks used by functions that will query all of the node's minipools - they follow this pattern:
@@ -63,21 +60,43 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 	serviceProvider *services.ServiceProvider,
 ) {
 	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
+		// Log
+		args := r.URL.Query()
+		log := serviceProvider.GetApiLogger()
+		isDebug := serviceProvider.IsDebugMode()
+		if isDebug {
+			log.Printlnf("[%s] => %s", r.Method, r.URL.String())
+		} else {
+			log.Printlnf("[%s] => %s", r.Method, r.URL.Path)
+		}
+
+		// Check the method
+		if r.Method != http.MethodGet {
+			server.HandleInvalidMethod(log, w)
+			return
+		}
+
 		// Create the handler and deal with any input validation errors
-		context, err := factory.Create(r.URL.Query())
+		context, err := factory.Create(args)
 		if err != nil {
-			handleInputError(w, err)
+			server.HandleInputError(log, w, err)
 			return
 		}
 
 		// Run the context's processing routine
 		response, err := runMinipoolRoute[DataType](context, serviceProvider, factory.GetCancelContext())
-		handleResponse(w, response, err)
+		server.HandleResponse(log, w, response, err, isDebug)
 	})
 }
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
 func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider, context context.Context) (*types.ApiResponse[DataType], error) {
+	// Get the services
+	w := serviceProvider.GetWallet()
+	q := serviceProvider.GetQueryManager()
+	rp := serviceProvider.GetRocketPool()
+	nodeAddress, _ := w.GetAddress()
+
 	// Load contracts
 	err := serviceProvider.LoadContractsIfStale()
 	if err != nil {
@@ -89,10 +108,6 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	if err != nil {
 		return nil, err
 	}
-
-	// Get the services
-	rp := serviceProvider.GetRocketPool()
-	nodeAddress, _ := serviceProvider.GetWallet().GetAddress()
 
 	// Get the latest block for consistency
 	latestBlock, err := rp.Client.BlockNumber(context)
@@ -116,7 +131,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	}
 
 	// Get contract state
-	err = rp.Query(func(mc *batch.MultiCaller) error {
+	err = q.Query(func(mc *batch.MultiCaller) error {
 		node.MinipoolCount.AddToQuery(mc)
 		ctx.GetState(node, mc)
 		return nil
