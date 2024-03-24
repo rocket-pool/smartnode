@@ -80,17 +80,16 @@ func createFlagsFromConfigParams(sectionName string, params []*cfgtypes.Paramete
 }
 
 // Register commands
-func RegisterCommands(app *cli.App, name string, aliases []string) {
+func RegisterCommands(app *cli.App, name string, aliases []string, cfg *config.RocketPoolConfig) {
 
 	configFlags := []cli.Flag{}
-	cfgTemplate := config.NewRocketPoolConfig("", false)
-	network := cfgTemplate.Smartnode.Network.Value.(cfgtypes.Network)
+	network := cfg.Smartnode.Network.Value.(cfgtypes.Network)
 
 	// Root params
-	configFlags = createFlagsFromConfigParams("", cfgTemplate.GetParameters(), configFlags, network)
+	configFlags = createFlagsFromConfigParams("", cfg.GetParameters(), configFlags, network)
 
 	// Subconfigs
-	for sectionName, subconfig := range cfgTemplate.GetSubconfigs() {
+	for sectionName, subconfig := range cfg.GetSubconfigs() {
 		configFlags = createFlagsFromConfigParams(sectionName, subconfig.GetParameters(), configFlags, network)
 	}
 
