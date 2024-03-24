@@ -60,13 +60,8 @@ func (c *nodeRegisterContext) Initialize() error {
 	c.rp = sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
-	// Requirements
-	err := sp.RequireNodeRegistered()
-	if err != nil {
-		return err
-	}
-
 	// Bindings
+	var err error
 	c.node, err = node.NewNode(c.rp, nodeAddress)
 	if err != nil {
 		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
