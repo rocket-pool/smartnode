@@ -77,7 +77,7 @@ func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address,
 	}
 	// Construct a filter query for relevant logs
 	addressFilter := []common.Address{*rocketNetworkPrices.Address}
-	topicFilter := [][]common.Hash{{rocketNetworkPrices.ABI.Events["PricesSubmitted"].ID}, {nodeAddress.Hash()}}
+	topicFilter := [][]common.Hash{{rocketNetworkPrices.ABI.Events["PricesSubmitted"].ID}, {common.BytesToHash(nodeAddress.Bytes())}}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)

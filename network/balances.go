@@ -131,7 +131,7 @@ func GetBalancesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Addres
 	}
 	// Construct a filter query for relevant logs
 	addressFilter := []common.Address{*rocketNetworkBalances.Address}
-	topicFilter := [][]common.Hash{{rocketNetworkBalances.ABI.Events["BalancesSubmitted"].ID}, {nodeAddress.Hash()}}
+	topicFilter := [][]common.Hash{{rocketNetworkBalances.ABI.Events["BalancesSubmitted"].ID}, {common.BytesToHash(nodeAddress.Bytes())}}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
