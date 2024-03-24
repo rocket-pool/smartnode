@@ -254,7 +254,7 @@ const (
 )
 
 func isAlertingEnabled(cfg *config.SmartNodeConfig) bool {
-	return cfg.Metrics.EnableMetrics.Value
+	return cfg.Alertmanager.EnableAlerting.Value
 }
 
 // Creates a uniform alert with the basic labels and annotations we expect.
@@ -280,7 +280,13 @@ func createAlert(uniqueName string, summary string, description string, severity
 }
 
 func createClient(cfg *config.SmartNodeConfig) *apiclient.Alertmanager {
+	// use the alertmanager container name for the hostname
 	host := fmt.Sprintf("%s:%d", string(config.ContainerID_Alertmanager), cfg.Alertmanager.Port.Value)
+
+	if cfg.IsNativeMode {
+		host = fmt.Sprintf("%s:%d", cfg.Alertmanager.NativeModeHost.Value, cfg.Alertmanager.NativeModePort.Value)
+	}
+
 	transport := apiclient.DefaultTransportConfig().WithHost(host)
 	client := apiclient.NewHTTPClientWithConfig(strfmt.Default, transport)
 	return client

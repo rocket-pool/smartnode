@@ -98,7 +98,7 @@ func (c *protocolDaoDefeatProposalContext) PrepareData(data *api.ProtocolDaoDefe
 	defeatStart := c.proposal.CreatedTime.Formatted().Add(c.proposal.ChallengeWindow.Formatted())
 	data.StillInChallengeWindow = (time.Until(defeatStart) > 0)
 	data.DoesNotExist = (c.proposalID > c.pdaoMgr.ProposalCount.Formatted())
-	data.AlreadyDefeated = (c.proposal.State.Formatted() == types.ProtocolDaoProposalState_Defeated)
+	data.AlreadyDefeated = (c.proposal.State.Formatted() == types.ProtocolDaoProposalState_Destroyed)
 	data.InvalidChallengeState = (c.challengeState() != types.ChallengeState_Challenged)
 	data.CanDefeat = !(data.DoesNotExist || data.StillInChallengeWindow || data.AlreadyDefeated || data.InvalidChallengeState)
 

@@ -77,6 +77,9 @@ const (
 	AddonsRescueNodeID string = "rescueNode"
 
 	// Alertmanager
+	AlertmanagerEnableAlertingID              string = "enableAlerting"
+	AlertmanagerNativeModeHostID              string = "nativeModeHost"
+	AlertmanagerNativeModePortID              string = "nativeModePort"
 	AlertmanagerDiscordWebhookUrlID           string = "discordWebhookURL"
 	AlertmanagerClientSyncStatusBeaconID      string = "alertEnabled_ClientSyncStatusBeacon"
 	AlertmanagerClientSyncStatusExecutionID   string = "alertEnabled_ClientSyncStatusExecution"

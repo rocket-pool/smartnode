@@ -22,6 +22,7 @@ type FeeRecipientInfo struct {
 }
 
 type NodeStatusData struct {
+	Warning                                  string         `json:"warning"`
 	AccountAddress                           common.Address `json:"accountAddress"`
 	AccountAddressFormatted                  string         `json:"accountAddressFormatted"`
 	PrimaryWithdrawalAddress                 common.Address `json:"primaryWithdrawalAddress"`

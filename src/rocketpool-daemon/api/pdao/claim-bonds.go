@@ -112,7 +112,7 @@ func (c *protocolDaoClaimBondsContext) PrepareData(dataBatch *types.DataBatch[ap
 		data.DoesNotExist = (claim.ProposalID > c.pdaoMgr.ProposalCount.Formatted())
 		data.IsProposer = (proposer == c.nodeAddress)
 		if data.IsProposer {
-			data.InvalidState = (state == rptypes.ProtocolDaoProposalState_Defeated || state < rptypes.ProtocolDaoProposalState_QuorumNotMet)
+			data.InvalidState = (state < rptypes.ProtocolDaoProposalState_QuorumNotMet)
 		} else {
 			data.InvalidState = (state == rptypes.ProtocolDaoProposalState_Pending)
 		}

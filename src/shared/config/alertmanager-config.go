@@ -17,13 +17,23 @@ const (
 
 	// Defaults
 	defaultAlertmanagerPort     uint16             = 9093
+	defaultAlertmanagerHost     string             = "localhost"
 	defaultAlertmanagerOpenPort config.RpcPortMode = config.RpcPortMode_Closed
 )
 
 // Configuration for Alertmanager
 type AlertmanagerConfig struct {
+	// Whether alerting is enabled
+	EnableAlerting config.Parameter[bool]
+
 	// Port for alertmanager UI & API
 	Port config.Parameter[uint16]
+
+	// Host for alertmanager UI & API. ONLY USED IN NATIVE MODE. In Docker, the host is derived from the container name.
+	NativeModeHost config.Parameter[string]
+
+	// Port for alertmanager UI & API. ONLY USED IN NATIVE MODE. In Docker, the host is derived from the container.
+	NativeModePort config.Parameter[uint16]
 
 	// Toggle for forwarding the API port outside of Docker; useful for ability to silence alerts
 	OpenPort config.Parameter[config.RpcPortMode]
@@ -58,12 +68,54 @@ type AlertmanagerConfig struct {
 func NewAlertmanagerConfig() *AlertmanagerConfig {
 
 	return &AlertmanagerConfig{
+		EnableAlerting: config.Parameter[bool]{
+			ParameterCommon: &config.ParameterCommon{
+				ID:                 ids.AlertmanagerEnableAlertingID,
+				Name:               "Enable Alerting",
+				Description:        "Enable the Smart Node's alerting system. This will provide you alerts when important events occur with your node.",
+				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon, config.ContainerID_Prometheus, ContainerID_Alertmanager},
+				CanBeBlank:         false,
+				OverwriteOnUpgrade: false,
+			},
+			Default: map[config.Network]bool{
+				config.Network_All: true,
+			},
+		},
+
 		Port: config.Parameter[uint16]{
 			ParameterCommon: &config.ParameterCommon{
 				ID:                 nmc_ids.PortID,
 				Name:               "Alertmanager Port",
 				Description:        "The port Alertmanager will listen on.",
-				AffectsContainers:  []config.ContainerID{ContainerID_Alertmanager, config.ContainerID_Prometheus},
+				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon, ContainerID_Alertmanager, config.ContainerID_Prometheus},
+				CanBeBlank:         true,
+				OverwriteOnUpgrade: false,
+			},
+			Default: map[config.Network]uint16{
+				config.Network_All: defaultAlertmanagerPort,
+			},
+		},
+
+		NativeModeHost: config.Parameter[string]{
+			ParameterCommon: &config.ParameterCommon{
+				ID:                 ids.AlertmanagerNativeModeHostID,
+				Name:               "Alertmanager Host",
+				Description:        "The host that the node should use to communicate with Alertmanager.",
+				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon, config.ContainerID_Prometheus},
+				CanBeBlank:         true,
+				OverwriteOnUpgrade: false,
+			},
+			Default: map[config.Network]string{
+				config.Network_All: defaultAlertmanagerHost,
+			},
+		},
+
+		NativeModePort: config.Parameter[uint16]{
+			ParameterCommon: &config.ParameterCommon{
+				ID:                 ids.AlertmanagerNativeModePortID,
+				Name:               "Alertmanager Port",
+				Description:        "The port that the node should use to communicate with Alertmanager.",
+				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon, config.ContainerID_Prometheus},
 				CanBeBlank:         true,
 				OverwriteOnUpgrade: false,
 			},
@@ -193,10 +245,13 @@ func (cfg *AlertmanagerConfig) GetTitle() string {
 // Get the parameters for this config
 func (cfg *AlertmanagerConfig) GetParameters() []config.IParameter {
 	return []config.IParameter{
+		&cfg.EnableAlerting,
 		&cfg.Port,
 		&cfg.OpenPort,
-		&cfg.ContainerTag,
+		&cfg.NativeModeHost,
+		&cfg.NativeModePort,
 		&cfg.DiscordWebhookUrl,
+		&cfg.ContainerTag,
 		&cfg.AlertEnabled_ClientSyncStatusBeacon,
 		&cfg.AlertEnabled_ClientSyncStatusExecution,
 		&cfg.AlertEnabled_UpcomingSyncCommittee,

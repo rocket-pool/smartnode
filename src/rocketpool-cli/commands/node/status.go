@@ -353,6 +353,10 @@ func getStatus(c *cli.Context) error {
 		}
 	}
 
+	if status.Data.Warning != "" {
+		fmt.Printf("\n%sWARNING: %s%s\n", terminal.ColorRed, status.Data.Warning, terminal.ColorReset)
+	}
+
 	// Return
 	return nil
 }

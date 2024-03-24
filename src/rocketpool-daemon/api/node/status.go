@@ -25,6 +25,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
+	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/models"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/collateral"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
@@ -299,7 +300,12 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	// Get alerts from Alertmanager
 	alerts, err := alerting.FetchAlerts(c.cfg)
 	if err != nil {
-		return err
+		// no reason to make `rocketpool node status` fail if we can't get alerts
+		// (this is more likely to happen in native mode than docker where
+		// alertmanager is more complex to set up)
+		// Do save a warning though to print to the user
+		data.Warning = fmt.Sprintf("Error fetching alerts from Alertmanager: %s", err)
+		alerts = make([]*models.GettableAlert, 0)
 	}
 	data.Alerts = make([]api.NodeAlert, len(alerts))
 

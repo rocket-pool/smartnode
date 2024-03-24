@@ -114,8 +114,7 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 		state := prop.State.Formatted()
 		if prop.ProposerAddress.Get() == c.nodeAddress {
 			isProposer = true
-			if state != types.ProtocolDaoProposalState_Defeated &&
-				state >= types.ProtocolDaoProposalState_QuorumNotMet {
+			if state >= types.ProtocolDaoProposalState_QuorumNotMet {
 				shouldProcess = true
 			}
 		} else {
@@ -205,8 +204,7 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 		// Handle proposals we were the proposer of
 		if claimResult.IsProposer {
 			state := propInfo.State.Formatted()
-			if state == types.ProtocolDaoProposalState_Defeated ||
-				state < types.ProtocolDaoProposalState_QuorumNotMet {
+			if state < types.ProtocolDaoProposalState_QuorumNotMet {
 				// Proposer gets nothing if the challenge was defeated or isn't done yet
 				continue
 			}
@@ -236,13 +234,13 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 
 				// Make sure the prop and challenge are in the right states
 				if challengeInfo.State != types.ChallengeState_Challenged {
-					if propInfo.State.Formatted() == types.ProtocolDaoProposalState_Defeated {
+					if propInfo.State.Formatted() == types.ProtocolDaoProposalState_Destroyed {
 						if challengeInfo.State != types.ChallengeState_Responded {
-							// If the proposal is defeated, a challenge must be in the challenged or responded states
+							// If the proposal is destroyed, a challenge must be in the challenged or responded states
 							continue
 						}
 					} else {
-						// Only refund non-responded challenges if the proposal wasn't defeated
+						// Only refund non-responded challenges if the proposal was destroyed
 						continue
 					}
 				}
