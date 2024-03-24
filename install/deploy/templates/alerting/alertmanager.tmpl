@@ -36,13 +36,17 @@ route:
 
 receivers:
   - name: "node_operator_default"
+    {{- if .Alertmanager.DiscordWebhookUrl.Value }}
     discord_configs:
       - webhook_url: "{{ .Alertmanager.DiscordWebhookUrl.Value }}"
+    {{- end }}
 
   - name: "node_operator_no_resolved"
+    {{- if .Alertmanager.DiscordWebhookUrl.Value }}
     discord_configs:
       - webhook_url: "{{ .Alertmanager.DiscordWebhookUrl.Value }}"
         send_resolved: false
+    {{- end }}
 
 inhibit_rules:
   # Inhibit rules mute a new alert (target) that matches an existing alert (source).
