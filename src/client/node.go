@@ -24,10 +24,10 @@ func NewNodeRequester(context *client.RequesterContext) *NodeRequester {
 }
 
 func (r *NodeRequester) GetName() string {
-	return "Auction"
+	return "Node"
 }
 func (r *NodeRequester) GetRoute() string {
-	return "auction"
+	return "node"
 }
 func (r *NodeRequester) GetContext() *client.RequesterContext {
 	return r.context
