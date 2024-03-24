@@ -183,7 +183,9 @@ func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 	c.reth.BalanceOf(mc, &c.rethBalance, c.node.Address)
 
 	// Snapshot
-	c.snapshot.Delegation(mc, &c.delegate, c.node.Address, c.cfg.GetVotingSnapshotID())
+	if c.snapshot != nil {
+		c.snapshot.Delegation(mc, &c.delegate, c.node.Address, c.cfg.GetVotingSnapshotID())
+	}
 }
 
 func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.TransactOpts) error {
@@ -249,16 +251,18 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	data.PendingMatchAmount = collateral.PendingMatchAmount
 
 	// Snapshot
-	emptyAddress := common.Address{}
-	data.VotingDelegate = c.delegate
-	if data.VotingDelegate != emptyAddress {
-		data.VotingDelegateFormatted = c.getFormattedAddress(data.VotingDelegate)
-	}
-	props, err := voting.GetSnapshotProposals(c.cfg, c.node.Address, c.delegate, true)
-	if err != nil {
-		data.SnapshotResponse.Error = fmt.Sprintf("error getting snapshot proposals: %s", err.Error())
-	} else {
-		data.SnapshotResponse.ActiveSnapshotProposals = props
+	if c.snapshot != nil {
+		emptyAddress := common.Address{}
+		data.VotingDelegate = c.delegate
+		if data.VotingDelegate != emptyAddress {
+			data.VotingDelegateFormatted = c.getFormattedAddress(data.VotingDelegate)
+		}
+		props, err := voting.GetSnapshotProposals(c.cfg, c.node.Address, c.delegate, true)
+		if err != nil {
+			data.SnapshotResponse.Error = fmt.Sprintf("error getting snapshot proposals: %s", err.Error())
+		} else {
+			data.SnapshotResponse.ActiveSnapshotProposals = props
+		}
 	}
 
 	// Fee recipient and smoothing pool
