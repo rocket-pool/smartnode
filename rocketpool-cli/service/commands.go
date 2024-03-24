@@ -192,7 +192,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "ignore-slash-timer",
-						Usage: "Bypass the safety timer that forces a delay when switching to a new ETH2 client",
+						Usage: "Bypass the safety timer that forces a delay when switching to a new consensus client",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -386,7 +386,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "prune-eth1",
 				Aliases:   []string{"n"},
-				Usage:     "Shuts down the main ETH1 client and prunes its database, freeing up disk space, then restarts it when it's done.",
+				Usage:     "Shuts down the main execution client and prunes its database, freeing up disk space, then restarts it when it's done.",
 				UsageText: "rocketpool service prune-eth1",
 				Action: func(c *cli.Context) error {
 
@@ -521,7 +521,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 			{
 				Name:      "resync-eth1",
-				Usage:     fmt.Sprintf("%sDeletes the main ETH1 client's chain data and resyncs it from scratch. Only use this as a last resort!%s", colorRed, colorReset),
+				Usage:     fmt.Sprintf("%sDeletes the main execution client's chain data and resyncs it from scratch. Only use this as a last resort!%s", colorRed, colorReset),
 				UsageText: "rocketpool service resync-eth1",
 				Action: func(c *cli.Context) error {
 
@@ -538,7 +538,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 			{
 				Name:      "resync-eth2",
-				Usage:     fmt.Sprintf("%sDeletes the ETH2 client's chain data and resyncs it from scratch. Only use this as a last resort!%s", colorRed, colorReset),
+				Usage:     fmt.Sprintf("%sDeletes the consensus client's chain data and resyncs it from scratch. Only use this as a last resort!%s", colorRed, colorReset),
 				UsageText: "rocketpool service resync-eth2",
 				Action: func(c *cli.Context) error {
 

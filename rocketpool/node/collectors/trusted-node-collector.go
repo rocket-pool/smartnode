@@ -58,7 +58,7 @@ type TrustedNodeCollector struct {
 	cacheTime     time.Time
 	cachedMetrics []prometheus.Metric
 
-	// The event log interval for the current eth1 client
+	// The event log interval for the current execution client
 	eventLogInterval *big.Int
 
 	// The thread-safe locker for the network state
