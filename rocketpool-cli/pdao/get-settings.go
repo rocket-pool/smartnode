@@ -2,7 +2,6 @@ package pdao
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/urfave/cli"
 
@@ -30,7 +29,7 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tBidding on Lots Enabled:  %t\n", response.Auction.IsBidOnLotEnabled)
 	fmt.Printf("\tMin ETH per Lot:          %.6f ETH\n", eth.WeiToEth(response.Auction.LotMinimumEthValue))
 	fmt.Printf("\tMax ETH per Lot:          %.6f ETH\n", eth.WeiToEth(response.Auction.LotMaximumEthValue))
-	fmt.Printf("\tLot Duration:             %s\n", time.Unix(int64(response.Auction.LotDuration), 0))
+	fmt.Printf("\tLot Duration:             %s\n", response.Auction.LotDuration)
 	fmt.Printf("\tStarting Price Ratio:     %.2f%%\n", eth.WeiToEth(response.Auction.LotStartingPriceRatio)*100)
 	fmt.Printf("\tReserve Price Ratio:      %.2f%%\n", eth.WeiToEth(response.Auction.LotReservePriceRatio)*100)
 	fmt.Println()
