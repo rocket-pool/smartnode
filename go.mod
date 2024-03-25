@@ -46,6 +46,7 @@ require (
 	golang.org/x/crypto v0.6.0
 	golang.org/x/sync v0.5.0
 	golang.org/x/term v0.5.0
+	golang.org/x/text v0.7.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -154,7 +155,6 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.45.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
@@ -171,4 +171,4 @@ replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a 
 
 // replace github.com/wealdtech/go-eth2-types/v2 => github.com/rocket-pool/go-eth2-types/v2 v2.0.0-20230130220714-d88838162252
 
-// replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
+replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go

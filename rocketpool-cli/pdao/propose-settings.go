@@ -34,8 +34,8 @@ func proposeSettingAuctionLotMaximumEthValue(c *cli.Context, value *big.Int) err
 	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.LotMaximumEthValueSettingPath, trueValue)
 }
 
-func proposeSettingAuctionLotDuration(c *cli.Context, value uint64) error {
-	trueValue := fmt.Sprint(value)
+func proposeSettingAuctionLotDuration(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.LotDurationSettingPath, trueValue)
 }
 

@@ -507,7 +507,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "lot-duration",
 										Aliases:   []string{"ld"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.LotDurationSettingPath, blockCountUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.LotDurationSettingPath, durationUsage),
 										UsageText: "rocketpool pdao propose setting auction lot-duration value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
@@ -521,7 +521,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
