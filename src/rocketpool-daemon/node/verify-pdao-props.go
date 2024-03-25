@@ -76,6 +76,7 @@ func (t *VerifyPdaoProps) Run(state *state.NetworkState) error {
 	t.w = t.sp.GetWallet()
 	t.rp = t.sp.GetRocketPool()
 	t.w = t.sp.GetWallet()
+	t.bc = t.sp.GetBeaconClient()
 	t.nodeAddress, _ = t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, t.log)
 	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value

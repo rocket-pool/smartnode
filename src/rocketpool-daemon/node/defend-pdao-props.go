@@ -66,11 +66,12 @@ func (t *DefendPdaoProps) Run(state *state.NetworkState) error {
 	t.w = t.sp.GetWallet()
 	t.rp = t.sp.GetRocketPool()
 	t.w = t.sp.GetWallet()
+	t.bc = t.sp.GetBeaconClient()
+	t.rs = t.cfg.GetRocketPoolResources()
 	t.nodeAddress, _ = t.w.GetAddress()
 	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, t.log)
 	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
 	t.intervalSize = big.NewInt(int64(config.EventLogInterval))
-	t.rs = t.cfg.GetRocketPoolResources()
 
 	// Bindings
 	propMgr, err := proposals.NewProposalManager(t.ctx, t.log, t.cfg, t.rp, t.bc)
