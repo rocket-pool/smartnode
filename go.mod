@@ -171,4 +171,4 @@ replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a 
 
 // replace github.com/wealdtech/go-eth2-types/v2 => github.com/rocket-pool/go-eth2-types/v2 v2.0.0-20230130220714-d88838162252
 
-replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
+// replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
