@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -102,8 +103,8 @@ func EstimateProposeLotMaximumEthValueGas(rp *rocketpool.RocketPool, value *big.
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", LotMaximumEthValueSettingPath), AuctionSettingsContractName, LotMaximumEthValueSettingPath, value, blockNumber, treeNodes, opts)
 }
 
-// The lot duration in blocks
-func GetLotDuration(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+// // The lot duration
+func GetLotDuration(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
@@ -112,7 +113,7 @@ func GetLotDuration(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 	if err := auctionSettingsContract.Call(opts, value, "getLotDuration"); err != nil {
 		return 0, fmt.Errorf("error getting lot duration: %w", err)
 	}
-	return (*value).Uint64(), nil
+	return time.Duration((*value).Uint64()) * time.Second, nil
 }
 func ProposeLotDuration(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", LotDurationSettingPath), AuctionSettingsContractName, LotDurationSettingPath, value, blockNumber, treeNodes, opts)
