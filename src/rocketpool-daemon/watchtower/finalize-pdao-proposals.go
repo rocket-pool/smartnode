@@ -32,6 +32,10 @@ type FinalizePdaoProposals struct {
 func NewFinalizePdaoProposals(sp *services.ServiceProvider, logger log.ColorLogger) *FinalizePdaoProposals {
 	return &FinalizePdaoProposals{
 		sp:  sp,
+		cfg: sp.GetConfig(),
+		w:   sp.GetWallet(),
+		ec:  sp.GetEthClient(),
+		rp:  sp.GetRocketPool(),
 		log: logger,
 	}
 }
@@ -40,12 +44,6 @@ func NewFinalizePdaoProposals(sp *services.ServiceProvider, logger log.ColorLogg
 func (t *FinalizePdaoProposals) Run(state *state.NetworkState) error {
 	// Log
 	t.log.Println("Checking for vetoable proposals to finalize...")
-
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.w = t.sp.GetWallet()
-	t.rp = t.sp.GetRocketPool()
-	t.ec = t.sp.GetEthClient()
 
 	// Get timed out minipools
 	propIDs := t.getFinalizableProposals(state)
@@ -59,7 +57,7 @@ func (t *FinalizePdaoProposals) Run(state *state.NetworkState) error {
 	// Finalize proposals
 	for _, propID := range propIDs {
 		if err := t.finalizeProposal(propID); err != nil {
-			t.log.Println(fmt.Errorf("Could not finalize proposal %d: %w", propID, err))
+			t.log.Println(fmt.Errorf("error finalizing proposal %d: %w", propID, err))
 		}
 	}
 

@@ -37,6 +37,10 @@ type DissolveTimedOutMinipools struct {
 func NewDissolveTimedOutMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *DissolveTimedOutMinipools {
 	return &DissolveTimedOutMinipools{
 		sp:  sp,
+		cfg: sp.GetConfig(),
+		w:   sp.GetWallet(),
+		rp:  sp.GetRocketPool(),
+		ec:  sp.GetEthClient(),
 		log: logger,
 	}
 }
@@ -46,11 +50,7 @@ func (t *DissolveTimedOutMinipools) Run(state *state.NetworkState) error {
 	// Log
 	t.log.Println("Checking for timed out minipools to dissolve...")
 
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.w = t.sp.GetWallet()
-	t.rp = t.sp.GetRocketPool()
-	t.ec = t.sp.GetEthClient()
+	// Update contract bindings
 	var err error
 	t.mpMgr, err = minipool.NewMinipoolManager(t.rp)
 	if err != nil {
@@ -72,7 +72,7 @@ func (t *DissolveTimedOutMinipools) Run(state *state.NetworkState) error {
 	// Dissolve minipools
 	for _, mp := range minipools {
 		if err := t.dissolveMinipool(mp); err != nil {
-			t.log.Println(fmt.Errorf("Could not dissolve minipool %s: %w", mp.Common().Address.Hex(), err))
+			t.log.Println(fmt.Errorf("error dissolving minipool %s: %w", mp.Common().Address.Hex(), err))
 		}
 	}
 

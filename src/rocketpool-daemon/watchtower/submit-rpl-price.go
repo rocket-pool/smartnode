@@ -39,11 +39,6 @@ const (
 	twapNumberOfSeconds uint32 = 60 * 60 * 12 // 12 hours
 )
 
-type poolObserveResponse struct {
-	TickCumulatives                    []*big.Int `abi:"tickCumulatives"`
-	SecondsPerLiquidityCumulativeX128s []*big.Int `abi:"secondsPerLiquidityCumulativeX128s"`
-}
-
 // Submit RPL price task
 type SubmitRplPrice struct {
 	ctx       context.Context
@@ -67,6 +62,11 @@ func NewSubmitRplPrice(ctx context.Context, sp *services.ServiceProvider, logger
 		sp:     sp,
 		log:    logger,
 		errLog: errorLogger,
+		cfg:    sp.GetConfig(),
+		ec:     sp.GetEthClient(),
+		w:      sp.GetWallet(),
+		rp:     sp.GetRocketPool(),
+		bc:     sp.GetBeaconClient(),
 		lock:   lock,
 	}
 }
@@ -191,14 +191,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 		t.isRunning = true
 		t.lock.Unlock()
 
-		// Get services
-		t.cfg = t.sp.GetConfig()
-		t.w = t.sp.GetWallet()
-		t.rp = t.sp.GetRocketPool()
-		t.ec = t.sp.GetEthClient()
-		t.bc = t.sp.GetBeaconClient()
 		nodeAddress, _ := t.w.GetAddress()
-
 		logPrefix := "[Price Report]"
 		t.log.Printlnf("%s Starting price report in a separate thread.", logPrefix)
 
@@ -492,7 +485,7 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 	// Get transactor
 	opts, err := t.w.GetTransactor()
 	if err != nil {
-		return fmt.Errorf("Failed getting transactor: %q", err)
+		return fmt.Errorf("failed getting transactor: %q", err)
 	}
 
 	// Check if any rates are stale
@@ -804,7 +797,7 @@ func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, rp *rocketpoo
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("Error getting cross domain message fee for Scroll: %w", err)
+		return fmt.Errorf("error getting cross domain message fee for Scroll: %w", err)
 	}
 	opts.Value = messageFee
 

@@ -51,27 +51,29 @@ type DefendPdaoProps struct {
 }
 
 func NewDefendPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger) *DefendPdaoProps {
+	cfg := sp.GetConfig()
+	log := &logger
+	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &DefendPdaoProps{
 		ctx:              ctx,
 		sp:               sp,
-		log:              &logger,
+		log:              log,
+		cfg:              cfg,
+		w:                sp.GetWallet(),
+		rp:               sp.GetRocketPool(),
+		bc:               sp.GetBeaconClient(),
+		rs:               cfg.GetRocketPoolResources(),
+		gasThreshold:     cfg.AutoTxGasThreshold.Value,
+		maxFee:           maxFee,
+		maxPriorityFee:   maxPriorityFee,
 		lastScannedBlock: nil,
+		intervalSize:     big.NewInt(int64(config.EventLogInterval)),
 	}
 }
 
 // Defend pDAO proposals
 func (t *DefendPdaoProps) Run(state *state.NetworkState) error {
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.w = t.sp.GetWallet()
-	t.rp = t.sp.GetRocketPool()
-	t.w = t.sp.GetWallet()
-	t.bc = t.sp.GetBeaconClient()
-	t.rs = t.cfg.GetRocketPoolResources()
 	t.nodeAddress, _ = t.w.GetAddress()
-	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, t.log)
-	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
-	t.intervalSize = big.NewInt(int64(config.EventLogInterval))
 
 	// Bindings
 	propMgr, err := proposals.NewProposalManager(t.ctx, t.log, t.cfg, t.rp, t.bc)

@@ -34,7 +34,7 @@ const (
 // Reduce bonds task
 type ReduceBonds struct {
 	sp             *services.ServiceProvider
-	log            log.ColorLogger
+	log            *log.ColorLogger
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
@@ -44,37 +44,33 @@ type ReduceBonds struct {
 	maxPriorityFee *big.Int
 }
 
-// Details required to check for bond reduction eligibility
-type minipoolBondReductionDetails struct {
-	Address             common.Address
-	DepositBalance      *big.Int
-	ReduceBondTime      time.Time
-	ReduceBondCancelled bool
-	Status              types.MinipoolStatus
-}
-
 // Create reduce bonds task
 func NewReduceBonds(sp *services.ServiceProvider, logger log.ColorLogger) *ReduceBonds {
+	cfg := sp.GetConfig()
+	log := &logger
+	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
+	gasThreshold := cfg.AutoTxGasThreshold.Value
+
+	if gasThreshold == 0 {
+		log.Println("Automatic tx gas threshold is 0, disabling auto-reduce.")
+	}
+
 	return &ReduceBonds{
-		sp:  sp,
-		log: logger,
+		sp:             sp,
+		log:            log,
+		cfg:            cfg,
+		w:              sp.GetWallet(),
+		rp:             sp.GetRocketPool(),
+		gasThreshold:   gasThreshold,
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
 	}
 }
 
 // Reduce bonds
 func (t *ReduceBonds) Run(state *state.NetworkState) error {
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.w = t.sp.GetWallet()
-	t.rp = t.sp.GetRocketPool()
-	t.w = t.sp.GetWallet()
-	nodeAddress, _ := t.w.GetAddress()
-	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
-	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
-
 	// Check if auto-bond-reduction is disabled
 	if t.gasThreshold == 0 {
-		t.log.Println("Automatic tx gas threshold is 0, disabling auto-reduce.")
 		return nil
 	}
 
@@ -104,6 +100,7 @@ func (t *ReduceBonds) Run(state *state.NetworkState) error {
 	}
 
 	// Get reduceable minipools
+	nodeAddress, _ := t.w.GetAddress()
 	minipools, mpBindings, err := t.getReduceableMinipools(nodeAddress, windowStart, windowLength, latestBlockTime, state, opts)
 	if err != nil {
 		return err
@@ -213,14 +210,14 @@ func (t *ReduceBonds) forceFeeDistribution(state *state.NetworkState) (bool, err
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(&t.log)
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.log)
 		if err != nil {
 			return false, err
 		}
 	}
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, true, t.gasThreshold, &t.log, maxFee, txInfo.SimulationResult.SafeGasLimit) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, true, t.gasThreshold, t.log, maxFee, txInfo.SimulationResult.SafeGasLimit) {
 		return false, nil
 	}
 
@@ -229,7 +226,7 @@ func (t *ReduceBonds) forceFeeDistribution(state *state.NetworkState) (bool, err
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.log, txInfo, opts)
 	if err != nil {
 		return false, err
 	}
@@ -343,7 +340,7 @@ func (t *ReduceBonds) reduceBonds(submissions []*eth.TransactionSubmission, mini
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(&t.log)
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.log)
 		if err != nil {
 			return err
 		}
@@ -352,7 +349,7 @@ func (t *ReduceBonds) reduceBonds(submissions []*eth.TransactionSubmission, mini
 	opts.GasTipCap = t.maxPriorityFee
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, &t.log, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.log, maxFee) {
 		for _, mp := range minipools {
 			timeSinceReductionStart := latestBlockTime.Sub(mp.ReduceBondTime.Formatted())
 			remainingTime := windowDuration - timeSinceReductionStart
@@ -370,7 +367,7 @@ func (t *ReduceBonds) reduceBonds(submissions []*eth.TransactionSubmission, mini
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.log, submissions, callbacks, opts)
 	if err != nil {
 		return err
 	}

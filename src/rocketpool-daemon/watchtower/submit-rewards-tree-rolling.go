@@ -112,6 +112,11 @@ func NewSubmitRewardsTree_Rolling(ctx context.Context, sp *services.ServiceProvi
 		sp:          sp,
 		log:         logger,
 		errLog:      errorLogger,
+		cfg:         cfg,
+		w:           sp.GetWallet(),
+		ec:          sp.GetEthClient(),
+		rp:          sp.GetRocketPool(),
+		bc:          bc,
 		stateMgr:    stateMgr,
 		genesisTime: genesisTime,
 		logPrefix:   logPrefix,
@@ -157,12 +162,7 @@ func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 		t.lock.Unlock()
 		t.log.Printlnf("%s Running record update in a separate thread.", t.logPrefix)
 
-		// Get services
-		t.cfg = t.sp.GetConfig()
-		t.w = t.sp.GetWallet()
-		t.rp = t.sp.GetRocketPool()
-		t.ec = t.sp.GetEthClient()
-		t.bc = t.sp.GetBeaconClient()
+		// Update contract bindings
 		nodeAddress, _ := t.w.GetAddress()
 		var err error
 		t.rewardsPool, err = rewards.NewRewardsPool(t.rp)
@@ -529,11 +529,11 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	// Generate the rewards file
 	treegen, err := rprewards.NewTreeGenerator(&t.log, t.logPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, t.recordMgr.Record)
 	if err != nil {
-		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
+		return fmt.Errorf("error creating Merkle tree generator: %w", err)
 	}
 	rewardsFile, err := treegen.GenerateTree(t.ctx)
 	if err != nil {
-		return fmt.Errorf("Error generating Merkle tree: %w", err)
+		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}
 	for address, network := range rewardsFile.GetHeader().InvalidNetworkNodes {
 		t.printMessage(fmt.Sprintf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network))
@@ -546,13 +546,13 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	)
 	err = localMinipoolPerformanceFile.Write()
 	if err != nil {
-		return fmt.Errorf("Error serializing minipool performance file into JSON: %w", err)
+		return fmt.Errorf("error serializing minipool performance file into JSON: %w", err)
 	}
 
 	if nodeTrusted {
 		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("Error getting the CID for file %s: %w", compressedMinipoolPerformancePath, err)
+			return fmt.Errorf("error getting the CID for file %s: %w", compressedMinipoolPerformancePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated minipool performance CID: %s", minipoolPerformanceCid))
 		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
@@ -571,19 +571,19 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	// Write the rewards tree to disk
 	err = localRewardsFile.Write()
 	if err != nil {
-		return fmt.Errorf("Error saving rewards tree file to %s: %w", rewardsTreePath, err)
+		return fmt.Errorf("error saving rewards tree file to %s: %w", rewardsTreePath, err)
 	}
 
 	if nodeTrusted {
 		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
+			return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
-			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
+			return fmt.Errorf("error submitting rewards snapshot: %w", err)
 		}
 
 		t.printMessage(fmt.Sprintf("Successfully submitted rewards snapshot for interval %d.", currentIndex))
@@ -598,7 +598,7 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 func (t *SubmitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFileHeader *sharedtypes.RewardsFileHeader, cid string, intervalsPassed *big.Int) error {
 	treeRootBytes, err := hex.DecodeString(nmc_utils.RemovePrefix(rewardsFileHeader.MerkleRoot))
 	if err != nil {
-		return fmt.Errorf("Error decoding merkle root: %w", err)
+		return fmt.Errorf("error decoding merkle root: %w", err)
 	}
 	treeRoot := common.BytesToHash(treeRootBytes)
 

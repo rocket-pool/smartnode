@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
@@ -29,8 +30,9 @@ type ManageFeeRecipient struct {
 	ctx context.Context
 	sp  *services.ServiceProvider
 	cfg *config.SmartNodeConfig
-	log log.ColorLogger
+	log *log.ColorLogger
 	bc  beacon.IBeaconClient
+	d   *client.Client
 }
 
 // Create manage fee recipient task
@@ -38,22 +40,20 @@ func NewManageFeeRecipient(ctx context.Context, sp *services.ServiceProvider, lo
 	return &ManageFeeRecipient{
 		ctx: ctx,
 		sp:  sp,
-		log: logger,
+		log: &logger,
+		cfg: sp.GetConfig(),
+		bc:  sp.GetBeaconClient(),
+		d:   sp.GetDocker(),
 	}
 }
 
 // Manage fee recipient
 func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.bc = t.sp.GetBeaconClient()
-	d := t.sp.GetDocker()
-	nodeAddress, _ := t.sp.GetWallet().GetAddress()
-
 	// Log
 	t.log.Println("Checking for correct fee recipient...")
 
 	// Get the fee recipient info for the node
+	nodeAddress, _ := t.sp.GetWallet().GetAddress()
 	feeRecipientInfo, err := t.getFeeRecipientInfo(nodeAddress, state)
 	if err != nil {
 		return fmt.Errorf("error getting fee recipient info: %w", err)
@@ -90,7 +90,7 @@ func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 		t.log.Printlnf("Error updating fee recipient files: %s", err.Error())
 		t.log.Println("Shutting down the validator client for safety to prevent you from being penalized...")
 
-		err = validator.StopValidator(t.cfg, t.bc, &t.log, d, false)
+		err = validator.StopValidator(t.cfg, t.bc, t.log, t.d, false)
 		if err != nil {
 			return fmt.Errorf("error stopping validator client: %w", err)
 		}
@@ -99,7 +99,7 @@ func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 
 	// Restart the VC
 	t.log.Println("Fee recipient files updated successfully! Restarting validator client...")
-	err = validator.StopValidator(t.cfg, t.bc, &t.log, d, true)
+	err = validator.StopValidator(t.cfg, t.bc, t.log, t.d, true)
 	if err != nil {
 		return fmt.Errorf("error restarting validator client: %w", err)
 	}
@@ -132,7 +132,7 @@ func (t *ManageFeeRecipient) getFeeRecipientInfo(nodeAddress common.Address, sta
 		beaconConfig := state.BeaconConfig
 		beaconHead, err := t.bc.GetBeaconHead(t.ctx)
 		if err != nil {
-			return nil, fmt.Errorf("Error getting Beacon head: %w", err)
+			return nil, fmt.Errorf("error getting Beacon head: %w", err)
 		}
 
 		// Check if the user just opted out

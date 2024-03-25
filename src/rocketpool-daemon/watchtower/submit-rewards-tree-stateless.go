@@ -61,6 +61,11 @@ func NewSubmitRewardsTree_Stateless(ctx context.Context, sp *services.ServicePro
 		sp:               sp,
 		log:              &logger,
 		errLog:           &errorLogger,
+		cfg:              sp.GetConfig(),
+		w:                sp.GetWallet(),
+		rp:               sp.GetRocketPool(),
+		ec:               sp.GetEthClient(),
+		bc:               sp.GetBeaconClient(),
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Merkle Tree]",
@@ -145,12 +150,7 @@ func (t *SubmitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 	t.lock.Unlock()
 
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.w = t.sp.GetWallet()
-	t.rp = t.sp.GetRocketPool()
-	t.ec = t.sp.GetEthClient()
-	t.bc = t.sp.GetBeaconClient()
+	// Refresh contract bindings
 	nodeAddress, _ := t.w.GetAddress()
 	t.rewardsPool, err = rewards.NewRewardsPool(t.rp)
 	if err != nil {
@@ -193,7 +193,7 @@ func (t *SubmitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		// Save the compressed file and get the CID for it
 		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
+			return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
 
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
@@ -328,7 +328,7 @@ func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	if nodeTrusted {
 		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
+			return fmt.Errorf("error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated minipool performance CID: %s", minipoolPerformanceCid))
 		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
@@ -354,7 +354,7 @@ func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		// Save the compressed file and get the CID for it
 		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s : %w", rewardsTreePath, err)
+			return fmt.Errorf("error getting CID for file %s : %w", rewardsTreePath, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
@@ -478,7 +478,7 @@ func (t *SubmitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Tim
 
 	// Check if the required epoch is finalized yet
 	if beaconHead.FinalizedEpoch < requiredEpoch {
-		return 0, 0, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
+		return 0, 0, fmt.Errorf("snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d)", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
 	}
 
 	// Get the first successful block

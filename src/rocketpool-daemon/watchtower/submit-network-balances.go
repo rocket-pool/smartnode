@@ -78,6 +78,11 @@ func NewSubmitNetworkBalances(ctx context.Context, sp *services.ServiceProvider,
 		sp:        sp,
 		log:       &logger,
 		errLog:    &errorLogger,
+		cfg:       sp.GetConfig(),
+		w:         sp.GetWallet(),
+		ec:        sp.GetEthClient(),
+		rp:        sp.GetRocketPool(),
+		bc:        sp.GetBeaconClient(),
 		lock:      lock,
 		isRunning: false,
 	}
@@ -196,14 +201,7 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 		t.isRunning = true
 		t.lock.Unlock()
 
-		// Get services
-		t.cfg = t.sp.GetConfig()
-		t.w = t.sp.GetWallet()
-		t.rp = t.sp.GetRocketPool()
-		t.ec = t.sp.GetEthClient()
-		t.bc = t.sp.GetBeaconClient()
 		nodeAddress, _ := t.w.GetAddress()
-
 		logPrefix := "[Balance Report]"
 		t.log.Printlnf("%s Starting balance report in a separate thread.", logPrefix)
 
