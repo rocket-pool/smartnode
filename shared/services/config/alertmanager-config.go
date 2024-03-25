@@ -22,14 +22,27 @@ const AlertingRulesConfigFile string = "alerting/rules/default.yml"
 
 // Defaults
 const defaultAlertmanagerPort uint16 = 9093
+const defaultAlertmanagerHost string = "localhost"
 const defaultAlertmanagerOpenPort config.RPCMode = config.RPC_Closed
 
 // Configuration for Alertmanager
 type AlertmanagerConfig struct {
+
+	// The parent Rocket Pool Config
+	Parent *RocketPoolConfig `yaml:"-"`
+
 	Title string `yaml:"-"`
+
+	// Whether alerting is enabled
+	EnableAlerting config.Parameter `yaml:"enableAlerting,omitempty"`
 
 	// Port for alertmanager UI & API
 	Port config.Parameter `yaml:"port,omitempty"`
+
+	// Host for alertmanager UI & API. ONLY USED IN NATIVE MODE. In Docker, the host is derived from the container name.
+	NativeModeHost config.Parameter `yaml:"nativeModeHost,omitempty"`
+	// Port for alertmanager UI & API. ONLY USED IN NATIVE MODE. In Docker, the host is derived from the container.
+	NativeModePort config.Parameter `yaml:"nativeModePort,omitempty"`
 
 	// Toggle for forwarding the API port outside of Docker; useful for ability to silence alerts
 	OpenPort config.Parameter `yaml:"openPort,omitempty"`
@@ -64,7 +77,20 @@ type AlertmanagerConfig struct {
 func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 
 	return &AlertmanagerConfig{
+		Parent: cfg,
+
 		Title: "Alertmanager Settings",
+
+		EnableAlerting: config.Parameter{
+			ID:                 "enableAlerting",
+			Name:               "Enable Alerting",
+			Description:        "Enable the Smartnode's alerting system. This will provide you alerts when important events occur with your node.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: true},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Alertmanager},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
 
 		Port: config.Parameter{
 			ID:                 "port",
@@ -72,7 +98,29 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 			Description:        "The port Alertmanager will listen on.",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultAlertmanagerPort},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager, config.ContainerID_Prometheus},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Alertmanager, config.ContainerID_Prometheus},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		NativeModeHost: config.Parameter{
+			ID:                 "nativeModeHost",
+			Name:               "Alertmanager Host",
+			Description:        "The host that the node should use to communicate with Alertmanager.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultAlertmanagerHost},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		NativeModePort: config.Parameter{
+			ID:                 "nativeModePort",
+			Name:               "Alertmanager Port",
+			Description:        "The port that the node should use to communicate with Alertmanager.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultAlertmanagerPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus},
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
@@ -197,10 +245,13 @@ func createParameterForAlertEnablement(uniqueName string, label string) config.P
 
 func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
+		&cfg.EnableAlerting,
 		&cfg.Port,
 		&cfg.OpenPort,
-		&cfg.ContainerTag,
+		&cfg.NativeModeHost,
+		&cfg.NativeModePort,
 		&cfg.DiscordWebhookURL,
+		&cfg.ContainerTag,
 		&cfg.AlertEnabled_ClientSyncStatusBeacon,
 		&cfg.AlertEnabled_ClientSyncStatusExecution,
 		&cfg.AlertEnabled_UpcomingSyncCommittee,
