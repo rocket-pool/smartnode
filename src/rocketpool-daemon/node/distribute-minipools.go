@@ -26,7 +26,7 @@ import (
 // Distribute minipools task
 type DistributeMinipools struct {
 	sp                  *services.ServiceProvider
-	log                 log.ColorLogger
+	log                 *log.ColorLogger
 	cfg                 *config.SmartNodeConfig
 	w                   *wallet.Wallet
 	rp                  *rocketpool.RocketPool
@@ -42,46 +42,54 @@ type DistributeMinipools struct {
 
 // Create distribute minipools task
 func NewDistributeMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *DistributeMinipools {
+	cfg := sp.GetConfig()
+	log := &logger
+	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
+	gasThreshold := cfg.AutoTxGasThreshold.Value
+
+	if gasThreshold == 0 {
+		log.Println("Automatic tx gas threshold is 0, disabling auto-distribute.")
+	}
+
+	distributeThresholdFloat := cfg.DistributeThreshold.Value
+	// Safety clamp
+	if distributeThresholdFloat >= 8 {
+		log.Printlnf("WARNING: Auto-distribute threshold is more than 8 ETH (%.6f ETH), reducing to 7.5 ETH for safety", distributeThresholdFloat)
+		distributeThresholdFloat = 7.5
+	} else if distributeThresholdFloat == 0 {
+		log.Println("Auto-distribute threshold is 0, disabling auto-distribute.")
+		return nil
+	}
+	distributeThreshold := eth.EthToWei(distributeThresholdFloat)
+
 	return &DistributeMinipools{
-		sp:    sp,
-		log:   logger,
-		eight: eth.EthToWei(8),
+		sp:                  sp,
+		log:                 log,
+		cfg:                 cfg,
+		w:                   sp.GetWallet(),
+		rp:                  sp.GetRocketPool(),
+		bc:                  sp.GetBeaconClient(),
+		d:                   sp.GetDocker(),
+		gasThreshold:        gasThreshold,
+		distributeThreshold: distributeThreshold,
+		maxFee:              maxFee,
+		maxPriorityFee:      maxPriorityFee,
+		eight:               eth.EthToWei(8),
 	}
 }
 
 // Distribute minipools
 func (t *DistributeMinipools) Run(state *state.NetworkState) error {
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.w = t.sp.GetWallet()
-	t.rp = t.sp.GetRocketPool()
-	t.bc = t.sp.GetBeaconClient()
-	t.d = t.sp.GetDocker()
-	t.w = t.sp.GetWallet()
-	nodeAddress, _ := t.w.GetAddress()
-	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
-	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
-
 	// Check if auto-distributing is disabled
 	if t.gasThreshold == 0 {
-		t.log.Println("Automatic tx gas threshold is 0, disabling auto-distribute.")
 		return nil
 	}
-	distributeThreshold := t.cfg.DistributeThreshold.Value
-	// Safety clamp
-	if distributeThreshold >= 8 {
-		t.log.Printlnf("WARNING: Auto-distribute threshold is more than 8 ETH (%.6f ETH), reducing to 7.5 ETH for safety", distributeThreshold)
-		distributeThreshold = 7.5
-	} else if distributeThreshold == 0 {
-		t.log.Println("Auto-distribute threshold is 0, disabling auto-distribute.")
-		return nil
-	}
-	t.distributeThreshold = eth.EthToWei(distributeThreshold)
 
 	// Log
 	t.log.Println("Checking for minipools to distribute...")
 
 	// Get prelaunch minipools
+	nodeAddress, _ := t.w.GetAddress()
 	minipools, err := t.getDistributableMinipools(nodeAddress, state)
 	if err != nil {
 		return err
@@ -191,7 +199,7 @@ func (t *DistributeMinipools) distributeMinipools(submissions []*eth.Transaction
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(&t.log)
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.log)
 		if err != nil {
 			return err
 		}
@@ -200,7 +208,7 @@ func (t *DistributeMinipools) distributeMinipools(submissions []*eth.Transaction
 	opts.GasTipCap = t.maxPriorityFee
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, &t.log, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.log, maxFee) {
 		return nil
 	}
 
@@ -213,7 +221,7 @@ func (t *DistributeMinipools) distributeMinipools(submissions []*eth.Transaction
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.log, submissions, callbacks, opts)
 	if err != nil {
 		return err
 	}

@@ -26,7 +26,7 @@ import (
 // Promote minipools task
 type PromoteMinipools struct {
 	sp             *services.ServiceProvider
-	log            log.ColorLogger
+	log            *log.ColorLogger
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
@@ -38,27 +38,28 @@ type PromoteMinipools struct {
 
 // Create promote minipools task
 func NewPromoteMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *PromoteMinipools {
+	cfg := sp.GetConfig()
+	log := &logger
+	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &PromoteMinipools{
-		sp:  sp,
-		log: logger,
+		sp:             sp,
+		log:            log,
+		cfg:            cfg,
+		w:              sp.GetWallet(),
+		rp:             sp.GetRocketPool(),
+		gasThreshold:   cfg.AutoTxGasThreshold.Value,
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
 	}
 }
 
 // Stake prelaunch minipools
 func (t *PromoteMinipools) Run(state *state.NetworkState) error {
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.w = t.sp.GetWallet()
-	t.rp = t.sp.GetRocketPool()
-	t.w = t.sp.GetWallet()
-	nodeAddress, _ := t.w.GetAddress()
-	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
-	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
-
 	// Log
 	t.log.Println("Checking for minipools to promote...")
 
 	// Get prelaunch minipools
+	nodeAddress, _ := t.w.GetAddress()
 	minipools, err := t.getVacantMinipools(nodeAddress, state)
 	if err != nil {
 		return err
@@ -176,7 +177,7 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmis
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(&t.log)
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.log)
 		if err != nil {
 			return err
 		}
@@ -186,7 +187,7 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmis
 
 	// Print the gas info
 	forceSubmissions := []*eth.TransactionSubmission{}
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, &t.log, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.log, maxFee) {
 		// Check for the timeout buffers
 		for i, mpd := range minipools {
 			creationTime := time.Unix(mpd.StatusTime.Int64(), 0)
@@ -214,7 +215,7 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmis
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.log, submissions, callbacks, opts)
 	if err != nil {
 		return err
 	}

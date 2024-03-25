@@ -200,6 +200,8 @@ func validateFlags(c *cli.Context) error {
 			return fmt.Errorf("Invalid nonce: %s\n", customNonce)
 		}
 		snCtx.Nonce = nonce
+	} else {
+		snCtx.Nonce = big.NewInt(0)
 	}
 
 	// Make sure the config directory exists

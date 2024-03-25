@@ -54,6 +54,11 @@ func NewCheckSoloMigrations(sp *services.ServiceProvider, logger log.ColorLogger
 		sp:               sp,
 		log:              logger,
 		errLog:           errorLogger,
+		cfg:              sp.GetConfig(),
+		w:                sp.GetWallet(),
+		rp:               sp.GetRocketPool(),
+		ec:               sp.GetEthClient(),
+		bc:               sp.GetBeaconClient(),
 		coll:             coll,
 		lock:             lock,
 		isRunning:        false,
@@ -100,12 +105,7 @@ func (t *CheckSoloMigrations) Run(state *state.NetworkState) error {
 
 // Check for solo staker migration validity
 func (t *CheckSoloMigrations) checkSoloMigrations(state *state.NetworkState) error {
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.w = t.sp.GetWallet()
-	t.rp = t.sp.GetRocketPool()
-	t.ec = t.sp.GetEthClient()
-	t.bc = t.sp.GetBeaconClient()
+	// Update contract bindings
 	var err error
 	t.mpMgr, err = minipool.NewMinipoolManager(t.rp)
 	if err != nil {

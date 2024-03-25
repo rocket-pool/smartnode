@@ -90,6 +90,11 @@ func NewSubmitScrubMinipools(sp *services.ServiceProvider, logger log.ColorLogge
 		sp:        sp,
 		log:       logger,
 		errLog:    errorLogger,
+		cfg:       sp.GetConfig(),
+		w:         sp.GetWallet(),
+		rp:        sp.GetRocketPool(),
+		ec:        sp.GetEthClient(),
+		bc:        sp.GetBeaconClient(),
 		coll:      coll,
 		lock:      lock,
 		isRunning: false,
@@ -118,12 +123,7 @@ func (t *SubmitScrubMinipools) Run(state *state.NetworkState) error {
 		checkPrefix := "[Minipool Scrub]"
 		t.log.Printlnf("%s Starting scrub check in a separate thread.", checkPrefix)
 
-		// Get services
-		t.cfg = t.sp.GetConfig()
-		t.w = t.sp.GetWallet()
-		t.rp = t.sp.GetRocketPool()
-		t.ec = t.sp.GetEthClient()
-		t.bc = t.sp.GetBeaconClient()
+		// Update contract bindings
 		var err error
 		t.mpMgr, err = minipool.NewMinipoolManager(t.rp)
 		if err != nil {

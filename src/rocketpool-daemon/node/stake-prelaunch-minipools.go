@@ -31,7 +31,7 @@ import (
 // Stake prelaunch minipools task
 type StakePrelaunchMinipools struct {
 	sp             *services.ServiceProvider
-	log            log.ColorLogger
+	log            *log.ColorLogger
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	vMgr           *validator.ValidatorManager
@@ -46,30 +46,31 @@ type StakePrelaunchMinipools struct {
 
 // Create stake prelaunch minipools task
 func NewStakePrelaunchMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *StakePrelaunchMinipools {
+	cfg := sp.GetConfig()
+	log := &logger
+	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &StakePrelaunchMinipools{
-		sp:  sp,
-		log: logger,
+		sp:             sp,
+		log:            log,
+		cfg:            sp.GetConfig(),
+		w:              sp.GetWallet(),
+		vMgr:           sp.GetValidatorManager(),
+		rp:             sp.GetRocketPool(),
+		bc:             sp.GetBeaconClient(),
+		d:              sp.GetDocker(),
+		gasThreshold:   cfg.AutoTxGasThreshold.Value,
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
 	}
 }
 
 // Stake prelaunch minipools
 func (t *StakePrelaunchMinipools) Run(state *state.NetworkState) error {
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.w = t.sp.GetWallet()
-	t.rp = t.sp.GetRocketPool()
-	t.bc = t.sp.GetBeaconClient()
-	t.w = t.sp.GetWallet()
-	t.d = t.sp.GetDocker()
-	t.vMgr = t.sp.GetValidatorManager()
-	nodeAddress, _ := t.w.GetAddress()
-	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, &t.log)
-	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
-
 	// Log
 	t.log.Println("Checking for minipools to launch...")
 
 	// Get prelaunch minipools
+	nodeAddress, _ := t.w.GetAddress()
 	minipools, err := t.getPrelaunchMinipools(nodeAddress, state)
 	if err != nil {
 		return err
@@ -107,7 +108,7 @@ func (t *StakePrelaunchMinipools) Run(state *state.NetworkState) error {
 		NOTE: This is prompted by the CLI now, so automatic restarting may be obviated
 		// Restart validator process if any minipools were staked successfully
 		if stakedMinipools {
-			if err := validator.RestartValidator(t.cfg, t.bc, &t.log, t.d); err != nil {
+			if err := validator.RestartValidator(t.cfg, t.bc, t.log, t.d); err != nil {
 				return err
 			}
 		}
@@ -228,7 +229,7 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(&t.log)
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.log)
 		if err != nil {
 			return false, err
 		}
@@ -239,7 +240,7 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 	// Print the gas info
 	forceSubmissions := []*eth.TransactionSubmission{}
 	forceMinipools := []*rpstate.NativeMinipoolDetails{}
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, &t.log, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.log, maxFee) {
 		// Check for the timeout buffers
 		for i, mpd := range minipools {
 			prelaunchTime := time.Unix(mpd.StatusTime.Int64(), 0)
@@ -270,7 +271,7 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, &t.log, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.log, submissions, callbacks, opts)
 	if err != nil {
 		return false, err
 	}

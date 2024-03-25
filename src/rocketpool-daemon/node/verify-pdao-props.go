@@ -59,11 +59,22 @@ type VerifyPdaoProps struct {
 }
 
 func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger) *VerifyPdaoProps {
+	cfg := sp.GetConfig()
+	log := &logger
+	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &VerifyPdaoProps{
 		ctx:                 ctx,
 		sp:                  sp,
-		log:                 &logger,
+		log:                 log,
+		cfg:                 cfg,
+		w:                   sp.GetWallet(),
+		rp:                  sp.GetRocketPool(),
+		bc:                  sp.GetBeaconClient(),
+		gasThreshold:        cfg.AutoTxGasThreshold.Value,
+		maxFee:              maxFee,
+		maxPriorityFee:      maxPriorityFee,
 		lastScannedBlock:    nil,
+		intervalSize:        big.NewInt(int64(config.EventLogInterval)),
 		validPropCache:      map[uint64]bool{},
 		rootSubmissionCache: map[uint64]map[uint64]*protocol.RootSubmitted{},
 	}
@@ -71,17 +82,8 @@ func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logge
 
 // Verify pDAO proposals
 func (t *VerifyPdaoProps) Run(state *state.NetworkState) error {
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.w = t.sp.GetWallet()
-	t.rp = t.sp.GetRocketPool()
-	t.w = t.sp.GetWallet()
-	t.nodeAddress, _ = t.w.GetAddress()
-	t.maxFee, t.maxPriorityFee = getAutoTxInfo(t.cfg, t.log)
-	t.gasThreshold = t.cfg.AutoTxGasThreshold.Value
-	t.intervalSize = big.NewInt(int64(config.EventLogInterval))
-
 	// Bindings
+	t.nodeAddress, _ = t.w.GetAddress()
 	propMgr, err := proposals.NewProposalManager(t.ctx, t.log, t.cfg, t.rp, t.bc)
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager: %w", err)

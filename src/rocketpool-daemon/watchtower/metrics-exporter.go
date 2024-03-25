@@ -51,7 +51,7 @@ func runMetricsServer(sp *services.ServiceProvider, logger log.ColorLogger, scru
 	})
 	err := http.ListenAndServe(fmt.Sprintf("%s:%d", metricsAddress, metricsPort), nil)
 	if err != nil {
-		return fmt.Errorf("Error running HTTP server: %w", err)
+		return fmt.Errorf("error running HTTP server: %w", err)
 	}
 
 	return nil

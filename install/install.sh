@@ -361,7 +361,7 @@ install() {
     { cp -r "$PACKAGE_FILES_PATH/override" "$RP_SHARE_PATH" || fail "Could not copy override folder to the Rocket Pool system directory."; } >&2
     { cp -r "$PACKAGE_FILES_PATH/scripts" "$RP_SHARE_PATH" || fail "Could not copy scripts folder to the Rocket Pool system directory."; } >&2
     { cp -r "$PACKAGE_FILES_PATH/templates" "$RP_SHARE_PATH" || fail "Could not copy templates folder to the Rocket Pool system directory."; } >&2
-    { find "$HD_SHARE_PATH/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || fail "Could not set executable permissions on package files."; } >&2
+    { find "$RP_SHARE_PATH/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || fail "Could not set executable permissions on package files."; } >&2
 
 
     # Clean up unnecessary files from old installations

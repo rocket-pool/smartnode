@@ -49,6 +49,10 @@ func NewGenerateRewardsTree(ctx context.Context, sp *services.ServiceProvider, l
 		sp:        sp,
 		log:       logger,
 		errLog:    errorLogger,
+		cfg:       sp.GetConfig(),
+		rp:        sp.GetRocketPool(),
+		ec:        sp.GetEthClient(),
+		bc:        sp.GetBeaconClient(),
 		lock:      lock,
 		isRunning: false,
 	}
@@ -56,11 +60,6 @@ func NewGenerateRewardsTree(ctx context.Context, sp *services.ServiceProvider, l
 
 // Check for generation requests
 func (t *GenerateRewardsTree) Run() error {
-	// Get services
-	t.cfg = t.sp.GetConfig()
-	t.rp = t.sp.GetRocketPool()
-	t.ec = t.sp.GetEthClient()
-	t.bc = t.sp.GetBeaconClient()
 	t.log.Println("Checking for manual rewards tree generation requests...")
 
 	// Check if rewards generation is already running
@@ -79,10 +78,10 @@ func (t *GenerateRewardsTree) Run() error {
 		t.log.Println("Watchtower storage directory doesn't exist, creating...")
 		err = os.Mkdir(requestDir, 0755)
 		if err != nil {
-			return fmt.Errorf("Error creating watchtower storage directory: %w", err)
+			return fmt.Errorf("error creating watchtower storage directory: %w", err)
 		}
 	} else if err != nil {
-		return fmt.Errorf("Error enumerating files in watchtower storage directory: %w", err)
+		return fmt.Errorf("error enumerating files in watchtower storage directory: %w", err)
 	}
 
 	for _, file := range files {
@@ -92,14 +91,14 @@ func (t *GenerateRewardsTree) Run() error {
 			indexString := strings.TrimSuffix(filename, config.RegenerateRewardsTreeRequestSuffix)
 			index, err := strconv.ParseUint(indexString, 0, 64)
 			if err != nil {
-				return fmt.Errorf("Error parsing index from [%s]: %w", filename, err)
+				return fmt.Errorf("error parsing index from [%s]: %w", filename, err)
 			}
 
 			// Delete the file
 			path := filepath.Join(requestDir, filename)
 			err = os.Remove(path)
 			if err != nil {
-				return fmt.Errorf("Error removing request file [%s]: %w", path, err)
+				return fmt.Errorf("error removing request file [%s]: %w", path, err)
 			}
 
 			// Generate the rewards tree
@@ -171,12 +170,12 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 				t.log.Printlnf("%s Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", generationPrefix, elBlockHeader.Number.Uint64(), archiveEcUrl)
 				ec, err := ethclient.Dial(archiveEcUrl)
 				if err != nil {
-					t.handleError(fmt.Errorf("Error connecting to archive EC: %w", err))
+					t.handleError(fmt.Errorf("error connecting to archive EC: %w", err))
 					return
 				}
 				client, err = rocketpool.NewRocketPool(ec, rs.StorageAddress, rs.MulticallAddress, rs.BalanceBatcherAddress)
 				if err != nil {
-					t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", err))
+					t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", generationPrefix, err))
 					return
 				}
 
@@ -186,18 +185,18 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 					return nil
 				}, opts)
 				if err != nil {
-					t.handleError(fmt.Errorf("%s Error verifying rETH address with Archive EC: %w", err))
+					t.handleError(fmt.Errorf("%s error verifying rETH address with Archive EC: %w", generationPrefix, err))
 					return
 				}
 				// Create the state manager with the archive EC
 				stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, ec, t.bc, &t.log)
 				if err != nil {
-					t.handleError(fmt.Errorf("%s Error creating new NetworkStateManager with ARchive EC: %w", err))
+					t.handleError(fmt.Errorf("%s error creating new NetworkStateManager with ARchive EC: %w", generationPrefix, err))
 					return
 				}
 			} else {
 				// No archive node specified
-				t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", elBlockHeader.Number.Uint64()))
+				t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified", elBlockHeader.Number.Uint64()))
 				return
 			}
 
@@ -206,7 +205,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 
 	// Sanity check the rETH address to make sure the client is working right
 	if address != rs.RethAddress {
-		t.handleError(fmt.Errorf("***ERROR*** Your Primary EC provided %s as the rETH address, but it should have been %s!", address.Hex(), rs.RethAddress.Hex()))
+		t.handleError(fmt.Errorf("***ERROR*** Your Primary EC provided %s as the rETH address, but it should have been %s", address.Hex(), rs.RethAddress.Hex()))
 		return
 	}
 

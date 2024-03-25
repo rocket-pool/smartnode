@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -14,26 +15,25 @@ import (
 // Manage download rewards trees task
 type DownloadRewardsTrees struct {
 	sp  *services.ServiceProvider
-	log log.ColorLogger
+	log *log.ColorLogger
+	cfg *config.SmartNodeConfig
+	rp  *rocketpool.RocketPool
 }
 
 // Create manage fee recipient task
 func NewDownloadRewardsTrees(sp *services.ServiceProvider, logger log.ColorLogger) *DownloadRewardsTrees {
 	return &DownloadRewardsTrees{
 		sp:  sp,
-		log: logger,
+		log: &logger,
+		cfg: sp.GetConfig(),
+		rp:  sp.GetRocketPool(),
 	}
 }
 
 // Manage fee recipient
 func (t *DownloadRewardsTrees) Run(state *state.NetworkState) error {
-	// Get services
-	cfg := t.sp.GetConfig()
-	rp := t.sp.GetRocketPool()
-	nodeAddress, _ := t.sp.GetWallet().GetAddress()
-
 	// Check if the user opted into downloading rewards files
-	if cfg.RewardsTreeMode.Value != config.RewardsMode_Download {
+	if t.cfg.RewardsTreeMode.Value != config.RewardsMode_Download {
 		return nil
 	}
 
@@ -42,12 +42,13 @@ func (t *DownloadRewardsTrees) Run(state *state.NetworkState) error {
 
 	// Get the current interval
 	currentIndex := state.NetworkDetails.RewardIndex
+	nodeAddress, _ := t.sp.GetWallet().GetAddress()
 
 	// Check for missing intervals
 	missingIntervals := []uint64{}
 	for i := uint64(0); i < currentIndex; i++ {
 		// Check if the tree file exists
-		treeFilePath := cfg.GetRewardsTreePath(i)
+		treeFilePath := t.cfg.GetRewardsTreePath(i)
 		_, err := os.Stat(treeFilePath)
 		if os.IsNotExist(err) {
 			t.log.Printlnf("You are missing the rewards tree file for interval %d.", i)
@@ -64,11 +65,11 @@ func (t *DownloadRewardsTrees) Run(state *state.NetworkState) error {
 	// Download missing intervals
 	for _, missingInterval := range missingIntervals {
 		fmt.Printf("Downloading interval %d file... ", missingInterval)
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, missingInterval, nil)
+		intervalInfo, err := rprewards.GetIntervalInfo(t.rp, t.cfg, nodeAddress, missingInterval, nil)
 		if err != nil {
 			return fmt.Errorf("error getting interval %d info: %w", missingInterval, err)
 		}
-		err = rprewards.DownloadRewardsFile(cfg, &intervalInfo)
+		err = rprewards.DownloadRewardsFile(t.cfg, &intervalInfo)
 		if err != nil {
 			fmt.Println()
 			return err
