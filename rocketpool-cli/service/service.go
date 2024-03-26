@@ -1401,15 +1401,12 @@ func serviceVersion(c *cli.Context) error {
 	}
 
 	var mevBoostString string
-	var mevBoostMode string
-
-	if cfg.MevBoost.Mode.Value.(sharedConfig.Mode) == sharedConfig.Mode_Local {
-		mevBoostMode = "Local Mode"
-	} else {
-		mevBoostMode = "External Mode"
-	}
 	if cfg.EnableMevBoost.Value.(bool) {
-		mevBoostString = fmt.Sprintf("Enabled (%s)\n\tImage: %s", mevBoostMode, cfg.MevBoost.ContainerTag.Value.(string))
+		if cfg.MevBoost.Mode.Value.(sharedConfig.Mode) == sharedConfig.Mode_Local {
+			mevBoostString = fmt.Sprintf("Enabled (Local Mode)\n\tImage: %s", cfg.MevBoost.ContainerTag.Value.(string))
+		} else {
+			mevBoostString = "Enabled (External Mode)"
+		}
 	} else {
 		mevBoostString = "Disabled"
 	}

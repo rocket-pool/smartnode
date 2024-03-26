@@ -111,6 +111,7 @@ func getCurrentVotingDelegate(c *cli.Context) (*api.NetworkCurrentVotingDelegate
 
 	// Response
 	response := api.NetworkCurrentVotingDelegateResponse{}
+	response.AccountAddress = nodeAccount.Address
 
 	// Set the delegate
 	delegate, err := network.GetCurrentVotingDelegate(rp, nodeAccount.Address, nil)

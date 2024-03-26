@@ -17,11 +17,17 @@ type Template struct {
 	Dst string
 }
 
-func (t Template) Write(data interface{}) error {
+func (t Template) Write(data any) error {
 	return t.WriteWithDelims(data, "{{", "}}")
 }
 
-func (t Template) WriteWithDelims(data interface{}, leftDelim string, rightDelim string) error {
+func (t Template) WriteWithDelims(data any, leftDelim string, rightDelim string) error {
+	// Create the destination folder if it doesn't exist
+	destPath := filepath.Dir(t.Dst)
+	err := os.MkdirAll(destPath, 0775)
+	if err != nil {
+		return fmt.Errorf("error creating destination directory [%s]: %w", destPath, err)
+	}
 
 	// Open the output file, creating it if it doesn't exist
 	runtimeFile, err := os.OpenFile(t.Dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0664)

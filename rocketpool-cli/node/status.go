@@ -23,6 +23,7 @@ const (
 	colorGreen        string = "\033[32m"
 	colorYellow       string = "\033[33m"
 	smoothingPoolLink string = "https://docs.rocketpool.net/guides/redstone/whats-new.html#smoothing-pool"
+	maxAlertItems     int    = 3
 )
 
 func getStatus(c *cli.Context) error {
@@ -382,15 +383,14 @@ func getStatus(c *cli.Context) error {
 	if cfg.EnableMetrics.Value == true && len(status.Alerts) > 0 {
 		// only print alerts if enabled; to avoid misleading the user to thinking everything is fine (since we really don't know).
 		fmt.Printf("\n%s=== Alerts ===%s\n", colorGreen, colorReset)
-		const maxItems = 3
 		for i, alert := range status.Alerts {
 			fmt.Println(alert.ColorString())
-			if i == maxItems-1 {
+			if i == maxAlertItems-1 {
 				break
 			}
 		}
-		if len(status.Alerts) > maxItems {
-			fmt.Printf("... and %d more.\n", len(status.Alerts)-maxItems)
+		if len(status.Alerts) > maxAlertItems {
+			fmt.Printf("... and %d more.\n", len(status.Alerts)-maxAlertItems)
 		}
 	}
 
