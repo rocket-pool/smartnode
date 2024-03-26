@@ -131,17 +131,13 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== New Testnet: Holesky ===%s\n", colorGreen, colorReset)
-	fmt.Println("A new test network has been deployed named Holesky! This will replace Prater as the new long-term test network for Rocket Pool node operators. To use it, select the \"Holesky Testnet\" option from the Network dialog in the Smartnode section of `rocketpool service config`.\n")
-
-	fmt.Printf("%s=== Prater Removal  ===%s\n", colorGreen, colorReset)
-	fmt.Println("The previously deprecated Prater test network is now removed from the Smartnode.\n")
+	fmt.Printf("%s=== New Notification module ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode alert notification functionality allows you to receive notifications about the health and important events of your Rocket Pool Smartnode. Check `https://docs.rocketpool.net/guides/node/maintenance/alerting` for more details.")
+	fmt.Println("")
 
 	fmt.Printf("%s=== New Geth Mode: PBSS ===%s\n", colorGreen, colorReset)
-	fmt.Println("Geth has been updated to v1.13, which includes the much-anticipated Path-Based State Scheme (PBSS) storage mode. With PBSS, you never have to manually prune Geth again; it prunes automatically behind the scenes during runtime! To enable it, check the \"Enable PBSS\" box in the Execution Client section of the `rocketpool service config` UI. Note you **will have to resync** Geth after enabling this for it to take effect, and will lose attestations if you don't have a fallback client enabled!\n")
-
-	fmt.Printf("%s=== MEV-Boost Changes ===%s\n", colorGreen, colorReset)
-	fmt.Println("The \"Blocknative\" relay has been shut down, so we have removed it from the MEV-Boost relay options. The other relays are still available.")
+	fmt.Println("Geth has been updated to v1.13, which includes the much-anticipated Path-Based State Scheme (PBSS) storage mode. With PBSS, you never have to manually prune Geth again; it prunes automatically behind the scenes during runtime! To enable it, check the \"Enable PBSS\" box in the Execution Client section of the `rocketpool service config` UI. Note you **will have to resync** Geth after enabling this for it to take effect, and will lose attestations if you don't have a fallback client enabled!")
+	fmt.Println("")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
