@@ -124,6 +124,21 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.NodeRPLLocked, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
 			return err
 		})
+
+		wg.Go(func() error {
+			var err error
+			response.IsVotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.OnchainVotingDelegate, err = network.GetCurrentVotingDelegate(rp, nodeAccount.Address, nil)
+			if err == nil {
+				response.OnchainVotingDelegateFormatted = formatResolvedAddress(c, response.OnchainVotingDelegate)
+			}
+			return err
+		})
 	}
 
 	// Get node account balances
@@ -178,17 +193,17 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			r := &response.SnapshotResponse
 			if cfg.Smartnode.GetSnapshotDelegationAddress() != "" {
 				idHash := cfg.Smartnode.GetVotingSnapshotID()
-				response.VotingDelegate, err = s.Delegation(nil, nodeAccount.Address, idHash)
+				response.SnapshotVotingDelegate, err = s.Delegation(nil, nodeAccount.Address, idHash)
 				if err != nil {
 					r.Error = err.Error()
 					return nil
 				}
 				blankAddress := common.Address{}
-				if response.VotingDelegate != blankAddress {
-					response.VotingDelegateFormatted = formatResolvedAddress(c, response.VotingDelegate)
+				if response.SnapshotVotingDelegate != blankAddress {
+					response.SnapshotVotingDelegateFormatted = formatResolvedAddress(c, response.SnapshotVotingDelegate)
 				}
 
-				votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.VotingDelegate)
+				votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SnapshotVotingDelegate)
 				if err != nil {
 					r.Error = err.Error()
 					return nil

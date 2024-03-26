@@ -153,13 +153,13 @@ func getStatus(c *cli.Context) error {
 			fmt.Println()
 		}
 
-		// Voting status
-		fmt.Printf("%s=== DAO Voting ===%s\n", colorGreen, colorReset)
+		// Snapshot voting status
+		fmt.Printf("%s=== Snapshot Voting ===%s\n", colorGreen, colorReset)
 		blankAddress := common.Address{}
-		if status.VotingDelegate == blankAddress {
-			fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool governance proposals.")
+		if status.SnapshotVotingDelegate == blankAddress {
+			fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool Snapshot governance proposals.")
 		} else {
-			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", colorBlue, status.VotingDelegateFormatted, colorReset)
+			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, status.SnapshotVotingDelegateFormatted, colorReset)
 		}
 
 		if status.SnapshotResponse.Error != "" {
@@ -175,12 +175,28 @@ func getStatus(c *cli.Context) error {
 				}
 			}
 			if len(status.SnapshotResponse.ActiveSnapshotProposals) == 0 {
-				fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
+				fmt.Print("Rocket Pool has no Snapshot governance proposals being voted on.\n")
 			} else {
-				fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.SnapshotResponse.ActiveSnapshotProposals), voteCount)
+				fmt.Printf("Rocket Pool has %d Snapshot governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.SnapshotResponse.ActiveSnapshotProposals), voteCount)
 			}
 			fmt.Println("")
 		}
+
+		// Onchain voting status
+		fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
+		if status.IsVotingInitialized {
+			fmt.Println("The node has been initialized for onchain voting.")
+
+		} else {
+			fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool network initialize-voting` to participate in onchain votes.")
+		}
+
+		if status.OnchainVotingDelegate == status.AccountAddress {
+			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals.")
+		} else {
+			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, status.OnchainVotingDelegateFormatted, colorReset)
+		}
+		fmt.Println("")
 
 		// Primary withdrawal address & balances
 		fmt.Printf("%s=== Primary Withdrawal Address ===%s\n", colorGreen, colorReset)
