@@ -59,9 +59,10 @@ var (
 		Usage:   "The max priority fee you want a transaction to use, in gwei. Use 0 to set it automatically.",
 		Value:   0,
 	}
-	nonceFlag *cli.StringFlag = &cli.StringFlag{
+	nonceFlag *cli.Uint64Flag = &cli.Uint64Flag{
 		Name:  "nonce",
 		Usage: "Use this flag to explicitly specify the nonce that the next transaction should use, so it can override an existing 'stuck' transaction. If running a command that sends multiple transactions, the first will be given this nonce and the rest will be incremented sequentially.",
+		Value: 0,
 	}
 	debugFlag *cli.BoolFlag = &cli.BoolFlag{
 		Name:  "debug",
@@ -193,15 +194,10 @@ func validateFlags(c *cli.Context) error {
 	}
 
 	// If set, validate custom nonce
-	customNonce := c.String(nonceFlag.Name)
-	if customNonce != "" {
-		nonce, ok := big.NewInt(0).SetString(customNonce, 0)
-		if !ok {
-			return fmt.Errorf("Invalid nonce: %s\n", customNonce)
-		}
-		snCtx.Nonce = nonce
-	} else {
-		snCtx.Nonce = big.NewInt(0)
+	snCtx.Nonce = big.NewInt(0)
+	if c.IsSet(nonceFlag.Name) {
+		customNonce := c.Uint64(nonceFlag.Name)
+		snCtx.Nonce.SetUint64(customNonce)
 	}
 
 	// Make sure the config directory exists
