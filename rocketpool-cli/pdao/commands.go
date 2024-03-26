@@ -783,7 +783,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "deposit-fee",
 										Aliases:   []string{"df"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.DepositFeeSettingPath, "specify a percentage between 0 and 0.01 (e.g., '0.0001' for 0.010%)"),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.DepositFeeSettingPath, "specify a percentage between 0 and 0.01 (e.g., '0.001' for 0.10%)"),
 										UsageText: "rocketpool pdao propose setting deposit deposit-fee value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
