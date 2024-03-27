@@ -30,6 +30,7 @@ const (
 	checkRocketStorageInterval     time.Duration = time.Second * 15
 	checkNodeRegisteredInterval    time.Duration = time.Second * 15
 	checkNodeWalletInterval        time.Duration = time.Second * 15
+	contractRefreshInterval        time.Duration = time.Minute * 5
 )
 
 var (
@@ -223,8 +224,8 @@ func (sp *ServiceProvider) WaitNodeRegistered(verbose bool) error {
 	if err := sp.RefreshRocketPoolContracts(); err != nil {
 		return fmt.Errorf("error loading contract bindings: %w", err)
 	}
+	contractRefreshTime := time.Now()
 	for {
-		// TODO: move into node tasks and handle refreshing contracts
 		nodeRegistered, err := sp.getNodeRegistered()
 		if err != nil {
 			return err
@@ -237,6 +238,14 @@ func (sp *ServiceProvider) WaitNodeRegistered(verbose bool) error {
 		}
 		if nmcutils.SleepWithCancel(sp.GetContext(), checkNodeRegisteredInterval) {
 			return nil
+		}
+
+		// Refresh the contracts if needed to make sure we're polling the latest ones
+		if time.Since(contractRefreshTime) > contractRefreshInterval {
+			if err := sp.RefreshRocketPoolContracts(); err != nil {
+				return fmt.Errorf("error refreshing contract bindings: %w", err)
+			}
+			contractRefreshTime = time.Now()
 		}
 	}
 }

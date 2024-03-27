@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/fatih/color"
 	"github.com/hashicorp/go-version"
@@ -30,6 +31,7 @@ type ServiceProvider struct {
 
 	// Internal use
 	loadedContractVersion *version.Version
+	refreshLock           *sync.Mutex
 	userDir               string
 }
 
@@ -108,6 +110,7 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 		rplFaucet:             rplFaucet,
 		snapshotDelegation:    snapshotDelegation,
 		loadedContractVersion: defaultVersion,
+		refreshLock:           &sync.Mutex{},
 	}
 	return provider, nil
 }
@@ -146,6 +149,9 @@ func (p *ServiceProvider) GetSnapshotDelegation() *contracts.SnapshotDelegation 
 
 // Refresh the Rocket Pool contracts if they've been updated since they were last loaded
 func (p *ServiceProvider) RefreshRocketPoolContracts() error {
+	p.refreshLock.Lock()
+	defer p.refreshLock.Unlock()
+
 	// Get the version on-chain
 	protocolVersion, err := p.rocketPool.GetProtocolVersion(nil)
 	if err != nil {
