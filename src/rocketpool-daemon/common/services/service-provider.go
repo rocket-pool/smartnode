@@ -1,14 +1,12 @@
 package services
 
 import (
-	"context"
 	"fmt"
-	"math/big"
 	"os"
 	"path/filepath"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/fatih/color"
+	"github.com/hashicorp/go-version"
 	"github.com/rocket-pool/node-manager-core/node/services"
 	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -31,8 +29,8 @@ type ServiceProvider struct {
 	snapshotDelegation *contracts.SnapshotDelegation
 
 	// Internal use
-	contractLoadBlock uint64
-	userDir           string
+	loadedContractVersion *version.Version
+	userDir               string
 }
 
 // Creates a new ServiceProvider instance
@@ -100,14 +98,16 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 	}
 
 	// Create the provider
+	defaultVersion, _ := version.NewSemver("0.0.0")
 	provider := &ServiceProvider{
-		userDir:            userDir,
-		ServiceProvider:    sp,
-		cfg:                cfg,
-		rocketPool:         rp,
-		validatorManager:   vMgr,
-		rplFaucet:          rplFaucet,
-		snapshotDelegation: snapshotDelegation,
+		userDir:               userDir,
+		ServiceProvider:       sp,
+		cfg:                   cfg,
+		rocketPool:            rp,
+		validatorManager:      vMgr,
+		rplFaucet:             rplFaucet,
+		snapshotDelegation:    snapshotDelegation,
+		loadedContractVersion: defaultVersion,
 	}
 	return provider, nil
 }
@@ -144,19 +144,21 @@ func (p *ServiceProvider) GetSnapshotDelegation() *contracts.SnapshotDelegation 
 // === Utils ===
 // =============
 
-func (p *ServiceProvider) LoadContractsIfStale() error {
-	if p.contractLoadBlock > 0 {
-		return nil
-	}
-
-	// Get the current block
-	var err error
-	p.contractLoadBlock, err = p.GetEthClient().BlockNumber(context.Background())
+// Refresh the Rocket Pool contracts if they've been updated since they were last loaded
+func (p *ServiceProvider) RefreshRocketPoolContracts() error {
+	// Get the version on-chain
+	protocolVersion, err := p.rocketPool.GetProtocolVersion(nil)
 	if err != nil {
-		return fmt.Errorf("error getting latest block: %w", err)
+		return err
 	}
 
-	return p.rocketPool.LoadAllContracts(&bind.CallOpts{
-		BlockNumber: big.NewInt(int64(p.contractLoadBlock)),
-	})
+	// Reload everything if it's different from what we have
+	if !p.loadedContractVersion.Equal(protocolVersion) {
+		err := p.rocketPool.LoadAllContracts(nil)
+		if err != nil {
+			return fmt.Errorf("error updating contracts to [%s]: %w", protocolVersion.String(), err)
+		}
+		p.loadedContractVersion = protocolVersion
+	}
+	return nil
 }

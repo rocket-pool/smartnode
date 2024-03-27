@@ -94,7 +94,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	nodeAddress, _ := w.GetAddress()
 
 	// Load contracts
-	err := serviceProvider.LoadContractsIfStale()
+	err := serviceProvider.RefreshRocketPoolContracts()
 	if err != nil {
 		return types.ResponseStatus_Error, nil, fmt.Errorf("error loading contract bindings: %w", err)
 	}
