@@ -119,13 +119,16 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, txInfo,
+	validated, err := tx.HandleTx(c, rp, txInfo,
 		confirmMsg,
 		"proposing kick from security council",
 		"Proposing kick from security council...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

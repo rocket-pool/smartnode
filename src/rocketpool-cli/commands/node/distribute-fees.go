@@ -47,13 +47,16 @@ func distribute(c *cli.Context) error {
 	fmt.Printf("\trETH pool stakers will receive %.6f ETH.\n\n", rEthShare)
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to distribute the ETH from your node's fee distributor?",
 		"distributing rewards",
 		"Distributing rewards...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

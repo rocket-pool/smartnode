@@ -59,7 +59,7 @@ func setSmoothingPoolState(c *cli.Context, optIn bool) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		confirmMsg,
 		identifierMsg,
 		submitMsg,
@@ -70,6 +70,9 @@ func setSmoothingPoolState(c *cli.Context, optIn bool) error {
 			return fmt.Errorf("%w\nYour fee recipient will be automatically reset to your node's distributor in a few minutes, and your validator client will restart.", err)
 		}
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

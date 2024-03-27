@@ -55,13 +55,16 @@ func setStakeRplForAllowed(c *cli.Context, addressOrEns string, allowed bool) er
 		identifierMsg = "removing address from RPL stake whitelist"
 		submitMsg = "Removing address from RPL stake whitelist..."
 	}
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		confirmMsg,
 		identifierMsg,
 		submitMsg,
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

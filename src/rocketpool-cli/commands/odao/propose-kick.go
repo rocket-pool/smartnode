@@ -101,13 +101,16 @@ func proposeKick(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to submit this proposal?",
 		"proposing kicking Oracle DAO member",
 		"Proposing kick of %s from the oracle DAO...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

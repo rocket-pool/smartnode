@@ -71,13 +71,16 @@ func proposeSecurityCouncilInvite(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to propose inviting %s (%s) to the security council?", id, address.Hex()),
 		"security council invitation proposal",
 		"Proposing invitation to security council...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

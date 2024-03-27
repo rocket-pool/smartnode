@@ -38,13 +38,16 @@ func finalizeProposal(c *cli.Context, proposalID uint64) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to finalize proposal %d?", proposalID),
 		"finalizing proposal",
 		"Finalizing proposal...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

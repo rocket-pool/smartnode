@@ -107,7 +107,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		}
 
 		// Run the approve TX
-		err = tx.HandleTx(c, rp, stakeResponse.Data.ApproveTxInfo,
+		validated, err := tx.HandleTx(c, rp, stakeResponse.Data.ApproveTxInfo,
 			"Do you want to let the staking contract interact with your RPL?",
 			"approving RPL for staking",
 			"Approving RPL for staking...",
@@ -115,18 +115,23 @@ func nodeStakeRpl(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
+		if validated {
+			fmt.Println("Successfully approved staking access to RPL.")
+		}
 
-		fmt.Println("Successfully approved staking access to RPL.")
 	}
 
 	// Run the stake TX
-	err = tx.HandleTx(c, rp, stakeResponse.Data.StakeTxInfo,
+	validated, err := tx.HandleTx(c, rp, stakeResponse.Data.StakeTxInfo,
 		fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach over 150%% collateral!", math.RoundDown(eth.WeiToEth(amountWei), 6)),
 		"staking RPL",
 		"Staking RPL...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

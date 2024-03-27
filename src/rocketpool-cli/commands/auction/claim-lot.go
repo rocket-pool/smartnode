@@ -88,7 +88,7 @@ func claimFromLot(c *cli.Context) error {
 	}
 
 	// Claim RPL from lots
-	err = tx.HandleTxBatch(c, rp, txs,
+	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to claim %d lots?", len(selectedLots)),
 		func(i int) string {
 			return fmt.Sprintf("claim of lot %d", selectedLots[i].Index)
@@ -97,6 +97,9 @@ func claimFromLot(c *cli.Context) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

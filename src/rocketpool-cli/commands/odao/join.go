@@ -66,7 +66,7 @@ func join(c *cli.Context) error {
 	}
 
 	// Run the Approve TX
-	err = tx.HandleTx(c, rp, response.Data.ApproveTxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.ApproveTxInfo,
 		"Do you want to let the Oracle DAO manager interact with your RPL? This is required to post your bond in order to join it.",
 		"approving RPL for bond",
 		"Approving RPL for joining the Oracle DAO...",
@@ -74,17 +74,21 @@ func join(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("Successfully approved bond access to RPL.")
+	if validated {
+		fmt.Println("Successfully approved bond access to RPL.")
+	}
 
 	// Run the Join TX
-	err = tx.HandleTx(c, rp, response.Data.JoinTxInfo,
+	validated, err = tx.HandleTx(c, rp, response.Data.JoinTxInfo,
 		"Are you sure you want to join the oracle DAO? Your RPL bond will be locked until you leave.",
 		"joining Oracle DAO",
 		"Joining the ODAO...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

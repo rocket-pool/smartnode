@@ -54,13 +54,16 @@ func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocket
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to submit this proposal?",
 		"setting update",
 		"Proposing Protocol DAO setting update...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

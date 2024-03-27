@@ -17,9 +17,9 @@ import (
 )
 
 // Handle a transaction, either printing its details, signing it, or submitting it and waiting for it to be included
-func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, confirmMessage string, identifier string, submissionMessage string) error {
+func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, confirmMessage string, identifier string, submissionMessage string) (bool, error) {
 	// Print the TX data if requested
-	if c.Bool(utils.PrintTxDataFlag) {
+	if c.Bool(utils.PrintTxDataFlag.Name) {
 		fmt.Printf("TX Data for %s:\n", identifier)
 		fmt.Printf("\tTo:       %s\n", txInfo.To.Hex())
 		fmt.Printf("\tData:     %s\n", hexutil.Encode(txInfo.Data))
@@ -31,18 +31,18 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, co
 		if txInfo.SimulationResult.SimulationError != "" {
 			fmt.Printf("%sWARNING: '%s' failed simulation: %s\nThis transaction will likely revert if you submit it.%s\n", terminal.ColorYellow, identifier, txInfo.SimulationResult.SimulationError, terminal.ColorReset)
 		}
-		return nil
+		return false, nil
 	}
 
 	// Make sure the TX was successful
 	if txInfo.SimulationResult.SimulationError != "" {
-		return fmt.Errorf("simulating %s failed: %s", identifier, txInfo.SimulationResult.SimulationError)
+		return false, fmt.Errorf("simulating %s failed: %s", identifier, txInfo.SimulationResult.SimulationError)
 	}
 
 	// Assign max fees
 	maxFee, maxPrioFee, err := gas.GetMaxFees(c, rp, txInfo.SimulationResult)
 	if err != nil {
-		return fmt.Errorf("error getting fee information: %w", err)
+		return false, fmt.Errorf("error getting fee information: %w", err)
 	}
 
 	// Check the nonce flag
@@ -55,45 +55,45 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, co
 	submission, _ := eth.CreateTxSubmissionFromInfo(txInfo, nil)
 
 	// Sign only (no submission) if requested
-	if c.Bool(utils.SignTxOnlyFlag) {
+	if c.Bool(utils.SignTxOnlyFlag.Name) {
 		response, err := rp.Api.Tx.SignTx(submission, nonce, maxFee, maxPrioFee)
 		if err != nil {
-			return fmt.Errorf("error signing transaction: %w", err)
+			return false, fmt.Errorf("error signing transaction: %w", err)
 		}
 		fmt.Printf("Signed transaction (%s):\n", identifier)
 		fmt.Println(response.Data.SignedTx)
 		fmt.Println()
 		updateCustomNonce(rp)
-		return nil
+		return false, nil
 	}
 
 	// Confirm submission
 	if !(c.Bool(utils.YesFlag.Name) || utils.Confirm(confirmMessage)) {
 		fmt.Println("Cancelled.")
-		return nil
+		return false, nil
 	}
 
 	// Submit it
 	fmt.Println(submissionMessage)
 	response, err := rp.Api.Tx.SubmitTx(submission, nonce, maxFee, maxPrioFee)
 	if err != nil {
-		return fmt.Errorf("error submitting transaction: %w", err)
+		return false, fmt.Errorf("error submitting transaction: %w", err)
 	}
 
 	// Wait for it
 	utils.PrintTransactionHash(rp, response.Data.TxHash)
 	if _, err = rp.Api.Tx.WaitForTransaction(response.Data.TxHash); err != nil {
-		return fmt.Errorf("error waiting for transaction: %w", err)
+		return false, fmt.Errorf("error waiting for transaction: %w", err)
 	}
 
 	updateCustomNonce(rp)
-	return nil
+	return true, nil
 }
 
 // Handle a batch of transactions, either printing their details, signing them, or submitting them and waiting for them to be included
-func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.TransactionInfo, confirmMessage string, identifierFunc func(int) string, submissionMessage string) error {
+func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.TransactionInfo, confirmMessage string, identifierFunc func(int) string, submissionMessage string) (bool, error) {
 	// Print the TX data if requested
-	if c.Bool(utils.PrintTxDataFlag) {
+	if c.Bool(utils.PrintTxDataFlag.Name) {
 		for i, info := range txInfos {
 			id := identifierFunc(i)
 			fmt.Printf("Data for TX %d (%s):\n", i, id)
@@ -110,13 +110,13 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.Transaction
 				fmt.Println()
 			}
 		}
-		return nil
+		return false, nil
 	}
 
 	// Make sure the TXs were successful
 	for i, txInfo := range txInfos {
 		if txInfo.SimulationResult.SimulationError != "" {
-			return fmt.Errorf("simulating %s failed: %s", identifierFunc(i), txInfo.SimulationResult.SimulationError)
+			return false, fmt.Errorf("simulating %s failed: %s", identifierFunc(i), txInfo.SimulationResult.SimulationError)
 		}
 	}
 
@@ -128,7 +128,7 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.Transaction
 	}
 	maxFee, maxPrioFee, err := gas.GetMaxFees(c, rp, gasInfo)
 	if err != nil {
-		return fmt.Errorf("error getting fee information: %w", err)
+		return false, fmt.Errorf("error getting fee information: %w", err)
 	}
 
 	// Check the nonce flag
@@ -145,10 +145,10 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.Transaction
 	}
 
 	// Sign only (no submission) if requested
-	if c.Bool(utils.SignTxOnlyFlag) {
+	if c.Bool(utils.SignTxOnlyFlag.Name) {
 		response, err := rp.Api.Tx.SignTxBatch(submissions, nonce, maxFee, maxPrioFee)
 		if err != nil {
-			return fmt.Errorf("error signing transactions: %w", err)
+			return false, fmt.Errorf("error signing transactions: %w", err)
 		}
 
 		for i, tx := range response.Data.SignedTxs {
@@ -156,25 +156,25 @@ func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.Transaction
 			fmt.Println(tx)
 			fmt.Println()
 		}
-		return nil
+		return false, nil
 	}
 
 	// Confirm submission
 	if !(c.Bool(utils.YesFlag.Name) || utils.Confirm(confirmMessage)) {
 		fmt.Println("Cancelled.")
-		return nil
+		return false, nil
 	}
 
 	// Submit them
 	fmt.Println(submissionMessage)
 	response, err := rp.Api.Tx.SubmitTxBatch(submissions, nonce, maxFee, maxPrioFee)
 	if err != nil {
-		return fmt.Errorf("error submitting transactions: %w", err)
+		return false, fmt.Errorf("error submitting transactions: %w", err)
 	}
 
 	// Wait for them
 	utils.PrintTransactionBatchHashes(rp, response.Data.TxHashes)
-	return waitForTransactions(rp, response.Data.TxHashes, identifierFunc)
+	return true, waitForTransactions(rp, response.Data.TxHashes, identifierFunc)
 }
 
 // Wait for a batch of transactions to get included in blocks

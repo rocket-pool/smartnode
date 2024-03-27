@@ -87,7 +87,7 @@ func executeProposal(c *cli.Context) error {
 	}
 
 	// Run the TXs
-	err = tx.HandleTxBatch(c, rp, txs,
+	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to execute %d proposals?", len(selectedProposals)),
 		func(i int) string {
 			return fmt.Sprintf("executing proposal %d", selectedProposals[i].ID)
@@ -96,6 +96,9 @@ func executeProposal(c *cli.Context) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

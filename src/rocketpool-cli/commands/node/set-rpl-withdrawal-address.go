@@ -100,7 +100,7 @@ func setRplWithdrawalAddress(c *cli.Context, withdrawalAddressOrEns string) erro
 			}
 
 			// Run the TX
-			err = tx.HandleTx(c, rp, sendResponse.Data.TxInfo,
+			validated, err := tx.HandleTx(c, rp, sendResponse.Data.TxInfo,
 				fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString),
 				fmt.Sprintf("sending ETH to %s", withdrawalAddressString),
 				fmt.Sprintf("Sending ETH to %s...\n", withdrawalAddressString),
@@ -108,8 +108,12 @@ func setRplWithdrawalAddress(c *cli.Context, withdrawalAddressOrEns string) erro
 			if err != nil {
 				return err
 			}
+			if validated {
+				fmt.Printf("Successfully sent the test transaction.\nPlease verify that your RPL withdrawal address received it before confirming it below.")
+				fmt.Println()
+			}
 
-			fmt.Printf("Successfully sent the test transaction.\nPlease verify that your RPL withdrawal address received it before confirming it below.\n\n")
+			fmt.Println()
 		}
 	}
 
@@ -119,13 +123,16 @@ func setRplWithdrawalAddress(c *cli.Context, withdrawalAddressOrEns string) erro
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString),
 		"setting RPL withdrawal address",
 		"Setting RPL withdrawal address...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

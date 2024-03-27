@@ -194,7 +194,7 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf(
 			"You are about to create a new, vacant minipool with a minimum possible commission rate of %f%%. Once created, you will be able to migrate your existing validator into this minipool.\n"+
 				"%sAre you sure you want to do this?%s",
@@ -206,6 +206,9 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log

@@ -85,13 +85,16 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrEns strin
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		confirmMsg,
 		"sending tokens",
 		submitMsg,
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

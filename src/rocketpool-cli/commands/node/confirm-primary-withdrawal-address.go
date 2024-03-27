@@ -32,13 +32,16 @@ func confirmPrimaryWithdrawalAddress(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to confirm your node's address as the new primary withdrawal address?",
 		"withdrawal address confirmation",
 		"Confirming new primary withdrawal address...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

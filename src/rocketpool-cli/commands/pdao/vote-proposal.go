@@ -151,13 +151,16 @@ func voteOnProposal(c *cli.Context) error {
 	fmt.Printf("You currently have %s voting power.\n\n", response.Data.VotingPower.String())
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to %s '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID),
 		"voting on proposal",
 		"Submitting vote...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

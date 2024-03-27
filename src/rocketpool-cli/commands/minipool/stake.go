@@ -77,7 +77,7 @@ func stakeMinipools(c *cli.Context) error {
 	fmt.Println()
 
 	// Run the TXs
-	err = tx.HandleTxBatch(c, rp, txs,
+	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to stake %d minipools?", len(selectedMinipools)),
 		func(i int) string {
 			return fmt.Sprintf("stake of minipool %s", selectedMinipools[i].Address.Hex())
@@ -86,6 +86,9 @@ func stakeMinipools(c *cli.Context) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

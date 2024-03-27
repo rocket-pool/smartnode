@@ -126,6 +126,8 @@ ______           _        _    ______           _
 		maxFeeFlag,
 		maxPriorityFeeFlag,
 		nonceFlag,
+		utils.PrintTxDataFlag,
+		utils.SignTxOnlyFlag,
 		debugFlag,
 		secureSessionFlag,
 	}

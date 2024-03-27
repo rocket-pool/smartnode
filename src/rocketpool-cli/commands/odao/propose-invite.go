@@ -36,13 +36,16 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to submit this proposal?",
 		"inviting member",
 		"Inviting %s to the oracle DAO...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

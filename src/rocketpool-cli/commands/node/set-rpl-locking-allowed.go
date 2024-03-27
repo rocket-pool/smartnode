@@ -41,13 +41,16 @@ func setRplLockingAllowed(c *cli.Context, allowedToLock bool) error {
 		confirmMsg = "Are you sure you want to block the node from locking RPL when creating governance proposals or to challenge a proposal? The node won't be able to create proposals or to create challenges."
 		submissionMsg = "Disabling RPL locking..."
 	}
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		confirmMsg,
 		"modifying RPL locking status",
 		submissionMsg,
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

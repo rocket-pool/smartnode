@@ -43,13 +43,16 @@ func sendMessage(c *cli.Context, toAddressOrEns string, message []byte) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to send a message to %s?", toAddressString),
 		"sending message",
 		fmt.Sprintf("Sending message to %s...", toAddressString),
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

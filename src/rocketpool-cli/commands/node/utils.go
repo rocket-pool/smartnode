@@ -424,7 +424,7 @@ func SwapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
 		}
 
 		// Run the approve TX
-		err = tx.HandleTx(c, rp, response.Data.ApproveTxInfo,
+		validated, err := tx.HandleTx(c, rp, response.Data.ApproveTxInfo,
 			"Do you want to let the new RPL contract interact with your legacy RPL?",
 			"approving RPL for swapping",
 			"Approving legacy RPL for swapping...",
@@ -432,18 +432,23 @@ func SwapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
 		if err != nil {
 			return err
 		}
+		if validated {
+			fmt.Println("Successfully approved access to legacy RPL.")
+		}
 
-		fmt.Println("Successfully approved access to legacy RPL.")
 	}
 
 	// Run the swap TX
-	err = tx.HandleTx(c, rp, response.Data.SwapTxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.SwapTxInfo,
 		fmt.Sprintf("Are you sure you want to swap %.6f legacy RPL for new RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)),
 		"swapping legacy RPL for new RPL",
 		"Swapping legacy RPL for new RPL...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

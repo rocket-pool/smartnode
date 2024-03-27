@@ -73,7 +73,7 @@ func upgradeDelegates(c *cli.Context) error {
 	fmt.Printf("Minipools will upgrade to delegate contract %s.\n", status.Data.LatestDelegate.Hex())
 
 	// Run the TXs
-	err = tx.HandleTxBatch(c, rp, txs,
+	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to upgrade %d minipools?", len(selectedMinipools)),
 		func(i int) string {
 			return fmt.Sprintf("upgrade of minipool %s", selectedMinipools[i].Address.Hex())
@@ -82,6 +82,9 @@ func upgradeDelegates(c *cli.Context) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

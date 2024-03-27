@@ -23,13 +23,16 @@ func nodeClearVotingDelegate(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you remove your node's current delegate address for voting on governance proposals?",
 		"removing delegate",
 		"Removing delegate...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return
