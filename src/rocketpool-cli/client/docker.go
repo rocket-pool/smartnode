@@ -27,7 +27,7 @@ func (c *Client) CheckIfContainerExists(containerName string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	cl, err := d.ContainerList(context.Background(), dt.ContainerListOptions{
+	cl, err := d.ContainerList(context.Background(), dtc.ListOptions{
 		All: true, Filters: filters.NewArgs(
 			filters.Arg("name", containerName),
 		),
@@ -77,7 +77,7 @@ func (c *Client) StartContainer(containerName string) error {
 	if err != nil {
 		return err
 	}
-	return d.ContainerStart(context.Background(), containerName, dt.ContainerStartOptions{})
+	return d.ContainerStart(context.Background(), containerName, dtc.StartOptions{})
 }
 
 // Restart a container
@@ -95,7 +95,7 @@ func (c *Client) RemoveContainer(containerName string) error {
 	if err != nil {
 		return err
 	}
-	return d.ContainerRemove(context.Background(), containerName, dt.ContainerRemoveOptions{})
+	return d.ContainerRemove(context.Background(), containerName, dtc.RemoveOptions{})
 }
 
 // Deletes a volume

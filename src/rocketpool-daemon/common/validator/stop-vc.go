@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/rocket-pool/node-manager-core/beacon"
@@ -37,7 +36,7 @@ func StopValidator(cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, log *lo
 		}
 
 		// Get all containers
-		containers, err := d.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+		containers, err := d.ContainerList(context.Background(), container.ListOptions{All: true})
 		if err != nil {
 			return fmt.Errorf("error getting docker containers: %w", err)
 		}
