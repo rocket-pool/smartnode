@@ -37,6 +37,9 @@ func confirmPrimaryWithdrawalAddress(c *cli.Context) error {
 		"withdrawal address confirmation",
 		"Confirming new primary withdrawal address...",
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
 	fmt.Printf("The node's primary withdrawal address was successfully set to the node address.\n")

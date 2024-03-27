@@ -214,6 +214,9 @@ func nodeClaimRewards(c *cli.Context) error {
 		"rewards claiming",
 		"Claiming Rewards...",
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
 	fmt.Println("Successfully claimed rewards.")

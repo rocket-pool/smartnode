@@ -52,6 +52,9 @@ func distribute(c *cli.Context) error {
 		"distributing rewards",
 		"Distributing rewards...",
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
 	fmt.Println("Successfully distributed your fee distributor's balance. Your rewards should arrive in your withdrawal address shortly.")

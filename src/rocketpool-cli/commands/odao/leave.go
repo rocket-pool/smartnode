@@ -78,6 +78,9 @@ func leave(c *cli.Context) error {
 		"leaving Oracle DAO",
 		"Leaving the Oracle DAO...",
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
 	fmt.Println("Successfully left the oracle DAO.")

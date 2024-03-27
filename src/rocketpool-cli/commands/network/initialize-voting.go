@@ -33,6 +33,9 @@ func initializeVoting(c *cli.Context) error {
 		"initialize voting",
 		"Initializing voting...",
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
 	fmt.Printf("Successfully initialized voting. Your node can now vote on Protocol DAO proposals.")

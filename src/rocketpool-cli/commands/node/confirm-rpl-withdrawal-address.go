@@ -37,6 +37,9 @@ func confirmRplWithdrawalAddress(c *cli.Context) error {
 		"confirming the RPL withdrawal address",
 		"Confirming new RPL withdrawal address...",
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
 	fmt.Printf("The node's RPL withdrawal address was successfully set to the node address.\n")

@@ -57,7 +57,7 @@ func voteOnProposal(c *cli.Context) error {
 			}
 		}
 		if !found {
-			return fmt.Errorf("Proposal %d can not be voted on.", selectedId)
+			return fmt.Errorf("proposal %d can not be voted on", selectedId)
 		}
 	} else {
 		// Prompt for proposal selection
@@ -156,6 +156,9 @@ func voteOnProposal(c *cli.Context) error {
 		"voting on proposal",
 		"Submitting vote...",
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
 	fmt.Printf("Successfully %s '%s' for proposal %d.\n", actionPast, voteDirectionLabel, selectedProposal.ID)

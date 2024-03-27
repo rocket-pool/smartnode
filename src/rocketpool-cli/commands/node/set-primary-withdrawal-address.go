@@ -71,7 +71,7 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 			inputAmount := utils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddressString), "^\\d+(\\.\\d+)?$", "Invalid amount")
 			testAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
-				return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)
+				return fmt.Errorf("invalid test amount '%s': %w", inputAmount, err)
 			}
 			amountWei := eth.EthToWei(testAmount)
 			sendResponse, err := rp.Api.Node.Send(amountWei, "eth", withdrawalAddress)
@@ -83,7 +83,7 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 			if !sendResponse.Data.CanSend {
 				fmt.Println("Cannot send test transaction:")
 				if sendResponse.Data.InsufficientBalance {
-					fmt.Println("You do not have %.6f ETH in your node wallet.", testAmount)
+					fmt.Printf("You do not have %.6f ETH in your node wallet.\n", testAmount)
 				}
 				return nil
 			}
@@ -98,7 +98,8 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 				return err
 			}
 
-			fmt.Println("Successfully sent the test transaction.\nPlease verify that your primary withdrawal address received it before confirming it below.\n")
+			fmt.Println("Successfully sent the test transaction.\nPlease verify that your primary withdrawal address received it before confirming it below.")
+			fmt.Println()
 		}
 	}
 
@@ -108,6 +109,9 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 		"setting node's primary withdrawal address",
 		fmt.Sprintf("Setting primary withdrawal address to %s...", withdrawalAddressString),
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
 	if !c.Bool(setPrimaryWithdrawalAddressForceFlag) {

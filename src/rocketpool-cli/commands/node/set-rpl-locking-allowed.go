@@ -46,6 +46,10 @@ func setRplLockingAllowed(c *cli.Context, allowedToLock bool) error {
 		"modifying RPL locking status",
 		submissionMsg,
 	)
+	if err != nil {
+		return err
+	}
+
 	// Log & return
 	if allowedToLock {
 		fmt.Printf("Successfully allowed the node to lock RPL.\n")

@@ -73,7 +73,6 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 			}
 			return nil
 		}
-		txInfo = response.Data.TxInfo
 
 		// Create the kick string
 		txInfo = response.Data.TxInfo

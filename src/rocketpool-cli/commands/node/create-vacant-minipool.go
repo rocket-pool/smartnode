@@ -44,7 +44,8 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 		return nil
 	}
 
-	fmt.Println("Your eth2 client is on the correct network.\n")
+	fmt.Println("Your eth2 client is on the correct network.")
+	fmt.Println()
 
 	// Check if the fee distributor has been initialized
 	feeDistributorResponse, err := rp.Api.Node.InitializeFeeDistributor()
@@ -71,7 +72,7 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 		// Parse amount
 		depositAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String(amountFlag), err)
+			return fmt.Errorf("invalid deposit amount '%s': %w", c.String(amountFlag), err)
 		}
 		amount = depositAmount
 	} else {
@@ -110,7 +111,7 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 		// Parse max slippage
 		maxNodeFeeSlippagePerc, err := strconv.ParseFloat(c.String("max-slippage"), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid maximum commission rate slippage '%s': %w", c.String("max-slippage"), err)
+			return fmt.Errorf("invalid maximum commission rate slippage '%s': %w", c.String("max-slippage"), err)
 		}
 		maxNodeFeeSlippage := maxNodeFeeSlippagePerc / 100
 
@@ -135,13 +136,13 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 		var success bool
 		salt, success = big.NewInt(0).SetString(c.String(saltFlag), 0)
 		if !success {
-			return fmt.Errorf("Invalid minipool salt: %s", c.String(saltFlag))
+			return fmt.Errorf("invalid minipool salt: %s", c.String(saltFlag))
 		}
 	} else {
 		buffer := make([]byte, 32)
 		_, err = rand.Read(buffer)
 		if err != nil {
-			return fmt.Errorf("Error generating random salt: %w", err)
+			return fmt.Errorf("error generating random salt: %w", err)
 		}
 		salt = big.NewInt(0).SetBytes(buffer)
 	}
@@ -216,7 +217,8 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 	if c.IsSet(cvmMnemonicFlag) {
 		mnemonic = c.String(cvmMnemonicFlag)
 	} else if !c.Bool(utils.YesFlag.Name) {
-		fmt.Println("You have the option of importing your validator's private key into the Smartnode's Validator Client instead of running your own Validator Client separately. In doing so, the Smartnode will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.\n")
+		fmt.Println("You have the option of importing your validator's private key into the Smartnode's Validator Client instead of running your own Validator Client separately. In doing so, the Smartnode will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.")
+		fmt.Println()
 		if utils.Confirm("Would you like to import your key and automatically migrate your withdrawal credentials?") {
 			mnemonic = wallet.PromptMnemonic()
 		}
@@ -226,7 +228,9 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 		handleImport(c, rp, response.Data.MinipoolAddress, mnemonic)
 	} else {
 		// Ignore importing / it errored out
-		fmt.Println("Since you're not importing your validator key, you will still be responsible for running and maintaining your own Validator Client with the validator's private key loaded, just as you are today.\n\n")
+		fmt.Println("Since you're not importing your validator key, you will still be responsible for running and maintaining your own Validator Client with the validator's private key loaded, just as you are today.")
+		fmt.Println()
+		fmt.Println()
 		fmt.Printf("You must now upgrade your validator's withdrawal credentials manually, using as tool such as `ethdo` (https://github.com/wealdtech/ethdo), to the following minipool address:\n\n\t%s\n\n", response.Data.MinipoolAddress)
 	}
 

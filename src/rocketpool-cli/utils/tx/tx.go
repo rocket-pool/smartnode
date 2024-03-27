@@ -11,19 +11,13 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/gas"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
 )
 
 // Handle a transaction, either printing its details, signing it, or submitting it and waiting for it to be included
 func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, confirmMessage string, identifier string, submissionMessage string) error {
-	// Make sure the TX was successful
-	/*
-		if txInfo.SimulationResult.SimulationError != "" {
-			return fmt.Errorf("simulating %s failed: %s", identifier, txInfo.SimulationResult.SimulationError)
-		}
-	*/
-
 	// Print the TX data if requested
 	if c.Bool(utils.PrintTxDataFlag) {
 		fmt.Printf("TX Data for %s:\n", identifier)
@@ -32,7 +26,17 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, co
 		fmt.Printf("\tValue:    %s\n", txInfo.Value.String())
 		fmt.Printf("\tEst. Gas: %d\n", txInfo.SimulationResult.EstimatedGasLimit)
 		fmt.Printf("\tSafe Gas: %d\n", txInfo.SimulationResult.SafeGasLimit)
+
+		// Warn if the TX failed simulation
+		if txInfo.SimulationResult.SimulationError != "" {
+			fmt.Printf("%sWARNING: '%s' failed simulation: %s\nThis transaction will likely revert if you submit it.%s\n", terminal.ColorYellow, identifier, txInfo.SimulationResult.SimulationError, terminal.ColorReset)
+		}
 		return nil
+	}
+
+	// Make sure the TX was successful
+	if txInfo.SimulationResult.SimulationError != "" {
+		return fmt.Errorf("simulating %s failed: %s", identifier, txInfo.SimulationResult.SimulationError)
 	}
 
 	// Assign max fees
@@ -88,25 +92,32 @@ func HandleTx(c *cli.Context, rp *client.Client, txInfo *eth.TransactionInfo, co
 
 // Handle a batch of transactions, either printing their details, signing them, or submitting them and waiting for them to be included
 func HandleTxBatch(c *cli.Context, rp *client.Client, txInfos []*eth.TransactionInfo, confirmMessage string, identifierFunc func(int) string, submissionMessage string) error {
-	// Make sure the TXs were successful
-	for i, txInfo := range txInfos {
-		if txInfo.SimulationResult.SimulationError != "" {
-			return fmt.Errorf("simulating %s failed: %s", identifierFunc(i), txInfo.SimulationResult.SimulationError)
-		}
-	}
-
 	// Print the TX data if requested
 	if c.Bool(utils.PrintTxDataFlag) {
 		for i, info := range txInfos {
-			fmt.Printf("Data for TX %d (%s):\n", i, identifierFunc(i))
+			id := identifierFunc(i)
+			fmt.Printf("Data for TX %d (%s):\n", i, id)
 			fmt.Printf("\tTo:       %s\n", info.To.Hex())
 			fmt.Printf("\tData:     %s\n", hexutil.Encode(info.Data))
 			fmt.Printf("\tValue:    %s\n", info.Value.String())
 			fmt.Printf("\tEst. Gas: %d\n", info.SimulationResult.EstimatedGasLimit)
 			fmt.Printf("\tSafe Gas: %d\n", info.SimulationResult.SafeGasLimit)
 			fmt.Println()
+
+			// Warn if the TX failed simulation
+			if info.SimulationResult.SimulationError != "" {
+				fmt.Printf("%sWARNING: '%s' failed simulation: %s\nThis transaction will likely revert if you submit it.%s\n", terminal.ColorYellow, id, info.SimulationResult.SimulationError, terminal.ColorReset)
+				fmt.Println()
+			}
 		}
 		return nil
+	}
+
+	// Make sure the TXs were successful
+	for i, txInfo := range txInfos {
+		if txInfo.SimulationResult.SimulationError != "" {
+			return fmt.Errorf("simulating %s failed: %s", identifierFunc(i), txInfo.SimulationResult.SimulationError)
+		}
 	}
 
 	// Assign max fees

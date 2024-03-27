@@ -40,6 +40,9 @@ func setTimezoneLocation(c *cli.Context) error {
 		"timezone change",
 		"Setting timezone...",
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
 	fmt.Printf("The node's timezone location was successfully updated to '%s'.\n", timezoneLocation)

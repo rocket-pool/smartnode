@@ -49,7 +49,8 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
-	fmt.Println("Your eth2 client is on the correct network.\n")
+	fmt.Println("Your Beacon Node is on the correct network.")
+	fmt.Println()
 
 	// Check if the fee distributor has been initialized
 	feeDistributorResponse, err := rp.Api.Node.InitializeFeeDistributor()
@@ -73,7 +74,7 @@ func nodeDeposit(c *cli.Context) error {
 		// Parse amount
 		depositAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String(amountFlag), err)
+			return fmt.Errorf("invalid deposit amount '%s': %w", c.String(amountFlag), err)
 		}
 		amount = depositAmount
 	} else {
@@ -113,7 +114,7 @@ func nodeDeposit(c *cli.Context) error {
 		// Parse max slippage
 		maxNodeFeeSlippagePerc, err := strconv.ParseFloat(c.String(maxSlippageFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid maximum commission rate slippage '%s': %w", c.String(maxSlippageFlag), err)
+			return fmt.Errorf("invalid maximum commission rate slippage '%s': %w", c.String(maxSlippageFlag), err)
 		}
 		maxNodeFeeSlippage := maxNodeFeeSlippagePerc / 100
 
@@ -138,13 +139,13 @@ func nodeDeposit(c *cli.Context) error {
 		var success bool
 		salt, success = big.NewInt(0).SetString(c.String(saltFlag), 0)
 		if !success {
-			return fmt.Errorf("Invalid minipool salt: %s", c.String(saltFlag))
+			return fmt.Errorf("invalid minipool salt: %s", c.String(saltFlag))
 		}
 	} else {
 		buffer := make([]byte, 32)
 		_, err = rand.Read(buffer)
 		if err != nil {
-			return fmt.Errorf("Error generating random salt: %w", err)
+			return fmt.Errorf("error generating random salt: %w", err)
 		}
 		salt = big.NewInt(0).SetBytes(buffer)
 	}

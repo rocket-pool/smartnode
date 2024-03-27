@@ -101,7 +101,7 @@ func getClaimIndicesForBond(bond *api.BondClaimResult) []uint64 {
 	}
 
 	indices := make([]uint64, 0, len(indexMap))
-	for index, _ := range indexMap {
+	for index := range indexMap {
 		indices = append(indices, index)
 	}
 

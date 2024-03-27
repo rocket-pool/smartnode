@@ -52,7 +52,7 @@ func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocket
 			fmt.Printf("You do not have enough unlocked RPL (proposals require locking %.6f RPL, but you only have %.6f RPL staked and unlocked).", eth.WeiToEth(response.Data.ProposalBond), eth.WeiToEth(big.NewInt(0).Sub(response.Data.StakedRpl, response.Data.LockedRpl)))
 		}
 		if response.Data.UnknownSetting {
-			fmt.Sprintf("Unknown setting '%s' on contract '%s'.\n", setting, contract)
+			fmt.Printf("Unknown setting '%s' on contract '%s'.\n", setting, contract)
 		}
 		return nil
 	}
@@ -63,8 +63,11 @@ func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocket
 		"setting update",
 		"Proposing Protocol DAO setting update...",
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
-	fmt.Printf("Successfully proposed setting '%s.%s' to '%s'.\n", contract, setting, value)
+	fmt.Printf("Successfully proposed setting '%s.%s' to '%v'.\n", contract, setting, value)
 	return nil
 }

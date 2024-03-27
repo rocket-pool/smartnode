@@ -40,7 +40,7 @@ func testRecovery(c *cli.Context) error {
 	skipValidatorKeyRecovery := c.Bool(skipValidatorRecoveryFlag.Name)
 	if !skipValidatorKeyRecovery {
 		// Check for custom keys
-		customKeyPasswordFile, err := promptForCustomKeyPasswords(rp, cfg, true)
+		customKeyPasswordFile, err := promptForCustomKeyPasswords(cfg, true)
 		if err != nil {
 			return err
 		}
@@ -102,7 +102,7 @@ func testRecovery(c *cli.Context) error {
 		derivationPathString := c.String(derivationPathFlag.Name)
 		var derivationPath *string
 		if derivationPathString != "" {
-			fmt.Printf("Using a custom derivation path (%s).\n", derivationPath)
+			fmt.Printf("Using a custom derivation path (%s).\n", derivationPathString)
 			derivationPath = &derivationPathString
 		}
 

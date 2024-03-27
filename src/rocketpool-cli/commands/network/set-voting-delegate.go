@@ -49,6 +49,9 @@ func setVotingDelegate(c *cli.Context, nameOrAddress string) error {
 		"setting voting delegate",
 		"Setting voting delegate...",
 	)
+	if err != nil {
+		return err
+	}
 
 	// Log & return
 	fmt.Printf("The node's voting delegate was successfuly set to %s.\n", addressString)

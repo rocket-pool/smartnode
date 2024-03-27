@@ -68,7 +68,7 @@ func nodeStakeRpl(c *cli.Context) error {
 	case "all":
 		amountWei = rplBalance
 	case "":
-		amountWei, err = promptForRplAmount(rp, priceResponse.Data, rplBalance)
+		amountWei, err = promptForRplAmount(priceResponse.Data, rplBalance)
 		if err != nil {
 			return err
 		}
@@ -76,7 +76,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		// Parse amount
 		stakeAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid stake amount '%s': %w", c.String(amountFlag), err)
+			return fmt.Errorf("invalid stake amount '%s': %w", c.String(amountFlag), err)
 		}
 		amountWei = eth.EthToWei(stakeAmount)
 	}
@@ -135,7 +135,7 @@ func nodeStakeRpl(c *cli.Context) error {
 }
 
 // Prompt the user for the amount of RPL to stake
-func promptForRplAmount(rp *client.Client, priceResponse *api.NetworkRplPriceData, rplBalance *big.Int) (*big.Int, error) {
+func promptForRplAmount(priceResponse *api.NetworkRplPriceData, rplBalance *big.Int) (*big.Int, error) {
 	// Get min/max per minipool RPL stake amounts
 	minAmount8 := priceResponse.MinPer8EthMinipoolRplStake
 	minAmount16 := priceResponse.MinPer16EthMinipoolRplStake
@@ -163,7 +163,7 @@ func promptForRplAmount(rp *client.Client, priceResponse *api.NetworkRplPriceDat
 		inputAmount := utils.Prompt("Please enter an amount of RPL to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 		stakeAmount, err := strconv.ParseFloat(inputAmount, 64)
 		if err != nil {
-			return nil, fmt.Errorf("Invalid stake amount '%s': %w", inputAmount, err)
+			return nil, fmt.Errorf("invalid stake amount '%s': %w", inputAmount, err)
 		}
 		amountWei = eth.EthToWei(stakeAmount)
 	}

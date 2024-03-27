@@ -67,7 +67,7 @@ func voteOnProposal(c *cli.Context) error {
 			}
 		}
 		if !found {
-			return fmt.Errorf("Proposal %d can not be voted on.", selectedId)
+			return fmt.Errorf("proposal %d can not be voted on", selectedId)
 		}
 	} else {
 		// Prompt for proposal selection

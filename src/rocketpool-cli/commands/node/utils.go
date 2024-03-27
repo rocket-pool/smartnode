@@ -170,7 +170,8 @@ func promptTimezone() string {
 		}
 	}
 
-	fmt.Println("You will now be prompted to enter a timezone.\nFor a complete list of valid entries, please use one of the \"TZ database name\" entries listed here:\nhttps://en.wikipedia.org/wiki/List_of_tz_database_time_zones\n")
+	fmt.Println("You will now be prompted to enter a timezone.\nFor a complete list of valid entries, please use one of the \"TZ database name\" entries listed here:\nhttps://en.wikipedia.org/wiki/List_of_tz_database_time_zones")
+	fmt.Println()
 
 	// Handle situations where we couldn't parse any timezone info from the OS
 	if len(countryNames) == 0 {
@@ -196,7 +197,6 @@ func promptTimezone() string {
 	// Prompt for country
 	country := ""
 	for {
-		time.Now().Zone()
 		timezone = ""
 		country = utils.Prompt("Please enter a country / continent from the list above:", "^.+$", "Please enter a country / continent from the list above:")
 
@@ -257,7 +257,6 @@ func promptTimezone() string {
 	// Prompt for region
 	region := ""
 	for {
-		time.Now().Zone()
 		timezone = ""
 		region = utils.Prompt("Please enter a region from the list above:", "^.+$", "Please enter a region from the list above:")
 
@@ -328,7 +327,7 @@ func promptMinNodeFee(networkCurrentNodeFee, networkMinNodeFee float64) float64 
 }
 
 // Prompt for the password to a solo validator key as part of migration
-func promptForSoloKeyPassword(rp *client.Client, cfg *config.SmartNodeConfig, pubkey beacon.ValidatorPubkey) (string, error) {
+func promptForSoloKeyPassword(cfg *config.SmartNodeConfig, pubkey beacon.ValidatorPubkey) (string, error) {
 
 	// Check for the custom key directory
 	customKeyDir, err := homedir.Expand(cfg.GetCustomKeyPath())
@@ -380,7 +379,7 @@ func promptForSoloKeyPassword(rp *client.Client, cfg *config.SmartNodeConfig, pu
 	}
 
 	if len(pubkeyPasswords) == 0 {
-		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into the Smartnode stack, you will need to put its keystore file into custom-keys first")
+		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into the Smartnode stack, you will need to put its keystore file into custom-keys first", pubkey.HexWithPrefix())
 	}
 
 	// Store it in the file
