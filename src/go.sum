@@ -84,8 +84,8 @@ github.com/crackcomm/go-gitignore v0.0.0-20231225121904-e25f5bc08668 h1:ZFUue+PN
 github.com/crackcomm/go-gitignore v0.0.0-20231225121904-e25f5bc08668/go.mod h1:p1d6YEZWvFzEh4KLyvBcVSnrfNDDvK2zfK/4x2v/4pE=
 github.com/crate-crypto/go-ipa v0.0.0-20231025140028-3c0104f4b233 h1:d28BXYi+wUpz1KBmiF9bWrjEMacUEREV6MBi2ODnrfQ=
 github.com/crate-crypto/go-ipa v0.0.0-20231025140028-3c0104f4b233/go.mod h1:geZJZH3SzKCqnz5VT0q/DyIG/tvu/dZk+VIfXicupJs=
-github.com/crate-crypto/go-kzg-4844 v1.0.0 h1:TsSgHwrkTKecKJ4kadtHi4b3xHW5dCFUDFnUp1TsawI=
-github.com/crate-crypto/go-kzg-4844 v1.0.0/go.mod h1:1kMhvPgI0Ky3yIa+9lFySEBUBXkYxeOi8ZF1sYioxhc=
+github.com/crate-crypto/go-kzg-4844 v0.7.0 h1:C0vgZRk4q4EZ/JgPfzuSoxdCq3C3mOZMBShovmncxvA=
+github.com/crate-crypto/go-kzg-4844 v0.7.0/go.mod h1:1kMhvPgI0Ky3yIa+9lFySEBUBXkYxeOi8ZF1sYioxhc=
 github.com/cskr/pubsub v1.0.2 h1:vlOzMhl6PFn60gRlTQQsIfVwaPB/B/8MziK8FhEPt/0=
 github.com/cskr/pubsub v1.0.2/go.mod h1:/8MzYXk/NJAz782G8RPkFzXTZVu63VotefPnR9TIRis=
 github.com/d4l3k/messagediff v1.2.1 h1:ZcAIMYsUg0EAp9X+tt8/enBE/Q8Yd5kzPynLyKptt9U=
@@ -470,8 +470,8 @@ github.com/rocket-pool/batch-query v1.0.0 h1:5HejmT1n1fIdLIqUhTNwbkG2PGOPl3IVjCp
 github.com/rocket-pool/batch-query v1.0.0/go.mod h1:d1CmxShzk0fioJ4yX0eFGhz2an1odnW/LZ2cp3eDGIQ=
 github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd h1:p9KuetSKB9nte9I/MkkiM3pwKFVQgqxxPTQ0y56Ff6s=
 github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd/go.mod h1:UE9fof8P7iESVtLn1K9CTSkNRYVFHZHlf96RKbU33kA=
-github.com/rocket-pool/node-manager-core v0.1.1-0.20240327085128-2b2b2820bcec h1:hdyaPjuey5jmz1E2R6btH1Iw5HtzDiXIiF0m51be0l0=
-github.com/rocket-pool/node-manager-core v0.1.1-0.20240327085128-2b2b2820bcec/go.mod h1:HW0Cp0P//Ng6kA4+m98HPN+bkY9BI9efQSnmBqk0sgs=
+github.com/rocket-pool/node-manager-core v0.1.1-0.20240327091033-29672a3a8134 h1:GQ93NEAIM8zi0lMjX/ZGf8GTs87BVp0VodfX8fXDpV8=
+github.com/rocket-pool/node-manager-core v0.1.1-0.20240327091033-29672a3a8134/go.mod h1:cdk3whznmhx7B2XmZ7BonczBeVLb7o/pPw6R7uY2Dw4=
 github.com/rocket-pool/rocketpool-go v1.8.3-0.20240327034231-ad6fd7e143ff h1:13eb7ovVIWSdRkd3ZFFn4OUJoEwLkx4dU41SFnD2weI=
 github.com/rocket-pool/rocketpool-go v1.8.3-0.20240327034231-ad6fd7e143ff/go.mod h1:1hbkDpU44PyWJW5h9uFcYLlOf+aR+bQEbIVNuud94T0=
 github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
