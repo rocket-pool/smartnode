@@ -61,6 +61,12 @@ func (c *minipoolVanityContext) PrepareData(data *api.MinipoolVanityArtifactsDat
 	w := sp.GetWallet()
 	localNodeAddress, isSet := w.GetAddress()
 
+	// Requirements
+	err := sp.RefreshRocketPoolContracts()
+	if err != nil {
+		return types.ResponseStatus_Error, err
+	}
+
 	// Get node account
 	var nodeAddress common.Address
 	if c.nodeAddressStr == "0" {

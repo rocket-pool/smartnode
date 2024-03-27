@@ -62,9 +62,9 @@ func (c *nodeRegisterContext) Initialize() (types.ResponseStatus, error) {
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	status, err := sp.RequireRocketPoolContracts()
 	if err != nil {
-		return types.ResponseStatus_ClientsNotSynced, err
+		return status, err
 	}
 
 	// Bindings

@@ -50,9 +50,9 @@ func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bi
 	if err != nil {
 		return types.ResponseStatus_WalletNotReady, err
 	}
-	err = sp.RequireEthClientSynced()
+	status, err := sp.RequireRocketPoolContracts()
 	if err != nil {
-		return types.ResponseStatus_ClientsNotSynced, err
+		return status, err
 	}
 
 	// Recover validator keys

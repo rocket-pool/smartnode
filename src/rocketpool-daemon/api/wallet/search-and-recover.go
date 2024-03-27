@@ -76,9 +76,9 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 		return types.ResponseStatus_ResourceConflict, fmt.Errorf("a wallet is already present")
 	}
 	if !c.skipValidatorKeyRecovery {
-		err := sp.RequireEthClientSynced()
+		status, err := sp.RequireRocketPoolContracts()
 		if err != nil {
-			return types.ResponseStatus_ClientsNotSynced, err
+			return status, err
 		}
 	}
 

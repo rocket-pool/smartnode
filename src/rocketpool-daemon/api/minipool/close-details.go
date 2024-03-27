@@ -53,12 +53,6 @@ func (c *minipoolCloseDetailsContext) Initialize() (types.ResponseStatus, error)
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
-
-	// Requirements
-	status, err := sp.RequireNodeRegistered()
-	if err != nil {
-		return status, err
-	}
 	return types.ResponseStatus_Success, nil
 }
 

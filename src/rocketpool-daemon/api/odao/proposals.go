@@ -62,9 +62,9 @@ func (c *oracleDaoProposalsContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, c.hasAddress = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	status, err := sp.RequireRocketPoolContracts()
 	if err != nil {
-		return types.ResponseStatus_ClientsNotSynced, err
+		return status, err
 	}
 
 	// Bindings

@@ -52,13 +52,8 @@ func (c *minipoolDelegateDetailsContext) Initialize() (types.ResponseStatus, err
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
-	// Requirements
-	status, err := sp.RequireNodeRegistered()
-	if err != nil {
-		return status, err
-	}
-
 	// Bindings
+	var err error
 	c.delegate, err = c.rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool delegate binding: %w", err)

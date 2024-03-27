@@ -44,13 +44,6 @@ type minipoolRefundDetailsContext struct {
 }
 
 func (c *minipoolRefundDetailsContext) Initialize() (types.ResponseStatus, error) {
-	sp := c.handler.serviceProvider
-
-	// Requirements
-	status, err := sp.RequireNodeRegistered()
-	if err != nil {
-		return status, err
-	}
 	return types.ResponseStatus_Success, nil
 }
 

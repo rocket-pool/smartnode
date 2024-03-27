@@ -54,9 +54,9 @@ func (c *oracleDaoMembersContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	status, err := sp.RequireRocketPoolContracts()
 	if err != nil {
-		return types.ResponseStatus_ClientsNotSynced, err
+		return status, err
 	}
 
 	// Bindings

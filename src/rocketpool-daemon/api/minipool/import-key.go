@@ -72,11 +72,7 @@ func (c *minipoolImportKeyContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = c.w.GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
-	if err != nil {
-		return status, err
-	}
-	err = sp.RequireWalletReady()
+	err := sp.RequireWalletReady()
 	if err != nil {
 		return types.ResponseStatus_WalletNotReady, err
 	}

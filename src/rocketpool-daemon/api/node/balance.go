@@ -51,6 +51,10 @@ func (c *nodeBalanceContext) PrepareData(data *api.NodeBalanceData, opts *bind.T
 	if err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
+	err = sp.RequireEthClientSynced()
+	if err != nil {
+		return types.ResponseStatus_ClientsNotSynced, err
+	}
 
 	data.Balance, err = ec.BalanceAt(ctx, nodeAddress, nil)
 	if err != nil {

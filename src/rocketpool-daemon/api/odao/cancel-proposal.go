@@ -10,7 +10,6 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
@@ -54,10 +53,9 @@ type oracleDaoCancelProposalContext struct {
 	rp          *rocketpool.RocketPool
 	nodeAddress common.Address
 
-	id         uint64
-	odaoMember *oracle.OracleDaoMember
-	dpm        *proposals.DaoProposalManager
-	prop       *proposals.OracleDaoProposal
+	id   uint64
+	dpm  *proposals.DaoProposalManager
+	prop *proposals.OracleDaoProposal
 }
 
 func (c *oracleDaoCancelProposalContext) Initialize() (types.ResponseStatus, error) {
@@ -66,16 +64,12 @@ func (c *oracleDaoCancelProposalContext) Initialize() (types.ResponseStatus, err
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireOnOracleDao()
 	if err != nil {
 		return status, err
 	}
 
 	// Bindings
-	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
-	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error creating oracle DAO member binding: %w", err)
-	}
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal manager binding: %w", err)
@@ -95,18 +89,12 @@ func (c *oracleDaoCancelProposalContext) Initialize() (types.ResponseStatus, err
 func (c *oracleDaoCancelProposalContext) GetState(mc *batch.MultiCaller) {
 	eth.AddQueryablesToMulticall(mc,
 		c.dpm.ProposalCount,
-		c.odaoMember.Exists,
 		c.prop.State,
 		c.prop.ProposerAddress,
 	)
 }
 
 func (c *oracleDaoCancelProposalContext) PrepareData(data *api.OracleDaoCancelProposalData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	// Verify oDAO status
-	if !c.odaoMember.Exists.Get() {
-		return types.ResponseStatus_InvalidChainState, errors.New("The node is not a member of the oracle DAO.")
-	}
-
 	// Check proposal details
 	state := c.prop.State.Formatted()
 	data.DoesNotExist = (c.id > c.dpm.ProposalCount.Formatted())

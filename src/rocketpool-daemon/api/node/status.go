@@ -100,6 +100,10 @@ func (c *nodeStatusContext) Initialize() (types.ResponseStatus, error) {
 	if err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
+	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, nodeAddress)

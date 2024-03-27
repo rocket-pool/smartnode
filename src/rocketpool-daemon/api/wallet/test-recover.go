@@ -61,9 +61,9 @@ func (c *walletTestRecoverContext) PrepareData(data *api.WalletRecoverData, opts
 	vMgr := sp.GetValidatorManager()
 
 	if !c.skipValidatorKeyRecovery {
-		err := sp.RequireEthClientSynced()
+		status, err := sp.RequireRocketPoolContracts()
 		if err != nil {
-			return types.ResponseStatus_ClientsNotSynced, err
+			return status, err
 		}
 	}
 

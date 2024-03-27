@@ -67,8 +67,13 @@ func (c *securityExecuteProposalsContext) Initialize() (types.ResponseStatus, er
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
+	}
+
 	// Bindings
-	var err error
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating DAO proposal manager binding: %w", err)

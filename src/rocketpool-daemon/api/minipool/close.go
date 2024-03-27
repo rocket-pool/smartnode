@@ -54,17 +54,6 @@ type minipoolCloseContext struct {
 }
 
 func (c *minipoolCloseContext) Initialize() (types.ResponseStatus, error) {
-	sp := c.handler.serviceProvider
-
-	// Requirements
-	status, err := sp.RequireNodeRegistered()
-	if err != nil {
-		return status, err
-	}
-	err = sp.RequireWalletReady()
-	if err != nil {
-		return types.ResponseStatus_WalletNotReady, err
-	}
 	return types.ResponseStatus_Success, nil
 }
 

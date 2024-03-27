@@ -66,6 +66,12 @@ func (c *securityStatusContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
+	}
+
 	// Bindings
 	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {

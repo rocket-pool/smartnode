@@ -62,11 +62,7 @@ func (c *minipoolReduceBondDetailsContext) Initialize() (types.ResponseStatus, e
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
-	if err != nil {
-		return status, err
-	}
-	err = sp.RequireBeaconClientSynced()
+	err := sp.RequireBeaconClientSynced()
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}

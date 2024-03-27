@@ -46,7 +46,12 @@ func (c *nodeClearSnapshotDelegateContext) PrepareData(data *types.TxInfoData, o
 	snapshot := sp.GetSnapshotDelegation()
 	idHash := cfg.GetVotingSnapshotID()
 
-	var err error
+	// Requirements
+	err := sp.RequireNodeAddress()
+	if err != nil {
+		return types.ResponseStatus_AddressNotPresent, err
+	}
+
 	data.TxInfo, err = snapshot.ClearDelegate(idHash, opts)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for ClearDelegate: %w", err)

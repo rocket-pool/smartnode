@@ -53,11 +53,7 @@ func (c *minipoolRescueDissolvedDetailsContext) Initialize() (types.ResponseStat
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
-	if err != nil {
-		return status, err
-	}
-	err = sp.RequireBeaconClientSynced()
+	err := sp.RequireBeaconClientSynced()
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}

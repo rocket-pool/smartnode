@@ -54,12 +54,6 @@ func (c *minipoolStakeDetailsContext) Initialize() (types.ResponseStatus, error)
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
-	// Requirements
-	status, err := sp.RequireNodeRegistered()
-	if err != nil {
-		return status, err
-	}
-
 	// Bindings
 	oMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {

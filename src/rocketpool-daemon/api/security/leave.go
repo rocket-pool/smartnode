@@ -62,10 +62,11 @@ func (c *securityLeaveContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnSecurityCouncil()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return types.ResponseStatus_InvalidChainState, err
+		return status, err
 	}
+
 	// Bindings
 	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {

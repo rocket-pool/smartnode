@@ -61,6 +61,10 @@ func (c *queueProcessContext) Initialize() (types.ResponseStatus, error) {
 	if err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
+	}
 
 	// Bindings
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
@@ -83,7 +87,7 @@ func (c *queueProcessContext) PrepareData(data *api.QueueProcessData, opts *bind
 	data.AssignDepositsDisabled = !c.pSettings.Deposit.AreDepositAssignmentsEnabled.Get()
 	data.CanProcess = !data.AssignDepositsDisabled
 
-	if data.CanProcess && opts != nil {
+	if data.CanProcess {
 		txInfo, err := c.depositPool.AssignDeposits(opts)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for AssignDeposits: %w", err)

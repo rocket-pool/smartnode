@@ -49,9 +49,9 @@ func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContract
 	ctx := sp.GetContext()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	status, err := sp.RequireRocketPoolContracts()
 	if err != nil {
-		return types.ResponseStatus_ClientsNotSynced, err
+		return status, err
 	}
 
 	// Get the deposit contract info

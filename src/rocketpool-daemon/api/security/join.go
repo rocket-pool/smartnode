@@ -59,8 +59,13 @@ func (c *securityJoinContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	status, err := sp.RequireNodeRegistered()
+	if err != nil {
+		return status, err
+	}
+
 	// Bindings
-	var err error
 	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating security council member binding: %w", err)

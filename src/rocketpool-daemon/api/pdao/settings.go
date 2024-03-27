@@ -53,8 +53,13 @@ func (c *protocolDaoSettingsContext) Initialize() (types.ResponseStatus, error) 
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
+	// Requirements
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
+	}
+
 	// Bindings
-	var err error
 	c.pMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)

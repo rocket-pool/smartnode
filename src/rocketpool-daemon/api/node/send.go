@@ -91,7 +91,11 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 		data.TokenSymbol = tokenContract.Details.Symbol
 		data.TokenName = tokenContract.Details.Name
 	} else {
-		var err error
+		// Load the contracts
+		status, err := sp.RequireRocketPoolContracts()
+		if err != nil {
+			return status, err
+		}
 		switch c.token {
 		case "rpl":
 			tokenContract, err = tokens.NewTokenRpl(rp)

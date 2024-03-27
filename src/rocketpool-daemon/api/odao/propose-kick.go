@@ -70,9 +70,9 @@ func (c *oracleDaoProposeKickContext) Initialize() (types.ResponseStatus, error)
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnOracleDao()
+	status, err := sp.RequireOnOracleDao()
 	if err != nil {
-		return types.ResponseStatus_InvalidChainState, err
+		return status, err
 	}
 
 	// Bindings

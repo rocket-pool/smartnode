@@ -65,9 +65,9 @@ func (c *networkStatsContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	status, err := sp.RequireRocketPoolContracts()
 	if err != nil {
-		return types.ResponseStatus_ClientsNotSynced, err
+		return status, err
 	}
 
 	// Bindings

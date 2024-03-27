@@ -69,9 +69,9 @@ func (c *securityVoteOnProposalContext) Initialize() (types.ResponseStatus, erro
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnSecurityCouncil()
+	status, err := sp.RequireOnSecurityCouncil()
 	if err != nil {
-		return types.ResponseStatus_InvalidChainState, err
+		return status, err
 	}
 
 	// Bindings

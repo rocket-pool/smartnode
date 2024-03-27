@@ -63,13 +63,8 @@ func (c *minipoolBeginReduceBondDetailsContext) Initialize() (types.ResponseStat
 	c.bc = sp.GetBeaconClient()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
-	// Requirements
-	status, err := sp.RequireNodeRegistered()
-	if err != nil {
-		return status, err
-	}
-
 	// Bindings
+	var err error
 	c.node, err = node.NewNode(c.rp, nodeAddress)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating node binding: %w", err)

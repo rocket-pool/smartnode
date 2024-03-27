@@ -73,11 +73,7 @@ func (c *minipoolCanChangeCredsContext) Initialize() (types.ResponseStatus, erro
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
-	if err != nil {
-		return status, err
-	}
-	err = sp.RequireBeaconClientSynced()
+	err := sp.RequireBeaconClientSynced()
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}

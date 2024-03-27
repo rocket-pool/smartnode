@@ -47,9 +47,9 @@ func (c *securityProposeLeaveContext) PrepareData(data *types.TxInfoData, opts *
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireOnSecurityCouncil()
+	status, err := sp.RequireOnSecurityCouncil()
 	if err != nil {
-		return types.ResponseStatus_InvalidChainState, err
+		return status, err
 	}
 
 	// Bindings

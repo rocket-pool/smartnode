@@ -55,11 +55,7 @@ func (c *nodeSetSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opt
 	idHash := cfg.GetVotingSnapshotID()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
-	if err != nil {
-		return types.ResponseStatus_ClientsNotSynced, err
-	}
-	err = sp.RequireSnapshot()
+	err := sp.RequireSnapshot()
 	if err != nil {
 		return types.ResponseStatus_InvalidChainState, err
 	}
