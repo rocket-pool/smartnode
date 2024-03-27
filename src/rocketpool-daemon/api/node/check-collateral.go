@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/collateral"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -41,21 +42,21 @@ type nodeCheckCollateralContext struct {
 	handler *NodeHandler
 }
 
-func (c *nodeCheckCollateralContext) PrepareData(data *api.NodeCheckCollateralData, opts *bind.TransactOpts) error {
+func (c *nodeCheckCollateralContext) PrepareData(data *api.NodeCheckCollateralData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Check collateral
 	collateral, err := collateral.CheckCollateral(rp, nodeAddress, nil)
 	if err != nil {
-		return fmt.Errorf("error checking node collateral: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error checking node collateral: %w", err)
 	}
 	data.EthMatched = collateral.EthMatched
 	data.EthMatchedLimit = collateral.EthMatchedLimit
@@ -65,5 +66,5 @@ func (c *nodeCheckCollateralContext) PrepareData(data *api.NodeCheckCollateralDa
 	remainingMatch := big.NewInt(0).Sub(data.EthMatchedLimit, data.EthMatched)
 	remainingMatch.Sub(remainingMatch, data.PendingMatchAmount)
 	data.InsufficientCollateral = (remainingMatch.Cmp(big.NewInt(0)) < 0)
-	return nil
+	return types.ResponseStatus_Success, nil
 }

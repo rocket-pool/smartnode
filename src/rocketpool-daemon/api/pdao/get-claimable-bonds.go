@@ -13,11 +13,12 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -61,7 +62,7 @@ type protocolDaoGetClaimableBondsContext struct {
 	pdaoMgr *protocol.ProtocolDaoManager
 }
 
-func (c *protocolDaoGetClaimableBondsContext) Initialize() error {
+func (c *protocolDaoGetClaimableBondsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
@@ -69,17 +70,17 @@ func (c *protocolDaoGetClaimableBondsContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating Protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating Protocol DAO manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoGetClaimableBondsContext) GetState(mc *batch.MultiCaller) {
@@ -88,18 +89,18 @@ func (c *protocolDaoGetClaimableBondsContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoGetClaimableBondsData, opts *bind.TransactOpts) error {
+func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoGetClaimableBondsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 	// Get the proposals
 	props, err := c.pdaoMgr.GetProposals(c.pdaoMgr.ProposalCount.Formatted(), true, nil)
 	if err != nil {
-		return fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
 	}
 
 	// Get some common vars
 	beaconCfg, err := c.bc.GetEth2Config(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting Beacon config: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting Beacon config: %w", err)
 	}
 	intervalSize := big.NewInt(int64(config.EventLogInterval))
 
@@ -114,11 +115,11 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 		state := prop.State.Formatted()
 		if prop.ProposerAddress.Get() == c.nodeAddress {
 			isProposer = true
-			if state >= types.ProtocolDaoProposalState_QuorumNotMet {
+			if state >= rptypes.ProtocolDaoProposalState_QuorumNotMet {
 				shouldProcess = true
 			}
 		} else {
-			if state != types.ProtocolDaoProposalState_Pending {
+			if state != rptypes.ProtocolDaoProposalState_Pending {
 				shouldProcess = true
 			}
 		}
@@ -140,7 +141,7 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 			resources := c.cfg.GetRocketPoolResources()
 			challengeEvents, err := c.pdaoMgr.GetChallengeSubmittedEvents([]uint64{prop.ID}, intervalSize, startBlock, endBlock, resources.PreviousProtocolDaoVerifierAddresses, nil)
 			if err != nil {
-				return fmt.Errorf("error scanning for proposal %d's ChallengeSubmitted events: %w", prop.ID, err)
+				return types.ResponseStatus_Error, fmt.Errorf("error scanning for proposal %d's ChallengeSubmitted events: %w", prop.ID, err)
 			}
 
 			// Add an explicit challenge event to the root to see if the proposal bond is refundable
@@ -165,7 +166,7 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 	}
 
 	// Get the states of all challenges
-	states := make([]func() types.ChallengeState, len(proposalIDsForStates))
+	states := make([]func() rptypes.ChallengeState, len(proposalIDsForStates))
 	err = c.rp.BatchQuery(len(proposalIDsForStates), challengeStateBatchSize, func(mc *batch.MultiCaller, i int) error {
 		propID := proposalIDsForStates[i]
 		index := challengedIndicesForStates[i]
@@ -174,7 +175,7 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting challenge states: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting challenge states: %w", err)
 	}
 
 	// Map out the challenge results
@@ -204,12 +205,12 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 		// Handle proposals we were the proposer of
 		if claimResult.IsProposer {
 			state := propInfo.State.Formatted()
-			if state < types.ProtocolDaoProposalState_QuorumNotMet {
+			if state < rptypes.ProtocolDaoProposalState_QuorumNotMet {
 				// Proposer gets nothing if the challenge was defeated or isn't done yet
 				continue
 			}
 			for challengedIndex, challengeInfo := range propInfo.Challenges {
-				if challengeInfo.State == types.ChallengeState_Responded {
+				if challengeInfo.State == rptypes.ChallengeState_Responded {
 					if challengedIndex == 1 {
 						// The proposal bond can be unlocked
 						claimResult.UnlockableIndices = append(claimResult.UnlockableIndices, 1)
@@ -233,9 +234,9 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 				}
 
 				// Make sure the prop and challenge are in the right states
-				if challengeInfo.State != types.ChallengeState_Challenged {
-					if propInfo.State.Formatted() == types.ProtocolDaoProposalState_Destroyed {
-						if challengeInfo.State != types.ChallengeState_Responded {
+				if challengeInfo.State != rptypes.ChallengeState_Challenged {
+					if propInfo.State.Formatted() == rptypes.ProtocolDaoProposalState_Destroyed {
+						if challengeInfo.State != rptypes.ChallengeState_Responded {
 							// If the proposal is destroyed, a challenge must be in the challenged or responded states
 							continue
 						}
@@ -295,12 +296,12 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 
 	// Update the response and return
 	data.ClaimableBonds = claimableBonds
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 type challengeInfo struct {
 	Challenger common.Address
-	State      types.ChallengeState
+	State      rptypes.ChallengeState
 }
 
 type proposalInfo struct {

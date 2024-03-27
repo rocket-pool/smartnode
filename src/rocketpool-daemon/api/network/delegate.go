@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -40,22 +41,22 @@ type networkDelegateContext struct {
 	handler *NetworkHandler
 }
 
-func (c *networkDelegateContext) PrepareData(data *api.NetworkLatestDelegateData, opts *bind.TransactOpts) error {
+func (c *networkDelegateContext) PrepareData(data *api.NetworkLatestDelegateData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 
 	// Requirements
 	err := sp.RequireEthClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Bindings
 	delegateContract, err := rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
 	if err != nil {
-		return fmt.Errorf("error getting minipool delegate contract: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool delegate contract: %w", err)
 	}
 
 	data.Address = delegateContract.Address
-	return nil
+	return types.ResponseStatus_Success, nil
 }

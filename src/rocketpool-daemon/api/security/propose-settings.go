@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
@@ -54,25 +55,25 @@ type securityProposeSettingContext struct {
 	valueString        string
 }
 
-func (c *securityProposeSettingContext) PrepareData(data *api.SecurityProposeSettingData, opts *bind.TransactOpts) error {
+func (c *securityProposeSettingContext) PrepareData(data *api.SecurityProposeSettingData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 
 	// Requirements
 	err := sp.RequireOnSecurityCouncil()
 	if err != nil {
-		return err
+		return types.ResponseStatus_InvalidChainState, err
 	}
 
 	// Bindings
 	pdaoMgr, err := protocol.NewProtocolDaoManager(rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	pSettings := pdaoMgr.Settings
 	scMgr, err := security.NewSecurityCouncilManager(rp, pSettings)
 	if err != nil {
-		return fmt.Errorf("error creating security council manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council manager binding: %w", err)
 	}
 
 	// Make sure the setting exists
@@ -87,10 +88,10 @@ func (c *securityProposeSettingContext) PrepareData(data *api.SecurityProposeSet
 	if data.CanPropose && opts != nil {
 		validSetting, txInfo, parseErr, createErr := c.createProposalTx(category, opts)
 		if parseErr != nil {
-			return parseErr
+			return types.ResponseStatus_InvalidArguments, parseErr
 		}
 		if createErr != nil {
-			return fmt.Errorf("error getting TX info for ProposeSet: %w", createErr)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for ProposeSet: %w", createErr)
 		}
 		if !validSetting {
 			data.UnknownSetting = true
@@ -99,7 +100,7 @@ func (c *securityProposeSettingContext) PrepareData(data *api.SecurityProposeSet
 			data.TxInfo = txInfo
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *securityProposeSettingContext) createProposalTx(category security.SettingsCategory, opts *bind.TransactOpts) (bool, *eth.TransactionInfo, error, error) {

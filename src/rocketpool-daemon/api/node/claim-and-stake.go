@@ -58,22 +58,22 @@ type nodeClaimAndStakeContext struct {
 	stakeAmount *big.Int
 }
 
-func (c *nodeClaimAndStakeContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
+func (c *nodeClaimAndStakeContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	distMainnet, err := rewards.NewMerkleDistributorMainnet(rp)
 	if err != nil {
-		return fmt.Errorf("error getting merkle distributor mainnet binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting merkle distributor mainnet binding: %w", err)
 	}
 
 	// Read the tree files to get the details
@@ -85,15 +85,15 @@ func (c *nodeClaimAndStakeContext) PrepareData(data *types.TxInfoData, opts *bin
 	for _, index := range c.indices {
 		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, index.Uint64(), nil)
 		if err != nil {
-			return fmt.Errorf("error getting interval info for interval %d: %w", index, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting interval info for interval %d: %w", index, err)
 		}
 
 		// Validate
 		if !intervalInfo.TreeFileExists {
-			return fmt.Errorf("rewards tree file '%s' doesn't exist", intervalInfo.TreeFilePath)
+			return types.ResponseStatus_ResourceNotFound, fmt.Errorf("rewards tree file '%s' doesn't exist", intervalInfo.TreeFilePath)
 		}
 		if !intervalInfo.MerkleRootValid {
-			return fmt.Errorf("merkle root for rewards tree file '%s' doesn't match the canonical merkle root for interval %d", intervalInfo.TreeFilePath, index.Uint64())
+			return types.ResponseStatus_ResourceConflict, fmt.Errorf("merkle root for rewards tree file '%s' doesn't match the canonical merkle root for interval %d", intervalInfo.TreeFilePath, index.Uint64())
 		}
 
 		// Get the rewards from it
@@ -122,8 +122,8 @@ func (c *nodeClaimAndStakeContext) PrepareData(data *types.TxInfoData, opts *bin
 		funcName = "ClaimAndStake"
 	}
 	if err != nil {
-		return fmt.Errorf("error getting TX info for %s: %w", funcName, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for %s: %w", funcName, err)
 	}
 	data.TxInfo = txInfo
-	return nil
+	return types.ResponseStatus_Success, nil
 }

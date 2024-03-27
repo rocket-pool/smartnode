@@ -65,31 +65,32 @@ type minipoolImportKeyContext struct {
 	mnemonic        string
 }
 
-func (c *minipoolImportKeyContext) Initialize() error {
+func (c *minipoolImportKeyContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.w = sp.GetWallet()
 	c.nodeAddress, _ = c.w.GetAddress()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireWalletReady(),
-	)
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
+	}
+	err = sp.RequireWalletReady()
+	if err != nil {
+		return types.ResponseStatus_WalletNotReady, err
 	}
 
 	// Bindings
 	mpMgr, err := minipool.NewMinipoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating minipool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool manager binding: %w", err)
 	}
 	c.mp, err = mpMgr.CreateMinipoolFromAddress(c.minipoolAddress, false, nil)
 	if err != nil {
-		return fmt.Errorf("error creating minipool binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolImportKeyContext) GetState(mc *batch.MultiCaller) {
@@ -100,18 +101,18 @@ func (c *minipoolImportKeyContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *minipoolImportKeyContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+func (c *minipoolImportKeyContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Validate minipool owner
 	mpCommon := c.mp.Common()
 	if mpCommon.NodeAddress.Get() != c.nodeAddress {
-		return fmt.Errorf("minipool %s does not belong to the node", c.minipoolAddress.Hex())
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("minipool %s does not belong to the node", c.minipoolAddress.Hex())
 	}
 
 	// Get minipool validator pubkey
 	pubkey := mpCommon.Pubkey.Get()
 	emptyPubkey := beacon.ValidatorPubkey{}
 	if pubkey == emptyPubkey {
-		return fmt.Errorf("minipool %s does not have a validator pubkey associated with it", c.minipoolAddress.Hex())
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("minipool %s does not have a validator pubkey associated with it", c.minipoolAddress.Hex())
 	}
 
 	// Get the index for this validator based on the mnemonic
@@ -122,7 +123,7 @@ func (c *minipoolImportKeyContext) PrepareData(data *types.SuccessData, opts *bi
 		validatorKeyPath := fmt.Sprintf(validatorKeyPath, index)
 		key, err := nmc_validator.GetPrivateKey(c.mnemonic, validatorKeyPath)
 		if err != nil {
-			return fmt.Errorf("error deriving key for index %d: %w", index, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error deriving key for index %d: %w", index, err)
 		}
 		candidatePubkey := key.PublicKey().Marshal()
 		if bytes.Equal(pubkey[:], candidatePubkey) {
@@ -132,14 +133,14 @@ func (c *minipoolImportKeyContext) PrepareData(data *types.SuccessData, opts *bi
 		index++
 	}
 	if validatorKey == nil {
-		return fmt.Errorf("couldn't find the validator key for this mnemonic after %d tries", validatorKeyRetrievalLimit)
+		return types.ResponseStatus_ResourceNotFound, fmt.Errorf("couldn't find the validator key for this mnemonic after %d tries", validatorKeyRetrievalLimit)
 	}
 
 	// Save the keystore to disk
 	derivationPath := fmt.Sprintf(validatorKeyPath, index)
 	err := c.vMgr.StoreValidatorKey(validatorKey, derivationPath)
 	if err != nil {
-		return fmt.Errorf("error saving keystore: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error saving keystore: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

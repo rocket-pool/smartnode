@@ -46,9 +46,13 @@ type walletMasqueradeContext struct {
 	address common.Address
 }
 
-func (c *walletMasqueradeContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+func (c *walletMasqueradeContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 
-	return w.MasqueradeAsAddress(c.address)
+	err := w.MasqueradeAsAddress(c.address)
+	if err != nil {
+		return types.ResponseStatus_Error, err
+	}
+	return types.ResponseStatus_Success, nil
 }

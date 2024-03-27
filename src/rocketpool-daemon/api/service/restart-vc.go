@@ -40,7 +40,7 @@ type serviceRestartVcContext struct {
 	handler *ServiceHandler
 }
 
-func (c *serviceRestartVcContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+func (c *serviceRestartVcContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	bc := sp.GetBeaconClient()
@@ -48,7 +48,7 @@ func (c *serviceRestartVcContext) PrepareData(data *types.SuccessData, opts *bin
 
 	err := validator.StopValidator(cfg, bc, nil, d, true)
 	if err != nil {
-		return fmt.Errorf("error restarting validator client: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error restarting validator client: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

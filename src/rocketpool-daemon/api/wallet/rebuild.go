@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -41,23 +41,24 @@ type walletRebuildContext struct {
 	handler *WalletHandler
 }
 
-func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bind.TransactOpts) error {
+func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	vMgr := sp.GetValidatorManager()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireWalletReady(),
-		sp.RequireEthClientSynced(),
-	)
+	err := sp.RequireWalletReady()
 	if err != nil {
-		return err
+		return types.ResponseStatus_WalletNotReady, err
+	}
+	err = sp.RequireEthClientSynced()
+	if err != nil {
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Recover validator keys
 	data.ValidatorKeys, err = vMgr.RecoverMinipoolKeys(false)
 	if err != nil {
-		return fmt.Errorf("error recovering minipool keys: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error recovering minipool keys: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

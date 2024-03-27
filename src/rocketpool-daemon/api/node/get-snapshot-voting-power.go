@@ -1,7 +1,6 @@
 package node
 
 import (
-	"errors"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -10,6 +9,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -46,23 +46,24 @@ type nodeGetSnapshotVotingPowerContext struct {
 	node *node.Node
 }
 
-func (c *nodeGetSnapshotVotingPowerContext) PrepareData(data *api.NodeGetSnapshotVotingPowerData, opts *bind.TransactOpts) error {
+func (c *nodeGetSnapshotVotingPowerContext) PrepareData(data *api.NodeGetSnapshotVotingPowerData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireSnapshot(),
-	)
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
+	}
+	err = sp.RequireSnapshot()
+	if err != nil {
+		return types.ResponseStatus_InvalidChainState, err
 	}
 
 	data.VotingPower, err = voting.GetSnapshotVotingPower(cfg, nodeAddress)
 	if err != nil {
-		return err
+		return types.ResponseStatus_Error, err
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

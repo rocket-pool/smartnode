@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -51,7 +52,7 @@ type walletTestSearchAndRecoverContext struct {
 	address                  common.Address
 }
 
-func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRecoverData, opts *bind.TransactOpts) error {
+func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRecoverData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rs := sp.GetNetworkResources()
 	vMgr := sp.GetValidatorManager()
@@ -59,7 +60,7 @@ func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAn
 	if !c.skipValidatorKeyRecovery {
 		err := sp.RequireEthClientSynced()
 		if err != nil {
-			return err
+			return types.ResponseStatus_ClientsNotSynced, err
 		}
 	}
 
@@ -76,7 +77,7 @@ func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAn
 			derivationPath := paths[j]
 			recoveredWallet, err = wallet.TestRecovery(derivationPath, i, c.mnemonic, rs.ChainID)
 			if err != nil {
-				return fmt.Errorf("error recovering wallet with path [%s], index [%d]: %w", derivationPath, i, err)
+				return types.ResponseStatus_Error, fmt.Errorf("error recovering wallet with path [%s], index [%d]: %w", derivationPath, i, err)
 			}
 
 			// Get recovered account
@@ -95,7 +96,7 @@ func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAn
 	}
 
 	if !data.FoundWallet {
-		return fmt.Errorf("exhausted all derivation paths and indices from 0 to %d, wallet not found", findIterations)
+		return types.ResponseStatus_ResourceNotFound, fmt.Errorf("exhausted all derivation paths and indices from 0 to %d, wallet not found", findIterations)
 	}
 	data.AccountAddress, _ = recoveredWallet.GetAddress()
 
@@ -104,9 +105,9 @@ func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAn
 		var err error
 		data.ValidatorKeys, err = vMgr.RecoverMinipoolKeys(true)
 		if err != nil {
-			return fmt.Errorf("error recovering minipool keys: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error recovering minipool keys: %w", err)
 		}
 	}
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

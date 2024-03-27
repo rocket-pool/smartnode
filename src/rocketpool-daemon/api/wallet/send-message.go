@@ -49,18 +49,17 @@ type walletSendMessageContext struct {
 	address common.Address
 }
 
-func (c *walletSendMessageContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
+func (c *walletSendMessageContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	txMgr := sp.GetTransactionManager()
 
-	err := errors.Join(
-		sp.RequireWalletReady(),
-	)
+	// Requirements
+	err := sp.RequireWalletReady()
 	if err != nil {
-		return err
+		return types.ResponseStatus_WalletNotReady, err
 	}
 
 	txInfo := txMgr.CreateTransactionInfoRaw(c.address, c.message, opts)
 	data.TxInfo = txInfo
-	return nil
+	return types.ResponseStatus_Success, nil
 }

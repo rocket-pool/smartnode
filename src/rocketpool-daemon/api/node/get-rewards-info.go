@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -57,37 +58,37 @@ type nodeGetRewardsInfoContext struct {
 	rewardsPool *rewards.RewardsPool
 }
 
-func (c *nodeGetRewardsInfoContext) Initialize() error {
+func (c *nodeGetRewardsInfoContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.cfg = sp.GetConfig()
 	c.rp = sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
 	c.networkMgr, err = network.NewNetworkManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating network manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating network manager binding: %w", err)
 	}
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO settings binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO settings binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
 	c.rewardsPool, err = rewards.NewRewardsPool(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating rewards pool binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating rewards pool binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *nodeGetRewardsInfoContext) GetState(mc *batch.MultiCaller) {
@@ -102,7 +103,7 @@ func (c *nodeGetRewardsInfoContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData, opts *bind.TransactOpts) error {
+func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Basic details
 	data.RplPrice = c.networkMgr.RplPrice.Raw()
 	data.RplStake = c.node.RplStake.Get()
@@ -112,7 +113,7 @@ func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData
 	// Get the claimed and unclaimed intervals
 	claimStatus, err := rprewards.GetClaimStatus(c.rp, c.node.Address, c.rewardsPool.RewardIndex.Formatted())
 	if err != nil {
-		return fmt.Errorf("error getting rewards claim status: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting rewards claim status: %w", err)
 	}
 	data.ClaimedIntervals = claimStatus.Claimed
 
@@ -120,7 +121,7 @@ func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData
 	for _, unclaimedInterval := range claimStatus.Unclaimed {
 		intervalInfo, err := rprewards.GetIntervalInfo(c.rp, c.cfg, c.node.Address, unclaimedInterval, nil)
 		if err != nil {
-			return fmt.Errorf("error getting interval %d info: %w", unclaimedInterval, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting interval %d info: %w", unclaimedInterval, err)
 		}
 		if !intervalInfo.TreeFileExists || !intervalInfo.MerkleRootValid {
 			data.InvalidIntervals = append(data.InvalidIntervals, intervalInfo)
@@ -136,7 +137,7 @@ func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData
 	if data.ActiveMinipools > 0 {
 		collateral, err := collateral.CheckCollateral(c.rp, c.node.Address, nil)
 		if err != nil {
-			return fmt.Errorf("error getting node collateral: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting node collateral: %w", err)
 		}
 		data.EthMatched = collateral.EthMatched
 		data.EthMatchedLimit = collateral.EthMatchedLimit
@@ -160,5 +161,5 @@ func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData
 		data.BorrowedCollateralRatio = -1
 	}
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

@@ -62,15 +62,15 @@ type auctionClaimContext struct {
 	lots              []*auction.AuctionLot
 }
 
-func (c *auctionClaimContext) Initialize() error {
+func (c *auctionClaimContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
@@ -78,10 +78,10 @@ func (c *auctionClaimContext) Initialize() error {
 	for i, index := range c.indices {
 		c.lots[i], err = auction.NewAuctionLot(c.rp, index)
 		if err != nil {
-			return fmt.Errorf("error creating lot %d binding: %w", index, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating lot %d binding: %w", index, err)
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *auctionClaimContext) GetState(mc *batch.MultiCaller) {
@@ -94,7 +94,7 @@ func (c *auctionClaimContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *auctionClaimContext) PrepareData(dataBatch *types.DataBatch[api.AuctionClaimFromLotData], opts *bind.TransactOpts) error {
+func (c *auctionClaimContext) PrepareData(dataBatch *types.DataBatch[api.AuctionClaimFromLotData], opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	dataBatch.Batch = make([]api.AuctionClaimFromLotData, len(c.indices))
 	for i, lot := range c.lots {
 		addressBidAmount := c.addressBidAmounts[i]
@@ -110,10 +110,10 @@ func (c *auctionClaimContext) PrepareData(dataBatch *types.DataBatch[api.Auction
 		if data.CanClaim && opts != nil {
 			txInfo, err := lot.ClaimBid(opts)
 			if err != nil {
-				return fmt.Errorf("error getting TX info for PlaceBid: %w", err)
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for PlaceBid: %w", err)
 			}
 			data.TxInfo = txInfo
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

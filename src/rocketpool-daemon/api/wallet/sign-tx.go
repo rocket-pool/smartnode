@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -46,21 +47,20 @@ type walletSignTxContext struct {
 	tx      []byte
 }
 
-func (c *walletSignTxContext) PrepareData(data *api.WalletSignTxData, opts *bind.TransactOpts) error {
+func (c *walletSignTxContext) PrepareData(data *api.WalletSignTxData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 
-	err := errors.Join(
-		sp.RequireWalletReady(),
-	)
+	// Requirements
+	err := sp.RequireWalletReady()
 	if err != nil {
-		return err
+		return types.ResponseStatus_WalletNotReady, err
 	}
 
 	signedBytes, err := w.SignTransaction(c.tx)
 	if err != nil {
-		return fmt.Errorf("error signing transaction: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error signing transaction: %w", err)
 	}
 	data.SignedTx = signedBytes
-	return nil
+	return types.ResponseStatus_Success, nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -55,23 +56,28 @@ type nodeRegisterContext struct {
 	pSettings        *protocol.ProtocolDaoSettings
 }
 
-func (c *nodeRegisterContext) Initialize() error {
+func (c *nodeRegisterContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
+	// Requirements
+	err := sp.RequireEthClientSynced()
+	if err != nil {
+		return types.ResponseStatus_ClientsNotSynced, err
+	}
+
 	// Bindings
-	var err error
 	c.node, err = node.NewNode(c.rp, nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *nodeRegisterContext) GetState(mc *batch.MultiCaller) {
@@ -81,19 +87,19 @@ func (c *nodeRegisterContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *nodeRegisterContext) PrepareData(data *api.NodeRegisterData, opts *bind.TransactOpts) error {
+func (c *nodeRegisterContext) PrepareData(data *api.NodeRegisterData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.AlreadyRegistered = c.node.Exists.Get()
 	data.RegistrationDisabled = !c.pSettings.Node.IsRegistrationEnabled.Get()
 	data.CanRegister = !(data.AlreadyRegistered || data.RegistrationDisabled)
 	if !data.CanRegister {
-		return nil
+		return types.ResponseStatus_Success, nil
 	}
 
 	// Get tx info
 	txInfo, err := c.node.Register(c.timezoneLocation, opts)
 	if err != nil {
-		return fmt.Errorf("error getting TX info for Register: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Register: %w", err)
 	}
 	data.TxInfo = txInfo
-	return nil
+	return types.ResponseStatus_Success, nil
 }

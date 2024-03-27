@@ -1,7 +1,6 @@
 package node
 
 import (
-	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -24,6 +23,7 @@ import (
 	prdeposit "github.com/prysmaticlabs/prysm/v4/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	nmc_config "github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/node/validator"
@@ -85,7 +85,7 @@ type nodeDepositContext struct {
 	mpMgr       *minipool.MinipoolManager
 }
 
-func (c *nodeDepositContext) Initialize() error {
+func (c *nodeDepositContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.cfg = sp.GetConfig()
 	c.rp = sp.GetRocketPool()
@@ -95,38 +95,39 @@ func (c *nodeDepositContext) Initialize() error {
 	nodeAddress, _ := c.w.GetAddress()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireWalletReady(),
-	)
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
+	}
+	err = sp.RequireWalletReady()
+	if err != nil {
+		return types.ResponseStatus_WalletNotReady, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
 	c.depositPool, err = deposit.NewDepositPoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting deposit pool binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting deposit pool binding: %w", err)
 	}
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
 	oMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting oDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting oDAO manager binding: %w", err)
 	}
 	c.oSettings = oMgr.Settings
 	c.mpMgr, err = minipool.NewMinipoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting minipool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *nodeDepositContext) GetState(mc *batch.MultiCaller) {
@@ -138,7 +139,7 @@ func (c *nodeDepositContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.TransactOpts) error {
+func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 	rs := c.cfg.GetNetworkResources()
 
@@ -151,28 +152,28 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	// Get Beacon config
 	eth2Config, err := c.bc.GetEth2Config(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting Beacon config: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting Beacon config: %w", err)
 	}
 
 	// Adjust the salt
 	if c.salt.Cmp(big.NewInt(0)) == 0 {
-		nonce, err := c.rp.Client.NonceAt(context.Background(), c.node.Address, nil)
+		nonce, err := c.rp.Client.NonceAt(ctx, c.node.Address, nil)
 		if err != nil {
-			return fmt.Errorf("error getting node's latest nonce: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting node's latest nonce: %w", err)
 		}
 		c.salt.SetUint64(nonce)
 	}
 
 	// Check node balance
-	data.NodeBalance, err = c.rp.Client.BalanceAt(context.Background(), c.node.Address, nil)
+	data.NodeBalance, err = c.rp.Client.BalanceAt(ctx, c.node.Address, nil)
 	if err != nil {
-		return fmt.Errorf("error getting node's ETH balance: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting node's ETH balance: %w", err)
 	}
 
 	// Check the node's collateral
 	collateral, err := collateral.CheckCollateral(c.rp, c.node.Address, nil)
 	if err != nil {
-		return fmt.Errorf("error checking node collateral: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error checking node collateral: %w", err)
 	}
 	ethMatched := collateral.EthMatched
 	ethMatchedLimit := collateral.EthMatchedLimit
@@ -202,17 +203,17 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 
 	// Return if depositing won't work
 	if !data.CanDeposit {
-		return nil
+		return types.ResponseStatus_Success, nil
 	}
 
 	// Make sure ETH2 is on the correct chain
 	depositContractInfo, err := rputils.GetDepositContractInfo(ctx, c.rp, c.cfg, c.bc)
 	if err != nil {
-		return fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
 	}
 	if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
 		depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
-		return fmt.Errorf("FATAL: Beacon network mismatch! Expected %s on chain %d, but beacon is using %s on chain %d.",
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("FATAL: Beacon network mismatch! Expected %s on chain %d, but beacon is using %s on chain %d.",
 			depositContractInfo.RPDepositContract.Hex(),
 			depositContractInfo.RPNetwork,
 			depositContractInfo.BeaconDepositContract.Hex(),
@@ -233,7 +234,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	// Get the next available validator key without saving it
 	validatorKey, index, err := c.vMgr.GetNextValidatorKey(false)
 	if err != nil {
-		return fmt.Errorf("error getting next available validator key: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting next available validator key: %w", err)
 	}
 	data.Index = index
 
@@ -244,7 +245,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting expected minipool address: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting expected minipool address: %w", err)
 	}
 	data.MinipoolAddress = minipoolAddress
 
@@ -255,14 +256,14 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting minipool withdrawal credentials: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool withdrawal credentials: %w", err)
 	}
 
 	// Get validator deposit data and associated parameters
 	depositAmount := uint64(1e9) // 1 ETH in gwei
 	depositData, err := validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, nmc_config.Network(rs.EthNetworkName))
 	if err != nil {
-		return fmt.Errorf("error getting deposit data: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting deposit data: %w", err)
 	}
 	pubkey := beacon.ValidatorPubkey(depositData.PublicKey)
 	signature := beacon.ValidatorSignature(depositData.Signature)
@@ -271,10 +272,10 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	// Make sure a validator with this pubkey doesn't already exist
 	status, err := c.bc.GetValidatorStatus(ctx, pubkey, nil)
 	if err != nil {
-		return fmt.Errorf("Error checking for existing validator status: %w\nYour funds have not been deposited for your own safety.", err)
+		return types.ResponseStatus_Error, fmt.Errorf("Error checking for existing validator status: %w\nYour funds have not been deposited for your own safety.", err)
 	}
 	if status.Exists {
-		return fmt.Errorf("**** ALERT ****\n"+
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("**** ALERT ****\n"+
 			"Your minipool %s has the following as a validator pubkey:\n\t%s\n"+
 			"This key is already in use by validator %d on the Beacon chain!\n"+
 			"Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.\n"+
@@ -285,7 +286,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	// Do a final sanity check
 	err = validateDepositInfo(eth2Config, uint64(depositAmount), pubkey, withdrawalCredentials, signature)
 	if err != nil {
-		return fmt.Errorf("FATAL: Your deposit failed the validation safety check: %w\n"+
+		return types.ResponseStatus_ResourceConflict, fmt.Errorf("FATAL: Your deposit failed the validation safety check: %w\n"+
 			"For your safety, this deposit will not be submitted and your ETH will not be staked.\n"+
 			"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS and include the following information:\n"+
 			"\tDomain Type: 0x%s\n"+
@@ -318,11 +319,11 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 		funcName = "Deposit"
 	}
 	if err != nil {
-		return fmt.Errorf("error getting TX info for %s: %w", funcName, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for %s: %w", funcName, err)
 	}
 	data.TxInfo = txInfo
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey beacon.ValidatorPubkey, withdrawalCredentials common.Hash, signature beacon.ValidatorSignature) error {

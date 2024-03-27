@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -9,11 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -47,14 +47,16 @@ type minipoolDistributeDetailsContext struct {
 	rp      *rocketpool.RocketPool
 }
 
-func (c *minipoolDistributeDetailsContext) Initialize() error {
+func (c *minipoolDistributeDetailsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	return errors.Join(
-		sp.RequireNodeRegistered(),
-	)
+	status, err := sp.RequireNodeRegistered()
+	if err != nil {
+		return status, err
+	}
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolDistributeDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -75,42 +77,38 @@ func (c *minipoolDistributeDetailsContext) GetMinipoolDetails(mc *batch.MultiCal
 	)
 }
 
-func (c *minipoolDistributeDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolDistributeDetailsData) error {
+func (c *minipoolDistributeDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolDistributeDetailsData) (types.ResponseStatus, error) {
 	// Get the current ETH balances of each minipool
 	balances, err := c.rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {
-		return fmt.Errorf("error getting minipool balances: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool balances: %w", err)
 	}
 
 	// Get the distribute details
 	details := make([]api.MinipoolDistributeDetails, len(addresses))
 	for i, mp := range mps {
-		mpDetails, err := getMinipoolDistributeDetails(c.rp, mp, balances[i])
-		if err != nil {
-			return fmt.Errorf("error checking closure details for minipool %s: %w", mp.Common().Address.Hex(), err)
-		}
-		details[i] = mpDetails
+		details[i] = getMinipoolDistributeDetails(c.rp, mp, balances[i])
 	}
 
 	// Get the node shares
 	err = c.rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
 		mpDetails := details[i]
 		status := mpDetails.Status
-		if status == types.MinipoolStatus_Staking && mpDetails.CanDistribute {
+		if status == rptypes.MinipoolStatus_Staking && mpDetails.CanDistribute {
 			mps[i].Common().CalculateNodeShare(mc, &details[i].NodeShareOfDistributableBalance, details[i].DistributableBalance)
 		}
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting node shares of minipool balances: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting node shares of minipool balances: %w", err)
 	}
 
 	// Update & return response
 	data.Details = details
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
-func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.IMinipool, balance *big.Int) (api.MinipoolDistributeDetails, error) {
+func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.IMinipool, balance *big.Int) api.MinipoolDistributeDetails {
 	mpCommonDetails := mp.Common()
 
 	// Create the details with the balance / share info and status details
@@ -126,28 +124,28 @@ func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.IMinipo
 	// Ignore minipools that are too old
 	if details.Version < 3 {
 		details.CanDistribute = false
-		return details, nil
+		return details
 	}
 
 	// Can't distribute a minipool that's already finalized
 	if details.IsFinalized {
 		details.CanDistribute = false
-		return details, nil
+		return details
 	}
 
 	// Ignore minipools with 0 balance
 	if details.Balance.Cmp(zero()) == 0 {
 		details.CanDistribute = false
-		return details, nil
+		return details
 	}
 
 	// Make sure it's in a distributable state
 	switch details.Status {
-	case types.MinipoolStatus_Staking:
+	case rptypes.MinipoolStatus_Staking:
 		// Ignore minipools with a balance lower than the refund
 		if details.Balance.Cmp(details.Refund) == -1 {
 			details.CanDistribute = false
-			return details, nil
+			return details
 		}
 
 		// Ignore minipools with an effective balance higher than v3 rewards-vs-exit cap
@@ -155,16 +153,16 @@ func getMinipoolDistributeDetails(rp *rocketpool.RocketPool, mp minipool.IMinipo
 		eight := eth.EthToWei(8)
 		if details.DistributableBalance.Cmp(eight) >= 0 {
 			details.CanDistribute = false
-			return details, nil
+			return details
 		}
-	case types.MinipoolStatus_Dissolved:
+	case rptypes.MinipoolStatus_Dissolved:
 		// Dissolved but non-finalized / non-closed minipools can just have the whole balance sent back to the NO
 		details.NodeShareOfDistributableBalance = details.Balance
 	default:
 		details.CanDistribute = false
-		return details, nil
+		return details
 	}
 
 	details.CanDistribute = true
-	return details, nil
+	return details
 }

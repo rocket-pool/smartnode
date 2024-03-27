@@ -49,27 +49,27 @@ type nodeSetSnapshotDelegateContext struct {
 	delegate common.Address
 }
 
-func (c *nodeSetSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
+func (c *nodeSetSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return nil
+		return status, nil
 	}
 
 	// Binding
 	node, err := node.NewNode(rp, nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
 
 	// Get TX info
 	data.TxInfo, err = node.SetVotingDelegate(c.delegate, opts)
 	if err != nil {
-		return fmt.Errorf("error getting TX info for SetVotingDelegate: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for SetVotingDelegate: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

@@ -42,13 +42,13 @@ type walletDeletePasswordContext struct {
 	save     bool
 }
 
-func (c *walletDeletePasswordContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+func (c *walletDeletePasswordContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 
 	err := w.DeletePassword()
 	if err != nil {
-		return fmt.Errorf("error deleting wallet password from disk: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error deleting wallet password from disk: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

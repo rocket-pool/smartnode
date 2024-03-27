@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -62,32 +63,32 @@ type auctionStatusContext struct {
 	networkMgr *network.NetworkManager
 }
 
-func (c *auctionStatusContext) Initialize() error {
+func (c *auctionStatusContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.auctionMgr, err = auction.NewAuctionManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating auction manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating auction manager binding: %w", err)
 	}
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
 	c.networkMgr, err = network.NewNetworkManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating network prices binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating network prices binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *auctionStatusContext) GetState(mc *batch.MultiCaller) {
@@ -102,7 +103,7 @@ func (c *auctionStatusContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *auctionStatusContext) PrepareData(data *api.AuctionStatusData, opts *bind.TransactOpts) error {
+func (c *auctionStatusContext) PrepareData(data *api.AuctionStatusData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Check the balance requirement
 	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Auction.LotMinimumEthValue.Get(), eth.EthToWei(1))
 	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkMgr.RplPrice.Raw())
@@ -111,7 +112,7 @@ func (c *auctionStatusContext) PrepareData(data *api.AuctionStatusData, opts *bi
 	// Get lot counts
 	lotCountDetails, err := c.getAllLotCountDetails(c.auctionMgr.LotCount.Formatted())
 	if err != nil {
-		return fmt.Errorf("error getting auction lot count details: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting auction lot count details: %w", err)
 	}
 	for _, details := range lotCountDetails {
 		if details.AddressHasBid && details.Cleared {
@@ -130,7 +131,7 @@ func (c *auctionStatusContext) PrepareData(data *api.AuctionStatusData, opts *bi
 	data.AllottedRplBalance = c.auctionMgr.AllottedRplBalance.Get()
 	data.RemainingRplBalance = c.auctionMgr.RemainingRplBalance.Get()
 	data.CanCreateLot = sufficientRemainingRplForLot
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 // Get all lot count details

@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -50,7 +51,7 @@ type queueProcessContext struct {
 	depositPool *deposit.DepositPoolManager
 }
 
-func (c *queueProcessContext) Initialize() error {
+func (c *queueProcessContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.w = sp.GetWallet()
@@ -58,36 +59,36 @@ func (c *queueProcessContext) Initialize() error {
 	// Requirements
 	err := sp.RequireNodeAddress()
 	if err != nil {
-		return err
+		return types.ResponseStatus_AddressNotPresent, err
 	}
 
 	// Bindings
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
 	c.depositPool, err = deposit.NewDepositPoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating deposit pool binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating deposit pool binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *queueProcessContext) GetState(mc *batch.MultiCaller) {
 	c.pSettings.Deposit.AreDepositAssignmentsEnabled.AddToQuery(mc)
 }
 
-func (c *queueProcessContext) PrepareData(data *api.QueueProcessData, opts *bind.TransactOpts) error {
+func (c *queueProcessContext) PrepareData(data *api.QueueProcessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.AssignDepositsDisabled = !c.pSettings.Deposit.AreDepositAssignmentsEnabled.Get()
 	data.CanProcess = !data.AssignDepositsDisabled
 
 	if data.CanProcess && opts != nil {
 		txInfo, err := c.depositPool.AssignDeposits(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for AssignDeposits: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for AssignDeposits: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

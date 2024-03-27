@@ -51,15 +51,20 @@ type minipoolBeginReduceBondContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolBeginReduceBondContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
+func (c *minipoolBeginReduceBondContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "begin-bond-reduce")
 }
 
-func (c *minipoolBeginReduceBondContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
+func (c *minipoolBeginReduceBondContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
 		mpCommon := mp.Common()
-		return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", mpCommon.Address.Hex(), mpCommon.Version)
+		return types.ResponseStatus_InvalidChainState, nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", mpCommon.Address.Hex(), mpCommon.Version)
 	}
-	return mpv3.BeginReduceBondAmount(c.newBondAmountWei, opts)
+
+	txInfo, err := mpv3.BeginReduceBondAmount(c.newBondAmountWei, opts)
+	if err != nil {
+		return types.ResponseStatus_Error, nil, err
+	}
+	return types.ResponseStatus_Success, txInfo, nil
 }

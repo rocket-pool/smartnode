@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -55,7 +56,7 @@ type securityLeaveContext struct {
 	pSettings *protocol.ProtocolDaoSettings
 }
 
-func (c *securityLeaveContext) Initialize() error {
+func (c *securityLeaveContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
@@ -63,27 +64,27 @@ func (c *securityLeaveContext) Initialize() error {
 	// Requirements
 	err := sp.RequireOnSecurityCouncil()
 	if err != nil {
-		return err
+		return types.ResponseStatus_InvalidChainState, err
 	}
 	// Bindings
 	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating security council member binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council member binding: %w", err)
 	}
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
 	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	c.pSettings = pdaoMgr.Settings
 	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, c.pSettings)
 	if err != nil {
-		return fmt.Errorf("error creating security council manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *securityLeaveContext) GetState(mc *batch.MultiCaller) {
@@ -94,7 +95,7 @@ func (c *securityLeaveContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *securityLeaveContext) PrepareData(data *api.SecurityLeaveData, opts *bind.TransactOpts) error {
+func (c *securityLeaveContext) PrepareData(data *api.SecurityLeaveData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	leftTime := c.scMember.LeftTime.Formatted()
 	actionTime := c.pSettings.Security.ProposalActionTime.Formatted()
 	data.ProposalExpired = time.Until(leftTime.Add(actionTime)) < 0
@@ -105,9 +106,9 @@ func (c *securityLeaveContext) PrepareData(data *api.SecurityLeaveData, opts *bi
 	if data.CanLeave && opts != nil {
 		txInfo, err := c.scMgr.Leave(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for Leave: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Leave: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

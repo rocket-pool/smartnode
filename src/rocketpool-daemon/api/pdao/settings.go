@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -48,7 +49,7 @@ type protocolDaoSettingsContext struct {
 	pSettings *protocol.ProtocolDaoSettings
 }
 
-func (c *protocolDaoSettingsContext) Initialize() error {
+func (c *protocolDaoSettingsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
@@ -56,10 +57,10 @@ func (c *protocolDaoSettingsContext) Initialize() error {
 	var err error
 	c.pMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	c.pSettings = c.pMgr.Settings
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoSettingsContext) GetState(mc *batch.MultiCaller) {
@@ -69,7 +70,7 @@ func (c *protocolDaoSettingsContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *protocolDaoSettingsContext) PrepareData(data *api.ProtocolDaoSettingsData, opts *bind.TransactOpts) error {
+func (c *protocolDaoSettingsContext) PrepareData(data *api.ProtocolDaoSettingsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.Auction.IsCreateLotEnabled = c.pSettings.Auction.IsCreateLotEnabled.Get()
 	data.Auction.IsBidOnLotEnabled = c.pSettings.Auction.IsBidOnLotEnabled.Get()
 	data.Auction.LotMinimumEthValue = c.pSettings.Auction.LotMinimumEthValue.Get()
@@ -135,5 +136,5 @@ func (c *protocolDaoSettingsContext) PrepareData(data *api.ProtocolDaoSettingsDa
 	data.Security.ProposalExecuteTime = c.pSettings.Security.ProposalExecuteTime.Formatted()
 	data.Security.ProposalActionTime = c.pSettings.Security.ProposalActionTime.Formatted()
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

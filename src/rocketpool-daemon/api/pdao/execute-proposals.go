@@ -62,30 +62,30 @@ type protocolDaoExecuteProposalsContext struct {
 	proposals []*protocol.ProtocolDaoProposal
 }
 
-func (c *protocolDaoExecuteProposalsContext) Initialize() error {
+func (c *protocolDaoExecuteProposalsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	c.proposals = make([]*protocol.ProtocolDaoProposal, len(c.ids))
 	for i, id := range c.ids {
 		c.proposals[i], err = protocol.NewProtocolDaoProposal(c.rp, id)
 		if err != nil {
-			return fmt.Errorf("error creating proposal binding for proposal %d: %w", id, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating proposal binding for proposal %d: %w", id, err)
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
@@ -97,7 +97,7 @@ func (c *protocolDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *protocolDaoExecuteProposalsContext) PrepareData(dataBatch *types.DataBatch[api.ProtocolDaoExecuteProposalData], opts *bind.TransactOpts) error {
+func (c *protocolDaoExecuteProposalsContext) PrepareData(dataBatch *types.DataBatch[api.ProtocolDaoExecuteProposalData], opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	dataBatch.Batch = make([]api.ProtocolDaoExecuteProposalData, len(c.ids))
 	for i, prop := range c.proposals {
 		// Check proposal details
@@ -110,10 +110,10 @@ func (c *protocolDaoExecuteProposalsContext) PrepareData(dataBatch *types.DataBa
 		if data.CanExecute && opts != nil {
 			txInfo, err := prop.Execute(opts)
 			if err != nil {
-				return fmt.Errorf("error getting TX info for Execute: %w", err)
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Execute: %w", err)
 			}
 			data.TxInfo = txInfo
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

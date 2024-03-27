@@ -1,16 +1,16 @@
 package minipool
 
 import (
-	"errors"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -43,17 +43,15 @@ type minipoolExitDetailsContext struct {
 	handler *MinipoolHandler
 }
 
-func (c *minipoolExitDetailsContext) Initialize() error {
+func (c *minipoolExitDetailsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-	)
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolExitDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -71,7 +69,7 @@ func (c *minipoolExitDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, m
 	)
 }
 
-func (c *minipoolExitDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, response *api.MinipoolExitDetailsData) error {
+func (c *minipoolExitDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, response *api.MinipoolExitDetailsData) (types.ResponseStatus, error) {
 	// Get the exit details
 	details := make([]api.MinipoolExitDetails, len(addresses))
 	for i, mp := range mps {
@@ -79,12 +77,12 @@ func (c *minipoolExitDetailsContext) PrepareData(addresses []common.Address, mps
 		status := mpCommonDetails.Status.Formatted()
 		mpDetails := api.MinipoolExitDetails{
 			Address:       mpCommonDetails.Address,
-			InvalidStatus: (status != types.MinipoolStatus_Staking),
+			InvalidStatus: (status != rptypes.MinipoolStatus_Staking),
 		}
 		mpDetails.CanExit = !mpDetails.InvalidStatus
 		details[i] = mpDetails
 	}
 
 	response.Details = details
-	return nil
+	return types.ResponseStatus_Success, nil
 }

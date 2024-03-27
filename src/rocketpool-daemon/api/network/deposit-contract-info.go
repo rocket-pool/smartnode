@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	rputils "github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -40,7 +41,7 @@ type networkDepositInfoContext struct {
 	handler *NetworkHandler
 }
 
-func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContractInfoData, opts *bind.TransactOpts) error {
+func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContractInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
@@ -50,18 +51,18 @@ func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContract
 	// Requirements
 	err := sp.RequireEthClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Get the deposit contract info
 	info, err := rputils.GetDepositContractInfo(ctx, rp, cfg, bc)
 	if err != nil {
-		return fmt.Errorf("error getting deposit contract info: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting deposit contract info: %w", err)
 	}
 	data.SufficientSync = true
 	data.RPNetwork = info.RPNetwork
 	data.RPDepositContract = info.RPDepositContract
 	data.BeaconNetwork = info.BeaconNetwork
 	data.BeaconDepositContract = info.BeaconDepositContract
-	return nil
+	return types.ResponseStatus_Success, nil
 }

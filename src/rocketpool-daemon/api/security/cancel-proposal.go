@@ -13,9 +13,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -59,36 +60,36 @@ type securityCancelProposalContext struct {
 	prop     *proposals.SecurityCouncilProposal
 }
 
-func (c *securityCancelProposalContext) Initialize() error {
+func (c *securityCancelProposalContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating security council member binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council member binding: %w", err)
 	}
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
 	prop, err := c.dpm.CreateProposalFromID(c.id, nil)
 	if err != nil {
-		return fmt.Errorf("error creating proposal binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal binding: %w", err)
 	}
 	var success bool
 	c.prop, success = proposals.GetProposalAsSecurity(prop)
 	if !success {
-		return fmt.Errorf("proposal %d is not a security council proposal", c.id)
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("proposal %d is not a security council proposal", c.id)
 	}
-	return nil
+	return types.ResponseStatus_Error, nil
 }
 
 func (c *securityCancelProposalContext) GetState(mc *batch.MultiCaller) {
@@ -100,11 +101,11 @@ func (c *securityCancelProposalContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *securityCancelProposalContext) PrepareData(data *api.SecurityCancelProposalData, opts *bind.TransactOpts) error {
+func (c *securityCancelProposalContext) PrepareData(data *api.SecurityCancelProposalData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Check proposal details
 	state := c.prop.State.Formatted()
 	data.DoesNotExist = (c.id > c.dpm.ProposalCount.Formatted())
-	data.InvalidState = !(state == types.ProposalState_Pending || state == types.ProposalState_Active)
+	data.InvalidState = !(state == rptypes.ProposalState_Pending || state == rptypes.ProposalState_Active)
 	data.InvalidProposer = (c.nodeAddress != c.prop.ProposerAddress.Get())
 	data.NotOnSecurityCouncil = !c.scMember.Exists.Get()
 	data.CanCancel = !(data.DoesNotExist || data.InvalidState || data.InvalidProposer || data.NotOnSecurityCouncil)
@@ -113,9 +114,9 @@ func (c *securityCancelProposalContext) PrepareData(data *api.SecurityCancelProp
 	if data.CanCancel && opts != nil {
 		txInfo, err := c.prop.Cancel(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for Cancel: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Cancel: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

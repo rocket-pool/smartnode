@@ -12,9 +12,10 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -57,27 +58,27 @@ type protocolDaoFinalizeProposalContext struct {
 	proposal   *protocol.ProtocolDaoProposal
 }
 
-func (c *protocolDaoFinalizeProposalContext) Initialize() error {
+func (c *protocolDaoFinalizeProposalContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	c.proposal, err = protocol.NewProtocolDaoProposal(c.rp, c.proposalID)
 	if err != nil {
-		return fmt.Errorf("error creating proposal binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoFinalizeProposalContext) GetState(mc *batch.MultiCaller) {
@@ -88,9 +89,9 @@ func (c *protocolDaoFinalizeProposalContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *protocolDaoFinalizeProposalContext) PrepareData(data *api.ProtocolDaoFinalizeProposalData, opts *bind.TransactOpts) error {
+func (c *protocolDaoFinalizeProposalContext) PrepareData(data *api.ProtocolDaoFinalizeProposalData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.DoesNotExist = (c.proposalID > c.pdaoMgr.ProposalCount.Formatted())
-	data.InvalidState = (c.proposal.State.Formatted() != types.ProtocolDaoProposalState_Vetoed)
+	data.InvalidState = (c.proposal.State.Formatted() != rptypes.ProtocolDaoProposalState_Vetoed)
 	data.AlreadyFinalized = c.proposal.IsFinalized.Get()
 	data.CanFinalize = !(data.DoesNotExist || data.InvalidState || data.AlreadyFinalized)
 
@@ -98,9 +99,9 @@ func (c *protocolDaoFinalizeProposalContext) PrepareData(data *api.ProtocolDaoFi
 	if data.CanFinalize && opts != nil {
 		txInfo, err := c.proposal.Finalize(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for Finalize: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Finalize: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

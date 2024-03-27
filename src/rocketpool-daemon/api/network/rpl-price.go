@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -50,27 +51,27 @@ type networkPriceContext struct {
 	networkMgr *network.NetworkManager
 }
 
-func (c *networkPriceContext) Initialize() error {
+func (c *networkPriceContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
 	err := sp.RequireEthClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Bindings
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
 	c.networkMgr, err = network.NewNetworkManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating network prices binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating network prices binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *networkPriceContext) GetState(mc *batch.MultiCaller) {
@@ -81,7 +82,7 @@ func (c *networkPriceContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *bind.TransactOpts) error {
+func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	var rplPrice *big.Int
 	_24Eth := eth.EthToWei(24)
 	_16Eth := eth.EthToWei(16)
@@ -108,5 +109,5 @@ func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *b
 	// Update & return response
 	data.RplPrice = rplPrice
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

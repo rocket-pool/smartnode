@@ -49,10 +49,14 @@ type minipoolSetUseLatestDelegatesContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolSetUseLatestDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
+func (c *minipoolSetUseLatestDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "set-use-latest-delegate")
 }
 
-func (c *minipoolSetUseLatestDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return mp.Common().SetUseLatestDelegate(c.setting, opts)
+func (c *minipoolSetUseLatestDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {
+	txInfo, err := mp.Common().SetUseLatestDelegate(c.setting, opts)
+	if err != nil {
+		return types.ResponseStatus_Error, nil, err
+	}
+	return types.ResponseStatus_Success, txInfo, nil
 }

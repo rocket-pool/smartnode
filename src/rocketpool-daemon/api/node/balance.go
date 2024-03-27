@@ -1,13 +1,13 @@
 package node
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -40,20 +40,21 @@ type nodeBalanceContext struct {
 	handler *NodeHandler
 }
 
-func (c *nodeBalanceContext) PrepareData(data *api.NodeBalanceData, opts *bind.TransactOpts) error {
+func (c *nodeBalanceContext) PrepareData(data *api.NodeBalanceData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	ec := sp.GetEthClient()
+	ctx := sp.GetContext()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
 	err := sp.RequireNodeAddress()
 	if err != nil {
-		return err
+		return types.ResponseStatus_AddressNotPresent, err
 	}
 
-	data.Balance, err = ec.BalanceAt(context.Background(), nodeAddress, nil)
+	data.Balance, err = ec.BalanceAt(ctx, nodeAddress, nil)
 	if err != nil {
-		return fmt.Errorf("error getting ETH balance of node %s: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting ETH balance of node %s: %w", nodeAddress.Hex(), err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

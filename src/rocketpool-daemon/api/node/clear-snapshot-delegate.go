@@ -40,7 +40,7 @@ type nodeClearSnapshotDelegateContext struct {
 	handler *NodeHandler
 }
 
-func (c *nodeClearSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
+func (c *nodeClearSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	snapshot := sp.GetSnapshotDelegation()
@@ -49,7 +49,7 @@ func (c *nodeClearSnapshotDelegateContext) PrepareData(data *types.TxInfoData, o
 	var err error
 	data.TxInfo, err = snapshot.ClearDelegate(idHash, opts)
 	if err != nil {
-		return fmt.Errorf("error getting TX info for ClearDelegate: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for ClearDelegate: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

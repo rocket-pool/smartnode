@@ -1,8 +1,6 @@
 package minipool
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -10,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -50,28 +49,26 @@ type minipoolPromoteDetailsContext struct {
 	oSettings *oracle.OracleDaoSettings
 }
 
-func (c *minipoolPromoteDetailsContext) Initialize() error {
+func (c *minipoolPromoteDetailsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-	)
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	oMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating oDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating oDAO manager binding: %w", err)
 	}
 	c.oSettings = oMgr.Settings
 	if err != nil {
-		return fmt.Errorf("error creating oDAO settings binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating oDAO settings binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolPromoteDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -93,11 +90,12 @@ func (c *minipoolPromoteDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller
 	}
 }
 
-func (c *minipoolPromoteDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolPromoteDetailsData) error {
+func (c *minipoolPromoteDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolPromoteDetailsData) (types.ResponseStatus, error) {
 	// Get the time of the latest block
-	latestEth1Block, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
+	ctx := c.handler.serviceProvider.GetContext()
+	latestEth1Block, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("Can't get the latest block time: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting the latest block time: %w", err)
 	}
 	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
 
@@ -124,5 +122,5 @@ func (c *minipoolPromoteDetailsContext) PrepareData(addresses []common.Address, 
 	}
 
 	data.Details = details
-	return nil
+	return types.ResponseStatus_Success, nil
 }

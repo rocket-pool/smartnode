@@ -62,7 +62,7 @@ type securityExecuteProposalsContext struct {
 	proposals []*proposals.SecurityCouncilProposal
 }
 
-func (c *securityExecuteProposalsContext) Initialize() error {
+func (c *securityExecuteProposalsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
@@ -71,21 +71,21 @@ func (c *securityExecuteProposalsContext) Initialize() error {
 	var err error
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
 	c.proposals = make([]*proposals.SecurityCouncilProposal, len(c.ids))
 	for i, id := range c.ids {
 		prop, err := c.dpm.CreateProposalFromID(id, nil)
 		if err != nil {
-			return fmt.Errorf("error creating proposal binding: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating proposal binding: %w", err)
 		}
 		var success bool
 		c.proposals[i], success = proposals.GetProposalAsSecurity(prop)
 		if !success {
-			return fmt.Errorf("proposal %d is not a Security Council proposal", id)
+			return types.ResponseStatus_InvalidChainState, fmt.Errorf("proposal %d is not a Security Council proposal", id)
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *securityExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
@@ -97,7 +97,7 @@ func (c *securityExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *securityExecuteProposalsContext) PrepareData(dataBatch *types.DataBatch[api.SecurityExecuteProposalData], opts *bind.TransactOpts) error {
+func (c *securityExecuteProposalsContext) PrepareData(dataBatch *types.DataBatch[api.SecurityExecuteProposalData], opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	dataBatch.Batch = make([]api.SecurityExecuteProposalData, len(c.ids))
 	for i, prop := range c.proposals {
 
@@ -112,10 +112,10 @@ func (c *securityExecuteProposalsContext) PrepareData(dataBatch *types.DataBatch
 		if data.CanExecute && opts != nil {
 			txInfo, err := prop.Execute(opts)
 			if err != nil {
-				return fmt.Errorf("error getting TX info for Execute: %w", err)
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Execute: %w", err)
 			}
 			data.TxInfo = txInfo
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

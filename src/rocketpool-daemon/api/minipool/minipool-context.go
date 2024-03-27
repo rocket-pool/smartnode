@@ -23,7 +23,7 @@ import (
 // Structs implementing this will handle the caller-specific functionality.
 type IMinipoolCallContext[DataType any] interface {
 	// Initialize the context with any bootstrapping, requirements checks, or bindings it needs to set up
-	Initialize() error
+	Initialize() (types.ResponseStatus, error)
 
 	// Used to get any supplemental state required during initialization - anything in here will be fed into an rp.Query() multicall
 	GetState(node *node.Node, mc *batch.MultiCaller)
@@ -37,7 +37,7 @@ type IMinipoolCallContext[DataType any] interface {
 	GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int)
 
 	// Prepare the response data using all of the provided artifacts
-	PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *DataType) error
+	PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *DataType) (types.ResponseStatus, error)
 }
 
 // Interface for minipool call context factories - these will be invoked during route handling to create the
@@ -80,13 +80,13 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 		}
 
 		// Run the context's processing routine
-		response, err := runMinipoolRoute[DataType](context, serviceProvider)
-		server.HandleResponse(log, w, response, err, isDebug)
+		status, response, err := runMinipoolRoute[DataType](context, serviceProvider)
+		server.HandleResponse(log, w, status, response, err, isDebug)
 	})
 }
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
-func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider) (*types.ApiResponse[DataType], error) {
+func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider) (types.ResponseStatus, *types.ApiResponse[DataType], error) {
 	// Get the services
 	w := serviceProvider.GetWallet()
 	q := serviceProvider.GetQueryManager()
@@ -96,19 +96,19 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	// Load contracts
 	err := serviceProvider.LoadContractsIfStale()
 	if err != nil {
-		return nil, fmt.Errorf("error loading contract bindings: %w", err)
+		return types.ResponseStatus_Error, nil, fmt.Errorf("error loading contract bindings: %w", err)
 	}
 
 	// Common requirements
-	err = serviceProvider.RequireNodeRegistered()
+	status, err := serviceProvider.RequireNodeRegistered()
 	if err != nil {
-		return nil, err
+		return status, nil, err
 	}
 
 	// Get the latest block for consistency
 	latestBlock, err := rp.Client.BlockNumber(serviceProvider.GetContext())
 	if err != nil {
-		return nil, fmt.Errorf("error getting latest block number: %w", err)
+		return types.ResponseStatus_Error, nil, fmt.Errorf("error getting latest block number: %w", err)
 	}
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(int64(latestBlock)),
@@ -117,13 +117,13 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	// Create the bindings
 	node, err := node.NewNode(rp, nodeAddress)
 	if err != nil {
-		return nil, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, nil, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
 
 	// Supplemental function-specific bindings
-	err = ctx.Initialize()
+	status, err = ctx.Initialize()
 	if err != nil {
-		return nil, err
+		return status, nil, err
 	}
 
 	// Get contract state
@@ -133,7 +133,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 		return nil
 	}, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting contract state: %w", err)
+		return types.ResponseStatus_Error, nil, fmt.Errorf("error getting contract state: %w", err)
 	}
 
 	// Create the response and data
@@ -144,23 +144,23 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 
 	// Supplemental function-specific check to see if minipool processing should continue
 	if !ctx.CheckState(node, data) {
-		return response, nil
+		return types.ResponseStatus_Success, response, nil
 	}
 
 	// Get the minipool addresses for this node
 	addresses, err := node.GetMinipoolAddresses(node.MinipoolCount.Formatted(), opts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting minipool addresses: %w", err)
+		return types.ResponseStatus_Error, nil, fmt.Errorf("error getting minipool addresses: %w", err)
 	}
 
 	// Create each minipool binding
 	mpMgr, err := minipool.NewMinipoolManager(rp)
 	if err != nil {
-		return nil, fmt.Errorf("error creating minipool manager binding: %w", err)
+		return types.ResponseStatus_Error, nil, fmt.Errorf("error creating minipool manager binding: %w", err)
 	}
 	mps, err := mpMgr.CreateMinipoolsFromAddresses(addresses, false, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error creating minipool bindings: %w", err)
+		return types.ResponseStatus_Error, nil, fmt.Errorf("error creating minipool bindings: %w", err)
 	}
 
 	// Get the relevant details
@@ -169,15 +169,10 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 		return nil
 	}, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting minipool details: %w", err)
+		return types.ResponseStatus_Error, nil, fmt.Errorf("error getting minipool details: %w", err)
 	}
 
 	// Supplemental function-specific response construction
-	err = ctx.PrepareData(addresses, mps, data)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return
-	return response, nil
+	status, err = ctx.PrepareData(addresses, mps, data)
+	return status, response, err
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -49,26 +50,26 @@ type queueStatusContext struct {
 	mpMgr       *minipool.MinipoolManager
 }
 
-func (c *queueStatusContext) Initialize() error {
+func (c *queueStatusContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
 	err := sp.RequireEthClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Bindings
 	c.depositPool, err = deposit.NewDepositPoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating deposit pool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating deposit pool manager binding: %w", err)
 	}
 	c.mpMgr, err = minipool.NewMinipoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating minipool queue binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool queue binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *queueStatusContext) GetState(mc *batch.MultiCaller) {
@@ -79,9 +80,9 @@ func (c *queueStatusContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *queueStatusContext) PrepareData(data *api.QueueStatusData, opts *bind.TransactOpts) error {
+func (c *queueStatusContext) PrepareData(data *api.QueueStatusData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.DepositPoolBalance = c.depositPool.Balance.Get()
 	data.MinipoolQueueCapacity = c.mpMgr.TotalQueueCapacity.Get()
 	data.MinipoolQueueLength = c.mpMgr.TotalQueueLength.Formatted()
-	return nil
+	return types.ResponseStatus_Success, nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
@@ -68,7 +69,7 @@ type protocolDaoProposeReplaceMemberOfSecurityCouncilContext struct {
 	newMember       *security.SecurityCouncilMember
 }
 
-func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) Initialize() error {
+func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
@@ -76,29 +77,29 @@ func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) Initialize() e
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node binding: %w", err)
 	}
 	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	c.existingMember, err = security.NewSecurityCouncilMember(c.rp, c.existingAddress)
 	if err != nil {
-		return fmt.Errorf("error creating security council member binding for %s: %w", c.existingAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council member binding for %s: %w", c.existingAddress.Hex(), err)
 	}
 	c.newMember, err = security.NewSecurityCouncilMember(c.rp, c.newAddress)
 	if err != nil {
-		return fmt.Errorf("error creating security council member binding for %s: %w", c.newAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council member binding for %s: %w", c.newAddress.Hex(), err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) GetState(mc *batch.MultiCaller) {
@@ -112,7 +113,7 @@ func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) GetState(mc *b
 	)
 }
 
-func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) PrepareData(data *api.ProtocolDaoProposeReplaceMemberOfSecurityCouncilData, opts *bind.TransactOpts) error {
+func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) PrepareData(data *api.ProtocolDaoProposeReplaceMemberOfSecurityCouncilData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 	data.NewMemberAlreadyExists = c.newMember.Exists.Get()
 	data.OldMemberDoesNotExist = !c.existingMember.Exists.Get()
@@ -127,15 +128,15 @@ func (c *protocolDaoProposeReplaceMemberOfSecurityCouncilContext) PrepareData(da
 	if data.CanPropose && opts != nil {
 		blockNumber, pollard, err := createPollard(ctx, c.rp, c.cfg, c.bc)
 		if err != nil {
-			return fmt.Errorf("error creating pollard for proposal creation: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating pollard for proposal creation: %w", err)
 		}
 
 		message := fmt.Sprintf("replace %s (%s) on the security council with %s (%s)", c.existingMember.ID.Get(), c.existingAddress.Hex(), c.newID, c.newAddress.Hex())
 		txInfo, err := c.pdaoMgr.ProposeReplaceSecurityCouncilMember(message, c.existingAddress, c.newID, c.newAddress, blockNumber, pollard, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for ProposeReplaceSecurityCouncilMember: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for ProposeReplaceSecurityCouncilMember: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

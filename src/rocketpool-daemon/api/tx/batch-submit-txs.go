@@ -2,7 +2,6 @@ package tx
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
 	_ "time/tzdata"
@@ -12,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -61,17 +61,16 @@ type txBatchSubmitTxsContext struct {
 	body    api.BatchSubmitTxsBody
 }
 
-func (c *txBatchSubmitTxsContext) PrepareData(data *api.BatchTxData, opts *bind.TransactOpts) error {
+func (c *txBatchSubmitTxsContext) PrepareData(data *api.BatchTxData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	ec := sp.GetEthClient()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
-	err := errors.Join(
-		sp.RequireWalletReady(),
-	)
+	// Requirements
+	err := sp.RequireWalletReady()
 	if err != nil {
-		return err
+		return types.ResponseStatus_WalletNotReady, err
 	}
 
 	// Get the first nonce
@@ -81,7 +80,7 @@ func (c *txBatchSubmitTxsContext) PrepareData(data *api.BatchTxData, opts *bind.
 	} else {
 		nonce, err := ec.NonceAt(context.Background(), nodeAddress, nil)
 		if err != nil {
-			return fmt.Errorf("error getting latest nonce for node: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting latest nonce for node: %w", err)
 		}
 		currentNonce = big.NewInt(0).SetUint64(nonce)
 	}
@@ -95,7 +94,7 @@ func (c *txBatchSubmitTxsContext) PrepareData(data *api.BatchTxData, opts *bind.
 
 		tx, err := rp.ExecuteTransaction(submission.TxInfo, opts)
 		if err != nil {
-			return fmt.Errorf("error submitting transaction %d: %w", i, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error submitting transaction %d: %w", i, err)
 		}
 		txHashes[i] = tx.Hash()
 
@@ -104,5 +103,5 @@ func (c *txBatchSubmitTxsContext) PrepareData(data *api.BatchTxData, opts *bind.
 	}
 
 	data.TxHashes = txHashes
-	return nil
+	return types.ResponseStatus_Success, nil
 }

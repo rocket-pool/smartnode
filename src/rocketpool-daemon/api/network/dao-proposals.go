@@ -5,7 +5,6 @@
 package network
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -46,7 +46,7 @@ type networkProposalContext struct {
 	handler *NetworkHandler
 }
 
-func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, opts *bind.TransactOpts) error {
+func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
@@ -54,12 +54,13 @@ func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, 
 	snapshot := sp.GetSnapshotDelegation()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireSnapshot(),
-	)
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
+	}
+	err = sp.RequireSnapshot()
+	if err != nil {
+		return types.ResponseStatus_InvalidChainState, err
 	}
 	data.AccountAddress = nodeAddress
 
@@ -70,15 +71,15 @@ func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, 
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting voting delegate info: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting voting delegate info: %w", err)
 	}
 
 	// Get snapshot proposals
 	snapshotResponse, err := voting.GetSnapshotProposals(cfg, data.AccountAddress, data.VotingDelegate, true)
 	if err != nil {
-		return fmt.Errorf("error getting snapshot proposals: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting snapshot proposals: %w", err)
 	}
 
 	data.ActiveSnapshotProposals = snapshotResponse
-	return nil
+	return types.ResponseStatus_Success, nil
 }

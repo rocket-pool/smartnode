@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -9,10 +8,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -48,19 +48,20 @@ type minipoolRescueDissolvedDetailsContext struct {
 	bc      beacon.IBeaconClient
 }
 
-func (c *minipoolRescueDissolvedDetailsContext) Initialize() error {
+func (c *minipoolRescueDissolvedDetailsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
-	)
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
-	return nil
+	err = sp.RequireBeaconClientSynced()
+	if err != nil {
+		return types.ResponseStatus_ClientsNotSynced, err
+	}
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolRescueDissolvedDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -79,7 +80,7 @@ func (c *minipoolRescueDissolvedDetailsContext) GetMinipoolDetails(mc *batch.Mul
 	)
 }
 
-func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRescueDissolvedDetailsData) error {
+func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRescueDissolvedDetailsData) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 	// Get the rescue details
 	pubkeys := []beacon.ValidatorPubkey{}
@@ -93,7 +94,7 @@ func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.A
 			IsFinalized:   mpCommon.IsFinalised.Get(),
 		}
 
-		if mpDetails.MinipoolState != types.MinipoolStatus_Dissolved || mpDetails.IsFinalized {
+		if mpDetails.MinipoolState != rptypes.MinipoolStatus_Dissolved || mpDetails.IsFinalized {
 			mpDetails.InvalidElState = true
 		} else {
 			pubkey := mpCommon.Pubkey.Get()
@@ -107,7 +108,7 @@ func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.A
 	// Get the statuses on Beacon
 	beaconStatuses, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
-		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}
 
 	// Do a complete viability check
@@ -132,5 +133,5 @@ func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.A
 	}
 
 	data.Details = details
-	return nil
+	return types.ResponseStatus_Success, nil
 }

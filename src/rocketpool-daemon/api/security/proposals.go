@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -56,7 +57,7 @@ type securityProposalsContext struct {
 	dpm   *proposals.DaoProposalManager
 }
 
-func (c *securityProposalsContext) Initialize() error {
+func (c *securityProposalsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, c.hasAddress = sp.GetWallet().GetAddress()
@@ -64,33 +65,33 @@ func (c *securityProposalsContext) Initialize() error {
 	// Requirements
 	err := sp.RequireEthClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Bindings
 	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating Protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating Protocol DAO manager binding: %w", err)
 	}
 	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, pdaoMgr.Settings)
 	if err != nil {
-		return fmt.Errorf("error creating security council manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council manager binding: %w", err)
 	}
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *securityProposalsContext) GetState(mc *batch.MultiCaller) {
 	c.dpm.ProposalCount.AddToQuery(mc)
 }
 
-func (c *securityProposalsContext) PrepareData(data *api.SecurityProposalsData, opts *bind.TransactOpts) error {
+func (c *securityProposalsContext) PrepareData(data *api.SecurityProposalsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	_, scProps, err := c.dpm.GetProposals(c.dpm.ProposalCount.Formatted(), true, nil)
 	if err != nil {
-		return fmt.Errorf("error getting proposals: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting proposals: %w", err)
 	}
 
 	// Get the basic details
@@ -126,8 +127,8 @@ func (c *securityProposalsContext) PrepareData(data *api.SecurityProposalsData, 
 			return nil
 		}, nil)
 		if err != nil {
-			return fmt.Errorf("error getting node vote status on proposals: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting node vote status on proposals: %w", err)
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

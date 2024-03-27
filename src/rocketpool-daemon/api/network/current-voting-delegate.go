@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -47,23 +48,23 @@ type networkCurrentVotingDelegateContext struct {
 	node *node.Node
 }
 
-func (c *networkCurrentVotingDelegateContext) Initialize() error {
+func (c *networkCurrentVotingDelegateContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *networkCurrentVotingDelegateContext) GetState(mc *batch.MultiCaller) {
@@ -72,8 +73,8 @@ func (c *networkCurrentVotingDelegateContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *networkCurrentVotingDelegateContext) PrepareData(data *api.NetworkCurrentVotingDelegateData, opts *bind.TransactOpts) error {
+func (c *networkCurrentVotingDelegateContext) PrepareData(data *api.NetworkCurrentVotingDelegateData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.AccountAddress = c.node.Address
 	data.VotingDelegate = c.node.CurrentVotingDelegate.Get()
-	return nil
+	return types.ResponseStatus_Success, nil
 }

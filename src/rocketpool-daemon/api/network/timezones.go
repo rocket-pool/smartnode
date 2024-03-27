@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -47,33 +48,33 @@ type networkTimezoneContext struct {
 	nodeMgr *node.NodeManager
 }
 
-func (c *networkTimezoneContext) Initialize() error {
+func (c *networkTimezoneContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
 	err := sp.RequireEthClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Bindings
 	c.nodeMgr, err = node.NewNodeManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting node manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting node manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *networkTimezoneContext) GetState(mc *batch.MultiCaller) {
 	c.nodeMgr.NodeCount.AddToQuery(mc)
 }
 
-func (c *networkTimezoneContext) PrepareData(data *api.NetworkTimezonesData, opts *bind.TransactOpts) error {
+func (c *networkTimezoneContext) PrepareData(data *api.NetworkTimezonesData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.TimezoneCounts = map[string]uint64{}
 	timezoneCounts, err := c.nodeMgr.GetNodeCountPerTimezone(c.nodeMgr.NodeCount.Formatted(), nil)
 	if err != nil {
-		return fmt.Errorf("error getting node counts per timezone: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting node counts per timezone: %w", err)
 	}
 
 	for timezone, count := range timezoneCounts {
@@ -87,5 +88,5 @@ func (c *networkTimezoneContext) PrepareData(data *api.NetworkTimezonesData, opt
 		data.NodeTotal += count
 	}
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

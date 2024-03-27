@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/node/services"
 	nmcutils "github.com/rocket-pool/node-manager-core/utils"
@@ -93,21 +94,21 @@ func (sp *ServiceProvider) RequireWalletReady() error {
 	return utils.CheckIfWalletReady(status)
 }
 
-func (sp *ServiceProvider) RequireNodeRegistered() error {
+func (sp *ServiceProvider) RequireNodeRegistered() (types.ResponseStatus, error) {
 	if err := sp.RequireNodeAddress(); err != nil {
-		return err
+		return types.ResponseStatus_AddressNotPresent, err
 	}
 	if err := sp.RequireEthClientSynced(); err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 	nodeRegistered, err := sp.getNodeRegistered()
 	if err != nil {
-		return err
+		return types.ResponseStatus_Error, err
 	}
 	if !nodeRegistered {
-		return errors.New("The node is not registered with Rocket Pool. Please run 'rocketpool node register' and try again.")
+		return types.ResponseStatus_InvalidChainState, errors.New("The node is not registered with Rocket Pool. Please run 'rocketpool node register' and try again.")
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (sp *ServiceProvider) RequireRplFaucet() error {

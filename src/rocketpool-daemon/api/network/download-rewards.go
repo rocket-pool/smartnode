@@ -47,28 +47,28 @@ type networkDownloadRewardsContext struct {
 	interval uint64
 }
 
-func (c *networkDownloadRewardsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+func (c *networkDownloadRewardsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Get the event info for the interval
 	intervalInfo, err := rewards.GetIntervalInfo(rp, cfg, nodeAddress, c.interval, nil)
 	if err != nil {
-		return fmt.Errorf("error getting interval %d info: %w", c.interval, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting interval %d info: %w", c.interval, err)
 	}
 
 	// Download the rewards file
 	err = rewards.DownloadRewardsFile(cfg, &intervalInfo)
 	if err != nil {
-		return fmt.Errorf("error downloading interval %d rewards file: %w", c.interval, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error downloading interval %d rewards file: %w", c.interval, err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

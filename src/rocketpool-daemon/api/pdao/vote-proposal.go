@@ -13,9 +13,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/proposals"
@@ -61,15 +62,15 @@ type protocolDaoVoteOnProposalContext struct {
 	nodeAddress common.Address
 
 	proposalID      uint64
-	voteDirection   types.VoteDirection
+	voteDirection   rptypes.VoteDirection
 	node            *node.Node
-	existingVoteDir func() types.VoteDirection
+	existingVoteDir func() rptypes.VoteDirection
 	pdaoMgr         *protocol.ProtocolDaoManager
 	proposal        *protocol.ProtocolDaoProposal
 	propMgr         *proposals.ProposalManager
 }
 
-func (c *protocolDaoVoteOnProposalContext) Initialize() error {
+func (c *protocolDaoVoteOnProposalContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.cfg = sp.GetConfig()
 	c.rp = sp.GetRocketPool()
@@ -78,29 +79,29 @@ func (c *protocolDaoVoteOnProposalContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
 	}
 	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	c.proposal, err = protocol.NewProtocolDaoProposal(c.rp, c.proposalID)
 	if err != nil {
-		return fmt.Errorf("error creating proposal binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal binding: %w", err)
 	}
 	c.propMgr, err = proposals.NewProposalManager(ctx, nil, c.cfg, c.rp, c.bc)
 	if err != nil {
-		return fmt.Errorf("error creating proposal manager: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal manager: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoVoteOnProposalContext) GetState(mc *batch.MultiCaller) {
@@ -112,18 +113,18 @@ func (c *protocolDaoVoteOnProposalContext) GetState(mc *batch.MultiCaller) {
 	c.existingVoteDir = c.proposal.GetAddressVoteDirection(mc, c.nodeAddress)
 }
 
-func (c *protocolDaoVoteOnProposalContext) PrepareData(data *api.ProtocolDaoVoteOnProposalData, opts *bind.TransactOpts) error {
+func (c *protocolDaoVoteOnProposalContext) PrepareData(data *api.ProtocolDaoVoteOnProposalData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	var err error
 	targetBlock := c.proposal.TargetBlock.Formatted()
 	totalDelegatedVP, nodeIndex, proof, err := c.propMgr.GetArtifactsForVoting(targetBlock, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", c.nodeAddress.Hex(), targetBlock, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", c.nodeAddress.Hex(), targetBlock, err)
 	}
 
 	data.VotingPower = totalDelegatedVP
 	data.DoesNotExist = (c.proposalID > c.pdaoMgr.ProposalCount.Formatted())
-	data.InvalidState = (c.proposal.State.Formatted() != types.ProtocolDaoProposalState_ActivePhase1)
-	data.AlreadyVoted = (c.existingVoteDir() != types.VoteDirection_NoVote)
+	data.InvalidState = (c.proposal.State.Formatted() != rptypes.ProtocolDaoProposalState_ActivePhase1)
+	data.AlreadyVoted = (c.existingVoteDir() != rptypes.VoteDirection_NoVote)
 	data.InsufficientPower = (data.VotingPower.Cmp(common.Big0) == 0)
 	data.CanVote = !(data.DoesNotExist || data.InvalidState || data.AlreadyVoted || data.InsufficientPower)
 
@@ -131,9 +132,9 @@ func (c *protocolDaoVoteOnProposalContext) PrepareData(data *api.ProtocolDaoVote
 	if data.CanVote && opts != nil {
 		txInfo, err := c.proposal.Vote(c.voteDirection, totalDelegatedVP, nodeIndex, proof, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for Vote: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Vote: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

@@ -42,34 +42,34 @@ type securityProposeLeaveContext struct {
 	handler *SecurityCouncilHandler
 }
 
-func (c *securityProposeLeaveContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
+func (c *securityProposeLeaveContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 
 	// Requirements
 	err := sp.RequireOnSecurityCouncil()
 	if err != nil {
-		return err
+		return types.ResponseStatus_InvalidChainState, err
 	}
 
 	// Bindings
 	pdaoMgr, err := protocol.NewProtocolDaoManager(rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	pSettings := pdaoMgr.Settings
 	scMgr, err := security.NewSecurityCouncilManager(rp, pSettings)
 	if err != nil {
-		return fmt.Errorf("error creating security council manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council manager binding: %w", err)
 	}
 
 	// Get the tx
 	if opts != nil {
 		txInfo, err := scMgr.RequestLeave(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for RequestLeave: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for RequestLeave: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

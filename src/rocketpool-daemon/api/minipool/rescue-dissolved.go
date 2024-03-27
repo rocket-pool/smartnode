@@ -65,10 +65,10 @@ type minipoolRescueDissolvedContext struct {
 	mpMgr *minipool.MinipoolManager
 }
 
-func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
+func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Sanity check
 	if len(c.minipoolAddresses) != len(c.depositAmounts) {
-		return fmt.Errorf("addresses and deposit amounts must have the same length (%d vs. %d)", len(c.minipoolAddresses), len(c.depositAmounts))
+		return types.ResponseStatus_InvalidArguments, fmt.Errorf("addresses and deposit amounts must have the same length (%d vs. %d)", len(c.minipoolAddresses), len(c.depositAmounts))
 	}
 
 	sp := c.handler.serviceProvider
@@ -79,18 +79,19 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData
 	c.rs = sp.GetNetworkResources()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
-	)
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
+	}
+	err = sp.RequireBeaconClientSynced()
+	if err != nil {
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Bindings
 	c.mpMgr, err = minipool.NewMinipoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating minipool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool manager binding: %w", err)
 	}
 
 	// Get the TXs
@@ -100,13 +101,13 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData
 		opts.Value = amount
 		txInfo, err := c.getDepositTx(address, amount, opts)
 		if err != nil {
-			return fmt.Errorf("error simulating deposit transaction for minipool %s: %w", address.Hex(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error simulating deposit transaction for minipool %s: %w", address.Hex(), err)
 		}
 		txInfos[i] = txInfo
 	}
 
 	data.TxInfos = txInfos
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 // Create a transaction for submitting a rescue deposit, optionally simulating it only for gas estimation

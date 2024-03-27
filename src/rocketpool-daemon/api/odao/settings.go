@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -49,7 +50,7 @@ type oracleDaoSettingsContext struct {
 	oSettings *oracle.OracleDaoSettings
 }
 
-func (c *oracleDaoSettingsContext) Initialize() error {
+func (c *oracleDaoSettingsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
@@ -57,23 +58,23 @@ func (c *oracleDaoSettingsContext) Initialize() error {
 	// Requirements
 	err := sp.RequireEthClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Bindings
 	odaoMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating oracle DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating oracle DAO manager binding: %w", err)
 	}
 	c.oSettings = odaoMgr.Settings
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *oracleDaoSettingsContext) GetState(mc *batch.MultiCaller) {
 	eth.QueryAllFields(c.oSettings, mc)
 }
 
-func (c *oracleDaoSettingsContext) PrepareData(data *api.OracleDaoSettingsData, opts *bind.TransactOpts) error {
+func (c *oracleDaoSettingsContext) PrepareData(data *api.OracleDaoSettingsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.Member.Quorum = c.oSettings.Member.Quorum.Formatted()
 	data.Member.RplBond = c.oSettings.Member.RplBond.Get()
 	data.Member.ChallengeCooldown = c.oSettings.Member.ChallengeCooldown.Formatted()
@@ -93,5 +94,5 @@ func (c *oracleDaoSettingsContext) PrepareData(data *api.OracleDaoSettingsData, 
 	data.Proposal.VoteDelayTime = c.oSettings.Proposal.VoteDelayTime.Formatted()
 	data.Proposal.ExecuteTime = c.oSettings.Proposal.ExecuteTime.Formatted()
 	data.Proposal.ActionTime = c.oSettings.Proposal.ActionTime.Formatted()
-	return nil
+	return types.ResponseStatus_Success, nil
 }

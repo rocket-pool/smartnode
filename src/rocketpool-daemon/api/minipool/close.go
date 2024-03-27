@@ -53,14 +53,19 @@ type minipoolCloseContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolCloseContext) Initialize() error {
+func (c *minipoolCloseContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 
 	// Requirements
-	return errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireWalletReady(),
-	)
+	status, err := sp.RequireNodeRegistered()
+	if err != nil {
+		return status, err
+	}
+	err = sp.RequireWalletReady()
+	if err != nil {
+		return types.ResponseStatus_WalletNotReady, err
+	}
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolCloseContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -78,11 +83,11 @@ func (c *minipoolCloseContext) GetMinipoolDetails(mc *batch.MultiCaller, mp mini
 	}
 }
 
-func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.BatchTxInfoData) error {
+func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.BatchTxInfoData) (types.ResponseStatus, error) {
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, addresses, data, c.CreateTx, "close")
 }
 
-func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
+func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {
 	mpCommon := mp.Common()
 	minipoolAddress := mpCommon.Address
 	mpv3, isMpv3 := minipool.GetMinipoolAsV3(mp)
@@ -92,9 +97,9 @@ func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.Transa
 		// Get gas estimate
 		txInfo, err := mpCommon.Close(opts)
 		if err != nil {
-			return nil, fmt.Errorf("error simulating close for minipool %s: %w", minipoolAddress.Hex(), err)
+			return types.ResponseStatus_Error, nil, fmt.Errorf("error simulating close for minipool %s: %w", minipoolAddress.Hex(), err)
 		}
-		return txInfo, nil
+		return types.ResponseStatus_Success, txInfo, nil
 	}
 
 	// Check if it's an upgraded Atlas-era minipool
@@ -103,19 +108,19 @@ func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.Transa
 			// It's already been distributed so just finalize it
 			txInfo, err := mpv3.Finalise(opts)
 			if err != nil {
-				return nil, fmt.Errorf("error simulating finalise for minipool %s: %w", minipoolAddress.Hex(), err)
+				return types.ResponseStatus_Error, nil, fmt.Errorf("error simulating finalise for minipool %s: %w", minipoolAddress.Hex(), err)
 			}
-			return txInfo, nil
+			return types.ResponseStatus_Success, txInfo, nil
 		}
 
 		// Do a distribution, which will finalize it
 		txInfo, err := mpv3.DistributeBalance(opts, false)
 		if err != nil {
-			return nil, fmt.Errorf("error simulation distribute balance for minipool %s: %w", minipoolAddress.Hex(), err)
+			return types.ResponseStatus_Error, nil, fmt.Errorf("error simulating distribute balance for minipool %s: %w", minipoolAddress.Hex(), err)
 		}
-		return txInfo, nil
+		return types.ResponseStatus_Success, txInfo, nil
 	}
 
 	// Handle old minipools
-	return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mpCommon.Version)
+	return types.ResponseStatus_InvalidChainState, nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mpCommon.Version)
 }

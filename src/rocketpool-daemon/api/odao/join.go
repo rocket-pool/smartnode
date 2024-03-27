@@ -1,7 +1,6 @@
 package odao
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -17,6 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -57,32 +57,32 @@ type oracleDaoJoinContext struct {
 	rplBalance *big.Int
 }
 
-func (c *oracleDaoJoinContext) Initialize() error {
+func (c *oracleDaoJoinContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
 	c.rpl, err = tokens.NewTokenRpl(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating RPL token binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating RPL token binding: %w", err)
 	}
 	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
 	c.oSettings = c.odaoMgr.Settings
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *oracleDaoJoinContext) GetState(mc *batch.MultiCaller) {
@@ -95,11 +95,12 @@ func (c *oracleDaoJoinContext) GetState(mc *batch.MultiCaller) {
 	c.rpl.BalanceOf(mc, &c.rplBalance, c.nodeAddress)
 }
 
-func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bind.TransactOpts) error {
+func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the timestamp of the latest block
-	latestHeader, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
+	ctx := c.handler.serviceProvider.GetContext()
+	latestHeader, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("error getting latest block header: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
 	actionWindow := c.oSettings.Proposal.ActionTime.Formatted()
@@ -115,20 +116,20 @@ func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bi
 	if data.CanJoin && opts != nil {
 		dnta, err := c.rp.GetContract(rocketpool.ContractName_RocketDAONodeTrustedActions)
 		if err != nil {
-			return fmt.Errorf("error getting RPL token contract: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting RPL token contract: %w", err)
 		}
 
 		approveTxInfo, err := c.rpl.Approve(dnta.Address, rplBond, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for RPL approval: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for RPL approval: %w", err)
 		}
 		data.ApproveTxInfo = approveTxInfo
 
 		joinTxInfo, err := c.odaoMgr.Join(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for Join: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Join: %w", err)
 		}
 		data.JoinTxInfo = joinTxInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

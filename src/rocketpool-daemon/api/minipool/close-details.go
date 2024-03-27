@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -9,12 +8,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -49,15 +49,17 @@ type minipoolCloseDetailsContext struct {
 	bc      beacon.IBeaconClient
 }
 
-func (c *minipoolCloseDetailsContext) Initialize() error {
+func (c *minipoolCloseDetailsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	return errors.Join(
-		sp.RequireNodeRegistered(),
-	)
+	status, err := sp.RequireNodeRegistered()
+	if err != nil {
+		return status, err
+	}
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolCloseDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -85,22 +87,18 @@ func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, 
 	}
 }
 
-func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) error {
+func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 	// Get the current ETH balances of each minipool
 	balances, err := c.rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {
-		return fmt.Errorf("error getting minipool balances: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool balances: %w", err)
 	}
 
 	// Get the closure details
 	details := make([]api.MinipoolCloseDetails, len(addresses))
 	for i, mp := range mps {
-		mpDetails, err := getMinipoolCloseDetails(c.rp, mp, balances[i])
-		if err != nil {
-			return fmt.Errorf("error checking closure details for minipool %s: %w", mp.Common().Address.Hex(), err)
-		}
-		details[i] = mpDetails
+		details[i] = getMinipoolCloseDetails(c.rp, mp, balances[i])
 	}
 
 	// Get the node shares
@@ -113,14 +111,14 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting node shares of minipool balances: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting node shares of minipool balances: %w", err)
 	}
 
 	// Get the beacon statuses for each closeable minipool
 	pubkeys := []beacon.ValidatorPubkey{}
 	pubkeyMap := map[common.Address]beacon.ValidatorPubkey{}
 	for i, mp := range details {
-		if mp.Status == types.MinipoolStatus_Dissolved {
+		if mp.Status == rptypes.MinipoolStatus_Dissolved {
 			// Ignore dissolved minipools
 			continue
 		}
@@ -130,14 +128,14 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 	}
 	statusMap, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
-		return fmt.Errorf("error getting beacon status of minipools: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting beacon status of minipools: %w", err)
 	}
 
 	// Review closeability based on validator status
 	for i, mp := range details {
 		pubkey := pubkeyMap[mp.Address]
 		validator := statusMap[pubkey]
-		if mp.Status != types.MinipoolStatus_Dissolved {
+		if mp.Status != rptypes.MinipoolStatus_Dissolved {
 			details[i].BeaconState = validator.Status
 			if validator.Status != beacon.ValidatorState_WithdrawalDone {
 				details[i].CanClose = false
@@ -146,10 +144,10 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 	}
 
 	data.Details = details
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
-func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.IMinipool, balance *big.Int) (api.MinipoolCloseDetails, error) {
+func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.IMinipool, balance *big.Int) api.MinipoolCloseDetails {
 	mpCommonDetails := mp.Common()
 
 	// Create the details with the balance / share info and status details
@@ -166,41 +164,41 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, mp minipool.IMinipool, b
 	// Ignore minipools that are too old
 	if details.Version < 3 {
 		details.CanClose = false
-		return details, nil
+		return details
 	}
 
 	// Can't close a minipool that's already finalized
 	if details.IsFinalized {
 		details.CanClose = false
-		return details, nil
+		return details
 	}
 
 	// Make sure it's in a closeable state
 	details.EffectiveBalance = big.NewInt(0).Sub(details.Balance, details.Refund)
 	switch details.Status {
-	case types.MinipoolStatus_Dissolved:
+	case rptypes.MinipoolStatus_Dissolved:
 		details.CanClose = true
 
-	case types.MinipoolStatus_Staking, types.MinipoolStatus_Withdrawable:
+	case rptypes.MinipoolStatus_Staking, rptypes.MinipoolStatus_Withdrawable:
 		// Ignore minipools with a balance lower than the refund
 		if details.Balance.Cmp(details.Refund) == -1 {
 			details.CanClose = false
-			return details, nil
+			return details
 		}
 
 		// Ignore minipools with an effective balance lower than v3 rewards-vs-exit cap
 		eight := eth.EthToWei(8)
 		if details.EffectiveBalance.Cmp(eight) == -1 {
 			details.CanClose = false
-			return details, nil
+			return details
 		}
 
 		details.CanClose = true
 
-	case types.MinipoolStatus_Initialized, types.MinipoolStatus_Prelaunch:
+	case rptypes.MinipoolStatus_Initialized, rptypes.MinipoolStatus_Prelaunch:
 		details.CanClose = false
-		return details, nil
+		return details
 	}
 
-	return details, nil
+	return details
 }
